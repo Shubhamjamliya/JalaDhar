@@ -63,6 +63,17 @@ app.use('/api/vendors', require('./routes/vendor-routes/service.routes'));
 app.use('/api/admin/auth', require('./routes/admin-routes/adminAuth.routes'));
 app.use('/api/admin', require('./routes/admin-routes/vendorApproval.routes'));
 app.use('/api/admin', require('./routes/admin-routes/userManagement.routes'));
+app.use('/api/admin', require('./routes/booking-routes/adminBooking.routes'));
+
+// Booking routes
+app.use('/api/bookings', require('./routes/booking-routes/userBooking.routes'));
+app.use('/api/vendors/bookings', require('./routes/booking-routes/vendorBooking.routes'));
+
+// Payment routes
+app.use('/api/payments', require('./routes/payment-routes/payment.routes'));
+
+// Rating routes
+app.use('/api/ratings', require('./routes/rating-routes/rating.routes'));
 
 // 404 handler
 app.use((req, res) => {

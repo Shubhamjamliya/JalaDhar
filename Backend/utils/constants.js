@@ -11,15 +11,19 @@ const TOKEN_TYPES = {
   EMAIL_VERIFICATION: 'EMAIL_VERIFICATION'
 };
 
-// Booking status - Updated for vendor module requirements
+// Booking status - Complete workflow status
 const BOOKING_STATUS = {
-  PENDING: 'PENDING',
-  ACCEPTED: 'ACCEPTED',  // Vendor accepts the booking
-  REJECTED: 'REJECTED',  // Vendor rejects the booking
-  VISITED: 'VISITED',    // Vendor has visited the location
-  COMPLETED: 'COMPLETED', // Service completed
-  CANCELLED: 'CANCELLED',
-  NO_SHOW: 'NO_SHOW'
+  PENDING: 'PENDING',              // Booking created, waiting for vendor assignment
+  ASSIGNED: 'ASSIGNED',            // Vendor auto-assigned, waiting for acceptance
+  ACCEPTED: 'ACCEPTED',            // Vendor accepts the booking
+  REJECTED: 'REJECTED',            // Vendor rejects the booking
+  VISITED: 'VISITED',              // Vendor visited & finished testing
+  REPORT_UPLOADED: 'REPORT_UPLOADED', // Vendor submitted report
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT', // User must pay remaining 60%
+  COMPLETED: 'COMPLETED',          // Payment done, report visible
+  SUCCESS: 'SUCCESS',              // Borewell success
+  FAILED: 'FAILED',                // Borewell failure
+  CANCELLED: 'CANCELLED'           // User/vendor cancels
 };
 
 // Service status

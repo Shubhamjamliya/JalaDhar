@@ -156,7 +156,7 @@ function App() {
                                 element={
                                     <AdminProtectedRoute>
                                         <AdminNavbar />
-                                        <main className="px-4 pb-28 pt-24 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
+                                        <main className="px-4 pb-6 pt-20 md:pt-20 md:pl-72 md:pr-6 min-h-screen bg-[#F6F7F9]">
                                             <Routes>
                                                 <Route
                                                     path="/"

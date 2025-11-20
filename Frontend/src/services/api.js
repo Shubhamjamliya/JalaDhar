@@ -15,10 +15,34 @@ const api = axios.create({
 // Request interceptor - Add token to headers
 api.interceptors.request.use(
   (config) => {
-    // Get token from localStorage (check user, vendor, and admin tokens)
-    const token = localStorage.getItem('accessToken') || 
-                  localStorage.getItem('vendorAccessToken') || 
-                  localStorage.getItem('adminAccessToken');
+    // Determine which token to use based on the API endpoint
+    let token = null;
+    const url = config.url || '';
+    
+    // Admin routes - use admin token
+    if (url.startsWith('/admin/')) {
+      token = localStorage.getItem('adminAccessToken');
+    }
+    // Vendor routes - use vendor token
+    else if (url.startsWith('/vendors/')) {
+      token = localStorage.getItem('vendorAccessToken');
+    }
+    // User routes - use user token
+    else if (url.startsWith('/users/')) {
+      token = localStorage.getItem('accessToken');
+    }
+    // Fallback: try to determine from current route
+    else {
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/admin')) {
+        token = localStorage.getItem('adminAccessToken');
+      } else if (currentPath.startsWith('/vendor')) {
+        token = localStorage.getItem('vendorAccessToken');
+      } else {
+        token = localStorage.getItem('accessToken');
+      }
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

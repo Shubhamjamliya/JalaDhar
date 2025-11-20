@@ -54,20 +54,66 @@ const bookingSchema = new mongoose.Schema({
     landmark: String
   },
   payment: {
-    amount: {
+    totalAmount: {
       type: Number,
       required: true,
       min: [0, 'Amount cannot be negative']
+    },
+    advanceAmount: {
+      type: Number,
+      required: true,
+      min: [0, 'Advance amount cannot be negative']
+    },
+    remainingAmount: {
+      type: Number,
+      required: true,
+      min: [0, 'Remaining amount cannot be negative']
+    },
+    advancePaid: {
+      type: Boolean,
+      default: false
+    },
+    remainingPaid: {
+      type: Boolean,
+      default: false
     },
     status: {
       type: String,
       enum: Object.values(PAYMENT_STATUS),
       default: PAYMENT_STATUS.PENDING
     },
-    transactionId: String,
-    razorpayOrderId: String,
-    razorpayPaymentId: String,
-    paidAt: Date
+    // Advance payment details
+    advanceTransactionId: String,
+    advanceRazorpayOrderId: String,
+    advanceRazorpayPaymentId: String,
+    advancePaidAt: Date,
+    // Remaining payment details
+    remainingTransactionId: String,
+    remainingRazorpayOrderId: String,
+    remainingRazorpayPaymentId: String,
+    remainingPaidAt: Date,
+    // Vendor settlement
+    vendorSettlement: {
+      amount: Number,
+      status: {
+        type: String,
+        enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'],
+        default: 'PENDING'
+      },
+      settlementType: {
+        type: String,
+        enum: ['SUCCESS', 'FAILED'],
+        default: null
+      },
+      incentive: Number,
+      penalty: Number,
+      travelCharges: Number,
+      settledAt: Date,
+      settledBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Admin'
+      }
+    }
   },
   notes: {
     type: String,
@@ -77,8 +123,74 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  completedAt: Date,
+  // Water detection report
+  report: {
+    waterFound: {
+      type: Boolean,
+      default: null
+    },
+    machineReadings: {
+      depth: Number,
+      flowRate: Number,
+      quality: String,
+      notes: String
+    },
+    images: [{
+      url: String,
+      publicId: String,
+      geoTag: {
+        lat: Number,
+        lng: Number
+      },
+      uploadedAt: Date
+    }],
+    reportFile: {
+      url: String,
+      publicId: String,
+      uploadedAt: Date
+    },
+    uploadedAt: Date,
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Vendor'
+    }
+  },
+  // Borewell result (after user digs)
+  borewellResult: {
+    status: {
+      type: String,
+      enum: ['PENDING', 'SUCCESS', 'FAILED'],
+      default: 'PENDING'
+    },
+    images: [{
+      url: String,
+      publicId: String,
+      uploadedAt: Date
+    }],
+    uploadedAt: Date,
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    approvedAt: Date,
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin'
+    }
+  },
+  // Invoice
+  invoice: {
+    invoiceNumber: String,
+    invoiceUrl: String,
+    publicId: String,
+    generatedAt: Date
+  },
+  // Timestamps
+  assignedAt: Date,
+  acceptedAt: Date,
   visitedAt: Date,
+  reportUploadedAt: Date,
+  completedAt: Date,
   cancelledAt: Date,
   cancelledBy: {
     type: String,

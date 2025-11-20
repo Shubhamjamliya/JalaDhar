@@ -226,7 +226,42 @@ const vendorSchema = new mongoose.Schema({
       default: Date.now
     },
     caption: String
-  }]
+  }],
+  // Rating and Performance
+  rating: {
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5
+    },
+    totalRatings: {
+      type: Number,
+      default: 0
+    },
+    successCount: {
+      type: Number,
+      default: 0
+    },
+    failureCount: {
+      type: Number,
+      default: 0
+    },
+    successRatio: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    }
+  },
+  // Location for distance calculation
+  location: {
+    coordinates: {
+      lat: Number,
+      lng: Number
+    },
+    lastUpdated: Date
+  }
 }, {
   timestamps: true
 });
@@ -242,6 +277,17 @@ vendorSchema.pre('save', async function (next) {
 vendorSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+// Calculate success ratio before saving
+vendorSchema.pre('save', function(next) {
+  if (this.rating.successCount + this.rating.failureCount > 0) {
+    const total = this.rating.successCount + this.rating.failureCount;
+    this.rating.successRatio = Math.round(
+      (this.rating.successCount / total) * 100
+    );
+  }
+  next();
+});
 
 // Remove sensitive data before sending JSON
 vendorSchema.methods.toJSON = function () {
