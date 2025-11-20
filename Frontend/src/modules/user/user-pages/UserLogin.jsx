@@ -41,15 +41,14 @@ export default function UserLogin() {
     };
 
     return (
-        <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5">
-            {/* Whole content WITHOUT CARD */}
+        <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5 py-8">
             <div className="w-full max-w-sm">
-                {/* Logo */}
+                {/* Logo - Centered */}
                 <div className="text-center mb-10 mt-4">
                     <img
                         src="/src/assets/logo.png"
                         alt="Jaladhar"
-                        className="w- mx-auto mb-2"
+                        className="w-auto mx-auto mb-2"
                     />
                 </div>
 
@@ -67,31 +66,16 @@ export default function UserLogin() {
 
                 {/* Email Input */}
                 <div className="mb-4">
-                    <div
-                        className="
-            w-full 
-            bg-white 
-            border border-[#D9DDE4]
-            rounded-2xl                /* slightly smaller than 2xl */
-            px-3 py-3                 /* reduced height */
-            shadow-[0px_2px_6px_rgba(0,0,0,0.05)]
-        "
-                    >
-                        <p className="text-[14px] font-semibold text-[#4A4A4A]">
+                    <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                        <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
                             Email
                         </p>
-
                         <input
                             type="email"
                             placeholder="Enter your email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="
-                w-[95%]               
-                text-[14px] text-gray-600 
-                mt-1
-                focus:outline-none
-            "
+                            className="w-full text-[14px] text-gray-600 focus:outline-none"
                             disabled={loading}
                         />
                     </div>
@@ -99,24 +83,15 @@ export default function UserLogin() {
 
                 {/* Password Input */}
                 <div className="mb-4">
-                    <div
-                        className="
-            w-full 
-            bg-white 
-            border border-[#D9DDE4]
-            rounded-2xl               
-            px-3 py-3                   
-            shadow-[0px_2px_6px_rgba(0,0,0,0.05)]
-        "
-                    >
-                        <p className="text-[14px] font-semibold text-[#4A4A4A]">
+                    <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                        <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
                             Password
                         </p>
-
-                        <div className="flex items-center mt-1">
+                        <div className="flex items-center">
                             <input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="Enter your password"
+                                className="w-[90%] text-[14px] text-gray-600 focus:outline-none"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="
@@ -131,7 +106,6 @@ export default function UserLogin() {
                                     }
                                 }}
                             />
-
                             <span
                                 className="text-gray-500 text-sm cursor-pointer ml-2"
                                 onClick={() => setShowPassword(!showPassword)}
@@ -155,6 +129,7 @@ export default function UserLogin() {
                 {/* Login Button */}
                 <button
                     onClick={handleLogin}
+                    className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors"
                     disabled={loading}
                     className="
     w-72 mx-auto block          

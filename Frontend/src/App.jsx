@@ -20,9 +20,11 @@ import VendorSignup from "./modules/vendor/vendor-pages/VendorSignup";
 import UserNavbar from "./modules/user/user-components/UserNavbar";
 import VendorNavbar from "./modules/vendor/vendor-components/VendorNavbar";
 import UserServiceProvider from "./modules/user/user-pages/UserServiceProvider";
+import UserRequestService from "./modules/user/user-pages/UserRequestService";
 import UserStatus from "./modules/user/user-pages/UserStatus";
 import UserBookingHistory from "./modules/user/user-pages/UserBookingHistory";
 import UserProfile from "./modules/user/user-pages/UserProfile";
+import UserVendorProfile from "./modules/user/user-pages/UserVendorProfile";
 import VendorDashboard from "./modules/vendor/vendor-pages/VendorDashboard";
 import VendorBookings from "./modules/vendor/vendor-pages/VendorBookings";
 import VendorStatus from "./modules/vendor/vendor-pages/VendorStatus";
@@ -48,175 +50,245 @@ function App() {
                 <VendorAuthProvider>
                     <AdminAuthProvider>
                         <Router>
-                        <Routes>
-                            {/* ---------- USER AUTH ---------- */}
-                            <Route path="/userlogin" element={<UserLogin />} />
-                            <Route path="/usersignup" element={<UserSignup />} />
+                            <Routes>
+                                {/* ---------- USER AUTH ---------- */}
+                                <Route
+                                    path="/userlogin"
+                                    element={<UserLogin />}
+                                />
+                                <Route
+                                    path="/usersignup"
+                                    element={<UserSignup />}
+                                />
 
-                            {/* ---------- USER PANEL (Nested with Navbar) ---------- */}
-                            <Route
-                                path="/user/*"
-                                element={
-                                    <ProtectedRoute>
-                                        <UserNavbar />
-                                        <main className="px-4 pb-28 pt-24 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
-                                            <Routes>
-                                                <Route
-                                                    path="/"
-                                                    element={
-                                                        <Navigate
-                                                            to="/user/dashboard"
-                                                            replace
-                                                        />
-                                                    }
-                                                />
-                                                <Route
-                                                    path="/dashboard"
-                                                    element={<UserDashboard />}
-                                                />
-                                                <Route
-                                                    path="/serviceprovider"
-                                                    element={<UserServiceProvider />}
-                                                />
-                                                <Route
-                                                    path="/status"
-                                                    element={<UserStatus />}
-                                                />
-                                                <Route
-                                                    path="/history"
-                                                    element={<UserBookingHistory />}
-                                                />
-                                                <Route
-                                                    path="/profile"
-                                                    element={<UserProfile />}
-                                                />
-                                            </Routes>
-                                        </main>
-                                    </ProtectedRoute>
-                                }
-                            />
+                                {/* ---------- USER PANEL (Nested with Navbar) ---------- */}
+                                <Route
+                                    path="/user/*"
+                                    element={
+                                        <ProtectedRoute>
+                                            <UserNavbar />
+                                            <main className="px-4 pb-16 pt-16 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
+                                                <Routes>
+                                                    <Route
+                                                        path="/"
+                                                        element={
+                                                            <Navigate
+                                                                to="/user/dashboard"
+                                                                replace
+                                                            />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/dashboard"
+                                                        element={
+                                                            <UserDashboard />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/serviceprovider"
+                                                        element={
+                                                            <UserServiceProvider />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/request-service"
+                                                        element={
+                                                            <UserRequestService />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/status"
+                                                        element={<UserStatus />}
+                                                    />
+                                                    <Route
+                                                        path="/history"
+                                                        element={
+                                                            <UserBookingHistory />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/profile"
+                                                        element={
+                                                            <UserProfile />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/vendor/:vendorId"
+                                                        element={
+                                                            <UserVendorProfile />
+                                                        }
+                                                    />
+                                                </Routes>
+                                            </main>
+                                        </ProtectedRoute>
+                                    }
+                                />
 
-                            {/* ---------- VENDOR AUTH ---------- */}
-                            <Route path="/vendorlogin" element={<VendorLogin />} />
-                            <Route path="/vendorsignup" element={<VendorSignup />} />
+                                {/* ---------- VENDOR AUTH ---------- */}
+                                <Route
+                                    path="/vendorlogin"
+                                    element={<VendorLogin />}
+                                />
+                                <Route
+                                    path="/vendorsignup"
+                                    element={<VendorSignup />}
+                                />
 
-                            {/* ---------- VENDOR PANEL (Nested with Navbar) ---------- */}
-                            <Route
-                                path="/vendor/*"
-                                element={
-                                    <VendorProtectedRoute>
-                                        <VendorNavbar />
-                                        <main className="px-4 pb-28 pt-24 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
-                                            <Routes>
-                                                <Route
-                                                    path="/"
-                                                    element={
-                                                        <Navigate
-                                                            to="/vendor/dashboard"
-                                                            replace
-                                                        />
-                                                    }
-                                                />
-                                                <Route
-                                                    path="/dashboard"
-                                                    element={<VendorDashboard />}
-                                                />
-                                                <Route
-                                                    path="/bookings"
-                                                    element={<VendorBookings />}
-                                                />
-                                                <Route
-                                                    path="/status"
-                                                    element={<VendorStatus />}
-                                                />
-                                                <Route
-                                                    path="/wallet"
-                                                    element={<VendorWallet />}
-                                                />
-                                                <Route
-                                                    path="/profile"
-                                                    element={<VendorProfile />}
-                                                />
-                                                <Route
-                                                    path="/requests"
-                                                    element={<VendorRequests />}
-                                                />
-                                                <Route
-                                                    path="/services"
-                                                    element={<VendorServices />}
-                                                />
-                                            </Routes>
-                                        </main>
-                                    </VendorProtectedRoute>
-                                }
-                            />
+                                {/* ---------- VENDOR PANEL (Nested with Navbar) ---------- */}
+                                <Route
+                                    path="/vendor/*"
+                                    element={
+                                        <VendorProtectedRoute>
+                                            <VendorNavbar />
+                                            <main className="px-4 pb-28 pt-24 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
+                                                <Routes>
+                                                    <Route
+                                                        path="/"
+                                                        element={
+                                                            <Navigate
+                                                                to="/vendor/dashboard"
+                                                                replace
+                                                            />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/dashboard"
+                                                        element={
+                                                            <VendorDashboard />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/bookings"
+                                                        element={
+                                                            <VendorBookings />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/status"
+                                                        element={
+                                                            <VendorStatus />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/wallet"
+                                                        element={
+                                                            <VendorWallet />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/profile"
+                                                        element={
+                                                            <VendorProfile />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/requests"
+                                                        element={
+                                                            <VendorRequests />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/services"
+                                                        element={
+                                                            <VendorServices />
+                                                        }
+                                                    />
+                                                </Routes>
+                                            </main>
+                                        </VendorProtectedRoute>
+                                    }
+                                />
 
-                            {/* ---------- ADMIN AUTH ---------- */}
-                            <Route path="/adminlogin" element={<AdminLogin />} />
+                                {/* ---------- ADMIN AUTH ---------- */}
+                                <Route
+                                    path="/adminlogin"
+                                    element={<AdminLogin />}
+                                />
 
-                            {/* ---------- ADMIN PANEL (Nested with Sidebar and Topbar) ---------- */}
-                            <Route
-                                path="/admin/*"
-                                element={
-                                    <AdminProtectedRoute>
-                                        <div className="flex min-h-screen bg-[#F6F7F9]">
-                                            <AdminNavbar />
-                                            <div className="flex-1 flex flex-col md:ml-64">
-                                                <main className="flex-1 p-6 mt-16">
-                                                    <Routes>
-                                                        <Route
-                                                            path="/"
-                                                            element={
-                                                                <Navigate
-                                                                    to="/admin/dashboard"
-                                                                    replace
-                                                                />
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/dashboard"
-                                                            element={<AdminDashboard />}
-                                                        />
-                                                        <Route
-                                                            path="/vendors"
-                                                            element={<AdminVendors />}
-                                                        />
-                                                        <Route
-                                                            path="/vendors/pending"
-                                                            element={<AdminPendingVendors />}
-                                                        />
-                                                        <Route
-                                                            path="/vendors/:vendorId"
-                                                            element={<AdminVendorDetails />}
-                                                        />
-                                                        <Route
-                                                            path="/users"
-                                                            element={<AdminUsers />}
-                                                        />
-                                                        <Route
-                                                            path="/users/:userId"
-                                                            element={<AdminUserDetails />}
-                                                        />
-                                                        <Route
-                                                            path="/payments"
-                                                            element={<AdminPayments />}
-                                                        />
-                                                        <Route
-                                                            path="/settings"
-                                                            element={<AdminSettings />}
-                                                        />
-                                                    </Routes>
-                                                </main>
+                                {/* ---------- ADMIN PANEL (Nested with Sidebar and Topbar) ---------- */}
+                                <Route
+                                    path="/admin/*"
+                                    element={
+                                        <AdminProtectedRoute>
+                                            <div className="flex min-h-screen bg-[#F6F7F9]">
+                                                <AdminNavbar />
+                                                <div className="flex-1 flex flex-col md:ml-64">
+                                                    <main className="flex-1 p-6 mt-16">
+                                                        <Routes>
+                                                            <Route
+                                                                path="/"
+                                                                element={
+                                                                    <Navigate
+                                                                        to="/admin/dashboard"
+                                                                        replace
+                                                                    />
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/dashboard"
+                                                                element={
+                                                                    <AdminDashboard />
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/vendors"
+                                                                element={
+                                                                    <AdminVendors />
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/vendors/pending"
+                                                                element={
+                                                                    <AdminPendingVendors />
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/vendors/:vendorId"
+                                                                element={
+                                                                    <AdminVendorDetails />
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/users"
+                                                                element={
+                                                                    <AdminUsers />
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/users/:userId"
+                                                                element={
+                                                                    <AdminUserDetails />
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/payments"
+                                                                element={
+                                                                    <AdminPayments />
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/settings"
+                                                                element={
+                                                                    <AdminSettings />
+                                                                }
+                                                            />
+                                                        </Routes>
+                                                    </main>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </AdminProtectedRoute>
-                                }
-                            />
+                                        </AdminProtectedRoute>
+                                    }
+                                />
 
-                            {/* ---------- DEFAULT REDIRECT ---------- */}
-                            <Route path="/" element={<Navigate to="/userlogin" replace />} />
-                        </Routes>
-                    </Router>
+                                {/* ---------- DEFAULT REDIRECT ---------- */}
+                                <Route
+                                    path="/"
+                                    element={
+                                        <Navigate to="/userlogin" replace />
+                                    }
+                                />
+                            </Routes>
+                        </Router>
                     </AdminAuthProvider>
                 </VendorAuthProvider>
             </AuthProvider>
