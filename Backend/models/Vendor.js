@@ -157,7 +157,76 @@ const vendorSchema = new mongoose.Schema({
       lat: Number,
       lng: Number
     }
-  }
+  },
+  // Availability Settings
+  availability: {
+    isAvailable: {
+      type: Boolean,
+      default: true
+    },
+    workingDays: [{
+      type: String,
+      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    }],
+    workingHours: {
+      start: {
+        type: String,
+        default: '09:00'
+      },
+      end: {
+        type: String,
+        default: '18:00'
+      }
+    },
+    timeSlots: [{
+      date: Date,
+      slots: [{
+        start: String,
+        end: String,
+        isAvailable: {
+          type: Boolean,
+          default: true
+        }
+      }]
+    }]
+  },
+  // Services offered by vendor
+  services: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Service'
+  }],
+  // Payment Collection Status
+  paymentCollection: {
+    totalEarnings: {
+      type: Number,
+      default: 0
+    },
+    pendingAmount: {
+      type: Number,
+      default: 0
+    },
+    collectedAmount: {
+      type: Number,
+      default: 0
+    },
+    lastPaymentDate: Date
+  },
+  // Gallery Images
+  gallery: [{
+    url: {
+      type: String,
+      required: true
+    },
+    publicId: {
+      type: String,
+      required: true
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    },
+    caption: String
+  }]
 }, {
   timestamps: true
 });

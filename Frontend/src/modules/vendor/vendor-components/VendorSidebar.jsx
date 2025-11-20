@@ -1,19 +1,21 @@
 import { useRef, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { IoCloseOutline, IoLogOutOutline } from "react-icons/io5";
+import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 
 export default function VendorSidebar({ isOpen, onClose, navItems }) {
     const closeRef = useRef(null);
-    const navigate = useNavigate();
+    const { logout } = useVendorAuth();
 
     useEffect(() => {
         if (isOpen) closeRef.current?.focus();
     }, [isOpen]);
 
-    const handleLogout = () => {
-        // Add logout logic here
-        navigate("/vendorlogin");
+    const handleLogout = async () => {
         onClose();
+        if (window.confirm("Are you sure you want to logout?")) {
+            await logout();
+        }
     };
 
     const overlay = `fixed inset-0 bg-black/30 z-40 transition-opacity ${

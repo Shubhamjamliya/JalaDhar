@@ -11,12 +11,13 @@ const TOKEN_TYPES = {
   EMAIL_VERIFICATION: 'EMAIL_VERIFICATION'
 };
 
-// Booking status
+// Booking status - Updated for vendor module requirements
 const BOOKING_STATUS = {
   PENDING: 'PENDING',
-  CONFIRMED: 'CONFIRMED',
-  IN_PROGRESS: 'IN_PROGRESS',
-  COMPLETED: 'COMPLETED',
+  ACCEPTED: 'ACCEPTED',  // Vendor accepts the booking
+  REJECTED: 'REJECTED',  // Vendor rejects the booking
+  VISITED: 'VISITED',    // Vendor has visited the location
+  COMPLETED: 'COMPLETED', // Service completed
   CANCELLED: 'CANCELLED',
   NO_SHOW: 'NO_SHOW'
 };

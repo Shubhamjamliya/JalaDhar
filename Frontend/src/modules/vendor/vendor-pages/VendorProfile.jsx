@@ -7,71 +7,197 @@ import {
     IoCheckmarkOutline,
     IoCloseOutline,
 } from "react-icons/io5";
+import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import { 
+    getVendorProfile, 
+    updateVendorProfile, 
+    uploadProfilePicture 
+} from "../../../services/vendorApi";
 
 export default function VendorProfile() {
     const navigate = useNavigate();
+    const { logout, vendor: authVendor } = useVendorAuth();
     const [isEditing, setIsEditing] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
     const [profileData, setProfileData] = useState({
         profileImage: null,
-        fullName: "John Doe",
-        email: "johndoe@email.com",
-        mobile: "+91 9876543210",
+        profileImageUrl: null,
+        fullName: "",
+        email: "",
+        mobile: "",
         aadhaarNo: "",
         panNo: "",
         aadhaarImage: null,
+        aadhaarImageUrl: null,
         panImage: null,
+        panImageUrl: null,
         education: "",
+        institution: "",
         experienceYears: "",
         experienceDetails: "",
         certificates: [],
         bankName: "",
+        accountHolderName: "",
         accountNo: "",
         ifsc: "",
+        branchName: "",
         cancelledCheck: null,
+        cancelledCheckUrl: null,
         serviceDescription: "",
         fullAddress: "",
+        address: {
+            street: "",
+            city: "",
+            state: "",
+            pincode: ""
+        }
     });
 
     useEffect(() => {
-        // Load vendor profile from localStorage
-        const savedProfile =
-            JSON.parse(localStorage.getItem("vendorProfile")) || {};
-        if (Object.keys(savedProfile).length > 0) {
-            setProfileData(savedProfile);
-        }
+        loadProfile();
     }, []);
 
-    const handleLogout = () => {
-        navigate("/vendorlogin");
+    const loadProfile = async () => {
+        try {
+            setLoading(true);
+            setError("");
+            const response = await getVendorProfile();
+            
+            if (response.success && response.data.vendor) {
+                const vendor = response.data.vendor;
+                
+                // Map backend data to frontend form structure
+                setProfileData({
+                    profileImage: null,
+                    profileImageUrl: vendor.documents?.profilePicture?.url || null,
+                    fullName: vendor.name || "",
+                    email: vendor.email || "",
+                    mobile: vendor.phone || "",
+                    aadhaarNo: "", // Not stored in backend separately
+                    panNo: "", // Not stored in backend separately
+                    aadhaarImage: null,
+                    aadhaarImageUrl: vendor.documents?.aadharCard?.url || null,
+                    panImage: null,
+                    panImageUrl: vendor.documents?.panCard?.url || null,
+                    education: vendor.educationalQualifications?.[0]?.degree || "",
+                    institution: vendor.educationalQualifications?.[0]?.institution || "",
+                    experienceYears: vendor.experience?.toString() || "",
+                    experienceDetails: "",
+                    certificates: vendor.documents?.certificates?.map(cert => cert.url) || [],
+                    bankName: vendor.bankDetails?.bankName || "",
+                    accountHolderName: vendor.bankDetails?.accountHolderName || "",
+                    accountNo: vendor.bankDetails?.accountNumber || "",
+                    ifsc: vendor.bankDetails?.ifscCode || "",
+                    branchName: vendor.bankDetails?.branchName || "",
+                    cancelledCheck: null,
+                    cancelledCheckUrl: vendor.documents?.cancelledCheque?.url || null,
+                    serviceDescription: "",
+                    fullAddress: "",
+                    address: {
+                        street: vendor.address?.street || "",
+                        city: vendor.address?.city || "",
+                        state: vendor.address?.state || "",
+                        pincode: vendor.address?.pincode || ""
+                    }
+                });
+            } else {
+                setError("Failed to load profile");
+            }
+        } catch (err) {
+            console.error("Load profile error:", err);
+            setError("Failed to load profile");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        await logout();
     };
 
     const handleEdit = () => {
         setIsEditing(true);
     };
 
-    const handleSave = () => {
-        // Save to localStorage
-        localStorage.setItem("vendorProfile", JSON.stringify(profileData));
-        setIsEditing(false);
-        alert("Profile updated successfully!");
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            setError("");
+            setSuccess("");
+
+            // Prepare profile update data
+            const updateData = {
+                name: profileData.fullName,
+                phone: profileData.mobile,
+                experience: parseInt(profileData.experienceYears) || 0,
+                address: JSON.stringify(profileData.address),
+                bankDetails: JSON.stringify({
+                    accountHolderName: profileData.accountHolderName,
+                    accountNumber: profileData.accountNo,
+                    ifscCode: profileData.ifsc,
+                    bankName: profileData.bankName,
+                    branchName: profileData.branchName || ""
+                }),
+                educationalQualifications: JSON.stringify([{
+                    degree: profileData.education,
+                    institution: profileData.institution,
+                    year: new Date().getFullYear(),
+                    percentage: null
+                }])
+            };
+
+            // Update profile
+            const response = await updateVendorProfile(updateData);
+            
+            if (response.success) {
+                // Upload profile picture if changed
+                if (profileData.profileImage) {
+                    try {
+                        await uploadProfilePicture(profileData.profileImage);
+                    } catch (err) {
+                        console.error("Profile picture upload error:", err);
+                        // Continue even if picture upload fails
+                    }
+                }
+
+                setSuccess("Profile updated successfully!");
+                setIsEditing(false);
+                // Reload profile to get updated data
+                await loadProfile();
+            } else {
+                setError(response.message || "Failed to update profile");
+            }
+        } catch (err) {
+            console.error("Save profile error:", err);
+            setError("Failed to update profile. Please try again.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleCancel = () => {
-        // Reload from localStorage
-        const savedProfile =
-            JSON.parse(localStorage.getItem("vendorProfile")) || {};
-        if (Object.keys(savedProfile).length > 0) {
-            setProfileData(savedProfile);
-        }
+        // Reload from backend
+        loadProfile();
         setIsEditing(false);
     };
 
     const handleImageChange = (field, e) => {
         const file = e.target.files[0];
         if (file) {
+            // Store file for upload
+            setProfileData({ ...profileData, [field]: file });
+            
+            // Create preview
             const reader = new FileReader();
             reader.onloadend = () => {
-                setProfileData({ ...profileData, [field]: reader.result });
+                setProfileData(prev => ({ 
+                    ...prev, 
+                    [field]: file,
+                    [`${field}Url`]: reader.result 
+                }));
             };
             reader.readAsDataURL(file);
         }
@@ -82,7 +208,7 @@ export default function VendorProfile() {
         const fileReaders = files.map((file) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
+                reader.onloadend = () => resolve({ file, url: reader.result });
                 reader.readAsDataURL(file);
             });
         });
@@ -90,7 +216,7 @@ export default function VendorProfile() {
         Promise.all(fileReaders).then((results) => {
             setProfileData({
                 ...profileData,
-                certificates: [...profileData.certificates, ...results],
+                certificates: [...profileData.certificates, ...results.map(r => r.url)],
             });
         });
     };
@@ -114,17 +240,42 @@ export default function VendorProfile() {
         return ifsc.slice(0, 2) + "****" + ifsc.slice(-2);
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0A84FF] mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading profile...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <div className="max-w-2xl mx-auto">
+                {/* Error Message */}
+                {error && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-600">{error}</p>
+                    </div>
+                )}
+
+                {/* Success Message */}
+                {success && (
+                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-600">{success}</p>
+                    </div>
+                )}
+
                 {/* Profile Header */}
                 <div className="flex flex-col items-center mb-8">
                     {/* Profile Picture */}
                     <div className="relative">
                         <div className="w-32 h-32 rounded-full bg-gray-200 border-4 border-white shadow-md mb-4 flex items-center justify-center overflow-hidden">
-                            {profileData.profileImage ? (
+                            {profileData.profileImageUrl ? (
                                 <img
-                                    src={profileData.profileImage}
+                                    src={profileData.profileImageUrl}
                                     alt="Profile"
                                     className="w-full h-full object-cover"
                                 />
@@ -163,7 +314,7 @@ export default function VendorProfile() {
                             />
                         ) : (
                             <h1 className="text-2xl font-bold text-gray-800">
-                                {profileData.fullName || "Vendor Name"}
+                                {profileData.fullName || authVendor?.name || "Vendor Name"}
                             </h1>
                         )}
                         {!isEditing ? (
@@ -178,14 +329,16 @@ export default function VendorProfile() {
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleSave}
-                                    className="bg-[#0A84FF] text-white font-semibold py-2 px-4 rounded-[10px] shadow-md hover:bg-[#005BBB] transition-colors flex items-center gap-2"
+                                    disabled={saving}
+                                    className="bg-[#0A84FF] text-white font-semibold py-2 px-4 rounded-[10px] shadow-md hover:bg-[#005BBB] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <IoCheckmarkOutline className="text-lg" />
-                                    Save
+                                    {saving ? "Saving..." : "Save"}
                                 </button>
                                 <button
                                     onClick={handleCancel}
-                                    className="bg-gray-500 text-white font-semibold py-2 px-4 rounded-[10px] shadow-md hover:bg-gray-600 transition-colors flex items-center gap-2"
+                                    disabled={saving}
+                                    className="bg-gray-500 text-white font-semibold py-2 px-4 rounded-[10px] shadow-md hover:bg-gray-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <IoCloseOutline className="text-lg" />
                                     Cancel
@@ -223,6 +376,7 @@ export default function VendorProfile() {
                                 })
                             }
                             isEditing={isEditing}
+                            disabled={true}
                         />
                         <EditableField
                             label="Mobile"
@@ -245,39 +399,15 @@ export default function VendorProfile() {
                         KYC Details
                     </h3>
                     <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] space-y-4">
-                        <EditableField
-                            label="Aadhaar No"
-                            value={profileData.aadhaarNo}
-                            onChange={(e) =>
-                                setProfileData({
-                                    ...profileData,
-                                    aadhaarNo: e.target.value,
-                                })
-                            }
-                            isEditing={isEditing}
-                            placeholder="Enter Aadhaar number"
-                        />
-                        <EditableField
-                            label="PAN No"
-                            value={profileData.panNo}
-                            onChange={(e) =>
-                                setProfileData({
-                                    ...profileData,
-                                    panNo: e.target.value,
-                                })
-                            }
-                            isEditing={isEditing}
-                            placeholder="Enter PAN number"
-                        />
                         <EditableImageField
                             label="Aadhaar Image"
-                            imageSrc={profileData.aadhaarImage}
+                            imageSrc={profileData.aadhaarImageUrl}
                             isEditing={isEditing}
                             onChange={(e) => handleImageChange("aadhaarImage", e)}
                         />
                         <EditableImageField
                             label="PAN Image"
-                            imageSrc={profileData.panImage}
+                            imageSrc={profileData.panImageUrl}
                             isEditing={isEditing}
                             onChange={(e) => handleImageChange("panImage", e)}
                         />
@@ -302,56 +432,44 @@ export default function VendorProfile() {
                             isEditing={isEditing}
                             placeholder="Enter your qualification"
                         />
+                        <EditableField
+                            label="Institution Name"
+                            value={profileData.institution}
+                            onChange={(e) =>
+                                setProfileData({
+                                    ...profileData,
+                                    institution: e.target.value,
+                                })
+                            }
+                            isEditing={isEditing}
+                            placeholder="Enter institution name"
+                        />
                         <div>
                             <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
-                                Experience
+                                Experience (Years)
                             </label>
-                            <div className="flex gap-2">
-                                {isEditing ? (
-                                    <>
-                                        <input
-                                            type="number"
-                                            placeholder="Years"
-                                            value={profileData.experienceYears}
-                                            onChange={(e) =>
-                                                setProfileData({
-                                                    ...profileData,
-                                                    experienceYears: e.target.value,
-                                                })
-                                            }
-                                            className="w-24 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Experience details"
-                                            value={profileData.experienceDetails}
-                                            onChange={(e) =>
-                                                setProfileData({
-                                                    ...profileData,
-                                                    experienceDetails: e.target.value,
-                                                })
-                                            }
-                                            className="flex-1 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
-                                        />
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="w-24 bg-gray-50 rounded-[8px] px-3 py-2">
-                                            <p className="text-sm text-gray-600">
-                                                {profileData.experienceYears
-                                                    ? `${profileData.experienceYears} Years`
-                                                    : "N/A"}
-                                            </p>
-                                        </div>
-                                        <div className="flex-1 bg-gray-50 rounded-[8px] px-3 py-2">
-                                            <p className="text-sm text-gray-600">
-                                                {profileData.experienceDetails ||
-                                                    "Not provided"}
-                                            </p>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
+                            {isEditing ? (
+                                <input
+                                    type="number"
+                                    placeholder="Years"
+                                    value={profileData.experienceYears}
+                                    onChange={(e) =>
+                                        setProfileData({
+                                            ...profileData,
+                                            experienceYears: e.target.value,
+                                        })
+                                    }
+                                    className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                />
+                            ) : (
+                                <div className="bg-gray-50 rounded-[8px] px-3 py-2">
+                                    <p className="text-sm text-gray-600">
+                                        {profileData.experienceYears
+                                            ? `${profileData.experienceYears} Years`
+                                            : "Not provided"}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                         <div>
                             <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
@@ -407,6 +525,18 @@ export default function VendorProfile() {
                     </h3>
                     <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] space-y-4">
                         <EditableField
+                            label="Account Holder Name"
+                            value={profileData.accountHolderName}
+                            onChange={(e) =>
+                                setProfileData({
+                                    ...profileData,
+                                    accountHolderName: e.target.value,
+                                })
+                            }
+                            isEditing={isEditing}
+                            placeholder="Enter account holder name"
+                        />
+                        <EditableField
                             label="Bank Name"
                             value={profileData.bankName}
                             onChange={(e) =>
@@ -452,9 +582,21 @@ export default function VendorProfile() {
                             placeholder="Enter IFSC code"
                             type={isEditing ? "text" : undefined}
                         />
+                        <EditableField
+                            label="Branch Name"
+                            value={profileData.branchName}
+                            onChange={(e) =>
+                                setProfileData({
+                                    ...profileData,
+                                    branchName: e.target.value,
+                                })
+                            }
+                            isEditing={isEditing}
+                            placeholder="Enter branch name (optional)"
+                        />
                         <EditableImageField
-                            label="Cancelled Check"
-                            imageSrc={profileData.cancelledCheck}
+                            label="Cancelled Cheque"
+                            imageSrc={profileData.cancelledCheckUrl}
                             isEditing={isEditing}
                             onChange={(e) =>
                                 handleImageChange("cancelledCheck", e)
@@ -469,30 +611,83 @@ export default function VendorProfile() {
                         Service & Address
                     </h3>
                     <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] space-y-4">
-                        <EditableTextAreaField
-                            label="Description of Services"
-                            value={profileData.serviceDescription}
-                            onChange={(e) =>
-                                setProfileData({
-                                    ...profileData,
-                                    serviceDescription: e.target.value,
-                                })
-                            }
-                            isEditing={isEditing}
-                            placeholder="Describe your services"
-                        />
-                        <EditableTextAreaField
-                            label="Full Address"
-                            value={profileData.fullAddress}
-                            onChange={(e) =>
-                                setProfileData({
-                                    ...profileData,
-                                    fullAddress: e.target.value,
-                                })
-                            }
-                            isEditing={isEditing}
-                            placeholder="Enter full address"
-                        />
+                        <div>
+                            <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
+                                Address
+                            </label>
+                            {isEditing ? (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <input
+                                        type="text"
+                                        placeholder="Street"
+                                        value={profileData.address.street}
+                                        onChange={(e) =>
+                                            setProfileData({
+                                                ...profileData,
+                                                address: {
+                                                    ...profileData.address,
+                                                    street: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="City"
+                                        value={profileData.address.city}
+                                        onChange={(e) =>
+                                            setProfileData({
+                                                ...profileData,
+                                                address: {
+                                                    ...profileData.address,
+                                                    city: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="State"
+                                        value={profileData.address.state}
+                                        onChange={(e) =>
+                                            setProfileData({
+                                                ...profileData,
+                                                address: {
+                                                    ...profileData.address,
+                                                    state: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Pincode"
+                                        value={profileData.address.pincode}
+                                        onChange={(e) =>
+                                            setProfileData({
+                                                ...profileData,
+                                                address: {
+                                                    ...profileData.address,
+                                                    pincode: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="bg-gray-50 rounded-[8px] px-4 py-2">
+                                    <p className="text-sm text-gray-600">
+                                        {profileData.address.street || profileData.address.city || profileData.address.state || profileData.address.pincode
+                                            ? `${profileData.address.street || ""}, ${profileData.address.city || ""}, ${profileData.address.state || ""} - ${profileData.address.pincode || ""}`.replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',')
+                                            : "Not provided"}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -500,7 +695,10 @@ export default function VendorProfile() {
                 {!isEditing && (
                     <div className="flex flex-col md:flex-row gap-4">
                         {/* Change Password Button */}
-                        <button className="border-2 border-[#0A84FF] text-[#0A84FF] font-semibold py-3 px-6 rounded-[10px] hover:bg-[#E7F0FB] transition-colors">
+                        <button 
+                            onClick={() => navigate("/vendor/change-password")}
+                            className="border-2 border-[#0A84FF] text-[#0A84FF] font-semibold py-3 px-6 rounded-[10px] hover:bg-[#E7F0FB] transition-colors"
+                        >
                             Change Password
                         </button>
 
@@ -528,6 +726,7 @@ function EditableField({
     isEditing,
     type = "text",
     placeholder = "",
+    disabled = false,
 }) {
     return (
         <div>
@@ -540,7 +739,8 @@ function EditableField({
                     value={value || ""}
                     onChange={onChange}
                     placeholder={placeholder}
-                    className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-4 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                    disabled={disabled}
+                    className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-4 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
             ) : (
                 <div className="bg-gray-50 rounded-[8px] px-4 py-2">

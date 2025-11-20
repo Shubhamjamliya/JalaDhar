@@ -55,9 +55,13 @@ app.use('/api/users/auth', require('./routes/user-routes/auth.routes'));
 
 // Vendor routes
 app.use('/api/vendors/auth', require('./routes/vendor-routes/auth.routes'));
+app.use('/api/vendors', require('./routes/vendor-routes/profile.routes'));
+app.use('/api/vendors', require('./routes/vendor-routes/dashboard.routes'));
+app.use('/api/vendors', require('./routes/vendor-routes/service.routes'));
 
 // Admin routes
 app.use('/api/admin/auth', require('./routes/admin-routes/adminAuth.routes'));
+app.use('/api/admin', require('./routes/admin-routes/vendorApproval.routes'));
 
 // 404 handler
 app.use((req, res) => {
