@@ -13,9 +13,11 @@ import VendorSignup from "./modules/vendor/vendor-pages/VendorSignup";
 import UserNavbar from "./modules/user/user-components/UserNavbar";
 import VendorNavbar from "./modules/vendor/vendor-components/VendorNavbar";
 import UserServiceProvider from "./modules/user/user-pages/UserServiceProvider";
+import UserRequestService from "./modules/user/user-pages/UserRequestService";
 import UserStatus from "./modules/user/user-pages/UserStatus";
 import UserBookingHistory from "./modules/user/user-pages/UserBookingHistory";
 import UserProfile from "./modules/user/user-pages/UserProfile";
+import UserVendorProfile from "./modules/user/user-pages/UserVendorProfile";
 import VendorDashboard from "./modules/vendor/vendor-pages/VendorDashboard";
 import VendorBookings from "./modules/vendor/vendor-pages/VendorBookings";
 import VendorStatus from "./modules/vendor/vendor-pages/VendorStatus";
@@ -38,7 +40,7 @@ function App() {
                     element={
                         <>
                             <UserNavbar />
-                            <main className="px-4 pb-28 pt-24 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
+                            <main className="px-4 pb-16 pt-16 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
                                 <Routes>
                                     <Route
                                         path="/"
@@ -58,6 +60,10 @@ function App() {
                                         element={<UserServiceProvider />}
                                     />
                                     <Route
+                                        path="/request-service"
+                                        element={<UserRequestService />}
+                                    />
+                                    <Route
                                         path="/status"
                                         element={<UserStatus />}
                                     />
@@ -68,6 +74,10 @@ function App() {
                                     <Route
                                         path="/profile"
                                         element={<UserProfile />}
+                                    />
+                                    <Route
+                                        path="/vendor/:vendorId"
+                                        element={<UserVendorProfile />}
                                     />
                                 </Routes>
                             </main>

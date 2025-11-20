@@ -11,14 +11,14 @@ export default function UserSignup() {
     };
 
     return (
-        <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5">
+        <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5 py-8">
             <div className="w-full max-w-sm">
-                {/* Logo */}
+                {/* Logo - Centered */}
                 <div className="text-center mb-10 mt-4">
                     <img
                         src="/src/assets/logo.png"
                         alt="Jaladhar"
-                        className="w- mx-auto mb-2"
+                        className="w-auto mx-auto mb-2"
                     />
                 </div>
 
@@ -29,57 +29,56 @@ export default function UserSignup() {
 
                 {/* Full Name */}
                 <div className="mb-4">
-                    <div className="w-full bg-white border border-[#D9DDE4] rounded-2xl px-3 py-3 shadow-[0px_2px_6px_rgba(0,0,0,0.05)]">
-                        <p className="text-[14px] font-semibold text-[#4A4A4A]">
+                    <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                        <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
                             Full Name
                         </p>
                         <input
                             type="text"
                             placeholder="Enter your full name"
-                            className="w-[95%] text-[14px] text-gray-600 mt-1 focus:outline-none"
+                            className="w-full text-[14px] text-gray-600 focus:outline-none"
                         />
                     </div>
                 </div>
 
                 {/* Email */}
                 <div className="mb-4">
-                    <div className="w-full bg-white border border-[#D9DDE4] rounded-2xl px-3 py-3 shadow-[0px_2px_6px_rgba(0,0,0,0.05)]">
-                        <p className="text-[14px] font-semibold text-[#4A4A4A]">
+                    <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                        <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
                             Email
                         </p>
                         <input
                             type="email"
                             placeholder="Enter your email"
-                            className="w-[95%] text-[14px] text-gray-600 mt-1 focus:outline-none"
+                            className="w-full text-[14px] text-gray-600 focus:outline-none"
                         />
                     </div>
                 </div>
 
-                {/* Mobile No */}
+                {/* Mobile */}
                 <div className="mb-4">
-                    <div className="w-full bg-white border border-[#D9DDE4] rounded-2xl px-3 py-3 shadow-[0px_2px_6px_rgba(0,0,0,0.05)]">
-                        <p className="text-[14px] font-semibold text-[#4A4A4A]">
-                            Mobile No.
+                    <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                        <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
+                            Mobile
                         </p>
                         <input
-                            type="number"
+                            type="tel"
                             placeholder="Enter your mobile number"
-                            className="w-[95%] text-[14px] text-gray-600 mt-1 focus:outline-none"
+                            className="w-full text-[14px] text-gray-600 focus:outline-none"
                         />
                     </div>
                 </div>
 
                 {/* Password */}
                 <div className="mb-4">
-                    <div className="w-full bg-white border border-[#D9DDE4] rounded-2xl px-3 py-3 shadow-[0px_2px_6px_rgba(0,0,0,0.05)]">
-                        <p className="text-[14px] font-semibold text-[#4A4A4A]">
+                    <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                        <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
                             Password
                         </p>
-
-                        <div className="flex items-center mt-1">
+                        <div className="flex items-center">
                             <input
                                 type={showPassword ? "text" : "password"}
-                                placeholder="Enter your password"
+                                placeholder="Create password"
                                 className="w-[90%] text-[14px] text-gray-600 focus:outline-none"
                             />
                             <span
@@ -94,15 +93,14 @@ export default function UserSignup() {
 
                 {/* Confirm Password */}
                 <div className="mb-4">
-                    <div className="w-full bg-white border border-[#D9DDE4] rounded-2xl px-3 py-3 shadow-[0px_2px_6px_rgba(0,0,0,0.05)]">
-                        <p className="text-[14px] font-semibold text-[#4A4A4A]">
+                    <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                        <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
                             Confirm Password
                         </p>
-
-                        <div className="flex items-center mt-1">
+                        <div className="flex items-center">
                             <input
                                 type={showConfirmPassword ? "text" : "password"}
-                                placeholder="Re-enter your password"
+                                placeholder="Re-enter password"
                                 className="w-[90%] text-[14px] text-gray-600 focus:outline-none"
                             />
                             <span
@@ -120,14 +118,7 @@ export default function UserSignup() {
                 {/* Sign Up Button */}
                 <button
                     onClick={handleSignup}
-                    className="
-                        w-72 mx-auto block     
-                        bg-[#0A84FF] text-white 
-                        font-semibold 
-                        py-4 text-lg 
-                        rounded-4xl shadow-md
-                        active:bg-[#005BBB]
-                    "
+                    className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors"
                 >
                     Sign Up
                 </button>
