@@ -177,3 +177,91 @@ export const getPaymentStatus = async () => {
   return response.data;
 };
 
+/**
+ * Vendor Service API functions
+ */
+
+/**
+ * Get all vendor services
+ * @returns {Promise}
+ */
+export const getMyServices = async () => {
+  const response = await api.get('/vendors/services');
+  return response.data;
+};
+
+/**
+ * Get service details
+ * @param {string} serviceId
+ * @returns {Promise}
+ */
+export const getServiceDetails = async (serviceId) => {
+  const response = await api.get(`/vendors/services/${serviceId}`);
+  return response.data;
+};
+
+/**
+ * Add new service
+ * @param {FormData} serviceData - Service data with images
+ * @returns {Promise}
+ */
+export const addService = async (serviceData) => {
+  const response = await api.post('/vendors/services', serviceData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+/**
+ * Update service
+ * @param {string} serviceId
+ * @param {Object} serviceData - Service data to update
+ * @returns {Promise}
+ */
+export const updateService = async (serviceId, serviceData) => {
+  const response = await api.put(`/vendors/services/${serviceId}`, serviceData);
+  return response.data;
+};
+
+/**
+ * Delete service
+ * @param {string} serviceId
+ * @returns {Promise}
+ */
+export const deleteService = async (serviceId) => {
+  const response = await api.delete(`/vendors/services/${serviceId}`);
+  return response.data;
+};
+
+/**
+ * Upload service images
+ * @param {string} serviceId
+ * @param {File[]} imageFiles - Array of image files
+ * @returns {Promise}
+ */
+export const uploadServiceImages = async (serviceId, imageFiles) => {
+  const formData = new FormData();
+  imageFiles.forEach((file) => {
+    formData.append('images', file);
+  });
+  const response = await api.post(`/vendors/services/${serviceId}/images`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+/**
+ * Delete service image
+ * @param {string} serviceId
+ * @param {string} imageId
+ * @returns {Promise}
+ */
+export const deleteServiceImage = async (serviceId, imageId) => {
+  const response = await api.delete(`/vendors/services/${serviceId}/images/${imageId}`);
+  return response.data;
+};
+

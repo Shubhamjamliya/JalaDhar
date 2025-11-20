@@ -1,89 +1,153 @@
-import { useRef, useEffect } from "react";
-import { NavLink } from "react-router-dom";
-import { IoCloseOutline, IoLogOutOutline } from "react-icons/io5";
+import { NavLink, useLocation } from "react-router-dom";
+import {
+    IoHomeOutline,
+    IoPeopleOutline,
+    IoDocumentTextOutline,
+    IoPersonCircleOutline,
+    IoLogOutOutline,
+    IoShieldCheckmarkOutline,
+    IoSettingsOutline,
+    IoWalletOutline,
+} from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
+import logo from "../../../assets/logo.png";
 
-export default function AdminSidebar({ isOpen, onClose, navItems }) {
-    const closeRef = useRef(null);
-    const { logout } = useAdminAuth();
+const navItems = [
+    {
+        id: "dashboard",
+        label: "Dashboard",
+        to: "/admin/dashboard",
+        Icon: IoHomeOutline,
+    },
+    {
+        id: "vendors",
+        label: "All Vendors",
+        to: "/admin/vendors",
+        Icon: IoPeopleOutline,
+    },
+    {
+        id: "pending",
+        label: "Pending Approvals",
+        to: "/admin/vendors/pending",
+        Icon: IoDocumentTextOutline,
+    },
+    {
+        id: "users",
+        label: "Users",
+        to: "/admin/users",
+        Icon: IoPersonCircleOutline,
+    },
+    {
+        id: "payments",
+        label: "Payments",
+        to: "/admin/payments",
+        Icon: IoWalletOutline,
+    },
+    {
+        id: "settings",
+        label: "Settings",
+        to: "/admin/settings",
+        Icon: IoSettingsOutline,
+    },
+];
 
-    useEffect(() => {
-        if (isOpen) closeRef.current?.focus();
-    }, [isOpen]);
+export default function AdminSidebar() {
+    const { logout, admin } = useAdminAuth();
+    const location = useLocation();
 
     const handleLogout = async () => {
-        onClose();
         if (window.confirm("Are you sure you want to logout?")) {
             await logout();
         }
     };
 
-    if (!isOpen) return null;
+    // Helper function to check if a route is active
+    const checkIsActive = (path) => {
+        const currentPath = location.pathname;
+        
+        // For routes that should match exactly
+        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/payments" || path === "/admin/settings") {
+            return currentPath === path || currentPath === path + "/";
+        }
+        
+        // For pending, match the path and sub-routes
+        if (path === "/admin/vendors/pending") {
+            return currentPath === path || currentPath.startsWith(path + "/");
+        }
+        
+        return false;
+    };
 
     return (
-        <>
-            {/* Backdrop */}
-            <div
-                className="fixed inset-0 bg-black/50 z-50 md:hidden"
-                onClick={onClose}
-            />
+        <aside className="fixed left-0 top-0 h-screen w-64 bg-gradient-to-b from-[#1a1f3a] to-[#2d3561] text-white z-40 shadow-2xl">
+            {/* Logo Section */}
+            <div className="flex items-center gap-3 p-6 border-b border-white/10">
+                <div className="w-10 h-10 rounded-lg bg-[#0A84FF] flex items-center justify-center flex-shrink-0">
+                    <IoShieldCheckmarkOutline className="text-xl text-white" />
+                </div>
+                <div>
+                    <h1 className="text-lg font-bold text-white">Jaladhar</h1>
+                    <p className="text-xs text-white/70">Admin Panel</p>
+                </div>
+            </div>
 
-            {/* Sidebar */}
-            <aside className="fixed inset-y-0 left-0 w-64 bg-white z-50 shadow-xl md:hidden">
-                <div className="flex flex-col h-full">
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                        <h2 className="text-lg font-bold text-gray-800">Menu</h2>
-                        <button
-                            ref={closeRef}
-                            onClick={onClose}
-                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                            aria-label="Close menu"
+            {/* Navigation Items */}
+            <nav className="flex flex-col gap-2 p-4 mt-4 flex-1 overflow-y-auto">
+                {navItems.map((item) => {
+                    const Icon = item.Icon;
+                    const isActive = checkIsActive(item.to);
+                    // Use end prop for routes that should match exactly (not sub-routes)
+                    const shouldEnd = item.to === "/admin/vendors" || item.to === "/admin/users" || item.to === "/admin/dashboard" || item.to === "/admin/payments" || item.to === "/admin/settings";
+                    
+                    return (
+                        <NavLink
+                            key={item.id}
+                            to={item.to}
+                            end={shouldEnd}
+                            className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                                isActive
+                                    ? "bg-[#0A84FF] text-white shadow-lg shadow-[#0A84FF]/30"
+                                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                            }`}
                         >
-                            <IoCloseOutline className="text-2xl text-gray-600" />
-                        </button>
-                    </div>
+                            <Icon className={`text-xl flex-shrink-0 ${isActive ? "text-white" : "text-white/70 group-hover:text-white"}`} />
+                            <span className="font-medium text-sm">{item.label}</span>
+                            {isActive && (
+                                <div className="ml-auto w-2 h-2 rounded-full bg-white"></div>
+                            )}
+                        </NavLink>
+                    );
+                })}
+            </nav>
 
-                    {/* Navigation */}
-                    <nav className="flex-1 overflow-y-auto p-4">
-                        <ul className="space-y-2">
-                            {navItems.map((item) => {
-                                const Icon = item.Icon;
-                                return (
-                                    <li key={item.id}>
-                                        <NavLink
-                                            to={item.to}
-                                            onClick={onClose}
-                                            className={({ isActive }) =>
-                                                `flex items-center gap-3 px-4 py-3 rounded-[10px] transition-all ${
-                                                    isActive
-                                                        ? "bg-[#0A84FF] text-white font-semibold"
-                                                        : "text-gray-600 hover:bg-gray-100"
-                                                }`
-                                            }
-                                        >
-                                            <Icon className="text-xl" />
-                                            <span>{item.label}</span>
-                                        </NavLink>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    </nav>
-
-                    {/* Logout Button */}
-                    <div className="p-4 border-t border-gray-200">
-                        <button
-                            onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-4 py-3 bg-red-600 text-white rounded-[10px] hover:bg-red-700 transition-colors font-semibold"
-                        >
-                            <IoLogOutOutline className="text-xl" />
-                            <span>Logout</span>
-                        </button>
+            {/* Admin Profile Section */}
+            <div className="p-4 border-t border-white/10">
+                <div className="mb-4 p-3 rounded-xl bg-white/5 backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A84FF] to-[#005BBB] flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-bold text-sm">
+                                {admin?.name?.charAt(0).toUpperCase() || "A"}
+                            </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-white truncate">
+                                {admin?.name || "Admin"}
+                            </p>
+                            <p className="text-xs text-white/60 truncate">
+                                {admin?.email || "admin@jaladhar.com"}
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </aside>
-        </>
+                
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                >
+                    <IoLogOutOutline className="text-xl flex-shrink-0" />
+                    <span className="font-medium text-sm">Logout</span>
+                </button>
+            </div>
+        </aside>
     );
 }
-

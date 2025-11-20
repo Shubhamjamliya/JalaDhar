@@ -43,8 +43,7 @@ export default function VendorSignup() {
         branchName: "",
         cancelledCheque: null,
         
-        // Service & Address
-        serviceDescription: "",
+        // Address
         address: {
             street: "",
             city: "",
@@ -209,7 +208,6 @@ export default function VendorSignup() {
                     ifscCode: "",
                     branchName: "",
                     cancelledCheque: null,
-                    serviceDescription: "",
                     address: {
                         street: "",
                         city: "",
@@ -482,21 +480,11 @@ export default function VendorSignup() {
                         />
                     </div>
 
-                    {/* Section 5: Service & Address */}
+                    {/* Section 5: Address */}
                     <div className="mb-6">
                         <h3 className="text-lg font-bold text-gray-800 mb-4">
-                            Service & Address
+                            Address
                         </h3>
-                        {/* Description of Services */}
-                        <TextAreaBox
-                            label="Description of Services"
-                            name="serviceDescription"
-                            placeholder="Describe your services"
-                            value={formData.serviceDescription}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
-
                         {/* Address Fields */}
                         <div className="grid grid-cols-2 gap-4 mb-4">
                             <InputBox

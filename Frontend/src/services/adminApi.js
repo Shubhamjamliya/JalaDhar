@@ -163,3 +163,56 @@ export const activateUser = async (userId) => {
   return response.data;
 };
 
+/**
+ * Admin Payment Management API functions
+ */
+
+/**
+ * Get all payments with filters
+ * @param {Object} params - { page, limit, status, paymentType, search, sortBy, sortOrder }
+ * @returns {Promise}
+ */
+export const getAllPayments = async (params = {}) => {
+  const response = await api.get('/admin/payments', { params });
+  return response.data;
+};
+
+/**
+ * Get payment statistics
+ * @returns {Promise}
+ */
+export const getPaymentStatistics = async () => {
+  const response = await api.get('/admin/payments/statistics');
+  return response.data;
+};
+
+/**
+ * Get payment details
+ * @param {string} paymentId
+ * @returns {Promise}
+ */
+export const getPaymentDetails = async (paymentId) => {
+  const response = await api.get(`/admin/payments/${paymentId}`);
+  return response.data;
+};
+
+/**
+ * Process vendor settlement
+ * @param {string} bookingId
+ * @returns {Promise}
+ */
+export const processVendorSettlement = async (bookingId) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/settlement`);
+  return response.data;
+};
+
+/**
+ * Get all bookings with filters
+ * @param {Object} params - { page, limit, status, search, sortBy, sortOrder }
+ * @returns {Promise}
+ */
+export const getAllBookings = async (params = {}) => {
+  const response = await api.get('/admin/bookings', { params });
+  return response.data;
+};
+

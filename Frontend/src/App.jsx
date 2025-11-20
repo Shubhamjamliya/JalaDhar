@@ -7,6 +7,7 @@ import {
 import { AuthProvider } from "./contexts/AuthContext";
 import { VendorAuthProvider } from "./contexts/VendorAuthContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import VendorProtectedRoute from "./components/VendorProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
@@ -36,14 +37,17 @@ import AdminPendingVendors from "./modules/admin/admin-pages/AdminPendingVendors
 import AdminVendorDetails from "./modules/admin/admin-pages/AdminVendorDetails";
 import AdminUsers from "./modules/admin/admin-pages/AdminUsers";
 import AdminUserDetails from "./modules/admin/admin-pages/AdminUserDetails";
+import AdminSettings from "./modules/admin/admin-pages/AdminSettings";
+import AdminPayments from "./modules/admin/admin-pages/AdminPayments";
 import AdminNavbar from "./modules/admin/admin-component/AdminNavbar";
 
 function App() {
     return (
-        <AuthProvider>
-            <VendorAuthProvider>
-                <AdminAuthProvider>
-                    <Router>
+        <ThemeProvider>
+            <AuthProvider>
+                <VendorAuthProvider>
+                    <AdminAuthProvider>
+                        <Router>
                         <Routes>
                             {/* ---------- USER AUTH ---------- */}
                             <Route path="/userlogin" element={<UserLogin />} />
@@ -150,49 +154,61 @@ function App() {
                             {/* ---------- ADMIN AUTH ---------- */}
                             <Route path="/adminlogin" element={<AdminLogin />} />
 
-                            {/* ---------- ADMIN PANEL (Nested with Navbar) ---------- */}
+                            {/* ---------- ADMIN PANEL (Nested with Sidebar and Topbar) ---------- */}
                             <Route
                                 path="/admin/*"
                                 element={
                                     <AdminProtectedRoute>
-                                        <AdminNavbar />
-                                        <main className="px-4 pb-6 pt-20 md:pt-20 md:pl-72 md:pr-6 min-h-screen bg-[#F6F7F9]">
-                                            <Routes>
-                                                <Route
-                                                    path="/"
-                                                    element={
-                                                        <Navigate
-                                                            to="/admin/dashboard"
-                                                            replace
+                                        <div className="flex min-h-screen bg-[#F6F7F9]">
+                                            <AdminNavbar />
+                                            <div className="flex-1 flex flex-col md:ml-64">
+                                                <main className="flex-1 p-6 mt-16">
+                                                    <Routes>
+                                                        <Route
+                                                            path="/"
+                                                            element={
+                                                                <Navigate
+                                                                    to="/admin/dashboard"
+                                                                    replace
+                                                                />
+                                                            }
                                                         />
-                                                    }
-                                                />
-                                                <Route
-                                                    path="/dashboard"
-                                                    element={<AdminDashboard />}
-                                                />
-                                                <Route
-                                                    path="/vendors"
-                                                    element={<AdminVendors />}
-                                                />
-                                                <Route
-                                                    path="/vendors/pending"
-                                                    element={<AdminPendingVendors />}
-                                                />
-                                                <Route
-                                                    path="/vendors/:vendorId"
-                                                    element={<AdminVendorDetails />}
-                                                />
-                                                <Route
-                                                    path="/users"
-                                                    element={<AdminUsers />}
-                                                />
-                                                <Route
-                                                    path="/users/:userId"
-                                                    element={<AdminUserDetails />}
-                                                />
-                                            </Routes>
-                                        </main>
+                                                        <Route
+                                                            path="/dashboard"
+                                                            element={<AdminDashboard />}
+                                                        />
+                                                        <Route
+                                                            path="/vendors"
+                                                            element={<AdminVendors />}
+                                                        />
+                                                        <Route
+                                                            path="/vendors/pending"
+                                                            element={<AdminPendingVendors />}
+                                                        />
+                                                        <Route
+                                                            path="/vendors/:vendorId"
+                                                            element={<AdminVendorDetails />}
+                                                        />
+                                                        <Route
+                                                            path="/users"
+                                                            element={<AdminUsers />}
+                                                        />
+                                                        <Route
+                                                            path="/users/:userId"
+                                                            element={<AdminUserDetails />}
+                                                        />
+                                                        <Route
+                                                            path="/payments"
+                                                            element={<AdminPayments />}
+                                                        />
+                                                        <Route
+                                                            path="/settings"
+                                                            element={<AdminSettings />}
+                                                        />
+                                                    </Routes>
+                                                </main>
+                                            </div>
+                                        </div>
                                     </AdminProtectedRoute>
                                 }
                             />
@@ -201,9 +217,10 @@ function App() {
                             <Route path="/" element={<Navigate to="/userlogin" replace />} />
                         </Routes>
                     </Router>
-                </AdminAuthProvider>
-            </VendorAuthProvider>
-        </AuthProvider>
+                    </AdminAuthProvider>
+                </VendorAuthProvider>
+            </AuthProvider>
+        </ThemeProvider>
     );
 }
 

@@ -6,12 +6,21 @@ import {
     IoImageOutline,
     IoCheckmarkOutline,
     IoCloseOutline,
+    IoAddCircleOutline,
+    IoTrashOutline,
+    IoConstructOutline,
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { 
     getVendorProfile, 
     updateVendorProfile, 
-    uploadProfilePicture 
+    uploadProfilePicture,
+    getMyServices,
+    addService,
+    updateService,
+    deleteService,
+    uploadServiceImages,
+    deleteServiceImage
 } from "../../../services/vendorApi";
 
 export default function VendorProfile() {
@@ -22,6 +31,21 @@ export default function VendorProfile() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [vendor, setVendor] = useState(null);
+    const [services, setServices] = useState([]);
+    const [isAddingService, setIsAddingService] = useState(false);
+    const [editingServiceId, setEditingServiceId] = useState(null);
+    const [serviceFormData, setServiceFormData] = useState({
+        name: "",
+        description: "",
+        machineType: "",
+        skills: "",
+        price: "",
+        duration: "",
+        category: "",
+        images: []
+    });
+    const [serviceImagePreviews, setServiceImagePreviews] = useState([]);
     const [profileData, setProfileData] = useState({
         profileImage: null,
         profileImageUrl: null,
@@ -46,7 +70,6 @@ export default function VendorProfile() {
         branchName: "",
         cancelledCheck: null,
         cancelledCheckUrl: null,
-        serviceDescription: "",
         fullAddress: "",
         address: {
             street: "",
@@ -67,40 +90,52 @@ export default function VendorProfile() {
             const response = await getVendorProfile();
             
             if (response.success && response.data.vendor) {
-                const vendor = response.data.vendor;
+                const vendorData = response.data.vendor;
+                setVendor(vendorData);
+                
+                // Load services if vendor is approved
+                if (vendorData.isApproved) {
+                    try {
+                        const servicesResponse = await getMyServices();
+                        if (servicesResponse.success) {
+                            setServices(servicesResponse.data.services || []);
+                        }
+                    } catch (err) {
+                        console.error("Load services error:", err);
+                    }
+                }
                 
                 // Map backend data to frontend form structure
                 setProfileData({
                     profileImage: null,
-                    profileImageUrl: vendor.documents?.profilePicture?.url || null,
-                    fullName: vendor.name || "",
-                    email: vendor.email || "",
-                    mobile: vendor.phone || "",
+                    profileImageUrl: vendorData.documents?.profilePicture?.url || null,
+                    fullName: vendorData.name || "",
+                    email: vendorData.email || "",
+                    mobile: vendorData.phone || "",
                     aadhaarNo: "", // Not stored in backend separately
                     panNo: "", // Not stored in backend separately
                     aadhaarImage: null,
-                    aadhaarImageUrl: vendor.documents?.aadharCard?.url || null,
+                    aadhaarImageUrl: vendorData.documents?.aadharCard?.url || null,
                     panImage: null,
-                    panImageUrl: vendor.documents?.panCard?.url || null,
-                    education: vendor.educationalQualifications?.[0]?.degree || "",
-                    institution: vendor.educationalQualifications?.[0]?.institution || "",
-                    experienceYears: vendor.experience?.toString() || "",
+                    panImageUrl: vendorData.documents?.panCard?.url || null,
+                    education: vendorData.educationalQualifications?.[0]?.degree || "",
+                    institution: vendorData.educationalQualifications?.[0]?.institution || "",
+                    experienceYears: vendorData.experience?.toString() || "",
                     experienceDetails: "",
-                    certificates: vendor.documents?.certificates?.map(cert => cert.url) || [],
-                    bankName: vendor.bankDetails?.bankName || "",
-                    accountHolderName: vendor.bankDetails?.accountHolderName || "",
-                    accountNo: vendor.bankDetails?.accountNumber || "",
-                    ifsc: vendor.bankDetails?.ifscCode || "",
-                    branchName: vendor.bankDetails?.branchName || "",
+                    certificates: vendorData.documents?.certificates?.map(cert => cert.url) || [],
+                    bankName: vendorData.bankDetails?.bankName || "",
+                    accountHolderName: vendorData.bankDetails?.accountHolderName || "",
+                    accountNo: vendorData.bankDetails?.accountNumber || "",
+                    ifsc: vendorData.bankDetails?.ifscCode || "",
+                    branchName: vendorData.bankDetails?.branchName || "",
                     cancelledCheck: null,
-                    cancelledCheckUrl: vendor.documents?.cancelledCheque?.url || null,
-                    serviceDescription: "",
+                    cancelledCheckUrl: vendorData.documents?.cancelledCheque?.url || null,
                     fullAddress: "",
                     address: {
-                        street: vendor.address?.street || "",
-                        city: vendor.address?.city || "",
-                        state: vendor.address?.state || "",
-                        pincode: vendor.address?.pincode || ""
+                        street: vendorData.address?.street || "",
+                        city: vendorData.address?.city || "",
+                        state: vendorData.address?.state || "",
+                        pincode: vendorData.address?.pincode || ""
                     }
                 });
             } else {
@@ -238,6 +273,196 @@ export default function VendorProfile() {
         if (!ifsc) return "";
         if (ifsc.length <= 2) return ifsc;
         return ifsc.slice(0, 2) + "****" + ifsc.slice(-2);
+    };
+
+    // Service Management Functions
+    const handleServiceImageChange = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const newPreviews = [];
+        files.forEach((file) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                newPreviews.push({ file, preview: reader.result });
+                if (newPreviews.length === files.length) {
+                    setServiceImagePreviews([...serviceImagePreviews, ...newPreviews]);
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const handleRemoveServiceImage = (index) => {
+        const newPreviews = serviceImagePreviews.filter((_, i) => i !== index);
+        setServiceImagePreviews(newPreviews);
+    };
+
+    const handleAddService = async () => {
+        try {
+            setError("");
+            setSuccess("");
+
+            if (!serviceFormData.name || !serviceFormData.machineType || !serviceFormData.price || !serviceFormData.duration) {
+                setError("Please fill in all required service fields");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('name', serviceFormData.name);
+            formData.append('description', serviceFormData.description || '');
+            formData.append('machineType', serviceFormData.machineType);
+            formData.append('skills', JSON.stringify(serviceFormData.skills ? serviceFormData.skills.split(',').map(s => s.trim()) : []));
+            formData.append('price', serviceFormData.price);
+            formData.append('duration', serviceFormData.duration);
+            formData.append('category', serviceFormData.category || '');
+
+            // Add images
+            serviceImagePreviews.forEach((item) => {
+                formData.append('images', item.file);
+            });
+
+            const response = await addService(formData);
+            
+            if (response.success) {
+                setSuccess("Service added successfully! Waiting for admin approval.");
+                setIsAddingService(false);
+                setServiceFormData({
+                    name: "",
+                    description: "",
+                    machineType: "",
+                    skills: "",
+                    price: "",
+                    duration: "",
+                    category: "",
+                    images: []
+                });
+                setServiceImagePreviews([]);
+                // Reload services
+                const servicesResponse = await getMyServices();
+                if (servicesResponse.success) {
+                    setServices(servicesResponse.data.services || []);
+                }
+            } else {
+                setError(response.message || "Failed to add service");
+            }
+        } catch (err) {
+            console.error("Add service error:", err);
+            setError("Failed to add service. Please try again.");
+        }
+    };
+
+    const handleEditService = (service) => {
+        setEditingServiceId(service._id);
+        setServiceFormData({
+            name: service.name || "",
+            description: service.description || "",
+            machineType: service.machineType || "",
+            skills: Array.isArray(service.skills) ? service.skills.join(', ') : "",
+            price: service.price?.toString() || "",
+            duration: service.duration?.toString() || "",
+            category: service.category || "",
+            images: []
+        });
+        setServiceImagePreviews(service.images?.map(img => ({ preview: img.url, file: null })) || []);
+        setIsAddingService(true);
+    };
+
+    const handleUpdateService = async () => {
+        try {
+            setError("");
+            setSuccess("");
+
+            if (!serviceFormData.name || !serviceFormData.machineType || !serviceFormData.price || !serviceFormData.duration) {
+                setError("Please fill in all required service fields");
+                return;
+            }
+
+            const updateData = {
+                name: serviceFormData.name,
+                description: serviceFormData.description || '',
+                machineType: serviceFormData.machineType,
+                skills: JSON.stringify(serviceFormData.skills ? serviceFormData.skills.split(',').map(s => s.trim()) : []),
+                price: parseFloat(serviceFormData.price),
+                duration: parseInt(serviceFormData.duration),
+                category: serviceFormData.category || ''
+            };
+
+            const response = await updateService(editingServiceId, updateData);
+            
+            if (response.success) {
+                // Upload new images if any
+                const newImages = serviceImagePreviews.filter(item => item.file);
+                if (newImages.length > 0) {
+                    const imageFiles = newImages.map(item => item.file);
+                    await uploadServiceImages(editingServiceId, imageFiles);
+                }
+
+                setSuccess("Service updated successfully!");
+                setIsAddingService(false);
+                setEditingServiceId(null);
+                setServiceFormData({
+                    name: "",
+                    description: "",
+                    machineType: "",
+                    skills: "",
+                    price: "",
+                    duration: "",
+                    category: "",
+                    images: []
+                });
+                setServiceImagePreviews([]);
+                // Reload services
+                const servicesResponse = await getMyServices();
+                if (servicesResponse.success) {
+                    setServices(servicesResponse.data.services || []);
+                }
+            } else {
+                setError(response.message || "Failed to update service");
+            }
+        } catch (err) {
+            console.error("Update service error:", err);
+            setError("Failed to update service. Please try again.");
+        }
+    };
+
+    const handleDeleteService = async (serviceId) => {
+        if (!window.confirm("Are you sure you want to delete this service?")) {
+            return;
+        }
+
+        try {
+            const response = await deleteService(serviceId);
+            if (response.success) {
+                setSuccess("Service deleted successfully!");
+                // Reload services
+                const servicesResponse = await getMyServices();
+                if (servicesResponse.success) {
+                    setServices(servicesResponse.data.services || []);
+                }
+            } else {
+                setError(response.message || "Failed to delete service");
+            }
+        } catch (err) {
+            console.error("Delete service error:", err);
+            setError("Failed to delete service. Please try again.");
+        }
+    };
+
+    const cancelServiceForm = () => {
+        setIsAddingService(false);
+        setEditingServiceId(null);
+        setServiceFormData({
+            name: "",
+            description: "",
+            machineType: "",
+            skills: "",
+            price: "",
+            duration: "",
+            category: "",
+            images: []
+        });
+        setServiceImagePreviews([]);
     };
 
     if (loading) {
@@ -605,10 +830,259 @@ export default function VendorProfile() {
                     </div>
                 </div>
 
-                {/* Section 5: Service & Address */}
+                {/* Section 5: Services (Only if approved) */}
+                {vendor?.isApproved && (
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-gray-800">
+                                My Services
+                            </h3>
+                            {!isAddingService && (
+                                <button
+                                    onClick={() => setIsAddingService(true)}
+                                    className="bg-[#0A84FF] text-white font-semibold py-2 px-4 rounded-[10px] shadow-md hover:bg-[#005BBB] transition-colors flex items-center gap-2"
+                                >
+                                    <IoAddCircleOutline className="text-lg" />
+                                    Add Service
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Add/Edit Service Form */}
+                        {isAddingService && (
+                            <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-4">
+                                <h4 className="text-md font-bold text-gray-800 mb-4">
+                                    {editingServiceId ? "Edit Service" : "Add New Service"}
+                                </h4>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
+                                                Service Name *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={serviceFormData.name}
+                                                onChange={(e) => setServiceFormData({ ...serviceFormData, name: e.target.value })}
+                                                placeholder="e.g., Ground Water Detection"
+                                                className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
+                                                Machine Type *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={serviceFormData.machineType}
+                                                onChange={(e) => setServiceFormData({ ...serviceFormData, machineType: e.target.value })}
+                                                placeholder="e.g., Water Detection Machine"
+                                                className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
+                                            Description
+                                        </label>
+                                        <textarea
+                                            value={serviceFormData.description}
+                                            onChange={(e) => setServiceFormData({ ...serviceFormData, description: e.target.value })}
+                                            placeholder="Describe your service..."
+                                            rows="3"
+                                            className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
+                                                Skills (comma separated)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={serviceFormData.skills}
+                                                onChange={(e) => setServiceFormData({ ...serviceFormData, skills: e.target.value })}
+                                                placeholder="e.g., Water Detection, Survey, Analysis"
+                                                className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
+                                                Category
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={serviceFormData.category}
+                                                onChange={(e) => setServiceFormData({ ...serviceFormData, category: e.target.value })}
+                                                placeholder="e.g., Water Services"
+                                                className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
+                                                Price (₹) *
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={serviceFormData.price}
+                                                onChange={(e) => setServiceFormData({ ...serviceFormData, price: e.target.value })}
+                                                placeholder="0.00"
+                                                min="0"
+                                                step="0.01"
+                                                className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
+                                                Duration (minutes) *
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={serviceFormData.duration}
+                                                onChange={(e) => setServiceFormData({ ...serviceFormData, duration: e.target.value })}
+                                                placeholder="e.g., 120"
+                                                min="1"
+                                                className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
+                                            Service Images
+                                        </label>
+                                        {serviceImagePreviews.length > 0 && (
+                                            <div className="grid grid-cols-4 gap-2 mb-2">
+                                                {serviceImagePreviews.map((item, index) => (
+                                                    <div key={index} className="relative">
+                                                        <img
+                                                            src={item.preview}
+                                                            alt={`Preview ${index + 1}`}
+                                                            className="w-full h-24 object-cover rounded-[8px]"
+                                                        />
+                                                        <button
+                                                            onClick={() => handleRemoveServiceImage(index)}
+                                                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                                                        >
+                                                            <IoCloseOutline className="text-sm" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[#D9DDE4] rounded-[8px] cursor-pointer hover:border-[#0A84FF] transition-colors">
+                                            <IoImageOutline className="text-2xl text-gray-400 mb-1" />
+                                            <p className="text-xs text-gray-500">Add Service Images</p>
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={handleServiceImageChange}
+                                            />
+                                        </label>
+                                    </div>
+                                    <div className="flex gap-2 justify-end">
+                                        <button
+                                            onClick={cancelServiceForm}
+                                            className="px-4 py-2 border border-gray-300 rounded-[8px] text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={editingServiceId ? handleUpdateService : handleAddService}
+                                            className="px-4 py-2 bg-[#0A84FF] text-white rounded-[8px] hover:bg-[#005BBB] transition-colors"
+                                        >
+                                            {editingServiceId ? "Update Service" : "Add Service"}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Services List */}
+                        <div className="space-y-4">
+                            {services.length === 0 ? (
+                                <div className="bg-white rounded-[12px] p-8 text-center shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                                    <IoConstructOutline className="text-4xl text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-600">No services added yet</p>
+                                    <p className="text-sm text-gray-500 mt-2">Add your first service to get started</p>
+                                </div>
+                            ) : (
+                                services.map((service) => (
+                                    <div key={service._id} className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <h4 className="text-lg font-bold text-gray-800">{service.name}</h4>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                        service.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                                                        service.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                                                        service.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                        {service.status}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm text-gray-600 mb-2">{service.description || "No description"}</p>
+                                                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                                                    <span><strong>Machine:</strong> {service.machineType}</span>
+                                                    <span><strong>Price:</strong> ₹{service.price}</span>
+                                                    <span><strong>Duration:</strong> {service.duration} min</span>
+                                                    {service.category && <span><strong>Category:</strong> {service.category}</span>}
+                                                </div>
+                                                {service.skills && service.skills.length > 0 && (
+                                                    <div className="mt-2">
+                                                        <p className="text-xs text-gray-500 mb-1">Skills:</p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {service.skills.map((skill, idx) => (
+                                                                <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">
+                                                                    {skill}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex gap-2 ml-4">
+                                                <button
+                                                    onClick={() => handleEditService(service)}
+                                                    className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                                                >
+                                                    <IoPencilOutline className="text-lg" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteService(service._id)}
+                                                    className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                                                >
+                                                    <IoTrashOutline className="text-lg" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {service.images && service.images.length > 0 && (
+                                            <div className="grid grid-cols-4 gap-2 mt-4">
+                                                {service.images.map((img, idx) => (
+                                                    <img
+                                                        key={idx}
+                                                        src={img.url}
+                                                        alt={`${service.name} ${idx + 1}`}
+                                                        className="w-full h-24 object-cover rounded-[8px]"
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Section 6: Address */}
                 <div className="mb-6">
                     <h3 className="text-lg font-bold text-gray-800 mb-4">
-                        Service & Address
+                        Address
                     </h3>
                     <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] space-y-4">
                         <div>
