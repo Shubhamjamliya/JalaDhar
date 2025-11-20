@@ -1,8 +1,17 @@
 import { useRef, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { IoCloseOutline } from "react-icons/io5";
+import { IoCloseOutline, IoLogOutOutline } from "react-icons/io5";
+import { useAuth } from "../../../contexts/AuthContext";
 
 export default function UserSidebar({ isOpen, onClose, navItems }) {
+  const { logout } = useAuth();
+  
+  const handleLogout = async () => {
+    onClose();
+    if (window.confirm("Are you sure you want to logout?")) {
+      await logout();
+    }
+  };
   const closeRef = useRef(null);
 
   useEffect(() => {
@@ -47,6 +56,15 @@ export default function UserSidebar({ isOpen, onClose, navItems }) {
               {label}
             </NavLink>
           ))}
+          
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 p-3 rounded-xl text-red-600 hover:bg-red-50 mt-auto"
+          >
+            <IoLogOutOutline className="text-xl" />
+            Logout
+          </button>
         </nav>
       </aside>
     </>

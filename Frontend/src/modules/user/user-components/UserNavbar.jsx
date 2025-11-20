@@ -8,7 +8,9 @@ import {
     IoPersonCircleOutline,
     IoMenuOutline,
     IoNotificationsOutline,
+    IoLogOutOutline,
 } from "react-icons/io5";
+import { useAuth } from "../../../contexts/AuthContext";
 
 import UserSidebar from "./UserSidebar";
 import logo from "../../../assets/logo.png"; // Replace with your logo
@@ -49,6 +51,13 @@ const navItems = [
 export default function UserNavbar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const toggleRef = useRef(null);
+    const { logout, user } = useAuth();
+
+    const handleLogout = async () => {
+        if (window.confirm("Are you sure you want to logout?")) {
+            await logout();
+        }
+    };
 
     const mobileLinkBase =
         "flex flex-1 items-center justify-center rounded-full px-1 py-1 transition-all duration-200";
@@ -90,7 +99,24 @@ export default function UserNavbar() {
 
                 {/* Right Icons */}
                 <div className="flex items-center gap-4">
+                    {/* User Name - Desktop Only */}
+                    {user && (
+                        <span className="hidden md:block text-sm font-medium text-gray-700">
+                            {user.name}
+                        </span>
+                    )}
+                    
                     <IoNotificationsOutline className="text-2xl text-[#0A84FF] md:text-2xl cursor-pointer hover:opacity-80 transition-opacity" />
+                    
+                    {/* Logout Button - Desktop Only */}
+                    <button
+                        onClick={handleLogout}
+                        className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Logout"
+                    >
+                        <IoLogOutOutline className="text-xl" />
+                        <span>Logout</span>
+                    </button>
 
                     {/* Mobile Menu Button - Hidden on Desktop */}
                     <button

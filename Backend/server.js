@@ -21,7 +21,7 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -62,6 +62,7 @@ app.use('/api/vendors', require('./routes/vendor-routes/service.routes'));
 // Admin routes
 app.use('/api/admin/auth', require('./routes/admin-routes/adminAuth.routes'));
 app.use('/api/admin', require('./routes/admin-routes/vendorApproval.routes'));
+app.use('/api/admin', require('./routes/admin-routes/userManagement.routes'));
 
 // 404 handler
 app.use((req, res) => {
