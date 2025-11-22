@@ -1,8 +1,16 @@
 import { useState, useEffect } from "react";
 import { IoWalletOutline, IoArrowDownOutline } from "react-icons/io5";
 import { getDashboardStats, getBookingHistory } from "../../../services/vendorApi";
+import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import PageContainer from "../../shared/components/PageContainer";
+import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import ErrorMessage from "../../shared/components/ErrorMessage";
+import ProfileHeader from "../../shared/components/ProfileHeader";
+import StatCard from "../../shared/components/StatCard";
+import SectionHeading from "../../shared/components/SectionHeading";
 
 export default function VendorWallet() {
+    const { vendor } = useVendorAuth();
     const [loading, setLoading] = useState(true);
     const [paymentCollection, setPaymentCollection] = useState({
         totalEarnings: 0,
@@ -70,24 +78,20 @@ export default function VendorWallet() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0A84FF] mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading wallet...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner message="Loading wallet..." />;
     }
 
+    const vendorProfileImage = vendor?.documents?.profilePicture?.url || null;
+
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-            {/* Error Message */}
-            {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">{error}</p>
-                </div>
-            )}
+        <PageContainer>
+            <ErrorMessage message={error} />
+
+            {/* Profile Header */}
+            <ProfileHeader 
+                name={vendor?.name || "Vendor"} 
+                profileImage={vendorProfileImage}
+            />
 
             {/* Header */}
             <div className="mb-6">
@@ -123,31 +127,23 @@ export default function VendorWallet() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-3 gap-3 mb-6">
-                <div className="bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                    <p className="text-xs text-[#4A4A4A] mb-1">Total Earned</p>
-                    <p className="text-lg font-bold text-gray-800">
-                        ₹{(paymentCollection.totalEarnings / 1000).toFixed(1)}k
-                    </p>
-                </div>
-                <div className="bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                    <p className="text-xs text-[#4A4A4A] mb-1">Pending</p>
-                    <p className="text-lg font-bold text-gray-800">
-                        ₹{(paymentCollection.pendingAmount / 1000).toFixed(1)}k
-                    </p>
-                </div>
-                <div className="bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                    <p className="text-xs text-[#4A4A4A] mb-1">Collected</p>
-                    <p className="text-lg font-bold text-gray-800">
-                        ₹{(paymentCollection.collectedAmount / 1000).toFixed(1)}k
-                    </p>
-                </div>
+                <StatCard 
+                    label="Total Earned" 
+                    value={`₹${(paymentCollection.totalEarnings / 1000).toFixed(1)}k`} 
+                />
+                <StatCard 
+                    label="Pending" 
+                    value={`₹${(paymentCollection.pendingAmount / 1000).toFixed(1)}k`} 
+                />
+                <StatCard 
+                    label="Collected" 
+                    value={`₹${(paymentCollection.collectedAmount / 1000).toFixed(1)}k`} 
+                />
             </div>
 
             {/* Transaction List */}
+            <SectionHeading title="Recent Transactions" />
             <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">
-                    Recent Transactions
-                </h3>
                 {transactions.length === 0 ? (
                     <p className="text-[#4A4A4A] text-sm text-center py-8">
                         No transactions yet
@@ -192,6 +188,6 @@ export default function VendorWallet() {
                     </div>
                 )}
             </div>
-        </div>
+        </PageContainer>
     );
 }

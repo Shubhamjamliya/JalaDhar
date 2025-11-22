@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Vendor = require('../../models/Vendor');
 const Token = require('../../models/Token');
 const { generateTokenPair } = require('../../utils/tokenService');
@@ -7,6 +8,7 @@ const { TOKEN_TYPES } = require('../../utils/constants');
 const { validationResult } = require('express-validator');
 const cloudinary = require('cloudinary').v2;
 const { Readable } = require('stream');
+const { generateOTP, generateToken } = require('../../utils/generateOTP');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -30,7 +32,89 @@ const uploadToCloudinary = (buffer, folder = 'vendor-documents') => {
 };
 
 /**
- * Register new vendor with documents
+ * Send OTP for vendor registration
+ */
+const sendRegistrationOTP = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { name, email, phone } = req.body;
+
+    // Check if vendor already exists
+    const existingVendor = await Vendor.findOne({
+      $or: [{ email }, { phone }]
+    });
+
+    if (existingVendor) {
+      return res.status(400).json({
+        success: false,
+        message: existingVendor.email === email 
+          ? 'Email already registered' 
+          : 'Phone number already registered'
+      });
+    }
+
+    // Create OTP token with email stored separately
+    await Token.deleteMany({ email, type: TOKEN_TYPES.EMAIL_VERIFICATION, isUsed: false });
+
+    const otp = generateOTP(6);
+    const token = generateToken(32);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    const tokenDoc = await Token.create({
+      userId: new mongoose.Types.ObjectId(), // Dummy ObjectId
+      userModel: 'Vendor',
+      token,
+      type: TOKEN_TYPES.EMAIL_VERIFICATION,
+      otp,
+      email, // Store email directly
+      expiresAt
+    });
+
+    // Send OTP email
+    const emailResult = await sendOTPEmail({
+      email,
+      name,
+      otp,
+      type: 'verification'
+    });
+
+    if (!emailResult.success) {
+      await Token.deleteOne({ _id: tokenDoc._id });
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP email',
+        error: emailResult.error
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'OTP sent to email successfully',
+      data: {
+        token: tokenDoc.token,
+        email
+      }
+    });
+  } catch (error) {
+    console.error('Send vendor registration OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send OTP',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Register new vendor with documents and OTP verification
  */
 const register = async (req, res) => {
   try {
@@ -51,15 +135,60 @@ const register = async (req, res) => {
       bankDetails, 
       educationalQualifications, 
       experience, 
-      address 
+      address,
+      otp,
+      token
     } = req.body;
 
-    // Check if vendor already exists
+    if (!otp || !token) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP and token are required'
+      });
+    }
+
+    // Verify OTP using token
+    const tokenDoc = await Token.findOne({
+      token,
+      type: TOKEN_TYPES.EMAIL_VERIFICATION,
+      email,
+      isUsed: false,
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!tokenDoc) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP token'
+      });
+    }
+
+    // Check attempts
+    if (tokenDoc.attempts >= 5) {
+      await Token.deleteOne({ _id: tokenDoc._id });
+      return res.status(400).json({
+        success: false,
+        message: 'Max OTP attempts exceeded. Please request a new OTP.'
+      });
+    }
+
+    // Verify OTP
+    if (tokenDoc.otp !== otp) {
+      tokenDoc.attempts += 1;
+      await tokenDoc.save();
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP. Please try again.'
+      });
+    }
+
+    // Check if vendor already exists (double check)
     const existingVendor = await Vendor.findOne({
       $or: [{ email }, { phone }]
     });
 
     if (existingVendor) {
+      await markTokenAsUsed(tokenDoc._id);
       return res.status(400).json({
         success: false,
         message: existingVendor.email === email 
@@ -138,7 +267,7 @@ const register = async (req, res) => {
       }
     }
 
-    // Create vendor
+    // Create vendor with email verified
     const vendor = await Vendor.create({
       name,
       email,
@@ -148,24 +277,12 @@ const register = async (req, res) => {
       educationalQualifications: parsedQualifications,
       experience: parseInt(experience),
       documents,
-      address: typeof address === 'string' ? JSON.parse(address) : address
+      address: typeof address === 'string' ? JSON.parse(address) : address,
+      isEmailVerified: true // Email is verified via OTP
     });
 
-    // Generate email verification OTP
-    const { otp } = await createOTPToken({
-      userId: vendor._id,
-      userModel: 'Vendor',
-      type: TOKEN_TYPES.EMAIL_VERIFICATION,
-      expiryMinutes: 10
-    });
-
-    // Send verification email
-    await sendOTPEmail({
-      email: vendor.email,
-      name: vendor.name,
-      otp,
-      type: 'verification'
-    });
+    // Mark token as used
+    await markTokenAsUsed(tokenDoc._id);
 
     // Send welcome email
     await sendWelcomeEmail({
@@ -175,7 +292,7 @@ const register = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful. Please verify your email. Your account is pending admin approval.',
+      message: 'Registration successful. Email verified. Your account is pending admin approval.',
       data: {
         vendor: {
           id: vendor._id,
@@ -246,6 +363,14 @@ const login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
+      });
+    }
+
+    // Check if email is verified
+    if (!vendor.isEmailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email before logging in. Check your email for verification OTP.'
       });
     }
 
@@ -564,6 +689,7 @@ const logout = async (req, res) => {
 };
 
 module.exports = {
+  sendRegistrationOTP,
   register,
   login,
   forgotPassword,

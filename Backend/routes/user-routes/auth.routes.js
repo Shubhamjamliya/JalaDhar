@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const {
+  sendRegistrationOTP,
   register,
   login,
   forgotPassword,
@@ -45,8 +46,26 @@ const resendEmailValidation = [
   body('email').isEmail().withMessage('Please provide a valid email')
 ];
 
+// Validation for sending OTP
+const sendOTPValidation = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('phone').trim().notEmpty().withMessage('Phone number is required')
+];
+
+// Validation for registration with OTP
+const registerWithOTPValidation = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('phone').trim().notEmpty().withMessage('Phone number is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
+  body('token').trim().notEmpty().withMessage('Verification token is required')
+];
+
 // Routes
-router.post('/register', registerValidation, register);
+router.post('/register/send-otp', sendOTPValidation, sendRegistrationOTP);
+router.post('/register', registerWithOTPValidation, register);
 router.post('/login', loginValidation, login);
 router.post('/forgot-password', forgotPasswordValidation, forgotPassword);
 router.post('/reset-password', resetPasswordValidation, resetPassword);

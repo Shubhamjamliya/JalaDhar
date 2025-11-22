@@ -91,14 +91,9 @@ export default function UserLogin() {
                             <input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="Enter your password"
-                                className="w-[90%] text-[14px] text-gray-600 focus:outline-none"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="
-                    w-[90%]            /* width slightly reduced */
-                    text-[14px] text-gray-600 
-                    focus:outline-none
-                "
+                                className="w-[90%] text-[14px] text-gray-600 focus:outline-none"
                                 disabled={loading}
                                 onKeyPress={(e) => {
                                     if (e.key === 'Enter') {
@@ -119,7 +114,7 @@ export default function UserLogin() {
                 {/* Forgot Password */}
                 <div className="text-right mb-5">
                     <Link
-                        to="/forgot-password"
+                        to="/user/forgot-password"
                         className="text-[#0A84FF] text-sm underline"
                     >
                         Forgot Password?
@@ -129,18 +124,8 @@ export default function UserLogin() {
                 {/* Login Button */}
                 <button
                     onClick={handleLogin}
-                    className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors"
+                    className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={loading}
-                    className="
-    w-72 mx-auto block          
-    bg-[#0A84FF] text-white 
-    font-semibold 
-    py-4                       
-    text-lg 
-    rounded-4xl shadow-md
-    active:bg-[#005BBB]
-    disabled:opacity-50 disabled:cursor-not-allowed
-  "
                 >
                     {loading ? "Logging in..." : "Login"}
                 </button>

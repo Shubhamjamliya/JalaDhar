@@ -10,41 +10,129 @@ import {
     IoChevronForwardOutline,
     IoPencilOutline,
 } from "react-icons/io5";
+import { getUserProfile, updateUserProfile, uploadUserProfilePicture } from "../../../services/authApi";
+import { useAuth } from "../../../contexts/AuthContext";
+import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import ErrorMessage from "../../shared/components/ErrorMessage";
+import SuccessMessage from "../../shared/components/SuccessMessage";
 
 export default function UserProfile() {
     const navigate = useNavigate();
+    const { logout } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
     const [isEditing, setIsEditing] = useState(false);
     const [profileData, setProfileData] = useState({
-        fullName: "Jaladhar User",
-        email: "jaladhar.user@email.com",
-        mobile: "+1 (555) 123-4567",
-        address: "123 Aqua Way, Waterville, WA 98858",
-        profileImage:
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuC63hQ7eA16a_tLf_1uuDHo3Ppu2Pg4jMt1_s8lgxTArGI-qsPziV9KMAkt-9zrFLjckYzMM-7pLGLtX79YFinPRyD6RF1w19E33bHT_I5GFy8pXr-vLS6zHzoadHiDD7iVmkpAux18ZG0osXrauHu3Xo9dmruEm56CgzfOqO37PwxkEx0sPgxMl6Ynnz1ZfB1s4oC0P5drmjSbbq7vyuBbLFkZ8IM7rSloMF1Uzta1CPj5uhXMwOno7qoSTTf86NhzVra9iqOnO9gd",
+        name: "",
+        email: "",
+        phone: "",
+        address: {
+            street: "",
+            city: "",
+            state: "",
+            pincode: "",
+        },
+        profilePicture: null,
     });
 
     useEffect(() => {
-        // Load user profile from localStorage
-        const savedProfile =
-            JSON.parse(localStorage.getItem("userProfile")) || {};
-        if (Object.keys(savedProfile).length > 0) {
-            setProfileData((prev) => ({ ...prev, ...savedProfile }));
-        }
+        loadProfile();
     }, []);
 
-    const handleLogout = () => {
-        navigate("/userlogin");
+    const loadProfile = async () => {
+        try {
+            setLoading(true);
+            setError("");
+            const response = await getUserProfile();
+            if (response.success) {
+                const user = response.data.user;
+                setProfileData({
+                    name: user.name || "",
+                    email: user.email || "",
+                    phone: user.phone || "",
+                    address: user.address || {
+                        street: "",
+                        city: "",
+                        state: "",
+                        pincode: "",
+                    },
+                    profilePicture: user.profilePicture || null,
+                });
+            } else {
+                setError(response.message || "Failed to load profile");
+            }
+        } catch (err) {
+            console.error("Load profile error:", err);
+            setError("Failed to load profile");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        if (window.confirm("Are you sure you want to logout?")) {
+            await logout();
+            navigate("/userlogin");
+        }
     };
 
     const handleEdit = () => {
         setIsEditing(true);
     };
 
-    const handleSave = () => {
-        // Save to localStorage
-        localStorage.setItem("userProfile", JSON.stringify(profileData));
-        setIsEditing(false);
-        alert("Profile updated successfully!");
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            setError("");
+            setSuccess("");
+
+            const response = await updateUserProfile({
+                name: profileData.name,
+                phone: profileData.phone,
+                address: profileData.address,
+            });
+
+            if (response.success) {
+                setSuccess("Profile updated successfully!");
+                setIsEditing(false);
+                // Reload profile to get updated data
+                await loadProfile();
+            } else {
+                setError(response.message || "Failed to update profile");
+            }
+        } catch (err) {
+            console.error("Update profile error:", err);
+            setError(err.response?.data?.message || "Failed to update profile");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            setSaving(true);
+            setError("");
+            const response = await uploadUserProfilePicture(file);
+            if (response.success) {
+                setProfileData({
+                    ...profileData,
+                    profilePicture: response.data.profilePicture,
+                });
+                setSuccess("Profile picture updated successfully!");
+            } else {
+                setError(response.message || "Failed to upload profile picture");
+            }
+        } catch (err) {
+            console.error("Upload image error:", err);
+            setError(err.response?.data?.message || "Failed to upload profile picture");
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleSavedVendors = () => {
@@ -57,29 +145,48 @@ export default function UserProfile() {
         alert("Help Center feature coming soon!");
     };
 
+    if (loading) {
+        return <LoadingSpinner message="Loading profile..." />;
+    }
+
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <div className="min-h-screen w-full bg-[#F6F7F9] px-4 py-6">
+                <ErrorMessage message={error} />
+                <SuccessMessage message={success} />
+
                 {/* Profile Header */}
                 <div className="flex flex-col items-center gap-6 text-center">
                     {/* Profile Image */}
                     <div className="relative">
-                        <div
-                            className="h-32 w-32 rounded-full bg-gray-200 bg-cover bg-center bg-no-repeat shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                            style={{
-                                backgroundImage: profileData.profileImage
-                                    ? `url('${profileData.profileImage}')`
-                                    : "none",
-                            }}
-                        >
-                            {!profileData.profileImage && (
-                                <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center">
-                                    <span className="text-4xl text-gray-400">
-                                        👤
-                                    </span>
-                                </div>
+                        <label htmlFor="profileImage" className="cursor-pointer">
+                            <div
+                                className="h-32 w-32 rounded-full bg-gray-200 bg-cover bg-center bg-no-repeat shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
+                                style={{
+                                    backgroundImage: profileData.profilePicture
+                                        ? `url('${profileData.profilePicture}')`
+                                        : "none",
+                                }}
+                            >
+                                {!profileData.profilePicture && (
+                                    <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center">
+                                        <span className="text-4xl text-gray-400">
+                                            👤
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            {isEditing && (
+                                <input
+                                    type="file"
+                                    id="profileImage"
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                    disabled={saving}
+                                />
                             )}
-                        </div>
+                        </label>
                     </div>
 
                     {/* Name + Email */}
@@ -87,37 +194,24 @@ export default function UserProfile() {
                         {isEditing ? (
                             <input
                                 type="text"
-                                value={profileData.fullName}
+                                value={profileData.name}
                                 onChange={(e) =>
                                     setProfileData({
                                         ...profileData,
-                                        fullName: e.target.value,
+                                        name: e.target.value,
                                     })
                                 }
                                 className="text-[22px] font-bold leading-tight text-center bg-white border border-[#D9DDE4] rounded-[8px] px-4 py-2 focus:outline-none focus:border-[#0A84FF]"
+                                disabled={saving}
                             />
                         ) : (
                             <p className="text-[22px] font-bold leading-tight text-gray-800">
-                                {profileData.fullName}
+                                {profileData.name || "User"}
                             </p>
                         )}
-                        {isEditing ? (
-                            <input
-                                type="email"
-                                value={profileData.email}
-                                onChange={(e) =>
-                                    setProfileData({
-                                        ...profileData,
-                                        email: e.target.value,
-                                    })
-                                }
-                                className="text-base text-gray-500 text-center bg-white border border-[#D9DDE4] rounded-[8px] px-4 py-2 mt-2 focus:outline-none focus:border-[#0A84FF]"
-                            />
-                        ) : (
-                            <p className="text-base text-gray-500">
-                                {profileData.email}
-                            </p>
-                        )}
+                        <p className="text-base text-gray-500">
+                            {profileData.email}
+                        </p>
                     </div>
                 </div>
 
@@ -128,43 +222,120 @@ export default function UserProfile() {
                         <InfoRow
                             icon={IoPersonOutline}
                             label="Name"
-                            value={profileData.fullName}
+                            value={profileData.name}
                             isEditing={isEditing}
                             onChange={(e) =>
                                 setProfileData({
                                     ...profileData,
-                                    fullName: e.target.value,
+                                    name: e.target.value,
                                 })
                             }
+                            disabled={saving}
                         />
 
                         {/* Phone */}
                         <InfoRow
                             icon={IoCallOutline}
                             label="Phone Number"
-                            value={profileData.mobile}
+                            value={profileData.phone}
                             isEditing={isEditing}
                             onChange={(e) =>
                                 setProfileData({
                                     ...profileData,
-                                    mobile: e.target.value,
+                                    phone: e.target.value,
                                 })
                             }
+                            disabled={saving}
                         />
 
                         {/* Address */}
-                        <InfoRow
-                            icon={IoHomeOutline}
-                            label="Primary Address"
-                            value={profileData.address}
-                            isEditing={isEditing}
-                            onChange={(e) =>
-                                setProfileData({
-                                    ...profileData,
-                                    address: e.target.value,
-                                })
-                            }
-                        />
+                        {isEditing ? (
+                            <div className="flex items-start gap-4">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] bg-opacity-10">
+                                    <IoHomeOutline className="text-2xl text-[#0A84FF]" />
+                                </div>
+                                <div className="flex flex-col flex-1 gap-2">
+                                    <span className="text-xs text-gray-500 mb-1">Primary Address</span>
+                                    <input
+                                        type="text"
+                                        placeholder="Street"
+                                        value={profileData.address.street || ""}
+                                        onChange={(e) =>
+                                            setProfileData({
+                                                ...profileData,
+                                                address: {
+                                                    ...profileData.address,
+                                                    street: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="text-base font-medium text-gray-800 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-1.5 focus:outline-none focus:border-[#0A84FF]"
+                                        disabled={saving}
+                                    />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="City"
+                                            value={profileData.address.city || ""}
+                                            onChange={(e) =>
+                                                setProfileData({
+                                                    ...profileData,
+                                                    address: {
+                                                        ...profileData.address,
+                                                        city: e.target.value,
+                                                    },
+                                                })
+                                            }
+                                            className="text-base font-medium text-gray-800 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-1.5 focus:outline-none focus:border-[#0A84FF]"
+                                            disabled={saving}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="State"
+                                            value={profileData.address.state || ""}
+                                            onChange={(e) =>
+                                                setProfileData({
+                                                    ...profileData,
+                                                    address: {
+                                                        ...profileData.address,
+                                                        state: e.target.value,
+                                                    },
+                                                })
+                                            }
+                                            className="text-base font-medium text-gray-800 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-1.5 focus:outline-none focus:border-[#0A84FF]"
+                                            disabled={saving}
+                                        />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Pincode"
+                                        value={profileData.address.pincode || ""}
+                                        onChange={(e) =>
+                                            setProfileData({
+                                                ...profileData,
+                                                address: {
+                                                    ...profileData.address,
+                                                    pincode: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="text-base font-medium text-gray-800 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-1.5 focus:outline-none focus:border-[#0A84FF]"
+                                        disabled={saving}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <InfoRow
+                                icon={IoHomeOutline}
+                                label="Primary Address"
+                                value={
+                                    profileData.address?.street
+                                        ? `${profileData.address.street}, ${profileData.address.city}, ${profileData.address.state} ${profileData.address.pincode}`
+                                        : "Not provided"
+                                }
+                                isEditing={false}
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -173,13 +344,18 @@ export default function UserProfile() {
                     <div className="mt-6 flex gap-3">
                         <button
                             onClick={handleSave}
-                            className="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-[#0A84FF] text-white font-bold shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-transform hover:scale-[1.02]"
+                            disabled={saving}
+                            className="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-[#0A84FF] text-white font-bold shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Save Changes
+                            {saving ? "Saving..." : "Save Changes"}
                         </button>
                         <button
-                            onClick={() => setIsEditing(false)}
-                            className="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-gray-500 text-white font-bold shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-transform hover:scale-[1.02]"
+                            onClick={() => {
+                                setIsEditing(false);
+                                loadProfile(); // Reload to reset changes
+                            }}
+                            disabled={saving}
+                            className="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-gray-500 text-white font-bold shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-transform hover:scale-[1.02] disabled:opacity-50"
                         >
                             Cancel
                         </button>
@@ -220,7 +396,7 @@ export default function UserProfile() {
 
 /* -------------------- REUSABLE COMPONENTS -------------------- */
 
-function InfoRow({ icon, label, value, isEditing, onChange }) {
+function InfoRow({ icon, label, value, isEditing, onChange, disabled }) {
     const IconComponent = icon;
     return (
         <div className="flex items-start gap-4">
@@ -234,7 +410,8 @@ function InfoRow({ icon, label, value, isEditing, onChange }) {
                         type="text"
                         value={value || ""}
                         onChange={onChange}
-                        className="text-base font-medium text-gray-800 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-1.5 focus:outline-none focus:border-[#0A84FF]"
+                        disabled={disabled}
+                        className="text-base font-medium text-gray-800 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-1.5 focus:outline-none focus:border-[#0A84FF] disabled:opacity-50"
                     />
                 ) : (
                     <span className="text-base font-medium text-gray-800">

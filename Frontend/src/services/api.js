@@ -19,27 +19,36 @@ api.interceptors.request.use(
     let token = null;
     const url = config.url || '';
     
-    // Admin routes - use admin token
-    if (url.startsWith('/admin/')) {
-      token = localStorage.getItem('adminAccessToken');
-    }
-    // Vendor routes - use vendor token
-    else if (url.startsWith('/vendors/')) {
-      token = localStorage.getItem('vendorAccessToken');
-    }
-    // User routes - use user token
-    else if (url.startsWith('/users/')) {
-      token = localStorage.getItem('accessToken');
-    }
-    // Fallback: try to determine from current route
-    else {
-      const currentPath = window.location.pathname;
-      if (currentPath.startsWith('/admin')) {
+    // Public auth endpoints don't need tokens
+    const isPublicAuthEndpoint = 
+      url.includes('/auth/register') || 
+      url.includes('/auth/login') || 
+      url.includes('/auth/forgot-password') ||
+      url.includes('/auth/reset-password');
+    
+    if (!isPublicAuthEndpoint) {
+      // Admin routes - use admin token
+      if (url.startsWith('/admin/')) {
         token = localStorage.getItem('adminAccessToken');
-      } else if (currentPath.startsWith('/vendor')) {
+      }
+      // Vendor routes - use vendor token
+      else if (url.startsWith('/vendors/')) {
         token = localStorage.getItem('vendorAccessToken');
-      } else {
+      }
+      // User routes, booking routes, and rating routes - use user token
+      else if (url.startsWith('/users/') || url.startsWith('/bookings/') || url.startsWith('/ratings/')) {
         token = localStorage.getItem('accessToken');
+      }
+      // Fallback: try to determine from current route
+      else {
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/admin')) {
+          token = localStorage.getItem('adminAccessToken');
+        } else if (currentPath.startsWith('/vendor')) {
+          token = localStorage.getItem('vendorAccessToken');
+        } else {
+          token = localStorage.getItem('accessToken');
+        }
       }
     }
     

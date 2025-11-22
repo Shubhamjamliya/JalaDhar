@@ -114,7 +114,7 @@ export default function VendorLogin() {
                 {/* Forgot Password */}
                 <div className="text-right mb-5">
                     <Link
-                        to="/vendor-forgot-password"
+                        to="/vendor/forgot-password"
                         className="text-[#0A84FF] text-sm underline"
                     >
                         Forgot Password?

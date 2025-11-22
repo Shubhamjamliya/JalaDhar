@@ -59,16 +59,28 @@ const acceptBooking = async (req, res) => {
     const { bookingId } = req.params;
     const vendorId = req.userId;
 
+    console.log(`[acceptBooking] Attempting to accept booking ${bookingId} for vendor ${vendorId}`);
+
+    // First check if booking exists and belongs to vendor
     const booking = await Booking.findOne({
       _id: bookingId,
-      vendor: vendorId,
-      status: BOOKING_STATUS.ASSIGNED
+      vendor: vendorId
     }).populate('user', 'name email');
 
     if (!booking) {
+      console.log(`[acceptBooking] Booking ${bookingId} not found or doesn't belong to vendor ${vendorId}`);
       return res.status(404).json({
         success: false,
-        message: 'Booking not found or already processed'
+        message: 'Booking not found or you do not have permission to accept this booking'
+      });
+    }
+
+    // Check if booking is in correct status
+    if (booking.status !== BOOKING_STATUS.ASSIGNED) {
+      console.log(`[acceptBooking] Booking ${bookingId} status is ${booking.status}, expected ${BOOKING_STATUS.ASSIGNED}`);
+      return res.status(400).json({
+        success: false,
+        message: `Booking cannot be accepted. Current status: ${booking.status}. Only ${BOOKING_STATUS.ASSIGNED} bookings can be accepted.`
       });
     }
 
@@ -118,6 +130,8 @@ const rejectBooking = async (req, res) => {
     const { rejectionReason } = req.body;
     const vendorId = req.userId;
 
+    console.log(`[rejectBooking] Attempting to reject booking ${bookingId} for vendor ${vendorId}`);
+
     if (!rejectionReason || rejectionReason.trim().length < 10) {
       return res.status(400).json({
         success: false,
@@ -125,16 +139,26 @@ const rejectBooking = async (req, res) => {
       });
     }
 
+    // First check if booking exists and belongs to vendor
     const booking = await Booking.findOne({
       _id: bookingId,
-      vendor: vendorId,
-      status: BOOKING_STATUS.ASSIGNED
+      vendor: vendorId
     }).populate('user', 'name email');
 
     if (!booking) {
+      console.log(`[rejectBooking] Booking ${bookingId} not found or doesn't belong to vendor ${vendorId}`);
       return res.status(404).json({
         success: false,
-        message: 'Booking not found or already processed'
+        message: 'Booking not found or you do not have permission to reject this booking'
+      });
+    }
+
+    // Check if booking is in correct status
+    if (booking.status !== BOOKING_STATUS.ASSIGNED) {
+      console.log(`[rejectBooking] Booking ${bookingId} status is ${booking.status}, expected ${BOOKING_STATUS.ASSIGNED}`);
+      return res.status(400).json({
+        success: false,
+        message: `Booking cannot be rejected. Current status: ${booking.status}. Only ${BOOKING_STATUS.ASSIGNED} bookings can be rejected.`
       });
     }
 
@@ -170,6 +194,66 @@ const rejectBooking = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to reject booking',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Mark booking as visited (simple - without report upload)
+ */
+const markAsVisited = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const vendorId = req.userId;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      vendor: vendorId,
+      status: BOOKING_STATUS.ACCEPTED
+    }).populate('user', 'name email');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or not in accepted status'
+      });
+    }
+
+    // Update booking status
+    booking.status = BOOKING_STATUS.VISITED;
+    booking.visitedAt = new Date();
+    await booking.save();
+
+    // Send notification to user
+    try {
+      await sendBookingStatusUpdateEmail({
+        email: booking.user.email,
+        name: booking.user.name,
+        bookingId: booking._id.toString(),
+        status: 'VISITED',
+        message: 'Vendor has visited your location'
+      });
+    } catch (emailError) {
+      console.error('Email notification error:', emailError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Booking marked as visited successfully',
+      data: {
+        booking: {
+          id: booking._id,
+          status: booking.status,
+          visitedAt: booking.visitedAt
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Mark as visited error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark booking as visited',
       error: error.message
     });
   }
@@ -330,6 +414,7 @@ module.exports = {
   getVendorBookings,
   acceptBooking,
   rejectBooking,
+  markAsVisited,
   markVisitedAndUploadReport,
   getBookingDetails
 };

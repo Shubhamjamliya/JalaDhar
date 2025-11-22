@@ -43,6 +43,46 @@ export const getAdminProfile = async () => {
 };
 
 /**
+ * Forgot password - Send OTP
+ * @param {Object} data - { email }
+ * @returns {Promise}
+ */
+export const adminForgotPassword = async (data) => {
+  const response = await api.post('/admin/auth/forgot-password', data);
+  return response.data;
+};
+
+/**
+ * Reset password with OTP
+ * @param {Object} data - { email, otp, newPassword }
+ * @returns {Promise}
+ */
+export const adminResetPassword = async (data) => {
+  const response = await api.post('/admin/auth/reset-password', data);
+  return response.data;
+};
+
+/**
+ * Send OTP for admin registration
+ * @param {Object} data - { email, name }
+ * @returns {Promise}
+ */
+export const sendAdminRegistrationOTP = async (data) => {
+  const response = await api.post('/admin/auth/register/send-otp', data);
+  return response.data;
+};
+
+/**
+ * Register new admin with OTP verification
+ * @param {Object} data - { name, email, password, otp, token }
+ * @returns {Promise}
+ */
+export const registerAdminWithOTP = async (data) => {
+  const response = await api.post('/admin/auth/register/verify-otp', data);
+  return response.data;
+};
+
+/**
  * Admin Vendor Management API functions
  */
 

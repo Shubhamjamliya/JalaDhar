@@ -11,31 +11,136 @@ import {
     IoCheckmarkCircleOutline,
     IoCloseCircleOutline,
     IoTimeOutline,
+    IoCheckmarkOutline,
+    IoSettingsOutline,
 } from "react-icons/io5";
+import { getUserProfile } from "../../../services/authApi";
+import { getUserDashboardStats, getNearbyVendors } from "../../../services/bookingApi";
+import { useAuth } from "../../../contexts/AuthContext";
+import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import ErrorMessage from "../../shared/components/ErrorMessage";
 
 export default function UserDashboard() {
     const navigate = useNavigate();
-    const [userName, setUserName] = useState("Akshat");
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [userName, setUserName] = useState("");
     const [userAvatar, setUserAvatar] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [requestStatuses, setRequestStatuses] = useState([]);
+    const [vendors, setVendors] = useState([]);
+    const [userLocation, setUserLocation] = useState({ lat: null, lng: null });
+    const [dashboardStats, setDashboardStats] = useState({
+        total: 0,
+        pending: 0,
+        accepted: 0,
+        completed: 0,
+        cancelled: 0
+    });
 
     useEffect(() => {
-        // Load user profile from localStorage
-        const savedProfile =
-            JSON.parse(localStorage.getItem("userProfile")) || {};
-        if (savedProfile.fullName) {
-            setUserName(savedProfile.fullName);
+        loadDashboardData();
+        // Get user location if available (optional - won't block if denied)
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setUserLocation({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                    });
+                },
+                (error) => {
+                    // Silently handle location errors - location is optional
+                    // Error types: PERMISSION_DENIED, POSITION_UNAVAILABLE, TIMEOUT
+                    console.log('Location access not available:', error.message);
+                    // Still load vendors without location
+                    loadVendors();
+                },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 5000,
+                    maximumAge: 300000 // Cache for 5 minutes
+                }
+            );
+        } else {
+            // Geolocation not supported - load vendors anyway
+            loadVendors();
         }
-        if (savedProfile.profileImage) {
-            setUserAvatar(savedProfile.profileImage);
-        }
-
-        // Load request statuses from localStorage
-        const savedRequests =
-            JSON.parse(localStorage.getItem("userRequests")) || [];
-        setRequestStatuses(savedRequests);
     }, []);
+
+    useEffect(() => {
+        // Only reload vendors if location was successfully obtained
+        if (userLocation.lat && userLocation.lng) {
+            loadVendors();
+        }
+    }, [userLocation]);
+
+    const loadDashboardData = async () => {
+        try {
+            setLoading(true);
+            setError("");
+
+            // Load user profile and dashboard stats in parallel
+            const [profileResponse, statsResponse] = await Promise.all([
+                getUserProfile(),
+                getUserDashboardStats()
+            ]);
+
+            if (profileResponse.success) {
+                const userData = profileResponse.data.user;
+                setUserName(userData.name || "");
+                setUserAvatar(userData.profilePicture || null);
+            }
+
+            if (statsResponse.success) {
+                setDashboardStats(statsResponse.data.stats || dashboardStats);
+                // Convert recent bookings to request statuses format
+                const recentBookings = statsResponse.data.recentBookings || [];
+                const formattedRequests = recentBookings.map((booking, index) => ({
+                    id: booking._id || index,
+                    serviceType: booking.service?.name || "Service",
+                    requestDate: booking.scheduledDate || booking.createdAt,
+                    requestTime: booking.scheduledTime || "N/A",
+                    status: booking.status?.toLowerCase() || "pending",
+                    description: `Booking for ${booking.service?.name || "service"}`,
+                }));
+                setRequestStatuses(formattedRequests);
+            }
+        } catch (err) {
+            console.error("Load dashboard data error:", err);
+            setError("Failed to load dashboard data");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadVendors = async () => {
+        try {
+            const params = { limit: 10 };
+            // Only include location if available (optional)
+            if (userLocation.lat && userLocation.lng) {
+                params.lat = userLocation.lat;
+                params.lng = userLocation.lng;
+            }
+            // Load vendors with or without location
+            const response = await getNearbyVendors(params);
+            if (response.success) {
+                setVendors(response.data.vendors || []);
+            }
+        } catch (err) {
+            console.error("Load vendors error:", err);
+            // Even on error, try to show vendors without location
+            try {
+                const fallbackResponse = await getNearbyVendors({ limit: 10 });
+                if (fallbackResponse.success) {
+                    setVendors(fallbackResponse.data.vendors || []);
+                }
+            } catch (fallbackErr) {
+                console.error("Fallback load vendors error:", fallbackErr);
+            }
+        }
+    };
 
     useEffect(() => {
         // Prevent body scroll when modal is open
@@ -83,67 +188,7 @@ export default function UserDashboard() {
         }
     };
 
-    // Sample data if no requests
-    const sampleRequests = [
-        {
-            id: 1,
-            serviceType: "Pit Cleaning",
-            requestDate: "2024-01-15",
-            requestTime: "10:30 AM",
-            status: "pending",
-            description: "Need pit cleaning service urgently",
-        },
-        {
-            id: 2,
-            serviceType: "Groundwater Survey",
-            requestDate: "2024-01-14",
-            requestTime: "2:00 PM",
-            status: "success",
-            description: "Groundwater survey request",
-        },
-        {
-            id: 3,
-            serviceType: "Water Testing",
-            requestDate: "2024-01-13",
-            requestTime: "11:00 AM",
-            status: "rejected",
-            description: "Water quality testing",
-        },
-    ];
-
-    const displayRequests =
-        requestStatuses.length > 0 ? requestStatuses : sampleRequests;
-
-    // Vendor data - same structure as UserServiceProvider for consistency
-    const vendors = [
-        {
-            id: 1,
-            name: "AquaFix Plumbing",
-            category: "Plumbing",
-            rating: 4.9,
-            reviews: 120,
-            distance: "2.5 km away",
-            image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBFIejiN3gC457JpbQXg8Nt7qcehDsWtO7onZr_F4iCLyg774lap8BmyWKX28dA6XEUOYOTvI4IJp5AVRrnYLJkE_t-QV8wwWUv51EoJN7UOQ-cwBnja--doe1rQD1NsyHwkE7Wr_saOzATfkmTj8rPh8z1Odd6O7z-wZMuWvxT-w9UF-ceN3pMUQiGbIEiTlBam98tEtcs9N9CaQc7kLsnUf--R2N_y81GjMurYcMRQTg1oAx8eRAfXQ4Di0C6ItnYOS3O3oUFC2H2",
-        },
-        {
-            id: 2,
-            name: "PureFlow Systems",
-            category: "Water Purifiers",
-            rating: 4.8,
-            reviews: 88,
-            distance: "3.1 km away",
-            image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCd4RAvRaJsbYSUyfoS4fwssj9zgcp7Y8hVWP4dMart8y6LHd3LOobWc_DJCoABTpLXFycKRHE7HmdR9MWaOPvsnfFQklWSlX-tJW_WL-UDMmJ_IhX54kooCpT3qB82VuUk_BR8gYaLMuhh0Ii8lke0ng2tH2cto1b05Co7nhbLwS1z25RIglCINuaH8cLs23BDqiEtLxmRVDCH2_07YK6aij1rdqQ283U8bWguj6e5Fum9Na0z5NGZReHqqmPCmZg_pVEGk9UwONNK",
-        },
-        {
-            id: 3,
-            name: "Clear Tank Co.",
-            category: "Tank Cleaning",
-            rating: 5.0,
-            reviews: 45,
-            distance: "5.0 km away",
-            image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAKw8TD27NpUPP9fG39USVkTsLRqGtYydXMyri5be9HnUSIKXVIoovkIdkep2dDPu-jZCqKsadhh_EPaUi5n72rnW9fAWoeyvWWlocav2Brr321489R9QkJtGMsSl9ZMD6-szaHN-MlqhqEzaJGZecFkMINWVlNjFjh0pPoQ2yhGNGxlXNPWp8FAktY1PIg9srJdfos2U62f1PHplKkFSPehU_ymJGTLWcRJpe9M-SQuoCiWGwYSZ8mmI7CejZP2FYiF-5thU1ZicBB",
-        },
-    ];
+    const displayRequests = requestStatuses;
 
     const backgroundImageUrl =
         "https://lh3.googleusercontent.com/aida-public/AB6AXuCSWOEOG7ry6z14TFWGAz7PjaKTwn697LggEX4Vf1U2F-18-Yl362M1a0XmrCPrnxjq3HLvvisiIPbnCcLWbicHHyQVehSZEC56qo5fvTVnSjPmEPPFLj9dncg63DYDUscFj51kK5mnPvn7hznGuHDuYjMiSWsX7r6Nlpe1ss-SQVtV_G_yADjJFZVcqSA8EGeUz4tjBJlabT7hxamjtW25RfdT9g0K2O82ATNS4J1em3nBru9nIKr4YnD72XMjXgETg4PCKTSCxEva";
@@ -151,10 +196,16 @@ export default function UserDashboard() {
     const avatarImageUrl =
         "https://lh3.googleusercontent.com/aida-public/AB6AXuDCqZRhSzmWMNhXuX4RPFuS_KD7WQ8XLgbsk2nXkV3JICy3ZcLfqjZnTbmofKaBePVQ9HQeoiASrUYaU_VYP7dBYSFBI9Z5WlMcnCKPDQIZaN5Uo8Qh4iv3tNNNnrRAnqP6QfGEIvqzMRneraT-7cwEGw9ba4Ci_wx2qsxlsRdxcPVRdPcnkz2n2vv4YM02MHGkKA3Punga2QFw4FyWv6phuBqmgoiAjWSehWquP1nyb8tigrHh5j6ir7c3uumnU1LI7khab45fuKmL";
 
+    if (loading) {
+        return <LoadingSpinner message="Loading dashboard..." />;
+    }
+
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+            <ErrorMessage message={error} />
+
             {/* Profile Header with Background Image */}
-            <section className="relative my-4 overflow-hidden rounded-[12px] bg-white p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+            <section className="relative my-4 overflow-hidden rounded-[12px] bg-blue-400 p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
                 <div className="absolute inset-0 z-0 opacity-10">
                     <img
                         className="h-full w-full object-cover"
@@ -180,122 +231,128 @@ export default function UserDashboard() {
             </section>
 
             {/* Services Overview */}
-            <h2 className="px-2 pt-4 pb-2 text-lg font-bold text-gray-800">
+            <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
                 Your Services Overview
             </h2>
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="flex items-center justify-between gap-4 mb-6 px-2">
                 {/* Request Status */}
                 <div
                     onClick={handleRequestStatusClick}
-                    className="flex items-center gap-3 rounded-[12px] bg-white p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all cursor-pointer active:scale-[0.98]"
+                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] flex items-center justify-center flex-shrink-0">
-                        <IoDocumentTextOutline className="text-xl text-white" />
+                    <div className="w-16 h-16 rounded-full bg-white shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all">
+                        <IoDocumentTextOutline className="text-2xl text-[#0A84FF]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-gray-800 mb-0.5">
-                            Request Status
-                        </h3>
-                    </div>
+                    <span className="text-xs font-medium text-gray-800 text-center">
+                        Request Status
+                    </span>
                 </div>
 
                 {/* Current Booking */}
                 <div
                     onClick={() => navigate("/user/status")}
-                    className="flex items-center gap-3 rounded-[12px] bg-white p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all cursor-pointer active:scale-[0.98]"
+                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] flex items-center justify-center flex-shrink-0">
-                        <IoCalendarOutline className="text-xl text-white" />
+                    <div className="w-16 h-16 rounded-full bg-white shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all relative">
+                        <IoCalendarOutline className="text-2xl text-[#0A84FF]" />
+                        <IoCheckmarkOutline className="absolute -bottom-0.5 -right-0.5 text-sm text-white bg-[#0A84FF] rounded-full p-0.5" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-gray-800 mb-0.5">
-                            Current Booking
-                        </h3>
-                        {/* <p className="text-xs text-[#4A4A4A]">View bookings</p> */}
-                    </div>
+                    <span className="text-xs font-medium text-gray-800 text-center">
+                        Current Booking
+                    </span>
                 </div>
 
                 {/* Find Vendor */}
                 <div
                     onClick={() => navigate("/user/serviceprovider")}
-                    className="flex items-center gap-3 rounded-[12px] bg-white p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all cursor-pointer active:scale-[0.98]"
+                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] flex items-center justify-center flex-shrink-0">
-                        <IoSearchOutline className="text-xl text-white" />
+                    <div className="w-16 h-16 rounded-full bg-white shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all">
+                        <IoSearchOutline className="text-2xl text-[#0A84FF]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-gray-800 mb-0.5">
-                            Find Vendor
-                        </h3>
-                    </div>
+                    <span className="text-xs font-medium text-gray-800 text-center">
+                        Find Vendor
+                    </span>
                 </div>
 
                 {/* Update Profile */}
                 <div
                     onClick={() => navigate("/user/profile")}
-                    className="flex items-center gap-3 rounded-[12px] bg-white p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all cursor-pointer active:scale-[0.98]"
+                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] flex items-center justify-center flex-shrink-0">
-                        <IoPersonCircleOutline className="text-xl text-white" />
+                    <div className="w-16 h-16 rounded-full bg-white shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all relative">
+                        <IoPersonCircleOutline className="text-2xl text-[#0A84FF]" />
+                        <IoSettingsOutline className="absolute -bottom-0.5 -right-0.5 text-xs text-[#0A84FF] bg-white rounded-full p-0.5" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-gray-800 mb-0.5">
-                            Update Profile
-                        </h3>
-                    </div>
+                    <span className="text-xs font-medium text-gray-800 text-center">
+                        Update Profile
+                    </span>
                 </div>
             </div>
 
-            {/* Top Vendors */}
-            <h2 className="px-2 pt-8 pb-2 text-lg font-bold text-gray-800">
+            {/* Top Vendors Near You */}
+            <h2 className="px-2 pt-8 pb-4 text-lg font-bold text-gray-800">
                 Top Vendors Near You
             </h2>
-            <div className="flex flex-col gap-4">
-                {vendors.map((vendor) => (
-                    <div
-                        key={vendor.id}
-                        onClick={() => navigate(`/user/vendor/${vendor.id}`)}
-                        className="flex gap-4 rounded-[12px] bg-white p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all cursor-pointer active:scale-[0.98]"
-                    >
-                        <div
-                            className="h-20 w-20 rounded-[10px] bg-cover bg-center flex-shrink-0"
-                            style={{
-                                backgroundImage: `url("${vendor.image}")`,
-                            }}
-                        ></div>
-                        <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-800">
-                                {vendor.name}
-                            </h4>
-                            <p className="text-sm text-gray-500">
-                                {vendor.category}
-                            </p>
-                            <div className="flex items-center gap-1 text-sm mt-1">
-                                <IoStar className="text-base text-yellow-500" />
-                                <span className="font-bold text-gray-800">
-                                    {vendor.rating}
-                                </span>
-                                <span className="text-gray-400">
-                                    ({vendor.reviews})
-                                </span>
-                            </div>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                            <p className="text-sm font-bold text-[#0A84FF]">
-                                {vendor.distance}
-                            </p>
-                        </div>
+            <div className="flex flex-col gap-4 mb-6 px-2">
+                {vendors.length === 0 ? (
+                    <div className="bg-white rounded-[12px] p-8 text-center shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                        <p className="text-gray-600 text-sm">No vendors available nearby</p>
                     </div>
-                ))}
-            </div>
-            {/* View All Vendors Button */}
-            <div className="flex justify-end px-2 pt-2">
-                <button
-                    onClick={() => navigate("/user/serviceprovider")}
-                    className="text-sm font-semibold text-[#0A84FF] hover:underline"
-                >
-                    View All Vendors
-                </button>
+                ) : (
+                    vendors.map((vendor) => (
+                        <div
+                            key={vendor._id}
+                            onClick={() => navigate(`/user/vendor-profile/${vendor._id}`)}
+                            className="flex items-center gap-4 rounded-[12px] bg-white p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all active:scale-[0.98]"
+                        >
+                            {/* Vendor Image - Square with rounded corners */}
+                            <div
+                                className="h-20 w-20 shrink-0 rounded-[8px] bg-cover bg-center bg-no-repeat"
+                                style={{
+                                    backgroundImage: vendor.documents?.profilePicture?.url
+                                        ? `url("${vendor.documents.profilePicture.url}")`
+                                        : "none",
+                                    backgroundColor: vendor.documents?.profilePicture?.url ? "transparent" : "#E5E7EB"
+                                }}
+                            >
+                                {!vendor.documents?.profilePicture?.url && (
+                                    <div className="w-full h-full flex items-center justify-center rounded-[8px]">
+                                        <span className="text-3xl">👤</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Vendor Details - Middle Section */}
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-gray-800 mb-1">
+                                    {vendor.name}
+                                </h4>
+                                <p className="text-sm text-gray-500 mb-1.5">
+                                    {vendor.category || vendor.serviceTags?.[0] || "General Services"}
+                                </p>
+                                <div className="flex items-center gap-1 text-sm">
+                                    <span className="material-symbols-outlined text-base text-yellow-500">star</span>
+                                    <span className="font-bold text-gray-800">
+                                        {vendor.averageRating?.toFixed(1) || "0.0"}
+                                    </span>
+                                    <span className="text-gray-500">
+                                        ({vendor.totalRatings || 0})
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Distance - Right Side */}
+                            {vendor.distance !== null && (
+                                <div className="text-right shrink-0">
+                                    <p className="text-sm font-semibold text-[#0A84FF]">
+                                        {vendor.distance.toFixed(1)} km away
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    ))
+                )}
             </div>
 
             {/* Request Status Modal */}

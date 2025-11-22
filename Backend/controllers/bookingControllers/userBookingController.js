@@ -96,9 +96,28 @@ const createBooking = async (req, res) => {
       });
     }
 
+    // Check if user has an active booking (only one booking at a time)
+    const activeBooking = await Booking.findOne({
+      user: userId,
+      status: {
+        $nin: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED, BOOKING_STATUS.FAILED, BOOKING_STATUS.SUCCESS]
+      }
+    });
+
+    if (activeBooking) {
+      return res.status(400).json({
+        success: false,
+        message: 'You already have an active booking. Please complete or cancel your current booking before creating a new one.',
+        data: {
+          activeBookingId: activeBooking._id,
+          activeBookingStatus: activeBooking.status
+        }
+      });
+    }
+
     // Find service
     const service = await Service.findById(serviceId);
-    if (!service || service.status !== 'APPROVED' || !service.isActive) {
+    if (!service || !service.isActive) {
       return res.status(404).json({
         success: false,
         message: 'Service not found or not available'
@@ -119,15 +138,36 @@ const createBooking = async (req, res) => {
     const advanceAmount = totalAmount * 0.4;
     const remainingAmount = totalAmount * 0.6;
 
-    // Create Razorpay order for advance payment
-    const razorpayOrder = await createOrder(advanceAmount, 'INR', {
-      receipt: `advance_${Date.now()}`,
-      notes: {
-        bookingType: 'ADVANCE',
-        serviceId: serviceId.toString(),
-        vendorId: vendorId.toString()
-      }
-    });
+    // ============================================
+    // FAKE PAYMENT MODE CHECK (FOR TESTING)
+    // ============================================
+    // Set FAKE_PAYMENT_MODE=true in .env to enable fake payment
+    // When removing fake payment, delete this entire section and always create Razorpay orders
+    const useFakePayment = process.env.FAKE_PAYMENT_MODE === 'true';
+    let razorpayOrder = null;
+
+    if (!useFakePayment) {
+      // Real Razorpay flow - create order
+      razorpayOrder = await createOrder(advanceAmount, 'INR', {
+        receipt: `advance_${Date.now()}`,
+        notes: {
+          bookingType: 'ADVANCE',
+          serviceId: serviceId.toString(),
+          vendorId: vendorId.toString()
+        }
+      });
+    } else {
+      // Fake payment mode - create fake order object for consistency
+      razorpayOrder = {
+        success: true,
+        orderId: `fake_order_${Date.now()}`,
+        amount: Math.round(advanceAmount * 100), // In paise
+        currency: 'INR',
+        receipt: `advance_${Date.now()}`,
+        status: 'created',
+        createdAt: Date.now()
+      };
+    }
 
     // Create booking
     const booking = await Booking.create({
@@ -194,7 +234,9 @@ const createBooking = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Booking created successfully. Please complete advance payment.',
+      message: useFakePayment 
+        ? 'Booking created successfully. Use fake payment endpoint to complete payment.'
+        : 'Booking created successfully. Please complete advance payment.',
       data: {
         booking: {
           id: booking._id,
@@ -209,7 +251,14 @@ const createBooking = async (req, res) => {
           remainingAmount,
           totalAmount,
           razorpayOrderId: razorpayOrder.orderId,
-          keyId: process.env.RAZORPAY_KEY_ID
+          keyId: useFakePayment ? null : process.env.RAZORPAY_KEY_ID,
+          useFakePayment // Flag to indicate fake payment mode
+        },
+        // Razorpay order details (null in fake mode)
+        razorpayOrder: useFakePayment ? null : {
+          id: razorpayOrder.orderId,
+          amount: razorpayOrder.amount,
+          currency: razorpayOrder.currency
         }
       }
     });
@@ -494,13 +543,462 @@ const downloadInvoice = async (req, res) => {
   }
 };
 
+/**
+ * Get all available services (for users to browse)
+ */
+const getAllServices = async (req, res) => {
+  try {
+    const { category, page = 1, limit = 20 } = req.query;
+
+    // No status filter - show all services regardless of approval status
+    const query = {
+      isActive: true
+    };
+
+    if (category) {
+      query.category = category;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [services, total] = await Promise.all([
+      Service.find(query)
+        .populate('vendor', 'name rating documents.profilePicture')
+        .select('name description price duration machineType category images vendor')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Service.countDocuments(query)
+    ]);
+
+    // Get unique categories (all active services)
+    const categories = await Service.distinct('category', { isActive: true });
+
+    res.json({
+      success: true,
+      message: 'Services retrieved successfully',
+      data: {
+        services,
+        categories: categories.filter(c => c),
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / parseInt(limit)),
+          totalServices: total
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get all services error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve services',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get nearby vendors with their services (for user dashboard and listings)
+ */
+const getNearbyVendors = async (req, res) => {
+  try {
+    const { lat, lng, limit = 10, minPrice, maxPrice, minRating, minExperience, serviceType } = req.query;
+
+    const query = {
+      isActive: true,
+      isApproved: true
+    };
+
+    // First, get all vendors with services populated (no status filter - show all services)
+    const vendors = await Vendor.find(query)
+      .select('name email phone experience rating address location documents.profilePicture services')
+      .populate({
+        path: 'services',
+        // Removed match filter - show all services regardless of status
+        select: 'name category price description images status isActive'
+      })
+      .limit(parseInt(limit))
+      .lean(); // Use lean() for better performance
+
+    console.log(`[getNearbyVendors] Found ${vendors.length} active and approved vendors`);
+
+    if (vendors.length === 0) {
+      console.log(`[getNearbyVendors] No vendors found with isActive: true, isApproved: true`);
+      return res.json({
+        success: true,
+        message: 'No vendors found',
+        data: {
+          vendors: []
+        }
+      });
+    }
+
+    // Filter vendors that have at least one service (any status - no approval required)
+    let vendorsWithServices = vendors.map(v => {
+      // Filter out null/undefined services
+      const allServices = v.services ? v.services.filter(s => s !== null && s !== undefined) : [];
+
+      if (allServices.length === 0) {
+        console.log(`[getNearbyVendors] Vendor ${v.name} (${v._id}) has no services. Services array length: ${v.services?.length || 0}`);
+      } else {
+        console.log(`[getNearbyVendors] Vendor ${v.name} (${v._id}) has ${allServices.length} services`);
+      }
+
+      // Replace services array with filtered one
+      v.services = allServices;
+      return v;
+    }).filter(v => v.services && v.services.length > 0); // Only keep vendors with services
+
+    console.log(`[getNearbyVendors] Found ${vendorsWithServices.length} vendors with services out of ${vendors.length} total`);
+
+    // Calculate distance and format vendors
+    const formattedVendors = vendorsWithServices.map(vendor => {
+      let distance = null;
+      if (lat && lng && vendor.location?.coordinates?.lat && vendor.location?.coordinates?.lng) {
+        // Haversine formula for accurate distance
+        const R = 6371; // Earth's radius in km
+        const dLat = (vendor.location.coordinates.lat - parseFloat(lat)) * Math.PI / 180;
+        const dLon = (vendor.location.coordinates.lng - parseFloat(lng)) * Math.PI / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(parseFloat(lat) * Math.PI / 180) * Math.cos(vendor.location.coordinates.lat * Math.PI / 180) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        distance = R * c;
+      }
+
+      // Get primary service category
+      const primaryService = vendor.services && vendor.services.length > 0
+        ? vendor.services[0]
+        : null;
+
+      // Get minimum price from all services
+      const prices = vendor.services.map(s => s.price).filter(p => p > 0);
+      const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+
+      return {
+        ...vendor, // Already a plain object due to lean()
+        distance,
+        averageRating: vendor.rating?.averageRating || 0,
+        totalRatings: vendor.rating?.totalRatings || 0,
+        category: primaryService?.category || 'General',
+        minPrice,
+        serviceTags: vendor.services
+          .map(s => s.category || s.name)
+          .filter((v, i, a) => a.indexOf(v) === i)
+          .slice(0, 3),
+        allServices: vendor.services.map(s => ({
+          id: s._id,
+          name: s.name,
+          category: s.category,
+          price: s.price,
+          description: s.description,
+          images: s.images
+        }))
+      };
+    });
+
+    // Apply filters
+    let filteredVendors = formattedVendors;
+
+    // Filter by price range
+    if (minPrice) {
+      filteredVendors = filteredVendors.filter(v => v.minPrice >= parseFloat(minPrice));
+    }
+    if (maxPrice) {
+      filteredVendors = filteredVendors.filter(v => v.minPrice <= parseFloat(maxPrice));
+    }
+
+    // Filter by rating
+    if (minRating) {
+      filteredVendors = filteredVendors.filter(v => v.averageRating >= parseFloat(minRating));
+    }
+
+    // Filter by experience
+    if (minExperience) {
+      filteredVendors = filteredVendors.filter(v => (v.experience || 0) >= parseFloat(minExperience));
+    }
+
+    // Filter by service type/category
+    if (serviceType) {
+      filteredVendors = filteredVendors.filter(v => 
+        v.serviceTags.some(tag => tag.toLowerCase().includes(serviceType.toLowerCase())) ||
+        v.category?.toLowerCase().includes(serviceType.toLowerCase())
+      );
+    }
+
+    // Sort by distance (if available), then by rating
+    filteredVendors.sort((a, b) => {
+      if (a.distance !== null && b.distance !== null) {
+        return a.distance - b.distance;
+      }
+      if (a.distance !== null) return -1;
+      if (b.distance !== null) return 1;
+      return (b.averageRating || 0) - (a.averageRating || 0);
+    });
+
+    res.json({
+      success: true,
+      message: 'Nearby vendors retrieved successfully',
+      data: {
+        vendors: filteredVendors
+      }
+    });
+  } catch (error) {
+    console.error('Get nearby vendors error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve nearby vendors',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get vendor profile details (for users to view)
+ */
+const getVendorProfile = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    const { lat, lng } = req.query; // User location for distance calculation
+
+    console.log(`[getVendorProfile] Fetching vendor profile for ID: ${vendorId}`);
+
+    if (!vendorId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vendor ID is required'
+      });
+    }
+
+    const vendor = await Vendor.findById(vendorId)
+      .select('name email phone experience rating address location documents.profilePicture services isActive isApproved')
+      .populate({
+        path: 'services',
+        select: 'name category price description images status isActive'
+      })
+      .lean();
+
+    if (!vendor) {
+      console.log(`[getVendorProfile] Vendor not found with ID: ${vendorId}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Vendor not found'
+      });
+    }
+
+    if (!vendor.isActive || !vendor.isApproved) {
+      console.log(`[getVendorProfile] Vendor ${vendorId} is not active or not approved. isActive: ${vendor.isActive}, isApproved: ${vendor.isApproved}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Vendor not available'
+      });
+    }
+
+    // Calculate distance if user location provided
+    let distance = null;
+    if (lat && lng && vendor.location?.coordinates?.lat && vendor.location?.coordinates?.lng) {
+      const R = 6371; // Earth's radius in km
+      const dLat = (vendor.location.coordinates.lat - parseFloat(lat)) * Math.PI / 180;
+      const dLon = (vendor.location.coordinates.lng - parseFloat(lng)) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(parseFloat(lat) * Math.PI / 180) * Math.cos(vendor.location.coordinates.lat * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      distance = R * c;
+    }
+
+    // Format vendor data
+    const formattedVendor = {
+      ...vendor,
+      distance,
+      averageRating: vendor.rating?.averageRating || 0,
+      totalRatings: vendor.rating?.totalRatings || 0,
+      services: (vendor.services || []).filter(s => s !== null && s !== undefined).map(s => ({
+        id: s._id,
+        name: s.name,
+        category: s.category,
+        price: s.price,
+        description: s.description,
+        images: s.images,
+        status: s.status,
+        isActive: s.isActive
+      }))
+    };
+
+    res.json({
+      success: true,
+      message: 'Vendor profile retrieved successfully',
+      data: {
+        vendor: formattedVendor
+      }
+    });
+  } catch (error) {
+    console.error('Get vendor profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve vendor profile',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get user dashboard statistics
+ */
+const getDashboardStats = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    // Get booking counts by status
+    const bookingStats = await Booking.aggregate([
+      { $match: { user: userId } },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get total bookings
+    const totalBookings = await Booking.countDocuments({ user: userId });
+
+    // Get recent bookings (last 5)
+    const recentBookings = await Booking.find({ user: userId })
+      .populate('vendor', 'name documents.profilePicture rating')
+      .populate('service', 'name price')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('status scheduledDate scheduledTime service vendor createdAt');
+
+    // Format stats
+    const stats = {
+      total: totalBookings,
+      pending: 0,
+      accepted: 0,
+      completed: 0,
+      cancelled: 0
+    };
+
+    bookingStats.forEach(stat => {
+      if (stat._id === 'PENDING' || stat._id === 'ASSIGNED') {
+        stats.pending += stat.count;
+      } else if (stat._id === 'ACCEPTED' || stat._id === 'VISITED' || stat._id === 'REPORT_UPLOADED' || stat._id === 'AWAITING_PAYMENT') {
+        stats.accepted += stat.count;
+      } else if (stat._id === 'COMPLETED') {
+        stats.completed += stat.count;
+      } else if (stat._id === 'CANCELLED' || stat._id === 'REJECTED') {
+        stats.cancelled += stat.count;
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Dashboard stats retrieved successfully',
+      data: {
+        stats,
+        recentBookings
+      }
+    });
+  } catch (error) {
+    console.error('Get dashboard stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve dashboard stats',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Cancel a booking
+ */
+const cancelBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const userId = req.userId;
+    const { cancellationReason } = req.body;
+
+    // Find booking
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId
+    }).populate('vendor', 'name email');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Check if booking can be cancelled
+    const cancellableStatuses = [
+      BOOKING_STATUS.PENDING,
+      BOOKING_STATUS.ASSIGNED,
+      BOOKING_STATUS.ACCEPTED
+    ];
+
+    if (!cancellableStatuses.includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Booking cannot be cancelled. Current status: ${booking.status}`
+      });
+    }
+
+    // Update booking status
+    booking.status = BOOKING_STATUS.CANCELLED;
+    booking.cancelledAt = new Date();
+    booking.cancellationReason = cancellationReason || 'Cancelled by user';
+    await booking.save();
+
+    // Send notification email to vendor
+    try {
+      await sendBookingStatusUpdateEmail({
+        email: booking.vendor.email,
+        name: booking.vendor.name,
+        bookingId: booking._id.toString(),
+        status: 'CANCELLED',
+        message: 'User has cancelled the booking'
+      });
+    } catch (emailError) {
+      console.error('Email notification error:', emailError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Booking cancelled successfully',
+      data: {
+        booking: {
+          id: booking._id,
+          status: booking.status
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Cancel booking error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel booking',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
+  getAllServices,
   getAvailableVendors,
+  getNearbyVendors,
+  getVendorProfile,
   createBooking,
   getUserBookings,
   getBookingDetails,
+  cancelBooking,
   initiateRemainingPayment,
   uploadBorewellResult,
-  downloadInvoice
+  downloadInvoice,
+  getDashboardStats
 };
 

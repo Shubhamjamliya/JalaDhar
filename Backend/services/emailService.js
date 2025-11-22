@@ -20,19 +20,36 @@ const createTransporter = () => {
 const sendEmail = async ({ to, subject, html, text }) => {
   try {
     const transporter = createTransporter();
-    
+
+    const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'Jaladhar <noreply@jaladhar.com>';
+
     const mailOptions = {
-      from: process.env.EMAIL_FROM || 'Jaladhar <noreply@jaladhar.com>',
+      from: fromEmail,
       to,
       subject,
       html,
       text
     };
 
+    console.log('📧 Sending email:', {
+      from: fromEmail,
+      to,
+      subject,
+      emailFrom: process.env.EMAIL_FROM || fromEmail || 'NOT SET',
+      emailHost: process.env.EMAIL_HOST || 'smtp.gmail.com'
+    });
+
     const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Email sending error:', error);
+    console.error('❌ Email sending error:', {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      emailFrom: process.env.EMAIL_FROM || fromEmail || 'NOT SET',
+      emailHost: process.env.EMAIL_HOST || 'smtp.gmail.com'
+    });
     return { success: false, error: error.message };
   }
 };
@@ -42,9 +59,12 @@ const sendEmail = async ({ to, subject, html, text }) => {
  * @param {Object} params - { email, name, otp, type }
  */
 const sendOTPEmail = async ({ email, name, otp, type = 'verification' }) => {
-  const subject = type === 'password_reset' 
-    ? 'Password Reset OTP - Jaladhar'
-    : 'Email Verification OTP - Jaladhar';
+  let subject = 'Email Verification OTP - Jaladhar';
+  if (type === 'password_reset') {
+    subject = 'Password Reset OTP - Jaladhar';
+  } else if (type === 'admin_registration') {
+    subject = 'Admin Registration OTP - Jaladhar';
+  }
 
   const html = `
     <!DOCTYPE html>
@@ -68,7 +88,7 @@ const sendOTPEmail = async ({ email, name, otp, type = 'verification' }) => {
         </div>
         <div class="content">
           <p>Hello ${name},</p>
-          <p>Your OTP for ${type === 'password_reset' ? 'password reset' : 'email verification'} is:</p>
+          <p>Your OTP for ${type === 'password_reset' ? 'password reset' : type === 'admin_registration' ? 'admin registration' : 'email verification'} is:</p>
           <div class="otp-box">
             <div class="otp">${otp}</div>
           </div>
@@ -86,7 +106,7 @@ const sendOTPEmail = async ({ email, name, otp, type = 'verification' }) => {
   const text = `
     Hello ${name},
     
-    Your OTP for ${type === 'password_reset' ? 'password reset' : 'email verification'} is: ${otp}
+    Your OTP for ${type === 'password_reset' ? 'password reset' : type === 'admin_registration' ? 'admin registration' : 'email verification'} is: ${otp}
     
     This OTP is valid for 10 minutes. Please do not share this OTP with anyone.
     

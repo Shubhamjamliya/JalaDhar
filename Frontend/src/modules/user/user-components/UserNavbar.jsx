@@ -24,7 +24,7 @@ const navItems = [
     },
     {
         id: "service",
-        label: "Service Provider",
+        label: "Find a Vendor",
         to: "/user/serviceprovider",
         Icon: IoCarOutline,
     },

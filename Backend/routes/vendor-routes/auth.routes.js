@@ -3,6 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const multer = require('multer');
 const {
+  sendRegistrationOTP,
   register,
   login,
   forgotPassword,
@@ -78,8 +79,31 @@ const resendEmailValidation = [
   body('email').isEmail().withMessage('Please provide a valid email')
 ];
 
+// Validation for sending OTP
+const sendOTPValidation = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('phone').trim().notEmpty().withMessage('Phone number is required')
+];
+
+// Validation for registration with OTP
+const registerWithOTPValidation = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('phone').trim().notEmpty().withMessage('Phone number is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
+  body('token').trim().notEmpty().withMessage('Verification token is required'),
+  body('bankDetails.accountHolderName').trim().notEmpty().withMessage('Account holder name is required'),
+  body('bankDetails.accountNumber').trim().notEmpty().withMessage('Account number is required'),
+  body('bankDetails.ifscCode').trim().notEmpty().withMessage('IFSC code is required'),
+  body('bankDetails.bankName').trim().notEmpty().withMessage('Bank name is required'),
+  body('experience').isInt({ min: 0 }).withMessage('Experience must be a valid number (years)')
+];
+
 // Routes
-router.post('/register', uploadDocuments, registerValidation, register);
+router.post('/register/send-otp', sendOTPValidation, sendRegistrationOTP);
+router.post('/register', uploadDocuments, registerWithOTPValidation, register);
 router.post('/login', loginValidation, login);
 router.post('/forgot-password', forgotPasswordValidation, forgotPassword);
 router.post('/reset-password', resetPasswordValidation, resetPassword);

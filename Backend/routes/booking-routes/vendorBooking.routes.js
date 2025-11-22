@@ -6,6 +6,7 @@ const {
   getVendorBookings,
   acceptBooking,
   rejectBooking,
+  markAsVisited,
   markVisitedAndUploadReport,
   getBookingDetails
 } = require('../../controllers/bookingControllers/vendorBookingController');
@@ -56,10 +57,23 @@ const uploadReportValidation = [
 ];
 
 // Routes
+// IMPORTANT: Specific routes must come before parameterized routes
 router.get('/my-bookings', authenticate, isVendor, getVendorBookings);
-router.get('/:bookingId', authenticate, isVendor, getBookingDetails);
-router.patch('/:bookingId/accept', authenticate, isVendor, acceptBooking);
+
+// Accept booking route - MUST be before generic :bookingId route
+router.patch('/:bookingId/accept', (req, res, next) => {
+  console.log(`[ROUTE DEBUG] PATCH /:bookingId/accept matched - bookingId: ${req.params.bookingId}`);
+  next();
+}, authenticate, (req, res, next) => {
+  console.log(`[AUTH DEBUG] Authentication passed - bookingId: ${req.params.bookingId}, userId: ${req.userId}`);
+  next();
+}, isVendor, (req, res, next) => {
+  console.log(`[VENDOR DEBUG] Vendor check passed - bookingId: ${req.params.bookingId}`);
+  next();
+}, acceptBooking);
+
 router.patch('/:bookingId/reject', authenticate, isVendor, rejectBookingValidation, rejectBooking);
+router.patch('/:bookingId/visited', authenticate, isVendor, markAsVisited);
 router.post(
   '/:bookingId/visit-report',
   authenticate,
@@ -71,6 +85,8 @@ router.post(
   uploadReportValidation,
   markVisitedAndUploadReport
 );
+// Generic route should be last
+router.get('/:bookingId', authenticate, isVendor, getBookingDetails);
 
 module.exports = router;
 

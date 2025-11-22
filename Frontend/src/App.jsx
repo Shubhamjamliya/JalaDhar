@@ -14,15 +14,22 @@ import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 import UserLogin from "./modules/user/user-pages/UserLogin";
 import UserSignup from "./modules/user/user-pages/UserSignup";
+import UserOTPVerification from "./modules/user/user-pages/UserOTPVerification";
+import UserForgotPassword from "./modules/user/user-pages/UserForgotPassword";
+import UserResetPassword from "./modules/user/user-pages/UserResetPassword";
 import UserDashboard from "./modules/user/user-pages/UserDashboard";
 import VendorLogin from "./modules/vendor/vendor-pages/VendorLogin";
 import VendorSignup from "./modules/vendor/vendor-pages/VendorSignup";
+import VendorOTPVerification from "./modules/vendor/vendor-pages/VendorOTPVerification";
+import VendorForgotPassword from "./modules/vendor/vendor-pages/VendorForgotPassword";
+import VendorResetPassword from "./modules/vendor/vendor-pages/VendorResetPassword";
 import UserNavbar from "./modules/user/user-components/UserNavbar";
 import VendorNavbar from "./modules/vendor/vendor-components/VendorNavbar";
 import UserServiceProvider from "./modules/user/user-pages/UserServiceProvider";
 import UserRequestService from "./modules/user/user-pages/UserRequestService";
 import UserStatus from "./modules/user/user-pages/UserStatus";
 import UserBookingHistory from "./modules/user/user-pages/UserBookingHistory";
+import UserBookingDetails from "./modules/user/user-pages/UserBookingDetails";
 import UserProfile from "./modules/user/user-pages/UserProfile";
 import UserVendorProfile from "./modules/user/user-pages/UserVendorProfile";
 import VendorDashboard from "./modules/vendor/vendor-pages/VendorDashboard";
@@ -32,7 +39,10 @@ import VendorWallet from "./modules/vendor/vendor-pages/VendorWallet";
 import VendorProfile from "./modules/vendor/vendor-pages/VendorProfile";
 import VendorRequests from "./modules/vendor/vendor-pages/VendorRequests";
 import VendorServices from "./modules/vendor/vendor-pages/VendorServices";
+import VendorBookingDetails from "./modules/vendor/vendor-pages/VendorBookingDetails";
 import AdminLogin from "./modules/admin/admin-pages/AdminLogin";
+import AdminForgotPassword from "./modules/admin/admin-pages/AdminForgotPassword";
+import AdminResetPassword from "./modules/admin/admin-pages/AdminResetPassword";
 import AdminDashboard from "./modules/admin/admin-pages/AdminDashboard";
 import AdminVendors from "./modules/admin/admin-pages/AdminVendors";
 import AdminPendingVendors from "./modules/admin/admin-pages/AdminPendingVendors";
@@ -59,6 +69,18 @@ function App() {
                                 <Route
                                     path="/usersignup"
                                     element={<UserSignup />}
+                                />
+                                <Route
+                                    path="/user/verify-otp"
+                                    element={<UserOTPVerification />}
+                                />
+                                <Route
+                                    path="/user/forgot-password"
+                                    element={<UserForgotPassword />}
+                                />
+                                <Route
+                                    path="/user/reset-password"
+                                    element={<UserResetPassword />}
                                 />
 
                                 {/* ---------- USER PANEL (Nested with Navbar) ---------- */}
@@ -107,13 +129,19 @@ function App() {
                                                         }
                                                     />
                                                     <Route
+                                                        path="/booking/:bookingId"
+                                                        element={
+                                                            <UserBookingDetails />
+                                                        }
+                                                    />
+                                                    <Route
                                                         path="/profile"
                                                         element={
                                                             <UserProfile />
                                                         }
                                                     />
                                                     <Route
-                                                        path="/vendor/:vendorId"
+                                                        path="/vendor-profile/:vendorId"
                                                         element={
                                                             <UserVendorProfile />
                                                         }
@@ -133,6 +161,18 @@ function App() {
                                     path="/vendorsignup"
                                     element={<VendorSignup />}
                                 />
+                                <Route
+                                    path="/vendor/verify-otp"
+                                    element={<VendorOTPVerification />}
+                                />
+                                <Route
+                                    path="/vendor/forgot-password"
+                                    element={<VendorForgotPassword />}
+                                />
+                                <Route
+                                    path="/vendor/reset-password"
+                                    element={<VendorResetPassword />}
+                                />
 
                                 {/* ---------- VENDOR PANEL (Nested with Navbar) ---------- */}
                                 <Route
@@ -140,7 +180,7 @@ function App() {
                                     element={
                                         <VendorProtectedRoute>
                                             <VendorNavbar />
-                                            <main className="px-4 pb-28 pt-24 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
+                                            <main className="px-4 pb-16 pt-16 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
                                                 <Routes>
                                                     <Route
                                                         path="/"
@@ -158,9 +198,15 @@ function App() {
                                                         }
                                                     />
                                                     <Route
+                                                        path="/bookings/:bookingId"
+                                                        element={
+                                                            <VendorBookingDetails />
+                                                        }
+                                                    />
+                                                    <Route
                                                         path="/bookings"
                                                         element={
-                                                            <VendorBookings />
+                                                            <VendorRequests />
                                                         }
                                                     />
                                                     <Route
@@ -203,6 +249,14 @@ function App() {
                                 <Route
                                     path="/adminlogin"
                                     element={<AdminLogin />}
+                                />
+                                <Route
+                                    path="/admin/forgot-password"
+                                    element={<AdminForgotPassword />}
+                                />
+                                <Route
+                                    path="/admin/reset-password"
+                                    element={<AdminResetPassword />}
                                 />
 
                                 {/* ---------- ADMIN PANEL (Nested with Sidebar and Topbar) ---------- */}

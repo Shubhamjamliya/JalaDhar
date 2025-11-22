@@ -1,16 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import { sendVendorRegistrationOTP } from "../../../services/vendorAuthApi";
+import { IoArrowBackOutline } from "react-icons/io5";
 
 export default function VendorSignup() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [registrationStep, setRegistrationStep] = useState(1); // 1: form, 2: OTP
+    const [verificationToken, setVerificationToken] = useState("");
+    const [otpCountdown, setOtpCountdown] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     
     const navigate = useNavigate();
     const { register } = useVendorAuth();
+
+    useEffect(() => {
+        let timer;
+        if (otpCountdown > 0) {
+            timer = setTimeout(() => setOtpCountdown(otpCountdown - 1), 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [otpCountdown]);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -95,7 +108,7 @@ export default function VendorSignup() {
         }));
     };
 
-    const handleVendorSignup = async (e) => {
+    const handleSendOTP = async (e) => {
         e?.preventDefault();
         setError("");
         setSuccess("");
@@ -133,102 +146,52 @@ export default function VendorSignup() {
         }
 
         try {
-            // Create FormData
-            const formDataToSend = new FormData();
-            
-            // Basic details
-            formDataToSend.append('name', formData.name);
-            formDataToSend.append('email', formData.email);
-            formDataToSend.append('phone', formData.phone);
-            formDataToSend.append('password', formData.password);
-            
-            // Files
-            if (formData.profilePicture) {
-                formDataToSend.append('profilePicture', formData.profilePicture);
-            }
-            if (formData.aadharCard) {
-                formDataToSend.append('aadharCard', formData.aadharCard);
-            }
-            if (formData.panCard) {
-                formDataToSend.append('panCard', formData.panCard);
-            }
-            if (formData.cancelledCheque) {
-                formDataToSend.append('cancelledCheque', formData.cancelledCheque);
-            }
-            formData.certificates.forEach((cert) => {
-                formDataToSend.append('certificates', cert);
+            const response = await sendVendorRegistrationOTP({
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone
             });
             
-            // Bank details - Send as nested fields for validation
-            formDataToSend.append('bankDetails[accountHolderName]', formData.accountHolderName);
-            formDataToSend.append('bankDetails[accountNumber]', formData.accountNumber);
-            formDataToSend.append('bankDetails[ifscCode]', formData.ifscCode);
-            formDataToSend.append('bankDetails[bankName]', formData.bankName);
-            formDataToSend.append('bankDetails[branchName]', formData.branchName || '');
-            
-            // Educational qualifications (array) - only send if both degree and institution are provided
-            const educationalQualifications = (formData.education && formData.institution) ? [{
-                degree: formData.education,
-                institution: formData.institution,
-                year: new Date().getFullYear(),
-                percentage: null
-            }] : [];
-            formDataToSend.append('educationalQualifications', JSON.stringify(educationalQualifications));
-            
-            // Experience
-            formDataToSend.append('experience', parseInt(formData.experience));
-            
-            // Address
-            formDataToSend.append('address', JSON.stringify(formData.address));
-            
-            const result = await register(formDataToSend);
-            
-            if (result.success) {
-                setSuccess(result.message || "Registration successful! Your account is pending admin approval.");
-                // Clear form
-                setFormData({
-                    name: "",
-                    email: "",
-                    phone: "",
-                    password: "",
-                    confirmPassword: "",
-                    profilePicture: null,
-                    aadhaarNo: "",
-                    panNo: "",
-                    aadharCard: null,
-                    panCard: null,
-                    education: "",
-                    institution: "",
-                    experience: "",
-                    experienceDetails: "",
-                    certificates: [],
-                    bankName: "",
-                    accountHolderName: "",
-                    accountNumber: "",
-                    ifscCode: "",
-                    branchName: "",
-                    cancelledCheque: null,
-                    address: {
-                        street: "",
-                        city: "",
-                        state: "",
-                        pincode: ""
+            if (response.success) {
+                // Navigate to OTP verification page with registration data
+                navigate("/vendor/verify-otp", {
+                    state: {
+                        registrationData: {
+                            name: formData.name,
+                            email: formData.email,
+                            phone: formData.phone,
+                            password: formData.password,
+                            profilePicture: formData.profilePicture,
+                            aadharCard: formData.aadharCard,
+                            panCard: formData.panCard,
+                            certificates: formData.certificates,
+                            cancelledCheque: formData.cancelledCheque,
+                            accountHolderName: formData.accountHolderName,
+                            accountNumber: formData.accountNumber,
+                            ifscCode: formData.ifscCode,
+                            bankName: formData.bankName,
+                            branchName: formData.branchName,
+                            education: formData.education,
+                            institution: formData.institution,
+                            experience: formData.experience,
+                            address: formData.address
+                        },
+                        verificationToken: response.data.token,
+                        email: formData.email,
+                        otpSent: true
                     }
                 });
-                // Redirect to login after 3 seconds
-                setTimeout(() => {
-                    navigate("/vendorlogin");
-                }, 3000);
             } else {
-                setError(result.message || "Registration failed. Please try again.");
+                setError(response.message || "Failed to send OTP");
             }
         } catch (err) {
-            setError("An unexpected error occurred. Please try again.");
-            console.error("Signup error:", err);
+            setError(err.response?.data?.message || "Failed to send OTP. Please try again.");
+            console.error("Send OTP error:", err);
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5 py-8">
@@ -261,7 +224,7 @@ export default function VendorSignup() {
                     </div>
                 )}
 
-                <form onSubmit={handleVendorSignup}>
+                <form onSubmit={handleSendOTP}>
                     {/* Section 1: Basic Details */}
                     <div className="mb-6">
                         <h3 className="text-lg font-bold text-gray-800 mb-4">
@@ -526,26 +489,26 @@ export default function VendorSignup() {
                         </div>
                     </div>
 
-                    {/* Submit */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? "Signing up..." : "Sign Up"}
-                    </button>
-
-                    {/* Login */}
-                    <p className="text-center text-sm mt-4 text-gray-700">
-                        Already Registered?{" "}
-                        <Link
-                            to="/vendorlogin"
-                            className="text-[#0A84FF] font-semibold underline"
+                        {/* Submit */}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Login
-                        </Link>
-                    </p>
-                </form>
+                            {loading ? "Sending OTP..." : "Send OTP"}
+                        </button>
+
+                        {/* Login */}
+                        <p className="text-center text-sm mt-4 text-gray-700">
+                            Already Registered?{" "}
+                            <Link
+                                to="/vendorlogin"
+                                className="text-[#0A84FF] font-semibold underline"
+                            >
+                                Login
+                            </Link>
+                        </p>
+                    </form>
             </div>
         </div>
     );

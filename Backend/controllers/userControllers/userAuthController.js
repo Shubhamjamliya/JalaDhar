@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../../models/User');
 const Token = require('../../models/Token');
 const { generateTokenPair } = require('../../utils/tokenService');
@@ -5,13 +6,13 @@ const { createOTPToken, verifyOTPToken, markTokenAsUsed } = require('../../servi
 const { sendOTPEmail, sendWelcomeEmail } = require('../../services/emailService');
 const { TOKEN_TYPES } = require('../../utils/constants');
 const { validationResult } = require('express-validator');
+const { generateOTP, generateToken } = require('../../utils/generateOTP');
 
 /**
- * Register new user
+ * Send OTP for user registration
  */
-const register = async (req, res) => {
+const sendRegistrationOTP = async (req, res) => {
   try {
-    // Check validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -21,7 +22,7 @@ const register = async (req, res) => {
       });
     }
 
-    const { name, email, phone, password } = req.body;
+    const { name, email, phone } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({
@@ -37,29 +38,144 @@ const register = async (req, res) => {
       });
     }
 
-    // Create user
+    // Create OTP token with email stored separately (user doesn't exist yet)
+    // Delete any existing tokens for this email
+    await Token.deleteMany({ email, type: TOKEN_TYPES.EMAIL_VERIFICATION, isUsed: false });
+
+    const otp = generateOTP(6);
+    const token = generateToken(32);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    const tokenDoc = await Token.create({
+      userId: new mongoose.Types.ObjectId(), // Dummy ObjectId
+      userModel: 'User',
+      token,
+      type: TOKEN_TYPES.EMAIL_VERIFICATION,
+      otp,
+      email, // Store email directly
+      expiresAt
+    });
+
+    // Send OTP email
+    const emailResult = await sendOTPEmail({
+      email,
+      name,
+      otp,
+      type: 'verification'
+    });
+
+    if (!emailResult.success) {
+      await Token.deleteOne({ _id: tokenDoc._id });
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP email',
+        error: emailResult.error
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'OTP sent to email successfully',
+      data: {
+        token: tokenDoc.token,
+        email
+      }
+    });
+  } catch (error) {
+    console.error('Send registration OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send OTP',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Register new user with OTP verification
+ */
+const register = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { name, email, phone, password, otp, token } = req.body;
+
+    if (!otp || !token) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP and token are required'
+      });
+    }
+
+    // Verify OTP using token
+    const Token = require('../../models/Token');
+    const tokenDoc = await Token.findOne({
+      token,
+      type: TOKEN_TYPES.EMAIL_VERIFICATION,
+      email,
+      isUsed: false,
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!tokenDoc) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP token'
+      });
+    }
+
+    // Check attempts
+    if (tokenDoc.attempts >= 5) {
+      await Token.deleteOne({ _id: tokenDoc._id });
+      return res.status(400).json({
+        success: false,
+        message: 'Max OTP attempts exceeded. Please request a new OTP.'
+      });
+    }
+
+    // Verify OTP
+    if (tokenDoc.otp !== otp) {
+      tokenDoc.attempts += 1;
+      await tokenDoc.save();
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP. Please try again.'
+      });
+    }
+
+    // Check if user already exists (double check)
+    const existingUser = await User.findOne({
+      $or: [{ email }, { phone }]
+    });
+
+    if (existingUser) {
+      await markTokenAsUsed(tokenDoc._id);
+      return res.status(400).json({
+        success: false,
+        message: existingUser.email === email 
+          ? 'Email already registered' 
+          : 'Phone number already registered'
+      });
+    }
+
+    // Create user with email verified
     const user = await User.create({
       name,
       email,
       phone,
-      password
+      password,
+      isEmailVerified: true // Email is verified via OTP
     });
 
-    // Generate email verification OTP
-    const { otp } = await createOTPToken({
-      userId: user._id,
-      userModel: 'User',
-      type: TOKEN_TYPES.EMAIL_VERIFICATION,
-      expiryMinutes: 10
-    });
-
-    // Send verification email
-    await sendOTPEmail({
-      email: user.email,
-      name: user.name,
-      otp,
-      type: 'verification'
-    });
+    // Mark token as used
+    await markTokenAsUsed(tokenDoc._id);
 
     // Send welcome email
     await sendWelcomeEmail({
@@ -69,7 +185,7 @@ const register = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful. Please verify your email.',
+      message: 'Registration successful. Email verified.',
       data: {
         user: {
           id: user._id,
@@ -130,6 +246,14 @@ const login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
+      });
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email before logging in. Check your email for verification OTP.'
       });
     }
 
@@ -451,6 +575,7 @@ module.exports = {
   login,
   forgotPassword,
   resetPassword,
+  sendRegistrationOTP,
   verifyEmail,
   resendEmailVerification,
   logout

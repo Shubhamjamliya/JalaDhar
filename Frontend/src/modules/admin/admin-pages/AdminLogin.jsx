@@ -88,7 +88,7 @@ export default function AdminLogin() {
                 </div>
 
                 {/* Password Input */}
-                <div className="mb-6">
+                <div className="mb-4">
                     <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
                         <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
                             Password
@@ -115,6 +115,16 @@ export default function AdminLogin() {
                             </span>
                         </div>
                     </div>
+                </div>
+
+                {/* Forgot Password */}
+                <div className="text-right mb-5">
+                    <Link
+                        to="/admin/forgot-password"
+                        className="text-[#0A84FF] text-sm underline"
+                    >
+                        Forgot Password?
+                    </Link>
                 </div>
 
                 {/* Login Button */}

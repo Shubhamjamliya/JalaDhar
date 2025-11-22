@@ -2,13 +2,18 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const {
+  getAllServices,
   getAvailableVendors,
+  getNearbyVendors,
+  getVendorProfile,
   createBooking,
   getUserBookings,
   getBookingDetails,
+  cancelBooking,
   initiateRemainingPayment,
   uploadBorewellResult,
-  downloadInvoice
+  downloadInvoice,
+  getDashboardStats
 } = require('../../controllers/bookingControllers/userBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isUser } = require('../../middleware/roleMiddleware');
@@ -29,11 +34,16 @@ const uploadBorewellResultValidation = [
   body('status').isIn(['SUCCESS', 'FAILED']).withMessage('Status must be SUCCESS or FAILED')
 ];
 
-// Routes
+// Routes - Specific routes first, then dynamic routes
+router.get('/dashboard/stats', authenticate, isUser, getDashboardStats);
+router.get('/my-bookings', authenticate, isUser, getUserBookings);
+router.get('/services', authenticate, isUser, getAllServices);
+router.get('/vendors/nearby', authenticate, isUser, getNearbyVendors);
+router.get('/vendors/:vendorId', authenticate, isUser, getVendorProfile);
 router.get('/services/:serviceId/vendors', authenticate, isUser, getAvailableVendors);
 router.post('/create', authenticate, isUser, createBookingValidation, createBooking);
-router.get('/my-bookings', authenticate, isUser, getUserBookings);
 router.get('/:bookingId', authenticate, isUser, getBookingDetails);
+router.patch('/:bookingId/cancel', authenticate, isUser, body('cancellationReason').optional().isLength({ max: 500 }), cancelBooking);
 router.post('/:bookingId/remaining-payment', authenticate, isUser, initiateRemainingPayment);
 router.post('/:bookingId/borewell-result', authenticate, isUser, uploadBorewellResultValidation, uploadBorewellResult);
 router.get('/:bookingId/invoice', authenticate, isUser, downloadInvoice);

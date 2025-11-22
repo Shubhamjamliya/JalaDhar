@@ -5,8 +5,18 @@ import api from './api';
  */
 
 /**
- * Register new vendor with documents
- * @param {FormData} formData - FormData containing vendor info and files
+ * Send OTP for vendor registration
+ * @param {Object} data - { name, email, phone }
+ * @returns {Promise}
+ */
+export const sendVendorRegistrationOTP = async (data) => {
+  const response = await api.post('/vendors/auth/register/send-otp', data);
+  return response.data;
+};
+
+/**
+ * Register new vendor with documents and OTP verification
+ * @param {FormData} formData - FormData containing vendor info, files, otp, and token
  * @returns {Promise}
  */
 export const vendorRegister = async (formData) => {

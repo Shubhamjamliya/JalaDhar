@@ -1,5 +1,6 @@
 const Booking = require('../../models/Booking');
 const Vendor = require('../../models/Vendor');
+const Service = require('../../models/Service');
 const { BOOKING_STATUS } = require('../../utils/constants');
 const { validationResult } = require('express-validator');
 
@@ -10,19 +11,33 @@ const getDashboardStats = async (req, res) => {
   try {
     const vendorId = req.userId;
 
+    // Get today's date range
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     // Get booking counts by status
     const [
       pendingBookings,
+      assignedBookings,
       acceptedBookings,
       visitedBookings,
       completedBookings,
+      todayBookings,
       totalEarnings,
-      pendingEarnings
+      pendingEarnings,
+      servicesCount
     ] = await Promise.all([
       Booking.countDocuments({ vendor: vendorId, status: BOOKING_STATUS.PENDING }),
+      Booking.countDocuments({ vendor: vendorId, status: BOOKING_STATUS.ASSIGNED }),
       Booking.countDocuments({ vendor: vendorId, status: BOOKING_STATUS.ACCEPTED }),
       Booking.countDocuments({ vendor: vendorId, status: BOOKING_STATUS.VISITED }),
       Booking.countDocuments({ vendor: vendorId, status: BOOKING_STATUS.COMPLETED }),
+      Booking.countDocuments({
+        vendor: vendorId,
+        scheduledDate: { $gte: today, $lt: tomorrow }
+      }),
       Booking.aggregate([
         {
           $match: {
@@ -52,7 +67,8 @@ const getDashboardStats = async (req, res) => {
             total: { $sum: '$payment.amount' }
           }
         }
-      ])
+      ]),
+      Service.countDocuments({ vendor: vendorId })
     ]);
 
     // Get vendor payment collection data
@@ -84,9 +100,12 @@ const getDashboardStats = async (req, res) => {
       data: {
         stats: {
           pendingBookings,
+          assignedBookings,
           acceptedBookings,
           visitedBookings,
           completedBookings,
+          todayBookings,
+          servicesCount,
           totalEarnings: totalEarnings[0]?.total || 0,
           pendingEarnings: pendingEarnings[0]?.total || 0,
           paymentCollection: vendor?.paymentCollection || {

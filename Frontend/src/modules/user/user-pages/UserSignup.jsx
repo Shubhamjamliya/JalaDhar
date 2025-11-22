@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../../contexts/AuthContext";
+import { sendUserRegistrationOTP } from "../../../services/authApi";
 
 export default function UserSignup() {
     const [showPassword, setShowPassword] = useState(false);
@@ -14,9 +14,7 @@ export default function UserSignup() {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const navigate = useNavigate();
-    const { register } = useAuth();
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -26,10 +24,9 @@ export default function UserSignup() {
         }));
     };
 
-    const handleSignup = async (e) => {
+    const handleSendOTP = async (e) => {
         e?.preventDefault();
         setError("");
-        setSuccess("");
         setLoading(true);
 
         // Validation
@@ -52,37 +49,45 @@ export default function UserSignup() {
         }
 
         try {
-            const result = await register({
+            console.log("Sending OTP request:", { name: formData.name, email: formData.email, phone: formData.phone });
+            const response = await sendUserRegistrationOTP({
                 name: formData.name,
                 email: formData.email,
-                phone: formData.phone,
-                password: formData.password
+                phone: formData.phone
             });
-            
-            if (result.success) {
-                setSuccess(result.message || "Registration successful! Please verify your email.");
-                // Clear form
-                setFormData({
-                    name: "",
-                    email: "",
-                    phone: "",
-                    password: "",
-                    confirmPassword: ""
+            console.log("OTP response:", response);
+
+            if (response.success) {
+                // Navigate to OTP verification page with registration data
+                navigate("/user/verify-otp", {
+                    state: {
+                        registrationData: {
+                            name: formData.name,
+                            email: formData.email,
+                            phone: formData.phone,
+                            password: formData.password
+                        },
+                        verificationToken: response.data.token,
+                        email: formData.email,
+                        otpSent: true
+                    }
                 });
-                // Redirect to login after 2 seconds
-                setTimeout(() => {
-                    navigate("/userlogin");
-                }, 2000);
             } else {
-                setError(result.message || "Registration failed. Please try again.");
+                setError(response.message || "Failed to send OTP");
             }
         } catch (err) {
-            setError("An unexpected error occurred. Please try again.");
-            console.error("Signup error:", err);
+            console.error("Send OTP error:", err);
+            console.error("Error details:", {
+                message: err.message,
+                response: err.response?.data,
+                status: err.response?.status
+            });
+            setError(err.response?.data?.message || err.message || "Failed to send OTP. Please try again.");
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5 py-8">
@@ -108,14 +113,8 @@ export default function UserSignup() {
                     </div>
                 )}
 
-                {/* Success Message */}
-                {success && (
-                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-sm text-green-600">{success}</p>
-                    </div>
-                )}
-
-                {/* Full Name */}
+                <form onSubmit={handleSendOTP}>
+                    {/* Full Name */}
                 <div className="mb-4">
                     <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
                         <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
@@ -160,7 +159,6 @@ export default function UserSignup() {
                         <input
                             type="tel"
                             name="phone"
-                            type="tel"
                             placeholder="Enter your mobile number"
                             value={formData.phone}
                             onChange={handleInputChange}
@@ -224,13 +222,15 @@ export default function UserSignup() {
                     </div>
                 </div>
 
-                {/* Sign Up Button */}
-                <button
-                    onClick={handleSignup}
-                    className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors"
-                >
-                    Sign Up
-                </button>
+                    {/* Sign Up Button */}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors disabled:opacity-50"
+                    >
+                        {loading ? "Sending OTP..." : "Send OTP"}
+                    </button>
+                </form>
 
                 {/* Login Link */}
                 <p className="text-center text-sm mt-4 text-gray-700">

@@ -14,12 +14,24 @@ export const getDashboardStats = async () => {
 };
 
 /**
- * Get new booking requests (pending bookings)
+ * Get vendor bookings (all bookings with optional status filter)
  * @param {Object} params - { page, limit, status }
  * @returns {Promise}
  */
+export const getVendorBookings = async (params = {}) => {
+  const response = await api.get('/vendors/bookings/my-bookings', { params });
+  return response.data;
+};
+
+/**
+ * Get new booking requests (ASSIGNED bookings - for accept/reject)
+ * @param {Object} params - { page, limit }
+ * @returns {Promise}
+ */
 export const getNewBookings = async (params = {}) => {
-  const response = await api.get('/vendors/bookings', { params });
+  const response = await api.get('/vendors/bookings/my-bookings', { 
+    params: { ...params, status: 'ASSIGNED' } 
+  });
   return response.data;
 };
 
@@ -29,7 +41,17 @@ export const getNewBookings = async (params = {}) => {
  * @returns {Promise}
  */
 export const getBookingHistory = async (params = {}) => {
-  const response = await api.get('/vendors/bookings/history', { params });
+  const response = await api.get('/vendors/bookings/my-bookings', { params });
+  return response.data;
+};
+
+/**
+ * Get booking details
+ * @param {string} bookingId - Booking ID
+ * @returns {Promise}
+ */
+export const getBookingDetails = async (bookingId) => {
+  const response = await api.get(`/vendors/bookings/${bookingId}`);
   return response.data;
 };
 
@@ -52,6 +74,21 @@ export const acceptBooking = async (bookingId) => {
 export const rejectBooking = async (bookingId, rejectionReason) => {
   const response = await api.patch(`/vendors/bookings/${bookingId}/reject`, {
     rejectionReason
+  });
+  return response.data;
+};
+
+/**
+ * Upload visit report
+ * @param {string} bookingId
+ * @param {FormData} reportData - { waterFound, machineReadings, notes, images[], reportFile }
+ * @returns {Promise}
+ */
+export const uploadVisitReport = async (bookingId, reportData) => {
+  const response = await api.post(`/vendors/bookings/${bookingId}/visit-report`, reportData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
   });
   return response.data;
 };
