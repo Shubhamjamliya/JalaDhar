@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import { sendUserRegistrationOTP } from "../../../services/authApi";
-import { IoArrowBackOutline, IoCheckmarkCircleOutline } from "react-icons/io5";
 
 export default function UserOTPVerification() {
     const navigate = useNavigate();
@@ -116,49 +115,48 @@ export default function UserOTPVerification() {
 
     if (registrationSuccess) {
         return (
-            <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5 py-8">
+            <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-4 py-6 overflow-y-auto">
                 <div className="w-full max-w-sm">
-                    {/* Logo */}
-                    <div className="text-center mb-10 mt-4">
-                        <img
-                            src="/src/assets/logo.png"
-                            alt="Jaladhar"
-                            className="w-auto mx-auto mb-2"
-                        />
+                    <div className="mt-4 mb-6 flex flex-col items-center">
+                        <span className="material-symbols-outlined icon-gradient !text-5xl">
+                            water_drop
+                        </span>
+                        <h1 className="mt-2 text-3xl font-bold tracking-tighter text-[#3A3A3A]">
+                            JALADHAR
+                        </h1>
                     </div>
 
-                    {/* Success Message */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-                        <IoCheckmarkCircleOutline className="text-6xl text-green-500 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                    <main className="w-full rounded-xl bg-white p-6 shadow-lg text-center">
+                        <span className="material-symbols-outlined text-6xl text-green-500 mb-4">
+                            check_circle
+                        </span>
+                        <h2 className="text-2xl font-bold text-[#3A3A3A] mb-2">
                             Registration Successful!
                         </h2>
-                        <p className="text-gray-600 mb-6">
+                        <p className="text-sm text-[#6B7280] mb-6">
                             Your account has been created successfully. You will be redirected to login page shortly.
                         </p>
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0A84FF] mx-auto"></div>
-                    </div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A80E5] mx-auto"></div>
+                    </main>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5 py-8">
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-4 py-6 overflow-y-auto">
             <div className="w-full max-w-sm">
-                {/* Logo */}
-                <div className="text-center mb-10 mt-4">
-                    <img
-                        src="/src/assets/logo.png"
-                        alt="Jaladhar"
-                        className="w-auto mx-auto mb-2"
-                    />
+                <div className="mt-4 mb-6 flex flex-col items-center">
+                    <span className="material-symbols-outlined icon-gradient !text-5xl">
+                        water_drop
+                    </span>
+                    <h1 className="mt-2 text-3xl font-bold tracking-tighter text-[#3A3A3A]">
+                        JALADHAR
+                    </h1>
+                    <p className="mt-3 text-sm text-[#6B7280] text-center">
+                        Verify your email to complete registration.
+                    </p>
                 </div>
-
-                {/* Title */}
-                <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
-                    Verify Email
-                </h2>
 
                 {/* Error Message */}
                 {error && (
@@ -174,81 +172,91 @@ export default function UserOTPVerification() {
                     </div>
                 )}
 
-                {/* OTP Verification Form */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="text-center mb-6">
-                        <p className="text-gray-700 text-sm mb-2">
-                            An OTP has been sent to <span className="font-semibold">{email}</span>.
-                        </p>
-                        <p className="text-gray-500 text-xs">
-                            Please enter the 6-digit code below to complete registration.
-                        </p>
-                    </div>
+                <main className="w-full rounded-xl bg-white p-6 shadow-lg">
+                    <form className="space-y-4" onSubmit={handleVerifyOTP}>
+                        <div className="flex justify-center mb-3">
+                            <h2 className="button-white text-sm font-bold text-gradient px-3 py-1 rounded-full border-2 border-[#1A80E5]">
+                                Verify Email
+                            </h2>
+                        </div>
 
-                    {/* OTP Input */}
-                    <div className="mb-4">
-                        <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                            <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
-                                Enter OTP
+                        <div className="text-center mb-4">
+                            <p className="text-sm text-[#6B7280] mb-1">
+                                An OTP has been sent to
                             </p>
+                            <p className="text-sm font-bold text-[#3A3A3A] mb-2">
+                                {email}
+                            </p>
+                            <p className="text-xs text-[#6B7280]">
+                                Please enter the 6-digit code below to complete registration.
+                            </p>
+                        </div>
+
+                        {/* OTP Input */}
+                        <div className="relative">
+                            <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400">
+                                lock
+                            </span>
                             <input
                                 type="text"
-                                placeholder="------"
+                                placeholder="Enter OTP"
                                 value={otp}
                                 onChange={(e) => {
                                     const value = e.target.value.replace(/\D/g, '').slice(0, 6);
                                     setOtp(value);
                                 }}
                                 maxLength="6"
-                                className="w-full text-[14px] text-gray-600 focus:outline-none text-center text-xl tracking-widest"
+                                className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm text-center tracking-widest"
                                 disabled={loading}
                                 autoFocus
                             />
                         </div>
-                    </div>
 
-                    {/* Resend OTP / Back */}
-                    <div className="flex items-center justify-between text-sm mb-4">
-                        {otpCountdown > 0 ? (
-                            <p className="text-gray-500">Resend OTP in {otpCountdown}s</p>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={handleResendOTP}
-                                className="text-[#0A84FF] hover:underline font-medium"
-                                disabled={loading}
+                        {/* Resend OTP / Back */}
+                        <div className="flex items-center justify-between text-xs">
+                            {otpCountdown > 0 ? (
+                                <p className="text-[#6B7280]">Resend OTP in {otpCountdown}s</p>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleResendOTP}
+                                    className="text-[#1A80E5] hover:underline font-medium"
+                                    disabled={loading}
+                                >
+                                    Resend OTP
+                                </button>
+                            )}
+                            <Link
+                                to="/usersignup"
+                                className="text-[#6B7280] hover:text-[#1A80E5] font-medium flex items-center gap-1"
                             >
-                                Resend OTP
-                            </button>
-                        )}
-                        <Link
-                            to="/usersignup"
-                            className="text-gray-500 hover:underline font-medium flex items-center gap-1"
+                                <span className="material-symbols-outlined text-sm">arrow_back</span>
+                                Edit Details
+                            </Link>
+                        </div>
+
+                        {/* Verify & Register Button */}
+                        <button
+                            type="submit"
+                            disabled={loading || otp.length !== 6}
+                            className="button-gradient w-full rounded-full py-3 text-sm font-bold text-white shadow-[0_6px_15px_rgba(26,128,229,0.25)] transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
-                            <IoArrowBackOutline className="text-base" /> Edit Details
+                            {loading ? "Verifying..." : "Verify & Register"}
+                        </button>
+                    </form>
+                </main>
+
+                <div className="mt-6 mb-4 text-center">
+                    <p className="text-sm text-[#6B7280]">
+                        Already Registered?{" "}
+                        <Link
+                            to="/userlogin"
+                            className="font-semibold text-[#1A80E5] hover:text-blue-700"
+                        >
+                            Login
                         </Link>
-                    </div>
-
-                    {/* Verify & Register Button */}
-                    <button
-                        onClick={handleVerifyOTP}
-                        disabled={loading || otp.length !== 6}
-                        className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? "Verifying..." : "Verify & Register"}
-                    </button>
+                    </p>
                 </div>
-
-                {/* Login Link */}
-                <p className="text-center text-sm mt-4 text-gray-700">
-                    Already Registered?{" "}
-                    <Link
-                        to="/userlogin"
-                        className="text-[#0A84FF] font-semibold underline"
-                    >
-                        Login
-                    </Link>
-                </p>
             </div>
         </div>
     );

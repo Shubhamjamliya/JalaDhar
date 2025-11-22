@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { sendVendorRegistrationOTP } from "../../../services/vendorAuthApi";
-import { IoArrowBackOutline } from "react-icons/io5";
 
 export default function VendorSignup() {
     const [showPassword, setShowPassword] = useState(false);
@@ -194,21 +193,19 @@ export default function VendorSignup() {
 
 
     return (
-        <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5 py-8">
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-4 py-6 overflow-y-auto">
             <div className="w-full max-w-2xl">
-                {/* Logo */}
-                <div className="text-center mb-6">
-                    <img
-                        src="/src/assets/logo.png"
-                        alt="Jaladhar"
-                        className="w-auto mx-auto mb-2"
-                    />
+                <div className="mt-4 mb-6 flex flex-col items-center">
+                    <span className="material-symbols-outlined icon-gradient !text-5xl">
+                        water_drop
+                    </span>
+                    <h1 className="mt-2 text-3xl font-bold tracking-tighter text-[#3A3A3A]">
+                        JALADHAR
+                    </h1>
+                    <p className="mt-3 text-sm text-[#6B7280] text-center">
+                        Create your vendor account to get started.
+                    </p>
                 </div>
-
-                {/* Title */}
-                <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
-                    Vendor Signup
-                </h2>
 
                 {/* Error Message */}
                 {error && (
@@ -224,10 +221,16 @@ export default function VendorSignup() {
                     </div>
                 )}
 
-                <form onSubmit={handleSendOTP}>
+                <main className="w-full rounded-xl bg-white p-6 shadow-lg">
+                    <form className="space-y-4" onSubmit={handleSendOTP}>
+                        <div className="flex justify-center mb-3">
+                            <h2 className="button-white text-sm font-bold text-gradient px-3 py-1 rounded-full border-2 border-[#1A80E5]">
+                                Vendor Sign Up
+                            </h2>
+                        </div>
                     {/* Section 1: Basic Details */}
-                    <div className="mb-6">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">
+                    <div className="mb-4">
+                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
                             Basic Details
                         </h3>
                         {/* Profile Image Upload */}
@@ -295,8 +298,8 @@ export default function VendorSignup() {
                     </div>
 
                     {/* Section 2: KYC Details */}
-                    <div className="mb-6">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">
+                    <div className="mb-4">
+                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
                             KYC Details
                         </h3>
                         {/* Upload Aadhaar */}
@@ -317,8 +320,8 @@ export default function VendorSignup() {
                     </div>
 
                     {/* Section 3: Education & Experience */}
-                    <div className="mb-6">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">
+                    <div className="mb-4">
+                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
                             Education & Experience
                         </h3>
                         {/* Education/Qualification */}
@@ -344,12 +347,15 @@ export default function VendorSignup() {
                         />
 
                         {/* Experience */}
-                        <div className="mb-4">
-                            <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                                <p className="text-[14px] font-semibold text-[#4A4A4A] mb-2">
-                                    Experience (Years) *
-                                </p>
-                                <div className="flex gap-2">
+                        <div className="mb-3">
+                            <label className="block text-xs font-medium text-[#6B7280] mb-1">
+                                Experience (Years) *
+                            </label>
+                            <div className="flex gap-2">
+                                <div className="relative w-24">
+                                    <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg">
+                                        calendar_today
+                                    </span>
                                     <input
                                         type="number"
                                         name="experience"
@@ -357,16 +363,21 @@ export default function VendorSignup() {
                                         value={formData.experience}
                                         onChange={handleInputChange}
                                         min="0"
-                                        className="w-24 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-[14px] text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                        className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-10 pr-3 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
                                         disabled={loading}
                                     />
+                                </div>
+                                <div className="relative flex-1">
+                                    <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
+                                        description
+                                    </span>
                                     <input
                                         type="text"
                                         name="experienceDetails"
                                         placeholder="Experience details (optional)"
                                         value={formData.experienceDetails}
                                         onChange={handleInputChange}
-                                        className="flex-1 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-[14px] text-gray-600 focus:outline-none focus:border-[#0A84FF]"
+                                        className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
                                         disabled={loading}
                                     />
                                 </div>
@@ -384,8 +395,8 @@ export default function VendorSignup() {
                     </div>
 
                     {/* Section 4: Bank Details */}
-                    <div className="mb-6">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">
+                    <div className="mb-4">
+                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
                             Bank Details *
                         </h3>
                         <InputBox
@@ -444,8 +455,8 @@ export default function VendorSignup() {
                     </div>
 
                     {/* Section 5: Address */}
-                    <div className="mb-6">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">
+                    <div className="mb-4">
+                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
                             Address
                         </h3>
                         {/* Address Fields */}
@@ -493,22 +504,24 @@ export default function VendorSignup() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="button-gradient w-full rounded-full py-3 text-sm font-bold text-white shadow-[0_6px_15px_rgba(26,128,229,0.25)] transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-4"
                         >
-                            {loading ? "Sending OTP..." : "Send OTP"}
+                            {loading ? "Sending OTP..." : "Sign Up"}
                         </button>
-
-                        {/* Login */}
-                        <p className="text-center text-sm mt-4 text-gray-700">
-                            Already Registered?{" "}
-                            <Link
-                                to="/vendorlogin"
-                                className="text-[#0A84FF] font-semibold underline"
-                            >
-                                Login
-                            </Link>
-                        </p>
                     </form>
+                </main>
+
+                <div className="mt-6 mb-4 text-center">
+                    <p className="text-sm text-[#6B7280]">
+                        Already Registered?{" "}
+                        <Link
+                            to="/vendorlogin"
+                            className="font-semibold text-[#1A80E5] hover:text-blue-700"
+                        >
+                            Login
+                        </Link>
+                    </p>
+                </div>
             </div>
         </div>
     );
@@ -573,20 +586,33 @@ function ProfileImageUpload({ file, onChange }) {
     );
 }
 
-function InputBox({ label, name, type, placeholder, value, onChange, disabled }) {
+function InputBox({ label, name, type, placeholder, value, onChange, disabled, icon }) {
+    const getIcon = () => {
+        if (icon) return icon;
+        if (name === "name") return "person";
+        if (name === "email") return "mail";
+        if (name === "phone") return "phone";
+        if (name.includes("address")) return "home";
+        if (name.includes("bank") || name.includes("account") || name.includes("ifsc")) return "account_balance";
+        return "edit";
+    };
+
     return (
-        <div className="mb-4">
-            <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
-                    {label}
-                </p>
+        <div className="mb-3">
+            <label className="block text-xs font-medium text-[#6B7280] mb-1">
+                {label}
+            </label>
+            <div className="relative">
+                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
+                    {getIcon()}
+                </span>
                 <input
                     type={type}
                     name={name}
                     placeholder={placeholder}
                     value={value}
                     onChange={onChange}
-                    className="w-full text-[14px] text-gray-600 focus:outline-none"
+                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
                     disabled={disabled}
                 />
             </div>
@@ -596,28 +622,33 @@ function InputBox({ label, name, type, placeholder, value, onChange, disabled })
 
 function PasswordBox({ label, name, placeholder, value, onChange, show, toggle, disabled }) {
     return (
-        <div className="mb-4">
-            <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
-                    {label}
-                </p>
-                <div className="flex items-center">
-                    <input
-                        type={show ? "text" : "password"}
-                        name={name}
-                        placeholder={placeholder}
-                        value={value}
-                        onChange={onChange}
-                        className="w-[90%] text-[14px] text-gray-600 focus:outline-none"
-                        disabled={disabled}
-                    />
-                    <span
-                        className="text-gray-500 text-sm cursor-pointer ml-2"
-                        onClick={toggle}
-                    >
-                        {show ? "Hide" : "Show"}
+        <div className="mb-3">
+            <label className="block text-xs font-medium text-[#6B7280] mb-1">
+                {label}
+            </label>
+            <div className="relative">
+                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
+                    lock
+                </span>
+                <input
+                    type={show ? "text" : "password"}
+                    name={name}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={onChange}
+                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-12 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                    disabled={disabled}
+                />
+                <button
+                    type="button"
+                    className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    onClick={toggle}
+                    disabled={disabled}
+                >
+                    <span className="material-symbols-outlined text-xl">
+                        {show ? "visibility_off" : "visibility"}
                     </span>
-                </div>
+                </button>
             </div>
         </div>
     );
@@ -625,13 +656,16 @@ function PasswordBox({ label, name, placeholder, value, onChange, show, toggle, 
 
 function FileBox({ label, onChange, file, disabled }) {
     return (
-        <div className="mb-4">
-            <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
-                    {label}
-                </p>
+        <div className="mb-3">
+            <label className="block text-xs font-medium text-[#6B7280] mb-1">
+                {label}
+            </label>
+            <div className="relative">
+                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
+                    upload_file
+                </span>
                 {file && (
-                    <p className="text-xs text-green-600 mb-2">
+                    <p className="text-xs text-green-600 mb-2 pl-12">
                         ✓ {file.name}
                     </p>
                 )}
@@ -639,7 +673,7 @@ function FileBox({ label, onChange, file, disabled }) {
                     type="file"
                     accept="image/*"
                     onChange={onChange}
-                    className="w-full text-[14px] text-gray-600 focus:outline-none"
+                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
                     disabled={disabled}
                 />
             </div>
@@ -649,13 +683,16 @@ function FileBox({ label, onChange, file, disabled }) {
 
 function MultiFileBox({ label, files, onChange, onRemove, disabled }) {
     return (
-        <div className="mb-4">
-            <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
-                    {label}
-                </p>
+        <div className="mb-3">
+            <label className="block text-xs font-medium text-[#6B7280] mb-1">
+                {label}
+            </label>
+            <div className="relative">
+                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
+                    upload_file
+                </span>
                 {files && files.length > 0 && (
-                    <div className="mb-2 space-y-1">
+                    <div className="mb-2 space-y-1 pl-12">
                         {files.map((file, index) => (
                             <div key={index} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
                                 <span className="text-gray-600">{file.name}</span>
@@ -676,10 +713,10 @@ function MultiFileBox({ label, files, onChange, onRemove, disabled }) {
                     accept="image/*"
                     multiple
                     onChange={onChange}
-                    className="w-full text-[14px] text-gray-600 focus:outline-none"
+                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
                     disabled={disabled}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-1 pl-12">
                     You can select multiple files
                 </p>
             </div>
