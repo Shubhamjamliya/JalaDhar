@@ -35,7 +35,11 @@ api.interceptors.request.use(
       else if (url.startsWith('/vendors/')) {
         token = localStorage.getItem('vendorAccessToken');
       }
-      // User routes, booking routes, and rating routes - use user token
+      // Vendor-specific rating route - use vendor token
+      else if (url === '/ratings/my-ratings' || url.startsWith('/ratings/my-ratings')) {
+        token = localStorage.getItem('vendorAccessToken');
+      }
+      // User routes, booking routes, and other rating routes - use user token
       else if (url.startsWith('/users/') || url.startsWith('/bookings/') || url.startsWith('/ratings/')) {
         token = localStorage.getItem('accessToken');
       }

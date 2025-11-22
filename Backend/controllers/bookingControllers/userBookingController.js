@@ -5,6 +5,7 @@ const Payment = require('../../models/Payment');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { createOrder } = require('../../services/razorpayService');
 const { sendBookingConfirmationEmail, sendBookingStatusUpdateEmail } = require('../../services/emailService');
+const { uploadToCloudinary } = require('../../services/cloudinaryService');
 
 /**
  * Get available vendors for a service
@@ -138,16 +139,9 @@ const createBooking = async (req, res) => {
     const advanceAmount = totalAmount * 0.4;
     const remainingAmount = totalAmount * 0.6;
 
-    // ============================================
-    // FAKE PAYMENT MODE CHECK (FOR TESTING)
-    // ============================================
-    // Set FAKE_PAYMENT_MODE=true in .env to enable fake payment
-    // When removing fake payment, delete this entire section and always create Razorpay orders
-    const useFakePayment = process.env.FAKE_PAYMENT_MODE === 'true';
-    let razorpayOrder = null;
-
-    if (!useFakePayment) {
-      // Real Razorpay flow - create order
+    // Create Razorpay order for advance payment
+    let razorpayOrder;
+    try {
       razorpayOrder = await createOrder(advanceAmount, 'INR', {
         receipt: `advance_${Date.now()}`,
         notes: {
@@ -156,17 +150,18 @@ const createBooking = async (req, res) => {
           vendorId: vendorId.toString()
         }
       });
-    } else {
-      // Fake payment mode - create fake order object for consistency
-      razorpayOrder = {
-        success: true,
-        orderId: `fake_order_${Date.now()}`,
-        amount: Math.round(advanceAmount * 100), // In paise
-        currency: 'INR',
-        receipt: `advance_${Date.now()}`,
-        status: 'created',
-        createdAt: Date.now()
-      };
+      
+      // Validate order creation
+      if (!razorpayOrder || !razorpayOrder.orderId) {
+        throw new Error('Failed to create Razorpay order');
+      }
+    } catch (razorpayError) {
+      console.error('Razorpay order creation error:', razorpayError);
+      return res.status(500).json({
+        success: false,
+        message: 'Payment service unavailable. Please try again later or contact support.',
+        error: razorpayError.message
+      });
     }
 
     // Create booking
@@ -234,9 +229,7 @@ const createBooking = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: useFakePayment 
-        ? 'Booking created successfully. Use fake payment endpoint to complete payment.'
-        : 'Booking created successfully. Please complete advance payment.',
+      message: 'Booking created successfully. Please complete advance payment.',
       data: {
         booking: {
           id: booking._id,
@@ -251,11 +244,9 @@ const createBooking = async (req, res) => {
           remainingAmount,
           totalAmount,
           razorpayOrderId: razorpayOrder.orderId,
-          keyId: useFakePayment ? null : process.env.RAZORPAY_KEY_ID,
-          useFakePayment // Flag to indicate fake payment mode
+          keyId: process.env.RAZORPAY_KEY_ID
         },
-        // Razorpay order details (null in fake mode)
-        razorpayOrder: useFakePayment ? null : {
+        razorpayOrder: {
           id: razorpayOrder.orderId,
           amount: razorpayOrder.amount,
           currency: razorpayOrder.currency
@@ -439,7 +430,7 @@ const uploadBorewellResult = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const userId = req.userId;
-    const { status, images } = req.body; // status: 'SUCCESS' or 'FAILED'
+    const { status } = req.body; // status: 'SUCCESS' or 'FAILED'
 
     if (!['SUCCESS', 'FAILED'].includes(status)) {
       return res.status(400).json({
@@ -461,10 +452,23 @@ const uploadBorewellResult = async (req, res) => {
       });
     }
 
+    // Handle file uploads (images)
+    const borewellImages = [];
+    if (req.files && req.files.images && req.files.images.length > 0) {
+      for (const file of req.files.images) {
+        const result = await uploadToCloudinary(file.buffer, 'borewell-results/images');
+        borewellImages.push({
+          url: result.secure_url,
+          publicId: result.public_id,
+          uploadedAt: new Date()
+        });
+      }
+    }
+
     // Update borewell result
     booking.borewellResult = {
       status,
-      images: images || [],
+      images: borewellImages,
       uploadedAt: new Date(),
       uploadedBy: userId
     };

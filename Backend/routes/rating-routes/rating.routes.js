@@ -4,10 +4,11 @@ const { body } = require('express-validator');
 const {
   submitRating,
   getVendorRatings,
+  getMyRatings,
   getBookingRating
 } = require('../../controllers/ratingControllers/ratingController');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isUser } = require('../../middleware/roleMiddleware');
+const { isUser, isVendor } = require('../../middleware/roleMiddleware');
 
 // Validation rules
 const submitRatingValidation = [
@@ -21,6 +22,7 @@ const submitRatingValidation = [
 // Routes
 router.post('/:bookingId', authenticate, isUser, submitRatingValidation, submitRating);
 router.get('/booking/:bookingId', authenticate, isUser, getBookingRating);
+router.get('/my-ratings', authenticate, isVendor, getMyRatings); // Vendor's own ratings
 router.get('/vendor/:vendorId', getVendorRatings); // Public route
 
 module.exports = router;

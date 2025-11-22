@@ -49,8 +49,15 @@ const verifyAdvancePayment = async (req, res) => {
       });
     }
 
-    // Get payment details from Razorpay
-    const paymentDetails = await getPaymentDetails(razorpayPaymentId);
+    // Get payment details from Razorpay (optional - signature verification is primary)
+    let paymentDetails = null;
+    try {
+      paymentDetails = await getPaymentDetails(razorpayPaymentId);
+    } catch (error) {
+      console.error('Error fetching payment details from Razorpay:', error);
+      // Continue with verification - signature verification is the most important check
+      // If we can't fetch details, we'll still proceed if signature is valid
+    }
 
     // Update booking payment
     booking.payment.advancePaid = true;
@@ -342,111 +349,9 @@ const handlePaymentFailed = async (paymentData) => {
   }
 };
 
-/**
- * ============================================
- * FAKE PAYMENT FUNCTIONALITY (FOR TESTING)
- * ============================================
- * This section can be easily removed when switching to production.
- * Simply delete the fakeAdvancePayment function and its route.
- */
-
-/**
- * Fake advance payment (for testing/development)
- * Bypasses Razorpay and directly marks payment as successful
- */
-const fakeAdvancePayment = async (req, res) => {
-  try {
-    const { bookingId } = req.body;
-
-    if (!bookingId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Booking ID is required'
-      });
-    }
-
-    // Find booking
-    const booking = await Booking.findById(bookingId)
-      .populate('user', 'name email')
-      .populate('vendor', 'name email')
-      .populate('service', 'name price');
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found'
-      });
-    }
-
-    // Check if already paid
-    if (booking.payment.advancePaid) {
-      return res.status(400).json({
-        success: false,
-        message: 'Advance payment already processed'
-      });
-    }
-
-    // Update booking payment (fake payment - no Razorpay verification)
-    booking.payment.advancePaid = true;
-    booking.payment.advanceRazorpayPaymentId = `fake_payment_${Date.now()}`;
-    booking.payment.advancePaidAt = new Date();
-    booking.payment.status = PAYMENT_STATUS.SUCCESS;
-    await booking.save();
-
-    // Update payment record
-    const payment = await Payment.findOne({
-      booking: bookingId,
-      paymentType: 'ADVANCE'
-    });
-
-    if (payment) {
-      payment.status = PAYMENT_STATUS.SUCCESS;
-      payment.razorpayPaymentId = `fake_payment_${Date.now()}`;
-      payment.paidAt = new Date();
-      await payment.save();
-    }
-
-    // Send confirmation email
-    try {
-      await sendPaymentConfirmationEmail({
-        email: booking.user.email,
-        name: booking.user.name,
-        bookingId: booking._id.toString(),
-        amount: booking.payment.advanceAmount,
-        paymentType: 'Advance Payment (Test Mode)'
-      });
-    } catch (emailError) {
-      console.error('Email notification error:', emailError);
-    }
-
-    res.json({
-      success: true,
-      message: 'Fake advance payment processed successfully',
-      data: {
-        booking: {
-          id: booking._id,
-          status: booking.status,
-          payment: {
-            advancePaid: booking.payment.advancePaid,
-            remainingAmount: booking.payment.remainingAmount
-          }
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Fake advance payment error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process fake payment',
-      error: error.message
-    });
-  }
-};
-
 module.exports = {
   verifyAdvancePayment,
   verifyRemainingPayment,
-  fakeAdvancePayment, // FAKE PAYMENT - Can be removed later
   handleWebhook
 };
 

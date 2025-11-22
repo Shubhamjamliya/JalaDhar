@@ -11,8 +11,9 @@ import {
     IoReceiptOutline,
     IoSearchOutline,
     IoFilterOutline,
+    IoCarOutline,
 } from "react-icons/io5";
-import { getAllPayments, getPaymentStatistics, getAllBookings, processVendorSettlement } from "../../../services/adminApi";
+import { getAllPayments, getPaymentStatistics, getAllBookings, processVendorSettlement, getTravelChargesRequests, approveTravelCharges, rejectTravelCharges } from "../../../services/adminApi";
 import { useTheme } from "../../../contexts/ThemeContext";
 
 export default function AdminPayments() {
@@ -35,6 +36,15 @@ export default function AdminPayments() {
     const [userPayments, setUserPayments] = useState([]);
     const [vendorPayments, setVendorPayments] = useState([]);
     const [settlements, setSettlements] = useState([]);
+    const [travelChargesRequests, setTravelChargesRequests] = useState([]);
+    const [travelChargesPagination, setTravelChargesPagination] = useState({
+        currentPage: 1,
+        totalPages: 1,
+        total: 0,
+    });
+    const [travelChargesFilter, setTravelChargesFilter] = useState({
+        status: "PENDING",
+    });
     const [userPagination, setUserPagination] = useState({
         currentPage: 1,
         totalPages: 1,
@@ -58,7 +68,7 @@ export default function AdminPayments() {
 
     useEffect(() => {
         loadPaymentData();
-    }, [activeTab, userFilters, vendorFilters, userPagination.currentPage, vendorPagination.currentPage]);
+    }, [activeTab, userFilters, vendorFilters, userPagination.currentPage, vendorPagination.currentPage, travelChargesFilter, travelChargesPagination.currentPage]);
 
     const loadPaymentData = async () => {
         try {
@@ -113,6 +123,17 @@ export default function AdminPayments() {
                     );
                     setSettlements(pendingSettlements);
                 }
+            } else if (activeTab === "travel-charges") {
+                const params = {
+                    page: travelChargesPagination.currentPage,
+                    limit: 10,
+                    ...(travelChargesFilter.status && { status: travelChargesFilter.status }),
+                };
+                const response = await getTravelChargesRequests(params);
+                if (response.success) {
+                    setTravelChargesRequests(response.data.requests);
+                    setTravelChargesPagination(response.data.pagination);
+                }
             }
         } catch (err) {
             console.error("Payment data error:", err);
@@ -136,6 +157,45 @@ export default function AdminPayments() {
         } catch (err) {
             console.error("Settlement error:", err);
             alert("Failed to process settlement");
+        }
+    };
+
+    const handleApproveTravelCharges = async (bookingId) => {
+        if (!window.confirm("Are you sure you want to approve this travel charges request?")) {
+            return;
+        }
+
+        try {
+            const response = await approveTravelCharges(bookingId);
+            if (response.success) {
+                alert("Travel charges request approved successfully!");
+                loadPaymentData();
+            }
+        } catch (err) {
+            console.error("Approve travel charges error:", err);
+            alert(err.response?.data?.message || "Failed to approve travel charges request");
+        }
+    };
+
+    const handleRejectTravelCharges = async (bookingId) => {
+        const rejectionReason = window.prompt("Please provide a reason for rejection (minimum 10 characters):");
+        
+        if (!rejectionReason || rejectionReason.trim().length < 10) {
+            if (rejectionReason !== null) {
+                alert("Rejection reason must be at least 10 characters long.");
+            }
+            return;
+        }
+
+        try {
+            const response = await rejectTravelCharges(bookingId, { rejectionReason: rejectionReason.trim() });
+            if (response.success) {
+                alert("Travel charges request rejected successfully!");
+                loadPaymentData();
+            }
+        } catch (err) {
+            console.error("Reject travel charges error:", err);
+            alert(err.response?.data?.message || "Failed to reject travel charges request");
         }
     };
 
@@ -242,6 +302,21 @@ export default function AdminPayments() {
                         {stats.pendingSettlements > 0 && (
                             <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
                                 {stats.pendingSettlements}
+                            </span>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("travel-charges")}
+                        className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${
+                            activeTab === "travel-charges"
+                                ? "border-purple-500 text-purple-600"
+                                : "border-transparent text-gray-600 hover:text-gray-800"
+                        }`}
+                    >
+                        Travel Charges
+                        {travelChargesRequests.filter(r => r.travelChargesRequest?.status === "PENDING").length > 0 && (
+                            <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                                {travelChargesRequests.filter(r => r.travelChargesRequest?.status === "PENDING").length}
                             </span>
                         )}
                     </button>
@@ -767,6 +842,148 @@ export default function AdminPayments() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Travel Charges Tab */}
+            {activeTab === "travel-charges" && (
+                <div>
+                    {/* Filter */}
+                    <div className="mb-6 flex gap-4">
+                        <select
+                            value={travelChargesFilter.status}
+                            onChange={(e) => setTravelChargesFilter({ ...travelChargesFilter, status: e.target.value })}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                            <option value="">All Status</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REJECTED">Rejected</option>
+                        </select>
+                    </div>
+
+                    {loading ? (
+                        <div className="p-8 text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                            <p className="text-gray-600">Loading travel charges requests...</p>
+                        </div>
+                    ) : travelChargesRequests.length === 0 ? (
+                        <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-200">
+                            <IoCarOutline className="text-4xl text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-600 font-semibold">No travel charges requests</p>
+                            <p className="text-sm text-gray-500 mt-2">No travel charges requests found</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {travelChargesRequests.map((request) => (
+                                <div
+                                    key={request.bookingId}
+                                    className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                                                    <IoCarOutline className="text-2xl text-purple-600" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-gray-800">
+                                                        Booking #{request.bookingId?.toString().slice(-8)}
+                                                    </h3>
+                                                    <p className="text-sm text-gray-500">
+                                                        {request.vendor?.name || "Vendor"} → {request.user?.name || "User"}
+                                                    </p>
+                                                </div>
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                                    request.travelChargesRequest?.status === "APPROVED"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : request.travelChargesRequest?.status === "REJECTED"
+                                                        ? "bg-red-100 text-red-700"
+                                                        : "bg-yellow-100 text-yellow-700"
+                                                }`}>
+                                                    {request.travelChargesRequest?.status || "PENDING"}
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="bg-purple-50 rounded-lg p-3">
+                                                    <p className="text-xs text-gray-600 mb-1">Requested Amount</p>
+                                                    <p className="text-lg font-bold text-purple-700">
+                                                        {formatCurrency(request.travelChargesRequest?.amount || 0)}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-gray-50 rounded-lg p-3">
+                                                    <p className="text-xs text-gray-600 mb-1">Vendor</p>
+                                                    <p className="text-sm font-semibold text-gray-800">{request.vendor?.name || "N/A"}</p>
+                                                    <p className="text-xs text-gray-500">{request.vendor?.email || ""}</p>
+                                                </div>
+                                                <div className="bg-blue-50 rounded-lg p-3">
+                                                    <p className="text-xs text-gray-600 mb-1">User</p>
+                                                    <p className="text-sm font-semibold text-gray-800">{request.user?.name || "N/A"}</p>
+                                                    <p className="text-xs text-gray-500">{request.user?.email || ""}</p>
+                                                </div>
+                                            </div>
+                                            {request.travelChargesRequest?.reason && (
+                                                <div className="mt-4 bg-gray-50 rounded-lg p-3">
+                                                    <p className="text-xs text-gray-600 mb-1">Reason</p>
+                                                    <p className="text-sm text-gray-800">{request.travelChargesRequest.reason}</p>
+                                                </div>
+                                            )}
+                                            {request.travelChargesRequest?.status === "REJECTED" && request.travelChargesRequest?.rejectionReason && (
+                                                <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
+                                                    <p className="text-xs text-red-700 mb-1 font-semibold">Rejection Reason</p>
+                                                    <p className="text-sm text-red-800">{request.travelChargesRequest.rejectionReason}</p>
+                                                </div>
+                                            )}
+                                            {request.travelChargesRequest?.requestedAt && (
+                                                <p className="text-xs text-gray-500 mt-3">
+                                                    Requested: {new Date(request.travelChargesRequest.requestedAt).toLocaleString()}
+                                                </p>
+                                            )}
+                                        </div>
+                                        {request.travelChargesRequest?.status === "PENDING" && (
+                                            <div className="flex flex-col gap-2">
+                                                <button
+                                                    onClick={() => handleApproveTravelCharges(request.bookingId)}
+                                                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold text-sm whitespace-nowrap shadow-md"
+                                                >
+                                                    Approve
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRejectTravelCharges(request.bookingId)}
+                                                    className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold text-sm whitespace-nowrap shadow-md"
+                                                >
+                                                    Reject
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            
+                            {/* Pagination */}
+                            {travelChargesPagination.totalPages > 1 && (
+                                <div className="flex items-center justify-between mt-6">
+                                    <button
+                                        onClick={() => setTravelChargesPagination({ ...travelChargesPagination, currentPage: travelChargesPagination.currentPage - 1 })}
+                                        disabled={travelChargesPagination.currentPage === 1}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Previous
+                                    </button>
+                                    <span className="text-sm text-gray-600">
+                                        Page {travelChargesPagination.currentPage} of {travelChargesPagination.totalPages}
+                                    </span>
+                                    <button
+                                        onClick={() => setTravelChargesPagination({ ...travelChargesPagination, currentPage: travelChargesPagination.currentPage + 1 })}
+                                        disabled={travelChargesPagination.currentPage === travelChargesPagination.totalPages}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

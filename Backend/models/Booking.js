@@ -178,6 +178,30 @@ const bookingSchema = new mongoose.Schema({
       ref: 'Admin'
     }
   },
+  // Travel charges request
+  travelChargesRequest: {
+    amount: {
+      type: Number,
+      min: [0, 'Travel charges cannot be negative']
+    },
+    reason: String,
+    status: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: null
+    },
+    requestedAt: Date,
+    requestedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Vendor'
+    },
+    reviewedAt: Date,
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin'
+    },
+    rejectionReason: String
+  },
   // Invoice
   invoice: {
     invoiceNumber: String,

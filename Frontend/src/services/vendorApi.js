@@ -114,6 +114,27 @@ export const markBookingAsCompleted = async (bookingId) => {
 };
 
 /**
+ * Request travel charges for a booking
+ * @param {string} bookingId
+ * @param {Object} data - { amount, reason }
+ * @returns {Promise}
+ */
+export const requestTravelCharges = async (bookingId, data) => {
+  const response = await api.post(`/vendors/bookings/${bookingId}/travel-charges`, data);
+  return response.data;
+};
+
+/**
+ * Get vendor's own ratings and reviews
+ * @param {Object} params - { page, limit, sortBy, sortOrder }
+ * @returns {Promise}
+ */
+export const getMyRatings = async (params = {}) => {
+  const response = await api.get('/ratings/my-ratings', { params });
+  return response.data;
+};
+
+/**
  * Schedule/Update visit time
  * @param {string} bookingId
  * @param {Object} scheduleData - { scheduledDate, scheduledTime }

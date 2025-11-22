@@ -18,7 +18,7 @@ import {
     IoConstructOutline,
     IoDocumentTextOutline,
 } from "react-icons/io5";
-import { getBookingDetails, downloadInvoice, cancelBooking, submitRating, getBookingRating } from "../../../services/bookingApi";
+import { getBookingDetails, downloadInvoice, cancelBooking, submitRating, getBookingRating, uploadBorewellResult } from "../../../services/bookingApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import SuccessMessage from "../../shared/components/SuccessMessage";
@@ -40,6 +40,12 @@ export default function UserBookingDetails() {
         review: ""
     });
     const [submittingRating, setSubmittingRating] = useState(false);
+    const [showBorewellModal, setShowBorewellModal] = useState(false);
+    const [borewellData, setBorewellData] = useState({
+        status: "",
+        images: []
+    });
+    const [uploadingBorewell, setUploadingBorewell] = useState(false);
 
     useEffect(() => {
         loadBookingDetails();
@@ -142,6 +148,55 @@ export default function UserBookingDetails() {
                 review: ""
             });
             setShowRatingModal(true);
+        }
+    };
+
+    const handleBorewellImageUpload = (e) => {
+        const files = Array.from(e.target.files);
+        const newImages = files.map((file) => ({
+            file,
+            preview: URL.createObjectURL(file),
+        }));
+        setBorewellData({
+            ...borewellData,
+            images: [...borewellData.images, ...newImages],
+        });
+    };
+
+    const handleRemoveBorewellImage = (index) => {
+        const newImages = borewellData.images.filter((_, i) => i !== index);
+        setBorewellData({ ...borewellData, images: newImages });
+    };
+
+    const handleSubmitBorewellResult = async () => {
+        if (!borewellData.status) {
+            setError("Please select a result status (Success or Failed)");
+            return;
+        }
+
+        try {
+            setUploadingBorewell(true);
+            setError("");
+            setSuccess("");
+
+            const response = await uploadBorewellResult(bookingId, {
+                status: borewellData.status,
+                images: borewellData.images.map((img) => img.file),
+            });
+
+            if (response.success) {
+                setSuccess("Borewell result uploaded successfully!");
+                setShowBorewellModal(false);
+                setBorewellData({ status: "", images: [] });
+                await loadBookingDetails();
+            } else {
+                setError(response.message || "Failed to upload borewell result");
+            }
+        } catch (err) {
+            console.error("Upload borewell result error:", err);
+            setError(err.response?.data?.message || "Failed to upload borewell result");
+        } finally {
+            setUploadingBorewell(false);
         }
     };
 
@@ -447,6 +502,54 @@ export default function UserBookingDetails() {
                     </div>
                 )}
 
+                {/* Borewell Result Section */}
+                {booking.status === "COMPLETED" && !booking.borewellResult && (
+                    <div className="bg-white rounded-[12px] p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-6">
+                        <h2 className="text-lg font-bold text-gray-800 mb-3">Borewell Result</h2>
+                        <p className="text-sm text-gray-600 mb-4">
+                            After digging the borewell, please upload photos and mark the result as Success or Failed.
+                        </p>
+                        <button
+                            onClick={() => setShowBorewellModal(true)}
+                            className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors flex items-center justify-center gap-2"
+                        >
+                            <IoImageOutline className="text-xl" />
+                            Upload Borewell Result
+                        </button>
+                    </div>
+                )}
+
+                {/* Display Borewell Result */}
+                {booking.borewellResult && (
+                    <div className="bg-white rounded-[12px] p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-gray-800">Borewell Result</h2>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                booking.borewellResult.status === "SUCCESS" 
+                                    ? "bg-green-100 text-green-700" 
+                                    : "bg-red-100 text-red-700"
+                            }`}>
+                                {booking.borewellResult.status}
+                            </span>
+                        </div>
+                        {booking.borewellResult.images && booking.borewellResult.images.length > 0 && (
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                {booking.borewellResult.images.map((img, index) => (
+                                    <img
+                                        key={index}
+                                        src={img.url || img}
+                                        alt={`Borewell result ${index + 1}`}
+                                        className="w-full h-32 object-cover rounded-[8px]"
+                                    />
+                                ))}
+                            </div>
+                        )}
+                        {booking.borewellResult.status === "PENDING" && (
+                            <p className="text-sm text-gray-600 italic">Awaiting admin approval</p>
+                        )}
+                    </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-2 mb-6">
                     {booking.status === "COMPLETED" && (
@@ -474,12 +577,12 @@ export default function UserBookingDetails() {
                         </>
                     )}
 
-                    {booking.status === "AWAITING_PAYMENT" && (
+                    {booking.status === "AWAITING_PAYMENT" && !booking.payment?.remainingPaid && (
                         <button
                             onClick={() => navigate(`/user/booking/${bookingId}/payment`)}
                             className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors"
                         >
-                            Pay Remaining Amount
+                            Pay Remaining Amount ({formatAmount(booking.payment?.remainingAmount || 0)})
                         </button>
                     )}
 
@@ -523,6 +626,136 @@ export default function UserBookingDetails() {
                                         />
                                     ))}
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Borewell Result Upload Modal */}
+                {showBorewellModal && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                        onClick={() => !uploadingBorewell && setShowBorewellModal(false)}
+                    >
+                        <div
+                            className="bg-white rounded-[16px] w-full max-w-lg max-h-[90vh] flex flex-col shadow-xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+                                <h2 className="text-xl font-bold text-gray-800">Upload Borewell Result</h2>
+                                <button
+                                    onClick={() => !uploadingBorewell && setShowBorewellModal(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                    disabled={uploadingBorewell}
+                                >
+                                    <IoCloseOutline className="text-2xl text-gray-600" />
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-5">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                            Result Status <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="flex gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setBorewellData({ ...borewellData, status: "SUCCESS" })}
+                                                disabled={uploadingBorewell}
+                                                className={`flex-1 h-12 rounded-[8px] font-semibold transition-colors flex items-center justify-center gap-2 ${
+                                                    borewellData.status === "SUCCESS"
+                                                        ? "bg-green-500 text-white"
+                                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                                }`}
+                                            >
+                                                <IoCheckmarkCircleOutline className="text-xl" />
+                                                Success
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setBorewellData({ ...borewellData, status: "FAILED" })}
+                                                disabled={uploadingBorewell}
+                                                className={`flex-1 h-12 rounded-[8px] font-semibold transition-colors flex items-center justify-center gap-2 ${
+                                                    borewellData.status === "FAILED"
+                                                        ? "bg-red-500 text-white"
+                                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                                }`}
+                                            >
+                                                <IoCloseCircleOutline className="text-xl" />
+                                                Failed
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                            Upload Photos (Optional)
+                                        </label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleBorewellImageUpload}
+                                            disabled={uploadingBorewell}
+                                            className="hidden"
+                                            id="borewell-images"
+                                        />
+                                        <label
+                                            htmlFor="borewell-images"
+                                            className="block w-full h-32 border-2 border-dashed border-gray-300 rounded-[8px] flex items-center justify-center cursor-pointer hover:border-[#0A84FF] transition-colors"
+                                        >
+                                            <div className="text-center">
+                                                <IoImageOutline className="text-3xl text-gray-400 mx-auto mb-2" />
+                                                <p className="text-sm text-gray-600">Click to upload images</p>
+                                                <p className="text-xs text-gray-500 mt-1">Max 10 images</p>
+                                            </div>
+                                        </label>
+                                        {borewellData.images.length > 0 && (
+                                            <div className="grid grid-cols-3 gap-2 mt-3">
+                                                {borewellData.images.map((img, index) => (
+                                                    <div key={index} className="relative">
+                                                        <img
+                                                            src={img.preview}
+                                                            alt={`Preview ${index + 1}`}
+                                                            className="w-full h-24 object-cover rounded-[8px]"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveBorewellImage(index)}
+                                                            disabled={uploadingBorewell}
+                                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                                        >
+                                                            <IoCloseOutline className="text-sm" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex gap-3 p-5 border-t border-gray-200">
+                                <button
+                                    onClick={() => setShowBorewellModal(false)}
+                                    className="flex-1 h-10 bg-gray-200 text-gray-700 text-sm font-medium rounded-[8px] hover:bg-gray-300 transition-colors"
+                                    disabled={uploadingBorewell}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSubmitBorewellResult}
+                                    disabled={uploadingBorewell || !borewellData.status}
+                                    className="flex-1 h-10 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {uploadingBorewell ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            Uploading...
+                                        </>
+                                    ) : (
+                                        "Upload Result"
+                                    )}
+                                </button>
                             </div>
                         </div>
                     </div>

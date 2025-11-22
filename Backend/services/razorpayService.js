@@ -16,8 +16,19 @@ const razorpay = new Razorpay({
  */
 const createOrder = async (amount, currency = 'INR', options = {}) => {
   try {
+    // Validate Razorpay credentials
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      throw new Error('Razorpay credentials not configured');
+    }
+
+    // Validate amount
+    const amountInPaise = Math.round(amount * 100);
+    if (amountInPaise < 100) {
+      throw new Error('Minimum payment amount is ₹1.00');
+    }
+
     const orderOptions = {
-      amount: Math.round(amount * 100), // Convert to paise
+      amount: amountInPaise, // Convert to paise
       currency: currency,
       receipt: options.receipt || `receipt_${Date.now()}`,
       notes: options.notes || {},
@@ -25,6 +36,11 @@ const createOrder = async (amount, currency = 'INR', options = {}) => {
     };
 
     const order = await razorpay.orders.create(orderOptions);
+    
+    if (!order || !order.id) {
+      throw new Error('Invalid order response from Razorpay');
+    }
+
     return {
       success: true,
       orderId: order.id,
@@ -36,7 +52,14 @@ const createOrder = async (amount, currency = 'INR', options = {}) => {
     };
   } catch (error) {
     console.error('Razorpay create order error:', error);
-    throw new Error(`Failed to create Razorpay order: ${error.message}`);
+    // Provide more detailed error message
+    if (error.statusCode === 401) {
+      throw new Error('Invalid Razorpay credentials. Please check your API keys.');
+    } else if (error.statusCode === 400) {
+      throw new Error(`Invalid payment request: ${error.error?.description || error.message}`);
+    } else {
+      throw new Error(`Failed to create Razorpay order: ${error.message || 'Unknown error'}`);
+    }
   }
 };
 

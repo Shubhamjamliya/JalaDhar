@@ -165,6 +165,97 @@ const getVendorRatings = async (req, res) => {
 };
 
 /**
+ * Get vendor's own ratings (authenticated vendor endpoint)
+ */
+const getMyRatings = async (req, res) => {
+  try {
+    const vendorId = req.userId; // Vendor ID from authentication
+    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const sort = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    const [ratings, total] = await Promise.all([
+      Rating.find({ vendor: vendorId })
+        .populate('user', 'name profilePicture')
+        .populate('service', 'name')
+        .populate('booking', 'scheduledDate scheduledTime')
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Rating.countDocuments({ vendor: vendorId })
+    ]);
+
+    // Calculate rating statistics
+    const allRatings = await Rating.find({ vendor: vendorId }).select('overallRating ratings isSuccess');
+    const stats = {
+      totalRatings: allRatings.length,
+      averageRating: 0,
+      ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+      categoryAverages: {
+        accuracy: 0,
+        professionalism: 0,
+        behavior: 0,
+        visitTiming: 0
+      },
+      successCount: 0,
+      failureCount: 0
+    };
+
+    if (allRatings.length > 0) {
+      // Calculate averages
+      const sumOverall = allRatings.reduce((sum, r) => sum + r.overallRating, 0);
+      stats.averageRating = Math.round((sumOverall / allRatings.length) * 10) / 10;
+
+      // Rating distribution
+      allRatings.forEach(r => {
+        const rating = Math.floor(r.overallRating);
+        if (rating >= 1 && rating <= 5) {
+          stats.ratingDistribution[rating]++;
+        }
+      });
+
+      // Category averages
+      const sumAccuracy = allRatings.reduce((sum, r) => sum + (r.ratings?.accuracy || 0), 0);
+      const sumProfessionalism = allRatings.reduce((sum, r) => sum + (r.ratings?.professionalism || 0), 0);
+      const sumBehavior = allRatings.reduce((sum, r) => sum + (r.ratings?.behavior || 0), 0);
+      const sumVisitTiming = allRatings.reduce((sum, r) => sum + (r.ratings?.visitTiming || 0), 0);
+
+      stats.categoryAverages.accuracy = Math.round((sumAccuracy / allRatings.length) * 10) / 10;
+      stats.categoryAverages.professionalism = Math.round((sumProfessionalism / allRatings.length) * 10) / 10;
+      stats.categoryAverages.behavior = Math.round((sumBehavior / allRatings.length) * 10) / 10;
+      stats.categoryAverages.visitTiming = Math.round((sumVisitTiming / allRatings.length) * 10) / 10;
+
+      // Success/failure counts
+      stats.successCount = allRatings.filter(r => r.isSuccess === true).length;
+      stats.failureCount = allRatings.filter(r => r.isSuccess === false).length;
+    }
+
+    res.json({
+      success: true,
+      message: 'Ratings retrieved successfully',
+      data: {
+        ratings,
+        stats,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / parseInt(limit)),
+          totalRatings: total
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get my ratings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve ratings',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Get booking rating (if exists)
  */
 const getBookingRating = async (req, res) => {
@@ -215,6 +306,7 @@ const getBookingRating = async (req, res) => {
 module.exports = {
   submitRating,
   getVendorRatings,
+  getMyRatings,
   getBookingRating
 };
 

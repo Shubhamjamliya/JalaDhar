@@ -271,13 +271,13 @@ const markVisitedAndUploadReport = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       vendor: vendorId,
-      status: BOOKING_STATUS.ACCEPTED
+      status: BOOKING_STATUS.VISITED
     }).populate('user', 'name email');
 
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found or not eligible for visit'
+        message: 'Booking not found or not eligible for report upload. Please mark as visited first.'
       });
     }
 
@@ -316,9 +316,7 @@ const markVisitedAndUploadReport = async (req, res) => {
       }
     }
 
-    // Update booking with report
-    booking.status = BOOKING_STATUS.VISITED;
-    booking.visitedAt = new Date();
+    // Update booking with report (status is already VISITED)
     booking.report = {
       waterFound: waterFound === 'true' || waterFound === true,
       machineReadings: machineReadings ? JSON.parse(machineReadings) : {},
@@ -372,6 +370,68 @@ const markVisitedAndUploadReport = async (req, res) => {
 };
 
 /**
+ * Mark booking as completed
+ * Note: This is typically done automatically after user pays remaining amount,
+ * but can be used manually if needed for AWAITING_PAYMENT bookings
+ */
+const markAsCompleted = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const vendorId = req.userId;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      vendor: vendorId,
+      status: { $in: [BOOKING_STATUS.VISITED, BOOKING_STATUS.AWAITING_PAYMENT, BOOKING_STATUS.REPORT_UPLOADED] }
+    }).populate('user', 'name email');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or not eligible for completion. Booking must be in VISITED, REPORT_UPLOADED, or AWAITING_PAYMENT status.'
+      });
+    }
+
+    // Update booking status
+    booking.status = BOOKING_STATUS.COMPLETED;
+    booking.completedAt = new Date();
+    await booking.save();
+
+    // Send notification to user
+    try {
+      await sendBookingStatusUpdateEmail({
+        email: booking.user.email,
+        name: booking.user.name,
+        bookingId: booking._id.toString(),
+        status: 'COMPLETED',
+        message: 'Your booking has been marked as completed.'
+      });
+    } catch (emailError) {
+      console.error('Email notification error:', emailError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Booking marked as completed successfully',
+      data: {
+        booking: {
+          id: booking._id,
+          status: booking.status,
+          completedAt: booking.completedAt
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Mark as completed error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark booking as completed',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Get booking details for vendor
  */
 const getBookingDetails = async (req, res) => {
@@ -410,12 +470,88 @@ const getBookingDetails = async (req, res) => {
   }
 };
 
+/**
+ * Request travel charges for a booking
+ */
+const requestTravelCharges = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const vendorId = req.userId;
+    const { amount, reason } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Travel charges amount is required and must be greater than 0'
+      });
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      vendor: vendorId
+    }).populate('user', 'name email');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Check if travel charges already requested
+    if (booking.travelChargesRequest && booking.travelChargesRequest.status === 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        message: 'Travel charges request is already pending approval'
+      });
+    }
+
+    // Check if already approved or rejected
+    if (booking.travelChargesRequest && booking.travelChargesRequest.status) {
+      return res.status(400).json({
+        success: false,
+        message: `Travel charges request has already been ${booking.travelChargesRequest.status.toLowerCase()}`
+      });
+    }
+
+    // Update booking with travel charges request
+    booking.travelChargesRequest = {
+      amount,
+      reason: reason || '',
+      status: 'PENDING',
+      requestedAt: new Date(),
+      requestedBy: vendorId
+    };
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: 'Travel charges request submitted successfully. Awaiting admin approval.',
+      data: {
+        booking: {
+          id: booking._id,
+          travelChargesRequest: booking.travelChargesRequest
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Request travel charges error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit travel charges request',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getVendorBookings,
   acceptBooking,
   rejectBooking,
   markAsVisited,
   markVisitedAndUploadReport,
-  getBookingDetails
+  markAsCompleted,
+  getBookingDetails,
+  requestTravelCharges
 };
 

@@ -256,3 +256,34 @@ export const getAllBookings = async (params = {}) => {
   return response.data;
 };
 
+/**
+ * Get all travel charges requests
+ * @param {Object} params - { page, limit, status }
+ * @returns {Promise}
+ */
+export const getTravelChargesRequests = async (params = {}) => {
+  const response = await api.get('/admin/travel-charges', { params });
+  return response.data;
+};
+
+/**
+ * Approve travel charges request
+ * @param {string} bookingId
+ * @returns {Promise}
+ */
+export const approveTravelCharges = async (bookingId) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/travel-charges/approve`);
+  return response.data;
+};
+
+/**
+ * Reject travel charges request
+ * @param {string} bookingId
+ * @param {Object} data - { rejectionReason }
+ * @returns {Promise}
+ */
+export const rejectTravelCharges = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/travel-charges/reject`, data);
+  return response.data;
+};
+

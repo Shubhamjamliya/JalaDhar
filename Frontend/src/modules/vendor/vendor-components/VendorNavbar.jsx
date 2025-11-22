@@ -9,6 +9,7 @@ import {
     IoMenuOutline,
     IoNotificationsOutline,
     IoLogOutOutline,
+    IoStarOutline,
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 
@@ -45,6 +46,12 @@ const navItems = [
         label: "Profile",
         to: "/vendor/profile",
         Icon: IoPersonOutline,
+    },
+    {
+        id: "reviews",
+        label: "Reviews",
+        to: "/vendor/reviews",
+        Icon: IoStarOutline,
     },
 ];
 
@@ -138,7 +145,7 @@ export default function VendorNavbar() {
 
             {/* Bottom Navigation - Mobile Only */}
             <nav className="fixed bottom-0 inset-x-0 z-50 flex items-center justify-around gap-1 bg-white px-3 py-2 shadow-lg md:hidden">
-                {navItems.map(({ id, label, to, Icon }) => (
+                {navItems.filter(item => item.id !== "reviews").map(({ id, label, to, Icon }) => (
                     <NavLink
                         key={id}
                         to={to}

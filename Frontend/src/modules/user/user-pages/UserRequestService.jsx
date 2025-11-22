@@ -7,8 +7,9 @@ import {
     IoLocationOutline,
     IoCloseOutline,
     IoChevronBackOutline,
+    IoCheckmarkCircleOutline,
 } from "react-icons/io5";
-import { createBooking, fakeAdvancePayment, verifyAdvancePayment } from "../../../services/bookingApi";
+import { createBooking, verifyAdvancePayment } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
 import PageContainer from "../../shared/components/PageContainer";
 import ErrorMessage from "../../shared/components/ErrorMessage";
@@ -22,15 +23,9 @@ export default function UserRequestService() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
     const [service, setService] = useState(null);
     const [vendor, setVendor] = useState(null);
-    // ============================================
-    // FAKE PAYMENT MODE (FOR TESTING)
-    // ============================================
-    // This can be easily removed later - just delete this state and its usage
-    const [useFakePayment, setUseFakePayment] = useState(
-        import.meta.env.VITE_FAKE_PAYMENT === 'true' || false
-    );
     const [formData, setFormData] = useState({
         scheduledDate: "",
         scheduledTime: "",
@@ -116,101 +111,150 @@ export default function UserRequestService() {
             if (response.success) {
                 const booking = response.data.booking;
                 const paymentData = response.data.payment;
+                const razorpayOrder = response.data.razorpayOrder;
+                
+                if (!razorpayOrder) {
+                    setError("Payment order not created. Please try again.");
+                    setLoading(false);
+                    return;
+                }
 
-                // ============================================
-                // FAKE PAYMENT FLOW (FOR TESTING)
-                // ============================================
-                // This section can be easily removed when switching to production
-                // Just delete the if block and keep only the Razorpay flow
-                if (useFakePayment || paymentData.useFakePayment) {
-                    // Fake payment - skip Razorpay and directly mark as paid
-                    try {
-                        const fakePaymentResponse = await fakeAdvancePayment(booking.id);
-                        
-                        if (fakePaymentResponse.success) {
-                            setSuccess("Booking created successfully! Payment completed (Test Mode).");
-                            // Wait a bit longer to ensure booking is saved in database
-                            setTimeout(() => {
-                                navigate("/user/status", {
-                                    state: { 
-                                        bookingId: booking.id,
-                                        refresh: true 
-                                    }
-                                });
-                            }, 2500);
-                        } else {
-                            setError(fakePaymentResponse.message || "Fake payment failed. Please try again.");
-                        }
-                    } catch (fakeErr) {
-                        console.error("Fake payment error:", fakeErr);
-                        setError(fakeErr.response?.data?.message || "Fake payment failed. Please try again.");
-                    }
-                } else {
-                    // ============================================
-                    // REAL RAZORPAY PAYMENT FLOW
-                    // ============================================
-                    const razorpayOrder = response.data.razorpayOrder;
-                    
-                    if (!razorpayOrder) {
-                        setError("Payment order not created. Please try again.");
-                        return;
-                    }
+                // Load Razorpay script
+                await loadRazorpay();
 
-                    // Load Razorpay script
-                    await loadRazorpay();
+                const options = {
+                    key: paymentData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_key",
+                    amount: razorpayOrder.amount,
+                    currency: razorpayOrder.currency || 'INR',
+                    name: "Jaladhar",
+                    description: `Advance payment for ${service.name}`,
+                    order_id: razorpayOrder.id,
+                    handler: async function (paymentResponse) {
+                        // Payment successful - verify payment on backend
+                        try {
+                            const verifyResponse = await verifyAdvancePayment(
+                                booking.id,
+                                paymentResponse.razorpay_order_id,
+                                paymentResponse.razorpay_payment_id,
+                                paymentResponse.razorpay_signature
+                            );
 
-                    const options = {
-                        key: paymentData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_key",
-                        amount: razorpayOrder.amount,
-                        currency: razorpayOrder.currency || 'INR',
-                        name: "Jaladhar",
-                        description: `Advance payment for ${service.name}`,
-                        order_id: razorpayOrder.id,
-                        handler: async function (paymentResponse) {
-                            // Payment successful - verify payment on backend
-                            try {
-                                const verifyResponse = await verifyAdvancePayment(
-                                    booking.id,
-                                    paymentResponse.razorpay_order_id,
-                                    paymentResponse.razorpay_payment_id,
-                                    paymentResponse.razorpay_signature
-                                );
-
-                                if (verifyResponse.success) {
-                                    setSuccess("Booking created successfully! Payment completed.");
-                                    setTimeout(() => {
-                                        navigate("/user/status", {
-                                            state: {
-                                                bookingId: booking.id,
-                                                refresh: true
+                            if (verifyResponse.success) {
+                                setPaymentSuccess(true);
+                                setSuccess("Booking created successfully! Payment completed.");
+                                setLoading(false);
+                                // Navigate after a short delay to show success overlay
+                                setTimeout(() => {
+                                    navigate(`/user/booking/confirmation/${booking.id}`, {
+                                        replace: true,
+                                        state: {
+                                            booking: {
+                                                ...booking,
+                                                service: service,
+                                                vendor: vendor
                                             }
-                                        });
-                                    }, 2000);
-                                } else {
-                                    setError(verifyResponse.message || "Payment verification failed. Please contact support.");
-                                }
-                            } catch (verifyErr) {
-                                console.error("Payment verification error:", verifyErr);
-                                setError(verifyErr.response?.data?.message || "Payment verification failed. Please contact support.");
+                                        }
+                                    });
+                                }, 500);
+                            } else {
+                                setError(verifyResponse.message || "Payment verification failed. Please contact support.");
+                                setLoading(false);
                             }
+                        } catch (verifyErr) {
+                            console.error("Payment verification error:", verifyErr);
+                            setError(verifyErr.response?.data?.message || "Payment verification failed. Please contact support.");
+                            setLoading(false);
+                        }
+                    },
+                    prefill: {
+                        name: user?.name || "",
+                        email: user?.email || "",
+                        contact: user?.phone || "",
+                    },
+                    theme: {
+                        color: "#0A84FF",
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            setError("Payment cancelled. Booking created but payment pending.");
+                            setLoading(false);
                         },
-                        prefill: {
-                            name: user?.name || "",
-                            email: user?.email || "",
-                            contact: user?.phone || "",
-                        },
-                        theme: {
-                            color: "#0A84FF",
-                        },
-                        modal: {
-                            ondismiss: function () {
-                                setError("Payment cancelled. Booking created but payment pending.");
-                            },
-                        },
+                    },
+                };
+
+                // Validate Razorpay key before opening
+                if (!paymentData.keyId || paymentData.keyId === "rzp_test_key" || !razorpayOrder?.id) {
+                    setError("Invalid Razorpay configuration. Please contact support or check your payment settings.");
+                    setLoading(false);
+                    return;
+                }
+
+                try {
+                    const razorpay = new window.Razorpay(options);
+                    
+                    // Handle payment failure
+                    razorpay.on('payment.failed', function (response) {
+                        console.error("Razorpay payment failed:", response);
+                        const errorMsg = response.error?.description || response.error?.reason || response.error?.code || "Payment failed. Please try again.";
+                        setError(`Payment failed: ${errorMsg}`);
+                        setLoading(false);
+                    });
+                    
+                    // Handle payment errors
+                    razorpay.on('payment.error', function (response) {
+                        console.error("Razorpay payment error:", response);
+                        const errorMsg = response.error?.description || response.error?.reason || response.error?.code || "Payment error occurred. Please try again.";
+                        setError(`Payment error: ${errorMsg}`);
+                        setLoading(false);
+                    });
+
+                    // Handle Razorpay API errors (like 500 errors from their API)
+                    const errorHandler = (event) => {
+                        // Check if it's a Razorpay-related error
+                        if (event.message && (
+                            event.message.includes('razorpay') || 
+                            event.message.includes('api.razorpay.com') ||
+                            event.target?.src?.includes('razorpay.com')
+                        )) {
+                            console.error("Razorpay API error detected:", event);
+                            setError("Payment gateway error. Please try again or contact support.");
+                            setLoading(false);
+                            window.removeEventListener('error', errorHandler);
+                        }
                     };
 
-                    const razorpay = new window.Razorpay(options);
+                    // Listen for unhandled errors (catches 500 errors from Razorpay API)
+                    window.addEventListener('error', errorHandler, { once: true });
+                    
+                    // Also listen for unhandled promise rejections
+                    const rejectionHandler = (event) => {
+                        if (event.reason && (
+                            event.reason.message?.includes('razorpay') ||
+                            event.reason.message?.includes('api.razorpay.com') ||
+                            event.reason?.config?.url?.includes('razorpay.com')
+                        )) {
+                            console.error("Razorpay promise rejection:", event.reason);
+                            setError("Payment gateway error. Please try again or contact support.");
+                            setLoading(false);
+                            window.removeEventListener('unhandledrejection', rejectionHandler);
+                        }
+                    };
+                    window.addEventListener('unhandledrejection', rejectionHandler, { once: true });
+                    
+                    // Cleanup error listeners when modal closes
+                    const originalOndismiss = options.modal.ondismiss;
+                    options.modal.ondismiss = function() {
+                        window.removeEventListener('error', errorHandler);
+                        window.removeEventListener('unhandledrejection', rejectionHandler);
+                        setLoading(false);
+                        if (originalOndismiss) originalOndismiss();
+                    };
+
                     razorpay.open();
+                } catch (razorpayError) {
+                    console.error("Razorpay initialization error:", razorpayError);
+                    setError("Failed to initialize payment gateway. Please check your Razorpay configuration or try again later.");
+                    setLoading(false);
                 }
             } else {
                 // Check if error is due to existing active booking
@@ -247,6 +291,27 @@ export default function UserRequestService() {
 
     // Check if error is about active booking
     const hasActiveBookingError = error && (error.includes("active booking") || error.includes("already have"));
+
+    // Show success overlay during navigation to prevent seeing booking form
+    if (paymentSuccess) {
+        return (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white">
+                <div className="text-center px-4">
+                    <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center mb-6 mx-auto animate-pulse">
+                        <IoCheckmarkCircleOutline className="text-6xl text-green-600" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-gray-800 mb-3">Payment Successful!</h2>
+                    <p className="text-lg text-gray-600 mb-4">Your booking has been confirmed</p>
+                    <div className="flex items-center justify-center gap-2 text-[#0A84FF]">
+                        <div className="w-2 h-2 rounded-full bg-[#0A84FF] animate-bounce"></div>
+                        <div className="w-2 h-2 rounded-full bg-[#0A84FF] animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 rounded-full bg-[#0A84FF] animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <span className="ml-2 text-sm font-medium">Redirecting...</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <PageContainer>

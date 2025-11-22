@@ -307,10 +307,195 @@ const getBookingStatistics = async (req, res) => {
   }
 };
 
+/**
+ * Get all travel charges requests
+ */
+const getTravelChargesRequests = async (req, res) => {
+  try {
+    const { status, page = 1, limit = 10 } = req.query;
+
+    const query = {
+      'travelChargesRequest.status': status || { $ne: null }
+    };
+
+    if (status) {
+      query['travelChargesRequest.status'] = status;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [bookings, total] = await Promise.all([
+      Booking.find(query)
+        .populate('user', 'name email phone')
+        .populate('vendor', 'name email phone')
+        .populate('service', 'name price')
+        .populate('travelChargesRequest.requestedBy', 'name email')
+        .populate('travelChargesRequest.reviewedBy', 'name email')
+        .sort({ 'travelChargesRequest.requestedAt': -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Booking.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Travel charges requests retrieved successfully',
+      data: {
+        requests: bookings.map(booking => ({
+          bookingId: booking._id,
+          bookingStatus: booking.status,
+          user: booking.user,
+          vendor: booking.vendor,
+          service: booking.service,
+          travelChargesRequest: booking.travelChargesRequest,
+          createdAt: booking.createdAt
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get travel charges requests error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve travel charges requests',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Approve travel charges request
+ */
+const approveTravelCharges = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const adminId = req.userId;
+
+    const booking = await Booking.findById(bookingId)
+      .populate('vendor', 'name email')
+      .populate('user', 'name email');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    if (!booking.travelChargesRequest || booking.travelChargesRequest.status !== 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending travel charges request found for this booking'
+      });
+    }
+
+    // Update travel charges request
+    booking.travelChargesRequest.status = 'APPROVED';
+    booking.travelChargesRequest.reviewedAt = new Date();
+    booking.travelChargesRequest.reviewedBy = adminId;
+
+    // Update vendor settlement travel charges
+    if (!booking.payment.vendorSettlement) {
+      booking.payment.vendorSettlement = {};
+    }
+    booking.payment.vendorSettlement.travelCharges = booking.travelChargesRequest.amount;
+
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: 'Travel charges request approved successfully',
+      data: {
+        booking: {
+          id: booking._id,
+          travelChargesRequest: booking.travelChargesRequest
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Approve travel charges error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve travel charges request',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Reject travel charges request
+ */
+const rejectTravelCharges = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const adminId = req.userId;
+    const { rejectionReason } = req.body;
+
+    if (!rejectionReason || rejectionReason.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rejection reason is required and must be at least 10 characters'
+      });
+    }
+
+    const booking = await Booking.findById(bookingId)
+      .populate('vendor', 'name email')
+      .populate('user', 'name email');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    if (!booking.travelChargesRequest || booking.travelChargesRequest.status !== 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending travel charges request found for this booking'
+      });
+    }
+
+    // Update travel charges request
+    booking.travelChargesRequest.status = 'REJECTED';
+    booking.travelChargesRequest.reviewedAt = new Date();
+    booking.travelChargesRequest.reviewedBy = adminId;
+    booking.travelChargesRequest.rejectionReason = rejectionReason.trim();
+
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: 'Travel charges request rejected successfully',
+      data: {
+        booking: {
+          id: booking._id,
+          travelChargesRequest: booking.travelChargesRequest
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Reject travel charges error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject travel charges request',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllBookings,
   approveBorewellResult,
   processVendorSettlement,
-  getBookingStatistics
+  getBookingStatistics,
+  getTravelChargesRequests,
+  approveTravelCharges,
+  rejectTravelCharges
 };
 

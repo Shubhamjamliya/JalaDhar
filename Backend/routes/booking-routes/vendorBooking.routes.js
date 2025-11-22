@@ -8,7 +8,9 @@ const {
   rejectBooking,
   markAsVisited,
   markVisitedAndUploadReport,
-  getBookingDetails
+  markAsCompleted,
+  getBookingDetails,
+  requestTravelCharges
 } = require('../../controllers/bookingControllers/vendorBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isVendor } = require('../../middleware/roleMiddleware');
@@ -56,6 +58,13 @@ const uploadReportValidation = [
   body('machineReadings').optional().isJSON().withMessage('Machine readings must be valid JSON')
 ];
 
+const travelChargesValidation = [
+  body('amount')
+    .isFloat({ min: 0.01 })
+    .withMessage('Travel charges amount must be greater than 0'),
+  body('reason').optional().trim().isLength({ max: 500 }).withMessage('Reason must be less than 500 characters')
+];
+
 // Routes
 // IMPORTANT: Specific routes must come before parameterized routes
 router.get('/my-bookings', authenticate, isVendor, getVendorBookings);
@@ -74,6 +83,8 @@ router.patch('/:bookingId/accept', (req, res, next) => {
 
 router.patch('/:bookingId/reject', authenticate, isVendor, rejectBookingValidation, rejectBooking);
 router.patch('/:bookingId/visited', authenticate, isVendor, markAsVisited);
+router.patch('/:bookingId/completed', authenticate, isVendor, markAsCompleted);
+router.post('/:bookingId/travel-charges', authenticate, isVendor, travelChargesValidation, requestTravelCharges);
 router.post(
   '/:bookingId/visit-report',
   authenticate,

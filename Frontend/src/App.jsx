@@ -30,6 +30,8 @@ import UserRequestService from "./modules/user/user-pages/UserRequestService";
 import UserStatus from "./modules/user/user-pages/UserStatus";
 import UserBookingHistory from "./modules/user/user-pages/UserBookingHistory";
 import UserBookingDetails from "./modules/user/user-pages/UserBookingDetails";
+import UserBookingConfirmation from "./modules/user/user-pages/UserBookingConfirmation";
+import UserRemainingPayment from "./modules/user/user-pages/UserRemainingPayment";
 import UserProfile from "./modules/user/user-pages/UserProfile";
 import UserVendorProfile from "./modules/user/user-pages/UserVendorProfile";
 import VendorDashboard from "./modules/vendor/vendor-pages/VendorDashboard";
@@ -40,6 +42,8 @@ import VendorProfile from "./modules/vendor/vendor-pages/VendorProfile";
 import VendorRequests from "./modules/vendor/vendor-pages/VendorRequests";
 import VendorServices from "./modules/vendor/vendor-pages/VendorServices";
 import VendorBookingDetails from "./modules/vendor/vendor-pages/VendorBookingDetails";
+import VendorUploadReport from "./modules/vendor/vendor-pages/VendorUploadReport";
+import VendorReviews from "./modules/vendor/vendor-pages/VendorReviews";
 import AdminLogin from "./modules/admin/admin-pages/AdminLogin";
 import AdminForgotPassword from "./modules/admin/admin-pages/AdminForgotPassword";
 import AdminResetPassword from "./modules/admin/admin-pages/AdminResetPassword";
@@ -129,9 +133,21 @@ function App() {
                                                         }
                                                     />
                                                     <Route
+                                                        path="/booking/confirmation/:bookingId"
+                                                        element={
+                                                            <UserBookingConfirmation />
+                                                        }
+                                                    />
+                                                    <Route
                                                         path="/booking/:bookingId"
                                                         element={
                                                             <UserBookingDetails />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/booking/:bookingId/payment"
+                                                        element={
+                                                            <UserRemainingPayment />
                                                         }
                                                     />
                                                     <Route
@@ -198,6 +214,12 @@ function App() {
                                                         }
                                                     />
                                                     <Route
+                                                        path="/bookings/:bookingId/upload-report"
+                                                        element={
+                                                            <VendorUploadReport />
+                                                        }
+                                                    />
+                                                    <Route
                                                         path="/bookings/:bookingId"
                                                         element={
                                                             <VendorBookingDetails />
@@ -237,6 +259,12 @@ function App() {
                                                         path="/services"
                                                         element={
                                                             <VendorServices />
+                                                        }
+                                                    />
+                                                    <Route
+                                                        path="/reviews"
+                                                        element={
+                                                            <VendorReviews />
                                                         }
                                                     />
                                                 </Routes>

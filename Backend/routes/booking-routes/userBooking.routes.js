@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const { body } = require('express-validator');
 const {
   getAllServices,
@@ -17,6 +18,22 @@ const {
 } = require('../../controllers/bookingControllers/userBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isUser } = require('../../middleware/roleMiddleware');
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 
 // Validation rules
 const createBookingValidation = [
@@ -45,7 +62,7 @@ router.post('/create', authenticate, isUser, createBookingValidation, createBook
 router.get('/:bookingId', authenticate, isUser, getBookingDetails);
 router.patch('/:bookingId/cancel', authenticate, isUser, body('cancellationReason').optional().isLength({ max: 500 }), cancelBooking);
 router.post('/:bookingId/remaining-payment', authenticate, isUser, initiateRemainingPayment);
-router.post('/:bookingId/borewell-result', authenticate, isUser, uploadBorewellResultValidation, uploadBorewellResult);
+router.post('/:bookingId/borewell-result', authenticate, isUser, upload.fields([{ name: 'images', maxCount: 10 }]), uploadBorewellResultValidation, uploadBorewellResult);
 router.get('/:bookingId/invoice', authenticate, isUser, downloadInvoice);
 
 module.exports = router;

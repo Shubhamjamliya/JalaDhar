@@ -72,6 +72,24 @@ export const initiateRemainingPayment = async (bookingId) => {
 };
 
 /**
+ * Verify remaining payment (60%)
+ * @param {string} bookingId - Booking ID
+ * @param {string} razorpayOrderId - Razorpay order ID
+ * @param {string} razorpayPaymentId - Razorpay payment ID
+ * @param {string} razorpaySignature - Razorpay signature
+ * @returns {Promise}
+ */
+export const verifyRemainingPayment = async (bookingId, razorpayOrderId, razorpayPaymentId, razorpaySignature) => {
+  const response = await api.post('/payments/verify-remaining', {
+    bookingId,
+    razorpayOrderId,
+    razorpayPaymentId,
+    razorpaySignature
+  });
+  return response.data;
+};
+
+/**
  * Upload borewell result
  * @param {string} bookingId - Booking ID
  * @param {Object} data - { status: 'SUCCESS' | 'FAILED', images: File[] }
@@ -176,14 +194,6 @@ export const getVendorProfile = async (vendorId, lat = null, lng = null) => {
 };
 
 /**
- * ============================================
- * FAKE PAYMENT FUNCTIONALITY (FOR TESTING)
- * ============================================
- * This function can be easily removed when switching to production.
- * Simply delete this function and remove its usage from UserRequestService.jsx
- */
-
-/**
  * Verify advance payment with Razorpay
  * @param {string} bookingId - Booking ID
  * @param {string} razorpayOrderId - Razorpay order ID
@@ -198,16 +208,6 @@ export const verifyAdvancePayment = async (bookingId, razorpayOrderId, razorpayP
     razorpayPaymentId,
     razorpaySignature
   });
-  return response.data;
-};
-
-/**
- * Fake advance payment (for testing)
- * @param {string} bookingId - Booking ID
- * @returns {Promise}
- */
-export const fakeAdvancePayment = async (bookingId) => {
-  const response = await api.post('/payments/fake-advance', { bookingId });
   return response.data;
 };
 

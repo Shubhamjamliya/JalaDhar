@@ -11,8 +11,11 @@ import {
     IoDocumentTextOutline,
     IoImageOutline,
     IoDownloadOutline,
+    IoCarOutline,
+    IoAddCircleOutline,
+    IoCloseOutline,
 } from "react-icons/io5";
-import { getBookingDetails, acceptBooking, rejectBooking, uploadVisitReport } from "../../../services/vendorApi";
+import { getBookingDetails, acceptBooking, rejectBooking, markBookingAsVisited, requestTravelCharges } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
@@ -27,6 +30,12 @@ export default function VendorBookingDetails() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [booking, setBooking] = useState(null);
+    const [showTravelChargesModal, setShowTravelChargesModal] = useState(false);
+    const [travelChargesData, setTravelChargesData] = useState({
+        amount: "",
+        reason: ""
+    });
+    const [submittingTravelCharges, setSubmittingTravelCharges] = useState(false);
 
     useEffect(() => {
         loadBookingDetails();
@@ -132,6 +141,65 @@ export default function VendorBookingDetails() {
             }
         } finally {
             setActionLoading(false);
+        }
+    };
+
+    const handleMarkAsVisited = async () => {
+        if (!window.confirm("Have you visited the customer's location? This will mark the booking as visited.")) {
+            return;
+        }
+
+        try {
+            setActionLoading(true);
+            setError("");
+            setSuccess("");
+            
+            const response = await markBookingAsVisited(bookingId);
+            
+            if (response.success) {
+                setSuccess("Booking marked as visited successfully!");
+                await loadBookingDetails(); // Reload to get updated status
+            } else {
+                setError(response.message || "Failed to mark booking as visited");
+            }
+        } catch (err) {
+            console.error("Mark as visited error:", err);
+            const errorMessage = err.response?.data?.message || "Failed to mark booking as visited";
+            setError(errorMessage);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleSubmitTravelCharges = async () => {
+        if (!travelChargesData.amount || parseFloat(travelChargesData.amount) <= 0) {
+            setError("Please enter a valid amount");
+            return;
+        }
+
+        try {
+            setSubmittingTravelCharges(true);
+            setError("");
+            setSuccess("");
+
+            const response = await requestTravelCharges(bookingId, {
+                amount: parseFloat(travelChargesData.amount),
+                reason: travelChargesData.reason || ""
+            });
+
+            if (response.success) {
+                setSuccess("Travel charges request submitted successfully!");
+                setShowTravelChargesModal(false);
+                setTravelChargesData({ amount: "", reason: "" });
+                await loadBookingDetails();
+            } else {
+                setError(response.message || "Failed to submit travel charges request");
+            }
+        } catch (err) {
+            console.error("Submit travel charges error:", err);
+            setError(err.response?.data?.message || "Failed to submit travel charges request");
+        } finally {
+            setSubmittingTravelCharges(false);
         }
     };
 
@@ -432,6 +500,178 @@ export default function VendorBookingDetails() {
                             <IoCloseCircleOutline className="text-xl" />
                             {actionLoading ? "Processing..." : "Reject Booking"}
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Mark as Visited Button */}
+            {booking.status === "ACCEPTED" && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
+                    <button
+                        onClick={handleMarkAsVisited}
+                        disabled={actionLoading}
+                        className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <IoCheckmarkCircleOutline className="text-xl" />
+                        {actionLoading ? "Processing..." : "Mark as Visited"}
+                    </button>
+                </div>
+            )}
+
+            {/* Upload Report Button */}
+            {booking.status === "VISITED" && !booking.report && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
+                    <button
+                        onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
+                        className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)]"
+                    >
+                        <IoDocumentTextOutline className="text-xl" />
+                        Upload Report
+                    </button>
+                </div>
+            )}
+
+            {/* Travel Charges Request Section */}
+            {["ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED"].includes(booking.status) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-gray-800">Travel Charges</h2>
+                        {booking.travelChargesRequest?.status && (
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                booking.travelChargesRequest.status === "APPROVED" 
+                                    ? "bg-green-100 text-green-700" 
+                                    : booking.travelChargesRequest.status === "REJECTED"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-yellow-100 text-yellow-700"
+                            }`}>
+                                {booking.travelChargesRequest.status}
+                            </span>
+                        )}
+                    </div>
+                    
+                    {booking.travelChargesRequest ? (
+                        <div className="space-y-3">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Requested Amount:</span>
+                                <span className="font-semibold text-gray-800">₹{booking.travelChargesRequest.amount?.toLocaleString() || 0}</span>
+                            </div>
+                            {booking.travelChargesRequest.reason && (
+                                <div>
+                                    <span className="text-gray-600">Reason:</span>
+                                    <p className="text-gray-800 mt-1">{booking.travelChargesRequest.reason}</p>
+                                </div>
+                            )}
+                            {booking.travelChargesRequest.status === "REJECTED" && booking.travelChargesRequest.rejectionReason && (
+                                <div className="bg-red-50 border border-red-200 rounded-[8px] p-3">
+                                    <p className="text-sm text-red-700">
+                                        <strong>Rejection Reason:</strong> {booking.travelChargesRequest.rejectionReason}
+                                    </p>
+                                </div>
+                            )}
+                            {booking.travelChargesRequest.requestedAt && (
+                                <div className="text-sm text-gray-500">
+                                    Requested: {formatDate(booking.travelChargesRequest.requestedAt)}
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div>
+                            <p className="text-sm text-gray-600 mb-4">
+                                Request travel charges if you need reimbursement for travel expenses.
+                            </p>
+                            <button
+                                onClick={() => setShowTravelChargesModal(true)}
+                                className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)]"
+                            >
+                                <IoAddCircleOutline className="text-xl" />
+                                Request Travel Charges
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Travel Charges Request Modal */}
+            {showTravelChargesModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={() => !submittingTravelCharges && setShowTravelChargesModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-[16px] w-full max-w-md flex flex-col shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between p-5 border-b border-gray-200">
+                            <h2 className="text-xl font-bold text-gray-800">Request Travel Charges</h2>
+                            <button
+                                onClick={() => !submittingTravelCharges && setShowTravelChargesModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                disabled={submittingTravelCharges}
+                            >
+                                <IoCloseOutline className="text-2xl text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-5">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                        Amount (₹) <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={travelChargesData.amount}
+                                        onChange={(e) => setTravelChargesData({ ...travelChargesData, amount: e.target.value })}
+                                        placeholder="Enter amount"
+                                        className="w-full border border-gray-300 rounded-[8px] px-3 py-2 text-sm focus:outline-none focus:border-[#0A84FF]"
+                                        disabled={submittingTravelCharges}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                        Reason (Optional)
+                                    </label>
+                                    <textarea
+                                        value={travelChargesData.reason}
+                                        onChange={(e) => setTravelChargesData({ ...travelChargesData, reason: e.target.value })}
+                                        placeholder="Explain why you need travel charges..."
+                                        rows="4"
+                                        className="w-full border border-gray-300 rounded-[8px] px-3 py-2 text-sm focus:outline-none focus:border-[#0A84FF]"
+                                        disabled={submittingTravelCharges}
+                                        maxLength={500}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {travelChargesData.reason.length}/500 characters
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 p-5 border-t border-gray-200">
+                            <button
+                                onClick={() => setShowTravelChargesModal(false)}
+                                className="flex-1 h-10 bg-gray-200 text-gray-700 text-sm font-medium rounded-[8px] hover:bg-gray-300 transition-colors"
+                                disabled={submittingTravelCharges}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSubmitTravelCharges}
+                                disabled={submittingTravelCharges || !travelChargesData.amount || parseFloat(travelChargesData.amount) <= 0}
+                                className="flex-1 h-10 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {submittingTravelCharges ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    "Submit Request"
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

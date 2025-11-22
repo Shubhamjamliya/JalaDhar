@@ -4,7 +4,6 @@ const { body } = require('express-validator');
 const {
   verifyAdvancePayment,
   verifyRemainingPayment,
-  fakeAdvancePayment, // FAKE PAYMENT - Can be removed later
   handleWebhook
 } = require('../../controllers/paymentControllers/paymentController');
 const { authenticate } = require('../../middleware/authMiddleware');
@@ -21,11 +20,6 @@ const verifyPaymentValidation = [
 // Routes
 router.post('/verify-advance', authenticate, isUser, verifyPaymentValidation, verifyAdvancePayment);
 router.post('/verify-remaining', authenticate, isUser, verifyPaymentValidation, verifyRemainingPayment);
-
-// FAKE PAYMENT ROUTE (FOR TESTING) - Can be easily removed later
-// Remove this route and the fakeAdvancePayment import when switching to production
-router.post('/fake-advance', authenticate, isUser, body('bookingId').notEmpty().withMessage('Booking ID is required'), fakeAdvancePayment);
-
 router.post('/webhook', handleWebhook); // No auth for webhook
 
 module.exports = router;
