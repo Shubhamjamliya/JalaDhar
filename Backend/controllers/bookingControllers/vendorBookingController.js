@@ -21,7 +21,7 @@ const getVendorBookings = async (req, res) => {
 
     const [bookings, total] = await Promise.all([
       Booking.find(query)
-        .populate('user', 'name email phone address')
+        .populate('user', 'name email phone address profilePicture documents.profilePicture')
         .populate('service', 'name price machineType')
         .sort({ createdAt: -1 })
         .skip(skip)

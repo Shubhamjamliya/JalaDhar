@@ -139,19 +139,7 @@ export default function VendorBookings() {
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <ErrorMessage message={error} />
 
-            {/* Header */}
-            <div className="bg-gray-100 rounded-t-[12px] px-4 py-3 flex items-center justify-between mb-0">
-                <button
-                    onClick={() => navigate("/vendor/dashboard")}
-                    className="p-2 hover:bg-gray-200 rounded-full transition-colors"
-                >
-                    <IoChevronBackOutline className="text-xl text-gray-700" />
-                </button>
-                <h1 className="text-lg font-bold text-gray-800">Booking Requests</h1>
-                <button className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                    <IoMenuOutline className="text-xl text-gray-700" />
-                </button>
-            </div>
+            
 
             {/* Tabs */}
             <div className="flex bg-gray-100 rounded-b-[12px] mb-4 overflow-hidden">

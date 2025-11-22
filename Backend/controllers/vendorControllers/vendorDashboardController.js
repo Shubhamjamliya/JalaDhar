@@ -76,11 +76,11 @@ const getDashboardStats = async (req, res) => {
 
     // Get recent bookings (last 5)
     const recentBookings = await Booking.find({ vendor: vendorId })
-      .populate('user', 'name email phone')
+      .populate('user', 'name email phone profilePicture')
       .populate('service', 'name machineType price')
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('status scheduledDate scheduledTime payment user service');
+      .select('status scheduledDate scheduledTime payment address user service');
 
     // Get upcoming bookings (next 5)
     const upcomingBookings = await Booking.find({
@@ -88,7 +88,7 @@ const getDashboardStats = async (req, res) => {
       status: { $in: [BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.PENDING] },
       scheduledDate: { $gte: new Date() }
     })
-      .populate('user', 'name email phone')
+      .populate('user', 'name email phone profilePicture')
       .populate('service', 'name machineType price')
       .sort({ scheduledDate: 1 })
       .limit(5)
