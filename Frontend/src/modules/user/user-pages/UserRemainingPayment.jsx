@@ -30,12 +30,14 @@ export default function UserRemainingPayment() {
     const loadBookingDetails = async () => {
         try {
             setLoading(true);
+            setError("");
             const response = await getBookingDetails(bookingId);
             if (response.success) {
                 const bookingData = response.data.booking;
                 
-                // Check if booking is in correct status
-                if (bookingData.status !== 'AWAITING_PAYMENT') {
+                // Check if booking is in correct status (use userStatus for user view)
+                const userStatus = bookingData.userStatus || bookingData.status;
+                if (userStatus !== 'AWAITING_PAYMENT' && userStatus !== 'REPORT_UPLOADED') {
                     setError("This booking is not eligible for remaining payment.");
                     setLoading(false);
                     return;

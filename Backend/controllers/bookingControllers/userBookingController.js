@@ -98,11 +98,17 @@ const createBooking = async (req, res) => {
     }
 
     // Check if user has an active booking (only one booking at a time)
+    // Exclude bookings that are cancelled, completed, rejected, or pending without payment
+    // An active booking is one that is either paid (advancePaid = true) or already assigned (status != PENDING)
     const activeBooking = await Booking.findOne({
       user: userId,
       status: {
         $nin: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED, BOOKING_STATUS.FAILED, BOOKING_STATUS.SUCCESS]
-      }
+      },
+      $or: [
+        { 'payment.advancePaid': true }, // Any paid booking is active
+        { status: { $ne: BOOKING_STATUS.PENDING } } // Any non-PENDING booking is active (shouldn't happen without payment, but handle it)
+      ]
     });
 
     if (activeBooking) {
@@ -164,12 +170,14 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // Create booking
+    // Create booking in PENDING status - will be set to ASSIGNED only after payment verification
     const booking = await Booking.create({
       user: userId,
       vendor: vendorId,
       service: serviceId,
       status: BOOKING_STATUS.PENDING,
+      vendorStatus: BOOKING_STATUS.PENDING,
+      userStatus: BOOKING_STATUS.PENDING,
       scheduledDate: new Date(scheduledDate),
       scheduledTime,
       address: {
@@ -192,10 +200,6 @@ const createBooking = async (req, res) => {
       },
       assignedAt: new Date()
     });
-
-    // Update status to ASSIGNED
-    booking.status = BOOKING_STATUS.ASSIGNED;
-    await booking.save();
 
     // Create payment record
     await Payment.create({
@@ -273,7 +277,8 @@ const getUserBookings = async (req, res) => {
 
     const query = { user: userId };
     if (status) {
-      query.status = status;
+      // Use userStatus for user queries
+      query.userStatus = status;
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -361,7 +366,7 @@ const initiateRemainingPayment = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       user: userId,
-      status: BOOKING_STATUS.AWAITING_PAYMENT
+      userStatus: BOOKING_STATUS.AWAITING_PAYMENT
     }).populate('service', 'name price');
 
     if (!booking) {
@@ -442,7 +447,7 @@ const uploadBorewellResult = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       user: userId,
-      status: BOOKING_STATUS.COMPLETED
+      userStatus: BOOKING_STATUS.PAYMENT_SUCCESS
     });
 
     if (!booking) {
@@ -473,8 +478,12 @@ const uploadBorewellResult = async (req, res) => {
       uploadedBy: userId
     };
 
-    // Update booking status
-    booking.status = status === 'SUCCESS' ? BOOKING_STATUS.SUCCESS : BOOKING_STATUS.FAILED;
+    // When user uploads borewell result:
+    // - Both user and vendor status: BOREWELL_UPLOADED
+    // - Main status: BOREWELL_UPLOADED (will be changed to SUCCESS/FAILED after admin approval)
+    booking.status = BOOKING_STATUS.BOREWELL_UPLOADED;
+    booking.userStatus = BOOKING_STATUS.BOREWELL_UPLOADED;
+    booking.vendorStatus = BOOKING_STATUS.BOREWELL_UPLOADED;
     await booking.save();
 
     res.json({
@@ -954,6 +963,8 @@ const cancelBooking = async (req, res) => {
 
     // Update booking status
     booking.status = BOOKING_STATUS.CANCELLED;
+    booking.vendorStatus = BOOKING_STATUS.CANCELLED;
+    booking.userStatus = BOOKING_STATUS.CANCELLED;
     booking.cancelledAt = new Date();
     booking.cancellationReason = cancellationReason || 'Cancelled by user';
     await booking.save();

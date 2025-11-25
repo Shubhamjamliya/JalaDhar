@@ -287,3 +287,118 @@ export const rejectTravelCharges = async (bookingId, data) => {
   return response.data;
 };
 
+/**
+ * Pay travel charges to vendor
+ * @param {string} bookingId
+ * @returns {Promise}
+ */
+export const payTravelCharges = async (bookingId) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/travel-charges/pay`);
+  return response.data;
+};
+
+/**
+ * Pay first installment (50%) to vendor after report upload
+ * @param {string} bookingId
+ * @returns {Promise}
+ */
+export const payFirstInstallment = async (bookingId) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/first-installment/pay`);
+  return response.data;
+};
+
+/**
+ * Pay second installment (Final Settlement - 50% Remaining) with manual incentive/penalty
+ * @param {string} bookingId
+ * @param {Object} data - { incentive (for success), penalty (for failure) }
+ * @returns {Promise}
+ */
+export const paySecondInstallment = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/second-installment/pay`, data);
+  return response.data;
+};
+
+/**
+ * Get bookings with reports pending approval
+ * @param {Object} params - { page, limit, status }
+ * @returns {Promise}
+ */
+export const getReportPendingApprovals = async (params = {}) => {
+  const response = await api.get('/admin/bookings/report-pending', { params });
+  return response.data;
+};
+
+/**
+ * Get bookings with borewell results pending approval
+ * @param {Object} params - { page, limit, status }
+ * @returns {Promise}
+ */
+export const getBorewellPendingApprovals = async (params = {}) => {
+  const response = await api.get('/admin/bookings/borewell-pending', { params });
+  return response.data;
+};
+
+/**
+ * Approve report (without payment)
+ * @param {string} bookingId
+ * @returns {Promise}
+ */
+export const approveReport = async (bookingId) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/approve-report`);
+  return response.data;
+};
+
+/**
+ * Reject report
+ * @param {string} bookingId
+ * @param {Object} data - { rejectionReason }
+ * @returns {Promise}
+ */
+export const rejectReport = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/reject-report`, data);
+  return response.data;
+};
+
+/**
+ * Approve borewell result
+ * @param {string} bookingId
+ * @param {Object} data - { approved: true/false }
+ * @returns {Promise}
+ */
+export const approveBorewellResult = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/approve-result`, data);
+  return response.data;
+};
+
+/**
+ * Get bookings with pending user refunds (failed borewell)
+ * @param {Object} params - { page, limit }
+ * @returns {Promise}
+ */
+export const getPendingUserRefunds = async (params = {}) => {
+  const response = await api.get('/admin/bookings/pending-user-refunds', { params });
+  return response.data;
+};
+
+/**
+ * Process user refund for failed borewell
+ * @param {string} bookingId
+ * @param {Object} data - { refundAmount }
+ * @returns {Promise}
+ */
+export const processUserRefund = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/user-refund`, data);
+  return response.data;
+};
+
+/**
+ * Process final settlement (includes refund if failed)
+ * @param {string} bookingId
+ * @param {Object} data - { incentive, penalty, refundAmount }
+ * @returns {Promise}
+ */
+export const processFinalSettlement = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/final-settlement`, data);
+  return response.data;
+};
+

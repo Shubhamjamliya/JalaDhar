@@ -13,7 +13,7 @@ import {
     IoFilterOutline,
     IoCarOutline,
 } from "react-icons/io5";
-import { getAllPayments, getPaymentStatistics, getAllBookings, processVendorSettlement, getTravelChargesRequests, approveTravelCharges, rejectTravelCharges } from "../../../services/adminApi";
+import { getAllPayments, getPaymentStatistics, getAllBookings, getTravelChargesRequests, approveTravelCharges, rejectTravelCharges, payTravelCharges, payFirstInstallment, paySecondInstallment, getPendingUserRefunds, processUserRefund } from "../../../services/adminApi";
 import { useTheme } from "../../../contexts/ThemeContext";
 
 export default function AdminPayments() {
@@ -31,12 +31,21 @@ export default function AdminPayments() {
         advancePayments: { total: 0, count: 0 },
         remainingPayments: { total: 0, count: 0 },
         settlements: { total: 0, count: 0 },
-        pendingSettlements: 0,
     });
     const [userPayments, setUserPayments] = useState([]);
+    const [userRefunds, setUserRefunds] = useState([]);
+    const [pendingUserRefunds, setPendingUserRefunds] = useState([]);
+    const [userStats, setUserStats] = useState({
+        totalPayments: 0,
+        totalAmount: 0,
+        advancePayments: 0,
+        remainingPayments: 0,
+        totalRefunds: 0,
+        refundAmount: 0,
+    });
     const [vendorPayments, setVendorPayments] = useState([]);
-    const [settlements, setSettlements] = useState([]);
     const [travelChargesRequests, setTravelChargesRequests] = useState([]);
+    const [vendorBookings, setVendorBookings] = useState([]);
     const [travelChargesPagination, setTravelChargesPagination] = useState({
         currentPage: 1,
         totalPages: 1,
@@ -89,7 +98,21 @@ export default function AdminPayments() {
                     ...(userFilters.status && { status: userFilters.status }),
                     ...(userFilters.search && { search: userFilters.search }),
                 };
-                const paymentsResponse = await getAllPayments(params);
+                
+                // Load refunds for failed borewell bookings first
+                const refundParams = {
+                    page: 1,
+                    limit: 50,
+                    paymentType: "REFUND",
+                    status: "SUCCESS",
+                };
+                
+                const [paymentsResponse, refundsResponse, pendingRefundsResponse] = await Promise.all([
+                    getAllPayments(params),
+                    getAllPayments(refundParams),
+                    getPendingUserRefunds({ page: 1, limit: 50 })
+                ]);
+
                 if (paymentsResponse.success) {
                     // Filter to only show ADVANCE and REMAINING payments
                     const userPaymentsOnly = paymentsResponse.data.payments.filter(
@@ -97,9 +120,89 @@ export default function AdminPayments() {
                     );
                     setUserPayments(userPaymentsOnly);
                     setUserPagination(paymentsResponse.data.pagination);
+
+                    // Calculate payment stats
+                    const advancePayments = userPaymentsOnly.filter(p => p.paymentType === "ADVANCE");
+                    const remainingPayments = userPaymentsOnly.filter(p => p.paymentType === "REMAINING");
+                    const totalAmount = userPaymentsOnly.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+                    // Process refunds
+                    let failedBorewellRefunds = [];
+                    if (refundsResponse.success) {
+                        // Filter refunds related to failed borewells (after admin approval)
+                        failedBorewellRefunds = refundsResponse.data.payments.filter(
+                            (payment) => {
+                                // Check if description contains "failed borewell" or booking has failed borewell result
+                                return payment.description?.toLowerCase().includes('failed borewell') || 
+                                       payment.description?.toLowerCase().includes('refund for failed') ||
+                                       (payment.description?.toLowerCase().includes('borewell') && payment.status === 'SUCCESS');
+                            }
+                        );
+                        setUserRefunds(failedBorewellRefunds);
+                    }
+
+                    // Load pending refunds
+                    if (pendingRefundsResponse.success) {
+                        setPendingUserRefunds(pendingRefundsResponse.data.bookings || []);
+                    }
+
+                    // Set all stats together
+                    setUserStats({
+                        totalPayments: userPaymentsOnly.length,
+                        totalAmount,
+                        advancePayments: advancePayments.length,
+                        remainingPayments: remainingPayments.length,
+                        totalRefunds: failedBorewellRefunds.length,
+                        refundAmount: failedBorewellRefunds.reduce((sum, r) => sum + (r.amount || 0), 0),
+                    });
                 }
             } else if (activeTab === "vendor-payments") {
-                // Load vendor payments (SETTLEMENT)
+                // Load bookings with vendor payment information
+                const bookingsResponse = await getAllBookings({
+                    page: 1,
+                    limit: 100,
+                });
+                if (bookingsResponse.success) {
+                    // Filter bookings that have vendor-related payments (travel charges, settlements, or report uploaded)
+                    // For first installment: only show bookings with approved reports
+                    const bookingsWithPayments = bookingsResponse.data.bookings.filter(
+                        (booking) => {
+                            // Travel charges requests
+                            if (booking.travelChargesRequest) return true;
+                            
+                            // Vendor settlements
+                            if (booking.payment?.vendorSettlement) return true;
+                            
+                            // First installment - only show if report is approved
+                            if (booking.firstInstallment || 
+                                (booking.report && booking.report.uploadedAt && booking.report.approvedAt && !booking.firstInstallment?.paid)) {
+                                // Only include if report is approved
+                                if (booking.report?.approvedAt) return true;
+                            }
+                            
+                            // Other statuses (completed, borewell uploaded, etc.)
+                            if (booking.vendorStatus === "COMPLETED" ||
+                                booking.vendorStatus === "BOREWELL_UPLOADED" ||
+                                booking.vendorStatus === "PAID_FIRST") {
+                                return true;
+                            }
+                            
+                            return false;
+                        }
+                    );
+                    console.log("Vendor bookings loaded:", bookingsWithPayments.length);
+                    console.log("Sample booking:", bookingsWithPayments[0] ? {
+                        id: bookingsWithPayments[0]._id,
+                        vendorStatus: bookingsWithPayments[0].vendorStatus,
+                        status: bookingsWithPayments[0].status,
+                        reportUploadedAt: bookingsWithPayments[0].reportUploadedAt,
+                        hasReport: !!bookingsWithPayments[0].report,
+                        firstInstallment: bookingsWithPayments[0].firstInstallment
+                    } : "No bookings");
+                    setVendorBookings(bookingsWithPayments);
+                }
+
+                // Also load vendor payments (SETTLEMENT) for history
                 const params = {
                     page: vendorPagination.currentPage,
                     limit: 10,
@@ -111,17 +214,6 @@ export default function AdminPayments() {
                 if (paymentsResponse.success) {
                     setVendorPayments(paymentsResponse.data.payments);
                     setVendorPagination(paymentsResponse.data.pagination);
-                }
-            } else if (activeTab === "settlements") {
-                const bookingsResponse = await getAllBookings({
-                    page: 1,
-                    limit: 50,
-                });
-                if (bookingsResponse.success) {
-                    const pendingSettlements = bookingsResponse.data.bookings.filter(
-                        (booking) => booking.payment?.vendorSettlement?.status === "PENDING"
-                    );
-                    setSettlements(pendingSettlements);
                 }
             } else if (activeTab === "travel-charges") {
                 const params = {
@@ -140,23 +232,6 @@ export default function AdminPayments() {
             setError("Failed to load payment data");
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleSettlement = async (bookingId) => {
-        if (!window.confirm("Are you sure you want to process this settlement?")) {
-            return;
-        }
-
-        try {
-            const response = await processVendorSettlement(bookingId);
-            if (response.success) {
-                alert("Settlement processed successfully!");
-                loadPaymentData();
-            }
-        } catch (err) {
-            console.error("Settlement error:", err);
-            alert("Failed to process settlement");
         }
     };
 
@@ -179,7 +254,7 @@ export default function AdminPayments() {
 
     const handleRejectTravelCharges = async (bookingId) => {
         const rejectionReason = window.prompt("Please provide a reason for rejection (minimum 10 characters):");
-        
+
         if (!rejectionReason || rejectionReason.trim().length < 10) {
             if (rejectionReason !== null) {
                 alert("Rejection reason must be at least 10 characters long.");
@@ -196,6 +271,145 @@ export default function AdminPayments() {
         } catch (err) {
             console.error("Reject travel charges error:", err);
             alert(err.response?.data?.message || "Failed to reject travel charges request");
+        }
+    };
+
+    const handlePayTravelCharges = async (bookingId) => {
+        if (!window.confirm("Are you sure you want to pay travel charges to the vendor?")) {
+            return;
+        }
+
+        try {
+            const response = await payTravelCharges(bookingId);
+            if (response.success) {
+                alert("Travel charges paid successfully!");
+                loadPaymentData();
+            }
+        } catch (err) {
+            console.error("Pay travel charges error:", err);
+            alert(err.response?.data?.message || "Failed to pay travel charges");
+        }
+    };
+
+    const handlePayFirstInstallment = async (bookingId) => {
+        if (!window.confirm("Are you sure you want to pay first installment (50%) to the vendor? This will change vendor status to COMPLETED.")) {
+            return;
+        }
+
+        try {
+            const response = await payFirstInstallment(bookingId);
+            if (response.success) {
+                alert("First installment (50%) paid successfully! Vendor status updated to COMPLETED.");
+                loadPaymentData();
+            }
+        } catch (err) {
+            console.error("Pay first installment error:", err);
+            alert(err.response?.data?.message || "Failed to pay first installment");
+        }
+    };
+
+    const [secondInstallmentModal, setSecondInstallmentModal] = useState({
+        open: false,
+        booking: null,
+        incentive: 0,
+        penalty: 0
+    });
+
+    const [userRefundModal, setUserRefundModal] = useState({
+        open: false,
+        booking: null,
+        refundAmount: 0
+    });
+
+    const handleOpenSecondInstallmentModal = (booking) => {
+        const isSuccess = booking.borewellResult?.status === "SUCCESS";
+        setSecondInstallmentModal({
+            open: true,
+            booking,
+            incentive: isSuccess ? 0 : undefined,
+            penalty: !isSuccess ? 0 : undefined
+        });
+    };
+
+    const handleCloseSecondInstallmentModal = () => {
+        setSecondInstallmentModal({
+            open: false,
+            booking: null,
+            incentive: 0,
+            penalty: 0
+        });
+    };
+
+    const handleOpenUserRefundModal = (booking) => {
+        setUserRefundModal({
+            open: true,
+            booking,
+            refundAmount: booking.payment?.remainingAmount || 0
+        });
+    };
+
+    const handleCloseUserRefundModal = () => {
+        setUserRefundModal({
+            open: false,
+            booking: null,
+            refundAmount: 0
+        });
+    };
+
+    const handleProcessUserRefund = async () => {
+        const { booking, refundAmount } = userRefundModal;
+        if (!booking) return;
+
+        if (!refundAmount || refundAmount <= 0) {
+            alert("Refund amount must be greater than 0");
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to process refund of ${formatCurrency(refundAmount)} for this user?`)) {
+            return;
+        }
+
+        try {
+            setError("");
+            const response = await processUserRefund(booking._id, { refundAmount });
+            if (response.success) {
+                alert(response.message || "User refund processed successfully!");
+                handleCloseUserRefundModal();
+                loadPaymentData();
+            } else {
+                setError(response.message || "Failed to process user refund");
+            }
+        } catch (err) {
+            console.error("Process user refund error:", err);
+            alert(err.response?.data?.message || "Failed to process user refund");
+        }
+    };
+
+    const handlePaySecondInstallment = async () => {
+        const { booking, incentive, penalty } = secondInstallmentModal;
+        const isSuccess = booking.borewellResult?.status === "SUCCESS";
+        const baseAmount = booking.payment?.totalAmount * 0.5;
+        const finalAmount = isSuccess
+            ? baseAmount + (incentive || 0)
+            : Math.max(0, baseAmount - (penalty || 0));
+
+        if (!window.confirm(`Are you sure you want to pay second installment (Final Settlement) of ${formatCurrency(finalAmount)} to the vendor?`)) {
+            return;
+        }
+
+        try {
+            const response = await paySecondInstallment(booking._id, {
+                incentive: isSuccess ? (incentive || 0) : 0,
+                penalty: !isSuccess ? (penalty || 0) : 0
+            });
+            if (response.success) {
+                alert(response.message || "Second installment (Final Settlement) paid successfully!");
+                handleCloseSecondInstallmentModal();
+                loadPaymentData();
+            }
+        } catch (err) {
+            console.error("Pay second installment error:", err);
+            alert(err.response?.data?.message || "Failed to pay second installment");
         }
     };
 
@@ -261,57 +475,38 @@ export default function AdminPayments() {
                 <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab("overview")}
-                        className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${
-                            activeTab === "overview"
-                                ? `border-[${currentTheme.primary}] text-[${currentTheme.primary}]`
-                                : "border-transparent text-gray-600 hover:text-gray-800"
-                        }`}
+                        className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "overview"
+                            ? `border-[${currentTheme.primary}] text-[${currentTheme.primary}]`
+                            : "border-transparent text-gray-600 hover:text-gray-800"
+                            }`}
                         style={activeTab === "overview" ? { borderColor: currentTheme.primary, color: currentTheme.primary } : {}}
                     >
                         Overview
                     </button>
                     <button
                         onClick={() => setActiveTab("user-payments")}
-                        className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${
-                            activeTab === "user-payments"
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-600 hover:text-gray-800"
-                        }`}
+                        className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "user-payments"
+                            ? "border-blue-500 text-blue-600"
+                            : "border-transparent text-gray-600 hover:text-gray-800"
+                            }`}
                     >
                         User Payments
                     </button>
                     <button
                         onClick={() => setActiveTab("vendor-payments")}
-                        className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${
-                            activeTab === "vendor-payments"
-                                ? "border-orange-500 text-orange-600"
-                                : "border-transparent text-gray-600 hover:text-gray-800"
-                        }`}
+                        className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "vendor-payments"
+                            ? "border-orange-500 text-orange-600"
+                            : "border-transparent text-gray-600 hover:text-gray-800"
+                            }`}
                     >
                         Vendor Settlements
                     </button>
                     <button
-                        onClick={() => setActiveTab("settlements")}
-                        className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${
-                            activeTab === "settlements"
-                                ? "border-green-500 text-green-600"
-                                : "border-transparent text-gray-600 hover:text-gray-800"
-                        }`}
-                    >
-                        Pending Settlements
-                        {stats.pendingSettlements > 0 && (
-                            <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
-                                {stats.pendingSettlements}
-                            </span>
-                        )}
-                    </button>
-                    <button
                         onClick={() => setActiveTab("travel-charges")}
-                        className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${
-                            activeTab === "travel-charges"
-                                ? "border-purple-500 text-purple-600"
-                                : "border-transparent text-gray-600 hover:text-gray-800"
-                        }`}
+                        className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "travel-charges"
+                            ? "border-purple-500 text-purple-600"
+                            : "border-transparent text-gray-600 hover:text-gray-800"
+                            }`}
                     >
                         Travel Charges
                         {travelChargesRequests.filter(r => r.travelChargesRequest?.status === "PENDING").length > 0 && (
@@ -416,27 +611,6 @@ export default function AdminPayments() {
                             <p className="text-sm text-gray-600">{stats.settlements.count} settlements</p>
                         </div>
                     </div>
-
-                    {/* Pending Settlements Alert */}
-                    {stats.pendingSettlements > 0 && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <IoTimeOutline className="text-2xl text-yellow-600" />
-                                    <div>
-                                        <h3 className="font-semibold text-gray-800">Pending Settlements</h3>
-                                        <p className="text-sm text-gray-600">{stats.pendingSettlements} vendor settlements awaiting processing</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setActiveTab("settlements")}
-                                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-semibold text-sm"
-                                >
-                                    View All
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -445,16 +619,198 @@ export default function AdminPayments() {
                 <div>
                     {/* Header Section */}
                     <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 mb-6 border border-blue-200">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: currentTheme.primary }}>
-                                    <IoArrowDownOutline className="text-3xl text-white" />
+                        <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: currentTheme.primary }}>
+                                <IoArrowDownOutline className="text-3xl text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-1">User Payments</h2>
+                                <p className="text-gray-600">Track all payments received from users (40% Advance + 60% Remaining)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* User Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                                    <IoReceiptOutline className="text-2xl text-blue-600" />
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-800 mb-1">User Payments</h2>
-                                    <p className="text-gray-600">Track all payments received from users (40% Advance + 60% Remaining)</p>
+                                <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded-full">Total Payments</span>
+                            </div>
+                            <p className="text-3xl font-bold text-gray-800 mb-1">{userStats.totalPayments}</p>
+                            <p className="text-xs text-gray-600">Payments received</p>
+                        </div>
+
+                        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                                    <IoWalletOutline className="text-2xl text-green-600" />
+                                </div>
+                                <span className="text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-full">Total Amount</span>
+                            </div>
+                            <p className="text-3xl font-bold text-gray-800 mb-1">{formatCurrency(userStats.totalAmount)}</p>
+                            <p className="text-xs text-gray-600">All user payments</p>
+                        </div>
+
+                        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                                    <IoArrowUpOutline className="text-2xl text-purple-600" />
+                                </div>
+                                <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-1 rounded-full">Total Refunds</span>
+                            </div>
+                            <p className="text-3xl font-bold text-gray-800 mb-1">{userStats.totalRefunds}</p>
+                            <p className="text-xs text-gray-600">Failed borewell refunds</p>
+                        </div>
+
+                        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+                                    <IoCashOutline className="text-2xl text-red-600" />
+                                </div>
+                                <span className="text-xs font-semibold text-red-700 bg-red-50 px-2 py-1 rounded-full">Refund Amount</span>
+                            </div>
+                            <p className="text-3xl font-bold text-gray-800 mb-1">{formatCurrency(userStats.refundAmount)}</p>
+                            <p className="text-xs text-gray-600">Total refunded</p>
+                        </div>
+                    </div>
+
+                    {/* Pending Refunds Card - Shows bookings awaiting refund processing */}
+                    {pendingUserRefunds.length > 0 && (
+                        <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-6 mb-6 border border-orange-200">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg">
+                                        <IoTimeOutline className="text-3xl text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-gray-800 mb-1">Pending User Refunds</h2>
+                                        <p className="text-gray-600">Failed borewell bookings awaiting refund processing</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm text-gray-600">Pending</p>
+                                    <p className="text-2xl font-bold text-orange-700">{pendingUserRefunds.length}</p>
+                                    <p className="text-xs text-gray-500">booking(s)</p>
                                 </div>
                             </div>
-                    </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                                {pendingUserRefunds.map((booking) => (
+                                    <div
+                                        key={booking._id}
+                                        className="bg-white rounded-lg p-4 shadow-sm border border-orange-200 hover:shadow-md transition-shadow"
+                                    >
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex-1">
+                                                <p className="text-xs text-gray-500 mb-1">Booking ID</p>
+                                                <p className="text-sm font-semibold text-gray-800">
+                                                    #{booking._id.toString().slice(-8)}
+                                                </p>
+                                            </div>
+                                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                                FAILED
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2 mb-4">
+                                            <div>
+                                                <p className="text-xs text-gray-500">User</p>
+                                                <p className="text-sm font-semibold text-gray-800">{booking.user?.name || "N/A"}</p>
+                                                <p className="text-xs text-gray-500">{booking.user?.email || ""}</p>
+                                            </div>
+                                            <div className="pt-2 border-t border-gray-200">
+                                                <p className="text-xs text-gray-500">Total Amount</p>
+                                                <p className="text-sm font-bold text-gray-800">{formatCurrency(booking.payment?.totalAmount || 0)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Remaining Amount (Refundable)</p>
+                                                <p className="text-lg font-bold text-orange-600">{formatCurrency(booking.payment?.remainingAmount || 0)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Borewell Approved</p>
+                                                <p className="text-sm text-gray-800">{formatDate(booking.borewellResult?.approvedAt)}</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => handleOpenUserRefundModal(booking)}
+                                            className="w-full bg-orange-600 text-white py-2 rounded-lg font-semibold hover:bg-orange-700 transition-colors text-sm flex items-center justify-center gap-2"
+                                        >
+                                            <IoWalletOutline className="text-lg" />
+                                            Process Refund
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Refunds Card for Failed Borewell - Completed Refunds */}
+                    {userRefunds.length > 0 && (
+                        <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-6 mb-6 border border-red-200">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 rounded-xl bg-red-500 flex items-center justify-center shadow-lg">
+                                        <IoArrowUpOutline className="text-3xl text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-gray-800 mb-1">Refunds & Compensation</h2>
+                                        <p className="text-gray-600">Refunds processed for users due to failed borewell results (after admin approval)</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm text-gray-600">Total Refunds</p>
+                                    <p className="text-2xl font-bold text-red-700">
+                                        {formatCurrency(userRefunds.reduce((sum, refund) => sum + (refund.amount || 0), 0))}
+                                    </p>
+                                    <p className="text-xs text-gray-500">{userRefunds.length} refund(s)</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                                {userRefunds.map((refund) => (
+                                    <div
+                                        key={refund._id}
+                                        className="bg-white rounded-lg p-4 shadow-sm border border-red-200 hover:shadow-md transition-shadow"
+                                    >
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex-1">
+                                                <p className="text-xs text-gray-500 mb-1">Booking ID</p>
+                                                <p className="text-sm font-semibold text-gray-800">
+                                                    #{refund.booking?.bookingId?.toString().slice(-8) || refund.booking?._id?.toString().slice(-8) || "N/A"}
+                                                </p>
+                                            </div>
+                                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                                REFUND
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div>
+                                                <p className="text-xs text-gray-500">User</p>
+                                                <p className="text-sm font-semibold text-gray-800">{refund.user?.name || "N/A"}</p>
+                                                <p className="text-xs text-gray-500">{refund.user?.email || ""}</p>
+                                            </div>
+                                            <div className="pt-2 border-t border-gray-200">
+                                                <p className="text-xs text-gray-500">Refund Amount</p>
+                                                <p className="text-lg font-bold text-red-600">{formatCurrency(refund.amount || 0)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Processed Date</p>
+                                                <p className="text-sm text-gray-800">{formatDate(refund.refundedAt || refund.paidAt || refund.createdAt)}</p>
+                                            </div>
+                                            {refund.description && (
+                                                <div className="pt-2 border-t border-gray-200">
+                                                    <p className="text-xs text-gray-500">Reason</p>
+                                                    <p className="text-xs text-gray-700 italic">{refund.description}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Filters */}
                     <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-6">
@@ -533,8 +889,8 @@ export default function AdminPayments() {
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {userPayments.map((payment) => (
-                                            <tr 
-                                                key={payment._id} 
+                                            <tr
+                                                key={payment._id}
                                                 className="hover:bg-opacity-50"
                                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${currentTheme.primary}10`}
                                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -543,11 +899,10 @@ export default function AdminPayments() {
                                                     {payment.razorpayOrderId?.slice(-8) || "N/A"}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                                        payment.paymentType === "ADVANCE" 
-                                                            ? "bg-blue-100 text-blue-700" 
-                                                            : "bg-purple-100 text-purple-700"
-                                                    }`}>
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${payment.paymentType === "ADVANCE"
+                                                        ? "bg-blue-100 text-blue-700"
+                                                        : "bg-purple-100 text-purple-700"
+                                                        }`}>
                                                         {payment.paymentType === "ADVANCE" ? "40% Advance" : "60% Remaining"}
                                                     </span>
                                                 </td>
@@ -613,97 +968,210 @@ export default function AdminPayments() {
                                 <IoCashOutline className="text-3xl text-white" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-800 mb-1">Vendor Settlements</h2>
-                                <p className="text-gray-600">Track all payments made to vendors (50% + Incentive/Penalty)</p>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-1">Vendor Payments</h2>
+                                <p className="text-gray-600">Manage travel charges, first installment (50%), and final settlement payments</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Filters */}
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="relative">
-                                <IoSearchOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search by Order ID..."
-                                    value={vendorFilters.search}
-                                    onChange={(e) => setVendorFilters({ ...vendorFilters, search: e.target.value })}
-                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                                />
-                            </div>
-                            <select
-                                value={vendorFilters.status}
-                                onChange={(e) => setVendorFilters({ ...vendorFilters, status: e.target.value })}
-                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            >
-                                <option value="">All Status</option>
-                                <option value="SUCCESS">Success</option>
-                                <option value="PENDING">Pending</option>
-                                <option value="FAILED">Failed</option>
-                            </select>
-                            <button
-                                onClick={() => setVendorFilters({ status: "", search: "" })}
-                                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold text-sm"
-                            >
-                                Clear Filters
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Payments Table */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    {/* Bookings with Payment Cards */}
+                    <div className="space-y-6">
                         {loading ? (
-                            <div className="p-8 text-center">
+                            <div className="p-8 text-center bg-white rounded-xl shadow-sm border border-gray-200">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
-                                <p className="text-gray-600">Loading vendor settlements...</p>
+                                <p className="text-gray-600">Loading vendor payments...</p>
                             </div>
-                        ) : vendorPayments.length === 0 ? (
-                            <div className="p-8 text-center">
+                        ) : vendorBookings.length === 0 ? (
+                            <div className="p-8 text-center bg-white rounded-xl shadow-sm border border-gray-200">
                                 <IoCashOutline className="text-4xl text-gray-400 mx-auto mb-4" />
-                                <p className="text-gray-600">No vendor settlements found</p>
+                                <p className="text-gray-600">No vendor payments found</p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead className="bg-orange-50 border-b border-orange-200">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-semibold text-orange-700 uppercase">Payment ID</th>
-                                            <th className="px-6 py-3 text-left text-xs font-semibold text-orange-700 uppercase">Vendor</th>
-                                            <th className="px-6 py-3 text-left text-xs font-semibold text-orange-700 uppercase">User</th>
-                                            <th className="px-6 py-3 text-left text-xs font-semibold text-orange-700 uppercase">Settlement Amount</th>
-                                            <th className="px-6 py-3 text-left text-xs font-semibold text-orange-700 uppercase">Status</th>
-                                            <th className="px-6 py-3 text-left text-xs font-semibold text-orange-700 uppercase">Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {vendorPayments.map((payment) => (
-                                            <tr key={payment._id} className="hover:bg-orange-50/50">
-                                                <td className="px-6 py-4 text-sm font-mono text-gray-600">
-                                                    {payment.razorpayOrderId?.slice(-8) || "N/A"}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-800 font-medium">
-                                                    {payment.vendor?.name || "N/A"}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-800">
-                                                    {payment.user?.name || "N/A"}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-bold text-gray-800">
-                                                    {formatCurrency(payment.amount)}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadge(payment.status)}`}>
-                                                        {payment.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">
-                                                    {formatDate(payment.paidAt || payment.createdAt)}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            vendorBookings.map((booking) => (
+                                <div key={booking._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                    {/* Booking Header */}
+                                    <div className="mb-6 pb-4 border-b border-gray-200">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-lg font-bold text-gray-800">
+                                                    Booking #{booking._id.toString().slice(-8)}
+                                                </h3>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    Vendor: <span className="font-semibold">{booking.vendor?.name || "N/A"}</span> |
+                                                    User: <span className="font-semibold">{booking.user?.name || "N/A"}</span> |
+                                                    Service: <span className="font-semibold">{booking.service?.name || "N/A"}</span>
+                                                </p>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${booking.vendorStatus === "COMPLETED" || booking.vendorStatus === "SUCCESS" || booking.vendorStatus === "FAILED"
+                                                ? "bg-green-100 text-green-700"
+                                                : "bg-yellow-100 text-yellow-700"
+                                                }`}>
+                                                {booking.vendorStatus || booking.status}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Payment Cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {/* Travel Charges Card */}
+                                        <div className={`border-2 rounded-lg p-4 ${booking.travelChargesRequest?.paid
+                                            ? "border-green-200 bg-green-50"
+                                            : booking.travelChargesRequest?.status === "APPROVED"
+                                                ? "border-orange-200 bg-orange-50"
+                                                : "border-gray-200 bg-gray-50"
+                                            }`}>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <IoCarOutline className="text-xl text-orange-600" />
+                                                <h4 className="font-bold text-gray-800">Travel Charges</h4>
+                                            </div>
+                                            <div className="mb-3">
+                                                <p className="text-2xl font-bold text-gray-800">
+                                                    {booking.travelChargesRequest?.amount
+                                                        ? formatCurrency(booking.travelChargesRequest.amount)
+                                                        : "N/A"}
+                                                </p>
+                                                <p className="text-xs text-gray-600 mt-1">
+                                                    {booking.travelChargesRequest?.status || "Not Requested"}
+                                                </p>
+                                            </div>
+                                            {booking.travelChargesRequest?.status === "APPROVED" && !booking.travelChargesRequest?.paid && (
+                                                <button
+                                                    onClick={() => handlePayTravelCharges(booking._id)}
+                                                    className="w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors text-sm"
+                                                >
+                                                    Pay Travel Charges
+                                                </button>
+                                            )}
+                                            {booking.travelChargesRequest?.paid && (
+                                                <div className="flex items-center gap-2 text-green-700 text-sm font-semibold">
+                                                    <IoCheckmarkCircleOutline className="text-lg" />
+                                                    <span>Paid</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* First Installment (50%) Card */}
+                                        <div className={`border-2 rounded-lg p-4 ${booking.firstInstallment?.paid
+                                            ? "border-green-200 bg-green-50"
+                                            : (booking.vendorStatus === "AWAITING_PAYMENT" || booking.vendorStatus === "REPORT_UPLOADED") && booking.report?.approvedAt && (booking.reportUploadedAt || booking.report)
+                                                ? "border-blue-200 bg-blue-50"
+                                                : "border-gray-200 bg-gray-50"
+                                            }`}>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <IoCashOutline className="text-xl text-blue-600" />
+                                                <h4 className="font-bold text-gray-800">First Installment</h4>
+                                            </div>
+                                            <div className="mb-3">
+                                                <p className="text-2xl font-bold text-gray-800">
+                                                    {booking.payment?.totalAmount
+                                                        ? formatCurrency(booking.payment.totalAmount * 0.5)
+                                                        : "N/A"}
+                                                </p>
+                                                <p className="text-xs text-gray-600 mt-1">50% of Total</p>
+                                                {/* Debug info - remove later */}
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    Status: {booking.vendorStatus || booking.status} |
+                                                    Report: {booking.reportUploadedAt || booking.report ? "Yes" : "No"} |
+                                                    Approved: {booking.report?.approvedAt ? "Yes" : "No"} |
+                                                    Paid: {booking.firstInstallment?.paid ? "Yes" : "No"}
+                                                </p>
+                                            </div>
+                                            {((booking.vendorStatus === "AWAITING_PAYMENT" ||
+                                                booking.vendorStatus === "REPORT_UPLOADED") &&
+                                                booking.report?.approvedAt &&
+                                                (booking.reportUploadedAt || booking.report) &&
+                                                !booking.firstInstallment?.paid) && (
+                                                    <button
+                                                        onClick={() => handlePayFirstInstallment(booking._id)}
+                                                        className="w-full bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors text-sm"
+                                                    >
+                                                        Pay First Installment
+                                                    </button>
+                                                )}
+                                            {((booking.vendorStatus === "REPORT_UPLOADED" ||
+                                                booking.vendorStatus === "AWAITING_PAYMENT") &&
+                                                (booking.reportUploadedAt || booking.report) &&
+                                                !booking.report?.approvedAt &&
+                                                !booking.firstInstallment?.paid) && (
+                                                    <p className="text-xs text-yellow-600 font-semibold">
+                                                        ⚠️ Report must be approved first
+                                                    </p>
+                                                )}
+                                            {booking.firstInstallment?.paid && (
+                                                <div className="flex items-center gap-2 text-green-700 text-sm font-semibold">
+                                                    <IoCheckmarkCircleOutline className="text-lg" />
+                                                    <span>Paid</span>
+                                                </div>
+                                            )}
+                                            {!booking.reportUploadedAt && !booking.report && (
+                                                <p className="text-xs text-gray-500 italic">Waiting for report upload</p>
+                                            )}
+                                        </div>
+
+                                        {/* Second Installment (Final Settlement - 50% Remaining) Card */}
+                                        <div className={`border-2 rounded-lg p-4 ${booking.payment?.vendorSettlement?.status === "COMPLETED" && (booking.vendorStatus === "SUCCESS" || booking.vendorStatus === "FAILED")
+                                                ? "border-green-200 bg-green-50"
+                                                : booking.borewellResult?.approvedAt && booking.borewellResult?.uploadedAt
+                                                    ? "border-purple-200 bg-purple-50"
+                                                    : "border-gray-200 bg-gray-50"
+                                            }`}>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <IoWalletOutline className="text-xl text-purple-600" />
+                                                <h4 className="font-bold text-gray-800">Second Installment</h4>
+                                            </div>
+                                            <div className="mb-3">
+                                                {booking.payment?.vendorSettlement?.status === "COMPLETED" ? (
+                                                    <>
+                                                        <p className="text-2xl font-bold text-gray-800">
+                                                            {formatCurrency(booking.payment.vendorSettlement.amount)}
+                                                        </p>
+                                                        <p className="text-xs text-gray-600 mt-1">
+                                                            {booking.borewellResult?.status === "SUCCESS"
+                                                                ? `50% + Incentive: ${formatCurrency(booking.payment.vendorSettlement.incentive || 0)}`
+                                                                : `50% - Penalty: ${formatCurrency(booking.payment.vendorSettlement.penalty || 0)}`}
+                                                        </p>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-2xl font-bold text-gray-800">
+                                                            {booking.payment?.totalAmount
+                                                                ? formatCurrency(booking.payment.totalAmount * 0.5)
+                                                                : "N/A"}
+                                                        </p>
+                                                        <p className="text-xs text-gray-600 mt-1">
+                                                            {booking.borewellResult?.status === "SUCCESS"
+                                                                ? "50% + Incentive (to be added)"
+                                                                : "50% - Penalty (to be deducted)"}
+                                                        </p>
+                                                    </>
+                                                )}
+                                            </div>
+                                            {booking.borewellResult?.approvedAt &&
+                                                booking.borewellResult?.uploadedAt &&
+                                                booking.payment?.vendorSettlement?.status !== "COMPLETED" && (
+                                                    <button
+                                                        onClick={() => handleOpenSecondInstallmentModal(booking)}
+                                                        className="w-full bg-purple-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-600 transition-colors text-sm"
+                                                    >
+                                                        Pay Second Installment
+                                                    </button>
+                                                )}
+                                            {booking.payment?.vendorSettlement?.status === "COMPLETED" && (
+                                                <div className="flex items-center gap-2 text-green-700 text-sm font-semibold">
+                                                    <IoCheckmarkCircleOutline className="text-lg" />
+                                                    <span>Paid</span>
+                                                </div>
+                                            )}
+                                            {!booking.borewellResult?.uploadedAt && (
+                                                <p className="text-xs text-gray-500 italic">Waiting for borewell result</p>
+                                            )}
+                                            {booking.borewellResult?.uploadedAt && !booking.borewellResult?.approvedAt && (
+                                                <p className="text-xs text-gray-500 italic">Waiting for borewell approval</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
                         )}
                     </div>
 
@@ -729,119 +1197,6 @@ export default function AdminPayments() {
                                     Next
                                 </button>
                             </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Pending Settlements Tab */}
-            {activeTab === "settlements" && (
-                <div>
-                    {/* Header Section */}
-                    <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-6 mb-6 border border-green-200">
-                        <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 rounded-xl bg-green-500 flex items-center justify-center shadow-lg">
-                                <IoTimeOutline className="text-3xl text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-800 mb-1">Pending Settlements</h2>
-                                <p className="text-gray-600">Process vendor settlements after borewell result approval</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {loading ? (
-                        <div className="p-8 text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-4"></div>
-                            <p className="text-gray-600">Loading pending settlements...</p>
-                        </div>
-                    ) : settlements.length === 0 ? (
-                        <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-200">
-                            <IoCashOutline className="text-4xl text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-600 font-semibold">No pending settlements</p>
-                            <p className="text-sm text-gray-500 mt-2">All settlements have been processed</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {settlements.map((booking) => (
-                                <div
-                                    key={booking._id}
-                                    className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
-                                >
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                                                    <IoReceiptOutline className="text-2xl text-green-600" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-lg font-bold text-gray-800">
-                                                        Booking #{booking.bookingId || booking._id.toString().slice(-8)}
-                                                    </h3>
-                                                    <p className="text-xs text-gray-500">
-                                                        {formatDate(booking.createdAt)}
-                                                    </p>
-                                                </div>
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                                    booking.payment?.vendorSettlement?.settlementType === "SUCCESS"
-                                                        ? "bg-green-100 text-green-700"
-                                                        : booking.payment?.vendorSettlement?.settlementType === "FAILED"
-                                                        ? "bg-red-100 text-red-700"
-                                                        : "bg-yellow-100 text-yellow-700"
-                                                }`}>
-                                                    {booking.payment?.vendorSettlement?.settlementType || "Pending Approval"}
-                                                </span>
-                                            </div>
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                                <div className="bg-gray-50 rounded-lg p-3">
-                                                    <p className="text-xs text-gray-600 mb-1">Vendor</p>
-                                                    <p className="text-sm font-semibold text-gray-800">{booking.vendor?.name || "N/A"}</p>
-                                                    <p className="text-xs text-gray-500">{booking.vendor?.email || ""}</p>
-                                                </div>
-                                                <div className="bg-gray-50 rounded-lg p-3">
-                                                    <p className="text-xs text-gray-600 mb-1">User</p>
-                                                    <p className="text-sm font-semibold text-gray-800">{booking.user?.name || "N/A"}</p>
-                                                    <p className="text-xs text-gray-500">{booking.user?.email || ""}</p>
-                                                </div>
-                                                <div className="bg-blue-50 rounded-lg p-3">
-                                                    <p className="text-xs text-gray-600 mb-1">Settlement Amount</p>
-                                                    <p className="text-lg font-bold text-blue-700">
-                                                        {formatCurrency(booking.payment?.vendorSettlement?.amount || 0)}
-                                                    </p>
-                                                </div>
-                                                <div className={`rounded-lg p-3 ${
-                                                    booking.payment?.vendorSettlement?.incentive
-                                                        ? "bg-green-50"
-                                                        : booking.payment?.vendorSettlement?.penalty
-                                                        ? "bg-red-50"
-                                                        : "bg-gray-50"
-                                                }`}>
-                                                    <p className="text-xs text-gray-600 mb-1">Incentive/Penalty</p>
-                                                    <p className={`text-lg font-bold ${
-                                                        booking.payment?.vendorSettlement?.incentive
-                                                            ? "text-green-700"
-                                                            : booking.payment?.vendorSettlement?.penalty
-                                                            ? "text-red-700"
-                                                            : "text-gray-700"
-                                                    }`}>
-                                                        {booking.payment?.vendorSettlement?.incentive
-                                                            ? `+${formatCurrency(booking.payment.vendorSettlement.incentive)}`
-                                                            : booking.payment?.vendorSettlement?.penalty
-                                                            ? `-${formatCurrency(booking.payment.vendorSettlement.penalty)}`
-                                                            : "N/A"}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => handleSettlement(booking._id)}
-                                            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold text-sm whitespace-nowrap shadow-md"
-                                        >
-                                            Process Settlement
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
                         </div>
                     )}
                 </div>
@@ -896,13 +1251,12 @@ export default function AdminPayments() {
                                                         {request.vendor?.name || "Vendor"} → {request.user?.name || "User"}
                                                     </p>
                                                 </div>
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                                    request.travelChargesRequest?.status === "APPROVED"
-                                                        ? "bg-green-100 text-green-700"
-                                                        : request.travelChargesRequest?.status === "REJECTED"
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${request.travelChargesRequest?.status === "APPROVED"
+                                                    ? "bg-green-100 text-green-700"
+                                                    : request.travelChargesRequest?.status === "REJECTED"
                                                         ? "bg-red-100 text-red-700"
                                                         : "bg-yellow-100 text-yellow-700"
-                                                }`}>
+                                                    }`}>
                                                     {request.travelChargesRequest?.status || "PENDING"}
                                                 </span>
                                             </div>
@@ -961,7 +1315,7 @@ export default function AdminPayments() {
                                     </div>
                                 </div>
                             ))}
-                            
+
                             {/* Pagination */}
                             {travelChargesPagination.totalPages > 1 && (
                                 <div className="flex items-center justify-between mt-6">
@@ -986,6 +1340,138 @@ export default function AdminPayments() {
                             )}
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Second Installment Payment Modal */}
+            {secondInstallmentModal.open && secondInstallmentModal.booking && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">Pay Second Installment (Final Settlement)</h3>
+
+                        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-2">Booking ID: <span className="font-semibold">{secondInstallmentModal.booking._id.toString().slice(-8)}</span></p>
+                            <p className="text-sm text-gray-600 mb-2">Vendor: <span className="font-semibold">{secondInstallmentModal.booking.vendor?.name || "N/A"}</span></p>
+                            <p className="text-sm text-gray-600 mb-2">Borewell Result: <span className={`font-semibold ${secondInstallmentModal.booking.borewellResult?.status === "SUCCESS" ? "text-green-600" : "text-red-600"}`}>
+                                {secondInstallmentModal.booking.borewellResult?.status || "N/A"}
+                            </span></p>
+                            <p className="text-sm text-gray-600">Base Amount (50%): <span className="font-semibold">{formatCurrency(secondInstallmentModal.booking.payment?.totalAmount * 0.5)}</span></p>
+                        </div>
+
+                        {secondInstallmentModal.booking.borewellResult?.status === "SUCCESS" ? (
+                            <div className="mb-4">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Incentive Amount (₹)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={secondInstallmentModal.incentive || ""}
+                                    onChange={(e) => setSecondInstallmentModal({
+                                        ...secondInstallmentModal,
+                                        incentive: parseFloat(e.target.value) || 0
+                                    })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Enter incentive amount"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Final Amount: {formatCurrency((secondInstallmentModal.booking.payment?.totalAmount * 0.5) + (secondInstallmentModal.incentive || 0))}</p>
+                            </div>
+                        ) : (
+                            <div className="mb-4">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Penalty Amount (₹)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max={secondInstallmentModal.booking.payment?.totalAmount * 0.5}
+                                    value={secondInstallmentModal.penalty || ""}
+                                    onChange={(e) => setSecondInstallmentModal({
+                                        ...secondInstallmentModal,
+                                        penalty: parseFloat(e.target.value) || 0
+                                    })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Enter penalty amount"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Final Amount: {formatCurrency(Math.max(0, (secondInstallmentModal.booking.payment?.totalAmount * 0.5) - (secondInstallmentModal.penalty || 0)))}
+                                    {secondInstallmentModal.penalty > (secondInstallmentModal.booking.payment?.totalAmount * 0.5) && (
+                                        <span className="text-red-600 ml-2">(Penalty cannot exceed 50%)</span>
+                                    )}
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleCloseSecondInstallmentModal}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handlePaySecondInstallment}
+                                className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-semibold text-sm"
+                            >
+                                Pay Settlement
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* User Refund Modal */}
+            {userRefundModal.open && userRefundModal.booking && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">Process User Refund</h3>
+
+                        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-2">Booking ID: <span className="font-semibold">{userRefundModal.booking._id.toString().slice(-8)}</span></p>
+                            <p className="text-sm text-gray-600 mb-2">User: <span className="font-semibold">{userRefundModal.booking.user?.name || "N/A"}</span></p>
+                            <p className="text-sm text-gray-600 mb-2">Borewell Result: <span className="font-semibold text-red-600">FAILED</span></p>
+                            <p className="text-sm text-gray-600">Remaining Amount: <span className="font-semibold">{formatCurrency(userRefundModal.booking.payment?.remainingAmount || 0)}</span></p>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Refund Amount (₹)
+                            </label>
+                            <input
+                                type="number"
+                                min="0"
+                                max={userRefundModal.booking.payment?.remainingAmount || 0}
+                                value={userRefundModal.refundAmount || ""}
+                                onChange={(e) => setUserRefundModal({
+                                    ...userRefundModal,
+                                    refundAmount: parseFloat(e.target.value) || 0
+                                })}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                placeholder="Enter refund amount"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Max Refund: {formatCurrency(userRefundModal.booking.payment?.remainingAmount || 0)}
+                                {userRefundModal.refundAmount > (userRefundModal.booking.payment?.remainingAmount || 0) && (
+                                    <span className="text-red-600 ml-2">(Cannot exceed remaining amount)</span>
+                                )}
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleCloseUserRefundModal}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleProcessUserRefund}
+                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold text-sm"
+                            >
+                                Process Refund
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

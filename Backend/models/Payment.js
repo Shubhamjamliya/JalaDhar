@@ -19,7 +19,7 @@ const paymentSchema = new mongoose.Schema({
   },
   paymentType: {
     type: String,
-    enum: ['ADVANCE', 'REMAINING', 'SETTLEMENT'],
+    enum: ['ADVANCE', 'REMAINING', 'SETTLEMENT', 'TRAVEL_CHARGES', 'REFUND'],
     required: true
   },
   amount: {
@@ -35,7 +35,7 @@ const paymentSchema = new mongoose.Schema({
   // Razorpay details
   razorpayOrderId: {
     type: String,
-    required: true
+    default: null
   },
   razorpayPaymentId: {
     type: String,

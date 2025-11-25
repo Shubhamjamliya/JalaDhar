@@ -239,31 +239,28 @@ export default function VendorRequests() {
             <div className="flex space-x-2 py-4">
                 <button
                     onClick={() => setActiveTab("New")}
-                    className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors ${
-                        activeTab === "New"
-                            ? "bg-[#0A84FF] text-white"
-                            : "bg-white text-[#6B7280]"
-                    }`}
+                    className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors ${activeTab === "New"
+                        ? "bg-[#0A84FF] text-white"
+                        : "bg-white text-[#6B7280]"
+                        }`}
                 >
                     New ({newRequests.length})
                 </button>
                 <button
                     onClick={() => setActiveTab("Confirmed")}
-                    className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors ${
-                        activeTab === "Confirmed"
-                            ? "bg-[#0A84FF] text-white"
-                            : "bg-white text-[#6B7280]"
-                    }`}
+                    className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors ${activeTab === "Confirmed"
+                        ? "bg-[#0A84FF] text-white"
+                        : "bg-white text-[#6B7280]"
+                        }`}
                 >
                     Confirmed
                 </button>
                 <button
                     onClick={() => setActiveTab("History")}
-                    className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors ${
-                        activeTab === "History"
-                            ? "bg-[#0A84FF] text-white"
-                            : "bg-white text-[#6B7280]"
-                    }`}
+                    className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors ${activeTab === "History"
+                        ? "bg-[#0A84FF] text-white"
+                        : "bg-white text-[#6B7280]"
+                        }`}
                 >
                     History
                 </button>
@@ -287,7 +284,7 @@ export default function VendorRequests() {
                             <div className="flex items-center gap-4">
                                 {/* Profile Picture */}
                                 {request.user?.profilePicture ||
-                                request.user?.documents?.profilePicture?.url ? (
+                                    request.user?.documents?.profilePicture?.url ? (
                                     <img
                                         src={
                                             request.user.profilePicture ||
@@ -327,8 +324,8 @@ export default function VendorRequests() {
                                     <p className="text-lg font-bold text-[#00C2A8]">
                                         {formatAmount(
                                             request.payment?.totalAmount ||
-                                                request.payment?.amount ||
-                                                0
+                                            request.payment?.amount ||
+                                            0
                                         )}
                                     </p>
                                     <p className="text-xs text-[#6B7280]">
@@ -383,38 +380,54 @@ export default function VendorRequests() {
                                 </div>
                             </div>
 
-                            {/* Action Buttons - Only for New/ASSIGNED requests */}
-                            {activeTab === "New" &&
-                                request.status === "ASSIGNED" && (
-                                    <div className="mt-4 flex gap-3">
-                                        <button
-                                            onClick={() =>
-                                                handleReject(request._id)
-                                            }
-                                            disabled={
-                                                actionLoading === request._id
-                                            }
-                                            className="flex-1 rounded-lg bg-red-100 py-3 text-sm font-bold text-red-600 transition-colors hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {actionLoading === request._id
-                                                ? "Processing..."
-                                                : "Decline"}
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                handleAccept(request._id)
-                                            }
-                                            disabled={
-                                                actionLoading === request._id
-                                            }
-                                            className="flex-1 rounded-lg bg-[#0A84FF] py-3 text-sm font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#005BBB] disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {actionLoading === request._id
-                                                ? "Processing..."
-                                                : "Accept"}
-                                        </button>
-                                    </div>
-                                )}
+                            {/* Action Buttons */}
+                            <div className="mt-4 flex gap-3">
+                                {/* View Status Button - Always visible */}
+                                <button
+                                    onClick={() =>
+                                        navigate(`/vendor/booking/${request._id}/status`)
+                                    }
+                                    className="flex-1 rounded-lg bg-[#E7F0FB] py-3 text-sm font-semibold text-[#0A84FF] transition-colors hover:bg-[#D0E1F7] flex items-center justify-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined !text-lg">
+                                        timeline
+                                    </span>
+                                    View Status
+                                </button>
+
+                                {/* Accept/Reject Buttons - Only for New/ASSIGNED requests */}
+                                {activeTab === "New" &&
+                                    (request.vendorStatus || request.status) === "ASSIGNED" && (
+                                        <>
+                                            <button
+                                                onClick={() =>
+                                                    handleReject(request._id)
+                                                }
+                                                disabled={
+                                                    actionLoading === request._id
+                                                }
+                                                className="flex-1 rounded-lg bg-red-100 py-3 text-sm font-bold text-red-600 transition-colors hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {actionLoading === request._id
+                                                    ? "Processing..."
+                                                    : "Decline"}
+                                            </button>
+                                            <button
+                                                onClick={() =>
+                                                    handleAccept(request._id)
+                                                }
+                                                disabled={
+                                                    actionLoading === request._id
+                                                }
+                                                className="flex-1 rounded-lg bg-[#0A84FF] py-3 text-sm font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#005BBB] disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {actionLoading === request._id
+                                                    ? "Processing..."
+                                                    : "Accept"}
+                                            </button>
+                                        </>
+                                    )}
+                            </div>
                         </div>
                     ))
                 )}

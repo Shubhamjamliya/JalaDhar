@@ -64,6 +64,13 @@ const verifyAdvancePayment = async (req, res) => {
     booking.payment.advanceRazorpayPaymentId = razorpayPaymentId;
     booking.payment.advancePaidAt = new Date();
     booking.payment.status = PAYMENT_STATUS.SUCCESS;
+    
+    // Only set booking to ASSIGNED after payment is verified
+    // This ensures booking is not active if payment fails
+    booking.status = BOOKING_STATUS.ASSIGNED;
+    booking.vendorStatus = BOOKING_STATUS.ASSIGNED;
+    booking.userStatus = BOOKING_STATUS.ASSIGNED;
+    
     await booking.save();
 
     // Update payment record
@@ -144,7 +151,7 @@ const verifyRemainingPayment = async (req, res) => {
     // Find booking
     const booking = await Booking.findOne({
       _id: bookingId,
-      status: BOOKING_STATUS.AWAITING_PAYMENT
+      userStatus: BOOKING_STATUS.AWAITING_PAYMENT
     })
       .populate('user', 'name email')
       .populate('vendor', 'name email')
@@ -173,8 +180,12 @@ const verifyRemainingPayment = async (req, res) => {
     booking.payment.remainingRazorpayPaymentId = razorpayPaymentId;
     booking.payment.remainingPaidAt = new Date();
     booking.payment.status = PAYMENT_STATUS.SUCCESS;
-    booking.status = BOOKING_STATUS.COMPLETED;
-    booking.completedAt = new Date();
+    // When user pays remaining 60%:
+    // - User status: PAYMENT_SUCCESS (can now see report)
+    // - Vendor status: Still REPORT_UPLOADED (waiting for admin to pay 50%)
+    booking.status = BOOKING_STATUS.PAYMENT_SUCCESS;
+    booking.userStatus = BOOKING_STATUS.PAYMENT_SUCCESS;
+    // vendorStatus remains REPORT_UPLOADED until admin pays
     await booking.save();
 
     // Update payment record
@@ -318,8 +329,8 @@ const handlePaymentCaptured = async (paymentData) => {
           booking.payment.remainingPaid = true;
           booking.payment.remainingRazorpayPaymentId = paymentData.id;
           booking.payment.remainingPaidAt = new Date();
-          booking.status = BOOKING_STATUS.COMPLETED;
-          booking.completedAt = new Date();
+          booking.status = BOOKING_STATUS.PAYMENT_SUCCESS;
+          booking.userStatus = BOOKING_STATUS.PAYMENT_SUCCESS;
         }
         booking.payment.status = PAYMENT_STATUS.SUCCESS;
         await booking.save();

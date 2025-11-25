@@ -22,6 +22,17 @@ const bookingSchema = new mongoose.Schema({
     enum: Object.values(BOOKING_STATUS),
     default: BOOKING_STATUS.PENDING
   },
+  // Separate status for vendor and user views
+  vendorStatus: {
+    type: String,
+    enum: Object.values(BOOKING_STATUS),
+    default: BOOKING_STATUS.PENDING
+  },
+  userStatus: {
+    type: String,
+    enum: Object.values(BOOKING_STATUS),
+    default: BOOKING_STATUS.PENDING
+  },
   scheduledDate: {
     type: Date,
     required: [true, 'Scheduled date is required']
@@ -113,6 +124,19 @@ const bookingSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Admin'
       }
+    },
+    // First installment (50% after report upload)
+    firstInstallment: {
+      amount: Number,
+      paid: {
+        type: Boolean,
+        default: false
+      },
+      paidAt: Date,
+      paidBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Admin'
+      }
     }
   },
   notes: {
@@ -153,7 +177,18 @@ const bookingSchema = new mongoose.Schema({
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Vendor'
-    }
+    },
+    approvedAt: Date,
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin'
+    },
+    rejectedAt: Date,
+    rejectedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin'
+    },
+    rejectionReason: String
   },
   // Borewell result (after user digs)
   borewellResult: {
@@ -200,7 +235,16 @@ const bookingSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Admin'
     },
-    rejectionReason: String
+    rejectionReason: String,
+    paid: {
+      type: Boolean,
+      default: false
+    },
+    paidAt: Date,
+    paidBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin'
+    }
   },
   // Invoice
   invoice: {
@@ -232,7 +276,7 @@ bookingSchema.index({ scheduledDate: 1 });
 bookingSchema.index({ 'payment.status': 1 });
 
 // Virtual for booking duration (if needed)
-bookingSchema.virtual('duration').get(function() {
+bookingSchema.virtual('duration').get(function () {
   if (this.visitedAt && this.completedAt) {
     return Math.round((this.completedAt - this.visitedAt) / 1000 / 60); // in minutes
   }

@@ -238,9 +238,9 @@ export default function UserBookingHistory() {
 
         const matchesFilter =
             activeFilter === "All" ||
-            (activeFilter === "Completed" && booking.status === "COMPLETED") ||
-            (activeFilter === "Upcoming" && ["PENDING", "ASSIGNED", "ACCEPTED", "VISITED"].includes(booking.status)) ||
-            (activeFilter === "Cancelled" && ["CANCELLED", "REJECTED"].includes(booking.status));
+            (activeFilter === "Completed" && (booking.userStatus || booking.status) === "COMPLETED") ||
+            (activeFilter === "Upcoming" && ["PENDING", "ASSIGNED", "ACCEPTED", "VISITED"].includes(booking.userStatus || booking.status)) ||
+            (activeFilter === "Cancelled" && ["CANCELLED", "REJECTED"].includes(booking.userStatus || booking.status));
 
         return matchesSearch && matchesFilter;
     });
@@ -249,7 +249,7 @@ export default function UserBookingHistory() {
         return <LoadingSpinner message="Loading booking history..." />;
     }
 
-    return (
+                return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <div className="min-h-screen w-full bg-[#F6F7F9] px-4 py-6">
                 <ErrorMessage message={error} />
@@ -262,23 +262,23 @@ export default function UserBookingHistory() {
                     </h1>
                     <p className="text-[#4A4A4A] text-sm">
                         View and manage all your service bookings
-                    </p>
-                </div>
+                        </p>
+                    </div>
 
                 {/* Search Bar */}
                 <div className="mb-4">
                     <div className="flex h-12 w-full items-stretch rounded-[10px] border border-gray-200 bg-white">
                         <div className="flex items-center justify-center rounded-l-[10px] pl-4">
-                            <IoSearchOutline className="text-gray-600" />
-                        </div>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                                <IoSearchOutline className="text-gray-600" />
+                            </div>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                             className="h-full w-full flex-1 rounded-r-[10px] px-3 text-base text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-[#0A84FF]"
-                            placeholder="Search by vendor or service"
-                        />
-                    </div>
+                                placeholder="Search by vendor or service"
+                            />
+                        </div>
                 </div>
 
                 {/* Filters */}
@@ -287,8 +287,7 @@ export default function UserBookingHistory() {
                         <button
                             key={filter}
                             onClick={() => setActiveFilter(filter)}
-                            className={`flex h-10 shrink-0 items-center justify-center rounded-full px-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-colors ${
-                                activeFilter === filter
+                            className={`flex h-10 shrink-0 items-center justify-center rounded-full px-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-colors ${activeFilter === filter
                                     ? "bg-[#0A84FF] text-white"
                                     : "bg-white text-gray-800"
                             }`}
@@ -320,7 +319,7 @@ export default function UserBookingHistory() {
                                             {booking.vendor?.name || "Vendor"}
                                         </p>
                                     </div>
-                                    {getStatusBadge(booking.status)}
+                                    {getStatusBadge(booking.userStatus || booking.status)}
                                 </div>
 
                                 {/* Date and Amount */}
@@ -344,7 +343,7 @@ export default function UserBookingHistory() {
                                     </button>
 
                                     {/* Completed Booking Actions */}
-                                    {booking.status === "COMPLETED" && (
+                                    {(booking.userStatus || booking.status) === "COMPLETED" && (
                                         <>
                                             {booking.report?.images && booking.report.images.length > 0 && (
                                                 <button
@@ -370,7 +369,7 @@ export default function UserBookingHistory() {
                                     )}
 
                                     {/* Payment Button for AWAITING_PAYMENT */}
-                                    {booking.status === "AWAITING_PAYMENT" && (
+                                    {(booking.userStatus || booking.status) === "AWAITING_PAYMENT" && (
                                         <button
                                             onClick={() => navigate(`/user/booking/${booking._id}/payment`)}
                                             className="w-full h-10 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors"
@@ -380,54 +379,54 @@ export default function UserBookingHistory() {
                                     )}
 
                                     {/* Cancel Button for Active Bookings */}
-                                    {["PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.status) && (
+                                    {["PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.userStatus || booking.status) && (
                                         <button
                                             onClick={() => handleCancelBooking(booking)}
                                             className="w-full h-10 bg-red-500 text-white text-sm font-semibold rounded-[8px] hover:bg-red-600 transition-colors"
                                         >
                                             Cancel Booking
                                         </button>
-                                    )}
+                                )}
                                 </div>
                             </div>
                         ))
                     )}
-                </div>
+            </div>
 
-                {/* Work Proof Modal */}
-                {showWorkProof && (
+            {/* Work Proof Modal */}
+            {showWorkProof && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={() => setShowWorkProof(null)}
+                >
                     <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                        onClick={() => setShowWorkProof(null)}
+                        className="bg-white rounded-[16px] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <div
-                            className="bg-white rounded-[16px] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-200">
                                 <h2 className="text-xl font-bold text-gray-800">Work Proof</h2>
-                                <button
-                                    onClick={() => setShowWorkProof(null)}
-                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                >
-                                    <IoCloseOutline className="text-2xl text-gray-600" />
-                                </button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-5">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <button
+                                onClick={() => setShowWorkProof(null)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <IoCloseOutline className="text-2xl text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {showWorkProof.map((imageUrl, index) => (
-                                        <img
-                                            key={index}
+                                    <img
+                                        key={index}
                                             src={imageUrl}
-                                            alt={`Work proof ${index + 1}`}
-                                            className="w-full h-64 object-cover rounded-[12px]"
-                                        />
-                                    ))}
-                                </div>
+                                        alt={`Work proof ${index + 1}`}
+                                        className="w-full h-64 object-cover rounded-[12px]"
+                                    />
+                                ))}
                             </div>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
                 {/* Rating Modal */}
                 {showRatingModal && (
@@ -531,4 +530,5 @@ export default function UserBookingHistory() {
             </div>
         </div>
     );
-}
+  }
+  

@@ -8,7 +8,17 @@ const {
   getBookingStatistics,
   getTravelChargesRequests,
   approveTravelCharges,
-  rejectTravelCharges
+  rejectTravelCharges,
+  payTravelCharges,
+  payFirstInstallment,
+  paySecondInstallment,
+  getReportPendingApprovals,
+  getBorewellPendingApprovals,
+  getPendingUserRefunds,
+  processUserRefund,
+  processFinalSettlement,
+  approveReport,
+  rejectReport
 } = require('../../controllers/bookingControllers/adminBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isAdmin } = require('../../middleware/roleMiddleware');
@@ -35,6 +45,16 @@ router.patch('/bookings/:bookingId/approve-result', authenticate, isAdmin, appro
 router.patch('/bookings/:bookingId/settlement', authenticate, isAdmin, processVendorSettlement);
 router.patch('/bookings/:bookingId/travel-charges/approve', authenticate, isAdmin, approveTravelCharges);
 router.patch('/bookings/:bookingId/travel-charges/reject', authenticate, isAdmin, rejectTravelChargesValidation, rejectTravelCharges);
+router.patch('/bookings/:bookingId/travel-charges/pay', authenticate, isAdmin, payTravelCharges);
+router.patch('/bookings/:bookingId/first-installment/pay', authenticate, isAdmin, payFirstInstallment);
+router.patch('/bookings/:bookingId/second-installment/pay', authenticate, isAdmin, paySecondInstallment);
+router.get('/bookings/report-pending', authenticate, isAdmin, getReportPendingApprovals);
+router.patch('/bookings/:bookingId/approve-report', authenticate, isAdmin, approveReport);
+router.patch('/bookings/:bookingId/reject-report', authenticate, isAdmin, rejectTravelChargesValidation, rejectReport);
+router.get('/bookings/borewell-pending', authenticate, isAdmin, getBorewellPendingApprovals);
+router.get('/bookings/pending-user-refunds', authenticate, isAdmin, getPendingUserRefunds);
+router.patch('/bookings/:bookingId/user-refund', authenticate, isAdmin, processUserRefund);
+router.patch('/bookings/:bookingId/final-settlement', authenticate, isAdmin, processFinalSettlement);
 
 module.exports = router;
 

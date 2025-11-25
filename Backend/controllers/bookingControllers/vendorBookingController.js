@@ -14,7 +14,8 @@ const getVendorBookings = async (req, res) => {
 
     const query = { vendor: vendorId };
     if (status) {
-      query.status = status;
+      // Use vendorStatus for vendor queries
+      query.vendorStatus = status;
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -75,16 +76,18 @@ const acceptBooking = async (req, res) => {
       });
     }
 
-    // Check if booking is in correct status
-    if (booking.status !== BOOKING_STATUS.ASSIGNED) {
-      console.log(`[acceptBooking] Booking ${bookingId} status is ${booking.status}, expected ${BOOKING_STATUS.ASSIGNED}`);
+    // Check if booking is in correct status (use vendorStatus for vendor)
+    if (booking.vendorStatus !== BOOKING_STATUS.ASSIGNED && booking.status !== BOOKING_STATUS.ASSIGNED) {
+      console.log(`[acceptBooking] Booking ${bookingId} status is ${booking.vendorStatus || booking.status}, expected ${BOOKING_STATUS.ASSIGNED}`);
       return res.status(400).json({
         success: false,
-        message: `Booking cannot be accepted. Current status: ${booking.status}. Only ${BOOKING_STATUS.ASSIGNED} bookings can be accepted.`
+        message: `Booking cannot be accepted. Current status: ${booking.vendorStatus || booking.status}. Only ${BOOKING_STATUS.ASSIGNED} bookings can be accepted.`
       });
     }
 
     booking.status = BOOKING_STATUS.ACCEPTED;
+    booking.vendorStatus = BOOKING_STATUS.ACCEPTED;
+    booking.userStatus = BOOKING_STATUS.ACCEPTED;
     booking.acceptedAt = new Date();
     await booking.save();
 
@@ -153,16 +156,18 @@ const rejectBooking = async (req, res) => {
       });
     }
 
-    // Check if booking is in correct status
-    if (booking.status !== BOOKING_STATUS.ASSIGNED) {
-      console.log(`[rejectBooking] Booking ${bookingId} status is ${booking.status}, expected ${BOOKING_STATUS.ASSIGNED}`);
+    // Check if booking is in correct status (use vendorStatus for vendor)
+    if (booking.vendorStatus !== BOOKING_STATUS.ASSIGNED && booking.status !== BOOKING_STATUS.ASSIGNED) {
+      console.log(`[rejectBooking] Booking ${bookingId} status is ${booking.vendorStatus || booking.status}, expected ${BOOKING_STATUS.ASSIGNED}`);
       return res.status(400).json({
         success: false,
-        message: `Booking cannot be rejected. Current status: ${booking.status}. Only ${BOOKING_STATUS.ASSIGNED} bookings can be rejected.`
+        message: `Booking cannot be rejected. Current status: ${booking.vendorStatus || booking.status}. Only ${BOOKING_STATUS.ASSIGNED} bookings can be rejected.`
       });
     }
 
     booking.status = BOOKING_STATUS.REJECTED;
+    booking.vendorStatus = BOOKING_STATUS.REJECTED;
+    booking.userStatus = BOOKING_STATUS.REJECTED;
     booking.rejectionReason = rejectionReason.trim();
     await booking.save();
 
@@ -210,7 +215,7 @@ const markAsVisited = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       vendor: vendorId,
-      status: BOOKING_STATUS.ACCEPTED
+      vendorStatus: BOOKING_STATUS.ACCEPTED
     }).populate('user', 'name email');
 
     if (!booking) {
@@ -222,6 +227,8 @@ const markAsVisited = async (req, res) => {
 
     // Update booking status
     booking.status = BOOKING_STATUS.VISITED;
+    booking.vendorStatus = BOOKING_STATUS.VISITED;
+    booking.userStatus = BOOKING_STATUS.VISITED;
     booking.visitedAt = new Date();
     await booking.save();
 
@@ -271,7 +278,7 @@ const markVisitedAndUploadReport = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       vendor: vendorId,
-      status: BOOKING_STATUS.VISITED
+      vendorStatus: BOOKING_STATUS.VISITED
     }).populate('user', 'name email');
 
     if (!booking) {
@@ -326,10 +333,12 @@ const markVisitedAndUploadReport = async (req, res) => {
       uploadedBy: vendorId
     };
     booking.reportUploadedAt = new Date();
+    // When vendor uploads report:
+    // - Vendor status: REPORT_UPLOADED (waiting for admin to pay 50%)
+    // - User status: AWAITING_PAYMENT (user needs to pay 60% to see report)
     booking.status = BOOKING_STATUS.REPORT_UPLOADED;
-
-    // Update to AWAITING_PAYMENT status
-    booking.status = BOOKING_STATUS.AWAITING_PAYMENT;
+    booking.vendorStatus = BOOKING_STATUS.REPORT_UPLOADED;
+    booking.userStatus = BOOKING_STATUS.AWAITING_PAYMENT;
     await booking.save();
 
     // Send notification to user
@@ -382,7 +391,7 @@ const markAsCompleted = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       vendor: vendorId,
-      status: { $in: [BOOKING_STATUS.VISITED, BOOKING_STATUS.AWAITING_PAYMENT, BOOKING_STATUS.REPORT_UPLOADED] }
+      vendorStatus: { $in: [BOOKING_STATUS.VISITED, BOOKING_STATUS.AWAITING_PAYMENT, BOOKING_STATUS.REPORT_UPLOADED] }
     }).populate('user', 'name email');
 
     if (!booking) {

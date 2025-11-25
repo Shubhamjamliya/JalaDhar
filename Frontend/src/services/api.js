@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getCachedResponse, setCachedResponse, clearCache } from '../utils/apiCache';
 
 // Base URL from environment variable or default
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -12,9 +13,44 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - Add token to headers
+// Cacheable GET requests (read-only endpoints)
+const CACHEABLE_METHODS = ['GET'];
+const CACHEABLE_ENDPOINTS = [
+  '/vendors/dashboard',
+  '/bookings/dashboard/stats',
+  '/admin/vendors',
+  '/admin/users',
+  '/admin/payments/statistics',
+  '/bookings/vendors/nearby',
+  '/bookings/my-bookings',
+  '/vendors/bookings/my-bookings',
+];
+
+// Check if request should be cached
+const shouldCache = (config) => {
+  if (!CACHEABLE_METHODS.includes(config.method?.toUpperCase())) {
+    return false;
+  }
+  
+  const url = config.url || '';
+  return CACHEABLE_ENDPOINTS.some(endpoint => url.includes(endpoint));
+};
+
+// Request interceptor - Add token to headers and check cache
 api.interceptors.request.use(
   (config) => {
+    // Check cache for GET requests
+    if (shouldCache(config)) {
+      const cachedData = getCachedResponse(config);
+      if (cachedData) {
+        // Return cached data as a resolved promise
+        return Promise.reject({
+          __cached: true,
+          data: cachedData
+        });
+      }
+    }
+    
     // Determine which token to use based on the API endpoint
     let token = null;
     const url = config.url || '';
@@ -66,12 +102,40 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - Handle errors globally
+// Response interceptor - Handle errors globally and cache responses
 api.interceptors.response.use(
   (response) => {
+    // Cache successful GET responses
+    if (shouldCache(response.config)) {
+      setCachedResponse(response.config, response.data);
+    }
     return response;
   },
   (error) => {
+    // Handle cached responses
+    if (error.__cached) {
+      return Promise.resolve({
+        data: error.data,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {}
+      });
+    }
+    
+    // Clear cache on mutations to ensure fresh data
+    if (error.config && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(error.config.method?.toUpperCase())) {
+      const url = error.config.url || '';
+      // Clear related cache entries
+      if (url.includes('/bookings')) {
+        clearCache('/bookings');
+      } else if (url.includes('/vendors')) {
+        clearCache('/vendors');
+      } else if (url.includes('/users')) {
+        clearCache('/users');
+      }
+    }
+    
     // Handle 401 Unauthorized - Token expired or invalid
     if (error.response?.status === 401) {
       const isVendorRoute = window.location.pathname.startsWith('/vendor');

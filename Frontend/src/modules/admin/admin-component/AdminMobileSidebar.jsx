@@ -10,6 +10,7 @@ import {
     IoShieldCheckmarkOutline,
     IoSettingsOutline,
     IoWalletOutline,
+    IoCheckmarkCircleOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import logo from "../../../assets/logo.png";
@@ -38,6 +39,12 @@ const navItems = [
         label: "Users",
         to: "/admin/users",
         Icon: IoPersonCircleOutline,
+    },
+    {
+        id: "approvals",
+        label: "Approvals",
+        to: "/admin/approvals",
+        Icon: IoCheckmarkCircleOutline,
     },
     {
         id: "payments",
@@ -74,7 +81,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
         const currentPath = location.pathname;
         
         // For routes that should match exactly
-        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/payments" || path === "/admin/settings") {
+        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/payments" || path === "/admin/settings" || path === "/admin/approvals") {
             return currentPath === path || currentPath === path + "/";
         }
         
@@ -136,7 +143,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                 <nav className="flex flex-col gap-2 flex-1">
                     {navItems.map(({ id, label, to, Icon }) => {
                         const isActive = checkIsActive(to);
-                        const shouldEnd = to === "/admin/vendors" || to === "/admin/users" || to === "/admin/dashboard" || to === "/admin/payments" || to === "/admin/settings";
+                        const shouldEnd = to === "/admin/vendors" || to === "/admin/users" || to === "/admin/dashboard" || to === "/admin/payments" || to === "/admin/settings" || to === "/admin/approvals";
                         return (
                             <NavLink
                                 key={id}

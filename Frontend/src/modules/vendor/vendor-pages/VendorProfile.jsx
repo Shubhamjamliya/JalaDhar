@@ -123,7 +123,7 @@ export default function VendorProfile() {
     const handleLogout = async () => {
         if (window.confirm("Are you sure you want to logout?")) {
             await logout();
-            navigate("/vendorlogin");
+        navigate("/vendorlogin");
         }
     };
 
@@ -160,7 +160,7 @@ export default function VendorProfile() {
                 }
 
                 setSuccess("Profile updated successfully!");
-                setIsEditing(false);
+        setIsEditing(false);
                 await loadProfile();
             } else {
                 setError(response.message || "Failed to update profile");
@@ -212,7 +212,7 @@ export default function VendorProfile() {
 
         const newPreviews = [];
         files.forEach((file) => {
-            const reader = new FileReader();
+                const reader = new FileReader();
             reader.onloadend = () => {
                 newPreviews.push({ file, preview: reader.result });
                 if (newPreviews.length === files.length) {
@@ -222,8 +222,8 @@ export default function VendorProfile() {
                     ]);
                 }
             };
-            reader.readAsDataURL(file);
-        });
+                reader.readAsDataURL(file);
+            });
     };
 
     const handleRemoveServiceImage = (index) => {
@@ -423,7 +423,7 @@ export default function VendorProfile() {
     };
 
     if (loading) {
-        return (
+    return (
             <PageContainer>
                 <LoadingSpinner message="Loading profile..." />
             </PageContainer>
@@ -477,16 +477,16 @@ export default function VendorProfile() {
                                     {profileData.profilePicture ? (
                                         <img
                                             src={profileData.profilePicture}
-                                            alt="Profile"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
+                                    alt="Profile"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
                                         <div className="w-full h-full bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] flex items-center justify-center">
                                             <span className="text-4xl">👤</span>
                                         </div>
-                                    )}
-                                </div>
-                                {isEditing && (
+                            )}
+                        </div>
+                        {isEditing && (
                                     <div className="absolute -bottom-1 -right-1 bg-[#0A84FF] rounded-full p-2 shadow-lg border-2 border-white">
                                         <IoPencilOutline className="text-white text-sm" />
                                     </div>
@@ -531,15 +531,15 @@ export default function VendorProfile() {
                         <p className="text-sm font-medium opacity-90 mt-1 break-words max-w-full px-4">
                             {profileData.email}
                         </p>
+                            </div>
                     </div>
-                </div>
             </section>
 
             {/* Vendor Information Card */}
             <div className="w-full mt-6 rounded-xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden">
                 <h3 className="text-lg font-bold text-[#3A3A3A] mb-6">
                     Personal Information
-                </h3>
+                    </h3>
                 <div className="flex flex-col space-y-6 w-full">
                     {/* Name */}
                     <InfoRow
@@ -547,9 +547,9 @@ export default function VendorProfile() {
                         label="Name"
                         value={profileData.name}
                         isEditing={isEditing}
-                        onChange={(e) =>
-                            setProfileData({
-                                ...profileData,
+                            onChange={(e) =>
+                                setProfileData({
+                                    ...profileData,
                                 name: e.target.value,
                             })
                         }
@@ -562,9 +562,9 @@ export default function VendorProfile() {
                         label="Phone Number"
                         value={profileData.phone}
                         isEditing={isEditing}
-                        onChange={(e) =>
-                            setProfileData({
-                                ...profileData,
+                            onChange={(e) =>
+                                setProfileData({
+                                    ...profileData,
                                 phone: e.target.value,
                             })
                         }
@@ -577,9 +577,9 @@ export default function VendorProfile() {
                         label="Experience (Years)"
                         value={profileData.experience}
                         isEditing={isEditing}
-                        onChange={(e) =>
-                            setProfileData({
-                                ...profileData,
+                            onChange={(e) =>
+                                setProfileData({
+                                    ...profileData,
                                 experience: e.target.value,
                             })
                         }
@@ -601,9 +601,9 @@ export default function VendorProfile() {
                                     type="text"
                                     placeholder="Street"
                                     value={profileData.address.street || ""}
-                                    onChange={(e) =>
-                                        setProfileData({
-                                            ...profileData,
+                            onChange={(e) =>
+                                setProfileData({
+                                    ...profileData,
                                             address: {
                                                 ...profileData.address,
                                                 street: e.target.value,
@@ -618,9 +618,9 @@ export default function VendorProfile() {
                                         type="text"
                                         placeholder="City"
                                         value={profileData.address.city || ""}
-                                        onChange={(e) =>
-                                            setProfileData({
-                                                ...profileData,
+                            onChange={(e) =>
+                                setProfileData({
+                                    ...profileData,
                                                 address: {
                                                     ...profileData.address,
                                                     city: e.target.value,
@@ -645,15 +645,15 @@ export default function VendorProfile() {
                                         }
                                         className="w-full text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
                                         disabled={saving}
-                                    />
-                                </div>
+                        />
+                    </div>
                                 <input
                                     type="text"
                                     placeholder="Pincode"
                                     value={profileData.address.pincode || ""}
-                                    onChange={(e) =>
-                                        setProfileData({
-                                            ...profileData,
+                            onChange={(e) =>
+                                setProfileData({
+                                    ...profileData,
                                             address: {
                                                 ...profileData.address,
                                                 pincode: e.target.value,
@@ -681,7 +681,7 @@ export default function VendorProfile() {
             </div>
 
             {/* Edit Profile Button */}
-            {isEditing ? (
+                                {isEditing ? (
                 <div className="mt-6 flex gap-3">
                     <button
                         onClick={handleSave}
@@ -782,8 +782,8 @@ export default function VendorProfile() {
                                             placeholder="e.g., Water Detection Machine"
                                             className="w-full rounded-lg border-gray-200 bg-[#F3F7FA] p-3 text-sm transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
                                         />
-                                    </div>
-                                </div>
+                                        </div>
+                                        </div>
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-[#6B7280]">
                                         Description
@@ -838,12 +838,12 @@ export default function VendorProfile() {
                                             min="1"
                                             className="w-full rounded-lg border-gray-200 bg-[#F3F7FA] p-3 text-sm transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
                                         />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
                                         Service Images
-                                    </label>
+                            </label>
                                     {serviceImagePreviews.length > 0 && (
                                         <div className="grid grid-cols-4 gap-2 mb-2">
                                             {serviceImagePreviews.map(
@@ -857,36 +857,36 @@ export default function VendorProfile() {
                                                             alt={`Preview ${
                                                                 index + 1
                                                             }`}
-                                                            className="w-full h-24 object-cover rounded-[8px]"
-                                                        />
-                                                        <button
-                                                            onClick={() =>
+                                                className="w-full h-24 object-cover rounded-[8px]"
+                                            />
+                                                <button
+                                                    onClick={() =>
                                                                 handleRemoveServiceImage(
                                                                     index
                                                                 )
-                                                            }
-                                                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
-                                                        >
-                                                            <IoCloseOutline className="text-sm" />
-                                                        </button>
+                                                    }
+                                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                                                >
+                                                    <IoCloseOutline className="text-sm" />
+                                                </button>
                                                     </div>
                                                 )
                                             )}
                                         </div>
                                     )}
-                                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[#D9DDE4] rounded-[8px] cursor-pointer hover:border-[#0A84FF] transition-colors">
-                                        <IoImageOutline className="text-2xl text-gray-400 mb-1" />
-                                        <p className="text-xs text-gray-500">
+                                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[#D9DDE4] rounded-[8px] cursor-pointer hover:border-[#0A84FF] transition-colors">
+                                    <IoImageOutline className="text-2xl text-gray-400 mb-1" />
+                                    <p className="text-xs text-gray-500">
                                             Add Service Images
-                                        </p>
-                                        <input
-                                            type="file"
-                                            className="hidden"
-                                            accept="image/*"
-                                            multiple
+                                    </p>
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/*"
+                                        multiple
                                             onChange={handleServiceImageChange}
-                                        />
-                                    </label>
+                                    />
+                                </label>
                                 </div>
                                 <div className="flex gap-3 justify-end">
                                     <button
@@ -926,7 +926,7 @@ export default function VendorProfile() {
                                 >
                                     Add Your First Service
                                 </button>
-                            </div>
+                        </div>
                         ) : (
                             services.map((service) => (
                                 <div
@@ -946,7 +946,7 @@ export default function VendorProfile() {
                                         ) : (
                                             <div className="h-24 w-24 shrink-0 rounded-lg bg-gray-200 flex items-center justify-center">
                                                 <IoImageOutline className="text-3xl text-gray-400" />
-                                            </div>
+                    </div>
                                         )}
 
                                         <div className="flex-1">
@@ -970,7 +970,7 @@ export default function VendorProfile() {
                                                 {service.duration &&
                                                     ` / ${service.duration} min`}
                                             </p>
-                                        </div>
+                </div>
 
                                         <button
                                             onClick={() =>
@@ -1077,11 +1077,11 @@ export default function VendorProfile() {
                                                                     index + 1
                                                                 }`}
                                                                 className="w-full h-auto object-cover rounded-lg"
-                                                            />
-                                                        </div>
+                        />
+                    </div>
                                                     )
                                                 )}
-                                            </div>
+                </div>
                                         </div>
                                     )}
 
@@ -1155,7 +1155,7 @@ export default function VendorProfile() {
                                                 }
                                             )}
                                         </p>
-                                    </div>
+                    </div>
                                     {previewingService.duration && (
                                         <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                             <div className="flex items-center gap-2 mb-2">
@@ -1172,7 +1172,7 @@ export default function VendorProfile() {
                                             </p>
                                         </div>
                                     )}
-                                </div>
+                </div>
 
                                 {/* Category and Status in Grid */}
                                 <div className="grid grid-cols-2 gap-4">
@@ -1275,7 +1275,7 @@ export default function VendorProfile() {
 
                         {/* Footer with Actions */}
                         <form className="flex-shrink-0 border-t border-gray-100 bg-white p-5 flex gap-3 justify-start rounded-b-xl">
-                            <button
+                        <button
                                 type="button"
                                 onClick={() => {
                                     handleEditService(previewingService);
@@ -1289,7 +1289,7 @@ export default function VendorProfile() {
                                 <span className="material-symbols-outlined text-base">
                                     edit
                                 </span>
-                            </button>
+                        </button>
                             <button
                                 type="button"
                                 onClick={() => {
@@ -1315,8 +1315,8 @@ export default function VendorProfile() {
                             </button>
                         </form>
                     </div>
-                </div>
-            )}
+                    </div>
+                )}
 
             {/* Action List */}
             <div className="w-full mt-6 space-y-3">
@@ -1350,21 +1350,21 @@ function InfoRow({
             </div>
             <div className="flex flex-col flex-1 min-w-0 w-full overflow-hidden">
                 <span className="text-xs text-[#6B7280] mb-2 font-semibold uppercase tracking-wide truncate">
-                    {label}
+                {label}
                 </span>
-                {isEditing ? (
-                    <input
-                        type={type}
-                        value={value || ""}
-                        onChange={onChange}
+            {isEditing ? (
+                <input
+                    type={type}
+                    value={value || ""}
+                    onChange={onChange}
                         disabled={disabled}
                         className="w-full text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] disabled:opacity-50 transition-all"
-                    />
-                ) : (
+                />
+            ) : (
                     <span className="text-base font-semibold text-[#3A3A3A] break-words">
                         {value || "Not provided"}
                     </span>
-                )}
+            )}
             </div>
         </div>
     );
@@ -1394,9 +1394,9 @@ function ActionRow({ icon, label, isLogout, onClick }) {
                         isLogout ? "text-red-500" : "text-[#3A3A3A]"
                     }`}
                 >
-                    {label}
+                {label}
                 </p>
-            </div>
+                </div>
             <IoChevronForwardOutline className="text-xl text-[#6B7280]" />
         </div>
     );

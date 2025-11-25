@@ -8,6 +8,7 @@ import {
     IoShieldCheckmarkOutline,
     IoSettingsOutline,
     IoWalletOutline,
+    IoCheckmarkCircleOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import logo from "../../../assets/logo.png";
@@ -38,6 +39,12 @@ const navItems = [
         Icon: IoPersonCircleOutline,
     },
     {
+        id: "approvals",
+        label: "Approvals",
+        to: "/admin/approvals",
+        Icon: IoCheckmarkCircleOutline,
+    },
+    {
         id: "payments",
         label: "Payments",
         to: "/admin/payments",
@@ -64,17 +71,17 @@ export default function AdminSidebar() {
     // Helper function to check if a route is active
     const checkIsActive = (path) => {
         const currentPath = location.pathname;
-        
+
         // For routes that should match exactly
-        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/payments" || path === "/admin/settings") {
+        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/payments" || path === "/admin/settings" || path === "/admin/approvals") {
             return currentPath === path || currentPath === path + "/";
         }
-        
+
         // For pending, match the path and sub-routes
         if (path === "/admin/vendors/pending") {
             return currentPath === path || currentPath.startsWith(path + "/");
         }
-        
+
         return false;
     };
 
@@ -97,18 +104,17 @@ export default function AdminSidebar() {
                     const Icon = item.Icon;
                     const isActive = checkIsActive(item.to);
                     // Use end prop for routes that should match exactly (not sub-routes)
-                    const shouldEnd = item.to === "/admin/vendors" || item.to === "/admin/users" || item.to === "/admin/dashboard" || item.to === "/admin/payments" || item.to === "/admin/settings";
-                    
+                    const shouldEnd = item.to === "/admin/vendors" || item.to === "/admin/users" || item.to === "/admin/dashboard" || item.to === "/admin/payments" || item.to === "/admin/settings" || item.to === "/admin/approvals";
+
                     return (
                         <NavLink
                             key={item.id}
                             to={item.to}
                             end={shouldEnd}
-                            className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                                isActive
+                            className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
                                     ? "bg-[#0A84FF] text-white shadow-lg shadow-[#0A84FF]/30"
                                     : "text-white/70 hover:bg-white/10 hover:text-white"
-                            }`}
+                                }`}
                         >
                             <Icon className={`text-xl flex-shrink-0 ${isActive ? "text-white" : "text-white/70 group-hover:text-white"}`} />
                             <span className="font-medium text-sm">{item.label}</span>
@@ -139,7 +145,7 @@ export default function AdminSidebar() {
                         </div>
                     </div>
                 </div>
-                
+
                 <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 text-red-400 hover:bg-red-500/20 hover:text-red-300"
