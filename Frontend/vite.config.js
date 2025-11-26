@@ -19,19 +19,25 @@ export default defineConfig(({ mode }) => ({
         theme_color: '#0A84FF',
         background_color: '#F6F7F9',
         display: 'standalone',
+        start_url: '/',
+        scope: '/',
         icons: [
           {
             src: '/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: '/icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       },
+      manifestFilename: 'manifest.webmanifest',
+      strategies: 'generateSW',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
@@ -64,7 +70,9 @@ export default defineConfig(({ mode }) => ({
       },
       devOptions: {
         enabled: false // Disable in development for faster reloads
-      }
+      },
+      injectRegister: 'auto',
+      injectManifest: false
     }),
     ...(mode === 'analyze' ? [visualizer({
       open: true,
