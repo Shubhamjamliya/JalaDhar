@@ -58,7 +58,6 @@ export default function VendorReviews() {
                 setError(response.message || "Failed to load reviews");
             }
         } catch (err) {
-            console.error("Load ratings error:", err);
             setError("Failed to load reviews");
         } finally {
             setLoading(false);

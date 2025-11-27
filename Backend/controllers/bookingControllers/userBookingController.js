@@ -30,15 +30,15 @@ const getAvailableVendors = async (req, res) => {
       isActive: true,
       isApproved: true,
       services: serviceId
-    }).select('name email phone experience rating address location documents.profilePicture');
+    }).select('name email phone experience rating address documents.profilePicture');
 
     // Calculate distance and sort vendors
     const vendorsWithDistance = vendors.map(vendor => {
       let distance = null;
-      if (lat && lng && vendor.location?.coordinates?.lat && vendor.location?.coordinates?.lng) {
+      if (lat && lng && vendor.address?.coordinates?.lat && vendor.address?.coordinates?.lng) {
         // Simple distance calculation (Haversine formula can be added)
-        const latDiff = Math.abs(vendor.location.coordinates.lat - parseFloat(lat));
-        const lngDiff = Math.abs(vendor.location.coordinates.lng - parseFloat(lng));
+        const latDiff = Math.abs(vendor.address.coordinates.lat - parseFloat(lat));
+        const lngDiff = Math.abs(vendor.address.coordinates.lng - parseFloat(lng));
         distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111; // Approximate km
       }
 
@@ -615,7 +615,15 @@ const getAllServices = async (req, res) => {
  */
 const getNearbyVendors = async (req, res) => {
   try {
-    const { lat, lng, limit = 10, minPrice, maxPrice, minRating, minExperience, serviceType } = req.query;
+    const { lat, lng, radius = 50, limit = 10, minPrice, maxPrice, minRating, minExperience, serviceType } = req.query;
+    
+    // Validate and set radius (50-100km range)
+    let searchRadius = parseFloat(radius);
+    if (isNaN(searchRadius) || searchRadius < 50) {
+      searchRadius = 50;
+    } else if (searchRadius > 100) {
+      searchRadius = 100;
+    }
 
     const query = {
       isActive: true,
@@ -633,10 +641,7 @@ const getNearbyVendors = async (req, res) => {
       .limit(parseInt(limit))
       .lean(); // Use lean() for better performance
 
-    console.log(`[getNearbyVendors] Found ${vendors.length} active and approved vendors`);
-
     if (vendors.length === 0) {
-      console.log(`[getNearbyVendors] No vendors found with isActive: true, isApproved: true`);
       return res.json({
         success: true,
         message: 'No vendors found',
@@ -651,30 +656,26 @@ const getNearbyVendors = async (req, res) => {
       // Filter out null/undefined services
       const allServices = v.services ? v.services.filter(s => s !== null && s !== undefined) : [];
 
-      if (allServices.length === 0) {
-        console.log(`[getNearbyVendors] Vendor ${v.name} (${v._id}) has no services. Services array length: ${v.services?.length || 0}`);
-      } else {
-        console.log(`[getNearbyVendors] Vendor ${v.name} (${v._id}) has ${allServices.length} services`);
-      }
-
       // Replace services array with filtered one
       v.services = allServices;
       return v;
     }).filter(v => v.services && v.services.length > 0); // Only keep vendors with services
 
-    console.log(`[getNearbyVendors] Found ${vendorsWithServices.length} vendors with services out of ${vendors.length} total`);
-
     // Calculate distance and format vendors
     const formattedVendors = vendorsWithServices.map(vendor => {
       let distance = null;
-      if (lat && lng && vendor.location?.coordinates?.lat && vendor.location?.coordinates?.lng) {
+      // Use address.coordinates for distance calculation
+      const vendorLat = vendor.address?.coordinates?.lat;
+      const vendorLng = vendor.address?.coordinates?.lng;
+      
+      if (lat && lng && vendorLat !== null && vendorLat !== undefined && vendorLng !== null && vendorLng !== undefined) {
         // Haversine formula for accurate distance
         const R = 6371; // Earth's radius in km
-        const dLat = (vendor.location.coordinates.lat - parseFloat(lat)) * Math.PI / 180;
-        const dLon = (vendor.location.coordinates.lng - parseFloat(lng)) * Math.PI / 180;
+        const dLat = (parseFloat(vendorLat) - parseFloat(lat)) * Math.PI / 180;
+        const dLon = (parseFloat(vendorLng) - parseFloat(lng)) * Math.PI / 180;
         const a =
           Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(parseFloat(lat) * Math.PI / 180) * Math.cos(vendor.location.coordinates.lat * Math.PI / 180) *
+          Math.cos(parseFloat(lat) * Math.PI / 180) * Math.cos(parseFloat(vendorLat) * Math.PI / 180) *
           Math.sin(dLon / 2) * Math.sin(dLon / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         distance = R * c;
@@ -740,6 +741,10 @@ const getNearbyVendors = async (req, res) => {
       );
     }
 
+    // Note: We show all vendors, but only calculate distance for those with coordinates
+    // Vendors without coordinates will be shown but without distance badge
+    // IMPORTANT: We show vendors WITH distance even if outside radius, so users can see all vendors with their distances
+
     // Sort by distance (if available), then by rating
     filteredVendors.sort((a, b) => {
       if (a.distance !== null && b.distance !== null) {
@@ -775,7 +780,6 @@ const getVendorProfile = async (req, res) => {
     const { vendorId } = req.params;
     const { lat, lng } = req.query; // User location for distance calculation
 
-    console.log(`[getVendorProfile] Fetching vendor profile for ID: ${vendorId}`);
 
     if (!vendorId) {
       return res.status(400).json({
@@ -793,7 +797,6 @@ const getVendorProfile = async (req, res) => {
       .lean();
 
     if (!vendor) {
-      console.log(`[getVendorProfile] Vendor not found with ID: ${vendorId}`);
       return res.status(404).json({
         success: false,
         message: 'Vendor not found'
@@ -801,7 +804,6 @@ const getVendorProfile = async (req, res) => {
     }
 
     if (!vendor.isActive || !vendor.isApproved) {
-      console.log(`[getVendorProfile] Vendor ${vendorId} is not active or not approved. isActive: ${vendor.isActive}, isApproved: ${vendor.isApproved}`);
       return res.status(404).json({
         success: false,
         message: 'Vendor not available'
@@ -810,13 +812,13 @@ const getVendorProfile = async (req, res) => {
 
     // Calculate distance if user location provided
     let distance = null;
-    if (lat && lng && vendor.location?.coordinates?.lat && vendor.location?.coordinates?.lng) {
+    if (lat && lng && vendor.address?.coordinates?.lat && vendor.address?.coordinates?.lng) {
       const R = 6371; // Earth's radius in km
-      const dLat = (vendor.location.coordinates.lat - parseFloat(lat)) * Math.PI / 180;
-      const dLon = (vendor.location.coordinates.lng - parseFloat(lng)) * Math.PI / 180;
+      const dLat = (vendor.address.coordinates.lat - parseFloat(lat)) * Math.PI / 180;
+      const dLon = (vendor.address.coordinates.lng - parseFloat(lng)) * Math.PI / 180;
       const a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(parseFloat(lat) * Math.PI / 180) * Math.cos(vendor.location.coordinates.lat * Math.PI / 180) *
+        Math.cos(parseFloat(lat) * Math.PI / 180) * Math.cos(vendor.address.coordinates.lat * Math.PI / 180) *
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       distance = R * c;

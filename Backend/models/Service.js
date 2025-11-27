@@ -31,9 +31,8 @@ const serviceSchema = new mongoose.Schema({
   },
   duration: {
     type: Number,
-    required: [true, 'Duration is required'],
     min: [1, 'Duration must be at least 1 minute']
-  }, // in minutes
+  }, // in minutes (optional)
   status: {
     type: String,
     enum: ['PENDING', 'APPROVED', 'REJECTED', 'INACTIVE'],

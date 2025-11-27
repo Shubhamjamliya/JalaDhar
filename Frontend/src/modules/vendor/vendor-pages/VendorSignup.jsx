@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { IoLocationOutline } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { sendVendorRegistrationOTP } from "../../../services/vendorAuthApi";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
+
+// Get API key at module level
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 export default function VendorSignup() {
     const [showPassword, setShowPassword] = useState(false);
@@ -10,11 +17,85 @@ export default function VendorSignup() {
     const [verificationToken, setVerificationToken] = useState("");
     const [otpCountdown, setOtpCountdown] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
-    
+    const [mapsLoaded, setMapsLoaded] = useState(false);
+    const [fullAddress, setFullAddress] = useState("");
+    const [gettingLocation, setGettingLocation] = useState(false);
+
     const navigate = useNavigate();
     const { register } = useVendorAuth();
+    const toast = useToast();
+
+    // Check if Google Maps is loaded
+    useEffect(() => {
+        const checkMapsLoaded = () => {
+            if (window.google && window.google.maps && window.google.maps.places) {
+                setMapsLoaded(true);
+                return true;
+            }
+            return false;
+        };
+
+        // Check if already loaded
+        if (checkMapsLoaded()) {
+            return;
+        }
+
+        // Load Google Maps API if not loaded
+        if (!GOOGLE_MAPS_API_KEY) {
+            // API key not set - fields will still show but without autocomplete
+            // User can still use "Use Current Location" button and type manually
+            return;
+        }
+
+        // Check if script already exists
+        const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
+
+        if (existingScript) {
+            // Script exists, poll until loaded
+            const pollInterval = setInterval(() => {
+                if (checkMapsLoaded()) {
+                    clearInterval(pollInterval);
+                }
+            }, 200);
+
+            // Stop polling after 10 seconds
+            setTimeout(() => {
+                clearInterval(pollInterval);
+            }, 10000);
+
+            // Also listen for load event
+            existingScript.addEventListener('load', () => {
+                setTimeout(() => {
+                    checkMapsLoaded();
+                }, 500);
+            });
+        } else {
+            // Create new script
+            const script = document.createElement("script");
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+
+            script.onload = () => {
+                // Poll until places library is ready
+                const pollInterval = setInterval(() => {
+                    if (checkMapsLoaded()) {
+                        clearInterval(pollInterval);
+                    }
+                }, 200);
+
+                // Stop polling after 5 seconds
+                setTimeout(() => {
+                    clearInterval(pollInterval);
+                }, 5000);
+            };
+
+            script.onerror = () => {
+                // Failed to load Google Maps API
+            };
+        }
+    }, []);
 
     useEffect(() => {
         let timer;
@@ -33,20 +114,20 @@ export default function VendorSignup() {
         password: "",
         confirmPassword: "",
         profilePicture: null,
-        
+
         // KYC Details
         aadhaarNo: "",
         panNo: "",
         aadharCard: null,
         panCard: null,
-        
+
         // Education & Experience
         education: "",
         institution: "",
         experience: "",
         experienceDetails: "",
         certificates: [],
-        
+
         // Bank Details
         bankName: "",
         accountHolderName: "",
@@ -54,33 +135,169 @@ export default function VendorSignup() {
         ifscCode: "",
         branchName: "",
         cancelledCheque: null,
-        
-        // Address
-        address: {
-            street: "",
-            city: "",
-            state: "",
-            pincode: ""
-        }
+
+        // Address - only geoLocation
+        address: {}
     });
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        if (name.startsWith('address.')) {
-            const addressField = name.split('.')[1];
-            setFormData(prev => ({
-                ...prev,
-                address: {
-                    ...prev.address,
-                    [addressField]: value
-                }
-            }));
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: value
-            }));
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    // Handle place selection from Google Places Autocomplete (for full address)
+    const handleFullAddressSelect = (placeData) => {
+        if (!placeData) {
+            return;
         }
+
+        // Get coordinates from selected place
+        const selectedLat = placeData.lat;
+        const selectedLng = placeData.lng;
+        const selectedPlaceId = placeData.placeId || "";
+        const selectedFormattedAddress = placeData.formattedAddress || "";
+
+        // Update form data with selected place information - only geoLocation
+        setFormData(prev => ({
+            ...prev,
+            address: {
+                coordinates: (selectedLat && selectedLng) ? {
+                    lat: selectedLat,
+                    lng: selectedLng
+                } : prev.address.coordinates,
+                geoLocation: (selectedPlaceId && selectedFormattedAddress) ? {
+                    formattedAddress: selectedFormattedAddress,
+                    placeId: selectedPlaceId,
+                    geocodedAt: new Date()
+                } : prev.address.geoLocation
+            },
+            // Coordinates are already stored in address.coordinates above
+            // Store place info for backend
+            selectedPlace: {
+                placeId: selectedPlaceId,
+                formattedAddress: selectedFormattedAddress
+            }
+        }));
+
+        // Update full address field with formatted address
+        if (selectedFormattedAddress) {
+            setFullAddress(selectedFormattedAddress);
+        }
+
+        toast.showSuccess("Address auto-filled from selected location");
+    };
+
+    // Get current location using browser geolocation API
+    const getCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            toast.showError("Geolocation is not supported by your browser");
+            return;
+        }
+
+        setGettingLocation(true);
+        const loadingToast = toast.showLoading("Getting your location...");
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                // Use module-level API key or try to read dynamically
+                const apiKey = GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+
+                // Always store coordinates first
+                let formattedAddress = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+
+                // Try to reverse geocode if API key is available
+                if (apiKey && apiKey.trim() !== "") {
+                    try {
+                        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+
+                        const response = await fetch(geocodeUrl);
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+
+                        // Check for API errors
+                        if (data.status === 'OK' && data.results && data.results.length > 0) {
+                            const result = data.results[0];
+                            formattedAddress = result.formatted_address || formattedAddress;
+                        } else {
+                            // Geocoding failed - provide specific error messages
+                            if (data.status === 'REQUEST_DENIED') {
+                                toast.showError(
+                                    "API key error: Please check your Google Maps API key. " +
+                                    "Make sure Geocoding API is enabled in Google Cloud Console."
+                                );
+                            } else if (data.status === 'OVER_QUERY_LIMIT') {
+                                toast.showError("Geocoding API quota exceeded. Please try again later.");
+                            } else {
+                                toast.showWarning(`Geocoding failed: ${data.error_message || data.status}. Using coordinates only.`);
+                            }
+                        }
+                    } catch (error) {
+                        toast.showWarning("Failed to get address from coordinates. Using coordinates only.");
+                    }
+                } else {
+                    toast.showError("Google Maps API key not found! Please check your .env file and restart the dev server.");
+                }
+
+                // Update form data with coordinates and geoLocation in address
+                setFormData(prev => ({
+                    ...prev,
+                    address: {
+                        coordinates: {
+                            lat: lat,
+                            lng: lng
+                        },
+                        geoLocation: formattedAddress && formattedAddress !== `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}` ? {
+                            formattedAddress: formattedAddress,
+                            placeId: null, // No placeId from reverse geocoding
+                            geocodedAt: new Date()
+                        } : prev.address.geoLocation
+                    }
+                }));
+
+                // Update full address field with formatted address
+                setFullAddress(formattedAddress);
+
+                toast.dismissToast(loadingToast);
+
+                if (formattedAddress && formattedAddress !== `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`) {
+                    toast.showSuccess("Location found! Address auto-filled.");
+                } else {
+                    toast.showInfo(`Location found (${lat.toFixed(4)}, ${lng.toFixed(4)}). Please search for your address.`);
+                }
+
+                setGettingLocation(false);
+            },
+            (error) => {
+                let errorMessage = "Unable to get your location";
+
+                if (error.code === error.PERMISSION_DENIED) {
+                    errorMessage = "Location permission denied. Please allow location access in your browser settings.";
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    errorMessage = "Location information unavailable. Please try searching manually.";
+                } else if (error.code === error.TIMEOUT) {
+                    errorMessage = "Location request timed out. Please try again.";
+                }
+
+                toast.dismissToast(loadingToast);
+                toast.showError(errorMessage);
+                setGettingLocation(false);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
     };
 
     const handleFileChange = (field, e) => {
@@ -109,40 +326,40 @@ export default function VendorSignup() {
 
     const handleSendOTP = async (e) => {
         e?.preventDefault();
-        setError("");
-        setSuccess("");
         setLoading(true);
 
         // Validation
         if (!formData.name || !formData.email || !formData.phone || !formData.password) {
-            setError("Please fill in all required fields");
+            toast.showError("Please fill in all required fields");
             setLoading(false);
             return;
         }
 
         if (formData.password.length < 6) {
-            setError("Password must be at least 6 characters");
+            toast.showError("Password must be at least 6 characters");
             setLoading(false);
             return;
         }
 
         if (formData.password !== formData.confirmPassword) {
-            setError("Passwords do not match");
+            toast.showError("Passwords do not match");
             setLoading(false);
             return;
         }
 
         if (!formData.bankName || !formData.accountHolderName || !formData.accountNumber || !formData.ifscCode) {
-            setError("Please fill in all bank details");
+            toast.showError("Please fill in all bank details");
             setLoading(false);
             return;
         }
 
         if (!formData.experience || isNaN(formData.experience) || parseInt(formData.experience) < 0) {
-            setError("Please enter a valid experience (years)");
+            toast.showError("Please enter a valid experience (years)");
             setLoading(false);
             return;
         }
+
+        const loadingToast = toast.showLoading("Sending OTP...");
 
         try {
             const response = await sendVendorRegistrationOTP({
@@ -150,42 +367,52 @@ export default function VendorSignup() {
                 email: formData.email,
                 phone: formData.phone
             });
-            
+
             if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("OTP sent successfully! Please check your email/phone.");
                 // Navigate to OTP verification page with registration data
-                navigate("/vendor/verify-otp", {
-                    state: {
-                        registrationData: {
-                            name: formData.name,
+                setTimeout(() => {
+                    navigate("/vendor/verify-otp", {
+                        state: {
+                            registrationData: {
+                                name: formData.name,
+                                email: formData.email,
+                                phone: formData.phone,
+                                password: formData.password,
+                                profilePicture: formData.profilePicture,
+                                aadharCard: formData.aadharCard,
+                                panCard: formData.panCard,
+                                certificates: formData.certificates,
+                                cancelledCheque: formData.cancelledCheque,
+                                accountHolderName: formData.accountHolderName,
+                                accountNumber: formData.accountNumber,
+                                ifscCode: formData.ifscCode,
+                                bankName: formData.bankName,
+                                branchName: formData.branchName,
+                                education: formData.education,
+                                institution: formData.institution,
+                                experience: formData.experience,
+                                address: {
+                                    ...formData.address,
+                                    // Coordinates are already in address.coordinates
+                                    coordinates: formData.address.coordinates || null
+                                },
+                                selectedPlace: formData.selectedPlace || null
+                            },
+                            verificationToken: response.data.token,
                             email: formData.email,
-                            phone: formData.phone,
-                            password: formData.password,
-                            profilePicture: formData.profilePicture,
-                            aadharCard: formData.aadharCard,
-                            panCard: formData.panCard,
-                            certificates: formData.certificates,
-                            cancelledCheque: formData.cancelledCheque,
-                            accountHolderName: formData.accountHolderName,
-                            accountNumber: formData.accountNumber,
-                            ifscCode: formData.ifscCode,
-                            bankName: formData.bankName,
-                            branchName: formData.branchName,
-                            education: formData.education,
-                            institution: formData.institution,
-                            experience: formData.experience,
-                            address: formData.address
-                        },
-                        verificationToken: response.data.token,
-                        email: formData.email,
-                        otpSent: true
-                    }
-                });
+                            otpSent: true
+                        }
+                    });
+                }, 800);
             } else {
-                setError(response.message || "Failed to send OTP");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to send OTP");
             }
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to send OTP. Please try again.");
-            console.error("Send OTP error:", err);
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to send OTP. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -207,20 +434,6 @@ export default function VendorSignup() {
                     </p>
                 </div>
 
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                )}
-
-                {/* Success Message */}
-                {success && (
-                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-sm text-green-600">{success}</p>
-                    </div>
-                )}
-
                 <main className="w-full rounded-xl bg-white p-6 shadow-lg">
                     <form className="space-y-4" onSubmit={handleSendOTP}>
                         <div className="flex justify-center mb-3">
@@ -228,277 +441,285 @@ export default function VendorSignup() {
                                 Vendor Sign Up
                             </h2>
                         </div>
-                    {/* Section 1: Basic Details */}
-                    <div className="mb-4">
-                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
-                            Basic Details
-                        </h3>
-                        {/* Profile Image Upload */}
-                        <ProfileImageUpload 
-                            file={formData.profilePicture}
-                            onChange={(e) => handleFileChange('profilePicture', e)}
-                        />
+                        {/* Section 1: Basic Details */}
+                        <div className="mb-4">
+                            <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
+                                Basic Details
+                            </h3>
+                            {/* Profile Image Upload */}
+                            <ProfileImageUpload
+                                file={formData.profilePicture}
+                                onChange={(e) => handleFileChange('profilePicture', e)}
+                            />
 
-                        {/* Full Name */}
-                        <InputBox
-                            label="Full Name *"
-                            name="name"
-                            type="text"
-                            placeholder="Enter your full name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
+                            {/* Full Name */}
+                            <InputBox
+                                label="Full Name *"
+                                name="name"
+                                type="text"
+                                placeholder="Enter your full name"
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                            />
 
-                        {/* Email */}
-                        <InputBox
-                            label="Email *"
-                            name="email"
-                            type="email"
-                            placeholder="Enter your email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
+                            {/* Email */}
+                            <InputBox
+                                label="Email *"
+                                name="email"
+                                type="email"
+                                placeholder="Enter your email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                            />
 
-                        {/* Mobile */}
-                        <InputBox
-                            label="Mobile *"
-                            name="phone"
-                            type="tel"
-                            placeholder="Enter your mobile number"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
+                            {/* Mobile */}
+                            <InputBox
+                                label="Mobile *"
+                                name="phone"
+                                type="tel"
+                                placeholder="Enter your mobile number"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                            />
 
-                        {/* Password */}
-                        <PasswordBox
-                            label="Password *"
-                            name="password"
-                            placeholder="Create password"
-                            value={formData.password}
-                            onChange={handleInputChange}
-                            show={showPassword}
-                            toggle={() => setShowPassword(!showPassword)}
-                            disabled={loading}
-                        />
+                            {/* Password */}
+                            <PasswordBox
+                                label="Password *"
+                                name="password"
+                                placeholder="Create password"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                show={showPassword}
+                                toggle={() => setShowPassword(!showPassword)}
+                                disabled={loading}
+                            />
 
-                        {/* Confirm Password */}
-                        <PasswordBox
-                            label="Confirm Password *"
-                            name="confirmPassword"
-                            placeholder="Re-enter password"
-                            value={formData.confirmPassword}
-                            onChange={handleInputChange}
-                            show={showConfirmPassword}
-                            toggle={() => setShowConfirmPassword(!showConfirmPassword)}
-                            disabled={loading}
-                        />
-                    </div>
+                            {/* Confirm Password */}
+                            <PasswordBox
+                                label="Confirm Password *"
+                                name="confirmPassword"
+                                placeholder="Re-enter password"
+                                value={formData.confirmPassword}
+                                onChange={handleInputChange}
+                                show={showConfirmPassword}
+                                toggle={() => setShowConfirmPassword(!showConfirmPassword)}
+                                disabled={loading}
+                            />
+                        </div>
 
-                    {/* Section 2: KYC Details */}
-                    <div className="mb-4">
-                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
-                            KYC Details
-                        </h3>
-                        {/* Upload Aadhaar */}
-                        <FileBox 
-                            label="Upload Aadhaar Image"
-                            onChange={(e) => handleFileChange('aadharCard', e)}
-                            file={formData.aadharCard}
-                            disabled={loading}
-                        />
+                        {/* Section 2: KYC Details */}
+                        <div className="mb-4">
+                            <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
+                                KYC Details
+                            </h3>
+                            {/* Upload Aadhaar */}
+                            <FileBox
+                                label="Upload Aadhaar Image"
+                                onChange={(e) => handleFileChange('aadharCard', e)}
+                                file={formData.aadharCard}
+                                disabled={loading}
+                            />
 
-                        {/* Upload PAN */}
-                        <FileBox 
-                            label="Upload PAN Image"
-                            onChange={(e) => handleFileChange('panCard', e)}
-                            file={formData.panCard}
-                            disabled={loading}
-                        />
-                    </div>
+                            {/* Upload PAN */}
+                            <FileBox
+                                label="Upload PAN Image"
+                                onChange={(e) => handleFileChange('panCard', e)}
+                                file={formData.panCard}
+                                disabled={loading}
+                            />
+                        </div>
 
-                    {/* Section 3: Education & Experience */}
-                    <div className="mb-4">
-                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
-                            Education & Experience
-                        </h3>
-                        {/* Education/Qualification */}
-                        <InputBox
-                            label="Education/Qualification"
-                            name="education"
-                            type="text"
-                            placeholder="Enter your qualification (e.g., B.Tech, Diploma)"
-                            value={formData.education}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
-                        
-                        {/* Institution */}
-                        <InputBox
-                            label="Institution Name"
-                            name="institution"
-                            type="text"
-                            placeholder="Enter institution name"
-                            value={formData.institution}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
+                        {/* Section 3: Education & Experience */}
+                        <div className="mb-4">
+                            <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
+                                Education & Experience
+                            </h3>
+                            {/* Education/Qualification */}
+                            <InputBox
+                                label="Education/Qualification"
+                                name="education"
+                                type="text"
+                                placeholder="Enter your qualification (e.g., B.Tech, Diploma)"
+                                value={formData.education}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                            />
 
-                        {/* Experience */}
-                        <div className="mb-3">
-                            <label className="block text-xs font-medium text-[#6B7280] mb-1">
-                                Experience (Years) *
-                            </label>
-                            <div className="flex gap-2">
-                                <div className="relative w-24">
-                                    <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg">
-                                        calendar_today
-                                    </span>
-                                    <input
-                                        type="number"
-                                        name="experience"
-                                        placeholder="Years"
-                                        value={formData.experience}
-                                        onChange={handleInputChange}
-                                        min="0"
-                                        className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-10 pr-3 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
-                                        disabled={loading}
-                                    />
-                                </div>
-                                <div className="relative flex-1">
-                                    <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
-                                        description
-                                    </span>
-                                    <input
-                                        type="text"
-                                        name="experienceDetails"
-                                        placeholder="Experience details (optional)"
-                                        value={formData.experienceDetails}
-                                        onChange={handleInputChange}
-                                        className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
-                                        disabled={loading}
-                                    />
+                            {/* Institution */}
+                            <InputBox
+                                label="Institution Name"
+                                name="institution"
+                                type="text"
+                                placeholder="Enter institution name"
+                                value={formData.institution}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                            />
+
+                            {/* Experience */}
+                            <div className="mb-3">
+                                <label className="block text-xs font-medium text-[#6B7280] mb-1">
+                                    Experience (Years) *
+                                </label>
+                                <div className="flex gap-2">
+                                    <div className="relative w-24">
+                                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg">
+                                            calendar_today
+                                        </span>
+                                        <input
+                                            type="number"
+                                            name="experience"
+                                            placeholder="Years"
+                                            value={formData.experience}
+                                            onChange={handleInputChange}
+                                            min="0"
+                                            className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-10 pr-3 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                                            disabled={loading}
+                                        />
+                                    </div>
+                                    <div className="relative flex-1">
+                                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
+                                            description
+                                        </span>
+                                        <input
+                                            type="text"
+                                            name="experienceDetails"
+                                            placeholder="Experience details (optional)"
+                                            value={formData.experienceDetails}
+                                            onChange={handleInputChange}
+                                            className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                                            disabled={loading}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Upload Certificates */}
-                        <MultiFileBox 
-                            label="Upload Certificates"
-                            files={formData.certificates}
-                            onChange={(e) => handleFileChange('certificates', e)}
-                            onRemove={removeCertificate}
-                            disabled={loading}
-                        />
-                    </div>
-
-                    {/* Section 4: Bank Details */}
-                    <div className="mb-4">
-                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
-                            Bank Details *
-                        </h3>
-                        <InputBox
-                            label="Account Holder Name *"
-                            name="accountHolderName"
-                            type="text"
-                            placeholder="Enter account holder name"
-                            value={formData.accountHolderName}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
-                        <InputBox
-                            label="Bank Name *"
-                            name="bankName"
-                            type="text"
-                            placeholder="Enter bank name"
-                            value={formData.bankName}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
-                        <InputBox
-                            label="Account Number *"
-                            name="accountNumber"
-                            type="text"
-                            placeholder="Enter account number"
-                            value={formData.accountNumber}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
-                        <InputBox
-                            label="IFSC Code *"
-                            name="ifscCode"
-                            type="text"
-                            placeholder="Enter IFSC code"
-                            value={formData.ifscCode}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
-                        <InputBox
-                            label="Branch Name"
-                            name="branchName"
-                            type="text"
-                            placeholder="Enter branch name (optional)"
-                            value={formData.branchName}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
-
-                        {/* Upload Cancelled Check */}
-                        <FileBox 
-                            label="Upload Cancelled Cheque"
-                            onChange={(e) => handleFileChange('cancelledCheque', e)}
-                            file={formData.cancelledCheque}
-                            disabled={loading}
-                        />
-                    </div>
-
-                    {/* Section 5: Address */}
-                    <div className="mb-4">
-                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
-                            Address
-                        </h3>
-                        {/* Address Fields */}
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                            <InputBox
-                                label="Street"
-                                name="address.street"
-                                type="text"
-                                placeholder="Street address"
-                                value={formData.address.street}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
-                            <InputBox
-                                label="City"
-                                name="address.city"
-                                type="text"
-                                placeholder="City"
-                                value={formData.address.city}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
-                            <InputBox
-                                label="State"
-                                name="address.state"
-                                type="text"
-                                placeholder="State"
-                                value={formData.address.state}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
-                            <InputBox
-                                label="Pincode"
-                                name="address.pincode"
-                                type="text"
-                                placeholder="Pincode"
-                                value={formData.address.pincode}
-                                onChange={handleInputChange}
+                            {/* Upload Certificates */}
+                            <MultiFileBox
+                                label="Upload Certificates"
+                                files={formData.certificates}
+                                onChange={(e) => handleFileChange('certificates', e)}
+                                onRemove={removeCertificate}
                                 disabled={loading}
                             />
                         </div>
-                    </div>
+
+                        {/* Section 4: Bank Details */}
+                        <div className="mb-4">
+                            <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
+                                Bank Details *
+                            </h3>
+                            <InputBox
+                                label="Account Holder Name *"
+                                name="accountHolderName"
+                                type="text"
+                                placeholder="Enter account holder name"
+                                value={formData.accountHolderName}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                            />
+                            <InputBox
+                                label="Bank Name *"
+                                name="bankName"
+                                type="text"
+                                placeholder="Enter bank name"
+                                value={formData.bankName}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                            />
+                            <InputBox
+                                label="Account Number *"
+                                name="accountNumber"
+                                type="text"
+                                placeholder="Enter account number"
+                                value={formData.accountNumber}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                            />
+                            <InputBox
+                                label="IFSC Code *"
+                                name="ifscCode"
+                                type="text"
+                                placeholder="Enter IFSC code"
+                                value={formData.ifscCode}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                            />
+                            <InputBox
+                                label="Branch Name"
+                                name="branchName"
+                                type="text"
+                                placeholder="Enter branch name (optional)"
+                                value={formData.branchName}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                            />
+
+                            {/* Upload Cancelled Check */}
+                            <FileBox
+                                label="Upload Cancelled Cheque"
+                                onChange={(e) => handleFileChange('cancelledCheque', e)}
+                                file={formData.cancelledCheque}
+                                disabled={loading}
+                            />
+                        </div>
+
+                        {/* Section 5: Address */}
+                        <div className="mb-4">
+                            <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
+                                Address
+                            </h3>
+
+                            {/* Main Address Search with Autocomplete */}
+                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <label className="block text-xs font-medium text-[#6B7280] mb-2">
+                                    Search Your Address <span className="text-red-500">*</span>
+                                </label>
+                                <div className="flex flex-col sm:flex-row gap-2 mb-2">
+                                    <div className="relative flex-1">
+                                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg z-10">
+                                            search
+                                        </span>
+                                        <PlaceAutocompleteInput
+                                            onPlaceSelect={handleFullAddressSelect}
+                                            placeholder="Start typing your address to see suggestions..."
+                                            value={fullAddress}
+                                            onChange={(e) => setFullAddress(e.target.value)}
+                                            disabled={loading || gettingLocation}
+                                            className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                                            countryRestriction="in"
+                                            types={["geocode", "establishment"]}
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={getCurrentLocation}
+                                        disabled={loading || gettingLocation}
+                                        className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 whitespace-nowrap"
+                                        title="Use current location"
+                                    >
+                                        <IoLocationOutline className="text-lg" />
+                                        {gettingLocation ? "Getting..." : "Use Current Location"}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-blue-700 mt-1">
+                                    💡 Type your address above to see suggestions, or click "Use Current Location" to auto-fill from GPS
+                                </p>
+                            </div>
+
+                            {/* Auto-filled Address Display */}
+                            {formData.address?.geoLocation?.formattedAddress && (
+                                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <p className="text-xs font-medium text-green-800 mb-2">✓ Address Selected:</p>
+                                    <div className="text-sm text-green-700">
+                                        <p>{formData.address.geoLocation.formattedAddress}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Submit */}
                         <button
@@ -744,3 +965,4 @@ function TextAreaBox({ label, name, placeholder, value, onChange, disabled }) {
         </div>
     );
 }
+

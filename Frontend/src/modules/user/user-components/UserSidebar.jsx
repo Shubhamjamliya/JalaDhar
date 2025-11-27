@@ -1,16 +1,21 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { IoCloseOutline, IoLogOutOutline } from "react-icons/io5";
 import { useAuth } from "../../../contexts/AuthContext";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 
 export default function UserSidebar({ isOpen, onClose, navItems }) {
   const { logout } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
-  const handleLogout = async () => {
+  const handleLogoutClick = () => {
     onClose();
-    if (window.confirm("Are you sure you want to logout?")) {
-      await logout();
-    }
+    setShowLogoutConfirm(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    setShowLogoutConfirm(false);
+    await logout();
   };
   const closeRef = useRef(null);
 
@@ -59,7 +64,7 @@ export default function UserSidebar({ isOpen, onClose, navItems }) {
           
           {/* Logout Button */}
           <button
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             className="flex items-center gap-3 p-3 rounded-xl text-red-600 hover:bg-red-50 mt-auto"
           >
             <IoLogOutOutline className="text-xl" />
@@ -67,6 +72,18 @@ export default function UserSidebar({ isOpen, onClose, navItems }) {
           </button>
         </nav>
       </aside>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Confirm Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Logout"
+        cancelText="Cancel"
+        confirmColor="danger"
+      />
     </>
   );
 }

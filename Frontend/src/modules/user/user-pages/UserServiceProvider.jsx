@@ -8,6 +8,7 @@ import { getNearbyVendors } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
+import LocationSelector from "../../../components/LocationSelector";
 
 export default function UserServiceProvider() {
     const navigate = useNavigate();
@@ -15,7 +16,8 @@ export default function UserServiceProvider() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [vendors, setVendors] = useState([]);
-    const [userLocation, setUserLocation] = useState({ lat: null, lng: null });
+    const [userLocation, setUserLocation] = useState({ lat: null, lng: null, address: null });
+    const [radius, setRadius] = useState(50);
     const [filters, setFilters] = useState({
         serviceType: "",
         price: "",
@@ -24,26 +26,8 @@ export default function UserServiceProvider() {
     });
 
     useEffect(() => {
-        // Get user location if available
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setUserLocation({
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                    });
-                },
-                () => {
-                    // Location permission denied or unavailable
-                }
-            );
-        }
         loadVendors();
-    }, []);
-
-    useEffect(() => {
-        loadVendors();
-    }, [filters, userLocation]);
+    }, [filters, userLocation, radius]);
 
     const loadVendors = async () => {
         try {
@@ -54,6 +38,7 @@ export default function UserServiceProvider() {
             if (userLocation.lat && userLocation.lng) {
                 params.lat = userLocation.lat;
                 params.lng = userLocation.lng;
+                params.radius = radius;
             }
 
             // Apply filters
@@ -79,7 +64,6 @@ export default function UserServiceProvider() {
                 setError(response.message || "Failed to load vendors");
             }
         } catch (err) {
-            console.error("Load vendors error:", err);
             setError("Failed to load vendors");
         } finally {
             setLoading(false);
@@ -136,6 +120,16 @@ export default function UserServiceProvider() {
                     <IoChevronBackOutline className="text-2xl" />
                 </button>
                 <h1 className="text-[#3A3A3A] text-lg font-bold leading-tight">Find a Vendor</h1>
+            </div>
+
+            {/* Location Selector */}
+            <div className="px-4 mb-4">
+                <LocationSelector
+                    onLocationSelect={setUserLocation}
+                    showRadiusSelector={true}
+                    onRadiusChange={setRadius}
+                    initialRadius={radius}
+                />
             </div>
 
             {/* Filter Bar */}

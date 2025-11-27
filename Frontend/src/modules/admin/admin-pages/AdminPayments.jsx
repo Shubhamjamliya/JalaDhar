@@ -15,11 +15,16 @@ import {
 } from "react-icons/io5";
 import { getAllPayments, getPaymentStatistics, getAllBookings, getTravelChargesRequests, approveTravelCharges, rejectTravelCharges, payTravelCharges, payFirstInstallment, paySecondInstallment, getPendingUserRefunds, processUserRefund } from "../../../services/adminApi";
 import { useTheme } from "../../../contexts/ThemeContext";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import ConfirmModal from "../../shared/components/ConfirmModal";
+import InputModal from "../../shared/components/InputModal";
 
 export default function AdminPayments() {
     const navigate = useNavigate();
     const { theme, themeColors } = useTheme();
     const currentTheme = themeColors[theme] || themeColors.default;
+    const toast = useToast();
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("overview");
     const [stats, setStats] = useState({
@@ -74,6 +79,15 @@ export default function AdminPayments() {
         search: "",
     });
     const [error, setError] = useState("");
+    const [showApproveTravelConfirm, setShowApproveTravelConfirm] = useState(false);
+    const [showRejectTravelInput, setShowRejectTravelInput] = useState(false);
+    const [showRejectTravelConfirm, setShowRejectTravelConfirm] = useState(false);
+    const [showPayTravelConfirm, setShowPayTravelConfirm] = useState(false);
+    const [showPayFirstInstallConfirm, setShowPayFirstInstallConfirm] = useState(false);
+    const [showProcessRefundConfirm, setShowProcessRefundConfirm] = useState(false);
+    const [showPaySecondInstallConfirm, setShowPaySecondInstallConfirm] = useState(false);
+    const [selectedBookingId, setSelectedBookingId] = useState(null);
+    const [rejectionReason, setRejectionReason] = useState("");
 
     useEffect(() => {
         loadPaymentData();
@@ -235,76 +249,111 @@ export default function AdminPayments() {
         }
     };
 
-    const handleApproveTravelCharges = async (bookingId) => {
-        if (!window.confirm("Are you sure you want to approve this travel charges request?")) {
-            return;
-        }
+    const handleApproveTravelCharges = (bookingId) => {
+        setSelectedBookingId(bookingId);
+        setShowApproveTravelConfirm(true);
+    };
 
+    const handleApproveTravelConfirm = async () => {
+        if (!selectedBookingId) return;
+        const bookingId = selectedBookingId;
+        setShowApproveTravelConfirm(false);
+        const loadingToast = toast.showLoading("Approving travel charges...");
         try {
             const response = await approveTravelCharges(bookingId);
             if (response.success) {
-                alert("Travel charges request approved successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Travel charges request approved successfully!");
+                setSelectedBookingId(null);
                 loadPaymentData();
             }
         } catch (err) {
             console.error("Approve travel charges error:", err);
-            alert(err.response?.data?.message || "Failed to approve travel charges request");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to approve travel charges request");
         }
     };
 
-    const handleRejectTravelCharges = async (bookingId) => {
-        const rejectionReason = window.prompt("Please provide a reason for rejection (minimum 10 characters):");
+    const handleRejectTravelCharges = (bookingId) => {
+        setSelectedBookingId(bookingId);
+        setRejectionReason("");
+        setShowRejectTravelInput(true);
+    };
 
-        if (!rejectionReason || rejectionReason.trim().length < 10) {
-            if (rejectionReason !== null) {
-                alert("Rejection reason must be at least 10 characters long.");
-            }
-            return;
-        }
+    const handleRejectTravelReasonSubmit = (reason) => {
+        setRejectionReason(reason);
+        setShowRejectTravelInput(false);
+        setShowRejectTravelConfirm(true);
+    };
 
+    const handleRejectTravelConfirm = async () => {
+        if (!selectedBookingId || !rejectionReason) return;
+        const bookingId = selectedBookingId;
+        setShowRejectTravelConfirm(false);
+        const loadingToast = toast.showLoading("Rejecting travel charges...");
         try {
             const response = await rejectTravelCharges(bookingId, { rejectionReason: rejectionReason.trim() });
             if (response.success) {
-                alert("Travel charges request rejected successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Travel charges request rejected successfully!");
+                setSelectedBookingId(null);
+                setRejectionReason("");
                 loadPaymentData();
             }
         } catch (err) {
             console.error("Reject travel charges error:", err);
-            alert(err.response?.data?.message || "Failed to reject travel charges request");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to reject travel charges request");
         }
     };
 
-    const handlePayTravelCharges = async (bookingId) => {
-        if (!window.confirm("Are you sure you want to pay travel charges to the vendor?")) {
-            return;
-        }
+    const handlePayTravelCharges = (bookingId) => {
+        setSelectedBookingId(bookingId);
+        setShowPayTravelConfirm(true);
+    };
 
+    const handlePayTravelConfirm = async () => {
+        if (!selectedBookingId) return;
+        const bookingId = selectedBookingId;
+        setShowPayTravelConfirm(false);
+        const loadingToast = toast.showLoading("Paying travel charges...");
         try {
             const response = await payTravelCharges(bookingId);
             if (response.success) {
-                alert("Travel charges paid successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Travel charges paid successfully!");
+                setSelectedBookingId(null);
                 loadPaymentData();
             }
         } catch (err) {
             console.error("Pay travel charges error:", err);
-            alert(err.response?.data?.message || "Failed to pay travel charges");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to pay travel charges");
         }
     };
 
-    const handlePayFirstInstallment = async (bookingId) => {
-        if (!window.confirm("Are you sure you want to pay first installment (50%) to the vendor? This will change vendor status to COMPLETED.")) {
-            return;
-        }
+    const handlePayFirstInstallment = (bookingId) => {
+        setSelectedBookingId(bookingId);
+        setShowPayFirstInstallConfirm(true);
+    };
 
+    const handlePayFirstInstallConfirm = async () => {
+        if (!selectedBookingId) return;
+        const bookingId = selectedBookingId;
+        setShowPayFirstInstallConfirm(false);
+        const loadingToast = toast.showLoading("Paying first installment...");
         try {
             const response = await payFirstInstallment(bookingId);
             if (response.success) {
-                alert("First installment (50%) paid successfully! Vendor status updated to COMPLETED.");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("First installment (50%) paid successfully! Vendor status updated to COMPLETED.");
+                setSelectedBookingId(null);
                 loadPaymentData();
             }
         } catch (err) {
             console.error("Pay first installment error:", err);
-            alert(err.response?.data?.message || "Failed to pay first installment");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to pay first installment");
         }
     };
 
@@ -356,60 +405,73 @@ export default function AdminPayments() {
         });
     };
 
-    const handleProcessUserRefund = async () => {
+    const handleProcessUserRefund = () => {
         const { booking, refundAmount } = userRefundModal;
         if (!booking) return;
 
         if (!refundAmount || refundAmount <= 0) {
-            alert("Refund amount must be greater than 0");
+            toast.showError("Refund amount must be greater than 0");
             return;
         }
 
-        if (!window.confirm(`Are you sure you want to process refund of ${formatCurrency(refundAmount)} for this user?`)) {
-            return;
-        }
+        setShowProcessRefundConfirm(true);
+    };
 
+    const handleProcessRefundConfirm = async () => {
+        setShowProcessRefundConfirm(false);
+        const { booking, refundAmount } = userRefundModal;
+        if (!booking) return;
+
+        const loadingToast = toast.showLoading("Processing refund...");
         try {
-            setError("");
             const response = await processUserRefund(booking._id, { refundAmount });
             if (response.success) {
-                alert(response.message || "User refund processed successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess(response.message || "User refund processed successfully!");
                 handleCloseUserRefundModal();
                 loadPaymentData();
             } else {
-                setError(response.message || "Failed to process user refund");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to process user refund");
             }
         } catch (err) {
             console.error("Process user refund error:", err);
-            alert(err.response?.data?.message || "Failed to process user refund");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to process user refund");
         }
     };
 
-    const handlePaySecondInstallment = async () => {
+    const handlePaySecondInstallment = () => {
+        setShowPaySecondInstallConfirm(true);
+    };
+
+    const handlePaySecondInstallConfirm = async () => {
+        setShowPaySecondInstallConfirm(false);
         const { booking, incentive, penalty } = secondInstallmentModal;
+        if (!booking) return;
+        
         const isSuccess = booking.borewellResult?.status === "SUCCESS";
         const baseAmount = booking.payment?.totalAmount * 0.5;
         const finalAmount = isSuccess
             ? baseAmount + (incentive || 0)
             : Math.max(0, baseAmount - (penalty || 0));
 
-        if (!window.confirm(`Are you sure you want to pay second installment (Final Settlement) of ${formatCurrency(finalAmount)} to the vendor?`)) {
-            return;
-        }
-
+        const loadingToast = toast.showLoading("Paying second installment...");
         try {
             const response = await paySecondInstallment(booking._id, {
                 incentive: isSuccess ? (incentive || 0) : 0,
                 penalty: !isSuccess ? (penalty || 0) : 0
             });
             if (response.success) {
-                alert(response.message || "Second installment (Final Settlement) paid successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess(response.message || "Second installment (Final Settlement) paid successfully!");
                 handleCloseSecondInstallmentModal();
                 loadPaymentData();
             }
         } catch (err) {
             console.error("Pay second installment error:", err);
-            alert(err.response?.data?.message || "Failed to pay second installment");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to pay second installment");
         }
     };
 
@@ -463,6 +525,7 @@ export default function AdminPayments() {
     }
 
     return (
+        <>
         <div className="min-h-[calc(100vh-5rem)]">
             {/* Header */}
             <div className="mb-6">
@@ -1475,6 +1538,120 @@ export default function AdminPayments() {
                 </div>
             )}
         </div>
-    );
+
+        {/* Approve Travel Charges Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showApproveTravelConfirm}
+            onClose={() => {
+                setShowApproveTravelConfirm(false);
+                setSelectedBookingId(null);
+            }}
+            onConfirm={handleApproveTravelConfirm}
+            title="Approve Travel Charges"
+            message="Are you sure you want to approve this travel charges request?"
+            confirmText="Yes, Approve"
+            cancelText="Cancel"
+            confirmColor="primary"
+        />
+
+        {/* Reject Travel Charges Reason Input Modal */}
+        <InputModal
+            isOpen={showRejectTravelInput}
+            onClose={() => {
+                setShowRejectTravelInput(false);
+                setSelectedBookingId(null);
+                setRejectionReason("");
+            }}
+            onSubmit={handleRejectTravelReasonSubmit}
+            title="Reject Travel Charges"
+            message="Please provide a reason for rejection (minimum 10 characters):"
+            placeholder="Enter rejection reason..."
+            submitText="Continue"
+            cancelText="Cancel"
+            minLength={10}
+            isTextarea={true}
+            textareaRows={4}
+        />
+
+        {/* Reject Travel Charges Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showRejectTravelConfirm}
+            onClose={() => {
+                setShowRejectTravelConfirm(false);
+                setSelectedBookingId(null);
+                setRejectionReason("");
+            }}
+            onConfirm={handleRejectTravelConfirm}
+            title="Confirm Rejection"
+            message="Are you sure you want to reject this travel charges request?"
+            confirmText="Yes, Reject"
+            cancelText="Cancel"
+            confirmColor="danger"
+        />
+
+        {/* Pay Travel Charges Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showPayTravelConfirm}
+            onClose={() => {
+                setShowPayTravelConfirm(false);
+                setSelectedBookingId(null);
+            }}
+            onConfirm={handlePayTravelConfirm}
+            title="Pay Travel Charges"
+            message="Are you sure you want to pay travel charges to the vendor?"
+            confirmText="Yes, Pay"
+            cancelText="Cancel"
+            confirmColor="primary"
+        />
+
+        {/* Pay First Installment Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showPayFirstInstallConfirm}
+            onClose={() => {
+                setShowPayFirstInstallConfirm(false);
+                setSelectedBookingId(null);
+            }}
+            onConfirm={handlePayFirstInstallConfirm}
+            title="Pay First Installment"
+            message="Are you sure you want to pay first installment (50%) to the vendor? This will change vendor status to COMPLETED."
+            confirmText="Yes, Pay"
+            cancelText="Cancel"
+            confirmColor="primary"
+        />
+
+        {/* Process Refund Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showProcessRefundConfirm}
+            onClose={() => setShowProcessRefundConfirm(false)}
+            onConfirm={handleProcessRefundConfirm}
+            title="Process Refund"
+            message={`Are you sure you want to process refund of ${formatCurrency(userRefundModal.refundAmount)} for this user?`}
+            confirmText="Yes, Process Refund"
+            cancelText="Cancel"
+            confirmColor="warning"
+        />
+
+        {/* Pay Second Installment Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showPaySecondInstallConfirm}
+            onClose={() => setShowPaySecondInstallConfirm(false)}
+            onConfirm={handlePaySecondInstallConfirm}
+            title="Pay Second Installment"
+            message={`Are you sure you want to pay second installment (Final Settlement) of ${formatCurrency(
+                secondInstallmentModal.booking
+                    ? (() => {
+                          const isSuccess = secondInstallmentModal.booking.borewellResult?.status === "SUCCESS";
+                          const baseAmount = secondInstallmentModal.booking.payment?.totalAmount * 0.5;
+                          return isSuccess
+                              ? baseAmount + (secondInstallmentModal.incentive || 0)
+                              : Math.max(0, baseAmount - (secondInstallmentModal.penalty || 0));
+                      })()
+                    : 0
+            )} to the vendor?`}
+            confirmText="Yes, Pay"
+            cancelText="Cancel"
+            confirmColor="primary"
+        />
+    </>);
 }
 

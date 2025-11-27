@@ -23,17 +23,23 @@ import {
     requestTravelCharges,
 } from "../../../services/vendorApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
-import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import ConfirmModal from "../../shared/components/ConfirmModal";
+import InputModal from "../../shared/components/InputModal";
 
 export default function VendorStatus() {
     const navigate = useNavigate();
     const { bookingId } = useParams();
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [booking, setBooking] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
+    const toast = useToast();
+    const [showAcceptConfirm, setShowAcceptConfirm] = useState(false);
+    const [showRejectInput, setShowRejectInput] = useState(false);
+    const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+    const [showVisitConfirm, setShowVisitConfirm] = useState(false);
+    const [rejectionReason, setRejectionReason] = useState("");
     const [showTravelChargesModal, setShowTravelChargesModal] = useState(false);
     const [travelChargesData, setTravelChargesData] = useState({
         amount: "",
@@ -48,105 +54,106 @@ export default function VendorStatus() {
     const loadBookingDetails = async () => {
         try {
             setLoading(true);
-            setError("");
             const response = await getBookingDetails(bookingId);
             if (response.success) {
                 setBooking(response.data.booking);
             } else {
-                setError(response.message || "Failed to load booking details");
+                toast.showError(response.message || "Failed to load booking details");
             }
         } catch (err) {
-            console.error("Load booking details error:", err);
-            setError(err.response?.data?.message || "Failed to load booking details");
+            handleApiError(err, "Failed to load booking details");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleAccept = async () => {
-        if (!window.confirm("Are you sure you want to accept this booking?")) {
-            return;
-        }
+    const handleAccept = () => {
+        setShowAcceptConfirm(true);
+    };
 
+    const handleAcceptConfirm = async () => {
+        setShowAcceptConfirm(false);
+        const loadingToast = toast.showLoading("Accepting booking...");
         try {
             setActionLoading(true);
-            setError("");
-            setSuccess("");
 
             const response = await acceptBooking(bookingId);
 
             if (response.success) {
-                setSuccess("Booking accepted successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Booking accepted successfully!");
                 await loadBookingDetails();
             } else {
-                setError(response.message || "Failed to accept booking");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to accept booking");
             }
         } catch (err) {
-            console.error("Accept booking error:", err);
-            setError(err.response?.data?.message || "Failed to accept booking");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to accept booking");
         } finally {
             setActionLoading(false);
         }
     };
 
-    const handleReject = async () => {
-        const rejectionReason = window.prompt(
-            "Please provide a reason for rejection (minimum 10 characters):"
-        );
+    const handleReject = () => {
+        setRejectionReason("");
+        setShowRejectInput(true);
+    };
 
-        if (!rejectionReason || rejectionReason.trim().length < 10) {
-            if (rejectionReason !== null) {
-                setError("Rejection reason must be at least 10 characters long.");
-            }
-            return;
-        }
+    const handleRejectionReasonSubmit = (reason) => {
+        setRejectionReason(reason);
+        setShowRejectInput(false);
+        setShowRejectConfirm(true);
+    };
 
-        if (!window.confirm("Are you sure you want to reject this booking?")) {
-            return;
-        }
-
+    const handleRejectConfirm = async () => {
+        setShowRejectConfirm(false);
+        const loadingToast = toast.showLoading("Rejecting booking...");
         try {
             setActionLoading(true);
-            setError("");
-            setSuccess("");
 
             const response = await rejectBooking(bookingId, rejectionReason);
 
             if (response.success) {
-                setSuccess("Booking rejected successfully.");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Booking rejected successfully.");
+                setRejectionReason("");
                 await loadBookingDetails();
             } else {
-                setError(response.message || "Failed to reject booking");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to reject booking");
             }
         } catch (err) {
-            console.error("Reject booking error:", err);
-            setError(err.response?.data?.message || "Failed to reject booking");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to reject booking");
         } finally {
             setActionLoading(false);
         }
     };
 
-    const handleMarkVisited = async () => {
-        if (!window.confirm("Have you visited the customer site? This will mark the booking as visited.")) {
-            return;
-        }
+    const handleMarkVisited = () => {
+        setShowVisitConfirm(true);
+    };
 
+    const handleVisitConfirm = async () => {
+        setShowVisitConfirm(false);
+        const loadingToast = toast.showLoading("Marking as visited...");
         try {
             setActionLoading(true);
-            setError("");
-            setSuccess("");
 
             const response = await markBookingAsVisited(bookingId);
 
             if (response.success) {
-                setSuccess("Booking marked as visited successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Booking marked as visited successfully!");
                 await loadBookingDetails();
             } else {
-                setError(response.message || "Failed to mark as visited");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to mark as visited");
             }
         } catch (err) {
-            console.error("Mark visited error:", err);
-            setError(err.response?.data?.message || "Failed to mark as visited");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to mark as visited");
         } finally {
             setActionLoading(false);
         }
@@ -154,14 +161,13 @@ export default function VendorStatus() {
 
     const handleRequestTravelCharges = async () => {
         if (!travelChargesData.amount || !travelChargesData.reason) {
-            setError("Please provide both amount and reason for travel charges");
+            toast.showError("Please provide both amount and reason for travel charges");
             return;
         }
 
+        const loadingToast = toast.showLoading("Submitting travel charges request...");
         try {
             setSubmittingTravelCharges(true);
-            setError("");
-            setSuccess("");
 
             const response = await requestTravelCharges(bookingId, {
                 amount: parseFloat(travelChargesData.amount),
@@ -169,16 +175,18 @@ export default function VendorStatus() {
             });
 
             if (response.success) {
-                setSuccess("Travel charges request submitted successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Travel charges request submitted successfully!");
                 setShowTravelChargesModal(false);
                 setTravelChargesData({ amount: "", reason: "" });
                 await loadBookingDetails();
             } else {
-                setError(response.message || "Failed to request travel charges");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to request travel charges");
             }
         } catch (err) {
-            console.error("Request travel charges error:", err);
-            setError(err.response?.data?.message || "Failed to request travel charges");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to request travel charges");
         } finally {
             setSubmittingTravelCharges(false);
         }
@@ -318,21 +326,6 @@ export default function VendorStatus() {
         return <LoadingSpinner message="Loading booking status..." />;
     }
 
-    if (error && !booking) {
-        return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-                <ErrorMessage message={error} />
-                <button
-                    onClick={() => navigate("/vendor/requests")}
-                    className="mt-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
-                >
-                    <IoChevronBackOutline className="text-xl" />
-                    <span className="font-semibold">Back to Bookings</span>
-                </button>
-            </div>
-        );
-    }
-
     if (!booking) {
         return (
             <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
@@ -356,8 +349,6 @@ export default function VendorStatus() {
 
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-            <ErrorMessage message={error} />
-            <SuccessMessage message={success} />
 
             {/* Back Button */}
             <button
@@ -754,6 +745,61 @@ export default function VendorStatus() {
                     </div>
                 </div>
             )}
+
+            {/* Accept Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showAcceptConfirm}
+                onClose={() => setShowAcceptConfirm(false)}
+                onConfirm={handleAcceptConfirm}
+                title="Accept Booking"
+                message="Are you sure you want to accept this booking?"
+                confirmText="Yes, Accept"
+                cancelText="Cancel"
+                confirmColor="primary"
+                isLoading={actionLoading}
+            />
+
+            {/* Reject Input Modal */}
+            <InputModal
+                isOpen={showRejectInput}
+                onClose={() => setShowRejectInput(false)}
+                onSubmit={handleRejectionReasonSubmit}
+                title="Reject Booking"
+                message="Please provide a reason for rejecting this booking (minimum 10 characters):"
+                placeholder="Enter rejection reason..."
+                submitText="Continue"
+                cancelText="Cancel"
+                minLength={10}
+            />
+
+            {/* Reject Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showRejectConfirm}
+                onClose={() => {
+                    setShowRejectConfirm(false);
+                    setRejectionReason("");
+                }}
+                onConfirm={handleRejectConfirm}
+                title="Confirm Rejection"
+                message={`Are you sure you want to reject this booking? Reason: ${rejectionReason}`}
+                confirmText="Yes, Reject"
+                cancelText="Cancel"
+                confirmColor="danger"
+                isLoading={actionLoading}
+            />
+
+            {/* Mark as Visited Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showVisitConfirm}
+                onClose={() => setShowVisitConfirm(false)}
+                onConfirm={handleVisitConfirm}
+                title="Mark as Visited"
+                message="Have you visited the customer's location? This will mark the booking as visited."
+                confirmText="Yes, Mark as Visited"
+                cancelText="Cancel"
+                confirmColor="primary"
+                isLoading={actionLoading}
+            />
         </div>
     );
 }

@@ -3,7 +3,9 @@ import { getDashboardStats, getBookingHistory } from "../../../services/vendorAp
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
-import ErrorMessage from "../../shared/components/ErrorMessage";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 
 export default function VendorWallet() {
     const { vendor } = useVendorAuth();
@@ -14,7 +16,8 @@ export default function VendorWallet() {
         collectedAmount: 0
     });
     const [transactions, setTransactions] = useState([]);
-    const [error, setError] = useState("");
+    const toast = useToast();
+    const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
 
     useEffect(() => {
         loadWalletData();
@@ -23,7 +26,6 @@ export default function VendorWallet() {
     const loadWalletData = async () => {
         try {
             setLoading(true);
-            setError("");
             
             // Get dashboard stats for payment collection
             const statsResponse = await getDashboardStats();
@@ -65,8 +67,7 @@ export default function VendorWallet() {
                 setTransactions(transactionList);
             }
         } catch (err) {
-            console.error("Load wallet error:", err);
-            setError("Failed to load wallet data");
+            handleApiError(err, "Failed to load wallet data");
         } finally {
             setLoading(false);
         }
@@ -75,12 +76,15 @@ export default function VendorWallet() {
     const handleWithdraw = () => {
         const totalBalance = paymentCollection.collectedAmount;
         if (totalBalance >= 1000) {
-            if (window.confirm(`Withdraw ₹${totalBalance.toLocaleString()} to your bank account?`)) {
-                alert("Withdrawal request submitted successfully!");
-            }
+            setShowWithdrawConfirm(true);
         } else {
-            alert("Minimum withdrawal amount is ₹1,000");
+            toast.showError("Minimum withdrawal amount is ₹1,000");
         }
+    };
+
+    const handleWithdrawConfirm = () => {
+        setShowWithdrawConfirm(false);
+        toast.showSuccess("Withdrawal request submitted successfully!");
     };
 
     // Calculate this month earnings
@@ -122,8 +126,8 @@ export default function VendorWallet() {
     }
 
     return (
+        <>
         <PageContainer>
-            <ErrorMessage message={error} />
 
             {/* Total Balance Card */}
             <section className="relative my-4 overflow-hidden rounded-xl bg-gradient-to-br from-[#1A80E5] to-[#26D7C4] p-6 text-white shadow-md">
@@ -227,5 +231,17 @@ export default function VendorWallet() {
                 )}
             </div>
         </PageContainer>
-    );
+
+        {/* Withdrawal Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showWithdrawConfirm}
+            onClose={() => setShowWithdrawConfirm(false)}
+            onConfirm={handleWithdrawConfirm}
+            title="Confirm Withdrawal"
+            message={`Withdraw ₹${paymentCollection.collectedAmount.toLocaleString()} to your bank account?`}
+            confirmText="Confirm Withdrawal"
+            cancelText="Cancel"
+            confirmColor="primary"
+        />
+    </>);
 }

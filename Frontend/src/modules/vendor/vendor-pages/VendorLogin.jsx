@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import { useToast } from "../../../hooks/useToast";
 
 export default function VendorLogin() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
     const navigate = useNavigate();
     const { login } = useVendorAuth();
+    const toast = useToast();
 
     // Disable scrolling on this page
     useEffect(() => {
@@ -21,28 +22,33 @@ export default function VendorLogin() {
 
     const handleVendorLogin = async (e) => {
         e?.preventDefault();
-        setError("");
         setLoading(true);
 
         // Basic validation
         if (!email || !password) {
-            setError("Please fill in all fields");
+            toast.showError("Please fill in all fields");
             setLoading(false);
             return;
         }
+
+        const loadingToast = toast.showLoading("Logging in...");
 
         try {
             const result = await login({ email, password });
 
             if (result.success) {
-                // Navigate to dashboard on success
-                navigate("/vendor/dashboard");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Login successful! Redirecting...");
+                setTimeout(() => {
+                    navigate("/vendor/dashboard");
+                }, 500);
             } else {
-                setError(result.message || "Login failed. Please try again.");
+                toast.dismissToast(loadingToast);
+                toast.showError(result.message || "Login failed. Please try again.");
             }
         } catch (err) {
-            setError("An unexpected error occurred. Please try again.");
-            console.error("Login error:", err);
+            toast.dismissToast(loadingToast);
+            toast.showError("An unexpected error occurred. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -62,13 +68,6 @@ export default function VendorLogin() {
                         Welcome back! Please login to your account.
                     </p>
                 </div>
-
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                )}
 
                 <form className="space-y-6 " onSubmit={handleVendorLogin}>
                     <div className="flex justify-center mb-4">

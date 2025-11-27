@@ -12,6 +12,7 @@ import {
     IoStarOutline,
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 
 import VendorSidebar from "./VendorSidebar";
 import logo from "../../../assets/logo.png";
@@ -57,13 +58,17 @@ const navItems = [
 
 export default function VendorNavbar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const toggleRef = useRef(null);
     const { logout, vendor } = useVendorAuth();
 
-    const handleLogout = async () => {
-        if (window.confirm("Are you sure you want to logout?")) {
-            await logout();
-        }
+    const handleLogoutClick = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const handleLogoutConfirm = async () => {
+        setShowLogoutConfirm(false);
+        await logout();
     };
 
     const mobileLinkBase =
@@ -116,7 +121,7 @@ export default function VendorNavbar() {
 
                     {/* Logout Button - Desktop Only */}
                     <button
-                        onClick={handleLogout}
+                        onClick={handleLogoutClick}
                         className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Logout"
                     >
@@ -166,6 +171,18 @@ export default function VendorNavbar() {
                     </NavLink>
                 ))}
             </nav>
+
+            {/* Logout Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={handleLogoutConfirm}
+                title="Confirm Logout"
+                message="Are you sure you want to logout?"
+                confirmText="Logout"
+                cancelText="Cancel"
+                confirmColor="danger"
+            />
         </>
     );
 }

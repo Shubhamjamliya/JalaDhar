@@ -13,24 +13,33 @@ import {
     IoTimeOutline,
     IoCheckmarkOutline,
     IoSettingsOutline,
+    IoLocationOutline,
 } from "react-icons/io5";
 import { getUserProfile } from "../../../services/authApi";
 import { getUserDashboardStats, getNearbyVendors } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
-import ErrorMessage from "../../shared/components/ErrorMessage";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
+
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 export default function UserDashboard() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [userName, setUserName] = useState("");
+    const toast = useToast();
     const [userAvatar, setUserAvatar] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [requestStatuses, setRequestStatuses] = useState([]);
     const [vendors, setVendors] = useState([]);
-    const [userLocation, setUserLocation] = useState({ lat: null, lng: null });
+    const [userLocation, setUserLocation] = useState({ lat: null, lng: null, address: null });
+    const [radius, setRadius] = useState(50);
+    const [searchAddress, setSearchAddress] = useState("");
+    const [gettingLocation, setGettingLocation] = useState(false);
+    const [mapsLoaded, setMapsLoaded] = useState(false);
     const [dashboardStats, setDashboardStats] = useState({
         total: 0,
         pending: 0,
@@ -39,47 +48,84 @@ export default function UserDashboard() {
         cancelled: 0
     });
 
+    // Load Google Maps API
     useEffect(() => {
-        loadDashboardData();
-        // Get user location if available (optional - won't block if denied)
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setUserLocation({
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                    });
-                },
-                (error) => {
-                    // Silently handle location errors - location is optional
-                    // Error types: PERMISSION_DENIED, POSITION_UNAVAILABLE, TIMEOUT
-                    console.log('Location access not available:', error.message);
-                    // Still load vendors without location
-                    loadVendors();
-                },
-                {
-                    enableHighAccuracy: false,
-                    timeout: 5000,
-                    maximumAge: 300000 // Cache for 5 minutes
+        if (!GOOGLE_MAPS_API_KEY) {
+            return;
+        }
+
+        const checkMapsLoaded = () => {
+            if (window.google && window.google.maps && window.google.maps.places) {
+                setMapsLoaded(true);
+                return true;
+            }
+            return false;
+        };
+
+        // Check if already loaded
+        if (checkMapsLoaded()) {
+            return;
+        }
+
+        // Check if script already exists
+        const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
+        if (existingScript) {
+            // Script exists, wait for it to load
+            const checkLoaded = setInterval(() => {
+                if (checkMapsLoaded()) {
+                    clearInterval(checkLoaded);
                 }
-            );
-        } else {
-            // Geolocation not supported - load vendors anyway
-            loadVendors();
+            }, 100);
+            return () => clearInterval(checkLoaded);
+        }
+
+        // Create and load script
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`;
+        script.async = true;
+        script.defer = true;
+
+        script.onload = () => {
+            setTimeout(() => {
+                checkMapsLoaded();
+            }, 100);
+        };
+
+        script.onerror = () => {
+            // Failed to load Google Maps API
+        };
+
+        document.head.appendChild(script);
+    }, []);
+
+    // Load saved location from localStorage
+    useEffect(() => {
+        const savedLocation = localStorage.getItem("userLocation");
+        if (savedLocation) {
+            try {
+                const parsed = JSON.parse(savedLocation);
+                if (parsed.lat && parsed.lng) {
+                    setUserLocation(parsed);
+                    setSearchAddress(parsed.address || "");
+                }
+            } catch (e) {
+                // Error loading saved location
+            }
         }
     }, []);
 
     useEffect(() => {
-        // Only reload vendors if location was successfully obtained
-        if (userLocation.lat && userLocation.lng) {
+        loadDashboardData();
+        loadVendors();
+    }, []);
+
+    useEffect(() => {
             loadVendors();
-        }
-    }, [userLocation]);
+    }, [userLocation, radius]);
 
     const loadDashboardData = async () => {
         try {
             setLoading(true);
-            setError("");
 
             // Load user profile and dashboard stats in parallel
             const [profileResponse, statsResponse] = await Promise.all([
@@ -108,8 +154,7 @@ export default function UserDashboard() {
                 setRequestStatuses(formattedRequests);
             }
         } catch (err) {
-            console.error("Load dashboard data error:", err);
-            setError("Failed to load dashboard data");
+            handleApiError(err, "Failed to load dashboard data");
         } finally {
             setLoading(false);
         }
@@ -117,29 +162,123 @@ export default function UserDashboard() {
 
     const loadVendors = async () => {
         try {
-            const params = { limit: 10 };
+            const params = { limit: 50 };
             // Only include location if available (optional)
             if (userLocation.lat && userLocation.lng) {
                 params.lat = userLocation.lat;
                 params.lng = userLocation.lng;
+                params.radius = radius;
             }
             // Load vendors with or without location
             const response = await getNearbyVendors(params);
             if (response.success) {
-                setVendors(response.data.vendors || []);
+                const vendorsData = response.data.vendors || [];
+                // Ensure distance is properly set and log for debugging
+                const vendorsWithDistance = vendorsData.map(vendor => {
+                    const distance = vendor.distance !== undefined && vendor.distance !== null && !isNaN(vendor.distance) ? vendor.distance : null;
+                    return {
+                        ...vendor,
+                        distance: distance
+                    };
+                });
+                setVendors(vendorsWithDistance);
+            } else {
+                // If response not successful, try without location
+                const fallbackResponse = await getNearbyVendors({ limit: 50 });
+                if (fallbackResponse.success) {
+                    setVendors(fallbackResponse.data.vendors || []);
+                }
             }
         } catch (err) {
-            console.error("Load vendors error:", err);
             // Even on error, try to show vendors without location
             try {
-                const fallbackResponse = await getNearbyVendors({ limit: 10 });
+                const fallbackResponse = await getNearbyVendors({ limit: 50 });
                 if (fallbackResponse.success) {
                     setVendors(fallbackResponse.data.vendors || []);
                 }
             } catch (fallbackErr) {
-                console.error("Fallback load vendors error:", fallbackErr);
+                setVendors([]);
             }
         }
+    };
+
+    // Get current location using browser geolocation API
+    const getCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            toast.showError("Geolocation is not supported by your browser");
+            return;
+        }
+
+        setGettingLocation(true);
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const newLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    address: null
+                };
+
+                // Try to reverse geocode to get address
+                if (GOOGLE_MAPS_API_KEY) {
+                    try {
+                        const response = await fetch(
+                            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${newLocation.lat},${newLocation.lng}&key=${GOOGLE_MAPS_API_KEY}`
+                        );
+                        const data = await response.json();
+                        if (data.results && data.results.length > 0) {
+                            newLocation.address = data.results[0].formatted_address;
+                            setSearchAddress(data.results[0].formatted_address);
+                        }
+                    } catch (error) {
+                        // Reverse geocoding error
+                    }
+                }
+
+                setUserLocation(newLocation);
+                localStorage.setItem("userLocation", JSON.stringify(newLocation));
+                setGettingLocation(false);
+            },
+            (error) => {
+                let errorMessage = "Unable to get your location";
+                if (error.code === error.PERMISSION_DENIED) {
+                    errorMessage = "Location permission denied. Please allow location access or search manually.";
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    errorMessage = "Location information unavailable. Please search manually.";
+                } else if (error.code === error.TIMEOUT) {
+                    errorMessage = "Location request timed out. Please try again or search manually.";
+                }
+                toast.showError(errorMessage);
+                setGettingLocation(false);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    };
+
+    // Handle place selection from Google Places Autocomplete
+    const handlePlaceSelect = (placeData) => {
+        if (!placeData || !placeData.lat || !placeData.lng) {
+            return;
+        }
+
+        const newLocation = {
+            lat: placeData.lat,
+            lng: placeData.lng,
+            address: placeData.formattedAddress || placeData.address
+        };
+
+        setUserLocation(newLocation);
+        setSearchAddress(newLocation.address);
+        localStorage.setItem("userLocation", JSON.stringify(newLocation));
+    };
+
+    const clearLocation = () => {
+        setUserLocation({ lat: null, lng: null, address: null });
+        setSearchAddress("");
+        localStorage.removeItem("userLocation");
     };
 
     useEffect(() => {
@@ -202,7 +341,6 @@ export default function UserDashboard() {
 
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-            <ErrorMessage message={error} />
 
             {/* Profile Header with Background Image */}
             <section className="relative my-4 overflow-hidden rounded-[12px] bg-blue-400 p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
@@ -294,6 +432,83 @@ export default function UserDashboard() {
             <h2 className="px-2 pt-8 pb-4 text-lg font-bold text-gray-800">
                 Top Vendors Near You
             </h2>
+
+            {/* Location Selector */}
+            <div className="px-2 mb-4 space-y-3">
+                {/* Address Input with Autocomplete */}
+                <div className="relative">
+                    <IoSearchOutline className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg z-10" />
+                    <PlaceAutocompleteInput
+                        onPlaceSelect={handlePlaceSelect}
+                        placeholder="Search for an address..."
+                        value={searchAddress}
+                        onChange={(e) => setSearchAddress(e.target.value)}
+                        disabled={false}
+                        className="w-full rounded-lg border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        countryRestriction="in"
+                        types={["geocode"]}
+                    />
+                </div>
+
+                {/* Use Current Location Button */}
+                <button
+                    type="button"
+                    onClick={getCurrentLocation}
+                    disabled={gettingLocation}
+                    className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <IoLocationOutline className="text-lg" />
+                    {gettingLocation ? "Getting location..." : "Use Current Location"}
+                </button>
+
+                {/* Current Location Display */}
+                {userLocation.lat && userLocation.lng && (
+                    <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <IoLocationOutline className="text-blue-600 text-xl flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-blue-900 truncate">
+                                    {userLocation.address || `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`}
+                                </p>
+                                <p className="text-xs text-blue-600">Location set</p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={clearLocation}
+                            className="text-blue-600 hover:text-blue-800 p-1"
+                            title="Clear location"
+                        >
+                            <IoCloseOutline className="text-xl" />
+                        </button>
+                    </div>
+                )}
+
+                {/* Radius Selector */}
+                {userLocation.lat && userLocation.lng && (
+                    <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                            Search Radius:
+                        </label>
+                        <div className="flex gap-2 flex-1">
+                            {[50, 75, 100].map((r) => (
+                                <button
+                                    key={r}
+                                    type="button"
+                                    onClick={() => setRadius(r)}
+                                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${radius === r
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
+                                        }`}
+                                >
+                                    {r} km
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
             <div className="flex flex-col gap-4 mb-6 px-2">
                 {vendors.length === 0 ? (
                     <div className="bg-white rounded-[12px] p-8 text-center shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
@@ -325,9 +540,16 @@ export default function UserDashboard() {
 
                             {/* Vendor Details - Middle Section */}
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-gray-800 mb-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                    <h4 className="font-bold text-gray-800">
                                     {vendor.name}
                                 </h4>
+                                    {userLocation.lat && userLocation.lng && vendor.distance !== null && vendor.distance !== undefined && !isNaN(vendor.distance) && (
+                                        <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                            {vendor.distance <= 50 && "Near Me • "}{typeof vendor.distance === 'number' ? vendor.distance.toFixed(1) : vendor.distance} km away
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-sm text-gray-500 mb-1.5">
                                     {vendor.category || vendor.serviceTags?.[0] || "General Services"}
                                 </p>
@@ -341,15 +563,6 @@ export default function UserDashboard() {
                                     </span>
                                 </div>
                             </div>
-
-                            {/* Distance - Right Side */}
-                            {vendor.distance !== null && (
-                                <div className="text-right shrink-0">
-                                    <p className="text-sm font-semibold text-[#0A84FF]">
-                                        {vendor.distance.toFixed(1)} km away
-                                    </p>
-                                </div>
-                            )}
                         </div>
                     ))
                 )}

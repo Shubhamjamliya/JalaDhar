@@ -20,16 +20,20 @@ import {
 } from "react-icons/io5";
 import { getBookingDetails, downloadInvoice, cancelBooking, submitRating, getBookingRating, uploadBorewellResult } from "../../../services/bookingApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
-import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import ConfirmModal from "../../shared/components/ConfirmModal";
+import InputModal from "../../shared/components/InputModal";
 
 export default function UserBookingDetails() {
     const navigate = useNavigate();
     const { bookingId } = useParams();
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [booking, setBooking] = useState(null);
+    const toast = useToast();
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [showCancellationInput, setShowCancellationInput] = useState(false);
+    const [cancellationReason, setCancellationReason] = useState("");
     const [showWorkProof, setShowWorkProof] = useState(false);
     const [showRatingModal, setShowRatingModal] = useState(false);
     const [ratingData, setRatingData] = useState({
@@ -54,22 +58,21 @@ export default function UserBookingDetails() {
     const loadBookingDetails = async () => {
         try {
             setLoading(true);
-            setError("");
             const response = await getBookingDetails(bookingId);
             if (response.success) {
                 setBooking(response.data.booking);
             } else {
-                setError(response.message || "Failed to load booking details");
+                toast.showError(response.message || "Failed to load booking details");
             }
         } catch (err) {
-            console.error("Load booking details error:", err);
-            setError("Failed to load booking details");
+            handleApiError(err, "Failed to load booking details");
         } finally {
             setLoading(false);
         }
     };
 
     const handleDownloadBill = async () => {
+        const loadingToast = toast.showLoading("Downloading invoice...");
         try {
             const blob = await downloadInvoice(bookingId);
             const url = window.URL.createObjectURL(blob);
@@ -80,39 +83,43 @@ export default function UserBookingDetails() {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
+            toast.dismissToast(loadingToast);
+            toast.showSuccess("Invoice downloaded successfully!");
         } catch (err) {
-            console.error("Download invoice error:", err);
-            alert("Failed to download invoice");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to download invoice");
         }
     };
 
-    const handleCancelBooking = async () => {
-        const cancellationReason = window.prompt(
-            "Please provide a reason for cancellation (optional):"
-        );
+    const handleCancelBooking = () => {
+        setCancellationReason("");
+        setShowCancellationInput(true);
+    };
 
-        if (cancellationReason === null) {
-            return;
-        }
+    const handleCancellationReasonSubmit = (reason) => {
+        setCancellationReason(reason);
+        setShowCancellationInput(false);
+        setShowCancelConfirm(true);
+    };
 
-        if (!window.confirm("Are you sure you want to cancel this booking?")) {
-            return;
-        }
-
+    const handleCancelConfirm = async () => {
+        setShowCancelConfirm(false);
+        const loadingToast = toast.showLoading("Cancelling booking...");
         try {
-            setError("");
-            setSuccess("");
             const response = await cancelBooking(bookingId, cancellationReason || "");
 
             if (response.success) {
-                setSuccess("Booking cancelled successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Booking cancelled successfully!");
+                setCancellationReason("");
                 await loadBookingDetails();
             } else {
-                setError(response.message || "Failed to cancel booking");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to cancel booking");
             }
         } catch (err) {
-            console.error("Cancel booking error:", err);
-            setError(err.response?.data?.message || "Failed to cancel booking");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to cancel booking");
         }
     };
 
@@ -139,7 +146,6 @@ export default function UserBookingDetails() {
             }
             setShowRatingModal(true);
         } catch (err) {
-            console.error("Get rating error:", err);
             setRatingData({
                 accuracy: 0,
                 professionalism: 0,
@@ -170,14 +176,13 @@ export default function UserBookingDetails() {
 
     const handleSubmitBorewellResult = async () => {
         if (!borewellData.status) {
-            setError("Please select a result status (Success or Failed)");
+            toast.showError("Please select a result status (Success or Failed)");
             return;
         }
 
+        const loadingToast = toast.showLoading("Uploading borewell result...");
         try {
             setUploadingBorewell(true);
-            setError("");
-            setSuccess("");
 
             const response = await uploadBorewellResult(bookingId, {
                 status: borewellData.status,
@@ -185,16 +190,18 @@ export default function UserBookingDetails() {
             });
 
             if (response.success) {
-                setSuccess("Borewell result uploaded successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Borewell result uploaded successfully!");
                 setShowBorewellModal(false);
                 setBorewellData({ status: "", images: [] });
                 await loadBookingDetails();
             } else {
-                setError(response.message || "Failed to upload borewell result");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to upload borewell result");
             }
         } catch (err) {
-            console.error("Upload borewell result error:", err);
-            setError(err.response?.data?.message || "Failed to upload borewell result");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to upload borewell result");
         } finally {
             setUploadingBorewell(false);
         }
@@ -202,13 +209,13 @@ export default function UserBookingDetails() {
 
     const handleSubmitRating = async () => {
         if (!ratingData.accuracy || !ratingData.professionalism || !ratingData.behavior || !ratingData.visitTiming) {
-            setError("Please provide all ratings");
+            toast.showError("Please provide all ratings");
             return;
         }
 
+        const loadingToast = toast.showLoading("Submitting rating...");
         try {
             setSubmittingRating(true);
-            setError("");
             const response = await submitRating(bookingId, {
                 ratings: {
                     accuracy: ratingData.accuracy,
@@ -220,15 +227,17 @@ export default function UserBookingDetails() {
             });
 
             if (response.success) {
-                setSuccess("Rating submitted successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Rating submitted successfully!");
                 setShowRatingModal(false);
                 await loadBookingDetails();
             } else {
-                setError(response.message || "Failed to submit rating");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to submit rating");
             }
         } catch (err) {
-            console.error("Submit rating error:", err);
-            setError(err.response?.data?.message || "Failed to submit rating");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to submit rating");
         } finally {
             setSubmittingRating(false);
         }
@@ -282,20 +291,6 @@ export default function UserBookingDetails() {
         return <LoadingSpinner message="Loading booking details..." />;
     }
 
-    if (error && !booking) {
-        return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-                <ErrorMessage message={error} />
-                <button
-                    onClick={() => navigate(-1)}
-                    className="mt-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
-                >
-                    <IoChevronBackOutline className="text-xl" />
-                    <span className="font-semibold">Go Back</span>
-                </button>
-            </div>
-        );
-    }
 
     if (!booking) {
         return (
@@ -319,8 +314,6 @@ export default function UserBookingDetails() {
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <div className="min-h-screen w-full bg-[#F6F7F9] px-4 py-6">
-                <ErrorMessage message={error} />
-                <SuccessMessage message={success} />
 
                 {/* Back Button */}
                 <button
@@ -858,6 +851,38 @@ export default function UserBookingDetails() {
                         </div>
                     </div>
                 )}
+
+                {/* Cancellation Reason Input Modal */}
+                <InputModal
+                    isOpen={showCancellationInput}
+                    onClose={() => {
+                        setShowCancellationInput(false);
+                        setCancellationReason("");
+                    }}
+                    onSubmit={handleCancellationReasonSubmit}
+                    title="Cancel Booking"
+                    message="Please provide a reason for cancellation (optional):"
+                    placeholder="Enter cancellation reason..."
+                    submitText="Continue"
+                    cancelText="Cancel"
+                    isTextarea={true}
+                    textareaRows={3}
+                />
+
+                {/* Cancel Booking Confirmation Modal */}
+                <ConfirmModal
+                    isOpen={showCancelConfirm}
+                    onClose={() => {
+                        setShowCancelConfirm(false);
+                        setCancellationReason("");
+                    }}
+                    onConfirm={handleCancelConfirm}
+                    title="Confirm Cancellation"
+                    message="Are you sure you want to cancel this booking?"
+                    confirmText="Yes, Cancel Booking"
+                    cancelText="Keep Booking"
+                    confirmColor="danger"
+                />
             </div>
         </div>
     );

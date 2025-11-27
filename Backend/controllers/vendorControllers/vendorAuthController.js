@@ -4,6 +4,7 @@ const Token = require('../../models/Token');
 const { generateTokenPair } = require('../../utils/tokenService');
 const { createOTPToken, verifyOTPToken, markTokenAsUsed } = require('../../services/otpService');
 const { sendOTPEmail, sendWelcomeEmail } = require('../../services/emailService');
+const { geocodeAddress } = require('../../services/geocodingService');
 const { TOKEN_TYPES } = require('../../utils/constants');
 const { validationResult } = require('express-validator');
 const cloudinary = require('cloudinary').v2;
@@ -267,8 +268,85 @@ const register = async (req, res) => {
       }
     }
 
+    // Parse address if it's a string
+    let parsedAddress = typeof address === 'string' ? JSON.parse(address) : address;
+    
+    // Parse location if it's a string (from "Use Current Location" button) - merge into address
+    if (req.body.location) {
+      const parsedLocation = typeof req.body.location === 'string' ? JSON.parse(req.body.location) : req.body.location;
+      // If location has coordinates but address doesn't, copy them to address
+      if (parsedLocation?.coordinates?.lat && parsedLocation?.coordinates?.lng && !parsedAddress?.coordinates?.lat) {
+        if (!parsedAddress) parsedAddress = {};
+        parsedAddress.coordinates = {
+          lat: parsedLocation.coordinates.lat,
+          lng: parsedLocation.coordinates.lng
+        };
+      }
+    }
+    
+    // Parse selectedPlace if it's a string (from dropdown selection)
+    let parsedSelectedPlace = null;
+    if (req.body.selectedPlace) {
+      parsedSelectedPlace = typeof req.body.selectedPlace === 'string' ? JSON.parse(req.body.selectedPlace) : req.body.selectedPlace;
+    }
+    
+    // Check if coordinates are available
+    const hasAddressCoordinates = parsedAddress?.coordinates?.lat && parsedAddress?.coordinates?.lng;
+    const hasSelectedPlace = parsedSelectedPlace && parsedSelectedPlace.placeId;
+    
+    // Priority: 1. Selected address from dropdown 2. Geocode address text
+    
+    // If address was selected from dropdown, use its coordinates and place info
+    if (hasAddressCoordinates && hasSelectedPlace) {
+      // Address was selected from dropdown - use its coordinates and place info
+      parsedAddress.geoLocation = {
+        formattedAddress: parsedSelectedPlace.formattedAddress || '',
+        placeId: parsedSelectedPlace.placeId || '',
+        geocodedAt: new Date()
+      };
+      // Coordinates are already in parsedAddress.coordinates from frontend
+    } else if (hasAddressCoordinates && !parsedAddress.geoLocation) {
+      // If we have coordinates but no geoLocation, try to reverse geocode for formatted address
+      try {
+        const { reverseGeocode } = require('../../services/geocodingService');
+        const reverseData = await reverseGeocode(
+          parsedAddress.coordinates.lat,
+          parsedAddress.coordinates.lng
+        );
+        if (reverseData) {
+          parsedAddress.geoLocation = {
+            formattedAddress: reverseData.formattedAddress,
+            placeId: reverseData.placeId,
+            geocodedAt: new Date()
+          };
+        }
+      } catch (reverseError) {
+        // Silently fail - not critical
+      }
+    } else if (!hasAddressCoordinates && parsedAddress && (parsedAddress.street || parsedAddress.city || parsedAddress.state || parsedAddress.pincode)) {
+      // No coordinates available - geocode the address text
+      try {
+        const geocodedData = await geocodeAddress(parsedAddress);
+        if (geocodedData) {
+          // Store coordinates in address.coordinates
+          parsedAddress.coordinates = {
+            lat: geocodedData.lat,
+            lng: geocodedData.lng
+          };
+          // Store geocoded location data
+          parsedAddress.geoLocation = {
+            formattedAddress: geocodedData.formattedAddress,
+            placeId: geocodedData.placeId,
+            geocodedAt: new Date()
+          };
+        }
+      } catch (geocodeError) {
+        // Log error but don't fail registration if geocoding fails
+      }
+    }
+
     // Create vendor with email verified
-    const vendor = await Vendor.create({
+    const vendorData = {
       name,
       email,
       phone,
@@ -277,9 +355,11 @@ const register = async (req, res) => {
       educationalQualifications: parsedQualifications,
       experience: parseInt(experience),
       documents,
-      address: typeof address === 'string' ? JSON.parse(address) : address,
+      address: parsedAddress,
       isEmailVerified: true // Email is verified via OTP
-    });
+    };
+
+    const vendor = await Vendor.create(vendorData);
 
     // Mark token as used
     await markTokenAsUsed(tokenDoc._id);

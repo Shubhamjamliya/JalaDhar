@@ -89,7 +89,6 @@ export default function UserAdvancePaymentConfirmation() {
                             try {
                                 await cancelBooking(booking.id, "Payment verification failed");
                             } catch (cancelErr) {
-                                console.error("Failed to cancel booking:", cancelErr);
                             }
                             setError(verifyResponse.message || "Payment verification failed. Booking has been cancelled. Please contact support.");
                             setLoading(false);
@@ -102,12 +101,10 @@ export default function UserAdvancePaymentConfirmation() {
                             }, 3000);
                         }
                     } catch (verifyErr) {
-                        console.error("Payment verification error:", verifyErr);
                         // Cancel booking if verification error occurs
                         try {
                             await cancelBooking(booking.id, "Payment verification error");
                         } catch (cancelErr) {
-                            console.error("Failed to cancel booking:", cancelErr);
                         }
                         setError(verifyErr.response?.data?.message || "Payment verification failed. Booking has been cancelled. Please contact support.");
                         setLoading(false);
@@ -134,7 +131,6 @@ export default function UserAdvancePaymentConfirmation() {
                         try {
                             await cancelBooking(booking.id, "Payment cancelled by user");
                         } catch (cancelErr) {
-                            console.error("Failed to cancel booking:", cancelErr);
                         }
                         setError("Payment cancelled. Booking has been cancelled.");
                         setLoading(false);
@@ -161,14 +157,13 @@ export default function UserAdvancePaymentConfirmation() {
 
                 // Handle payment failure
                 razorpay.on('payment.failed', async function (response) {
-                    console.error("Razorpay payment failed:", response);
                     const errorMsg = response.error?.description || response.error?.reason || response.error?.code || "Payment failed. Please try again.";
                     
                     // Cancel the booking if payment fails
                     try {
                         await cancelBooking(booking.id, `Payment failed: ${errorMsg}`);
                     } catch (cancelErr) {
-                        console.error("Failed to cancel booking:", cancelErr);
+                        // Failed to cancel booking - silently continue
                     }
                     
                     setError(`Payment failed: ${errorMsg}. Booking has been cancelled.`);
@@ -185,14 +180,13 @@ export default function UserAdvancePaymentConfirmation() {
 
                 // Handle payment errors
                 razorpay.on('payment.error', async function (response) {
-                    console.error("Razorpay payment error:", response);
                     const errorMsg = response.error?.description || response.error?.reason || response.error?.code || "Payment error occurred. Please try again.";
                     
                     // Cancel the booking if payment error occurs
                     try {
                         await cancelBooking(booking.id, `Payment error: ${errorMsg}`);
                     } catch (cancelErr) {
-                        console.error("Failed to cancel booking:", cancelErr);
+                        // Failed to cancel booking - silently continue
                     }
                     
                     setError(`Payment error: ${errorMsg}. Booking has been cancelled.`);
@@ -214,7 +208,6 @@ export default function UserAdvancePaymentConfirmation() {
                         event.message.includes('api.razorpay.com') ||
                         event.target?.src?.includes('razorpay.com')
                     )) {
-                        console.error("Razorpay API error detected:", event);
                         setError("Payment gateway error. Please try again or contact support.");
                         setLoading(false);
                         window.removeEventListener('error', errorHandler);
@@ -229,7 +222,6 @@ export default function UserAdvancePaymentConfirmation() {
                         event.reason.message?.includes('api.razorpay.com') ||
                         event.reason?.config?.url?.includes('razorpay.com')
                     )) {
-                        console.error("Razorpay promise rejection:", event.reason);
                         setError("Payment gateway error. Please try again or contact support.");
                         setLoading(false);
                         window.removeEventListener('unhandledrejection', rejectionHandler);
@@ -250,12 +242,10 @@ export default function UserAdvancePaymentConfirmation() {
 
                 razorpay.open();
             } catch (razorpayError) {
-                console.error("Razorpay initialization error:", razorpayError);
                 setError("Failed to initialize payment gateway. Please check your Razorpay configuration or try again later.");
                 setLoading(false);
             }
         } catch (err) {
-            console.error("Payment initiation error:", err);
             setError(err.response?.data?.message || "Failed to initiate payment. Please try again.");
             setLoading(false);
         }

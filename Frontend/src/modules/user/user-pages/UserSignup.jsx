@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { sendUserRegistrationOTP } from "../../../services/authApi";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
 
 export default function UserSignup() {
     const [showPassword, setShowPassword] = useState(false);
@@ -13,8 +15,8 @@ export default function UserSignup() {
         confirmPassword: "",
     });
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
     const navigate = useNavigate();
+    const toast = useToast();
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -26,7 +28,6 @@ export default function UserSignup() {
 
     const handleSendOTP = async (e) => {
         e?.preventDefault();
-        setError("");
         setLoading(true);
 
         // Validation
@@ -36,66 +37,59 @@ export default function UserSignup() {
             !formData.phone ||
             !formData.password
         ) {
-            setError("Please fill in all fields");
+            toast.showError("Please fill in all fields");
             setLoading(false);
             return;
         }
 
         if (formData.password.length < 6) {
-            setError("Password must be at least 6 characters");
+            toast.showError("Password must be at least 6 characters");
             setLoading(false);
             return;
         }
 
         if (formData.password !== formData.confirmPassword) {
-            setError("Passwords do not match");
+            toast.showError("Passwords do not match");
             setLoading(false);
             return;
         }
 
+        const loadingToast = toast.showLoading("Sending OTP...");
+
         try {
-            console.log("Sending OTP request:", {
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone,
-            });
             const response = await sendUserRegistrationOTP({
                 name: formData.name,
                 email: formData.email,
                 phone: formData.phone,
             });
-            console.log("OTP response:", response);
 
             if (response.success) {
-                // Navigate to OTP verification page with registration data
-                navigate("/user/verify-otp", {
-                    state: {
-                        registrationData: {
-                            name: formData.name,
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("OTP sent successfully! Please check your email/phone.");
+                
+                // Small delay to show success message before navigation
+                setTimeout(() => {
+                    navigate("/user/verify-otp", {
+                        state: {
+                            registrationData: {
+                                name: formData.name,
+                                email: formData.email,
+                                phone: formData.phone,
+                                password: formData.password,
+                            },
+                            verificationToken: response.data.token,
                             email: formData.email,
-                            phone: formData.phone,
-                            password: formData.password,
+                            otpSent: true,
                         },
-                        verificationToken: response.data.token,
-                        email: formData.email,
-                        otpSent: true,
-                    },
-                });
+                    });
+                }, 800);
             } else {
-                setError(response.message || "Failed to send OTP");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to send OTP");
             }
         } catch (err) {
-            console.error("Send OTP error:", err);
-            console.error("Error details:", {
-                message: err.message,
-                response: err.response?.data,
-                status: err.response?.status,
-            });
-            setError(
-                err.response?.data?.message ||
-                    err.message ||
-                    "Failed to send OTP. Please try again."
-            );
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to send OTP. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -115,13 +109,6 @@ export default function UserSignup() {
                         Create your account to get started.
                     </p>
                 </div>
-
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                )}
 
                 <main className="w-full rounded-xl bg-white p-6 shadow-lg">
                     <form className="space-y-4" onSubmit={handleSendOTP}>

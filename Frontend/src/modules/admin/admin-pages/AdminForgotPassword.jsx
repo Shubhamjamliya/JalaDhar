@@ -1,40 +1,44 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { adminForgotPassword } from "../../../services/adminApi";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
 
 export default function AdminForgotPassword() {
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const navigate = useNavigate();
+    const toast = useToast();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError("");
-        setSuccess("");
         setLoading(true);
 
         if (!email) {
-            setError("Please enter your email address");
+            toast.showError("Please enter your email address");
             setLoading(false);
             return;
         }
 
+        const loadingToast = toast.showLoading("Sending OTP...");
+
         try {
             const response = await adminForgotPassword({ email });
             if (response.success) {
-                setSuccess(response.message || "OTP sent to your email");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess(response.message || "OTP sent to your email");
                 setTimeout(() => {
                     navigate("/admin/reset-password", {
                         state: { email }
                     });
-                }, 1500);
+                }, 1000);
             } else {
-                setError(response.message || "Failed to send OTP");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to send OTP");
             }
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to send OTP. Please try again.");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to send OTP. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -56,20 +60,6 @@ export default function AdminForgotPassword() {
                 <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
                     Forgot Password
                 </h2>
-
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                )}
-
-                {/* Success Message */}
-                {success && (
-                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-sm text-green-600">{success}</p>
-                    </div>
-                )}
 
                 {/* Form */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

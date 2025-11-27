@@ -9,13 +9,19 @@ import {
     IoCallOutline,
 } from "react-icons/io5";
 import { getAllUsers, deactivateUser, activateUser } from "../../../services/adminApi";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 
 export default function AdminUsers() {
     const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [actionLoading, setActionLoading] = useState(null);
+    const toast = useToast();
+    const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+    const [showActivateConfirm, setShowActivateConfirm] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState(null);
     const [filters, setFilters] = useState({
         search: "",
         isActive: "",
@@ -67,43 +73,67 @@ export default function AdminUsers() {
         }
     };
 
-    const handleDeactivate = async (userId) => {
-        if (window.confirm("Are you sure you want to deactivate this user?")) {
-            try {
-                setActionLoading(userId);
-                const response = await deactivateUser(userId);
-                
-                if (response.success) {
-                    await loadUsers();
-                } else {
-                    alert(response.message || "Failed to deactivate user");
-                }
-            } catch (err) {
-                console.error("Deactivate user error:", err);
-                alert("Failed to deactivate user. Please try again.");
-            } finally {
-                setActionLoading(null);
+    const handleDeactivate = (userId) => {
+        setSelectedUserId(userId);
+        setShowDeactivateConfirm(true);
+    };
+
+    const handleDeactivateConfirm = async () => {
+        if (!selectedUserId) return;
+        const userId = selectedUserId;
+        setShowDeactivateConfirm(false);
+        const loadingToast = toast.showLoading("Deactivating user...");
+        try {
+            setActionLoading(userId);
+            const response = await deactivateUser(userId);
+            
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("User deactivated successfully!");
+                await loadUsers();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to deactivate user");
             }
+        } catch (err) {
+            console.error("Deactivate user error:", err);
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to deactivate user. Please try again.");
+        } finally {
+            setActionLoading(null);
+            setSelectedUserId(null);
         }
     };
 
-    const handleActivate = async (userId) => {
-        if (window.confirm("Are you sure you want to activate this user?")) {
-            try {
-                setActionLoading(userId);
-                const response = await activateUser(userId);
-                
-                if (response.success) {
-                    await loadUsers();
-                } else {
-                    alert(response.message || "Failed to activate user");
-                }
-            } catch (err) {
-                console.error("Activate user error:", err);
-                alert("Failed to activate user. Please try again.");
-            } finally {
-                setActionLoading(null);
+    const handleActivate = (userId) => {
+        setSelectedUserId(userId);
+        setShowActivateConfirm(true);
+    };
+
+    const handleActivateConfirm = async () => {
+        if (!selectedUserId) return;
+        const userId = selectedUserId;
+        setShowActivateConfirm(false);
+        const loadingToast = toast.showLoading("Activating user...");
+        try {
+            setActionLoading(userId);
+            const response = await activateUser(userId);
+            
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("User activated successfully!");
+                await loadUsers();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to activate user");
             }
+        } catch (err) {
+            console.error("Activate user error:", err);
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to activate user. Please try again.");
+        } finally {
+            setActionLoading(null);
+            setSelectedUserId(null);
         }
     };
 
@@ -128,13 +158,8 @@ export default function AdminUsers() {
     }
 
     return (
+        <>
         <div className="min-h-[calc(100vh-5rem)]">
-            {/* Error Message */}
-            {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">{error}</p>
-                </div>
-            )}
 
             {/* Header */}
             <div className="mb-6">
@@ -302,6 +327,36 @@ export default function AdminUsers() {
                 </div>
             )}
         </div>
-    );
+
+        {/* Deactivate User Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showDeactivateConfirm}
+            onClose={() => {
+                setShowDeactivateConfirm(false);
+                setSelectedUserId(null);
+            }}
+            onConfirm={handleDeactivateConfirm}
+            title="Deactivate User"
+            message="Are you sure you want to deactivate this user?"
+            confirmText="Yes, Deactivate"
+            cancelText="Cancel"
+            confirmColor="warning"
+        />
+
+        {/* Activate User Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showActivateConfirm}
+            onClose={() => {
+                setShowActivateConfirm(false);
+                setSelectedUserId(null);
+            }}
+            onConfirm={handleActivateConfirm}
+            title="Activate User"
+            message="Are you sure you want to activate this user?"
+            confirmText="Yes, Activate"
+            cancelText="Cancel"
+            confirmColor="primary"
+        />
+    </>);
 }
 

@@ -64,3 +64,17 @@ body {
   box-shadow: 0 0 0 2px rgba(26, 128, 229, 0.2);
   outline: none;
 }
+
+/* Toast Notification Mobile Optimization */
+.toast-container {
+  padding: 0 16px;
+}
+
+@media (max-width: 640px) {
+  .toast-container > div {
+    font-size: 13px;
+    padding: 10px 14px;
+    min-width: 250px;
+    max-width: calc(100vw - 32px);
+  }
+}

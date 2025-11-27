@@ -71,12 +71,20 @@ const addService = async (req, res) => {
       });
     }
 
-    // Parse skills if it's a string
+    // Parse skills if it's a string and not empty
     let parsedSkills = [];
     if (skills) {
-      if (typeof skills === 'string') {
-        parsedSkills = JSON.parse(skills);
-      } else if (Array.isArray(skills)) {
+      if (typeof skills === 'string' && skills.trim() !== '' && skills !== '[]') {
+        try {
+          parsedSkills = JSON.parse(skills);
+          // Only include if it's a non-empty array
+          if (!Array.isArray(parsedSkills) || parsedSkills.length === 0) {
+            parsedSkills = [];
+          }
+        } catch (e) {
+          parsedSkills = [];
+        }
+      } else if (Array.isArray(skills) && skills.length > 0) {
         parsedSkills = skills;
       }
     }
@@ -95,18 +103,32 @@ const addService = async (req, res) => {
     }
 
     // Create service
-    const service = await Service.create({
+    const serviceData = {
       vendor: vendorId,
       name: name.trim(),
       description: description?.trim() || '',
       machineType: machineType.trim(),
-      skills: parsedSkills,
       price: parseFloat(price),
-      duration: parseInt(duration),
-      category: category?.trim() || '',
       images,
       status: SERVICE_STATUS.PENDING // New services need admin approval
-    });
+    };
+
+    // Add skills only if not empty
+    if (parsedSkills.length > 0) {
+      serviceData.skills = parsedSkills;
+    }
+
+    // Add category only if provided and not empty
+    if (category && category.trim() !== '') {
+      serviceData.category = category.trim();
+    }
+
+    // Add duration only if provided
+    if (duration) {
+      serviceData.duration = parseInt(duration);
+    }
+
+    const service = await Service.create(serviceData);
 
     // Add service to vendor's services array
     vendor.services.push(service._id);
@@ -269,21 +291,50 @@ const updateService = async (req, res) => {
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
         if (field === 'skills') {
-          // Parse skills if it's a string
-          if (typeof req.body[field] === 'string') {
-            try {
-              service[field] = JSON.parse(req.body[field]);
-            } catch (e) {
+          // Only update skills if not empty
+          let parsedSkills = [];
+          if (req.body[field]) {
+            if (typeof req.body[field] === 'string' && req.body[field].trim() !== '' && req.body[field] !== '[]') {
+              try {
+                parsedSkills = JSON.parse(req.body[field]);
+                if (Array.isArray(parsedSkills) && parsedSkills.length > 0) {
+                  service[field] = parsedSkills;
+                } else {
+                  // Set to empty array if empty
+                  service[field] = [];
+                }
+              } catch (e) {
+                // Invalid JSON, set to empty array
+                service[field] = [];
+              }
+            } else if (Array.isArray(req.body[field]) && req.body[field].length > 0) {
               service[field] = req.body[field];
+            } else {
+              // Empty or invalid, set to empty array
+              service[field] = [];
             }
           } else {
-            service[field] = req.body[field];
+            // Explicitly empty, set to empty array
+            service[field] = [];
           }
         } else if (field === 'price') {
           service[field] = parseFloat(req.body[field]);
         } else if (field === 'duration') {
-          service[field] = parseInt(req.body[field]);
-        } else if (field === 'name' || field === 'description' || field === 'machineType' || field === 'category') {
+          if (req.body[field] !== undefined && req.body[field] !== null && req.body[field] !== '') {
+            service[field] = parseInt(req.body[field]);
+          } else {
+            // Allow setting duration to null/undefined if explicitly provided
+            service[field] = undefined;
+          }
+        } else if (field === 'category') {
+          // Only update category if not empty
+          if (req.body[field] && req.body[field].trim() !== '') {
+            service[field] = req.body[field].trim();
+          } else {
+            // Set to empty string or undefined if empty
+            service[field] = '';
+          }
+        } else if (field === 'name' || field === 'description' || field === 'machineType') {
           service[field] = req.body[field]?.trim() || service[field];
         } else {
           service[field] = req.body[field];

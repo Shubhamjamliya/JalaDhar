@@ -10,25 +10,28 @@ import {
 } from "react-icons/io5";
 import { createBooking } from "../../../services/bookingApi";
 import PageContainer from "../../shared/components/PageContainer";
-import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
+
+// Get API key at module level
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 export default function UserRequestService() {
     const navigate = useNavigate();
     const location = useLocation();
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [service, setService] = useState(null);
     const [vendor, setVendor] = useState(null);
+    const toast = useToast();
+    const [fullAddress, setFullAddress] = useState("");
+    const [gettingLocation, setGettingLocation] = useState(false);
     const [formData, setFormData] = useState({
         scheduledDate: "",
         scheduledTime: "",
         address: {
-            street: "",
-            city: "",
-            state: "",
-            pincode: "",
+            coordinates: null,
+            geoLocation: null
         },
         notes: "",
         images: [],
@@ -62,34 +65,167 @@ export default function UserRequestService() {
         setFormData({ ...formData, images: newImages });
     };
 
-    const handleAddressChange = (field, value) => {
-        setFormData({
-            ...formData,
+    // Handle place selection from Google Places Autocomplete
+    const handleAddressSelect = (placeData) => {
+        const selectedFormattedAddress = placeData.formattedAddress || "";
+        const selectedPlaceId = placeData.placeId || "";
+        const selectedLat = placeData.lat;
+        const selectedLng = placeData.lng;
+        
+        // Store in registration format
+        setFormData(prev => ({
+            ...prev,
             address: {
-                ...formData.address,
-                [field]: value,
+                coordinates: (selectedLat && selectedLng) ? {
+                    lat: selectedLat,
+                    lng: selectedLng
+                } : prev.address.coordinates,
+                geoLocation: (selectedPlaceId && selectedFormattedAddress) ? {
+                    formattedAddress: selectedFormattedAddress,
+                    placeId: selectedPlaceId,
+                    geocodedAt: new Date()
+                } : prev.address.geoLocation
+            }
+        }));
+        
+        setFullAddress(selectedFormattedAddress);
+        toast.showSuccess("Address auto-filled from selected location");
+    };
+
+    // Get current location using browser geolocation API
+    const getCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            toast.showError("Geolocation is not supported by your browser");
+            return;
+        }
+
+        setGettingLocation(true);
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                const apiKey = GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+
+                let formattedAddress = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+
+                // Try to reverse geocode if API key is available
+                if (apiKey && apiKey.trim() !== "") {
+                    try {
+                        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+
+                        const response = await fetch(geocodeUrl);
+
+                        if (response.ok) {
+                            const data = await response.json();
+
+                            if (data.status === 'OK' && data.results && data.results.length > 0) {
+                                const result = data.results[0];
+                                formattedAddress = result.formatted_address || formattedAddress;
+                                
+                                // Store in registration format
+                                setFormData(prev => ({
+                                    ...prev,
+                                    address: {
+                                        coordinates: {
+                                            lat: lat,
+                                            lng: lng
+                                        },
+                                        geoLocation: formattedAddress && formattedAddress !== `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}` ? {
+                                            formattedAddress: formattedAddress,
+                                            placeId: result.place_id || null,
+                                            geocodedAt: new Date()
+                                        } : prev.address.geoLocation
+                                    }
+                                }));
+                            }
+                        }
+                    } catch (error) {
+                        // Geocoding error - silently fail
+                    }
+                } else {
+                    // Store coordinates even if geocoding fails
+                    setFormData(prev => ({
+                        ...prev,
+                        address: {
+                            coordinates: {
+                                lat: lat,
+                                lng: lng
+                            },
+                            geoLocation: prev.address.geoLocation
+                        }
+                    }));
+                }
+
+                setFullAddress(formattedAddress);
+                toast.showSuccess("Location found! Address auto-filled.");
+                setGettingLocation(false);
             },
-        });
+            (error) => {
+                let errorMessage = "Unable to get your location";
+                if (error.code === error.PERMISSION_DENIED) {
+                    errorMessage = "Location permission denied. Please allow location access in your browser settings.";
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    errorMessage = "Location information unavailable.";
+                } else if (error.code === error.TIMEOUT) {
+                    errorMessage = "Location request timed out.";
+                }
+                toast.showError(errorMessage);
+                setGettingLocation(false);
+            }
+        );
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError("");
-        setSuccess("");
 
         // Validate address
-        if (!formData.address.street || !formData.address.city || !formData.address.state || !formData.address.pincode) {
-            setError("Please fill in all address fields");
+        if (!formData.address.geoLocation?.formattedAddress && !fullAddress) {
+            toast.showError("Please select or enter an address");
             return;
         }
 
         if (!service || !vendor) {
-            setError("Service or vendor information is missing");
+            toast.showError("Service or vendor information is missing");
             return;
         }
 
+        const loadingToast = toast.showLoading("Creating booking...");
+
         try {
             setLoading(true);
+
+            // Prepare address for backend (convert to old format for compatibility)
+            // Backend expects {street, city, state, pincode} but we store {coordinates, geoLocation}
+            let addressToSend = formData.address;
+            
+            // If user manually typed address but didn't select from autocomplete,
+            // store fullAddress in geoLocation as fallback
+            if (fullAddress && (!addressToSend.geoLocation?.formattedAddress)) {
+                addressToSend = {
+                    ...addressToSend,
+                    geoLocation: {
+                        formattedAddress: fullAddress,
+                        placeId: null,
+                        geocodedAt: new Date()
+                    }
+                };
+            }
+
+            // Parse formattedAddress to extract street, city, state, pincode for backend compatibility
+            const formattedAddr = addressToSend.geoLocation?.formattedAddress || fullAddress || "";
+            const addressParts = formattedAddr.split(",").map(part => part.trim());
+            
+            // Try to extract components (simple parsing - backend should handle this better)
+            const parsedAddress = {
+                street: addressParts[0] || "",
+                city: addressParts[1] || "",
+                state: addressParts[2] || "",
+                pincode: addressParts[addressParts.length - 1] || "",
+                coordinates: addressToSend.coordinates,
+                landmark: ""
+            };
 
             // Create booking
             const bookingData = {
@@ -97,7 +233,7 @@ export default function UserRequestService() {
                 vendorId: vendor._id || vendor.id,
                 scheduledDate: formData.scheduledDate,
                 scheduledTime: formData.scheduledTime,
-                address: formData.address,
+                address: parsedAddress,
                 notes: formData.notes || undefined,
             };
 
@@ -109,42 +245,48 @@ export default function UserRequestService() {
                 const razorpayOrder = response.data.razorpayOrder;
 
                 if (!razorpayOrder) {
-                    setError("Payment order not created. Please try again.");
+                    toast.dismissToast(loadingToast);
+                    toast.showError("Payment order not created. Please try again.");
                     setLoading(false);
                     return;
                 }
 
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Booking created successfully! Redirecting to payment...");
                 setLoading(false);
                 
                 // Navigate to confirmation page instead of directly opening payment
-                navigate("/user/booking/advance-payment/confirmation", {
-                                        replace: true,
-                                        state: {
-                        booking: booking,
-                                                service: service,
-                        vendor: vendor,
-                        paymentData: paymentData,
-                        razorpayOrder: razorpayOrder
-                    }
-                });
+                setTimeout(() => {
+                    navigate("/user/booking/advance-payment/confirmation", {
+                        replace: true,
+                        state: {
+                            booking: booking,
+                            service: service,
+                            vendor: vendor,
+                            paymentData: paymentData,
+                            razorpayOrder: razorpayOrder
+                        }
+                    });
+                }, 500);
             } else {
+                toast.dismissToast(loadingToast);
                 // Check if error is due to existing active booking
                 if (response.message && response.message.includes("active booking")) {
-                    setError(response.message || "You already have an active booking. Please complete or cancel it first.");
+                    toast.showError(response.message || "You already have an active booking. Please complete or cancel it first.");
                 } else {
-                    setError(response.message || "Failed to create booking");
+                    toast.showError(response.message || "Failed to create booking");
                 }
                 setLoading(false);
             }
         } catch (err) {
-            console.error("Create booking error:", err);
+            toast.dismissToast(loadingToast);
             const errorMessage = err.response?.data?.message || "Failed to create booking. Please try again.";
 
             // Check if error is due to existing active booking
             if (errorMessage.includes("active booking") || errorMessage.includes("already have")) {
-                setError(errorMessage);
+                toast.showError(errorMessage);
             } else {
-                setError(errorMessage);
+                handleApiError(err, "Failed to create booking. Please try again.");
             }
             setLoading(false);
         }
@@ -160,34 +302,8 @@ export default function UserRequestService() {
         );
     }
 
-    // Check if error is about active booking
-    const hasActiveBookingError = error && (error.includes("active booking") || error.includes("already have"));
-
     return (
         <PageContainer>
-            <ErrorMessage message={error} />
-            {hasActiveBookingError && (
-                <div className="mb-4 bg-blue-50 border border-blue-200 rounded-[12px] p-4">
-                    <p className="text-sm text-blue-800 mb-3 font-medium">
-                        You can view your current booking status or cancel it to create a new booking.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <button
-                            onClick={() => navigate("/user/status")}
-                            className="flex-1 bg-[#0A84FF] text-white px-4 py-2 rounded-[8px] text-sm font-semibold hover:bg-[#005BBB] transition-colors"
-                        >
-                            View Current Booking
-                        </button>
-                                        <button
-                            onClick={() => navigate("/user/history")}
-                            className="flex-1 bg-white text-[#0A84FF] border border-[#0A84FF] px-4 py-2 rounded-[8px] text-sm font-semibold hover:bg-blue-50 transition-colors"
-                                        >
-                            View Booking History
-                                        </button>
-                                    </div>
-                            </div>
-                        )}
-            <SuccessMessage message={success} />
 
             {/* Back Button */}
             <button
@@ -253,49 +369,51 @@ export default function UserRequestService() {
                     </div>
                 </div>
 
-                {/* Address Fields */}
+                {/* Address Input */}
                 <div>
                     <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
                         <IoLocationOutline className="inline text-base mr-1" />
                         Address *
                     </label>
-                    <div className="space-y-3">
-                        <input
-                            type="text"
-                            placeholder="Street Address"
-                            value={formData.address.street}
-                            onChange={(e) => handleAddressChange("street", e.target.value)}
-                            required
-                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                        />
-                        <div className="grid grid-cols-2 gap-3">
-                            <input
-                                type="text"
-                                placeholder="City"
-                                value={formData.address.city}
-                                onChange={(e) => handleAddressChange("city", e.target.value)}
-                                required
-                                className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                            />
-                            <input
-                                type="text"
-                                placeholder="State"
-                                value={formData.address.state}
-                                onChange={(e) => handleAddressChange("state", e.target.value)}
-                                required
-                                className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                            />
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex flex-col sm:flex-row gap-2 mb-2">
+                            <div className="relative flex-1">
+                                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg z-10">
+                                    search
+                                </span>
+                                <PlaceAutocompleteInput
+                                    onPlaceSelect={handleAddressSelect}
+                                    placeholder="Start typing your address to see suggestions..."
+                                    value={fullAddress}
+                                    onChange={(e) => setFullAddress(e.target.value)}
+                                    disabled={loading || gettingLocation}
+                                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#0A84FF] focus:ring-[#0A84FF] text-sm"
+                                    countryRestriction="in"
+                                    types={["geocode", "establishment"]}
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={getCurrentLocation}
+                                disabled={loading || gettingLocation}
+                                className="flex items-center justify-center gap-2 bg-[#0A84FF] text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-[#005BBB] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 whitespace-nowrap"
+                                title="Use current location"
+                            >
+                                <IoLocationOutline className="text-lg" />
+                                {gettingLocation ? "Getting..." : "Use Current Location"}
+                            </button>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Pincode"
-                            value={formData.address.pincode}
-                            onChange={(e) => handleAddressChange("pincode", e.target.value)}
-                            required
-                            pattern="[0-9]{6}"
-                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                        />
+                        <p className="text-xs text-blue-700 mt-1">
+                            💡 Type your address above to see suggestions, or click "Use Current Location" to auto-fill from GPS
+                        </p>
                     </div>
+                    {/* Display selected address */}
+                    {formData.address?.geoLocation?.formattedAddress && (
+                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-xs font-medium text-green-800 mb-1">✓ Address Selected:</p>
+                            <p className="text-sm text-green-700">{formData.address.geoLocation.formattedAddress}</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Notes */}

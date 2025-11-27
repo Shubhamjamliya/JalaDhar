@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { adminResetPassword } from "../../../services/adminApi";
 import { IoCheckmarkCircleOutline } from "react-icons/io5";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
 
 export default function AdminResetPassword() {
     const navigate = useNavigate();
@@ -13,8 +15,8 @@ export default function AdminResetPassword() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
+    const toast = useToast();
 
     useEffect(() => {
         if (!email) {
@@ -24,26 +26,27 @@ export default function AdminResetPassword() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError("");
         setLoading(true);
 
         if (!otp || otp.length !== 6) {
-            setError("Please enter a valid 6-digit OTP");
+            toast.showError("Please enter a valid 6-digit OTP");
             setLoading(false);
             return;
         }
 
         if (!newPassword || newPassword.length < 6) {
-            setError("Password must be at least 6 characters");
+            toast.showError("Password must be at least 6 characters");
             setLoading(false);
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            setError("Passwords do not match");
+            toast.showError("Passwords do not match");
             setLoading(false);
             return;
         }
+
+        const loadingToast = toast.showLoading("Resetting password...");
 
         try {
             const response = await adminResetPassword({
@@ -52,17 +55,21 @@ export default function AdminResetPassword() {
                 newPassword
             });
             if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Password reset successful! Redirecting to login...");
                 setSuccess(true);
                 setTimeout(() => {
                     navigate("/adminlogin", {
                         state: { message: "Password reset successful! Please login with your new password." }
                     });
-                }, 3000);
+                }, 2000);
             } else {
-                setError(response.message || "Password reset failed");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Password reset failed");
             }
         } catch (err) {
-            setError(err.response?.data?.message || "Password reset failed. Please try again.");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Password reset failed. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -110,13 +117,6 @@ export default function AdminResetPassword() {
                 <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
                     Reset Password
                 </h2>
-
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                )}
 
                 {/* Form */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

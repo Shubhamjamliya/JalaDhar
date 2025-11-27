@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import { sendUserRegistrationOTP } from "../../../services/authApi";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
 
 export default function UserOTPVerification() {
     const navigate = useNavigate();
@@ -11,9 +13,8 @@ export default function UserOTPVerification() {
     const [otp, setOtp] = useState("");
     const [otpCountdown, setOtpCountdown] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [registrationSuccess, setRegistrationSuccess] = useState(false);
+    const toast = useToast();
     
     // Get registration data from location state
     const registrationData = location.state?.registrationData;
@@ -42,9 +43,8 @@ export default function UserOTPVerification() {
     }, [otpCountdown]);
 
     const handleResendOTP = async () => {
-        setError("");
-        setSuccess("");
         setLoading(true);
+        const loadingToast = toast.showLoading("Resending OTP...");
         try {
             const response = await sendUserRegistrationOTP({
                 name: registrationData.name,
@@ -52,7 +52,8 @@ export default function UserOTPVerification() {
                 phone: registrationData.phone
             });
             if (response.success) {
-                setSuccess("New OTP sent successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("New OTP sent successfully!");
                 setOtpCountdown(60);
                 // Update location state with new token
                 window.history.replaceState(
@@ -60,10 +61,12 @@ export default function UserOTPVerification() {
                     ""
                 );
             } else {
-                setError(response.message || "Failed to resend OTP");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to resend OTP");
             }
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to resend OTP. Please try again.");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to resend OTP. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -71,15 +74,15 @@ export default function UserOTPVerification() {
 
     const handleVerifyOTP = async (e) => {
         e?.preventDefault();
-        setError("");
-        setSuccess("");
         setLoading(true);
 
         if (!otp || otp.length !== 6) {
-            setError("Please enter a valid 6-digit OTP");
+            toast.showError("Please enter a valid 6-digit OTP");
             setLoading(false);
             return;
         }
+
+        const loadingToast = toast.showLoading("Verifying OTP...");
 
         try {
             const result = await register({
@@ -92,22 +95,24 @@ export default function UserOTPVerification() {
             });
             
             if (result.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess(result.message || "Registration successful! Redirecting to login...");
                 setRegistrationSuccess(true);
-                setSuccess(result.message || "Registration successful!");
-                // Redirect to login after 3 seconds
+                // Redirect to login after 2 seconds
                 setTimeout(() => {
                     navigate("/userlogin", { 
                         state: { 
                             message: "Registration successful! Please login to continue." 
                         } 
                     });
-                }, 3000);
+                }, 2000);
             } else {
-                setError(result.message || "Registration failed. Please try again.");
+                toast.dismissToast(loadingToast);
+                toast.showError(result.message || "Registration failed. Please try again.");
             }
         } catch (err) {
-            setError(err.response?.data?.message || "Registration failed. Please try again.");
-            console.error("Registration error:", err);
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Registration failed. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -157,20 +162,6 @@ export default function UserOTPVerification() {
                         Verify your email to complete registration.
                     </p>
                 </div>
-
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                )}
-
-                {/* Success Message */}
-                {success && (
-                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-sm text-green-600">{success}</p>
-                    </div>
-                )}
 
                 <main className="w-full rounded-xl bg-white p-6 shadow-lg">
                     <form className="space-y-4" onSubmit={handleVerifyOTP}>

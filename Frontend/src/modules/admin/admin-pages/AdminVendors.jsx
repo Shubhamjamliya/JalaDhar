@@ -9,13 +9,24 @@ import {
     IoEyeOutline,
 } from "react-icons/io5";
 import { getAllVendors, approveVendor, rejectVendor, deactivateVendor, activateVendor } from "../../../services/adminApi";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import ConfirmModal from "../../shared/components/ConfirmModal";
+import InputModal from "../../shared/components/InputModal";
 
 export default function AdminVendors() {
     const navigate = useNavigate();
     const [vendors, setVendors] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [actionLoading, setActionLoading] = useState(null);
+    const toast = useToast();
+    const [showApproveConfirm, setShowApproveConfirm] = useState(false);
+    const [showRejectInput, setShowRejectInput] = useState(false);
+    const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+    const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+    const [showActivateConfirm, setShowActivateConfirm] = useState(false);
+    const [selectedVendorId, setSelectedVendorId] = useState(null);
+    const [rejectionReason, setRejectionReason] = useState("");
     const [filters, setFilters] = useState({
         search: "",
         isApproved: "",
@@ -67,94 +78,139 @@ export default function AdminVendors() {
         }
     };
 
-    const handleApprove = async (vendorId) => {
-        if (window.confirm("Are you sure you want to approve this vendor?")) {
-            try {
-                setActionLoading(vendorId);
-                const response = await approveVendor(vendorId);
-                
-                if (response.success) {
-                    await loadVendors();
-                } else {
-                    alert(response.message || "Failed to approve vendor");
-                }
-            } catch (err) {
-                console.error("Approve vendor error:", err);
-                alert("Failed to approve vendor. Please try again.");
-            } finally {
-                setActionLoading(null);
+    const handleApprove = (vendorId) => {
+        setSelectedVendorId(vendorId);
+        setShowApproveConfirm(true);
+    };
+
+    const handleApproveConfirm = async () => {
+        if (!selectedVendorId) return;
+        const vendorId = selectedVendorId;
+        setShowApproveConfirm(false);
+        const loadingToast = toast.showLoading("Approving vendor...");
+        try {
+            setActionLoading(vendorId);
+            const response = await approveVendor(vendorId);
+            
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Vendor approved successfully!");
+                await loadVendors();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to approve vendor");
             }
+        } catch (err) {
+            console.error("Approve vendor error:", err);
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to approve vendor. Please try again.");
+        } finally {
+            setActionLoading(null);
+            setSelectedVendorId(null);
         }
     };
 
-    const handleReject = async (vendorId) => {
-        const rejectionReason = window.prompt(
-            "Please provide a reason for rejection (minimum 10 characters):"
-        );
+    const handleReject = (vendorId) => {
+        setSelectedVendorId(vendorId);
+        setRejectionReason("");
+        setShowRejectInput(true);
+    };
 
-        if (!rejectionReason || rejectionReason.trim().length < 10) {
-            if (rejectionReason !== null) {
-                alert("Rejection reason must be at least 10 characters long.");
-            }
-            return;
-        }
+    const handleRejectionReasonSubmit = (reason) => {
+        setRejectionReason(reason);
+        setShowRejectInput(false);
+        setShowRejectConfirm(true);
+    };
 
-        if (window.confirm("Are you sure you want to reject this vendor?")) {
-            try {
-                setActionLoading(vendorId);
-                const response = await rejectVendor(vendorId, rejectionReason);
-                
-                if (response.success) {
-                    await loadVendors();
-                } else {
-                    alert(response.message || "Failed to reject vendor");
-                }
-            } catch (err) {
-                console.error("Reject vendor error:", err);
-                alert("Failed to reject vendor. Please try again.");
-            } finally {
-                setActionLoading(null);
+    const handleRejectConfirm = async () => {
+        if (!selectedVendorId || !rejectionReason) return;
+        const vendorId = selectedVendorId;
+        setShowRejectConfirm(false);
+        const loadingToast = toast.showLoading("Rejecting vendor...");
+        try {
+            setActionLoading(vendorId);
+            const response = await rejectVendor(vendorId, rejectionReason);
+            
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Vendor rejected successfully!");
+                setRejectionReason("");
+                await loadVendors();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to reject vendor");
             }
+        } catch (err) {
+            console.error("Reject vendor error:", err);
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to reject vendor. Please try again.");
+        } finally {
+            setActionLoading(null);
+            setSelectedVendorId(null);
         }
     };
 
-    const handleDeactivate = async (vendorId) => {
-        if (window.confirm("Are you sure you want to deactivate this vendor?")) {
-            try {
-                setActionLoading(vendorId);
-                const response = await deactivateVendor(vendorId);
-                
-                if (response.success) {
-                    await loadVendors();
-                } else {
-                    alert(response.message || "Failed to deactivate vendor");
-                }
-            } catch (err) {
-                console.error("Deactivate vendor error:", err);
-                alert("Failed to deactivate vendor. Please try again.");
-            } finally {
-                setActionLoading(null);
+    const handleDeactivate = (vendorId) => {
+        setSelectedVendorId(vendorId);
+        setShowDeactivateConfirm(true);
+    };
+
+    const handleDeactivateConfirm = async () => {
+        if (!selectedVendorId) return;
+        const vendorId = selectedVendorId;
+        setShowDeactivateConfirm(false);
+        const loadingToast = toast.showLoading("Deactivating vendor...");
+        try {
+            setActionLoading(vendorId);
+            const response = await deactivateVendor(vendorId);
+            
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Vendor deactivated successfully!");
+                await loadVendors();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to deactivate vendor");
             }
+        } catch (err) {
+            console.error("Deactivate vendor error:", err);
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to deactivate vendor. Please try again.");
+        } finally {
+            setActionLoading(null);
+            setSelectedVendorId(null);
         }
     };
 
-    const handleActivate = async (vendorId) => {
-        if (window.confirm("Are you sure you want to activate this vendor?")) {
-            try {
-                setActionLoading(vendorId);
-                const response = await activateVendor(vendorId);
-                
-                if (response.success) {
-                    await loadVendors();
-                } else {
-                    alert(response.message || "Failed to activate vendor");
-                }
-            } catch (err) {
-                console.error("Activate vendor error:", err);
-                alert("Failed to activate vendor. Please try again.");
-            } finally {
-                setActionLoading(null);
+    const handleActivate = (vendorId) => {
+        setSelectedVendorId(vendorId);
+        setShowActivateConfirm(true);
+    };
+
+    const handleActivateConfirm = async () => {
+        if (!selectedVendorId) return;
+        const vendorId = selectedVendorId;
+        setShowActivateConfirm(false);
+        const loadingToast = toast.showLoading("Activating vendor...");
+        try {
+            setActionLoading(vendorId);
+            const response = await activateVendor(vendorId);
+            
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Vendor activated successfully!");
+                await loadVendors();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to activate vendor");
             }
+        } catch (err) {
+            console.error("Activate vendor error:", err);
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to activate vendor. Please try again.");
+        } finally {
+            setActionLoading(null);
+            setSelectedVendorId(null);
         }
     };
 
@@ -179,13 +235,9 @@ export default function AdminVendors() {
     }
 
     return (
+        <>
         <div className="min-h-[calc(100vh-5rem)]">
             {/* Error Message */}
-            {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">{error}</p>
-                </div>
-            )}
 
             {/* Header */}
             <div className="mb-6">
@@ -384,6 +436,87 @@ export default function AdminVendors() {
                 </div>
             )}
         </div>
+
+        {/* Approve Vendor Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showApproveConfirm}
+            onClose={() => {
+                setShowApproveConfirm(false);
+                setSelectedVendorId(null);
+            }}
+            onConfirm={handleApproveConfirm}
+            title="Approve Vendor"
+            message="Are you sure you want to approve this vendor?"
+            confirmText="Yes, Approve"
+            cancelText="Cancel"
+            confirmColor="primary"
+        />
+
+        {/* Rejection Reason Input Modal */}
+        <InputModal
+            isOpen={showRejectInput}
+            onClose={() => {
+                setShowRejectInput(false);
+                setSelectedVendorId(null);
+                setRejectionReason("");
+            }}
+            onSubmit={handleRejectionReasonSubmit}
+            title="Reject Vendor"
+            message="Please provide a reason for rejection (minimum 10 characters):"
+            placeholder="Enter rejection reason..."
+            submitText="Continue"
+            cancelText="Cancel"
+            minLength={10}
+            isTextarea={true}
+            textareaRows={4}
+        />
+
+        {/* Reject Vendor Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showRejectConfirm}
+            onClose={() => {
+                setShowRejectConfirm(false);
+                setSelectedVendorId(null);
+                setRejectionReason("");
+            }}
+            onConfirm={handleRejectConfirm}
+            title="Confirm Rejection"
+            message="Are you sure you want to reject this vendor?"
+            confirmText="Yes, Reject"
+            cancelText="Cancel"
+            confirmColor="danger"
+        />
+
+        {/* Deactivate Vendor Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showDeactivateConfirm}
+            onClose={() => {
+                setShowDeactivateConfirm(false);
+                setSelectedVendorId(null);
+            }}
+            onConfirm={handleDeactivateConfirm}
+            title="Deactivate Vendor"
+            message="Are you sure you want to deactivate this vendor?"
+            confirmText="Yes, Deactivate"
+            cancelText="Cancel"
+            confirmColor="warning"
+        />
+
+        {/* Activate Vendor Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showActivateConfirm}
+            onClose={() => {
+                setShowActivateConfirm(false);
+                setSelectedVendorId(null);
+            }}
+            onConfirm={handleActivateConfirm}
+            title="Activate Vendor"
+            message="Are you sure you want to activate this vendor?"
+            confirmText="Yes, Activate"
+            cancelText="Cancel"
+            confirmColor="primary"
+        />
+        </>
     );
 }
 

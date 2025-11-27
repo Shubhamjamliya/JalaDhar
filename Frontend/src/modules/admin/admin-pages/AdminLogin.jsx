@@ -1,39 +1,46 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
+import { useToast } from "../../../hooks/useToast";
 
 export default function AdminLogin() {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
     const navigate = useNavigate();
     const { login } = useAdminAuth();
+    const toast = useToast();
 
     const handleAdminLogin = async (e) => {
         e?.preventDefault();
-        setError("");
         setLoading(true);
 
         // Basic validation
         if (!email || !password) {
-            setError("Please fill in all fields");
+            toast.showError("Please fill in all fields");
             setLoading(false);
             return;
         }
+
+        const loadingToast = toast.showLoading("Logging in...");
 
         try {
             const result = await login({ email, password });
             
             if (result.success) {
-                // Navigate to dashboard on success
-                navigate("/admin/dashboard");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Login successful! Redirecting...");
+                setTimeout(() => {
+                    navigate("/admin/dashboard");
+                }, 500);
             } else {
-                setError(result.message || "Login failed. Please try again.");
+                toast.dismissToast(loadingToast);
+                toast.showError(result.message || "Login failed. Please try again.");
             }
         } catch (err) {
-            setError("An unexpected error occurred. Please try again.");
+            toast.dismissToast(loadingToast);
+            toast.showError("An unexpected error occurred. Please try again.");
             console.error("Login error:", err);
         } finally {
             setLoading(false);
@@ -57,13 +64,6 @@ export default function AdminLogin() {
                 <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
                     Admin Login
                 </h2>
-
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                )}
 
                 {/* Email Input */}
                 <div className="mb-4">

@@ -49,7 +49,6 @@ export default function VendorAllBookingsStatus() {
         setError(response.message || "Failed to load bookings");
       }
     } catch (err) {
-      console.error("Load confirmed bookings error:", err);
       setError(err.response?.data?.message || "Failed to load bookings");
     } finally {
       setLoading(false);

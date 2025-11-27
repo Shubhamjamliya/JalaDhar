@@ -156,6 +156,11 @@ const vendorSchema = new mongoose.Schema({
     coordinates: {
       lat: Number,
       lng: Number
+    },
+    geoLocation: {
+      formattedAddress: String,
+      placeId: String,
+      geocodedAt: Date
     }
   },
   // Availability Settings
@@ -253,14 +258,6 @@ const vendorSchema = new mongoose.Schema({
       min: 0,
       max: 100
     }
-  },
-  // Location for distance calculation
-  location: {
-    coordinates: {
-      lat: Number,
-      lng: Number
-    },
-    lastUpdated: Date
   }
 }, {
   timestamps: true
@@ -279,7 +276,7 @@ vendorSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 // Calculate success ratio before saving
-vendorSchema.pre('save', function(next) {
+vendorSchema.pre('save', function (next) {
   if (this.rating.successCount + this.rating.failureCount > 0) {
     const total = this.rating.successCount + this.rating.failureCount;
     this.rating.successRatio = Math.round(

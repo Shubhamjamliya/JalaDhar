@@ -7,13 +7,22 @@ import {
     IoTimeOutline,
 } from "react-icons/io5";
 import { getPendingVendors, approveVendor, rejectVendor } from "../../../services/adminApi";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import ConfirmModal from "../../shared/components/ConfirmModal";
+import InputModal from "../../shared/components/InputModal";
 
 export default function AdminPendingVendors() {
     const navigate = useNavigate();
     const [vendors, setVendors] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [actionLoading, setActionLoading] = useState(null);
+    const toast = useToast();
+    const [showApproveConfirm, setShowApproveConfirm] = useState(false);
+    const [showRejectInput, setShowRejectInput] = useState(false);
+    const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+    const [selectedVendorId, setSelectedVendorId] = useState(null);
+    const [rejectionReason, setRejectionReason] = useState("");
     const [pagination, setPagination] = useState({
         currentPage: 1,
         totalPages: 1,
@@ -28,7 +37,6 @@ export default function AdminPendingVendors() {
     const loadPendingVendors = async () => {
         try {
             setLoading(true);
-            setError("");
             
             const response = await getPendingVendors({ page, limit: 10 });
             
@@ -40,64 +48,85 @@ export default function AdminPendingVendors() {
                     totalVendors: 0
                 });
             } else {
-                setError("Failed to load pending vendors");
+                toast.showError("Failed to load pending vendors");
             }
         } catch (err) {
             console.error("Load pending vendors error:", err);
-            setError("Failed to load pending vendors");
+            handleApiError(err, "Failed to load pending vendors");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleApprove = async (vendorId) => {
-        if (window.confirm("Are you sure you want to approve this vendor?")) {
-            try {
-                setActionLoading(vendorId);
-                const response = await approveVendor(vendorId);
-                
-                if (response.success) {
-                    await loadPendingVendors();
-                } else {
-                    alert(response.message || "Failed to approve vendor");
-                }
-            } catch (err) {
-                console.error("Approve vendor error:", err);
-                alert("Failed to approve vendor. Please try again.");
-            } finally {
-                setActionLoading(null);
+    const handleApprove = (vendorId) => {
+        setSelectedVendorId(vendorId);
+        setShowApproveConfirm(true);
+    };
+
+    const handleApproveConfirm = async () => {
+        if (!selectedVendorId) return;
+        const vendorId = selectedVendorId;
+        setShowApproveConfirm(false);
+        const loadingToast = toast.showLoading("Approving vendor...");
+        try {
+            setActionLoading(vendorId);
+            const response = await approveVendor(vendorId);
+            
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Vendor approved successfully!");
+                await loadPendingVendors();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to approve vendor");
             }
+        } catch (err) {
+            console.error("Approve vendor error:", err);
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to approve vendor. Please try again.");
+        } finally {
+            setActionLoading(null);
+            setSelectedVendorId(null);
         }
     };
 
-    const handleReject = async (vendorId) => {
-        const rejectionReason = window.prompt(
-            "Please provide a reason for rejection (minimum 10 characters):"
-        );
+    const handleReject = (vendorId) => {
+        setSelectedVendorId(vendorId);
+        setRejectionReason("");
+        setShowRejectInput(true);
+    };
 
-        if (!rejectionReason || rejectionReason.trim().length < 10) {
-            if (rejectionReason !== null) {
-                alert("Rejection reason must be at least 10 characters long.");
-            }
-            return;
-        }
+    const handleRejectionReasonSubmit = (reason) => {
+        setRejectionReason(reason);
+        setShowRejectInput(false);
+        setShowRejectConfirm(true);
+    };
 
-        if (window.confirm("Are you sure you want to reject this vendor?")) {
-            try {
-                setActionLoading(vendorId);
-                const response = await rejectVendor(vendorId, rejectionReason);
-                
-                if (response.success) {
-                    await loadPendingVendors();
-                } else {
-                    alert(response.message || "Failed to reject vendor");
-                }
-            } catch (err) {
-                console.error("Reject vendor error:", err);
-                alert("Failed to reject vendor. Please try again.");
-            } finally {
-                setActionLoading(null);
+    const handleRejectConfirm = async () => {
+        if (!selectedVendorId || !rejectionReason) return;
+        const vendorId = selectedVendorId;
+        setShowRejectConfirm(false);
+        const loadingToast = toast.showLoading("Rejecting vendor...");
+        try {
+            setActionLoading(vendorId);
+            const response = await rejectVendor(vendorId, rejectionReason);
+            
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Vendor rejected successfully!");
+                setRejectionReason("");
+                await loadPendingVendors();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to reject vendor");
             }
+        } catch (err) {
+            console.error("Reject vendor error:", err);
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to reject vendor. Please try again.");
+        } finally {
+            setActionLoading(null);
+            setSelectedVendorId(null);
         }
     };
 
@@ -122,13 +151,8 @@ export default function AdminPendingVendors() {
     }
 
     return (
+        <>
         <div className="min-h-[calc(100vh-5rem)]">
-            {/* Error Message */}
-            {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">{error}</p>
-                </div>
-            )}
 
             {/* Header */}
             <div className="mb-6">
@@ -245,6 +269,56 @@ export default function AdminPendingVendors() {
                 </div>
             )}
         </div>
-    );
+
+        {/* Approve Vendor Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showApproveConfirm}
+            onClose={() => {
+                setShowApproveConfirm(false);
+                setSelectedVendorId(null);
+            }}
+            onConfirm={handleApproveConfirm}
+            title="Approve Vendor"
+            message="Are you sure you want to approve this vendor?"
+            confirmText="Yes, Approve"
+            cancelText="Cancel"
+            confirmColor="primary"
+        />
+
+        {/* Rejection Reason Input Modal */}
+        <InputModal
+            isOpen={showRejectInput}
+            onClose={() => {
+                setShowRejectInput(false);
+                setSelectedVendorId(null);
+                setRejectionReason("");
+            }}
+            onSubmit={handleRejectionReasonSubmit}
+            title="Reject Vendor"
+            message="Please provide a reason for rejection (minimum 10 characters):"
+            placeholder="Enter rejection reason..."
+            submitText="Continue"
+            cancelText="Cancel"
+            minLength={10}
+            isTextarea={true}
+            textareaRows={4}
+        />
+
+        {/* Reject Vendor Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showRejectConfirm}
+            onClose={() => {
+                setShowRejectConfirm(false);
+                setSelectedVendorId(null);
+                setRejectionReason("");
+            }}
+            onConfirm={handleRejectConfirm}
+            title="Confirm Rejection"
+            message="Are you sure you want to reject this vendor?"
+            confirmText="Yes, Reject"
+            cancelText="Cancel"
+            confirmColor="danger"
+        />
+    </>);
 }
 

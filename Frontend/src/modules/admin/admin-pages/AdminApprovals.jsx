@@ -27,6 +27,9 @@ import {
 } from "../../../services/adminApi";
 import { useTheme } from "../../../contexts/ThemeContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 
 export default function AdminApprovals() {
     const { theme, themeColors } = useTheme();
@@ -36,12 +39,16 @@ export default function AdminApprovals() {
     const [travelChargesBookings, setTravelChargesBookings] = useState([]);
     const [reportBookings, setReportBookings] = useState([]);
     const [borewellBookings, setBorewellBookings] = useState([]);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [selectedBooking, setSelectedBooking] = useState(null);
+    const toast = useToast();
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState(""); // approve, reject, pay, etc.
     const [rejectionReason, setRejectionReason] = useState("");
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [showPayTravelConfirm, setShowPayTravelConfirm] = useState(false);
+    const [showApproveReportConfirm, setShowApproveReportConfirm] = useState(false);
+    const [selectedBookingId, setSelectedBookingId] = useState(null);
     
     // Pagination
     const [travelChargesPagination, setTravelChargesPagination] = useState({
@@ -67,8 +74,6 @@ export default function AdminApprovals() {
     const loadData = async () => {
         try {
             setLoading(true);
-            setError("");
-            setSuccess("");
             
             // Reset arrays when switching tabs to prevent showing stale data
             if (activeApprovalType === "travel-charges") {
@@ -96,7 +101,7 @@ export default function AdminApprovals() {
                         total: 0,
                     });
                 } else {
-                    setError(response.message || "Failed to load travel charges requests");
+                    toast.showError(response.message || "Failed to load travel charges requests");
                 }
             } else if (activeApprovalType === "report") {
                 const response = await getReportPendingApprovals({
@@ -126,7 +131,7 @@ export default function AdminApprovals() {
                         totalBookings: 0,
                     });
                 } else {
-                    setError(response.message || "Failed to load report approvals");
+                    toast.showError(response.message || "Failed to load report approvals");
                 }
             } else if (activeApprovalType === "borewell") {
                 const response = await getBorewellPendingApprovals({
@@ -142,12 +147,12 @@ export default function AdminApprovals() {
                         totalBookings: 0,
                     });
                 } else {
-                    setError(response.message || "Failed to load borewell approvals");
+                    toast.showError(response.message || "Failed to load borewell approvals");
                 }
             }
         } catch (err) {
             console.error("Load data error:", err);
-            setError(err.response?.data?.message || "Failed to load data. Please try again.");
+            handleApiError(err, "Failed to load data. Please try again.");
             // Reset arrays on error
             if (activeApprovalType === "travel-charges") {
                 setTravelChargesBookings([]);
@@ -203,46 +208,60 @@ export default function AdminApprovals() {
         }
     };
 
-    const handlePayTravelCharges = async (bookingId) => {
-        if (!window.confirm("Are you sure you want to pay travel charges to the vendor?")) {
-            return;
-        }
+    const handlePayTravelCharges = (bookingId) => {
+        setSelectedBookingId(bookingId);
+        setShowPayTravelConfirm(true);
+    };
 
+    const handlePayTravelConfirm = async () => {
+        if (!selectedBookingId) return;
+        const bookingId = selectedBookingId;
+        setShowPayTravelConfirm(false);
+        const loadingToast = toast.showLoading("Paying travel charges...");
         try {
-            setError("");
-            setSuccess("");
             const response = await payTravelCharges(bookingId);
             if (response.success) {
-                setSuccess("Travel charges paid successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Travel charges paid successfully!");
+                setSelectedBookingId(null);
                 await loadData();
             } else {
-                setError(response.message || "Failed to pay travel charges");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to pay travel charges");
             }
         } catch (err) {
             console.error("Pay travel charges error:", err);
-            setError(err.response?.data?.message || "Failed to pay travel charges");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to pay travel charges");
         }
     };
 
     // Report Approval Handler (without payment)
-    const handleApproveReport = async (bookingId) => {
-        if (!window.confirm("Are you sure you want to approve this report?")) {
-            return;
-        }
+    const handleApproveReport = (bookingId) => {
+        setSelectedBookingId(bookingId);
+        setShowApproveReportConfirm(true);
+    };
 
+    const handleApproveReportConfirm = async () => {
+        if (!selectedBookingId) return;
+        const bookingId = selectedBookingId;
+        setShowApproveReportConfirm(false);
+        const loadingToast = toast.showLoading("Approving report...");
         try {
-            setError("");
-            setSuccess("");
             const response = await approveReport(bookingId);
             if (response.success) {
-                setSuccess("Report approved successfully! Payment can be processed from payments page.");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Report approved successfully! Payment can be processed from payments page.");
+                setSelectedBookingId(null);
                 await loadData();
             } else {
-                setError(response.message || "Failed to approve report");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to approve report");
             }
         } catch (err) {
             console.error("Approve report error:", err);
-            setError(err.response?.data?.message || "Failed to approve report");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to approve report");
         }
     };
 
@@ -328,6 +347,7 @@ export default function AdminApprovals() {
     }
 
     return (
+        <>
         <div className="min-h-[calc(100vh-5rem)]">
             {/* Header */}
             <div className="mb-6">
@@ -952,6 +972,36 @@ export default function AdminApprovals() {
                 </div>
             )}
         </div>
-    );
+
+        {/* Pay Travel Charges Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showPayTravelConfirm}
+            onClose={() => {
+                setShowPayTravelConfirm(false);
+                setSelectedBookingId(null);
+            }}
+            onConfirm={handlePayTravelConfirm}
+            title="Pay Travel Charges"
+            message="Are you sure you want to pay travel charges to the vendor?"
+            confirmText="Yes, Pay"
+            cancelText="Cancel"
+            confirmColor="primary"
+        />
+
+        {/* Approve Report Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showApproveReportConfirm}
+            onClose={() => {
+                setShowApproveReportConfirm(false);
+                setSelectedBookingId(null);
+            }}
+            onConfirm={handleApproveReportConfirm}
+            title="Approve Report"
+            message="Are you sure you want to approve this report?"
+            confirmText="Yes, Approve"
+            cancelText="Cancel"
+            confirmColor="primary"
+        />
+    </>);
 }
 

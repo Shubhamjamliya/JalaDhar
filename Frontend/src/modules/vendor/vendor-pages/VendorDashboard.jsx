@@ -16,7 +16,8 @@ import {
     getVendorProfile,
 } from "../../../services/vendorApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
-import ErrorMessage from "../../shared/components/ErrorMessage";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
 
 export default function VendorDashboard() {
     const navigate = useNavigate();
@@ -41,7 +42,7 @@ export default function VendorDashboard() {
     const [recentBookings, setRecentBookings] = useState([]);
     const [upcomingBookings, setUpcomingBookings] = useState([]);
     const [vendorProfileData, setVendorProfileData] = useState(null);
-    const [error, setError] = useState("");
+    const toast = useToast();
 
     useEffect(() => {
         loadDashboardData();
@@ -50,18 +51,13 @@ export default function VendorDashboard() {
     // Debug: Log when vendor profile data changes
     useEffect(() => {
         if (vendorProfileData) {
-            console.log("Vendor profile data updated:", vendorProfileData);
-            console.log(
-                "Profile picture URL:",
-                vendorProfileData?.documents?.profilePicture?.url
-            );
+            // Vendor profile data updated
         }
     }, [vendorProfileData]);
 
     const loadDashboardData = async () => {
         try {
             setLoading(true);
-            setError("");
 
             // Fetch dashboard stats
             const dashboardResponse = await getDashboardStats();
@@ -73,11 +69,10 @@ export default function VendorDashboard() {
                     dashboardResponse.data.upcomingBookings || []
                 );
             } else {
-                setError("Failed to load dashboard data");
+                toast.showError("Failed to load dashboard data");
             }
         } catch (err) {
-            console.error("Dashboard error:", err);
-            setError("Failed to load dashboard data");
+            handleApiError(err, "Failed to load dashboard data");
         } finally {
             setLoading(false);
         }
@@ -85,25 +80,14 @@ export default function VendorDashboard() {
         // Fetch vendor profile separately (don't block dashboard if this fails)
         try {
             const profileResponse = await getVendorProfile();
-            console.log("Profile response:", profileResponse);
             if (
                 profileResponse.success &&
                 profileResponse.data &&
                 profileResponse.data.vendor
             ) {
-                console.log(
-                    "Setting vendor profile data:",
-                    profileResponse.data.vendor
-                );
                 setVendorProfileData(profileResponse.data.vendor);
-            } else {
-                console.log(
-                    "Profile response not successful or missing data:",
-                    profileResponse
-                );
             }
         } catch (err) {
-            console.error("Profile fetch error:", err);
             // Don't set error for profile fetch failure, just log it
         }
     };
@@ -195,7 +179,6 @@ export default function VendorDashboard() {
 
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-            <ErrorMessage message={error} />
 
             {/* Profile Header with Gradient Background */}
             <section

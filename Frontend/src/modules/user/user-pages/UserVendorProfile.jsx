@@ -61,7 +61,6 @@ export default function UserVendorProfile() {
                 setError(response.message || "Failed to load vendor profile");
             }
         } catch (err) {
-            console.error("Load vendor profile error:", err);
             setError("Failed to load vendor profile");
         } finally {
             setLoading(false);

@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
     IoCloseOutline,
@@ -13,6 +13,7 @@ import {
     IoCheckmarkCircleOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 import logo from "../../../assets/logo.png";
 
 const navItems = [
@@ -64,16 +65,20 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
     const closeRef = useRef(null);
     const { logout, admin } = useAdminAuth();
     const location = useLocation();
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     useEffect(() => {
         if (isOpen) closeRef.current?.focus();
     }, [isOpen]);
 
-    const handleLogout = async () => {
+    const handleLogoutClick = () => {
         onClose();
-        if (window.confirm("Are you sure you want to logout?")) {
-            await logout();
-        }
+        setShowLogoutConfirm(true);
+    };
+
+    const handleLogoutConfirm = async () => {
+        setShowLogoutConfirm(false);
+        await logout();
     };
 
     // Helper function to check if a route is active
@@ -166,7 +171,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                 {/* Logout Button */}
                 <div className="mt-auto pt-4 border-t border-white/10">
                     <button
-                        onClick={handleLogout}
+                        onClick={handleLogoutClick}
                         className="flex items-center gap-3 w-full p-3 rounded-lg text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors"
                     >
                         <IoLogOutOutline className="text-xl" />
@@ -174,6 +179,18 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                     </button>
                 </div>
             </aside>
+
+            {/* Logout Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={handleLogoutConfirm}
+                title="Confirm Logout"
+                message="Are you sure you want to logout?"
+                confirmText="Logout"
+                cancelText="Cancel"
+                confirmColor="danger"
+            />
         </>
     );
 }

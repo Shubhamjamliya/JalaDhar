@@ -14,6 +14,7 @@ import {
     IoCloseOutline,
     IoCheckmarkOutline,
     IoArrowBackOutline,
+    IoLocationOutline,
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import {
@@ -30,6 +31,10 @@ import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import SuccessMessage from "../../shared/components/SuccessMessage";
+import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
+
+// Get API key at module level
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 export default function VendorProfile() {
     const navigate = useNavigate();
@@ -54,16 +59,16 @@ export default function VendorProfile() {
         category: "",
     });
     const [serviceImagePreviews, setServiceImagePreviews] = useState([]);
+    const [fullAddress, setFullAddress] = useState("");
+    const [gettingLocation, setGettingLocation] = useState(false);
     const [profileData, setProfileData] = useState({
         name: "",
         email: "",
         phone: "",
         experience: "",
         address: {
-            street: "",
-            city: "",
-            state: "",
-            pincode: "",
+            coordinates: null,
+            geoLocation: null
         },
         profilePicture: null,
     });
@@ -90,30 +95,33 @@ export default function VendorProfile() {
                             setServices(servicesResponse.data.services || []);
                         }
                     } catch (err) {
-                        console.error("Load services error:", err);
                     }
                 }
 
                 // Map backend data to frontend form structure
+                const address = vendorData.address || {
+                    coordinates: null,
+                    geoLocation: null
+                };
+                
+                // Get full address string from geoLocation for display
+                const fullAddressStr = address?.geoLocation?.formattedAddress || "";
+                
                 setProfileData({
                     name: vendorData.name || "",
                     email: vendorData.email || "",
                     phone: vendorData.phone || "",
                     experience: vendorData.experience?.toString() || "",
-                    address: vendorData.address || {
-                        street: "",
-                        city: "",
-                        state: "",
-                        pincode: "",
-                    },
+                    address: address,
                     profilePicture:
                         vendorData.documents?.profilePicture?.url || null,
                 });
+                
+                setFullAddress(fullAddressStr);
             } else {
                 setError("Failed to load profile");
             }
         } catch (err) {
-            console.error("Load profile error:", err);
             setError("Failed to load profile");
         } finally {
             setLoading(false);
@@ -131,17 +139,144 @@ export default function VendorProfile() {
         setIsEditing(true);
     };
 
+    // Handle place selection from Google Places Autocomplete
+    const handleAddressSelect = (placeData) => {
+        const selectedFormattedAddress = placeData.formattedAddress || "";
+        const selectedPlaceId = placeData.placeId || "";
+        const selectedLat = placeData.lat;
+        const selectedLng = placeData.lng;
+        
+        // Store in registration format
+        setProfileData(prev => ({
+            ...prev,
+            address: {
+                coordinates: (selectedLat && selectedLng) ? {
+                    lat: selectedLat,
+                    lng: selectedLng
+                } : prev.address.coordinates,
+                geoLocation: (selectedPlaceId && selectedFormattedAddress) ? {
+                    formattedAddress: selectedFormattedAddress,
+                    placeId: selectedPlaceId,
+                    geocodedAt: new Date()
+                } : prev.address.geoLocation
+            }
+        }));
+        
+        setFullAddress(selectedFormattedAddress);
+        setSuccess("Address auto-filled from selected location");
+    };
+
+    // Get current location using browser geolocation API
+    const getCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            setError("Geolocation is not supported by your browser");
+            return;
+        }
+
+        setGettingLocation(true);
+        setError("");
+        setSuccess("");
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                const apiKey = GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+
+                let formattedAddress = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+
+                // Try to reverse geocode if API key is available
+                if (apiKey && apiKey.trim() !== "") {
+                    try {
+                        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+
+                        const response = await fetch(geocodeUrl);
+
+                        if (response.ok) {
+                            const data = await response.json();
+
+                            if (data.status === 'OK' && data.results && data.results.length > 0) {
+                                const result = data.results[0];
+                                formattedAddress = result.formatted_address || formattedAddress;
+                                
+                                // Store in registration format
+                                setProfileData(prev => ({
+                                    ...prev,
+                                    address: {
+                                        coordinates: {
+                                            lat: lat,
+                                            lng: lng
+                                        },
+                                        geoLocation: formattedAddress && formattedAddress !== `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}` ? {
+                                            formattedAddress: formattedAddress,
+                                            placeId: result.place_id || null,
+                                            geocodedAt: new Date()
+                                        } : prev.address.geoLocation
+                                    }
+                                }));
+                            }
+                        }
+                    } catch (error) {
+                    }
+                } else {
+                    // Store coordinates even if geocoding fails
+                    setProfileData(prev => ({
+                        ...prev,
+                        address: {
+                            coordinates: {
+                                lat: lat,
+                                lng: lng
+                            },
+                            geoLocation: prev.address.geoLocation
+                        }
+                    }));
+                }
+
+                setFullAddress(formattedAddress);
+                setSuccess("Location found! Address auto-filled.");
+                setGettingLocation(false);
+            },
+            (error) => {
+                let errorMessage = "Unable to get your location";
+                if (error.code === error.PERMISSION_DENIED) {
+                    errorMessage = "Location permission denied. Please allow location access in your browser settings.";
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    errorMessage = "Location information unavailable.";
+                } else if (error.code === error.TIMEOUT) {
+                    errorMessage = "Location request timed out.";
+                }
+                setError(errorMessage);
+                setGettingLocation(false);
+            }
+        );
+    };
+
     const handleSave = async () => {
         try {
             setSaving(true);
             setError("");
             setSuccess("");
 
+            // If user manually typed address but didn't select from autocomplete,
+            // store fullAddress in geoLocation as fallback
+            let addressToSave = { ...profileData.address };
+            if (fullAddress && (!addressToSave.geoLocation?.formattedAddress)) {
+                addressToSave = {
+                    ...addressToSave,
+                    geoLocation: {
+                        formattedAddress: fullAddress,
+                        placeId: null,
+                        geocodedAt: new Date()
+                    }
+                };
+            }
+
             const updateData = {
                 name: profileData.name,
                 phone: profileData.phone,
                 experience: parseInt(profileData.experience) || 0,
-                address: JSON.stringify(profileData.address),
+                address: addressToSave, // Send as object, not stringified
             };
 
             const response = await updateVendorProfile(updateData);
@@ -155,7 +290,6 @@ export default function VendorProfile() {
                     try {
                         await uploadProfilePicture(profileData.profilePicture);
                     } catch (err) {
-                        console.error("Profile picture upload error:", err);
                     }
                 }
 
@@ -166,7 +300,6 @@ export default function VendorProfile() {
                 setError(response.message || "Failed to update profile");
             }
         } catch (err) {
-            console.error("Save profile error:", err);
             setError("Failed to update profile. Please try again.");
         } finally {
             setSaving(false);
@@ -195,7 +328,6 @@ export default function VendorProfile() {
                 );
             }
         } catch (err) {
-            console.error("Upload image error:", err);
             setError(
                 err.response?.data?.message ||
                     "Failed to upload profile picture"
@@ -291,7 +423,6 @@ export default function VendorProfile() {
                 setError(response.message || "Failed to add service");
             }
         } catch (err) {
-            console.error("Add service error:", err);
             setError("Failed to add service. Please try again.");
         }
     };
@@ -379,7 +510,6 @@ export default function VendorProfile() {
                 setError(response.message || "Failed to update service");
             }
         } catch (err) {
-            console.error("Update service error:", err);
             setError("Failed to update service. Please try again.");
         }
     };
@@ -402,7 +532,6 @@ export default function VendorProfile() {
                 setError(response.message || "Failed to delete service");
             }
         } catch (err) {
-            console.error("Delete service error:", err);
             setError("Failed to delete service. Please try again.");
         }
     };
@@ -590,90 +719,50 @@ export default function VendorProfile() {
                     {/* Address */}
                     {isEditing ? (
                         <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-[#F3F7FA] transition-colors">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#00C2A8]/10 shrink-0 flex-shrink-0">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#00C2A8]/10 shrink-0">
                                 <IoHomeOutline className="text-xl text-[#00C2A8]" />
                             </div>
                             <div className="flex flex-col flex-1 min-w-0 gap-3 w-full overflow-hidden">
                                 <span className="text-xs text-[#6B7280] mb-1 font-semibold uppercase tracking-wide">
                                     Primary Address
                                 </span>
-                                <input
-                                    type="text"
-                                    placeholder="Street"
-                                    value={profileData.address.street || ""}
-                            onChange={(e) =>
-                                setProfileData({
-                                    ...profileData,
-                                            address: {
-                                                ...profileData.address,
-                                                street: e.target.value,
-                                            },
-                                        })
-                                    }
-                                    className="w-full text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
-                                    disabled={saving}
-                                />
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="City"
-                                        value={profileData.address.city || ""}
-                            onChange={(e) =>
-                                setProfileData({
-                                    ...profileData,
-                                                address: {
-                                                    ...profileData.address,
-                                                    city: e.target.value,
-                                                },
-                                            })
-                                        }
-                                        className="w-full text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
-                                        disabled={saving}
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="State"
-                                        value={profileData.address.state || ""}
-                                        onChange={(e) =>
-                                            setProfileData({
-                                                ...profileData,
-                                                address: {
-                                                    ...profileData.address,
-                                                    state: e.target.value,
-                                                },
-                                            })
-                                        }
-                                        className="w-full text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
-                                        disabled={saving}
-                        />
-                    </div>
-                                <input
-                                    type="text"
-                                    placeholder="Pincode"
-                                    value={profileData.address.pincode || ""}
-                            onChange={(e) =>
-                                setProfileData({
-                                    ...profileData,
-                                            address: {
-                                                ...profileData.address,
-                                                pincode: e.target.value,
-                                            },
-                                        })
-                                    }
-                                    className="w-full text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
-                                    disabled={saving}
-                                />
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <div className="relative flex-1">
+                                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg z-10">
+                                            search
+                                        </span>
+                                        <PlaceAutocompleteInput
+                                            onPlaceSelect={handleAddressSelect}
+                                            placeholder="Start typing your address to see suggestions..."
+                                            value={fullAddress}
+                                            onChange={(e) => setFullAddress(e.target.value)}
+                                            disabled={saving || gettingLocation}
+                                            className="w-full rounded-full border-gray-200 bg-[#F3F7FA] py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#0A84FF] focus:ring-[#0A84FF] text-sm"
+                                            countryRestriction="in"
+                                            types={["geocode", "establishment"]}
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={getCurrentLocation}
+                                        disabled={saving || gettingLocation}
+                                        className="flex items-center justify-center gap-2 bg-[#0A84FF] text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-[#005BBB] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 whitespace-nowrap"
+                                        title="Use current location"
+                                    >
+                                        <IoLocationOutline className="text-lg" />
+                                        {gettingLocation ? "Getting..." : "Use Current Location"}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-blue-700 mt-1">
+                                    💡 Type your address above to see suggestions, or click "Use Current Location" to auto-fill from GPS
+                                </p>
                             </div>
                         </div>
                     ) : (
                         <InfoRow
                             icon={IoHomeOutline}
                             label="Primary Address"
-                            value={
-                                profileData.address?.street
-                                    ? `${profileData.address.street}, ${profileData.address.city}, ${profileData.address.state} ${profileData.address.pincode}`
-                                    : "Not provided"
-                            }
+                            value={fullAddress || "Not provided"}
                             isEditing={false}
                         />
                     )}

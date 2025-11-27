@@ -19,18 +19,20 @@ import {
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
-import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
 import SectionHeading from "../../shared/components/SectionHeading";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 
 export default function VendorServices() {
     const navigate = useNavigate();
     const { vendor } = useVendorAuth();
     const [loading, setLoading] = useState(true);
     const [services, setServices] = useState([]);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [isAdding, setIsAdding] = useState(false);
+    const toast = useToast();
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [serviceToDelete, setServiceToDelete] = useState(null);
     const [editingId, setEditingId] = useState(null);
     const [previewingService, setPreviewingService] = useState(null);
     const [formData, setFormData] = useState({
@@ -51,16 +53,14 @@ export default function VendorServices() {
     const loadServices = async () => {
         try {
             setLoading(true);
-            setError("");
             const response = await getMyServices();
             if (response.success) {
                 setServices(response.data.services || []);
             } else {
-                setError(response.message || "Failed to load services");
+                toast.showError(response.message || "Failed to load services");
             }
         } catch (err) {
-            console.error("Load services error:", err);
-            setError("Failed to load services");
+            handleApiError(err, "Failed to load services");
         } finally {
             setLoading(false);
         }
@@ -148,7 +148,6 @@ export default function VendorServices() {
                 setError(response.message || "Failed to add service");
             }
         } catch (err) {
-            console.error("Add service error:", err);
             setError("Failed to add service. Please try again.");
         }
     };
@@ -230,26 +229,34 @@ export default function VendorServices() {
                 setError(response.message || "Failed to update service");
             }
         } catch (err) {
-            console.error("Update service error:", err);
             setError("Failed to update service. Please try again.");
         }
     };
 
-    const handleDeleteService = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this service?")) {
-            return;
-        }
+    const handleDeleteService = (id) => {
+        setServiceToDelete(id);
+        setShowDeleteConfirm(true);
+    };
 
+    const handleDeleteConfirm = async () => {
+        if (!serviceToDelete) return;
+        const id = serviceToDelete;
+        setShowDeleteConfirm(false);
+        const loadingToast = toast.showLoading("Deleting service...");
         try {
             const response = await deleteService(id);
             if (response.success) {
-                setSuccess("Service deleted successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Service deleted successfully!");
+                setServiceToDelete(null);
                 await loadServices();
             } else {
-                setError(response.message || "Failed to delete service");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to delete service");
             }
         } catch (err) {
-            console.error("Delete service error:", err);
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to delete service");
             setError("Failed to delete service. Please try again.");
         }
     };
@@ -286,9 +293,8 @@ export default function VendorServices() {
     }
 
     return (
+        <>
         <PageContainer>
-            <ErrorMessage message={error} />
-            <SuccessMessage message={success} />
 
             {/* Back Button */}
             <button
@@ -929,14 +935,9 @@ export default function VendorServices() {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    if (
-                                        window.confirm(
-                                            "Are you sure you want to delete this service?"
-                                        )
-                                    ) {
-                                        handleDeleteService(
-                                            previewingService._id
-                                        );
+                                    handleDeleteService(
+                                        previewingService._id
+                                    );
                                         setPreviewingService(null);
                                     }
                                 }}
@@ -964,5 +965,21 @@ export default function VendorServices() {
                 </div>
             )}
         </PageContainer>
+
+        {/* Delete Service Confirmation Modal */}
+        <ConfirmModal
+            isOpen={showDeleteConfirm}
+            onClose={() => {
+                setShowDeleteConfirm(false);
+                setServiceToDelete(null);
+            }}
+            onConfirm={handleDeleteConfirm}
+            title="Delete Service"
+            message="Are you sure you want to delete this service? This action cannot be undone."
+            confirmText="Yes, Delete"
+            cancelText="Cancel"
+            confirmColor="danger"
+        />
+        </>
     );
 }

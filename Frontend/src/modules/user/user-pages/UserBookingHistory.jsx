@@ -13,18 +13,22 @@ import {
 import { getUserBookings, downloadInvoice, submitRating, getBookingRating, cancelBooking, getBookingDetails } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
-import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import ConfirmModal from "../../shared/components/ConfirmModal";
+import InputModal from "../../shared/components/InputModal";
 
 export default function UserBookingHistory() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [bookings, setBookings] = useState([]);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
+    const toast = useToast();
     const [activeFilter, setActiveFilter] = useState("All");
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [showCancellationInput, setShowCancellationInput] = useState(false);
+    const [cancelBookingData, setCancelBookingData] = useState(null);
     const [showWorkProof, setShowWorkProof] = useState(null);
     const [showRatingModal, setShowRatingModal] = useState(null);
     const [ratingData, setRatingData] = useState({
@@ -43,22 +47,21 @@ export default function UserBookingHistory() {
     const loadBookings = async () => {
         try {
             setLoading(true);
-            setError("");
             const response = await getUserBookings();
             if (response.success) {
                 setBookings(response.data.bookings || []);
             } else {
-                setError(response.message || "Failed to load bookings");
+                toast.showError(response.message || "Failed to load bookings");
             }
         } catch (err) {
-            console.error("Load bookings error:", err);
-            setError("Failed to load bookings");
+            handleApiError(err, "Failed to load bookings");
         } finally {
             setLoading(false);
         }
     };
 
     const handleDownloadBill = async (bookingId) => {
+        const loadingToast = toast.showLoading("Downloading invoice...");
         try {
             const blob = await downloadInvoice(bookingId);
             const url = window.URL.createObjectURL(blob);
@@ -69,9 +72,11 @@ export default function UserBookingHistory() {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
+            toast.dismissToast(loadingToast);
+            toast.showSuccess("Invoice downloaded successfully!");
         } catch (err) {
-            console.error("Download invoice error:", err);
-            alert("Failed to download invoice");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to download invoice");
         }
     };
 
@@ -107,7 +112,6 @@ export default function UserBookingHistory() {
             }
             setShowRatingModal(booking);
         } catch (err) {
-            console.error("Get rating error:", err);
             // If error, assume no rating exists and proceed
             setRatingData({
                 accuracy: 0,
@@ -125,13 +129,13 @@ export default function UserBookingHistory() {
 
         // Validate ratings
         if (!ratingData.accuracy || !ratingData.professionalism || !ratingData.behavior || !ratingData.visitTiming) {
-            setError("Please provide all ratings");
+            toast.showError("Please provide all ratings");
             return;
         }
 
+        const loadingToast = toast.showLoading("Submitting rating...");
         try {
             setSubmittingRating(true);
-            setError("");
             const response = await submitRating(showRatingModal._id, {
                 ratings: {
                     accuracy: ratingData.accuracy,
@@ -143,50 +147,56 @@ export default function UserBookingHistory() {
             });
 
             if (response.success) {
-                setSuccess("Rating submitted successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Rating submitted successfully!");
                 setShowRatingModal(null);
                 // Reload bookings to reflect the rating
                 await loadBookings();
             } else {
-                setError(response.message || "Failed to submit rating");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to submit rating");
             }
         } catch (err) {
-            console.error("Submit rating error:", err);
-            setError(err.response?.data?.message || "Failed to submit rating");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to submit rating");
         } finally {
             setSubmittingRating(false);
         }
     };
 
-    const handleCancelBooking = async (booking) => {
-        const cancellationReason = window.prompt(
-            "Please provide a reason for cancellation (optional):"
-        );
+    const handleCancelBooking = (booking) => {
+        setCancelBookingData(booking);
+        setShowCancellationInput(true);
+    };
 
-        if (cancellationReason === null) {
-            // User cancelled the prompt
-            return;
-        }
+    const handleCancellationReasonSubmit = (reason) => {
+        setCancelBookingData(prev => ({ ...prev, cancellationReason: reason }));
+        setShowCancellationInput(false);
+        setShowCancelConfirm(true);
+    };
 
-        if (!window.confirm("Are you sure you want to cancel this booking?")) {
-            return;
-        }
-
+    const handleCancelConfirm = async () => {
+        if (!cancelBookingData) return;
+        
+        setShowCancelConfirm(false);
+        const loadingToast = toast.showLoading("Cancelling booking...");
+        
         try {
-            setError("");
-            setSuccess("");
-            const response = await cancelBooking(booking._id, cancellationReason || "");
+            const response = await cancelBooking(cancelBookingData._id, cancelBookingData.cancellationReason || "");
 
             if (response.success) {
-                setSuccess("Booking cancelled successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Booking cancelled successfully!");
+                setCancelBookingData(null);
                 // Reload bookings
                 await loadBookings();
             } else {
-                setError(response.message || "Failed to cancel booking");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to cancel booking");
             }
         } catch (err) {
-            console.error("Cancel booking error:", err);
-            setError(err.response?.data?.message || "Failed to cancel booking");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to cancel booking");
         }
     };
 
@@ -252,8 +262,6 @@ export default function UserBookingHistory() {
                 return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <div className="min-h-screen w-full bg-[#F6F7F9] px-4 py-6">
-                <ErrorMessage message={error} />
-                <SuccessMessage message={success} />
 
                 {/* Header */}
                 <div className="mb-6">
@@ -527,8 +535,40 @@ export default function UserBookingHistory() {
                         </div>
                     </div>
                 )}
+
+                {/* Cancellation Reason Input Modal */}
+                <InputModal
+                    isOpen={showCancellationInput}
+                    onClose={() => {
+                        setShowCancellationInput(false);
+                        setCancelBookingData(null);
+                    }}
+                    onSubmit={handleCancellationReasonSubmit}
+                    title="Cancel Booking"
+                    message="Please provide a reason for cancellation (optional):"
+                    placeholder="Enter cancellation reason..."
+                    submitText="Continue"
+                    cancelText="Cancel"
+                    isTextarea={true}
+                    textareaRows={3}
+                />
+
+                {/* Cancel Booking Confirmation Modal */}
+                <ConfirmModal
+                    isOpen={showCancelConfirm}
+                    onClose={() => {
+                        setShowCancelConfirm(false);
+                        setCancelBookingData(null);
+                    }}
+                    onConfirm={handleCancelConfirm}
+                    title="Confirm Cancellation"
+                    message="Are you sure you want to cancel this booking?"
+                    confirmText="Yes, Cancel Booking"
+                    cancelText="Keep Booking"
+                    confirmColor="danger"
+                />
             </div>
         </div>
     );
-  }
+}
   

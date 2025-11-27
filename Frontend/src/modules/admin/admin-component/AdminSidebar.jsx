@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
     IoHomeOutline,
@@ -11,6 +12,7 @@ import {
     IoCheckmarkCircleOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 import logo from "../../../assets/logo.png";
 
 const navItems = [
@@ -61,11 +63,15 @@ const navItems = [
 export default function AdminSidebar() {
     const { logout, admin } = useAdminAuth();
     const location = useLocation();
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-    const handleLogout = async () => {
-        if (window.confirm("Are you sure you want to logout?")) {
-            await logout();
-        }
+    const handleLogoutClick = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const handleLogoutConfirm = async () => {
+        setShowLogoutConfirm(false);
+        await logout();
     };
 
     // Helper function to check if a route is active
@@ -147,13 +153,25 @@ export default function AdminSidebar() {
                 </div>
 
                 <button
-                    onClick={handleLogout}
+                    onClick={handleLogoutClick}
                     className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 text-red-400 hover:bg-red-500/20 hover:text-red-300"
                 >
                     <IoLogOutOutline className="text-xl flex-shrink-0" />
                     <span className="font-medium text-sm">Logout</span>
                 </button>
             </div>
+
+            {/* Logout Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={handleLogoutConfirm}
+                title="Confirm Logout"
+                message="Are you sure you want to logout?"
+                confirmText="Logout"
+                cancelText="Cancel"
+                confirmColor="danger"
+            />
         </aside>
     );
 }

@@ -57,7 +57,6 @@ export default function VendorUploadReport() {
                 setError(response.message || "Failed to load booking details");
             }
         } catch (err) {
-            console.error("Load booking details error:", err);
             setError(err.response?.data?.message || "Failed to load booking details");
         } finally {
             setLoading(false);
@@ -151,7 +150,6 @@ export default function VendorUploadReport() {
                 setError(response.message || "Failed to upload report");
             }
         } catch (err) {
-            console.error("Upload report error:", err);
             setError(err.response?.data?.message || "Failed to upload report. Please try again.");
         } finally {
             setSubmitting(false);

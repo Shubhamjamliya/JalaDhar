@@ -10,6 +10,8 @@ import {
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { getAllVendors, getPendingVendors, getAllUsers } from "../../../services/adminApi";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
@@ -26,7 +28,7 @@ export default function AdminDashboard() {
         inactiveUsers: 0
     });
     const [recentVendors, setRecentVendors] = useState([]);
-    const [error, setError] = useState("");
+    const toast = useToast();
 
     useEffect(() => {
         loadDashboardData();
@@ -35,7 +37,6 @@ export default function AdminDashboard() {
     const loadDashboardData = async () => {
         try {
             setLoading(true);
-            setError("");
             
             // Get all vendors for stats
             const allVendorsResponse = await getAllVendors({ limit: 1 });
@@ -70,7 +71,7 @@ export default function AdminDashboard() {
             }
         } catch (err) {
             console.error("Dashboard error:", err);
-            setError("Failed to load dashboard data");
+            handleApiError(err, "Failed to load dashboard data");
         } finally {
             setLoading(false);
         }
@@ -98,13 +99,6 @@ export default function AdminDashboard() {
 
     return (
         <div className="min-h-[calc(100vh-5rem)]">
-            {/* Error Message */}
-            {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">{error}</p>
-                </div>
-            )}
-
             {/* Welcome Message */}
             <div className="bg-gradient-to-r from-[#0A84FF] to-[#005BBB] rounded-xl p-6 mb-6 shadow-lg">
                 <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">

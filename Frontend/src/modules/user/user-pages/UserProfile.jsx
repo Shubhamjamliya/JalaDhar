@@ -13,17 +13,17 @@ import {
 import { getUserProfile, updateUserProfile, uploadUserProfilePicture } from "../../../services/authApi";
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
-import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 
 export default function UserProfile() {
     const navigate = useNavigate();
     const { logout } = useAuth();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [isEditing, setIsEditing] = useState(false);
+    const toast = useToast();
     const [profileData, setProfileData] = useState({
         name: "",
         email: "",
@@ -44,7 +44,6 @@ export default function UserProfile() {
     const loadProfile = async () => {
         try {
             setLoading(true);
-            setError("");
             const response = await getUserProfile();
             if (response.success) {
                 const user = response.data.user;
@@ -61,21 +60,25 @@ export default function UserProfile() {
                     profilePicture: user.profilePicture || null,
                 });
             } else {
-                setError(response.message || "Failed to load profile");
+                toast.showError(response.message || "Failed to load profile");
             }
         } catch (err) {
-            console.error("Load profile error:", err);
-            setError("Failed to load profile");
+            handleApiError(err, "Failed to load profile");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleLogout = async () => {
-        if (window.confirm("Are you sure you want to logout?")) {
-            await logout();
-            navigate("/userlogin");
-        }
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+    const handleLogoutClick = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const handleLogoutConfirm = async () => {
+        setShowLogoutConfirm(false);
+        await logout();
+        navigate("/userlogin");
     };
 
     const handleEdit = () => {
@@ -85,8 +88,7 @@ export default function UserProfile() {
     const handleSave = async () => {
         try {
             setSaving(true);
-            setError("");
-            setSuccess("");
+            const loadingToast = toast.showLoading("Updating profile...");
 
             const response = await updateUserProfile({
                 name: profileData.name,
@@ -95,16 +97,17 @@ export default function UserProfile() {
             });
 
             if (response.success) {
-                setSuccess("Profile updated successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Profile updated successfully!");
                 setIsEditing(false);
                 // Reload profile to get updated data
                 await loadProfile();
             } else {
-                setError(response.message || "Failed to update profile");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to update profile");
             }
         } catch (err) {
-            console.error("Update profile error:", err);
-            setError(err.response?.data?.message || "Failed to update profile");
+            handleApiError(err, "Failed to update profile");
         } finally {
             setSaving(false);
         }
@@ -116,20 +119,21 @@ export default function UserProfile() {
 
         try {
             setSaving(true);
-            setError("");
+            const loadingToast = toast.showLoading("Uploading profile picture...");
             const response = await uploadUserProfilePicture(file);
             if (response.success) {
+                toast.dismissToast(loadingToast);
                 setProfileData({
                     ...profileData,
                     profilePicture: response.data.profilePicture,
                 });
-                setSuccess("Profile picture updated successfully!");
+                toast.showSuccess("Profile picture updated successfully!");
             } else {
-                setError(response.message || "Failed to upload profile picture");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to upload profile picture");
             }
         } catch (err) {
-            console.error("Upload image error:", err);
-            setError(err.response?.data?.message || "Failed to upload profile picture");
+            handleApiError(err, "Failed to upload profile picture");
         } finally {
             setSaving(false);
         }
@@ -137,12 +141,12 @@ export default function UserProfile() {
 
     const handleSavedVendors = () => {
         // Navigate to saved vendors page
-        alert("Saved Vendors feature coming soon!");
+        toast.showInfo("Saved Vendors feature coming soon!");
     };
 
     const handleHelpCenter = () => {
         // Navigate to help center
-        alert("Help Center feature coming soon!");
+        toast.showInfo("Help Center feature coming soon!");
     };
 
     if (loading) {
@@ -152,8 +156,6 @@ export default function UserProfile() {
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <div className="min-h-screen w-full bg-[#F6F7F9] px-4 py-6">
-                <ErrorMessage message={error} />
-                <SuccessMessage message={success} />
 
                 {/* Profile Header */}
                 <div className="flex flex-col items-center gap-6 text-center">
@@ -386,10 +388,22 @@ export default function UserProfile() {
                         icon={IoLogOutOutline}
                         label="Logout"
                         isLogout
-                        onClick={handleLogout}
+                        onClick={handleLogoutClick}
                     />
                 </div>
             </div>
+
+            {/* Logout Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={handleLogoutConfirm}
+                title="Confirm Logout"
+                message="Are you sure you want to logout?"
+                confirmText="Logout"
+                cancelText="Cancel"
+                confirmColor="danger"
+            />
         </div>
     );
 }

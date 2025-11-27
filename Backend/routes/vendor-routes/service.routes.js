@@ -49,14 +49,15 @@ const addServiceValidation = [
   body('skills')
     .optional()
     .custom((value) => {
+      if (!value || value === '' || value === '[]') {
+        return true; // Allow empty skills
+      }
       try {
         const skills = typeof value === 'string' ? JSON.parse(value) : value;
         if (!Array.isArray(skills)) {
           throw new Error('Skills must be an array');
         }
-        if (skills.length === 0) {
-          throw new Error('At least one skill is required');
-        }
+        // Allow empty array
         return true;
       } catch (error) {
         throw new Error('Invalid skills format');
@@ -66,6 +67,7 @@ const addServiceValidation = [
     .isFloat({ min: 0 })
     .withMessage('Price must be a valid number and cannot be negative'),
   body('duration')
+    .optional()
     .isInt({ min: 1 })
     .withMessage('Duration must be a valid number (in minutes) and at least 1'),
   body('description')

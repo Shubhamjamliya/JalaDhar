@@ -13,6 +13,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import VendorProtectedRoute from "./components/VendorProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import LoadingSpinner from "./modules/shared/components/LoadingSpinner";
+import ToastProvider from "./components/ToastProvider";
 
 // Lazy load all route components for better performance
 const UserLogin = lazy(() => import("./modules/user/user-pages/UserLogin"));
@@ -66,6 +67,7 @@ const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavb
 function App() {
     return (
         <ThemeProvider>
+            <ToastProvider />
             <AuthProvider>
                 <VendorAuthProvider>
                     <AdminAuthProvider>

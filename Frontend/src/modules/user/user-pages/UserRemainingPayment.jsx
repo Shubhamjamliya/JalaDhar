@@ -10,18 +10,17 @@ import {
 import { getBookingDetails, initiateRemainingPayment, verifyRemainingPayment } from "../../../services/bookingApi";
 import { loadRazorpay } from "../../../utils/razorpay";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
-import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
 
 export default function UserRemainingPayment() {
     const navigate = useNavigate();
     const { bookingId } = useParams();
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [booking, setBooking] = useState(null);
     const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const toast = useToast();
 
     useEffect(() => {
         loadBookingDetails();
@@ -30,7 +29,6 @@ export default function UserRemainingPayment() {
     const loadBookingDetails = async () => {
         try {
             setLoading(true);
-            setError("");
             const response = await getBookingDetails(bookingId);
             if (response.success) {
                 const bookingData = response.data.booking;
@@ -38,24 +36,23 @@ export default function UserRemainingPayment() {
                 // Check if booking is in correct status (use userStatus for user view)
                 const userStatus = bookingData.userStatus || bookingData.status;
                 if (userStatus !== 'AWAITING_PAYMENT' && userStatus !== 'REPORT_UPLOADED') {
-                    setError("This booking is not eligible for remaining payment.");
+                    toast.showError("This booking is not eligible for remaining payment.");
                     setLoading(false);
                     return;
                 }
 
                 if (bookingData.payment?.remainingPaid) {
-                    setError("Remaining payment has already been completed.");
+                    toast.showError("Remaining payment has already been completed.");
                     setLoading(false);
                     return;
                 }
 
                 setBooking(bookingData);
             } else {
-                setError(response.message || "Failed to load booking details");
+                toast.showError(response.message || "Failed to load booking details");
             }
         } catch (err) {
-            console.error("Load booking error:", err);
-            setError(err.response?.data?.message || "Failed to load booking details");
+            handleApiError(err, "Failed to load booking details");
         } finally {
             setLoading(false);
         }
@@ -64,13 +61,14 @@ export default function UserRemainingPayment() {
     const handlePayment = async () => {
         try {
             setProcessing(true);
-            setError("");
+            const loadingToast = toast.showLoading("Initiating payment...");
 
             // Initiate payment
             const paymentResponse = await initiateRemainingPayment(bookingId);
             
             if (!paymentResponse.success) {
-                setError(paymentResponse.message || "Failed to initiate payment");
+                toast.dismissToast(loadingToast);
+                toast.showError(paymentResponse.message || "Failed to initiate payment");
                 setProcessing(false);
                 return;
             }
@@ -102,21 +100,23 @@ export default function UserRemainingPayment() {
                         );
 
                         if (verifyResponse.success) {
+                            toast.dismissToast(loadingToast);
+                            toast.showSuccess("Payment completed successfully! You can now view the full report.");
                             setPaymentSuccess(true);
-                            setSuccess("Payment completed successfully! You can now view the full report.");
                             setProcessing(false);
                             
                             // Navigate to booking details after short delay
                             setTimeout(() => {
                                 navigate(`/user/booking/${bookingId}`, { replace: true });
-                            }, 1500);
+                            }, 1000);
                         } else {
-                            setError(verifyResponse.message || "Payment verification failed. Please contact support.");
+                            toast.dismissToast(loadingToast);
+                            toast.showError(verifyResponse.message || "Payment verification failed. Please contact support.");
                             setProcessing(false);
                         }
                     } catch (verifyErr) {
-                        console.error("Payment verification error:", verifyErr);
-                        setError(verifyErr.response?.data?.message || "Payment verification failed. Please contact support.");
+                        toast.dismissToast(loadingToast);
+                        handleApiError(verifyErr, "Payment verification failed. Please contact support.");
                         setProcessing(false);
                     }
                 },
@@ -125,7 +125,7 @@ export default function UserRemainingPayment() {
                 },
                 modal: {
                     ondismiss: function () {
-                        setError("Payment cancelled. Please try again when ready.");
+                        toast.showInfo("Payment cancelled. Please try again when ready.");
                         setProcessing(false);
                     },
                 },
@@ -133,7 +133,8 @@ export default function UserRemainingPayment() {
 
             // Validate Razorpay key
             if (!paymentData.keyId || paymentData.keyId === "rzp_test_key") {
-                setError("Invalid Razorpay configuration. Please contact support.");
+                toast.dismissToast(loadingToast);
+                toast.showError("Invalid Razorpay configuration. Please contact support.");
                 setProcessing(false);
                 return;
             }
@@ -142,28 +143,30 @@ export default function UserRemainingPayment() {
                 const razorpay = new window.Razorpay(options);
                 
                 razorpay.on('payment.failed', function (response) {
-                    console.error("Razorpay payment failed:", response);
                     const errorMsg = response.error?.description || response.error?.reason || "Payment failed. Please try again.";
-                    setError(`Payment failed: ${errorMsg}`);
+                    toast.dismissToast(loadingToast);
+                    toast.showError(`Payment failed: ${errorMsg}`);
                     setProcessing(false);
                 });
                 
                 razorpay.on('payment.error', function (response) {
-                    console.error("Razorpay payment error:", response);
                     const errorMsg = response.error?.description || response.error?.reason || "Payment error occurred. Please try again.";
-                    setError(`Payment error: ${errorMsg}`);
+                    toast.dismissToast(loadingToast);
+                    toast.showError(`Payment error: ${errorMsg}`);
                     setProcessing(false);
                 });
 
+                // Dismiss loading toast before opening Razorpay modal
+                toast.dismissToast(loadingToast);
                 razorpay.open();
             } catch (razorpayError) {
-                console.error("Razorpay initialization error:", razorpayError);
-                setError("Failed to initialize payment gateway. Please try again later.");
+                toast.dismissToast(loadingToast);
+                toast.showError("Failed to initialize payment gateway. Please try again later.");
                 setProcessing(false);
             }
         } catch (err) {
-            console.error("Payment initiation error:", err);
-            setError(err.response?.data?.message || "Failed to initiate payment. Please try again.");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to initiate payment. Please try again.");
             setProcessing(false);
         }
     };
@@ -181,20 +184,6 @@ export default function UserRemainingPayment() {
         );
     }
 
-    if (error && !booking) {
-        return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-                <ErrorMessage message={error} />
-                <button
-                    onClick={() => navigate(`/user/booking/${bookingId}`)}
-                    className="mt-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
-                >
-                    <IoChevronBackOutline className="text-xl" />
-                    <span className="font-semibold">Back to Booking Details</span>
-                </button>
-            </div>
-        );
-    }
 
     if (!booking) {
         return (
@@ -241,8 +230,6 @@ export default function UserRemainingPayment() {
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <div className="max-w-2xl mx-auto">
-                <ErrorMessage message={error} />
-                <SuccessMessage message={success} />
 
                 {/* Back Button */}
                 <button

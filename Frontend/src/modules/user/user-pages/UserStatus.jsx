@@ -17,16 +17,15 @@ import {
 } from "react-icons/io5";
 import { getUserBookings, uploadBorewellResult, getBookingDetails } from "../../../services/bookingApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
-import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
+import { useToast } from "../../../hooks/useToast";
+import { handleApiError } from "../../../utils/toastHelper";
 
 export default function UserStatus() {
     const navigate = useNavigate();
     const location = useLocation();
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [currentBooking, setCurrentBooking] = useState(null);
+    const toast = useToast();
     const [showBorewellModal, setShowBorewellModal] = useState(false);
     const [borewellData, setBorewellData] = useState({
         status: "",
@@ -52,11 +51,9 @@ export default function UserStatus() {
     const loadCurrentBooking = async () => {
         try {
             setLoading(true);
-            setError("");
 
             // Check if bookingId was passed from navigation
             const bookingId = location.state?.bookingId;
-            console.log("Loading booking, bookingId:", bookingId);
 
             if (bookingId) {
                 // If specific booking ID provided, try to get it directly using getBookingDetails
@@ -72,7 +69,6 @@ export default function UserStatus() {
                         return;
                     }
                 } catch (err) {
-                    console.error("Get booking details error:", err);
                     // Fallback to loadWithRetry
                     await loadWithRetry(bookingId);
                     return;
@@ -84,11 +80,8 @@ export default function UserStatus() {
                     limit: 10 // Get more bookings to find the right one
                 });
 
-                console.log("Bookings response:", response);
-
                 if (response.success) {
                     const bookings = response.data.bookings || [];
-                    console.log("Found bookings:", bookings.length);
                     // Find the most recent active booking
                     const activeBooking = bookings.find(
                         (booking) =>
@@ -96,20 +89,14 @@ export default function UserStatus() {
                     ) || bookings[0]; // If no active, show most recent
 
                     if (activeBooking) {
-                        console.log("Setting active booking:", activeBooking);
                         setCurrentBooking(activeBooking);
-                    } else {
-                        console.log("No active booking found");
-                        // No error - just no active booking
                     }
                 } else {
-                    console.error("Failed to load bookings:", response.message);
-                    setError(response.message || "Failed to load booking");
+                    toast.showError(response.message || "Failed to load booking");
                 }
             }
         } catch (err) {
-            console.error("Load booking error:", err);
-            setError("Failed to load booking status");
+            handleApiError(err, "Failed to load booking status");
         } finally {
             setLoading(false);
         }
@@ -135,12 +122,9 @@ export default function UserStatus() {
                             || bookings[0];
 
                         if (booking) {
-                            console.log("Found booking in retry:", booking);
                             setCurrentBooking(booking);
                             setLoading(false);
                             return;
-                        } else {
-                            console.log(`Retry ${i + 1}: Booking not found yet`);
                         }
                     }
 
@@ -149,7 +133,6 @@ export default function UserStatus() {
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                 } catch (err) {
-                    console.error(`Retry ${i + 1} failed:`, err);
                     if (i === retries - 1) {
                         throw err;
                     }
@@ -170,11 +153,10 @@ export default function UserStatus() {
                     setCurrentBooking(activeBooking);
                 }
             } else {
-                setError("Booking not found. It may still be processing.");
+                toast.showWarning("Booking not found. It may still be processing.");
             }
         } catch (err) {
-            console.error("Load with retry error:", err);
-            setError("Failed to load booking. Please try refreshing the page.");
+            handleApiError(err, "Failed to load booking. Please try refreshing the page.");
         } finally {
             setLoading(false);
         }
@@ -337,21 +319,20 @@ export default function UserStatus() {
 
     const handleSubmitBorewellResult = async () => {
         if (!borewellData.status) {
-            setError("Please select a result status (Success or Failed)");
+            toast.showError("Please select a result status (Success or Failed)");
             return;
         }
 
         if (!currentBooking) {
-            setError("Booking not found");
+            toast.showError("Booking not found");
             return;
         }
 
         const bookingId = currentBooking.id || currentBooking._id;
 
+        const loadingToast = toast.showLoading("Uploading borewell result...");
         try {
             setUploadingBorewell(true);
-            setError("");
-            setSuccess("");
 
             const response = await uploadBorewellResult(bookingId, {
                 status: borewellData.status,
@@ -359,16 +340,18 @@ export default function UserStatus() {
             });
 
             if (response.success) {
-                setSuccess("Borewell result uploaded successfully!");
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Borewell result uploaded successfully!");
                 setShowBorewellModal(false);
                 setBorewellData({ status: "", images: [] });
                 await loadCurrentBooking();
             } else {
-                setError(response.message || "Failed to upload borewell result");
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to upload borewell result");
             }
         } catch (err) {
-            console.error("Upload borewell result error:", err);
-            setError(err.response?.data?.message || "Failed to upload borewell result");
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to upload borewell result");
         } finally {
             setUploadingBorewell(false);
         }
@@ -379,7 +362,7 @@ export default function UserStatus() {
     }
 
     // Show nice message if no booking found
-    if (!currentBooking && !error) {
+    if (!currentBooking) {
         return (
             <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
@@ -420,44 +403,15 @@ export default function UserStatus() {
         );
     }
 
-    if (error && !currentBooking) {
-        return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-                <ErrorMessage message={error} />
-                <div className="mt-6 text-center">
-                    <button
-                        onClick={() => navigate("/user/serviceprovider")}
-                        className="bg-[#0A84FF] text-white px-6 py-3 rounded-[12px] font-semibold hover:bg-[#005BBB] transition-colors"
-                    >
-                        Find a Vendor
-                    </button>
-                </div>
-            </div>
-        );
-    }
 
     const steps = getStatusSteps();
     const vendor = currentBooking?.vendor;
     // Use userStatus for user view
     const status = currentBooking?.userStatus || currentBooking?.status;
 
-    // Debug logging
-    if (currentBooking) {
-        console.log("UserStatus Debug:", {
-            userStatus: currentBooking.userStatus,
-            status: currentBooking.status,
-            computedStatus: status,
-            payment: currentBooking.payment,
-            remainingPaid: currentBooking.payment?.remainingPaid,
-            report: currentBooking.report ? "exists" : "missing",
-            reportUploadedAt: currentBooking.reportUploadedAt
-        });
-    }
 
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-            <ErrorMessage message={error} />
-            <SuccessMessage message={success} />
 
             {/* Refresh Button */}
             {currentBooking && (
@@ -585,15 +539,14 @@ export default function UserStatus() {
                                                     try {
                                                         const bookingId = currentBooking.id || currentBooking._id;
                                                         if (!bookingId) {
-                                                            setError("Booking ID not found");
+                                                            toast.showError("Booking ID not found");
                                                             return;
                                                         }
                                                         // Refresh booking data before navigation
                                                         await loadCurrentBooking();
                                                         navigate(`/user/booking/${bookingId}/payment`);
                                                     } catch (err) {
-                                                        console.error("Navigation error:", err);
-                                                        setError("Failed to navigate to payment page. Please try again.");
+                                                        toast.showError("Failed to navigate to payment page. Please try again.");
                                                     }
                                                 }}
                                                 className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors flex items-center justify-center gap-2 mt-3"
