@@ -938,8 +938,7 @@ export default function VendorServices() {
                                     handleDeleteService(
                                         previewingService._id
                                     );
-                                        setPreviewingService(null);
-                                    }
+                                    setPreviewingService(null);
                                 }}
                                 className="bg-red-500 text-white py-3.5 px-6 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
                                 disabled={editingId !== null || isAdding}
