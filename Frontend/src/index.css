@@ -7,13 +7,13 @@
   --color-card-light: #FFFFFF;
   --color-text-dark: #3A3A3A;
   --color-text-light: #6B7280;
-  
+
   --font-display: "Inter", sans-serif;
-  
+
   --radius: 1rem;
   --radius-lg: 1.25rem;
-  
-  --shadow-soft: 0 4px 12px rgba(0,0,0,0.08);
+
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-soft-button: 0 6px 15px rgba(26, 128, 229, 0.25);
 }
 
@@ -71,7 +71,7 @@ body {
 }
 
 @media (max-width: 640px) {
-  .toast-container > div {
+  .toast-container>div {
     font-size: 13px;
     padding: 10px 14px;
     min-width: 250px;

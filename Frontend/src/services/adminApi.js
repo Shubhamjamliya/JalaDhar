@@ -47,6 +47,50 @@ export const getAdminProfile = async () => {
  * @param {Object} data - { email }
  * @returns {Promise}
  */
+/**
+ * Get all settings
+ * @param {string} category - Optional category filter
+ * @returns {Promise}
+ */
+export const getAllSettings = async (category = null) => {
+  const params = category ? { category } : {};
+  const response = await api.get('/admin/settings', { params });
+  return response.data;
+};
+
+/**
+ * Get setting by key
+ * @param {string} key - Setting key
+ * @returns {Promise}
+ */
+export const getSetting = async (key) => {
+  const response = await api.get(`/admin/settings/${key}`);
+  return response.data;
+};
+
+/**
+ * Update setting
+ * @param {string} key - Setting key
+ * @param {any} value - Setting value
+ * @param {string} label - Optional label
+ * @param {string} description - Optional description
+ * @returns {Promise}
+ */
+export const updateSetting = async (key, value, label = null, description = null) => {
+  const response = await api.put(`/admin/settings/${key}`, { value, label, description });
+  return response.data;
+};
+
+/**
+ * Update multiple settings
+ * @param {Array} settings - Array of {key, value} objects
+ * @returns {Promise}
+ */
+export const updateMultipleSettings = async (settings) => {
+  const response = await api.put('/admin/settings', { settings });
+  return response.data;
+};
+
 export const adminForgotPassword = async (data) => {
   const response = await api.post('/admin/auth/forgot-password', data);
   return response.data;

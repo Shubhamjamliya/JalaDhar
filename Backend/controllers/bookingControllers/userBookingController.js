@@ -8,6 +8,8 @@ const { sendBookingConfirmationEmail, sendBookingStatusUpdateEmail } = require('
 const { uploadToCloudinary } = require('../../services/cloudinaryService');
 const { sendNotification } = require('../../services/notificationService');
 const { getIO } = require('../../sockets');
+const { calculateDistance, calculateTravelCharges, calculateGST } = require('../../utils/distanceCalculator');
+const { getSettings } = require('../../services/settingsService');
 
 /**
  * Get available vendors for a service
@@ -89,7 +91,24 @@ const getAvailableVendors = async (req, res) => {
 const createBooking = async (req, res) => {
   try {
     const userId = req.userId;
-    const { serviceId, vendorId, scheduledDate, scheduledTime, address, notes } = req.body;
+    const { 
+      serviceId, 
+      vendorId, 
+      scheduledDate, 
+      scheduledTime, 
+      address, 
+      notes,
+      // Customer Enquiry Form fields
+      village,
+      mandal,
+      district,
+      state,
+      purpose,
+      purposeExtent,
+      existingBorewell,
+      techniqueUsed,
+      techniqueProviderName
+    } = req.body;
 
     // Validate required fields
     if (!serviceId || !vendorId || !scheduledDate || !scheduledTime || !address) {
@@ -142,8 +161,35 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // Calculate payment amounts (40% advance, 60% remaining)
-    const totalAmount = service.price;
+    // Get settings for charge calculation
+    const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE']);
+    const travelChargePerKm = settings.TRAVEL_CHARGE_PER_KM || 10;
+    const baseRadius = settings.BASE_RADIUS_KM || 30;
+    const gstPercentage = settings.GST_PERCENTAGE || 18;
+
+    // Get vendor location
+    const vendorLat = vendor.address?.coordinates?.lat;
+    const vendorLng = vendor.address?.coordinates?.lng;
+
+    // Get user booking location from address
+    const userLat = address.coordinates?.lat;
+    const userLng = address.coordinates?.lng;
+
+    // Calculate distance
+    let distance = null;
+    let travelCharges = 0;
+    if (vendorLat && vendorLng && userLat && userLng) {
+      distance = calculateDistance(vendorLat, vendorLng, userLat, userLng);
+      travelCharges = calculateTravelCharges(distance, baseRadius, travelChargePerKm);
+    }
+
+    // Calculate amounts
+    const baseServiceFee = service.price;
+    const subtotal = baseServiceFee + travelCharges;
+    const gst = calculateGST(subtotal, gstPercentage);
+    const totalAmount = subtotal + gst;
+
+    // Calculate advance and remaining (40% and 60% of total)
     const advanceAmount = totalAmount * 0.4;
     const remainingAmount = totalAmount * 0.6;
 
@@ -191,7 +237,29 @@ const createBooking = async (req, res) => {
         landmark: address.landmark
       },
       notes,
+      // Customer Enquiry Form fields
+      village: village || undefined,
+      mandal: mandal || undefined,
+      district: district || undefined,
+      state: state || undefined,
+      purpose: purpose || undefined,
+      purposeExtent: purposeExtent ? parseFloat(purposeExtent) : undefined,
+      existingBorewell: existingBorewell && existingBorewell.hasExisting ? {
+        hasExisting: true,
+        yearOfDrilling: existingBorewell.yearOfDrilling ? parseInt(existingBorewell.yearOfDrilling) : undefined,
+        depthInFeet: existingBorewell.depthInFeet ? parseFloat(existingBorewell.depthInFeet) : undefined,
+        gapsAndDepths: existingBorewell.gapsAndDepths || undefined,
+        waterQuantity: existingBorewell.waterQuantity ? parseFloat(existingBorewell.waterQuantity) : undefined,
+        surroundingBorewellDistance: existingBorewell.surroundingBorewellDistance || undefined
+      } : undefined,
+      techniqueUsed: techniqueUsed || undefined,
+      techniqueProviderName: techniqueProviderName || undefined,
       payment: {
+        baseServiceFee,
+        distance: distance || null,
+        travelCharges,
+        subtotal,
+        gst,
         totalAmount,
         advanceAmount,
         remainingAmount,
@@ -1071,6 +1139,90 @@ const cancelBooking = async (req, res) => {
   }
 };
 
+/**
+ * Calculate booking charges (for preview before booking)
+ */
+const calculateBookingCharges = async (req, res) => {
+  try {
+    const { serviceId, vendorId, userLat, userLng } = req.body;
+    
+    if (!serviceId || !vendorId || !userLat || !userLng) {
+      return res.status(400).json({
+        success: false,
+        message: 'serviceId, vendorId, userLat, and userLng are required'
+      });
+    }
+    
+    // Find service and vendor
+    const service = await Service.findById(serviceId);
+    const vendor = await Vendor.findById(vendorId);
+    
+    if (!service || !service.isActive) {
+      return res.status(404).json({
+        success: false,
+        message: 'Service not found or not available'
+      });
+    }
+    
+    if (!vendor || !vendor.isActive || !vendor.isApproved) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vendor not found or not available'
+      });
+    }
+    
+    // Get settings
+    const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE']);
+    const travelChargePerKm = settings.TRAVEL_CHARGE_PER_KM || 10;
+    const baseRadius = settings.BASE_RADIUS_KM || 30;
+    const gstPercentage = settings.GST_PERCENTAGE || 18;
+    
+    // Calculate distance
+    const vendorLat = vendor.address?.coordinates?.lat;
+    const vendorLng = vendor.address?.coordinates?.lng;
+    
+    let distance = null;
+    let travelCharges = 0;
+    
+    if (vendorLat && vendorLng) {
+      distance = calculateDistance(vendorLat, vendorLng, parseFloat(userLat), parseFloat(userLng));
+      travelCharges = calculateTravelCharges(distance, baseRadius, travelChargePerKm);
+    }
+    
+    const baseServiceFee = service.price;
+    const subtotal = baseServiceFee + travelCharges;
+    const gst = calculateGST(subtotal, gstPercentage);
+    const totalAmount = subtotal + gst;
+    const advanceAmount = totalAmount * 0.4;
+    const remainingAmount = totalAmount * 0.6;
+    
+    res.json({
+      success: true,
+      message: 'Charges calculated successfully',
+      data: {
+        baseServiceFee,
+        distance: distance ? parseFloat(distance.toFixed(2)) : null,
+        travelCharges: parseFloat(travelCharges.toFixed(2)),
+        subtotal: parseFloat(subtotal.toFixed(2)),
+        gst: parseFloat(gst.toFixed(2)),
+        totalAmount: parseFloat(totalAmount.toFixed(2)),
+        advanceAmount: parseFloat(advanceAmount.toFixed(2)),
+        remainingAmount: parseFloat(remainingAmount.toFixed(2)),
+        baseRadius,
+        travelChargePerKm,
+        gstPercentage
+      }
+    });
+  } catch (error) {
+    console.error('Calculate booking charges error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to calculate charges',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllServices,
   getAvailableVendors,
@@ -1083,6 +1235,7 @@ module.exports = {
   initiateRemainingPayment,
   uploadBorewellResult,
   downloadInvoice,
-  getDashboardStats
+  getDashboardStats,
+  calculateBookingCharges
 };
 

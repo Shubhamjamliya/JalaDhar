@@ -13,6 +13,16 @@ dotenv.config();
 // Connect to database
 connectDB();
 
+// Initialize default settings after DB connection
+setTimeout(async () => {
+  try {
+    const { initializeDefaultSettings } = require('./services/settingsService');
+    await initializeDefaultSettings();
+  } catch (err) {
+    console.error('Error initializing default settings:', err);
+  }
+}, 2000); // Wait 2 seconds for DB to be ready
+
 // Initialize Express app
 const app = express();
 
@@ -66,6 +76,7 @@ app.use('/api/admin', require('./routes/admin-routes/vendorApproval.routes'));
 app.use('/api/admin', require('./routes/admin-routes/userManagement.routes'));
 app.use('/api/admin', require('./routes/booking-routes/adminBooking.routes'));
 app.use('/api/admin', require('./routes/payment-routes/adminPayment.routes'));
+app.use('/api/admin/settings', require('./routes/admin-routes/settings.routes'));
 
 // Booking routes
 app.use('/api/bookings', require('./routes/booking-routes/userBooking.routes'));

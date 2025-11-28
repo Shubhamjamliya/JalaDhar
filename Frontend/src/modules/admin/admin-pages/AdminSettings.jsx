@@ -7,9 +7,10 @@ import {
     IoKeyOutline,
     IoCheckmarkCircleOutline,
     IoCloseOutline,
+    IoCashOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
-import { sendAdminRegistrationOTP, registerAdminWithOTP } from "../../../services/adminApi";
+import { sendAdminRegistrationOTP, registerAdminWithOTP, getAllSettings, updateMultipleSettings } from "../../../services/adminApi";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import { useToast } from "../../../hooks/useToast";
 
@@ -38,9 +39,18 @@ export default function AdminSettings() {
 
     const settingsTabs = [
         { id: "general", label: "General", icon: IoSettingsOutline },
+        { id: "pricing", label: "Pricing", icon: IoCashOutline },
         { id: "security", label: "Security", icon: IoLockClosedOutline },
         { id: "register", label: "Register Admin", icon: IoPersonAddOutline },
     ];
+
+    // Pricing Settings State
+    const [pricingSettings, setPricingSettings] = useState({
+        TRAVEL_CHARGE_PER_KM: 10,
+        BASE_RADIUS_KM: 30,
+        GST_PERCENTAGE: 18,
+    });
+    const [pricingLoading, setPricingLoading] = useState(false);
 
     // Countdown timer for OTP resend
     useEffect(() => {
@@ -179,6 +189,57 @@ export default function AdminSettings() {
         setOtpData({ ...otpData, otp: "" });
     };
 
+    // Load pricing settings
+    useEffect(() => {
+        const loadPricingSettings = async () => {
+            try {
+                const response = await getAllSettings('pricing');
+                if (response.success && response.data.settings) {
+                    const settingsObj = {};
+                    response.data.settings.forEach(setting => {
+                        settingsObj[setting.key] = setting.value;
+                    });
+                    setPricingSettings(prev => ({
+                        ...prev,
+                        ...settingsObj
+                    }));
+                }
+            } catch (err) {
+                console.error('Error loading pricing settings:', err);
+            }
+        };
+        if (activeTab === 'pricing') {
+            loadPricingSettings();
+        }
+    }, [activeTab]);
+
+    // Handle pricing settings update
+    const handlePricingSettingsUpdate = async (e) => {
+        e.preventDefault();
+        setError("");
+        setPricingLoading(true);
+
+        try {
+            const settings = [
+                { key: 'TRAVEL_CHARGE_PER_KM', value: parseFloat(pricingSettings.TRAVEL_CHARGE_PER_KM) },
+                { key: 'BASE_RADIUS_KM', value: parseFloat(pricingSettings.BASE_RADIUS_KM) },
+                { key: 'GST_PERCENTAGE', value: parseFloat(pricingSettings.GST_PERCENTAGE) },
+            ];
+
+            const response = await updateMultipleSettings(settings);
+            if (response.success) {
+                toast.showSuccess("Pricing settings updated successfully!");
+            } else {
+                setError(response.message || "Failed to update pricing settings");
+            }
+        } catch (err) {
+            console.error("Update pricing settings error:", err);
+            setError(err.response?.data?.message || "Failed to update pricing settings. Please try again.");
+        } finally {
+            setPricingLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-[calc(100vh-5rem)]">
             {/* Header */}
@@ -267,6 +328,93 @@ export default function AdminSettings() {
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {activeTab === "pricing" && (
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-800 mb-6">Pricing Settings</h2>
+                                <form onSubmit={handlePricingSettingsUpdate} className="space-y-6">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Travel Charge Per Kilometer (₹)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={pricingSettings.TRAVEL_CHARGE_PER_KM}
+                                            onChange={(e) =>
+                                                setPricingSettings({
+                                                    ...pricingSettings,
+                                                    TRAVEL_CHARGE_PER_KM: e.target.value,
+                                                })
+                                            }
+                                            min="0"
+                                            step="0.01"
+                                            required
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                            placeholder="Enter travel charge per km"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Charge per kilometer beyond the base radius
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Base Radius (km)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={pricingSettings.BASE_RADIUS_KM}
+                                            onChange={(e) =>
+                                                setPricingSettings({
+                                                    ...pricingSettings,
+                                                    BASE_RADIUS_KM: e.target.value,
+                                                })
+                                            }
+                                            min="0"
+                                            step="1"
+                                            required
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                            placeholder="Enter base radius in km"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Distance within which no travel charges apply
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            GST Percentage (%)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={pricingSettings.GST_PERCENTAGE}
+                                            onChange={(e) =>
+                                                setPricingSettings({
+                                                    ...pricingSettings,
+                                                    GST_PERCENTAGE: e.target.value,
+                                                })
+                                            }
+                                            min="0"
+                                            max="100"
+                                            step="0.01"
+                                            required
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                            placeholder="Enter GST percentage"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            GST percentage applied on total amount (subtotal + travel charges)
+                                        </p>
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <button
+                                            type="submit"
+                                            disabled={pricingLoading}
+                                            className="px-6 py-3 bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {pricingLoading ? "Saving..." : "Save Pricing Settings"}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         )}
 

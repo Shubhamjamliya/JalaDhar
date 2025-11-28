@@ -14,7 +14,8 @@ const {
   initiateRemainingPayment,
   uploadBorewellResult,
   downloadInvoice,
-  getDashboardStats
+  getDashboardStats,
+  calculateBookingCharges
 } = require('../../controllers/bookingControllers/userBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isUser } = require('../../middleware/roleMiddleware');
@@ -54,6 +55,7 @@ const uploadBorewellResultValidation = [
 // Routes - Specific routes first, then dynamic routes
 router.get('/dashboard/stats', authenticate, isUser, getDashboardStats);
 router.get('/my-bookings', authenticate, isUser, getUserBookings);
+router.post('/calculate-charges', authenticate, isUser, calculateBookingCharges);
 router.get('/services', authenticate, isUser, getAllServices);
 router.get('/vendors/nearby', authenticate, isUser, getNearbyVendors);
 router.get('/vendors/:vendorId', authenticate, isUser, getVendorProfile);

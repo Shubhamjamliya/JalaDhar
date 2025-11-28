@@ -194,6 +194,24 @@ export const getVendorProfile = async (vendorId, lat = null, lng = null) => {
 };
 
 /**
+ * Calculate booking charges (for preview before booking)
+ * @param {string} serviceId - Service ID
+ * @param {string} vendorId - Vendor ID
+ * @param {number} userLat - User latitude
+ * @param {number} userLng - User longitude
+ * @returns {Promise}
+ */
+export const calculateBookingCharges = async (serviceId, vendorId, userLat, userLng) => {
+  const response = await api.post('/bookings/calculate-charges', {
+    serviceId,
+    vendorId,
+    userLat,
+    userLng
+  });
+  return response.data;
+};
+
+/**
  * Verify advance payment with Razorpay
  * @param {string} bookingId - Booking ID
  * @param {string} razorpayOrderId - Razorpay order ID

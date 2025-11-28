@@ -74,7 +74,7 @@ const ratingSchema = new mongoose.Schema({
 // Indexes
 ratingSchema.index({ vendor: 1, createdAt: -1 });
 ratingSchema.index({ user: 1 });
-ratingSchema.index({ booking: 1 });
+// Note: booking field already has unique: true which creates an index automatically
 
 // Calculate overall rating before saving
 ratingSchema.pre('save', function(next) {

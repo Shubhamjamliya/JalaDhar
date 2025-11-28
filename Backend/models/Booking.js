@@ -64,7 +64,92 @@ const bookingSchema = new mongoose.Schema({
     },
     landmark: String
   },
+  // Customer Enquiry Form fields
+  village: {
+    type: String,
+    trim: true
+  },
+  mandal: {
+    type: String,
+    trim: true
+  },
+  district: {
+    type: String,
+    trim: true
+  },
+  state: {
+    type: String,
+    trim: true
+  },
+  purpose: {
+    type: String,
+    enum: ['Agriculture', 'Industrial/Commercial', 'Domestic/Household', 'Open plots'],
+    trim: true
+  },
+  purposeExtent: {
+    type: Number,
+    min: 0
+  },
+  existingBorewell: {
+    hasExisting: {
+      type: Boolean,
+      default: false
+    },
+    yearOfDrilling: {
+      type: Number,
+      min: 1900
+    },
+    depthInFeet: {
+      type: Number,
+      min: 0
+    },
+    gapsAndDepths: {
+      type: String,
+      trim: true
+    },
+    waterQuantity: {
+      type: Number,
+      min: 0
+    },
+    surroundingBorewellDistance: {
+      type: String,
+      trim: true
+    }
+  },
+  techniqueUsed: {
+    type: String,
+    enum: ['Coconut', 'Dowsing L rods', '3D Locator', 'Detector / Diviner', 'Geophysical survey'],
+    trim: true
+  },
+  techniqueProviderName: {
+    type: String,
+    trim: true
+  },
   payment: {
+    baseServiceFee: {
+      type: Number,
+      required: true,
+      min: [0, 'Base service fee cannot be negative']
+    },
+    distance: {
+      type: Number, // Distance in km between vendor and user location
+      default: null
+    },
+    travelCharges: {
+      type: Number,
+      default: 0,
+      min: [0, 'Travel charges cannot be negative']
+    },
+    gst: {
+      type: Number,
+      default: 0,
+      min: [0, 'GST cannot be negative']
+    },
+    subtotal: {
+      type: Number, // baseServiceFee + travelCharges
+      required: true,
+      min: [0, 'Subtotal cannot be negative']
+    },
     totalAmount: {
       type: Number,
       required: true,
