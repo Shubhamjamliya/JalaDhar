@@ -184,70 +184,55 @@ export default function LocationSelector({
                         </button>
                     </div>
                 ) : (
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <button
-                            type="button"
-                            onClick={getCurrentLocation}
-                            disabled={gettingLocation}
-                            className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            <IoLocationOutline className="text-lg" />
-                            {gettingLocation ? "Getting location..." : "Use Current Location"}
-                        </button>
-                        {mapsLoaded && (
-                            <button
-                                type="button"
-                                onClick={() => setShowSearch(!showSearch)}
-                                className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
-                            >
-                                <IoSearchOutline className="text-lg" />
-                                Search Location
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {/* Search Input (shown when search button clicked) */}
-                {showSearch && mapsLoaded && !location.lat && (
-                    <div className="mt-2">
-                        <div className="relative">
+                    <div className="flex gap-3">
+                        {/* Search Bar */}
+                        <div className="relative flex-1">
                             <IoSearchOutline className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg z-10" />
                             <PlaceAutocompleteInput
                                 onPlaceSelect={handlePlaceSelect}
-                                placeholder="Search for a location..."
+                                placeholder="Search for an address..."
                                 value={searchAddress}
                                 onChange={(e) => setSearchAddress(e.target.value)}
                                 disabled={false}
-                                className="w-full rounded-full border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:shadow-md transition-all"
                                 countryRestriction="in"
                                 types={["geocode"]}
                             />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 ml-3">
-                            Start typing to see location suggestions
-                        </p>
+
+                        {/* Use Current Location Button - Icon Only */}
+                        <button
+                            type="button"
+                            onClick={getCurrentLocation}
+                            disabled={gettingLocation}
+                            className="flex items-center justify-center bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
+                            title={gettingLocation ? "Getting location..." : "Use Current Location"}
+                        >
+                            <IoLocationOutline className="text-xl text-white" />
+                        </button>
                     </div>
                 )}
 
                 {/* Radius Selector */}
                 {showRadiusSelector && location.lat && location.lng && (
-                    <div className="mt-2 flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div className="mt-2 flex items-center gap-3 bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
                         <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
                             Search Radius:
                         </label>
-                        <div className="flex gap-2 flex-1">
+                        <div className="flex gap-3 flex-1">
                             {[50, 75, 100].map((r) => (
                                 <button
                                     key={r}
                                     type="button"
                                     onClick={() => handleRadiusChange(r)}
-                                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                                    className={`flex flex-col items-center justify-center w-16 h-16 rounded-full text-sm font-medium transition-all ${
                                         radius === r
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
+                                            ? "bg-blue-600 text-white shadow-md"
+                                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                                     }`}
                                 >
-                                    {r} km
+                                    <span className="text-base font-semibold">{r}</span>
+                                    <span className="text-xs">km</span>
                                 </button>
                             ))}
                         </div>

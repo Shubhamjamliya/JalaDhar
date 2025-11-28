@@ -68,15 +68,19 @@ export default function UserVendorProfile() {
     };
 
     const renderStars = (rating) => {
-        const fullStars = Math.floor(rating || 0);
-        const hasHalfStar = (rating || 0) % 1 >= 0.5;
+        const ratingValue = rating || 0;
+        const fullStars = Math.floor(ratingValue);
+        const hasHalfStar = ratingValue % 1 >= 0.5;
         return [...Array(5)].map((_, i) => {
             if (i < fullStars) {
-                return <IoStar key={i} className="text-lg text-yellow-500" />;
+                // Filled dark yellow stars for full rating
+                return <IoStar key={i} className="text-lg" style={{ fill: '#CA8A04', color: '#CA8A04' }} />;
             } else if (i === fullStars && hasHalfStar) {
-                return <IoStarOutline key={i} className="text-lg text-yellow-500" />;
+                // Half star - filled with dark yellow
+                return <IoStar key={i} className="text-lg" style={{ fill: '#CA8A04', color: '#CA8A04' }} />;
             } else {
-                return <IoStarOutline key={i} className="text-lg text-gray-300" />;
+                // Empty stars - filled with dark yellow (lighter shade)
+                return <IoStar key={i} className="text-lg" style={{ fill: '#CA8A04', color: '#CA8A04', opacity: 0.3 }} />;
             }
         });
     };
@@ -130,7 +134,7 @@ export default function UserVendorProfile() {
                 <span className="text-sm font-medium">Back</span>
             </button>
 
-            {/* Vendor Profile Header Card */}
+            {/* Vendor Profile Header Card with Contact Information */}
             <div className="bg-white rounded-[20px] p-6 shadow-[0_6px_20px_rgba(0,0,0,0.08)] mb-6">
                 <div className="flex flex-col items-center text-center mb-6">
                     {/* Profile Image */}
@@ -157,75 +161,60 @@ export default function UserVendorProfile() {
                         {vendorData.name}
                     </h1>
 
-                    {/* Category */}
-                    {vendorData.category && (
-                        <p className="text-base text-gray-500 mb-3">
-                            {vendorData.category}
-                        </p>
-                    )}
-
                     {/* Rating and Reviews */}
-                    <div className="flex items-center justify-center gap-3 mb-3">
+                    <div className="flex items-center justify-center gap-2 mb-4">
                         <div className="flex items-center gap-1">
-                            {renderStars(vendorData.averageRating)}
+                            {renderStars(vendorData.averageRating || 0)}
                         </div>
-                        <span className="font-bold text-gray-800 text-lg">
+                        <span className="font-bold text-gray-800 text-base">
                             {vendorData.averageRating?.toFixed(1) || "0.0"}
                         </span>
-                        <span className="text-gray-400 text-sm">
+                        <span className="text-gray-500 text-sm">
                             ({vendorData.totalRatings || 0} reviews)
                         </span>
                     </div>
 
-                    {/* Distance */}
-                    {vendorData.distance !== null && (
-                        <div className="flex items-center gap-1 text-[#0A84FF] font-semibold">
-                            <IoLocationOutline className="text-lg" />
-                            <span>{vendorData.distance.toFixed(1)} km away</span>
-                        </div>
-                    )}
+                    {/* Quick Info Grid */}
+                    <div className="grid grid-cols-2 gap-4 w-full max-w-xs mb-6 pt-4 border-t border-gray-100">
+                        {vendorData.experience && (
+                            <div className="text-center">
+                                <p className="text-xs text-gray-500 mb-1">Experience</p>
+                                <p className="text-lg font-bold text-gray-800">{vendorData.experience} years</p>
+                            </div>
+                        )}
+                        {vendorData.services && vendorData.services.length > 0 && (
+                            <div className="text-center">
+                                <p className="text-xs text-gray-500 mb-1">Services</p>
+                                <p className="text-lg font-bold text-gray-800">{vendorData.services.length}</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Quick Info Grid */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                    {vendorData.experience && (
-                        <div className="text-center">
-                            <p className="text-xs text-gray-500 mb-1">Experience</p>
-                            <p className="text-lg font-bold text-gray-800">{vendorData.experience} years</p>
-                        </div>
-                    )}
-                    {vendorData.services && vendorData.services.length > 0 && (
-                        <div className="text-center">
-                            <p className="text-xs text-gray-500 mb-1">Services</p>
-                            <p className="text-lg font-bold text-gray-800">{vendorData.services.length}</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Contact Information Card */}
-            <div className="bg-white rounded-[20px] p-6 shadow-[0_6px_20px_rgba(0,0,0,0.08)] mb-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Contact Information</h2>
-                <div className="space-y-4">
-                    {vendorData.phone && (
+                {/* Contact Information Section */}
+                <div className="pt-6 border-t border-gray-100">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Contact Information</h2>
+                    <div className="space-y-4">
+                        {vendorData.phone && (
+                            <InfoRow
+                                icon={IoCallOutline}
+                                label="Phone Number"
+                                value={vendorData.phone}
+                            />
+                        )}
+                        {vendorData.email && (
+                            <InfoRow
+                                icon={IoMailOutline}
+                                label="Email"
+                                value={vendorData.email}
+                            />
+                        )}
                         <InfoRow
-                            icon={<IoCallOutline className="text-2xl text-[#0A84FF]" />}
-                            label="Phone Number"
-                            value={vendorData.phone}
+                            icon={IoLocationOutline}
+                            label="Address"
+                            value={formatAddress(vendorData.address)}
                         />
-                    )}
-                    {vendorData.email && (
-                        <InfoRow
-                            icon={<IoMailOutline className="text-2xl text-[#0A84FF]" />}
-                            label="Email"
-                            value={vendorData.email}
-                        />
-                    )}
-                    <InfoRow
-                        icon={<IoLocationOutline className="text-2xl text-[#0A84FF]" />}
-                        label="Address"
-                        value={formatAddress(vendorData.address)}
-                    />
+                    </div>
                 </div>
             </div>
 
@@ -282,11 +271,11 @@ export default function UserVendorProfile() {
 /* ---------------------------
    REUSABLE COMPONENTS
 ---------------------------- */
-function InfoRow({ icon, label, value }) {
+function InfoRow({ icon: Icon, label, value }) {
     return (
         <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-[12px] bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] bg-opacity-10 shrink-0">
-                {icon}
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 shrink-0">
+                <Icon className="text-xl text-white" />
             </div>
             <div className="flex flex-col flex-1 min-w-0">
                 <span className="text-xs text-gray-500 mb-1 font-medium">{label}</span>

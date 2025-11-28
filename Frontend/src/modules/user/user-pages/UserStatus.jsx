@@ -476,17 +476,19 @@ export default function UserStatus() {
                                 {/* Icon */}
                                 <div className="flex flex-col items-center">
                                     <div
-                                        className={`flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${isActive || isCompleted ? "text-[#0A84FF]" : "text-gray-400"
+                                        className={`relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] overflow-hidden ${isActive || isCompleted ? "" : "opacity-60"
                                             }`}
                                     >
-                                        <StepIcon className="text-3xl" />
+                                        {/* Highlight/Reflection Effect */}
+                                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                                        <StepIcon className={`text-2xl relative z-10 ${isActive || isCompleted ? "text-[#1976D2]" : "text-gray-500"}`} />
                                     </div>
                                     {!isLast && (
                                         <div
                                             className={`w-0.5 grow ${isCompleted
-                                                ? "bg-[#0A84FF]"
+                                                ? "bg-[#1976D2]"
                                                 : isActive
-                                                    ? "bg-[#0A84FF]"
+                                                    ? "bg-[#1976D2]"
                                                     : "bg-gray-300"
                                                 }`}
                                         ></div>

@@ -9,6 +9,7 @@ import {
     IoStarOutline,
     IoCloseOutline,
     IoCheckmarkCircleOutline,
+    IoCheckmarkCircle,
     IoCloseCircleOutline,
     IoTimeOutline,
     IoCheckmarkOutline,
@@ -342,18 +343,21 @@ export default function UserDashboard() {
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
 
-            {/* Profile Header with Background Image */}
-            <section className="relative my-4 overflow-hidden rounded-[12px] bg-blue-400 p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                <div className="absolute inset-0 z-0 opacity-10">
-                    <img
-                        className="h-full w-full object-cover"
-                        src={backgroundImageUrl}
-                        alt=""
-                    />
+            {/* Profile Header with Light Blue Gradient */}
+            <section className="relative my-4 overflow-hidden rounded-[12px] bg-gradient-to-b from-[#E3F2FD] via-[#BBDEFB] to-[#90CAF9] p-6 shadow-lg">
+                {/* Subtle Wave Pattern Overlay */}
+                <div className="absolute inset-0 z-0 opacity-20">
+                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
+                        <path fill="#64B5F6" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                    </svg>
+                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ transform: 'translateY(20px)' }}>
+                        <path fill="#90CAF9" d="M0,128L48,138.7C96,149,192,171,288,181.3C384,192,480,192,576,186.7C672,181,768,171,864,165.3C960,160,1056,160,1152,154.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                    </svg>
                 </div>
                 <div className="relative z-10 flex items-center gap-4">
+                    {/* White Circular Profile Picture */}
                     <div
-                        className="h-16 w-16 rounded-full bg-cover bg-center flex-shrink-0"
+                        className="h-16 w-16 rounded-full bg-white bg-cover bg-center flex-shrink-0 shadow-lg border-4 border-white"
                         style={{
                             backgroundImage: userAvatar
                                 ? `url("${userAvatar}")`
@@ -372,14 +376,16 @@ export default function UserDashboard() {
             <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
                 Your Services Overview
             </h2>
-            <div className="flex items-center justify-between gap-4 mb-6 px-2">
+            <div className="flex items-center justify-between gap-4 mb-4 px-2">
                 {/* Request Status */}
                 <div
                     onClick={handleRequestStatusClick}
                     className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="w-16 h-16 rounded-full bg-white shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all">
-                        <IoDocumentTextOutline className="text-2xl text-[#0A84FF]" />
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
+                        {/* Highlight/Reflection Effect */}
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                        <IoDocumentTextOutline className="text-2xl text-[#1976D2] relative z-10" />
                     </div>
                     <span className="text-xs font-medium text-gray-800 text-center">
                         Request Status
@@ -391,9 +397,11 @@ export default function UserDashboard() {
                     onClick={() => navigate("/user/status")}
                     className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="w-16 h-16 rounded-full bg-white shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all relative">
-                        <IoCalendarOutline className="text-2xl text-[#0A84FF]" />
-                        <IoCheckmarkOutline className="absolute -bottom-0.5 -right-0.5 text-sm text-white bg-[#0A84FF] rounded-full p-0.5" />
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
+                        {/* Highlight/Reflection Effect */}
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                        <IoCalendarOutline className="text-2xl text-[#1976D2] relative z-10" />
+                        <IoCheckmarkCircle className="absolute -bottom-0.5 -right-0.5 text-base text-[#1976D2] z-20" />
                     </div>
                     <span className="text-xs font-medium text-gray-800 text-center">
                         Current Booking
@@ -405,8 +413,10 @@ export default function UserDashboard() {
                     onClick={() => navigate("/user/serviceprovider")}
                     className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="w-16 h-16 rounded-full bg-white shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all">
-                        <IoSearchOutline className="text-2xl text-[#0A84FF]" />
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
+                        {/* Highlight/Reflection Effect */}
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                        <IoSearchOutline className="text-2xl text-[#1976D2] relative z-10" />
                     </div>
                     <span className="text-xs font-medium text-gray-800 text-center">
                         Find Vendor
@@ -418,9 +428,11 @@ export default function UserDashboard() {
                     onClick={() => navigate("/user/profile")}
                     className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="w-16 h-16 rounded-full bg-white shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all relative">
-                        <IoPersonCircleOutline className="text-2xl text-[#0A84FF]" />
-                        <IoSettingsOutline className="absolute -bottom-0.5 -right-0.5 text-xs text-[#0A84FF] bg-white rounded-full p-0.5" />
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FC] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
+                        {/* Highlight/Reflection Effect */}
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                        <IoPersonCircleOutline className="text-2xl text-[#1976D2] relative z-10" />
+                        <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-gray-400 border-2 border-white z-20"></div>
                     </div>
                     <span className="text-xs font-medium text-gray-800 text-center">
                         Update Profile
@@ -429,14 +441,14 @@ export default function UserDashboard() {
             </div>
 
             {/* Top Vendors Near You */}
-            <h2 className="px-2 pt-8 pb-4 text-lg font-bold text-gray-800">
+            <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
                 Top Vendors Near You
             </h2>
 
             {/* Location Selector */}
-            <div className="px-2 mb-4 space-y-3">
+            <div className="px-2 mb-4 flex gap-3">
                 {/* Address Input with Autocomplete */}
-                <div className="relative">
+                <div className="relative flex-1">
                     <IoSearchOutline className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg z-10" />
                     <PlaceAutocompleteInput
                         onPlaceSelect={handlePlaceSelect}
@@ -444,127 +456,88 @@ export default function UserDashboard() {
                         value={searchAddress}
                         onChange={(e) => setSearchAddress(e.target.value)}
                         disabled={false}
-                        className="w-full rounded-lg border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:shadow-md transition-all"
                         countryRestriction="in"
                         types={["geocode"]}
                     />
                 </div>
 
-                {/* Use Current Location Button */}
+                {/* Use Current Location Button - Icon Only */}
                 <button
                     type="button"
                     onClick={getCurrentLocation}
                     disabled={gettingLocation}
-                    className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center justify-center bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
+                    title={gettingLocation ? "Getting location..." : "Use Current Location"}
                 >
-                    <IoLocationOutline className="text-lg" />
-                    {gettingLocation ? "Getting location..." : "Use Current Location"}
+                    <IoLocationOutline className="text-xl text-white" />
                 </button>
-
-                {/* Current Location Display */}
-                {userLocation.lat && userLocation.lng && (
-                    <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <IoLocationOutline className="text-blue-600 text-xl flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-blue-900 truncate">
-                                    {userLocation.address || `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`}
-                                </p>
-                                <p className="text-xs text-blue-600">Location set</p>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={clearLocation}
-                            className="text-blue-600 hover:text-blue-800 p-1"
-                            title="Clear location"
-                        >
-                            <IoCloseOutline className="text-xl" />
-                        </button>
-                    </div>
-                )}
-
-                {/* Radius Selector */}
-                {userLocation.lat && userLocation.lng && (
-                    <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
-                        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                            Search Radius:
-                        </label>
-                        <div className="flex gap-2 flex-1">
-                            {[50, 75, 100].map((r) => (
-                                <button
-                                    key={r}
-                                    type="button"
-                                    onClick={() => setRadius(r)}
-                                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${radius === r
-                                        ? "bg-blue-600 text-white"
-                                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
-                                        }`}
-                                >
-                                    {r} km
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
 
             <div className="flex flex-col gap-4 mb-6 px-2">
                 {vendors.length === 0 ? (
-                    <div className="bg-white rounded-[12px] p-8 text-center shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                    <div className="bg-white rounded-2xl p-8 text-center shadow-lg">
                         <p className="text-gray-600 text-sm">No vendors available nearby</p>
                     </div>
                 ) : (
-                    vendors.map((vendor) => (
-                        <div
-                            key={vendor._id}
-                            onClick={() => navigate(`/user/vendor-profile/${vendor._id}`)}
-                            className="flex items-center gap-4 rounded-[12px] bg-white p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all active:scale-[0.98]"
-                        >
-                            {/* Vendor Image - Square with rounded corners */}
+                    vendors.map((vendor, index) => {
+                        // Generate different colored backgrounds for profile pictures
+                        const colors = ['#B3E5FC', '#FFEB3B', '#C8E6C9', '#FFCCBC', '#E1BEE7'];
+                        const bgColor = colors[index % colors.length];
+                        
+                        return (
                             <div
-                                className="h-20 w-20 shrink-0 rounded-[8px] bg-cover bg-center bg-no-repeat"
-                                style={{
-                                    backgroundImage: vendor.documents?.profilePicture?.url
-                                        ? `url("${vendor.documents.profilePicture.url}")`
-                                        : "none",
-                                    backgroundColor: vendor.documents?.profilePicture?.url ? "transparent" : "#E5E7EB"
-                                }}
+                                key={vendor._id}
+                                onClick={() => navigate(`/user/vendor-profile/${vendor._id}`)}
+                                className="relative flex items-center gap-4 rounded-2xl bg-white p-4 shadow-lg cursor-pointer hover:shadow-xl transition-all active:scale-[0.98]"
                             >
-                                {!vendor.documents?.profilePicture?.url && (
-                                    <div className="w-full h-full flex items-center justify-center rounded-[8px]">
-                                        <span className="text-3xl">👤</span>
-                                    </div>
+                                {/* Distance Badge - Top Right */}
+                                {userLocation.lat && userLocation.lng && vendor.distance !== null && vendor.distance !== undefined && !isNaN(vendor.distance) && (
+                                    <span className="absolute top-2 right-2 text-xs font-semibold text-white bg-orange-400 px-2.5 py-1 rounded-full whitespace-nowrap z-10">
+                                        {typeof vendor.distance === 'number' ? vendor.distance.toFixed(1) : vendor.distance} km away
+                                    </span>
                                 )}
-                            </div>
 
-                            {/* Vendor Details - Middle Section */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                    <h4 className="font-bold text-gray-800">
-                                    {vendor.name}
-                                </h4>
-                                    {userLocation.lat && userLocation.lng && vendor.distance !== null && vendor.distance !== undefined && !isNaN(vendor.distance) && (
-                                        <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full whitespace-nowrap">
-                                            {vendor.distance <= 50 && "Near Me • "}{typeof vendor.distance === 'number' ? vendor.distance.toFixed(1) : vendor.distance} km away
-                                        </span>
-                                    )}
+                                {/* Vendor Image - Circular with colored background */}
+                                <div className="relative shrink-0">
+                                    <div
+                                        className="h-20 w-20 rounded-full bg-cover bg-center bg-no-repeat border-4 border-white shadow-md"
+                                        style={{
+                                            backgroundImage: vendor.documents?.profilePicture?.url
+                                                ? `url("${vendor.documents.profilePicture.url}")`
+                                                : "none",
+                                            backgroundColor: vendor.documents?.profilePicture?.url ? "transparent" : bgColor
+                                        }}
+                                    >
+                                        {!vendor.documents?.profilePicture?.url && (
+                                            <div className="w-full h-full flex items-center justify-center rounded-full">
+                                                <span className="text-3xl">👤</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <p className="text-sm text-gray-500 mb-1.5">
-                                    {vendor.category || vendor.serviceTags?.[0] || "General Services"}
-                                </p>
-                                <div className="flex items-center gap-1 text-sm">
-                                    <span className="material-symbols-outlined text-base text-yellow-500">star</span>
-                                    <span className="font-bold text-gray-800">
-                                        {vendor.averageRating?.toFixed(1) || "0.0"}
-                                    </span>
-                                    <span className="text-gray-500">
-                                        ({vendor.totalRatings || 0})
-                                    </span>
+
+                                {/* Vendor Details - Middle Section */}
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-bold text-gray-800 text-base mb-1">
+                                        {vendor.name}
+                                    </h4>
+                                    <p className="text-sm text-gray-500 mb-1.5">
+                                        {vendor.experience ? `${vendor.experience} years Experience` : (vendor.category || vendor.serviceTags?.[0] || "General")}
+                                    </p>
+                                    <div className="flex items-center gap-1 text-sm">
+                                        <IoStarOutline className="text-base text-yellow-500" />
+                                        <span className="font-bold text-gray-800">
+                                            {vendor.averageRating?.toFixed(1) || "0.0"}
+                                        </span>
+                                        <span className="text-gray-500">
+                                            ({vendor.totalRatings || 0})
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
 

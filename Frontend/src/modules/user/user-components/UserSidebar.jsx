@@ -55,20 +55,30 @@ export default function UserSidebar({ isOpen, onClose, navItems }) {
               key={id}
               to={to}
               onClick={onClose}
-              className="flex items-center gap-3 p-3 rounded-xl text-gray-700 hover:bg-blue-50 hover:text-[#0A84FF]"
+              className={({ isActive }) =>
+                `flex items-center gap-3 p-3 rounded-xl transition-all ${
+                  isActive
+                    ? "bg-blue-50 text-gray-800"
+                    : "text-gray-700 hover:bg-blue-50"
+                }`
+              }
             >
-              <Icon className="text-xl text-[#0A84FF]" />
-              {label}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-500 flex-shrink-0">
+                <Icon className="text-xl text-white" />
+              </div>
+              <span className="text-base font-medium">{label}</span>
             </NavLink>
           ))}
           
           {/* Logout Button */}
           <button
             onClick={handleLogoutClick}
-            className="flex items-center gap-3 p-3 rounded-xl text-red-600 hover:bg-red-50 mt-auto"
+            className="flex items-center gap-3 p-3 rounded-xl text-red-600 hover:bg-red-50 mt-auto transition-all"
           >
-            <IoLogOutOutline className="text-xl" />
-            Logout
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500 flex-shrink-0">
+              <IoLogOutOutline className="text-xl text-white" />
+            </div>
+            <span className="text-base font-medium">Logout</span>
           </button>
         </nav>
       </aside>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
     IoChevronBackOutline,
     IoChevronDownOutline,
+    IoStarOutline,
 } from "react-icons/io5";
 import { getNearbyVendors } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -78,25 +79,18 @@ export default function UserServiceProvider() {
     };
 
     const renderStars = (rating) => {
-        const fullStars = Math.floor(rating || 0);
-        const hasHalfStar = (rating || 0) % 1 >= 0.5;
-        const stars = [];
-        for (let i = 0; i < 5; i++) {
+        const ratingValue = rating || 0;
+        const fullStars = Math.floor(ratingValue);
+        const hasHalfStar = ratingValue % 1 >= 0.5;
+        return [...Array(5)].map((_, i) => {
             if (i < fullStars) {
-                stars.push(
-                    <span key={i} className="material-symbols-outlined text-base text-yellow-500">star</span>
-                );
+                return <IoStarOutline key={i} className="text-base text-yellow-500" style={{ fill: '#CA8A04' }} />;
             } else if (i === fullStars && hasHalfStar) {
-                stars.push(
-                    <span key={i} className="material-symbols-outlined text-base text-yellow-500">star_half</span>
-                );
+                return <IoStarOutline key={i} className="text-base text-yellow-500" style={{ fill: '#CA8A04', opacity: 0.5 }} />;
             } else {
-                stars.push(
-                    <span key={i} className="material-symbols-outlined text-base text-gray-300">star</span>
-                );
+                return <IoStarOutline key={i} className="text-base text-yellow-500" style={{ fill: '#CA8A04', opacity: 0.3 }} />;
             }
-        }
-        return stars;
+        });
     };
 
     const formatPrice = (price) => {
@@ -132,49 +126,6 @@ export default function UserServiceProvider() {
                 />
             </div>
 
-            {/* Filter Bar */}
-            <div className="flex gap-2 p-4 pt-0 overflow-x-auto w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] mb-4">
-                <button
-                    onClick={() => handleFilterChange("serviceType", "")}
-                    className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-4 pr-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${filters.serviceType === ""
-                            ? "bg-[#1A80E5] text-white"
-                            : "bg-white text-[#3A3A3A]"
-                        }`}
-                >
-                    <p className="text-sm font-medium leading-normal">Service type</p>
-                    <IoChevronDownOutline className="text-xl" />
-                </button>
-                <button
-                    onClick={() => handleFilterChange("price", "")}
-                    className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-4 pr-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${filters.price === ""
-                            ? "bg-[#1A80E5] text-white"
-                            : "bg-white text-[#3A3A3A]"
-                        }`}
-                >
-                    <p className="text-sm font-medium leading-normal">Price</p>
-                    <IoChevronDownOutline className="text-xl" />
-                </button>
-                <button
-                    onClick={() => handleFilterChange("rating", "")}
-                    className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-4 pr-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${filters.rating === ""
-                            ? "bg-[#1A80E5] text-white"
-                            : "bg-white text-[#3A3A3A]"
-                        }`}
-                >
-                    <p className="text-sm font-medium leading-normal">Rating</p>
-                    <IoChevronDownOutline className="text-xl" />
-                </button>
-                <button
-                    onClick={() => handleFilterChange("experience", "")}
-                    className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-4 pr-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${filters.experience === ""
-                            ? "bg-[#1A80E5] text-white"
-                            : "bg-white text-[#3A3A3A]"
-                        }`}
-                >
-                    <p className="text-sm font-medium leading-normal">Experience</p>
-                    <IoChevronDownOutline className="text-xl" />
-                </button>
-            </div>
 
             {/* Vendor List */}
             <div className="flex flex-col gap-4 px-4">
@@ -183,80 +134,97 @@ export default function UserServiceProvider() {
                         <p className="text-[#4A4A4A] text-sm">No vendors available</p>
                     </div>
                 ) : (
-                    vendors.map((vendor) => (
-                        <div
-                            key={vendor._id}
-                            className="flex flex-col gap-4 rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-                        >
-                            {/* Vendor Header */}
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="shrink-0">
-                                    <div
-                                        className="w-20 h-20 bg-center bg-no-repeat bg-cover rounded-lg"
-                                        style={{
-                                            backgroundImage: vendor.documents?.profilePicture?.url
-                                                ? `url("${vendor.documents.profilePicture.url}")`
-                                                : "none",
-                                            backgroundColor: vendor.documents?.profilePicture?.url ? "transparent" : "#E5E7EB"
-                                        }}
-                                    >
-                                        {!vendor.documents?.profilePicture?.url && (
-                                            <div className="w-full h-full flex items-center justify-center">
-                                                <span className="text-2xl">👤</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex flex-1 flex-col gap-1">
-                                    <p className="text-[#3A3A3A] text-base font-bold leading-tight truncate">
-                                        {vendor.name}
-                                    </p>
-                                    <div className="flex items-center gap-1 text-yellow-500">
-                                        {renderStars(vendor.averageRating)}
-                                        <span className="text-[#3A3A3A]/60 text-xs font-medium ml-1">
-                                            ({vendor.averageRating?.toFixed(1) || "0.0"})
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                    vendors.map((vendor, index) => {
+                        // Generate different colored backgrounds for profile pictures
+                        const colors = ['#B3E5FC', '#FFEB3B', '#C8E6C9', '#FFCCBC', '#E1BEE7'];
+                        const bgColor = colors[index % colors.length];
+                        
+                        return (
+                            <div
+                                key={vendor._id}
+                                className="relative flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-lg"
+                            >
+                                {/* Distance Badge - Top Right */}
+                                {userLocation.lat && userLocation.lng && vendor.distance !== null && vendor.distance !== undefined && !isNaN(vendor.distance) && (
+                                    <span className="absolute top-2 right-2 text-xs font-semibold text-white bg-orange-400 px-2.5 py-1 rounded-full whitespace-nowrap z-10">
+                                        {typeof vendor.distance === 'number' ? vendor.distance.toFixed(1) : vendor.distance} km away
+                                    </span>
+                                )}
 
-                            {/* Service Tags */}
-                            {vendor.serviceTags && vendor.serviceTags.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {vendor.serviceTags.map((tag, index) => (
-                                        <span
-                                            key={index}
-                                            className="text-xs font-medium text-[#1A80E5] bg-[#1A80E5]/10 px-3 py-1 rounded-full"
+                                {/* Vendor Header - Profile Picture and Name */}
+                                <div className="flex items-start gap-3 overflow-hidden">
+                                    {/* Circular Profile Picture */}
+                                    <div className="relative shrink-0">
+                                        <div
+                                            className="h-20 w-20 rounded-full bg-cover bg-center bg-no-repeat border-4 border-white shadow-md"
+                                            style={{
+                                                backgroundImage: vendor.documents?.profilePicture?.url
+                                                    ? `url("${vendor.documents.profilePicture.url}")`
+                                                    : "none",
+                                                backgroundColor: vendor.documents?.profilePicture?.url ? "transparent" : bgColor
+                                            }}
                                         >
-                                            {tag}
-                                        </span>
-                                    ))}
+                                            {!vendor.documents?.profilePicture?.url && (
+                                                <div className="w-full h-full flex items-center justify-center rounded-full">
+                                                    <span className="text-3xl">👤</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {/* Name and Rating */}
+                                    <div className={`flex flex-1 flex-col gap-1 min-w-0 ${userLocation.lat && userLocation.lng && vendor.distance !== null && vendor.distance !== undefined && !isNaN(vendor.distance) ? 'pr-24' : ''}`}>
+                                        <p className="text-gray-800 text-base font-bold leading-tight truncate">
+                                            {vendor.name}
+                                        </p>
+                                        <div className="flex items-center gap-1">
+                                            {renderStars(vendor.averageRating || 0)}
+                                            <span className="text-gray-600 text-xs font-medium ml-1">
+                                                ({vendor.averageRating?.toFixed(1) || "0.0"})
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
 
-                            {/* Price, Experience, and View Profile Button */}
-                            <div className="flex items-center justify-between mt-2">
+                                {/* Service Tags */}
+                                {vendor.serviceTags && vendor.serviceTags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {vendor.serviceTags.map((tag, tagIndex) => (
+                                            <span
+                                                key={tagIndex}
+                                                className="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full"
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Price and Experience */}
                                 <div className="flex flex-col gap-1">
-                                    <p className="text-sm text-[#3A3A3A]/80">
-                                        Starts from: <span className="font-bold text-[#3A3A3A]">
+                                    <p className="text-sm text-gray-600">
+                                        Starts from: <span className="font-bold text-gray-800">
                                             {formatPrice(vendor.minPrice)}
                                         </span>
                                     </p>
                                     {vendor.experience && (
-                                        <p className="text-xs text-[#3A3A3A]/60">
+                                        <p className="text-xs text-gray-500">
                                             {vendor.experience} years experience
                                         </p>
                                     )}
                                 </div>
+
+                                {/* View Profile Button - Moved to Bottom */}
                                 <button
                                     onClick={() => navigate(`/user/vendor-profile/${vendor._id}`)}
-                                    className="flex min-w-[100px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-5 bg-[#1A80E5] text-white text-sm font-medium leading-normal shrink-0"
+                                    className="relative flex items-center justify-center bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] text-[#1976D2] px-3 py-2 rounded-xl text-xs font-semibold hover:from-[#90CAF9] hover:via-[#BBDEFB] hover:to-[#64B5F6] transition-all shadow-md hover:shadow-lg active:scale-[0.98] overflow-hidden w-full"
                                 >
-                                    <span className="truncate">View Profile</span>
+                                    {/* Glossy/Highlight Effect */}
+                                    <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                                    <span className="relative z-10">View Profile</span>
                                 </button>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </div>
