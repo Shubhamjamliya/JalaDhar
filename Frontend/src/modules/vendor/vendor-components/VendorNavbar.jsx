@@ -7,12 +7,12 @@ import {
     IoWalletOutline,
     IoPersonOutline,
     IoMenuOutline,
-    IoNotificationsOutline,
     IoLogOutOutline,
     IoStarOutline,
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
+import NotificationDropdown from "../../../components/NotificationDropdown";
 
 import VendorSidebar from "./VendorSidebar";
 import logo from "../../../assets/logo.png";
@@ -117,7 +117,7 @@ export default function VendorNavbar() {
                         </span>
                     )}
 
-                    <IoNotificationsOutline className="text-2xl text-[#0A84FF] md:text-2xl cursor-pointer hover:opacity-80 transition-opacity" />
+                    <NotificationDropdown />
 
                     {/* Logout Button - Desktop Only */}
                     <button

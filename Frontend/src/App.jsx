@@ -9,6 +9,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { VendorAuthProvider } from "./contexts/VendorAuthContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import VendorProtectedRoute from "./components/VendorProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
@@ -71,7 +72,8 @@ function App() {
             <AuthProvider>
                 <VendorAuthProvider>
                     <AdminAuthProvider>
-                        <Router>
+                        <NotificationProvider>
+                            <Router>
                             <Routes>
                                 {/* ---------- USER AUTH ---------- */}
                                 <Route
@@ -524,7 +526,8 @@ function App() {
                                     }
                                 />
                             </Routes>
-                        </Router>
+                            </Router>
+                        </NotificationProvider>
                     </AdminAuthProvider>
                 </VendorAuthProvider>
             </AuthProvider>

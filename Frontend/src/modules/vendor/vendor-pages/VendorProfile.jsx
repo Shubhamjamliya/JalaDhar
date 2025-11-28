@@ -30,8 +30,9 @@ import {
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
+import { useToast } from "../../../hooks/useToast";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 
 // Get API key at module level
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
@@ -39,16 +40,19 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 export default function VendorProfile() {
     const navigate = useNavigate();
     const { logout, vendor: authVendor } = useVendorAuth();
+    const toast = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [vendor, setVendor] = useState(null);
     const [services, setServices] = useState([]);
     const [isAddingService, setIsAddingService] = useState(false);
     const [editingServiceId, setEditingServiceId] = useState(null);
     const [previewingService, setPreviewingService] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [serviceToDelete, setServiceToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [serviceFormData, setServiceFormData] = useState({
         name: "",
         description: "",
@@ -163,7 +167,7 @@ export default function VendorProfile() {
         }));
         
         setFullAddress(selectedFormattedAddress);
-        setSuccess("Address auto-filled from selected location");
+        toast.showSuccess("Address auto-filled from selected location");
     };
 
     // Get current location using browser geolocation API
@@ -175,7 +179,6 @@ export default function VendorProfile() {
 
         setGettingLocation(true);
         setError("");
-        setSuccess("");
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -234,7 +237,7 @@ export default function VendorProfile() {
                 }
 
                 setFullAddress(formattedAddress);
-                setSuccess("Location found! Address auto-filled.");
+                toast.showSuccess("Location found! Address auto-filled.");
                 setGettingLocation(false);
             },
             (error) => {
@@ -256,7 +259,6 @@ export default function VendorProfile() {
         try {
             setSaving(true);
             setError("");
-            setSuccess("");
 
             // If user manually typed address but didn't select from autocomplete,
             // store fullAddress in geoLocation as fallback
@@ -293,7 +295,7 @@ export default function VendorProfile() {
                     }
                 }
 
-                setSuccess("Profile updated successfully!");
+                toast.showSuccess("Profile updated successfully!");
         setIsEditing(false);
                 await loadProfile();
             } else {
@@ -321,7 +323,7 @@ export default function VendorProfile() {
                         response.data.profilePicture?.url ||
                         response.data.profilePicture,
                 });
-                setSuccess("Profile picture updated successfully!");
+                toast.showSuccess("Profile picture updated successfully!");
             } else {
                 setError(
                     response.message || "Failed to upload profile picture"
@@ -366,7 +368,6 @@ export default function VendorProfile() {
     const handleAddService = async () => {
         try {
             setError("");
-            setSuccess("");
 
             if (
                 !serviceFormData.name ||
@@ -402,7 +403,7 @@ export default function VendorProfile() {
             const response = await addService(formData);
 
             if (response.success) {
-                setSuccess("Service added successfully!");
+                toast.showSuccess("Service added successfully!");
                 setIsAddingService(false);
                 setServiceFormData({
                     name: "",
@@ -450,7 +451,6 @@ export default function VendorProfile() {
     const handleUpdateService = async () => {
         try {
             setError("");
-            setSuccess("");
 
             if (
                 !serviceFormData.name ||
@@ -488,7 +488,7 @@ export default function VendorProfile() {
                     await uploadServiceImages(editingServiceId, imageFiles);
                 }
 
-                setSuccess("Service updated successfully!");
+                toast.showSuccess("Service updated successfully!");
                 setIsAddingService(false);
                 setEditingServiceId(null);
                 setServiceFormData({
@@ -514,25 +514,37 @@ export default function VendorProfile() {
         }
     };
 
-    const handleDeleteService = async (serviceId) => {
-        if (!window.confirm("Are you sure you want to delete this service?")) {
-            return;
-        }
+    const handleDeleteService = (serviceId) => {
+        setServiceToDelete(serviceId);
+        setShowDeleteConfirm(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!serviceToDelete) return;
 
         try {
-            const response = await deleteService(serviceId);
+            setIsDeleting(true);
+            const response = await deleteService(serviceToDelete);
             if (response.success) {
-                setSuccess("Service deleted successfully!");
+                toast.showSuccess("Service deleted successfully!");
+                setShowDeleteConfirm(false);
+                setServiceToDelete(null);
                 // Reload services
                 const servicesResponse = await getMyServices();
                 if (servicesResponse.success) {
                     setServices(servicesResponse.data.services || []);
+                }
+                // Close preview modal if it was open
+                if (previewingService && previewingService._id === serviceToDelete) {
+                    setPreviewingService(null);
                 }
             } else {
                 setError(response.message || "Failed to delete service");
             }
         } catch (err) {
             setError("Failed to delete service. Please try again.");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -562,7 +574,6 @@ export default function VendorProfile() {
     return (
         <PageContainer>
             <ErrorMessage message={error} />
-            <SuccessMessage message={success} />
 
             {/* Back Button */}
             <button
@@ -1085,7 +1096,39 @@ export default function VendorProfile() {
                                                 }
                                                 className="peer sr-only"
                                                 type="checkbox"
-                                                readOnly
+                                                onChange={async (e) => {
+                                                    if (isAddingService || editingServiceId !== null) {
+                                                        e.preventDefault();
+                                                        return;
+                                                    }
+                                                    try {
+                                                        const newActiveStatus = e.target.checked;
+                                                        const response = await updateService(service._id, {
+                                                            isActive: newActiveStatus
+                                                        });
+                                                        if (response.success) {
+                                                            toast.showSuccess(
+                                                                newActiveStatus 
+                                                                    ? "Service activated successfully!" 
+                                                                    : "Service deactivated successfully!"
+                                                            );
+                                                            // Reload services
+                                                            const servicesResponse = await getMyServices();
+                                                            if (servicesResponse.success) {
+                                                                setServices(servicesResponse.data.services || []);
+                                                            }
+                                                        } else {
+                                                            setError(response.message || "Failed to update service status");
+                                                            // Revert the toggle
+                                                            e.target.checked = !newActiveStatus;
+                                                        }
+                                                    } catch (err) {
+                                                        setError("Failed to update service status. Please try again.");
+                                                        // Revert the toggle
+                                                        e.target.checked = !e.target.checked;
+                                                    }
+                                                }}
+                                                disabled={isAddingService || editingServiceId !== null}
                                             />
                                             <div
                                                 className={`slider peer h-6 w-10 rounded-full after:absolute after:top-[4px] after:left-[4px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:content-[''] peer-focus:outline-none transition-all ${
@@ -1382,16 +1425,8 @@ export default function VendorProfile() {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    if (
-                                        window.confirm(
-                                            "Are you sure you want to delete this service?"
-                                        )
-                                    ) {
-                                        handleDeleteService(
-                                            previewingService._id
-                                        );
-                                        setPreviewingService(null);
-                                    }
+                                    handleDeleteService(previewingService._id);
+                                    setPreviewingService(null);
                                 }}
                                 className="bg-red-500 text-white py-3.5 px-6 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
                                 disabled={
@@ -1416,6 +1451,22 @@ export default function VendorProfile() {
                     onClick={handleLogout}
                 />
             </div>
+
+            {/* Delete Service Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showDeleteConfirm}
+                onClose={() => {
+                    setShowDeleteConfirm(false);
+                    setServiceToDelete(null);
+                }}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Service"
+                message="Are you sure you want to delete this service? This action cannot be undone and the service will be permanently removed from the database."
+                confirmText="Yes, Delete"
+                cancelText="Cancel"
+                confirmColor="danger"
+                isLoading={isDeleting}
+            />
         </PageContainer>
     );
 }

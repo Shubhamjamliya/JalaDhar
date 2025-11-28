@@ -170,10 +170,9 @@ export default function AdminApprovals() {
     const handleApproveTravelCharges = async (bookingId) => {
         try {
             setError("");
-            setSuccess("");
             const response = await approveTravelCharges(bookingId);
             if (response.success) {
-                setSuccess("Travel charges request approved successfully!");
+                toast.showSuccess("Travel charges request approved successfully!");
                 await loadData();
             } else {
                 setError(response.message || "Failed to approve travel charges");
@@ -192,10 +191,9 @@ export default function AdminApprovals() {
 
         try {
             setError("");
-            setSuccess("");
             const response = await rejectTravelCharges(bookingId, { rejectionReason: rejectionReason.trim() });
             if (response.success) {
-                setSuccess("Travel charges request rejected successfully!");
+                toast.showSuccess("Travel charges request rejected successfully!");
                 setShowModal(false);
                 setRejectionReason("");
                 await loadData();
@@ -274,10 +272,9 @@ export default function AdminApprovals() {
 
         try {
             setError("");
-            setSuccess("");
             const response = await rejectReport(bookingId, { rejectionReason: rejectionReason.trim() });
             if (response.success) {
-                setSuccess("Report rejected successfully! Vendor can re-upload the report.");
+                toast.showSuccess("Report rejected successfully! Vendor can re-upload the report.");
                 setShowModal(false);
                 setRejectionReason("");
                 setSelectedBooking(null);
@@ -295,10 +292,9 @@ export default function AdminApprovals() {
     const handleApproveBorewell = async (booking, approved) => {
         try {
             setError("");
-            setSuccess("");
             const response = await approveBorewellResult(booking._id, { approved });
             if (response.success) {
-                setSuccess(`Borewell result ${approved ? "approved as SUCCESS" : "approved as FAILED"} successfully!`);
+                toast.showSuccess(`Borewell result ${approved ? "approved as SUCCESS" : "approved as FAILED"} successfully!`);
                 setShowModal(false);
                 setSelectedBooking(null);
                 await loadData();
@@ -374,7 +370,6 @@ export default function AdminApprovals() {
                         onClick={() => {
                             setActiveApprovalType("travel-charges");
                             setError("");
-                            setSuccess("");
                             setTravelChargesPagination({ ...travelChargesPagination, currentPage: 1 });
                         }}
                         className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${
@@ -395,7 +390,6 @@ export default function AdminApprovals() {
                         onClick={() => {
                             setActiveApprovalType("report");
                             setError("");
-                            setSuccess("");
                             setReportPagination({ ...reportPagination, currentPage: 1 });
                         }}
                         className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${
@@ -415,7 +409,6 @@ export default function AdminApprovals() {
                         onClick={() => {
                             setActiveApprovalType("borewell");
                             setError("");
-                            setSuccess("");
                             setBorewellPagination({ ...borewellPagination, currentPage: 1 });
                         }}
                         className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${

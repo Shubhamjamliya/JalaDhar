@@ -7,11 +7,11 @@ import {
     IoCalendarOutline,
     IoPersonCircleOutline,
     IoMenuOutline,
-    IoNotificationsOutline,
     IoLogOutOutline,
 } from "react-icons/io5";
 import { useAuth } from "../../../contexts/AuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
+import NotificationDropdown from "../../../components/NotificationDropdown";
 
 import UserSidebar from "./UserSidebar";
 import logo from "../../../assets/logo.png"; // Replace with your logo
@@ -111,7 +111,7 @@ export default function UserNavbar() {
                         </span>
                     )}
                     
-                    <IoNotificationsOutline className="text-2xl text-[#0A84FF] md:text-2xl cursor-pointer hover:opacity-80 transition-opacity" />
+                    <NotificationDropdown />
                     
                     {/* Logout Button - Desktop Only */}
                     <button

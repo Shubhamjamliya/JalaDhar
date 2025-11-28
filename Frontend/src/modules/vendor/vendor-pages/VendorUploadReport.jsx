@@ -11,15 +11,15 @@ import {
 import { getBookingDetails, uploadVisitReport } from "../../../services/vendorApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
+import { useToast } from "../../../hooks/useToast";
 
 export default function VendorUploadReport() {
     const navigate = useNavigate();
     const { bookingId } = useParams();
+    const toast = useToast();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [booking, setBooking] = useState(null);
 
     const [formData, setFormData] = useState({
@@ -107,7 +107,6 @@ export default function VendorUploadReport() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        setSuccess("");
 
         // Validation
         if (!formData.waterFound) {
@@ -142,7 +141,7 @@ export default function VendorUploadReport() {
             const response = await uploadVisitReport(bookingId, reportFormData);
 
             if (response.success) {
-                setSuccess("Report uploaded successfully! User will be notified to pay the remaining amount.");
+                toast.showSuccess("Report uploaded successfully! User will be notified to pay the remaining amount.");
                 setTimeout(() => {
                     navigate(`/vendor/bookings/${bookingId}`);
                 }, 2000);
@@ -195,7 +194,6 @@ export default function VendorUploadReport() {
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <ErrorMessage message={error} />
-            <SuccessMessage message={success} />
 
             {/* Back Button */}
             <button

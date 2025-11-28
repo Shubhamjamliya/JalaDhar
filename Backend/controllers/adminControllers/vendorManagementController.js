@@ -211,6 +211,30 @@ const approveVendor = async (req, res) => {
       name: vendor.name
     });
 
+    // Send real-time notification
+    try {
+      const { sendNotification } = require('../../services/notificationService');
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      
+      await sendNotification({
+        recipient: vendor._id,
+        recipientModel: 'Vendor',
+        type: 'VENDOR_APPROVED',
+        title: 'Account Approved',
+        message: 'Congratulations! Your vendor account has been approved. You can now accept bookings.',
+        relatedEntity: {
+          entityType: 'Vendor',
+          entityId: vendor._id
+        },
+        metadata: {
+          approvedAt: vendor.approvedAt
+        }
+      }, io);
+    } catch (notifError) {
+      console.error('Notification error:', notifError);
+    }
+
     res.json({
       success: true,
       message: 'Vendor approved successfully',
@@ -287,6 +311,30 @@ const rejectVendor = async (req, res) => {
       name: vendor.name,
       rejectionReason: vendor.rejectionReason
     });
+
+    // Send real-time notification
+    try {
+      const { sendNotification } = require('../../services/notificationService');
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      
+      await sendNotification({
+        recipient: vendor._id,
+        recipientModel: 'Vendor',
+        type: 'VENDOR_REJECTED',
+        title: 'Account Rejected',
+        message: `Your vendor account application has been rejected. Reason: ${vendor.rejectionReason}`,
+        relatedEntity: {
+          entityType: 'Vendor',
+          entityId: vendor._id
+        },
+        metadata: {
+          rejectionReason: vendor.rejectionReason
+        }
+      }, io);
+    } catch (notifError) {
+      console.error('Notification error:', notifError);
+    }
 
     res.json({
       success: true,

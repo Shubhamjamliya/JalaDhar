@@ -3,6 +3,7 @@ const { BOOKING_STATUS } = require('../../utils/constants');
 const { uploadToCloudinary } = require('../../services/cloudinaryService');
 const { Readable } = require('stream');
 const { sendBookingStatusUpdateEmail } = require('../../services/emailService');
+const { sendNotification } = require('../../services/notificationService');
 
 /**
  * Get vendor bookings
@@ -100,6 +101,30 @@ const acceptBooking = async (req, res) => {
         status: 'ACCEPTED',
         message: 'Vendor has accepted your booking request'
       });
+
+      // Send real-time notification
+      try {
+        const { getIO } = require('../../sockets');
+        const io = getIO();
+        await sendNotification({
+          recipient: booking.user._id,
+          recipientModel: 'User',
+          type: 'BOOKING_ACCEPTED',
+          title: 'Booking Accepted',
+          message: `Your booking has been accepted by ${booking.vendor?.name || 'vendor'}`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            vendorName: booking.vendor?.name,
+            bookingId: booking._id.toString()
+          }
+        }, io);
+      } catch (socketError) {
+        console.error('Socket notification error:', socketError);
+        // Continue even if Socket.io fails
+      }
     } catch (emailError) {
       console.error('Email notification error:', emailError);
     }
@@ -180,6 +205,30 @@ const rejectBooking = async (req, res) => {
         status: 'REJECTED',
         message: `Vendor has rejected your booking. Reason: ${rejectionReason}`
       });
+
+      // Send real-time notification
+      try {
+        const { getIO } = require('../../sockets');
+        const io = getIO();
+        await sendNotification({
+          recipient: booking.user._id,
+          recipientModel: 'User',
+          type: 'BOOKING_REJECTED',
+          title: 'Booking Rejected',
+          message: `Your booking has been rejected. Reason: ${rejectionReason}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          rejectionReason: rejectionReason,
+          bookingId: booking._id.toString()
+        }
+      }, io);
+      } catch (socketError) {
+        console.error('Socket notification error:', socketError);
+        // Continue even if Socket.io fails
+      }
     } catch (emailError) {
       console.error('Email notification error:', emailError);
     }
@@ -241,6 +290,29 @@ const markAsVisited = async (req, res) => {
         status: 'VISITED',
         message: 'Vendor has visited your location'
       });
+
+      // Send real-time notification
+      try {
+        const { getIO } = require('../../sockets');
+        const io = getIO();
+        await sendNotification({
+          recipient: booking.user._id,
+          recipientModel: 'User',
+          type: 'BOOKING_VISITED',
+          title: 'Vendor Visited',
+          message: `Vendor has visited your location`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            bookingId: booking._id.toString()
+          }
+        }, io);
+      } catch (socketError) {
+        console.error('Socket notification error:', socketError);
+        // Continue even if Socket.io fails
+      }
     } catch (emailError) {
       console.error('Email notification error:', emailError);
     }
@@ -341,7 +413,7 @@ const markVisitedAndUploadReport = async (req, res) => {
     booking.userStatus = BOOKING_STATUS.AWAITING_PAYMENT;
     await booking.save();
 
-    // Send notification to user
+    // Send notification to user and admin
     try {
       await sendBookingStatusUpdateEmail({
         email: booking.user.email,
@@ -350,6 +422,53 @@ const markVisitedAndUploadReport = async (req, res) => {
         status: 'REPORT_UPLOADED',
         message: 'Your water detection report is ready. Please pay the remaining amount to view it.'
       });
+
+      // Send real-time notifications
+      try {
+        const { getIO } = require('../../sockets');
+        const io = getIO();
+        
+        // Notify user
+        await sendNotification({
+        recipient: booking.user._id,
+        recipientModel: 'User',
+        type: 'REPORT_UPLOADED',
+        title: 'Report Ready',
+        message: `Water detection report is ready. Please pay remaining ₹${booking.payment.remainingAmount} to view it.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          remainingAmount: booking.payment.remainingAmount,
+          bookingId: booking._id.toString()
+        }
+      }, io);
+
+      // Notify admin (get all admins)
+      const Admin = require('../../models/Admin');
+      const admins = await Admin.find({ isActive: true });
+      for (const admin of admins) {
+        await sendNotification({
+          recipient: admin._id,
+          recipientModel: 'Admin',
+          type: 'REPORT_UPLOADED',
+          title: 'New Report Uploaded',
+          message: `New water detection report uploaded for booking #${booking._id.toString().slice(-6)}`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            bookingId: booking._id.toString(),
+            vendorId: booking.vendor.toString()
+          }
+        }, io);
+      }
+      } catch (socketError) {
+        console.error('Socket notification error:', socketError);
+        // Continue even if Socket.io fails
+      }
     } catch (emailError) {
       console.error('Email notification error:', emailError);
     }

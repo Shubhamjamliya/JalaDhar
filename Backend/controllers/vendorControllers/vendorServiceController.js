@@ -414,10 +414,6 @@ const deleteService = async (req, res) => {
       }
     }
 
-    // Soft delete - set isActive to false
-    service.isActive = false;
-    await service.save();
-
     // Remove from vendor's services array
     const vendor = await Vendor.findById(vendorId);
     if (vendor) {
@@ -426,6 +422,9 @@ const deleteService = async (req, res) => {
       );
       await vendor.save();
     }
+
+    // Hard delete - actually delete the service from database
+    await Service.findByIdAndDelete(serviceId);
 
     res.json({
       success: true,

@@ -4,6 +4,8 @@ const { PAYMENT_STATUS, BOOKING_STATUS } = require('../../utils/constants');
 const { verifyPayment, getPaymentDetails } = require('../../services/razorpayService');
 const { generateInvoice } = require('../../services/pdfService');
 const { sendPaymentConfirmationEmail } = require('../../services/emailService');
+const { sendNotification } = require('../../services/notificationService');
+const { getIO } = require('../../sockets');
 
 /**
  * Verify and process advance payment
@@ -97,6 +99,44 @@ const verifyAdvancePayment = async (req, res) => {
         amount: booking.payment.advanceAmount,
         paymentType: 'Advance Payment'
       });
+
+      // Send real-time notifications
+      const io = getIO();
+      
+      // Notify user
+      await sendNotification({
+        recipient: booking.user._id,
+        recipientModel: 'User',
+        type: 'PAYMENT_ADVANCE_SUCCESS',
+        title: 'Advance Payment Successful',
+        message: `Advance payment of ₹${booking.payment.advanceAmount} completed successfully. Booking assigned to vendor.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          amount: booking.payment.advanceAmount,
+          bookingId: booking._id.toString()
+        }
+      }, io);
+
+      // Notify vendor
+      await sendNotification({
+        recipient: booking.vendor._id,
+        recipientModel: 'Vendor',
+        type: 'BOOKING_ASSIGNED',
+        title: 'New Booking Assigned',
+        message: `User has paid advance payment. Booking assigned to you.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          userName: booking.user.name,
+          serviceName: booking.service.name,
+          bookingId: booking._id.toString()
+        }
+      }, io);
     } catch (emailError) {
       console.error('Email notification error:', emailError);
     }
@@ -228,6 +268,43 @@ const verifyRemainingPayment = async (req, res) => {
         paymentType: 'Remaining Payment',
         invoiceUrl: booking.invoice?.invoiceUrl
       });
+
+      // Send real-time notifications
+      const io = getIO();
+      
+      // Notify user
+      await sendNotification({
+        recipient: booking.user._id,
+        recipientModel: 'User',
+        type: 'PAYMENT_REMAINING_SUCCESS',
+        title: 'Payment Successful',
+        message: `Remaining payment of ₹${booking.payment.remainingAmount} completed. You can now view your report.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          amount: booking.payment.remainingAmount,
+          bookingId: booking._id.toString()
+        }
+      }, io);
+
+      // Notify vendor
+      await sendNotification({
+        recipient: booking.vendor._id,
+        recipientModel: 'Vendor',
+        type: 'PAYMENT_REMAINING_SUCCESS',
+        title: 'User Payment Completed',
+        message: `User has paid remaining amount of ₹${booking.payment.remainingAmount} for booking #${booking._id.toString().slice(-6)}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          amount: booking.payment.remainingAmount,
+          bookingId: booking._id.toString()
+        }
+      }, io);
     } catch (emailError) {
       console.error('Email notification error:', emailError);
     }

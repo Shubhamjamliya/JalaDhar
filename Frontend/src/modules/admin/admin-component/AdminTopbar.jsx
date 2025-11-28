@@ -1,15 +1,14 @@
 import { useState } from "react";
 import {
     IoMenuOutline,
-    IoNotificationsOutline,
     IoPersonCircleOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import AdminMobileSidebar from "./AdminMobileSidebar";
+import NotificationDropdown from "../../../components/NotificationDropdown";
 
 export default function AdminTopbar() {
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-    const [showNotifications, setShowNotifications] = useState(false);
     const { admin } = useAdminAuth();
 
     return (
@@ -28,35 +27,7 @@ export default function AdminTopbar() {
                     {/* Right Section */}
                     <div className="flex items-center gap-4 ml-auto">
                         {/* Notifications */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setShowNotifications(!showNotifications)}
-                                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                                aria-label="Notifications"
-                            >
-                                <IoNotificationsOutline className="text-2xl text-gray-700" />
-                                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                            </button>
-                            
-                            {showNotifications && (
-                                <>
-                                    <div
-                                        className="fixed inset-0 z-10"
-                                        onClick={() => setShowNotifications(false)}
-                                    ></div>
-                                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-20">
-                                        <div className="p-4 border-b border-gray-200">
-                                            <h3 className="font-semibold text-gray-800">Notifications</h3>
-                                        </div>
-                                        <div className="p-4">
-                                            <p className="text-sm text-gray-500 text-center py-4">
-                                                No new notifications
-                                            </p>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                        <NotificationDropdown />
 
                         {/* Admin Profile */}
                         <div className="flex items-center gap-3 pl-4 border-l border-gray-200">

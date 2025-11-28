@@ -129,7 +129,7 @@ export default function VendorServices() {
             const response = await addService(formDataToSend);
 
             if (response.success) {
-                setSuccess(
+                toast.showSuccess(
                     "Service added successfully! Waiting for admin approval."
                 );
                 setIsAdding(false);
@@ -211,7 +211,7 @@ export default function VendorServices() {
                     await uploadServiceImages(editingId, imageFiles);
                 }
 
-                setSuccess("Service updated successfully!");
+                toast.showSuccess("Service updated successfully!");
                 setIsAdding(false);
                 setEditingId(null);
                 setFormData({

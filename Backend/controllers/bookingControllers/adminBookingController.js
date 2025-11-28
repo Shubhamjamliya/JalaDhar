@@ -3,6 +3,8 @@ const Vendor = require('../../models/Vendor');
 const Payment = require('../../models/Payment');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { sendSettlementNotificationEmail } = require('../../services/emailService');
+const { sendNotification } = require('../../services/notificationService');
+const { getIO } = require('../../sockets');
 
 /**
  * Get all bookings with filters
@@ -166,6 +168,44 @@ const approveBorewellResult = async (req, res) => {
         incentive,
         penalty
       });
+
+      // Send real-time notifications
+      const io = getIO();
+      
+      // Notify user
+      await sendNotification({
+        recipient: booking.user._id,
+        recipientModel: 'User',
+        type: 'BOREWELL_APPROVED',
+        title: 'Borewell Result Approved',
+        message: `Your borewell result has been approved. Final settlement is being processed.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          status: approved ? 'SUCCESS' : 'FAILED'
+        }
+      }, io);
+
+      // Notify vendor
+      await sendNotification({
+        recipient: booking.vendor._id,
+        recipientModel: 'Vendor',
+        type: 'BOREWELL_APPROVED',
+        title: 'Borewell Result Approved',
+        message: `Borewell result for booking #${booking._id.toString().slice(-6)} has been approved. Final settlement pending.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          status: approved ? 'SUCCESS' : 'FAILED',
+          settlementAmount: finalSettlement
+        }
+      }, io);
     } catch (emailError) {
       console.error('Email notification error:', emailError);
     }
@@ -584,6 +624,46 @@ const approveReport = async (req, res) => {
     booking.vendorStatus = BOOKING_STATUS.AWAITING_PAYMENT;
     
     await booking.save();
+
+    // Send notifications to user and vendor
+    try {
+      const io = getIO();
+      
+      // Notify user
+      await sendNotification({
+        recipient: booking.user._id,
+        recipientModel: 'User',
+        type: 'REPORT_APPROVED',
+        title: 'Report Approved',
+        message: `Your water detection report has been approved by admin.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString()
+        }
+      }, io);
+
+      // Notify vendor
+      await sendNotification({
+        recipient: booking.vendor._id,
+        recipientModel: 'Vendor',
+        type: 'REPORT_APPROVED',
+        title: 'Report Approved',
+        message: `Your uploaded report for booking #${booking._id.toString().slice(-6)} has been approved by admin.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString()
+        }
+      }, io);
+    } catch (notifError) {
+      console.error('Notification error:', notifError);
+      // Continue even if notifications fail
+    }
 
     res.json({
       success: true,

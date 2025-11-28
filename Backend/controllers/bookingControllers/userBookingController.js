@@ -6,6 +6,8 @@ const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { createOrder } = require('../../services/razorpayService');
 const { sendBookingConfirmationEmail, sendBookingStatusUpdateEmail } = require('../../services/emailService');
 const { uploadToCloudinary } = require('../../services/cloudinaryService');
+const { sendNotification } = require('../../services/notificationService');
+const { getIO } = require('../../sockets');
 
 /**
  * Get available vendors for a service
@@ -227,6 +229,25 @@ const createBooking = async (req, res) => {
         serviceName: service.name,
         vendorName: vendor.name
       });
+
+      // Send real-time notification to vendor
+      const io = getIO();
+      await sendNotification({
+        recipient: vendorId,
+        recipientModel: 'Vendor',
+        type: 'BOOKING_CREATED',
+        title: 'New Booking Request',
+        message: `New booking request from ${booking.user.name} for ${service.name}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          serviceName: service.name,
+          userName: booking.user.name,
+          scheduledDate: booking.scheduledDate
+        }
+      }, io);
     } catch (emailError) {
       console.error('Email notification error:', emailError);
     }
@@ -485,6 +506,34 @@ const uploadBorewellResult = async (req, res) => {
     booking.userStatus = BOOKING_STATUS.BOREWELL_UPLOADED;
     booking.vendorStatus = BOOKING_STATUS.BOREWELL_UPLOADED;
     await booking.save();
+
+    // Send notification to admin
+    try {
+      const io = getIO();
+      const Admin = require('../../models/Admin');
+      const admins = await Admin.find({ isActive: true });
+      
+      for (const admin of admins) {
+        await sendNotification({
+          recipient: admin._id,
+          recipientModel: 'Admin',
+          type: 'BOREWELL_UPLOADED',
+          title: 'Borewell Result Uploaded',
+          message: `Borewell result uploaded for booking #${booking._id.toString().slice(-6)} - Status: ${status}`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            bookingId: booking._id.toString(),
+            status: status,
+            userId: userId.toString()
+          }
+        }, io);
+      }
+    } catch (notifError) {
+      console.error('Notification error:', notifError);
+    }
 
     res.json({
       success: true,
@@ -980,6 +1029,24 @@ const cancelBooking = async (req, res) => {
         status: 'CANCELLED',
         message: 'User has cancelled the booking'
       });
+
+      // Send real-time notification
+      const io = getIO();
+      await sendNotification({
+        recipient: booking.vendor._id,
+        recipientModel: 'Vendor',
+        type: 'BOOKING_CANCELLED',
+        title: 'Booking Cancelled',
+        message: `Booking #${booking._id.toString().slice(-6)} has been cancelled by user`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          cancellationReason: cancellationReason || 'Cancelled by user'
+        }
+      }, io);
     } catch (emailError) {
       console.error('Email notification error:', emailError);
     }

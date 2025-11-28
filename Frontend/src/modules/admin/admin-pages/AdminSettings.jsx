@@ -11,14 +11,14 @@ import {
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { sendAdminRegistrationOTP, registerAdminWithOTP } from "../../../services/adminApi";
 import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
+import { useToast } from "../../../hooks/useToast";
 
 export default function AdminSettings() {
     const { admin } = useAdminAuth();
+    const toast = useToast();
     const [activeTab, setActiveTab] = useState("general");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
 
     // Admin Registration State
     const [registrationStep, setRegistrationStep] = useState(1); // 1: Enter details, 2: Verify OTP
@@ -53,7 +53,6 @@ export default function AdminSettings() {
     const handleSendOTP = async (e) => {
         e.preventDefault();
         setError("");
-        setSuccess("");
 
         // Validation
         if (!registrationData.name || !registrationData.email || !registrationData.password) {
@@ -87,7 +86,7 @@ export default function AdminSettings() {
                 setOtpSent(true);
                 setRegistrationStep(2);
                 setOtpCountdown(60); // 60 seconds countdown
-                setSuccess("OTP sent to email successfully!");
+                toast.showSuccess("OTP sent to email successfully!");
             } else {
                 setError(response.message || "Failed to send OTP");
             }
@@ -117,7 +116,7 @@ export default function AdminSettings() {
                     otp: "",
                 });
                 setOtpCountdown(60);
-                setSuccess("OTP resent successfully!");
+                toast.showSuccess("OTP resent successfully!");
             } else {
                 setError(response.message || "Failed to resend OTP");
             }
@@ -132,7 +131,6 @@ export default function AdminSettings() {
     const handleRegisterAdmin = async (e) => {
         e.preventDefault();
         setError("");
-        setSuccess("");
 
         if (!otpData.otp || otpData.otp.length !== 6) {
             setError("Please enter a valid 6-digit OTP");
@@ -150,7 +148,7 @@ export default function AdminSettings() {
             });
 
             if (response.success) {
-                setSuccess("Admin registered successfully!");
+                toast.showSuccess("Admin registered successfully!");
                 // Reset form
                 setRegistrationStep(1);
                 setRegistrationData({
@@ -203,7 +201,6 @@ export default function AdminSettings() {
                                         onClick={() => {
                                             setActiveTab(tab.id);
                                             setError("");
-                                            setSuccess("");
                                             if (tab.id !== "register") {
                                                 setRegistrationStep(1);
                                                 setOtpSent(false);
@@ -228,7 +225,6 @@ export default function AdminSettings() {
                 <div className="lg:col-span-3">
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <ErrorMessage message={error} />
-                        <SuccessMessage message={success} />
 
                         {activeTab === "general" && (
                             <div>

@@ -15,16 +15,16 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { loadRazorpay } from "../../../utils/razorpay";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
-import SuccessMessage from "../../shared/components/SuccessMessage";
 import PageContainer from "../../shared/components/PageContainer";
+import { useToast } from "../../../hooks/useToast";
 
 export default function UserAdvancePaymentConfirmation() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuth();
+    const toast = useToast();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [paymentSuccess, setPaymentSuccess] = useState(false);
     
     // Get booking data from navigation state
@@ -45,7 +45,6 @@ export default function UserAdvancePaymentConfirmation() {
         try {
             setLoading(true);
             setError("");
-            setSuccess("");
 
             // Load Razorpay script
             await loadRazorpay();
@@ -69,7 +68,7 @@ export default function UserAdvancePaymentConfirmation() {
 
                         if (verifyResponse.success) {
                             setPaymentSuccess(true);
-                            setSuccess("Booking created successfully! Payment completed.");
+                            toast.showSuccess("Booking created successfully! Payment completed.");
                             setLoading(false);
                             // Navigate after a short delay to show success overlay
                             setTimeout(() => {
@@ -326,7 +325,6 @@ export default function UserAdvancePaymentConfirmation() {
     return (
         <PageContainer>
             <ErrorMessage message={error} />
-            <SuccessMessage message={success} />
 
             {/* Back Button */}
             <button

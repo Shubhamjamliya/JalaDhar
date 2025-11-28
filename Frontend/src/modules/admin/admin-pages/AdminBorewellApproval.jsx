@@ -14,10 +14,12 @@ import {
 import { getBorewellPendingApprovals, approveBorewellResult, processFinalSettlement } from "../../../services/adminApi";
 import { useTheme } from "../../../contexts/ThemeContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import { useToast } from "../../../hooks/useToast";
 
 export default function AdminBorewellApproval() {
     const { theme, themeColors } = useTheme();
     const currentTheme = themeColors[theme] || themeColors.default;
+    const toast = useToast();
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("pending"); // pending, approved, completed
     const [bookings, setBookings] = useState([]);
@@ -27,7 +29,6 @@ export default function AdminBorewellApproval() {
         totalBookings: 0,
     });
     const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [showSettlementModal, setShowSettlementModal] = useState(false);
@@ -70,10 +71,9 @@ export default function AdminBorewellApproval() {
     const handleApprove = async (booking, approved) => {
         try {
             setError("");
-            setSuccess("");
             const response = await approveBorewellResult(booking._id, { approved });
             if (response.success) {
-                setSuccess(`Borewell result ${approved ? "approved as SUCCESS" : "approved as FAILED"} successfully!`);
+                toast.showSuccess(`Borewell result ${approved ? "approved as SUCCESS" : "approved as FAILED"} successfully!`);
                 setShowApproveModal(false);
                 setSelectedBooking(null);
                 await loadBookings();
@@ -91,10 +91,9 @@ export default function AdminBorewellApproval() {
 
         try {
             setError("");
-            setSuccess("");
             const response = await processFinalSettlement(selectedBooking._id, settlementData);
             if (response.success) {
-                setSuccess(response.message || "Final settlement processed successfully!");
+                toast.showSuccess(response.message || "Final settlement processed successfully!");
                 setShowSettlementModal(false);
                 setSelectedBooking(null);
                 setSettlementData({ incentive: 0, penalty: 0, refundAmount: 0 });

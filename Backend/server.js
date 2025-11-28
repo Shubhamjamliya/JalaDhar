@@ -77,6 +77,9 @@ app.use('/api/payments', require('./routes/payment-routes/payment.routes'));
 // Rating routes
 app.use('/api/ratings', require('./routes/rating-routes/rating.routes'));
 
+// Notification routes
+app.use('/api/notifications', require('./routes/notification.routes'));
+
 // 404 handler
 app.use((req, res) => {
   console.log(`[404 HANDLER] Route not found - Method: ${req.method}, Path: ${req.path}, OriginalUrl: ${req.originalUrl}`);
@@ -98,13 +101,17 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server only if not in serverless environment (Vercel)
-// Vercel serverless functions don't need to listen on a port
+// Initialize Socket.io
+let server;
 if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
   const PORT = process.env.PORT || 5000;
-  const server = app.listen(PORT, () => {
+  server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
   });
+
+  // Initialize Socket.io
+  const { initializeSocket } = require('./sockets');
+  initializeSocket(server);
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (err) => {
@@ -113,6 +120,12 @@ if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
       process.exit(1);
     });
   });
+} else {
+  // For Vercel, create HTTP server for Socket.io
+  const http = require('http');
+  server = http.createServer(app);
+  const { initializeSocket } = require('./sockets');
+  initializeSocket(server);
 }
 
 module.exports = app;
