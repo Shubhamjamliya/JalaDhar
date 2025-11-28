@@ -428,7 +428,7 @@ export default function UserStatus() {
 
             {/* Booking Info Card */}
             {currentBooking && (
-                <div className="mb-6 rounded-[12px] bg-white p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                <div className="mb-6 rounded-[12px] bg-white p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border-2 border-[#81D4FA]">
                     <h2 className="text-lg font-bold text-gray-800 mb-2">
                         {currentBooking.service?.name || "Service"}
                     </h2>
@@ -460,7 +460,7 @@ export default function UserStatus() {
 
             {/* Status Timeline */}
             {steps.length === 0 ? (
-                <div className="text-center py-8 bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                <div className="text-center py-8 bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border-2 border-[#81D4FA]">
                     <p className="text-gray-600">No status information available</p>
                 </div>
             ) : (
@@ -497,7 +497,8 @@ export default function UserStatus() {
 
                                 {/* Content */}
                                 <div
-                                    className={`mb-6 rounded-[12px] bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${isActive || isCompleted ? "" : "text-gray-400"
+                                    className={`mb-6 rounded-[12px] bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border-2 ${isActive || isCompleted ? "border-[#81D4FA]" : "border-[#B3E5FC] opacity-60"
+                                        } ${isActive || isCompleted ? "" : "text-gray-400"
                                         }`}
                                 >
                                     <p className="text-base font-bold text-gray-800 mb-1">
@@ -509,9 +510,9 @@ export default function UserStatus() {
                                         </p>
                                     )}
                                     {step.id === "assigned" && vendor && (
-                                        <div className="mb-3 flex items-center gap-3 rounded-[10px] border border-gray-200 p-3">
+                                        <div className="mb-3 flex items-center gap-3 rounded-[10px] border-2 border-[#B3E5FC] bg-gradient-to-br from-[#E3F2FD] to-[#BBDEFB] p-3">
                                             <img
-                                                className="h-12 w-12 rounded-full object-cover"
+                                                className="h-12 w-12 rounded-full object-cover border-2 border-white"
                                                 src={
                                                     vendor.documents?.profilePicture?.url ||
                                                     "https://via.placeholder.com/48"

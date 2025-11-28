@@ -7,6 +7,7 @@ import {
     IoLocationOutline,
     IoCloseOutline,
     IoChevronBackOutline,
+    IoChevronDownOutline,
 } from "react-icons/io5";
 import { createBooking, calculateBookingCharges } from "../../../services/bookingApi";
 import PageContainer from "../../shared/components/PageContainer";
@@ -28,6 +29,7 @@ export default function UserRequestService() {
     const [gettingLocation, setGettingLocation] = useState(false);
     const [chargesBreakdown, setChargesBreakdown] = useState(null);
     const [calculatingCharges, setCalculatingCharges] = useState(false);
+    const [openDropdown, setOpenDropdown] = useState(null); // 'purpose', 'technique', or 'time'
     const [formData, setFormData] = useState({
         scheduledDate: "",
         scheduledTime: "",
@@ -409,6 +411,21 @@ export default function UserRequestService() {
         }
     };
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (openDropdown && !event.target.closest('.relative')) {
+                setOpenDropdown(null);
+            }
+        };
+        if (openDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [openDropdown]);
+
     if (!service || !vendor) {
     return (
             <PageContainer>
@@ -473,20 +490,56 @@ export default function UserRequestService() {
                             className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
                         />
                     </div>
-                    <div>
+                    <div className="relative">
                         <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
                             <IoTimeOutline className="inline text-base mr-1" />
                             Time *
                         </label>
-                        <input
-                            type="time"
-                            value={formData.scheduledTime}
-                            onChange={(e) =>
-                                setFormData({ ...formData, scheduledTime: e.target.value })
-                            }
-                            required
-                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                        />
+                        <button
+                            type="button"
+                            onClick={() => setOpenDropdown(openDropdown === 'time' ? null : 'time')}
+                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-between"
+                        >
+                            <span className={formData.scheduledTime ? "text-gray-800" : "text-gray-400"}>
+                                {formData.scheduledTime 
+                                    ? (() => {
+                                        const [hours, minutes] = formData.scheduledTime.split(':');
+                                        const hour12 = parseInt(hours) % 12 || 12;
+                                        const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
+                                        return `${hour12}:${minutes} ${ampm}`;
+                                    })()
+                                    : "---"
+                                }
+                            </span>
+                            <IoTimeOutline className="text-gray-400" />
+                        </button>
+                        {openDropdown === 'time' && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+                                {Array.from({ length: 24 }, (_, i) => {
+                                    const hour24 = i;
+                                    const hour12 = hour24 % 12 || 12;
+                                    const ampm = hour24 >= 12 ? 'PM' : 'AM';
+                                    const timeValue = `${String(hour24).padStart(2, '0')}:00`;
+                                    const displayTime = `${hour12}:00 ${ampm}`;
+                                    const isSelected = formData.scheduledTime === timeValue;
+                                    
+                                    return (
+                                        <div
+                                            key={timeValue}
+                                            className={`px-4 py-3 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
+                                                isSelected ? 'bg-gray-100 text-blue-600 font-medium' : 'text-gray-800'
+                                            }`}
+                                            onClick={() => {
+                                                setFormData({ ...formData, scheduledTime: timeValue });
+                                                setOpenDropdown(null);
+                                            }}
+                                        >
+                                            {displayTime}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                     </div>
                 </div>
@@ -606,22 +659,49 @@ export default function UserRequestService() {
                         Project Details
                     </h2>
                     {/* Purpose of Bore point checking */}
-                    <div>
+                    <div className="relative">
                     <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
                         Purpose of Bore point checking *
                     </label>
-                    <select
-                        value={formData.purpose}
-                        onChange={(e) => setFormData({ ...formData, purpose: e.target.value, purposeExtent: "" })}
-                        required
-                        className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                    >
-                        <option value="">Select purpose</option>
-                        <option value="Agriculture">Agriculture</option>
-                        <option value="Industrial/Commercial">Industrial/Commercial</option>
-                        <option value="Domestic/Household">Domestic/Household</option>
-                        <option value="Open plots">Open plots</option>
-                    </select>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setOpenDropdown(openDropdown === 'purpose' ? null : 'purpose')}
+                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-between"
+                        >
+                            <span className={formData.purpose ? "text-gray-800" : "text-gray-400"}>
+                                {formData.purpose || "Select purpose"}
+                            </span>
+                            <IoChevronDownOutline className={`text-gray-400 transition-transform ${openDropdown === 'purpose' ? 'rotate-180' : ''}`} />
+                        </button>
+                        {openDropdown === 'purpose' && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+                                <div 
+                                    className="px-4 py-3 bg-blue-600 text-white text-sm font-medium cursor-pointer"
+                                    onClick={() => {
+                                        setFormData({ ...formData, purpose: "", purposeExtent: "" });
+                                        setOpenDropdown(null);
+                                    }}
+                                >
+                                    Select purpose
+                                </div>
+                                {["Agriculture", "Industrial/Commercial", "Domestic/Household", "Open plots"].map((option) => (
+                                    <div
+                                        key={option}
+                                        className={`px-4 py-3 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
+                                            formData.purpose === option ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-800'
+                                        }`}
+                                        onClick={() => {
+                                            setFormData({ ...formData, purpose: option, purposeExtent: "" });
+                                            setOpenDropdown(null);
+                                        }}
+                                    >
+                                        {option}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     {formData.purpose && (
                         <div className="mt-3">
                             <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
@@ -747,23 +827,49 @@ export default function UserRequestService() {
                     </div>
 
                     {/* Techniques used to locate a bore point */}
-                    <div className="mt-4">
+                    <div className="mt-4 relative">
                     <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
                         Technique used to locate a bore point *
                     </label>
-                    <select
-                        value={formData.techniqueUsed}
-                        onChange={(e) => setFormData({ ...formData, techniqueUsed: e.target.value })}
-                        required
-                        className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                    >
-                        <option value="">Select technique</option>
-                        <option value="Coconut">Coconut</option>
-                        <option value="Dowsing L rods">Dowsing L rods</option>
-                        <option value="3D Locator">3D Locator</option>
-                        <option value="Detector / Diviner">Detector / Diviner</option>
-                        <option value="Geophysical survey">Geophysical survey</option>
-                    </select>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setOpenDropdown(openDropdown === 'technique' ? null : 'technique')}
+                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-between"
+                        >
+                            <span className={formData.techniqueUsed ? "text-gray-800" : "text-gray-400"}>
+                                {formData.techniqueUsed || "Select technique"}
+                            </span>
+                            <IoChevronDownOutline className={`text-gray-400 transition-transform ${openDropdown === 'technique' ? 'rotate-180' : ''}`} />
+                        </button>
+                        {openDropdown === 'technique' && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+                                <div 
+                                    className="px-4 py-3 bg-blue-600 text-white text-sm font-medium cursor-pointer"
+                                    onClick={() => {
+                                        setFormData({ ...formData, techniqueUsed: "" });
+                                        setOpenDropdown(null);
+                                    }}
+                                >
+                                    Select technique
+                                </div>
+                                {["Coconut", "Dowsing L rods", "3D Locator", "Detector / Diviner", "Geophysical survey"].map((option) => (
+                                    <div
+                                        key={option}
+                                        className={`px-4 py-3 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
+                                            formData.techniqueUsed === option ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-800'
+                                        }`}
+                                        onClick={() => {
+                                            setFormData({ ...formData, techniqueUsed: option });
+                                            setOpenDropdown(null);
+                                        }}
+                                    >
+                                        {option}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     {formData.techniqueUsed && (
                         <div className="mt-3">
                             <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
@@ -817,10 +923,10 @@ export default function UserRequestService() {
 
                 {/* Section: Payment Breakdown */}
                 {service && (
-                    <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-[16px] p-6 shadow-[0px_4px_20px_rgba(10,132,255,0.15)] border border-blue-200">
-                        <div className="flex items-center justify-between mb-5 pb-4 border-b-2 border-blue-200">
-                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                <span className="text-2xl">💳</span>
+                    <div className="bg-white rounded-[16px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border border-gray-100">
+                        <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-200">
+                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <span className="text-xl">💳</span>
                                 Payment Breakdown
                             </h2>
                             {chargesBreakdown && (
@@ -838,21 +944,21 @@ export default function UserRequestService() {
                                 </div>
                             </div>
                         ) : chargesBreakdown ? (
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {/* Base Service Fee */}
-                                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-blue-100">
+                                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
                                     <div className="flex justify-between items-center">
                                         <div>
                                             <p className="text-sm font-semibold text-gray-700">Base Service Fee</p>
                                             <p className="text-xs text-gray-500 mt-0.5">Service charge</p>
                                         </div>
-                                        <span className="text-lg font-bold text-gray-800">₹{chargesBreakdown.baseServiceFee?.toFixed(2) || service?.price?.toFixed(2) || '0.00'}</span>
+                                        <span className="text-base font-bold text-gray-800">₹{chargesBreakdown.baseServiceFee?.toFixed(2) || service?.price?.toFixed(2) || '0.00'}</span>
                                     </div>
                                 </div>
 
                                 {/* Distance & Travel Charges */}
                                 {chargesBreakdown.distance !== null && chargesBreakdown.distance !== undefined && (
-                                    <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-blue-100">
+                                    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
                                         <div className="flex justify-between items-center mb-2">
                                             <div>
                                                 <p className="text-sm font-semibold text-gray-700">Distance</p>
@@ -863,49 +969,49 @@ export default function UserRequestService() {
                                             </div>
                                         </div>
                                         {chargesBreakdown.travelCharges > 0 && (
-                                            <div className="flex justify-between items-center pt-2 border-t border-blue-100 mt-2">
+                                            <div className="flex justify-between items-center pt-2 border-t border-gray-200 mt-2">
                                                 <div>
                                                     <p className="text-sm font-semibold text-gray-700">Travel Charges</p>
                                                     <p className="text-xs text-gray-500 mt-0.5">
                                                         ₹{chargesBreakdown.travelChargePerKm || 10}/km beyond base radius
                                                     </p>
                                                 </div>
-                                                <span className="text-lg font-bold text-gray-800">₹{chargesBreakdown.travelCharges?.toFixed(2) || '0.00'}</span>
+                                                <span className="text-base font-bold text-gray-800">₹{chargesBreakdown.travelCharges?.toFixed(2) || '0.00'}</span>
                                             </div>
                                         )}
                                     </div>
                                 )}
 
                                 {/* Subtotal */}
-                                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-blue-200">
+                                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
                                     <div className="flex justify-between items-center">
                                         <p className="text-sm font-semibold text-gray-700">Subtotal</p>
-                                        <span className="text-lg font-bold text-gray-800">₹{chargesBreakdown.subtotal?.toFixed(2) || chargesBreakdown.baseServiceFee?.toFixed(2) || '0.00'}</span>
+                                        <span className="text-base font-bold text-gray-800">₹{chargesBreakdown.subtotal?.toFixed(2) || chargesBreakdown.baseServiceFee?.toFixed(2) || '0.00'}</span>
                                     </div>
                                 </div>
 
                                 {/* GST */}
-                                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-blue-100">
+                                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
                                     <div className="flex justify-between items-center">
                                         <div>
                                             <p className="text-sm font-semibold text-gray-700">GST</p>
                                             <p className="text-xs text-gray-500 mt-0.5">{chargesBreakdown.gstPercentage || 18}% on subtotal</p>
                                         </div>
-                                        <span className="text-lg font-bold text-gray-800">₹{chargesBreakdown.gst?.toFixed(2) || '0.00'}</span>
+                                        <span className="text-base font-bold text-gray-800">₹{chargesBreakdown.gst?.toFixed(2) || '0.00'}</span>
                                     </div>
                                 </div>
 
-                                {/* Total Amount - Highlighted */}
-                                <div className="bg-gradient-to-r from-[#0A84FF] to-[#005BBB] rounded-xl p-5 border-2 border-blue-300 shadow-lg">
+                                {/* Total Amount - Highlighted without background color */}
+                                <div className="bg-white rounded-xl p-5 border-2 border-gray-300 shadow-md">
                                     <div className="flex justify-between items-center">
-                                        <p className="text-lg font-bold text-white">Total Amount</p>
-                                        <span className="text-2xl font-bold text-white">₹{chargesBreakdown.totalAmount?.toFixed(2) || '0.00'}</span>
+                                        <p className="text-base font-bold text-gray-800">Total Amount</p>
+                                        <span className="text-xl font-bold text-gray-800">₹{chargesBreakdown.totalAmount?.toFixed(2) || '0.00'}</span>
                                     </div>
                                 </div>
 
                                 {/* Payment Split */}
-                                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-blue-100">
-                                    <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Payment Schedule</p>
+                                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                                    <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">PAYMENT SCHEDULE</p>
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center py-2 px-3 bg-blue-50 rounded-lg">
                                             <div>
@@ -925,15 +1031,15 @@ export default function UserRequestService() {
                     </div>
                 </div>
                         ) : (
-                            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-blue-100">
+                            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
                                 <div className="flex justify-between items-center mb-3">
                                     <div>
                                         <p className="text-sm font-semibold text-gray-700">Base Service Fee</p>
                                         <p className="text-xs text-gray-500 mt-0.5">Service charge</p>
                                     </div>
-                                    <span className="text-lg font-bold text-gray-800">₹{service?.price?.toLocaleString() || '0'}</span>
+                                    <span className="text-base font-bold text-gray-800">₹{service?.price?.toLocaleString() || '0'}</span>
                                 </div>
-                                <div className="pt-3 border-t border-blue-100">
+                                <div className="pt-3 border-t border-gray-200">
                                     <p className="text-xs text-center text-gray-500 py-2">
                                         {formData.address.coordinates?.lat && formData.address.coordinates?.lng 
                                             ? 'Calculating charges...' 

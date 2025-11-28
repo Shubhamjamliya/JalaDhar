@@ -11,6 +11,7 @@ import {
     IoHelpCircleOutline,
     IoCheckmarkCircleOutline,
     IoLeafOutline,
+    IoCameraOutline,
 } from "react-icons/io5";
 import { getUserProfile, updateUserProfile, uploadUserProfilePicture } from "../../../services/authApi";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -158,39 +159,32 @@ export default function UserProfile() {
     }
 
     return (
-        <div className="min-h-screen -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-            {/* Light Blue Background with Wave Pattern */}
-            <div className="min-h-screen w-full bg-gradient-to-b from-[#E3F2FD] via-[#BBDEFB] to-[#90CAF9] relative overflow-hidden">
-                {/* Wave Pattern Background */}
-                <div className="absolute inset-0 opacity-20">
-                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
-                        <path fill="#64B5F6" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                    </svg>
-                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ transform: 'translateY(20px)' }}>
-                        <path fill="#90CAF9" d="M0,128L48,138.7C96,149,192,171,288,181.3C384,192,480,192,576,186.7C672,181,768,171,864,165.3C960,160,1056,160,1152,154.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                    </svg>
-                </div>
-
-                <div className="relative z-10 px-4 py-4">
-                    {/* Profile Header */}
-                    <div className="flex flex-col items-center gap-4 text-center">
-                    {/* Profile Image */}
-                    <div className="relative">
-                        <label htmlFor="profileImage" className="cursor-pointer">
-                            <div
-                                className="h-28 w-28 rounded-full bg-white bg-cover bg-center bg-no-repeat shadow-lg border-4 border-white"
-                                style={{
-                                    backgroundImage: profileData.profilePicture
-                                        ? `url('${profileData.profilePicture}')`
-                                        : "none",
-                                }}
-                            >
-                                {!profileData.profilePicture && (
-                                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+            <div className="px-4 py-4">
+                {/* Combined Profile and Information Card */}
+                <div className="w-full rounded-[12px] bg-white p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                    {/* Profile Header Section */}
+                    <div className="flex flex-col items-center gap-4 text-center mb-6">
+                        {/* Profile Image */}
+                        <div className="relative">
+                            <label htmlFor="profileImage" className="cursor-pointer">
+                                <div
+                                    className="h-28 w-28 rounded-full bg-white bg-cover bg-center bg-no-repeat shadow-lg border-4 border-white relative"
+                                    style={{
+                                        backgroundImage: profileData.profilePicture
+                                            ? `url('${profileData.profilePicture}')`
+                                            : "none",
+                                    }}
+                                >
+                                    {!profileData.profilePicture && (
+                                        <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                                        </div>
+                                    )}
+                                    {/* Camera Icon Overlay */}
+                                    <div className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center shadow-md border-2 border-white hover:bg-blue-700 transition-colors">
+                                        <IoCameraOutline className="text-white text-sm" />
                                     </div>
-                                )}
-                            </div>
-                            {isEditing && (
+                                </div>
                                 <input
                                     type="file"
                                     id="profileImage"
@@ -199,32 +193,46 @@ export default function UserProfile() {
                                     className="hidden"
                                     disabled={saving}
                                 />
-                            )}
-                        </label>
-                    </div>
+                            </label>
+                        </div>
 
-                    {/* Name + Email + Verified Badge */}
-                    <div className="flex flex-col items-center gap-2">
-                        <p className="text-2xl font-bold text-gray-800">
-                            {profileData.name || "User"}
-                        </p>
-                        <p className="text-base text-gray-600">
-                            {profileData.email}
-                        </p>
-                        {profileData.isEmailVerified && (
-                            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-blue-200 shadow-sm">
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-500">
-                                    <IoCheckmarkCircleOutline className="text-white text-sm" />
+                        {/* Name + Email + Verified Badge + Edit Button */}
+                        <div className="w-full">
+                            <div className="flex items-center justify-between gap-4">
+                                {/* Name + Email + Verified Badge */}
+                                <div className="flex flex-col items-start gap-2 flex-1">
+                                    <p className="text-2xl font-bold text-gray-800">
+                                        {profileData.name || "User"}
+                                    </p>
+                                    <p className="text-base text-gray-600">
+                                        {profileData.email}
+                                    </p>
+                                    {profileData.isEmailVerified && (
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-blue-200 shadow-sm">
+                                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-500">
+                                                <IoCheckmarkCircleOutline className="text-white text-sm" />
+                                            </div>
+                                            <span className="text-sm font-medium text-teal-600">Verified Vendor</span>
+                                        </div>
+                                    )}
                                 </div>
-                                <span className="text-sm font-medium text-teal-600">Verified Vendor</span>
+                                
+                                {/* Edit Profile Button - Top Right */}
+                                {!isEditing && (
+                                    <button
+                                        onClick={handleEdit}
+                                        className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[#0A84FF] text-white text-sm font-semibold px-4 shadow-md hover:shadow-lg transition-all hover:scale-[1.02] shrink-0"
+                                    >
+                                        <IoPencilOutline className="text-base" />
+                                        Edit Profile
+                                    </button>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
-                </div>
 
-                    {/* User Information Card */}
-                    <div className="w-full mt-6 rounded-[12px] bg-white p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                        <div className="flex flex-col space-y-4">
+                    {/* User Information Section */}
+                    <div className="flex flex-col space-y-4 border-t border-gray-200 pt-4">
                         {/* Name */}
                         <InfoRow
                             icon={IoLeafOutline}
@@ -346,35 +354,27 @@ export default function UserProfile() {
                     </div>
                 </div>
 
-                    {/* Edit Profile Button */}
-                    {isEditing ? (
+                    {/* Save/Cancel Buttons - When Editing */}
+                    {isEditing && (
                         <div className="mt-5 flex gap-3">
-                        <button
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-[#0A84FF] text-white font-bold shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {saving ? "Saving..." : "Save Changes"}
-                        </button>
-                        <button
-                            onClick={() => {
-                                setIsEditing(false);
-                                loadProfile(); // Reload to reset changes
-                            }}
-                            disabled={saving}
-                            className="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-gray-500 text-white font-bold shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-transform hover:scale-[1.02] disabled:opacity-50"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                    ) : (
-                        <button
-                            onClick={handleEdit}
-                            className="mt-5 flex h-12 w-full items-center justify-center rounded-[10px] bg-[#0A84FF] text-white font-bold shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-transform hover:scale-[1.02]"
-                        >
-                            <IoPencilOutline className="mr-2 text-lg" />
-                            Edit Profile
-                        </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-[#0A84FF] text-white font-bold shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {saving ? "Saving..." : "Save Changes"}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsEditing(false);
+                                    loadProfile(); // Reload to reset changes
+                                }}
+                                disabled={saving}
+                                className="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-gray-500 text-white font-bold shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-transform hover:scale-[1.02] disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     )}
 
                     {/* Action List */}
@@ -395,7 +395,6 @@ export default function UserProfile() {
                         isLogout
                         onClick={handleLogoutClick}
                     />
-                </div>
                 </div>
             </div>
 

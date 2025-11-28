@@ -163,55 +163,49 @@ export default function LocationSelector({
         <div className="w-full mb-4">
             {/* Location Display/Selector */}
             <div className="flex flex-col gap-2">
-                {location.lat && location.lng ? (
-                    <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <IoLocationOutline className="text-blue-600 text-xl flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-blue-900">
+                <div className="flex gap-3">
+                    {/* Search Bar - Shows address when location is set */}
+                    <div className="relative flex-1 min-w-0">
+                        <IoSearchOutline className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg z-10" />
+                        {location.lat && location.lng ? (
+                            <div className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-10 text-sm text-gray-700 shadow-sm min-h-[48px] flex items-center">
+                                <p className="flex-1 truncate min-w-0 pr-2">
                                     {location.address || `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`}
                                 </p>
-                                <p className="text-xs text-blue-600">Location set</p>
+                                <button
+                                    type="button"
+                                    onClick={clearLocation}
+                                    className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0 absolute right-2"
+                                    title="Clear location"
+                                >
+                                    <IoCloseOutline className="text-lg" />
+                                </button>
                             </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={clearLocation}
-                            className="text-blue-600 hover:text-blue-800 p-1"
-                            title="Clear location"
-                        >
-                            <IoCloseOutline className="text-xl" />
-                        </button>
-                    </div>
-                ) : (
-                    <div className="flex gap-3">
-                        {/* Search Bar */}
-                        <div className="relative flex-1">
-                            <IoSearchOutline className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg z-10" />
+                        ) : (
                             <PlaceAutocompleteInput
                                 onPlaceSelect={handlePlaceSelect}
                                 placeholder="Search for an address..."
                                 value={searchAddress}
                                 onChange={(e) => setSearchAddress(e.target.value)}
                                 disabled={false}
-                                className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:shadow-md transition-all"
+                                className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:shadow-md transition-all min-h-[48px]"
                                 countryRestriction="in"
                                 types={["geocode"]}
                             />
-                        </div>
-
-                        {/* Use Current Location Button - Icon Only */}
-                        <button
-                            type="button"
-                            onClick={getCurrentLocation}
-                            disabled={gettingLocation}
-                            className="flex items-center justify-center bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
-                            title={gettingLocation ? "Getting location..." : "Use Current Location"}
-                        >
-                            <IoLocationOutline className="text-xl text-white" />
-                        </button>
+                        )}
                     </div>
-                )}
+
+                    {/* Use Current Location Button - Icon Only */}
+                    <button
+                        type="button"
+                        onClick={getCurrentLocation}
+                        disabled={gettingLocation}
+                        className="flex items-center justify-center bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
+                        title={gettingLocation ? "Getting location..." : "Use Current Location"}
+                    >
+                        <IoLocationOutline className="text-xl text-white" />
+                    </button>
+                </div>
 
                 {/* Radius Selector */}
                 {showRadiusSelector && location.lat && location.lng && (
