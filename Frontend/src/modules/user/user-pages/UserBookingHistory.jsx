@@ -263,16 +263,6 @@ export default function UserBookingHistory() {
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <div className="min-h-screen w-full bg-[#F6F7F9] px-4 py-6">
 
-                {/* Header */}
-                <div className="mb-6">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1">
-                        Booking History
-                    </h1>
-                    <p className="text-[#4A4A4A] text-sm">
-                        View and manage all your service bookings
-                        </p>
-                    </div>
-
                 {/* Search Bar */}
                 <div className="mb-4">
                     <div className="flex h-12 w-full items-stretch rounded-[10px] border border-gray-200 bg-white">
@@ -289,20 +279,22 @@ export default function UserBookingHistory() {
                         </div>
                 </div>
 
-                {/* Filters */}
-                <div className="flex gap-3 overflow-x-auto mb-6 pb-2">
-                    {["All", "Upcoming", "Completed", "Cancelled"].map((filter) => (
-                        <button
-                            key={filter}
-                            onClick={() => setActiveFilter(filter)}
-                            className={`flex h-10 shrink-0 items-center justify-center rounded-full px-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-colors ${activeFilter === filter
-                                    ? "bg-[#0A84FF] text-white"
-                                    : "bg-white text-gray-800"
-                            }`}
-                        >
-                            <p className="text-sm font-medium">{filter}</p>
-                        </button>
-                    ))}
+                {/* Filters - Sticky */}
+                <div className="sticky top-0 z-10 bg-[#F6F7F9] -mx-4 px-4 pt-2 pb-2 mb-4 overflow-hidden">
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                        {["All", "Upcoming", "Completed", "Cancelled"].map((filter) => (
+                            <button
+                                key={filter}
+                                onClick={() => setActiveFilter(filter)}
+                                className={`flex h-8 shrink-0 items-center justify-center rounded-[8px] px-4 border border-gray-200 shadow-[0px_2px_8px_rgba(0,0,0,0.05)] transition-colors ${activeFilter === filter
+                                        ? "bg-[#0A84FF] text-white border-[#0A84FF]"
+                                        : "bg-white text-gray-800"
+                                }`}
+                            >
+                                <p className="text-xs font-medium whitespace-nowrap">{filter}</p>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Booking Cards */}
@@ -345,7 +337,7 @@ export default function UserBookingHistory() {
                                     {/* View Details Button - Always visible */}
                                     <button
                                         onClick={() => navigate(`/user/booking/${booking._id}`)}
-                                        className="w-full h-10 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors"
+                                        className="w-full h-10 bg-gradient-to-b from-[#E3F2FD] via-[#BBDEFB] to-[#90CAF9] text-[#0A84FF] text-sm font-medium rounded-full shadow-[0px_2px_8px_rgba(0,0,0,0.15)] hover:shadow-[0px_3px_10px_rgba(0,0,0,0.2)] transition-all"
                                     >
                                         View Details
                                     </button>

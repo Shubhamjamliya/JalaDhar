@@ -55,20 +55,42 @@ export default function VendorSidebar({ isOpen, onClose, navItems }) {
                             key={id}
                             to={to}
                             onClick={onClose}
-                            className="flex items-center gap-3 p-3 rounded-xl text-gray-700 hover:bg-blue-50 hover:text-[#0A84FF]"
+                            className={({ isActive }) =>
+                                `flex items-center gap-3 p-2 rounded-xl transition-all ${
+                                    isActive
+                                        ? "bg-[#E3F2FD]"
+                                        : "hover:bg-gray-50"
+                                }`
+                            }
                         >
-                            <Icon className="text-xl text-[#0A84FF]" />
-                            {label}
+                            {({ isActive }) => (
+                                <>
+                                    <div className={`flex h-10 w-10 items-center justify-center rounded-full shrink-0 shadow-sm ${
+                                        isActive ? "bg-teal-500" : "bg-teal-500"
+                                    }`}>
+                                        <Icon className="text-xl text-white" />
+                                    </div>
+                                    <span className={`text-sm font-medium ${
+                                        isActive ? "text-[#0A84FF]" : "text-gray-700"
+                                    }`}>
+                                        {label}
+                                    </span>
+                                </>
+                            )}
                         </NavLink>
                     ))}
 
                     {/* Logout Button */}
                     <button
                         onClick={handleLogoutClick}
-                        className="flex items-center gap-3 p-3 rounded-xl text-gray-700 hover:bg-red-50 hover:text-red-600 mt-4"
+                        className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 mt-4 transition-all"
                     >
-                        <IoLogOutOutline className="text-xl text-red-600" />
-                        Logout
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500 shrink-0 shadow-sm">
+                            <IoLogOutOutline className="text-xl text-white" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">
+                            Logout
+                        </span>
                     </button>
                 </nav>
             </aside>

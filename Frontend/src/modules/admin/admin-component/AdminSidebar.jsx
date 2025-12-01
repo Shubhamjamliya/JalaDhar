@@ -118,7 +118,7 @@ export default function AdminSidebar() {
                             to={item.to}
                             end={shouldEnd}
                             className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
-                                    ? "bg-[#0A84FF] text-white shadow-lg shadow-[#0A84FF]/30"
+                                    ? "bg-[#60A5FA] text-white shadow-lg shadow-[#60A5FA]/30"
                                     : "text-white/70 hover:bg-white/10 hover:text-white"
                                 }`}
                         >
@@ -134,23 +134,6 @@ export default function AdminSidebar() {
 
             {/* Admin Profile Section */}
             <div className="p-4 border-t border-white/10">
-                <div className="mb-4 p-3 rounded-xl bg-white/5 backdrop-blur-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A84FF] to-[#005BBB] flex items-center justify-center flex-shrink-0">
-                            <span className="text-white font-bold text-sm">
-                                {admin?.name?.charAt(0).toUpperCase() || "A"}
-                            </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">
-                                {admin?.name || "Admin"}
-                            </p>
-                            <p className="text-xs text-white/60 truncate">
-                                {admin?.email || "admin@jaladhar.com"}
-                            </p>
-                        </div>
-                    </div>
-                </div>
 
                 <button
                     onClick={handleLogoutClick}

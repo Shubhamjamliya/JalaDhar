@@ -49,11 +49,14 @@ export default function VendorForgotPassword() {
             <div className="w-full max-w-sm">
                 {/* Logo */}
                 <div className="text-center mb-10 mt-4">
-                    <img
-                        src="/src/assets/logo.png"
-                        alt="Jaladhar"
-                        className="w-auto mx-auto mb-2"
-                    />
+                    <div className="flex flex-col items-center">
+                        <span className="material-symbols-outlined icon-gradient !text-7xl">
+                            water_drop
+                        </span>
+                        <h1 className="mt-2 text-4xl font-bold tracking-tighter text-[#3A3A3A]">
+                            JALADHAARA
+                        </h1>
+                    </div>
                 </div>
 
                 {/* Title */}

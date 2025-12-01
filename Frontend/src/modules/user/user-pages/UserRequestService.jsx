@@ -461,10 +461,22 @@ export default function UserRequestService() {
                     </p>
                 </div>
                 <div className="bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                    <p className="text-sm text-gray-600 mb-1">Vendor</p>
-                    <p className="text-base font-bold text-gray-800">{vendor.name}</p>
+                    <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                            <p className="text-sm text-gray-600 mb-1">Vendor</p>
+                            <p className="text-base font-bold text-gray-800">{vendor.name}</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => navigate("/user/serviceprovider")}
+                            className="ml-4 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-2"
+                        >
+                            <IoCloseOutline className="text-lg" />
+                            Change Vendor
+                        </button>
                     </div>
                 </div>
+            </div>
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">

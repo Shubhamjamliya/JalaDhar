@@ -892,8 +892,8 @@ function InfoRow({ icon, label, value }) {
     const IconComponent = icon;
     return (
         <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] bg-opacity-10 shrink-0">
-                <IconComponent className="text-xl text-[#0A84FF]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                <IconComponent className="text-xl text-white" />
             </div>
             <div className="flex flex-col flex-1 min-w-0">
                 <span className="text-xs text-gray-500 mb-1">{label}</span>

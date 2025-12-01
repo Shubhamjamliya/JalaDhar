@@ -37,33 +37,95 @@ export default function VendorWallet() {
                 });
             }
 
-            // Get all bookings for transactions (completed and pending)
+            // Get all bookings for transactions - fetch more to get all user payments
             const bookingsResponse = await getBookingHistory({ 
-                limit: 50,
+                limit: 100,
                 sortBy: "createdAt",
                 sortOrder: "desc"
             });
             
             if (bookingsResponse.success) {
                 const allBookings = bookingsResponse.data.bookings || [];
-                const transactionList = allBookings
-                    .filter(booking => {
-                        // Include bookings with payment amount or completed bookings
-                        return (booking.payment?.amount > 0) || (booking.status === "COMPLETED");
-                    })
-                    .map((booking) => {
-                        const paymentStatus = booking.payment?.status;
-                        const isCompleted = paymentStatus === "SUCCESS" || booking.status === "COMPLETED";
-                        
-                        return {
-                            id: booking._id,
-                            date: booking.completedAt || booking.createdAt,
-                            bookingId: booking._id.toString().slice(-8).toUpperCase(),
-                            amount: booking.payment?.amount || booking.service?.price || 0,
-                            status: isCompleted ? "completed" : "pending",
-                            type: "booking"
-                        };
-                    });
+                const transactionList = [];
+                
+                // Extract user payments from each booking
+                allBookings.forEach((booking) => {
+                    const bookingId = booking._id.toString().slice(-8).toUpperCase();
+                    
+                    // 1. User Advance Payment (40%) - When user pays advance
+                    if (booking.payment?.advancePaid && booking.payment?.advanceAmount > 0) {
+                        transactionList.push({
+                            id: `${booking._id}_advance`,
+                            date: booking.payment.advancePaidAt || booking.createdAt,
+                            bookingId: bookingId,
+                            amount: booking.payment.advanceAmount,
+                            status: booking.payment.status === "SUCCESS" ? "completed" : "pending",
+                            type: "advance_payment",
+                            description: "Advance Payment (40%)",
+                            user: booking.user?.name || "Customer"
+                        });
+                    }
+                    
+                    // 2. User Remaining Payment (60%) - When user pays remaining amount
+                    if (booking.payment?.remainingPaid && booking.payment?.remainingAmount > 0) {
+                        transactionList.push({
+                            id: `${booking._id}_remaining`,
+                            date: booking.payment.remainingPaidAt || booking.updatedAt || booking.createdAt,
+                            bookingId: bookingId,
+                            amount: booking.payment.remainingAmount,
+                            status: booking.payment.status === "SUCCESS" ? "completed" : "pending",
+                            type: "remaining_payment",
+                            description: "Remaining Payment (60%)",
+                            user: booking.user?.name || "Customer"
+                        });
+                    }
+                    
+                    // 3. Vendor Settlement (COMPLETED) - When admin pays vendor
+                    if (booking.payment?.vendorSettlement?.status === "COMPLETED" && booking.payment?.vendorSettlement?.amount > 0) {
+                        transactionList.push({
+                            id: `${booking._id}_settlement`,
+                            date: booking.payment.vendorSettlement.settledAt || booking.updatedAt || booking.createdAt,
+                            bookingId: bookingId,
+                            amount: booking.payment.vendorSettlement.amount,
+                            status: "completed",
+                            type: "settlement",
+                            description: `Settlement - ${booking.payment.vendorSettlement.settlementType || "Payment"}`,
+                            user: booking.user?.name || "Customer"
+                        });
+                    }
+                    
+                    // 4. First Installment (50% after report upload)
+                    if (booking.payment?.firstInstallment?.paid && booking.payment?.firstInstallment?.amount > 0) {
+                        transactionList.push({
+                            id: `${booking._id}_first_installment`,
+                            date: booking.payment.firstInstallment.paidAt || booking.updatedAt || booking.createdAt,
+                            bookingId: bookingId,
+                            amount: booking.payment.firstInstallment.amount,
+                            status: "completed",
+                            type: "installment",
+                            description: "First Installment (50%)",
+                            user: booking.user?.name || "Customer"
+                        });
+                    }
+                    
+                    // 5. Travel Charges Payment
+                    if (booking.travelChargesRequest?.paid && booking.travelChargesRequest?.amount > 0) {
+                        transactionList.push({
+                            id: `${booking._id}_travel`,
+                            date: booking.travelChargesRequest.paidAt || booking.updatedAt || booking.createdAt,
+                            bookingId: bookingId,
+                            amount: booking.travelChargesRequest.amount,
+                            status: "completed",
+                            type: "travel",
+                            description: "Travel Charges",
+                            user: booking.user?.name || "Customer"
+                        });
+                    }
+                });
+                
+                // Sort by date, newest first
+                transactionList.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
                 setTransactions(transactionList);
             }
         } catch (err) {
@@ -130,23 +192,25 @@ export default function VendorWallet() {
         <PageContainer>
 
             {/* Total Balance Card */}
-            <section className="relative my-4 overflow-hidden rounded-xl bg-gradient-to-br from-[#1A80E5] to-[#26D7C4] p-6 text-white shadow-md">
-                <div className="absolute inset-0 z-0 opacity-10">
-                    <img 
-                        className="h-full w-full object-cover"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSWOEOG7ry6z14TFWGAz7PjaKTwn697LggEX4Vf1U2F-18-Yl362M1a0XmrCPrnxjq3HLvvisiIPbnCcLWbicHHyQVehSZEC56qo5fvTVnSjPmEPPFLj9dncg63DYDUscFj51kK5mnPvn7hznGuHDuYjMiSWsX7r6Nlpe1ss-SQVtV_G_yADjJFZVcqSA8EGeUz4tjBJlabT7hxamjtW25RfdT9g0K2O82ATNS4J1em3nBru9nIKr4YnD72XMjXgETg4PCKTSCxEva"
-                        alt="Background"
-                    />
+            <section className="relative my-4 overflow-hidden rounded-[12px] bg-gradient-to-b from-[#E3F2FD] via-[#BBDEFB] to-[#90CAF9] p-6 shadow-lg">
+                {/* Subtle Wave Pattern Overlay */}
+                <div className="absolute inset-0 z-0 opacity-20">
+                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
+                        <path fill="#64B5F6" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                    </svg>
+                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ transform: 'translateY(20px)' }}>
+                        <path fill="#90CAF9" d="M0,128L48,138.7C96,149,192,171,288,181.3C384,192,480,192,576,186.7C672,181,768,171,864,165.3C960,160,1056,160,1152,154.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                    </svg>
                 </div>
                 <div className="relative z-10 flex flex-col items-center text-center">
-                    <p className="text-sm font-medium opacity-80">Total Balance</p>
-                    <p className="mt-1 text-5xl font-extrabold tracking-tighter">
+                    <p className="text-sm font-medium text-gray-800 opacity-90">Total Balance</p>
+                    <p className="mt-1 text-5xl font-extrabold tracking-tighter text-gray-800">
                         ₹{formatAmount(paymentCollection.collectedAmount)}
                     </p>
                     {paymentCollection.collectedAmount >= 1000 && (
                         <button
                             onClick={handleWithdraw}
-                            className="mt-4 w-full max-w-xs rounded-full bg-white/20 px-8 py-3 font-bold text-white backdrop-blur-sm hover:bg-white/30 transition-colors"
+                            className="mt-4 w-full max-w-xs rounded-full bg-blue-600 px-8 py-3 font-bold text-white hover:bg-blue-700 transition-colors shadow-md"
                         >
                             Withdraw
                         </button>
@@ -180,56 +244,84 @@ export default function VendorWallet() {
             </div>
 
             {/* Transaction History */}
-            <h2 className="px-2 pt-8 pb-3 text-lg font-bold text-[#3A3A3A]">Transaction History</h2>
-            <div className="flex flex-col gap-3">
-                {transactions.length === 0 ? (
-                    <div className="rounded-lg bg-white p-8 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                        <p className="text-[#6B7280] text-sm">No transactions yet</p>
-                    </div>
-                ) : (
-                    transactions.map((transaction) => {
-                        const isCompleted = transaction.status === "completed";
-                        const isPending = transaction.status === "pending";
-                        
-                        return (
-                            <div
-                                key={transaction.id}
-                                className="flex items-center gap-4 rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-                            >
-                                <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                                    isCompleted ? "bg-green-100" : isPending ? "bg-yellow-100" : "bg-red-100"
-                                }`}>
-                                    <span className={`material-symbols-outlined ${
-                                        isCompleted ? "text-[#34C759]" : isPending ? "text-[#FF9F0A]" : "text-red-500"
+            <section className="mt-6">
+                <div className="flex items-center justify-between mb-4 px-2">
+                    <h2 className="text-lg font-bold text-[#3A3A3A]">Transaction History</h2>
+                    {transactions.length > 0 && (
+                        <p className="text-sm text-[#6B7280]">{transactions.length} {transactions.length === 1 ? 'transaction' : 'transactions'}</p>
+                    )}
+                </div>
+                <div className="flex flex-col gap-3">
+                    {transactions.length === 0 ? (
+                        <div className="rounded-lg bg-white p-8 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                            <span className="material-symbols-outlined text-[#6B7280] text-4xl mb-2">receipt_long</span>
+                            <p className="text-[#6B7280] text-sm">No transactions yet</p>
+                            <p className="text-[#6B7280] text-xs mt-1">Your transaction history will appear here</p>
+                        </div>
+                    ) : (
+                        transactions.map((transaction) => {
+                            const isCompleted = transaction.status === "completed";
+                            const isPending = transaction.status === "pending";
+                            
+                            // Determine transaction label based on type
+                            let transactionLabel = `Booking #JAL${transaction.bookingId}`;
+                            if (transaction.type === "advance_payment") {
+                                transactionLabel = `Booking #JAL${transaction.bookingId} - Advance Payment`;
+                            } else if (transaction.type === "remaining_payment") {
+                                transactionLabel = `Booking #JAL${transaction.bookingId} - Remaining Payment`;
+                            } else if (transaction.type === "settlement") {
+                                transactionLabel = `Booking #JAL${transaction.bookingId} - ${transaction.description || "Settlement"}`;
+                            } else if (transaction.type === "installment") {
+                                transactionLabel = `Booking #JAL${transaction.bookingId} - ${transaction.description || "Installment"}`;
+                            } else if (transaction.type === "travel") {
+                                transactionLabel = `Booking #JAL${transaction.bookingId} - ${transaction.description || "Travel Charges"}`;
+                            }
+                            
+                            return (
+                                <div
+                                    key={transaction.id}
+                                    className="flex items-center gap-4 rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] transition-shadow"
+                                >
+                                    <div className={`flex h-12 w-12 items-center justify-center rounded-full shrink-0 ${
+                                        isCompleted ? "bg-green-100" : isPending ? "bg-yellow-100" : "bg-red-100"
                                     }`}>
-                                        {isCompleted ? "arrow_downward_alt" : "arrow_upward_alt"}
-                                    </span>
+                                        <span className={`material-symbols-outlined text-xl ${
+                                            isCompleted ? "text-[#34C759]" : isPending ? "text-[#FF9F0A]" : "text-red-500"
+                                        }`}>
+                                            {isCompleted ? "check_circle" : isPending ? "schedule" : "error"}
+                                        </span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-[#3A3A3A] truncate">
+                                            {transactionLabel}
+                                        </p>
+                                        {transaction.user && (
+                                            <p className="text-xs text-[#6B7280] mt-0.5">
+                                                Customer: {transaction.user}
+                                            </p>
+                                        )}
+                                        <p className="text-xs text-[#6B7280] mt-0.5">
+                                            {formatDateTime(transaction.date)}
+                                        </p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className={`font-bold text-base ${
+                                            isCompleted ? "text-[#34C759]" : isPending ? "text-[#FF9F0A]" : "text-red-500"
+                                        }`}>
+                                            {isCompleted || isPending ? "+" : "-"} ₹{formatAmount(transaction.amount)}
+                                        </p>
+                                        <p className={`text-xs font-medium mt-0.5 ${
+                                            isCompleted ? "text-[#34C759]" : "text-[#FF9F0A]"
+                                        }`}>
+                                            {transaction.status === "completed" ? "Completed" : "Pending"}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <p className="font-semibold text-[#3A3A3A]">
-                                        {transaction.type === "booking" ? `Booking #JAL${transaction.bookingId}` : "Withdrawal"}
-                                    </p>
-                                    <p className="text-xs text-[#6B7280]">
-                                        {formatDateTime(transaction.date)}
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <p className={`font-bold ${
-                                        isCompleted ? "text-[#34C759]" : isPending ? "text-[#FF9F0A]" : "text-red-500"
-                                    }`}>
-                                        {isCompleted || isPending ? "+" : "-"} ₹{formatAmount(transaction.amount)}
-                                    </p>
-                                    <p className={`text-xs font-medium ${
-                                        isCompleted ? "text-[#34C759]" : "text-[#FF9F0A]"
-                                    }`}>
-                                        {transaction.status === "completed" ? "Completed" : "Pending"}
-                                    </p>
-                                </div>
-                            </div>
-                        );
-                    })
-                )}
-            </div>
+                            );
+                        })
+                    )}
+                </div>
+            </section>
         </PageContainer>
 
         {/* Withdrawal Confirmation Modal */}

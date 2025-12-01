@@ -166,8 +166,8 @@ export default function VendorDashboard() {
         vendor?.documents?.profilePicture?.url ||
         null;
 
-    // Calculate pending requests (ASSIGNED status)
-    const pendingRequests = stats.assignedBookings || 0;
+    // Calculate pending requests (ASSIGNED + PENDING statuses - bookings waiting for vendor action)
+    const pendingRequests = (stats.assignedBookings || 0) + (stats.pendingBookings || 0);
 
     if (loading) {
         return (
@@ -180,35 +180,36 @@ export default function VendorDashboard() {
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
 
-            {/* Profile Header with Gradient Background */}
-            <section
-                className="relative my-4 overflow-hidden rounded-xl p-6 text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-                style={{
-                    background:
-                        "linear-gradient(135deg, #0A84FF 0%, #00C2A8 100%)",
-                }}
-            >
-                <div className="absolute -top-1/4 -right-1/4 z-0 h-48 w-48 rounded-full bg-white/10"></div>
-                <div className="absolute -bottom-1/4 -left-1/4 z-0 h-40 w-40 rounded-full bg-white/5"></div>
-
+            {/* Profile Header with Light Blue Gradient */}
+            <section className="relative my-4 overflow-hidden rounded-[12px] bg-gradient-to-b from-[#E3F2FD] via-[#BBDEFB] to-[#90CAF9] p-6 shadow-lg">
+                {/* Subtle Wave Pattern Overlay */}
+                <div className="absolute inset-0 z-0 opacity-20">
+                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
+                        <path fill="#64B5F6" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                    </svg>
+                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ transform: 'translateY(20px)' }}>
+                        <path fill="#90CAF9" d="M0,128L48,138.7C96,149,192,171,288,181.3C384,192,480,192,576,186.7C672,181,768,171,864,165.3C960,160,1056,160,1152,154.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                    </svg>
+                </div>
                 <div className="relative z-10 flex items-center gap-4">
-                    <div className="h-16 w-16 shrink-0 rounded-full border-2 border-white/50 shadow-md overflow-hidden bg-white/20 flex items-center justify-center">
-                        {vendorProfileImage ? (
-                            <img
-                                src={vendorProfileImage}
-                                alt="Profile"
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <span className="text-2xl text-white">👤</span>
+                    {/* White Circular Profile Picture */}
+                    <div
+                        className="h-16 w-16 rounded-full bg-white bg-cover bg-center flex-shrink-0 shadow-lg border-4 border-white"
+                        style={{
+                            backgroundImage: vendorProfileImage
+                                ? `url("${vendorProfileImage}")`
+                                : "none",
+                        }}
+                    >
+                        {!vendorProfileImage && (
+                            <div className="w-full h-full rounded-full bg-gradient-to-br from-[#BBDEFB] to-[#90CAF9] flex items-center justify-center">
+                                <span className="text-2xl text-white">👤</span>
+                            </div>
                         )}
                     </div>
                     <div>
-                        <p className="text-sm font-medium opacity-80">
-                            Welcome Back,
-                        </p>
-                        <p className="text-xl font-bold leading-tight tracking-[-0.015em]">
-                            {vendorProfileData?.name ||
+                        <p className="text-[22px] font-bold tracking-tight text-gray-800">
+                            Welcome, {vendorProfileData?.name ||
                                 vendor?.name ||
                                 "Vendor"}
                         </p>
@@ -256,17 +257,19 @@ export default function VendorDashboard() {
                 {/* Services */}
                 <div
                     onClick={() => navigate("/vendor/services")}
-                    className="flex flex-col items-center text-center cursor-pointer"
+                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="flex size-12 items-center justify-center rounded-full bg-[#00C2A8]/10">
-                        <span className="material-symbols-outlined !text-2xl text-[#00C2A8]">
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
+                        {/* Highlight/Reflection Effect */}
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                        <span className="material-symbols-outlined !text-2xl text-[#1976D2] relative z-10">
                             design_services
                         </span>
                     </div>
-                    <h3 className="mt-2 text-sm font-semibold text-[#3A3A3A]">
+                    <span className="text-xs font-bold text-gray-800 text-center">
                         Services
-                    </h3>
-                    <p className="text-[10px] text-[#6B7280]">
+                    </span>
+                    <p className="text-[10px] text-[#6B7280] -mt-1">
                         {stats.servicesCount || 0} services
                     </p>
                 </div>
@@ -274,17 +277,19 @@ export default function VendorDashboard() {
                 {/* Requests */}
                 <div
                     onClick={() => navigate("/vendor/requests")}
-                    className="flex flex-col items-center text-center cursor-pointer"
+                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="flex size-12 items-center justify-center rounded-full bg-[#00C2A8]/10">
-                        <span className="material-symbols-outlined !text-2xl text-[#00C2A8]">
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
+                        {/* Highlight/Reflection Effect */}
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                        <span className="material-symbols-outlined !text-2xl text-[#1976D2] relative z-10">
                             receipt_long
                         </span>
                     </div>
-                    <h3 className="mt-2 text-sm font-semibold text-[#3A3A3A]">
+                    <span className="text-xs font-bold text-gray-800 text-center">
                         Requests
-                    </h3>
-                    <p className="text-[10px] text-[#6B7280]">
+                    </span>
+                    <p className="text-[10px] text-[#6B7280] -mt-1">
                         {pendingRequests} pending
                     </p>
                 </div>
@@ -292,17 +297,19 @@ export default function VendorDashboard() {
                 {/* Wallet */}
                 <div
                     onClick={() => navigate("/vendor/wallet")}
-                    className="flex flex-col items-center text-center cursor-pointer"
+                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="flex size-12 items-center justify-center rounded-full bg-[#00C2A8]/10">
-                        <span className="material-symbols-outlined !text-2xl text-[#00C2A8]">
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
+                        {/* Highlight/Reflection Effect */}
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                        <span className="material-symbols-outlined !text-2xl text-[#1976D2] relative z-10">
                             account_balance_wallet
                         </span>
                     </div>
-                    <h3 className="mt-2 text-sm font-semibold text-[#3A3A3A]">
+                    <span className="text-xs font-bold text-gray-800 text-center">
                         Wallet
-                    </h3>
-                    <p className="text-[10px] text-[#6B7280]">
+                    </span>
+                    <p className="text-[10px] text-[#6B7280] -mt-1">
                         {formatAmount(
                             stats.paymentCollection?.collectedAmount || 0
                         )}
@@ -312,17 +319,19 @@ export default function VendorDashboard() {
                 {/* Profile */}
                 <div
                     onClick={() => navigate("/vendor/profile")}
-                    className="flex flex-col items-center text-center cursor-pointer"
+                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="flex size-12 items-center justify-center rounded-full bg-[#00C2A8]/10">
-                        <span className="material-symbols-outlined !text-2xl text-[#00C2A8]">
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
+                        {/* Highlight/Reflection Effect */}
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                        <span className="material-symbols-outlined !text-2xl text-[#1976D2] relative z-10">
                             manage_accounts
                         </span>
                     </div>
-                    <h3 className="mt-2 text-sm font-semibold text-[#3A3A3A]">
+                    <span className="text-xs font-bold text-gray-800 text-center">
                         Profile
-                    </h3>
-                    <p className="text-[10px] text-[#6B7280]">Edit details</p>
+                    </span>
+                    <p className="text-[10px] text-[#6B7280] -mt-1">Edit details</p>
                 </div>
             </section>
 
@@ -376,11 +385,6 @@ export default function VendorDashboard() {
                                             </p>
                                         </div>
                                     </div>
-                                    <button className="text-[#0A84FF]">
-                                        <span className="material-symbols-outlined">
-                                            chevron_right
-                                        </span>
-                                    </button>
                                 </div>
                                 <div className="mt-4 border-t border-gray-100 pt-3">
                                     <div className="flex items-center gap-2 text-sm text-[#6B7280]">
@@ -463,16 +467,10 @@ export default function VendorDashboard() {
                                             </p>
                                         </div>
                                     </div>
-                                    {booking.status === "COMPLETED" ? (
+                                    {booking.status === "COMPLETED" && (
                                         <span className="material-symbols-outlined text-green-500">
                                             check_circle
                                         </span>
-                                    ) : (
-                                        <button className="text-[#0A84FF]">
-                                            <span className="material-symbols-outlined">
-                                                chevron_right
-                                            </span>
-                                        </button>
                                     )}
                                 </div>
                                 <div className="mt-4 border-t border-gray-100 pt-3">

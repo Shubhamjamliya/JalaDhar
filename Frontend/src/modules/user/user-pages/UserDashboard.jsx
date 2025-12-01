@@ -387,7 +387,7 @@ export default function UserDashboard() {
                         <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
                         <IoDocumentTextOutline className="text-2xl text-[#1976D2] relative z-10" />
                     </div>
-                    <span className="text-xs font-medium text-gray-800 text-center">
+                    <span className="text-xs font-bold text-gray-800 text-center">
                         Request Status
                     </span>
                 </div>
@@ -403,7 +403,7 @@ export default function UserDashboard() {
                         <IoCalendarOutline className="text-2xl text-[#1976D2] relative z-10" />
                         <IoCheckmarkCircle className="absolute -bottom-0.5 -right-0.5 text-base text-[#1976D2] z-20" />
                     </div>
-                    <span className="text-xs font-medium text-gray-800 text-center">
+                    <span className="text-xs font-bold text-gray-800 text-center">
                         Current Booking
                     </span>
                 </div>
@@ -418,7 +418,7 @@ export default function UserDashboard() {
                         <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
                         <IoSearchOutline className="text-2xl text-[#1976D2] relative z-10" />
                     </div>
-                    <span className="text-xs font-medium text-gray-800 text-center">
+                    <span className="text-xs font-bold text-gray-800 text-center">
                         Find Vendor
                     </span>
                 </div>
@@ -434,7 +434,7 @@ export default function UserDashboard() {
                         <IoPersonCircleOutline className="text-2xl text-[#1976D2] relative z-10" />
                         <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-gray-400 border-2 border-white z-20"></div>
                     </div>
-                    <span className="text-xs font-medium text-gray-800 text-center">
+                    <span className="text-xs font-bold text-gray-800 text-center">
                         Update Profile
                     </span>
                 </div>
@@ -583,7 +583,7 @@ export default function UserDashboard() {
                                         return (
                                             <div
                                                 key={request.id}
-                                                className="bg-white rounded-[12px] p-5 border border-gray-200 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
+                                                className="bg-white rounded-[12px] p-5 border-2 border-[#87CEEB] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
                                             >
                                                 <div className="flex items-start justify-between mb-4">
                                                     <div className="flex-1">

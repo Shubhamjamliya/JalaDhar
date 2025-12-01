@@ -15,6 +15,7 @@ import {
     IoCheckmarkOutline,
     IoArrowBackOutline,
     IoLocationOutline,
+    IoCameraOutline,
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import {
@@ -584,36 +585,27 @@ export default function VendorProfile() {
                 <span className="text-sm font-medium">Back</span>
             </button>
 
-            {/* Profile Header with Gradient */}
+            {/* Profile Header with Light Blue Gradient */}
             <section
                 className="relative my-4 overflow-hidden rounded-xl p-8 text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
                 style={{
-                    background:
-                        "linear-gradient(135deg, #0A84FF 0%, #00C2A8 100%)",
+                    background: "linear-gradient(to bottom, #E3F2FD 0%, #BBDEFB 50%, #90CAF9 100%)",
                 }}
             >
                 <div className="absolute -top-1/4 -right-1/4 z-0 h-48 w-48 rounded-full bg-white/10"></div>
                 <div className="absolute -bottom-1/4 -left-1/4 z-0 h-40 w-40 rounded-full bg-white/5"></div>
-                <div className="absolute top-4 left-6 z-10">
-                    <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium opacity-90">
-                            Profile
-                        </p>
-                        <div className="h-2 w-2 rounded-full bg-red-400"></div>
-                    </div>
-                </div>
 
                 <div className="relative z-10 flex flex-col items-center gap-5 pt-4">
-                    {/* Profile Image with Yellow Background Circle */}
+                    {/* Profile Image with Camera Overlay */}
                     <div className="relative">
                         <label
                             htmlFor="profileImage"
-                            className="cursor-pointer group"
+                            className="cursor-pointer"
                         >
                             <div className="relative">
-                                {/* Yellow Background Circle */}
-                                <div className="absolute inset-0 bg-yellow-400 rounded-full scale-110 blur-sm opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                                <div className="relative h-28 w-28 shrink-0 rounded-full border-4 border-white/80 shadow-xl overflow-hidden bg-white flex items-center justify-center ring-4 ring-white/30">
+                                {/* Light Blue Background Circle */}
+                                <div className="absolute inset-0 bg-blue-200 rounded-full scale-110 blur-sm opacity-30 transition-opacity"></div>
+                                <div className="relative h-28 w-28 shrink-0 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white flex items-center justify-center ring-4 ring-white/30">
                                     {profileData.profilePicture ? (
                                         <img
                                             src={profileData.profilePicture}
@@ -621,27 +613,24 @@ export default function VendorProfile() {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                        <div className="w-full h-full bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] flex items-center justify-center">
+                                        <div className="w-full h-full bg-gradient-to-br from-[#BBDEFB] to-[#90CAF9] flex items-center justify-center">
                                             <span className="text-4xl">👤</span>
                                         </div>
                             )}
-                        </div>
-                        {isEditing && (
-                                    <div className="absolute -bottom-1 -right-1 bg-[#0A84FF] rounded-full p-2 shadow-lg border-2 border-white">
-                                        <IoPencilOutline className="text-white text-sm" />
-                                    </div>
-                                )}
+                                </div>
+                                {/* Camera Icon Overlay - Outside circle to overlap */}
+                                <div className="absolute -bottom-1 -right-1 h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg border-4 border-white hover:bg-blue-700 transition-colors z-10">
+                                    <IoCameraOutline className="text-white text-lg" />
+                                </div>
                             </div>
-                            {isEditing && (
-                                <input
-                                    type="file"
-                                    id="profileImage"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                    className="hidden"
-                                    disabled={saving}
-                                />
-                            )}
+                            <input
+                                type="file"
+                                id="profileImage"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                                disabled={saving}
+                            />
                         </label>
                     </div>
 
@@ -663,12 +652,12 @@ export default function VendorProfile() {
                             />
                         ) : (
                             <>
-                                <p className="text-2xl font-bold leading-tight tracking-tight break-words max-w-full px-4">
+                                <p className="text-2xl font-bold leading-tight tracking-tight break-words max-w-full px-4 text-gray-800">
                                     {profileData.name || "Vendor"}
                                 </p>
-                            </>
+                            </> 
                         )}
-                        <p className="text-sm font-medium opacity-90 mt-1 break-words max-w-full px-4">
+                        <p className="text-sm font-medium text-gray-700 mt-1 break-words max-w-full px-4">
                             {profileData.email}
                         </p>
                             </div>
@@ -676,11 +665,23 @@ export default function VendorProfile() {
             </section>
 
             {/* Vendor Information Card */}
-            <div className="w-full mt-6 rounded-xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden">
-                <h3 className="text-lg font-bold text-[#3A3A3A] mb-6">
-                    Personal Information
+            <div className="w-full mt-6 rounded-xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden">
+                <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-lg font-bold text-[#3A3A3A]">
+                        Personal Information
                     </h3>
-                <div className="flex flex-col space-y-6 w-full">
+                    {/* Edit Profile Button - Top Right */}
+                    {!isEditing && (
+                        <button
+                            onClick={handleEdit}
+                            className="flex h-8 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#0A84FF] to-[#00C2A8] text-white text-xs font-semibold px-3 shadow-md hover:shadow-lg transition-all hover:scale-[1.02] shrink-0"
+                        >
+                            <IoPencilOutline className="text-sm" />
+                            <span>Edit Profile</span>
+                        </button>
+                    )}
+                </div>
+                <div className="flex flex-col space-y-4 w-full">
                     {/* Name */}
                     <InfoRow
                         icon={IoPersonOutline}
@@ -730,8 +731,8 @@ export default function VendorProfile() {
                     {/* Address */}
                     {isEditing ? (
                         <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-[#F3F7FA] transition-colors">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#00C2A8]/10 shrink-0">
-                                <IoHomeOutline className="text-xl text-[#00C2A8]" />
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                                <IoHomeOutline className="text-xl text-white" />
                             </div>
                             <div className="flex flex-col flex-1 min-w-0 gap-3 w-full overflow-hidden">
                                 <span className="text-xs text-[#6B7280] mb-1 font-semibold uppercase tracking-wide">
@@ -780,8 +781,8 @@ export default function VendorProfile() {
                 </div>
             </div>
 
-            {/* Edit Profile Button */}
-                                {isEditing ? (
+            {/* Save/Cancel Buttons - When Editing */}
+            {isEditing && (
                 <div className="mt-6 flex gap-3">
                     <button
                         onClick={handleSave}
@@ -811,14 +812,6 @@ export default function VendorProfile() {
                         Cancel
                     </button>
                 </div>
-            ) : (
-                <button
-                    onClick={handleEdit}
-                    className="mt-6 flex h-14 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#0A84FF] to-[#00C2A8] text-white font-bold shadow-[0_4px_12px_rgba(10,132,255,0.3)] transition-all hover:shadow-[0_6px_16px_rgba(10,132,255,0.4)] hover:scale-[1.02]"
-                >
-                    <IoPencilOutline className="mr-2 text-xl" />
-                    Edit Profile
-                </button>
             )}
 
             {/* Services Section (Only if approved) */}
@@ -1484,12 +1477,12 @@ function InfoRow({
 }) {
     const IconComponent = icon;
     return (
-        <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-[#F3F7FA] transition-colors">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#00C2A8]/10 shrink-0 flex-shrink-0">
-                <IconComponent className="text-xl text-[#00C2A8]" />
+        <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#F3F7FA] transition-colors">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-500 shrink-0 flex-shrink-0 border-2 border-white shadow-sm">
+                <IconComponent className="text-lg text-white" />
             </div>
             <div className="flex flex-col flex-1 min-w-0 w-full overflow-hidden">
-                <span className="text-xs text-[#6B7280] mb-2 font-semibold uppercase tracking-wide truncate">
+                <span className="text-xs text-[#6B7280] mb-1 font-semibold uppercase tracking-wide truncate">
                 {label}
                 </span>
             {isEditing ? (

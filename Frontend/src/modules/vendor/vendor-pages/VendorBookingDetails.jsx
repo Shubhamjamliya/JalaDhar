@@ -273,14 +273,18 @@ export default function VendorBookingDetails() {
             {/* Header */}
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-                        Booking Details
-                    </h1>
-                    {getStatusBadge(booking.status)}
+                    <p className="text-[#4A4A4A] text-sm">
+                        Booking ID: {booking._id || booking.id}
+                    </p>
+                    {/* Pending Status Badge - Right Side Top with Orange Color */}
+                    {(booking.status === "PENDING" || booking.status === "ASSIGNED") ? (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+                            Pending
+                        </span>
+                    ) : (
+                        getStatusBadge(booking.status)
+                    )}
                 </div>
-                <p className="text-[#4A4A4A] text-sm">
-                    Booking ID: {booking._id || booking.id}
-                </p>
             </div>
 
             {/* User Information Card */}

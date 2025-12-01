@@ -131,19 +131,6 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                     </button>
                 </div>
 
-                {/* Admin Profile */}
-                <div className="flex items-center gap-3 mb-6 p-3 rounded-lg bg-white/5">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A84FF] to-[#005BBB] flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">
-                            {admin?.name?.charAt(0).toUpperCase() || "A"}
-                        </span>
-                    </div>
-                    <div>
-                        <p className="text-sm font-semibold">{admin?.name || "Admin"}</p>
-                        <p className="text-xs text-white/60">{admin?.email}</p>
-                    </div>
-                </div>
-
                 {/* Menu Items */}
                 <nav className="flex flex-col gap-2 flex-1">
                     {navItems.map(({ id, label, to, Icon }) => {
@@ -157,7 +144,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                 onClick={onClose}
                                 className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
                                     isActive
-                                        ? "bg-[#0A84FF] text-white shadow-md"
+                                        ? "bg-[#60A5FA] text-white shadow-md"
                                         : "text-white/70 hover:bg-white/10 hover:text-white"
                                 }`}
                             >

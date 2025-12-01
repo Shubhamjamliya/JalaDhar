@@ -120,7 +120,7 @@ export default function UserServiceProvider() {
             <div className="px-4 mb-4">
                 <LocationSelector
                     onLocationSelect={setUserLocation}
-                    showRadiusSelector={true}
+                    showRadiusSelector={false}
                     onRadiusChange={setRadius}
                     initialRadius={radius}
                 />

@@ -103,7 +103,7 @@ export default function UserSignup() {
                         water_drop
                     </span>
                     <h1 className="mt-2 text-3xl font-bold tracking-tighter text-[#3A3A3A]">
-                        JALADHAR
+                        JALADHAARA
                     </h1>
                     <p className="mt-3 text-sm text-[#6B7280] text-center">
                         Create your account to get started.

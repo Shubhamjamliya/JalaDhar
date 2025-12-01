@@ -139,7 +139,7 @@ export default function AdminDashboard() {
 
                 <div 
                     onClick={() => navigate("/admin/vendors/pending")}
-                    className="bg-white rounded-xl p-5 shadow-sm border-l-4 border-yellow-500 border border-gray-200 cursor-pointer hover:shadow-md hover:border-yellow-500 transition-all group"
+                    className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-all group"
                 >
                     <div className="flex items-center justify-between mb-3">
                         <div className="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center group-hover:bg-yellow-200 transition-colors">

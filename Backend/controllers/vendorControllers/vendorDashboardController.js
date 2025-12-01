@@ -36,7 +36,10 @@ const getDashboardStats = async (req, res) => {
       Booking.countDocuments({ vendor: vendorId, status: BOOKING_STATUS.COMPLETED }),
       Booking.countDocuments({
         vendor: vendorId,
-        scheduledDate: { $gte: today, $lt: tomorrow }
+        scheduledDate: { $gte: today, $lt: tomorrow },
+        status: { 
+          $nin: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] 
+        }
       }),
       Booking.aggregate([
         {

@@ -27,8 +27,7 @@ export default function VendorAllBookingsStatus() {
       setLoading(true);
       setError("");
 
-      // Get all bookings except ASSIGNED, PENDING, REJECTED, CANCELLED
-      // These are bookings that vendor has confirmed (accepted)
+      // Get all bookings - confirmed bookings are those where user has paid (ASSIGNED or beyond)
       const response = await getVendorBookings({
         limit: 100,
         sortBy: "createdAt",
@@ -37,11 +36,15 @@ export default function VendorAllBookingsStatus() {
 
       if (response.success) {
         const allBookings = response.data.bookings || [];
-        // Filter out unconfirmed bookings (use vendorStatus for vendor view)
+        // Filter bookings where user has confirmed by paying (advance payment done)
+        // Include: ASSIGNED (user paid advance - booking confirmed), ACCEPTED, and all statuses beyond
+        // Exclude: PENDING (user hasn't paid yet), REJECTED, CANCELLED
         const confirmedBookings = allBookings.filter(
           (booking) => {
             const status = booking.vendorStatus || booking.status;
-            return !["ASSIGNED", "PENDING", "REJECTED", "CANCELLED"].includes(status);
+            // Show bookings where user has paid (ASSIGNED = user confirmed by paying)
+            // or where booking has progressed beyond user confirmation
+            return !["PENDING", "REJECTED", "CANCELLED"].includes(status);
           }
         );
         setBookings(confirmedBookings);

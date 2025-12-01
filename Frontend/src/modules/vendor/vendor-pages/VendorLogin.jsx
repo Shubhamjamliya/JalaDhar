@@ -62,7 +62,7 @@ export default function VendorLogin() {
                         water_drop
                     </span>
                     <h1 className="mt-2 text-4xl font-bold tracking-tighter text-[#3A3A3A]">
-                        JALADHAR
+                        JALADHAARA
                     </h1>
                     <p className="mt-4 text-[#6B7280] text-center">
                         Welcome back! Please login to your account.

@@ -161,15 +161,24 @@ export default function UserProfile() {
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <div className="px-4 py-4">
-                {/* Combined Profile and Information Card */}
-                <div className="w-full rounded-[12px] bg-white p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                    {/* Profile Header Section */}
-                    <div className="flex flex-col items-center gap-4 text-center mb-6">
+                {/* Profile Header Card with Light Blue Gradient */}
+                <section
+                    className="relative my-4 overflow-hidden rounded-xl p-8 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6"
+                    style={{
+                        background: "linear-gradient(to bottom, #E3F2FD 0%, #BBDEFB 50%, #90CAF9 100%)",
+                    }}
+                >
+                    <div className="absolute -top-1/4 -right-1/4 z-0 h-48 w-48 rounded-full bg-white/10"></div>
+                    <div className="absolute -bottom-1/4 -left-1/4 z-0 h-40 w-40 rounded-full bg-white/5"></div>
+
+                    {/* Profile Picture, Name and Email */}
+                    <div className="relative z-10 flex flex-col items-center gap-5 pt-4">
                         {/* Profile Image */}
                         <div className="relative">
                             <label htmlFor="profileImage" className="cursor-pointer">
+                                <div className="relative">
                                 <div
-                                    className="h-28 w-28 rounded-full bg-white bg-cover bg-center bg-no-repeat shadow-lg border-4 border-white relative"
+                                        className="h-28 w-28 rounded-full bg-gradient-to-br from-[#BBDEFB] to-[#90CAF9] bg-cover bg-center bg-no-repeat shadow-xl border-4 border-white flex items-center justify-center overflow-hidden"
                                     style={{
                                         backgroundImage: profileData.profilePicture
                                             ? `url('${profileData.profilePicture}')`
@@ -177,12 +186,12 @@ export default function UserProfile() {
                                     }}
                                 >
                                     {!profileData.profilePicture && (
-                                        <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                                            <span className="text-5xl">👤</span>
+                                        )}
                                         </div>
-                                    )}
-                                    {/* Camera Icon Overlay */}
-                                    <div className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center shadow-md border-2 border-white hover:bg-blue-700 transition-colors">
-                                        <IoCameraOutline className="text-white text-sm" />
+                                    {/* Camera Icon Overlay - Outside circle to overlap */}
+                                    <div className="absolute -bottom-1 -right-1 h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg border-4 border-white hover:bg-blue-700 transition-colors z-10">
+                                        <IoCameraOutline className="text-white text-lg" />
                                     </div>
                                 </div>
                                 <input
@@ -196,46 +205,40 @@ export default function UserProfile() {
                             </label>
                         </div>
 
-                        {/* Name + Email + Verified Badge + Edit Button */}
-                        <div className="w-full">
-                            <div className="flex items-center justify-between gap-4">
-                                {/* Name + Email + Verified Badge */}
-                                <div className="flex flex-col items-start gap-2 flex-1">
-                                    <p className="text-2xl font-bold text-gray-800">
-                                        {profileData.name || "User"}
-                                    </p>
-                                    <p className="text-base text-gray-600">
-                                        {profileData.email}
-                                    </p>
-                                    {profileData.isEmailVerified && (
-                                        <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-blue-200 shadow-sm">
-                                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-500">
-                                                <IoCheckmarkCircleOutline className="text-white text-sm" />
+                        {/* Name */}
+                        <p className="text-2xl font-bold text-gray-800">
+                            {profileData.name || "User"}
+                        </p>
+                        
+                        {/* Email */}
+                        <p className="text-sm text-gray-700 mt-1">
+                            {profileData.email}
+                        </p>
                                             </div>
-                                            <span className="text-sm font-medium text-teal-600">Verified Vendor</span>
-                                        </div>
-                                    )}
-                                </div>
-                                
+                </section>
+
+                {/* User Information Card */}
+                <div className="w-full mt-6 rounded-xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-bold text-[#3A3A3A]">
+                            Personal Information
+                        </h3>
                                 {/* Edit Profile Button - Top Right */}
                                 {!isEditing && (
                                     <button
                                         onClick={handleEdit}
-                                        className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[#0A84FF] text-white text-sm font-semibold px-4 shadow-md hover:shadow-lg transition-all hover:scale-[1.02] shrink-0"
+                                className="flex h-8 items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#0A84FF] to-[#00C2A8] text-white text-xs font-semibold px-3 shadow-md hover:shadow-lg transition-all hover:scale-[1.02] shrink-0"
                                     >
-                                        <IoPencilOutline className="text-base" />
-                                        Edit Profile
+                                <IoPencilOutline className="text-sm" />
+                                <span>Edit Profile</span>
                                     </button>
                                 )}
-                            </div>
-                        </div>
                     </div>
-
                     {/* User Information Section */}
-                    <div className="flex flex-col space-y-4 border-t border-gray-200 pt-4">
+                    <div className="flex flex-col space-y-6 w-full">
                         {/* Name */}
                         <InfoRow
-                            icon={IoLeafOutline}
+                            icon={IoPersonOutline}
                             label="Name"
                             value={profileData.name}
                             isEditing={isEditing}
@@ -265,12 +268,14 @@ export default function UserProfile() {
 
                         {/* Address */}
                         {isEditing ? (
-                            <div className="flex items-start gap-4">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500">
+                            <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-[#F3F7FA] transition-colors">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
                                     <IoHomeOutline className="text-xl text-white" />
                                 </div>
-                                <div className="flex flex-col flex-1 gap-2">
-                                    <span className="text-xs text-gray-500 mb-1">Primary Address</span>
+                                <div className="flex flex-col flex-1 min-w-0 gap-2 w-full overflow-hidden">
+                                    <span className="text-xs text-[#6B7280] mb-2 font-semibold uppercase tracking-wide">
+                                        Primary Address
+                                    </span>
                                     <input
                                         type="text"
                                         placeholder="Street"
@@ -284,7 +289,7 @@ export default function UserProfile() {
                                                 },
                                             })
                                         }
-                                        className="text-base font-medium text-gray-800 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-1.5 focus:outline-none focus:border-[#0A84FF]"
+                                        className="text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
                                         disabled={saving}
                                     />
                                     <div className="grid grid-cols-2 gap-2">
@@ -301,7 +306,7 @@ export default function UserProfile() {
                                                     },
                                                 })
                                             }
-                                            className="text-base font-medium text-gray-800 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-1.5 focus:outline-none focus:border-[#0A84FF]"
+                                            className="text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
                                             disabled={saving}
                                         />
                                         <input
@@ -317,7 +322,7 @@ export default function UserProfile() {
                                                     },
                                                 })
                                             }
-                                            className="text-base font-medium text-gray-800 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-1.5 focus:outline-none focus:border-[#0A84FF]"
+                                            className="text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
                                             disabled={saving}
                                         />
                                     </div>
@@ -334,7 +339,7 @@ export default function UserProfile() {
                                                 },
                                             })
                                         }
-                                        className="text-base font-medium text-gray-800 bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-1.5 focus:outline-none focus:border-[#0A84FF]"
+                                        className="text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
                                         disabled={saving}
                                     />
                                 </div>
@@ -418,22 +423,24 @@ export default function UserProfile() {
 function InfoRow({ icon, label, value, isEditing, onChange, disabled }) {
     const IconComponent = icon;
     return (
-        <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500 flex-shrink-0">
+        <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-[#F3F7FA] transition-colors">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
                 <IconComponent className="text-xl text-white" />
             </div>
-            <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-xs text-gray-500 mb-1">{label}</span>
+            <div className="flex flex-col flex-1 min-w-0 w-full overflow-hidden">
+                <span className="text-xs text-[#6B7280] mb-2 font-semibold uppercase tracking-wide truncate">
+                    {label}
+                </span>
                 {isEditing ? (
                     <input
                         type="text"
                         value={value || ""}
                         onChange={onChange}
                         disabled={disabled}
-                        className="text-base font-medium text-gray-800 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-green-500 disabled:opacity-50"
+                        className="w-full text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] disabled:opacity-50 transition-all"
                     />
                 ) : (
-                    <span className="text-base font-medium text-gray-800 break-words">
+                    <span className="text-base font-semibold text-[#3A3A3A] break-words">
                         {value || "Not provided"}
                     </span>
                 )}

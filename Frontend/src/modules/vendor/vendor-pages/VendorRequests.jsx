@@ -38,9 +38,11 @@ export default function VendorRequests() {
             setLoading(true);
 
             // Load all three types in parallel
-            const [newResponse, confirmedResponse, historyResponse] =
+            // Fetch both ASSIGNED and PENDING bookings for "New" requests
+            const [assignedResponse, pendingResponse, confirmedResponse, historyResponse] =
                 await Promise.all([
-                    getVendorBookings({ status: "ASSIGNED", limit: 50 }),
+                    getVendorBookings({ status: "ASSIGNED", limit: 50, sortBy: "createdAt", sortOrder: "desc" }),
+                    getVendorBookings({ status: "PENDING", limit: 50, sortBy: "createdAt", sortOrder: "desc" }),
                     getVendorBookings({ status: "ACCEPTED", limit: 50 }),
                     getVendorBookings({
                         status: "COMPLETED",
@@ -50,9 +52,19 @@ export default function VendorRequests() {
                     }),
                 ]);
 
-            if (newResponse.success) {
-                setNewRequests(newResponse.data.bookings || []);
+            // Combine ASSIGNED and PENDING bookings for "New" requests
+            const newBookings = [];
+            if (assignedResponse.success) {
+                newBookings.push(...(assignedResponse.data.bookings || []));
             }
+            if (pendingResponse.success) {
+                newBookings.push(...(pendingResponse.data.bookings || []));
+            }
+            // Sort by creation date (newest first) and remove duplicates
+            const uniqueNewBookings = Array.from(
+                new Map(newBookings.map(booking => [booking._id, booking])).values()
+            ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            setNewRequests(uniqueNewBookings);
             if (confirmedResponse.success) {
                 setConfirmedRequests(confirmedResponse.data.bookings || []);
             }
@@ -329,6 +341,12 @@ export default function VendorRequests() {
                                         Booking ID:{" "}
                                         {formatBookingId(request._id)}
                                     </p>
+                                    {/* Status Badge for PENDING bookings */}
+                                    {(request.vendorStatus || request.status) === "PENDING" && (
+                                        <span className="inline-block mt-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
+                                            Waiting for Payment
+                                        </span>
+                                    )}
                                 </div>
 
                                 {/* Payment Amount */}
@@ -393,21 +411,20 @@ export default function VendorRequests() {
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="mt-4 flex gap-3">
+                            <div className="mt-4 flex gap-2">
                                 {/* View Status Button - Always visible */}
                                 <button
                                     onClick={() =>
                                         navigate(`/vendor/booking/${request._id}/status`)
                                     }
-                                    className="flex-1 rounded-lg bg-[#E7F0FB] py-3 text-sm font-semibold text-[#0A84FF] transition-colors hover:bg-[#D0E1F7] flex items-center justify-center gap-2"
+                                    className="relative flex-1 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] text-[#1976D2] py-2 px-3 text-xs font-semibold hover:from-[#90CAF9] hover:via-[#BBDEFB] hover:to-[#64B5F6] transition-all shadow-sm hover:shadow-md active:scale-[0.98] overflow-hidden flex items-center justify-center"
                                 >
-                                    <span className="material-symbols-outlined !text-lg">
-                                        timeline
-                                    </span>
-                                    View Status
+                                    {/* Glossy/Highlight Effect */}
+                                    <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                                    <span className="relative z-10">View Status</span>
                                 </button>
 
-                                {/* Accept/Reject Buttons - Only for New/ASSIGNED requests */}
+                                {/* Accept/Reject Buttons - Only for New/ASSIGNED requests (PENDING bookings don't have action buttons) */}
                                 {activeTab === "New" &&
                                     (request.vendorStatus || request.status) === "ASSIGNED" && (
                                         <>
@@ -418,7 +435,7 @@ export default function VendorRequests() {
                                                 disabled={
                                                     actionLoading === request._id
                                                 }
-                                                className="flex-1 rounded-lg bg-red-100 py-3 text-sm font-bold text-red-600 transition-colors hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="flex-1 rounded-full bg-red-50 py-2 px-3 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                                             >
                                                 {actionLoading === request._id
                                                     ? "Processing..."
@@ -431,7 +448,7 @@ export default function VendorRequests() {
                                                 disabled={
                                                     actionLoading === request._id
                                                 }
-                                                className="flex-1 rounded-lg bg-[#0A84FF] py-3 text-sm font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#005BBB] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="flex-1 rounded-full bg-green-500 py-2 px-3 text-xs font-bold text-white shadow-sm hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 {actionLoading === request._id
                                                     ? "Processing..."

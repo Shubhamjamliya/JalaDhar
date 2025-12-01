@@ -15,7 +15,6 @@ import ConfirmModal from "../../shared/components/ConfirmModal";
 import NotificationDropdown from "../../../components/NotificationDropdown";
 
 import VendorSidebar from "./VendorSidebar";
-import logo from "../../../assets/logo.png";
 
 const navItems = [
     {
@@ -82,11 +81,14 @@ export default function VendorNavbar() {
             {/* Top Navbar - Mobile & Desktop */}
             <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-[#F6F7F9] px-4 py-3 md:px-6 md:py-4">
                 {/* Left Logo */}
-                <img
-                    src={logo}
-                    alt="Jaladhar"
-                    className="h-8 object-contain md:h-10"
-                />
+                <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#0A84FF] text-2xl md:text-3xl">
+                        water_drop
+                    </span>
+                    <h1 className="text-xl md:text-2xl font-bold text-[#0A84FF]">
+                        JALADHAARA
+                    </h1>
+                </div>
 
                 {/* Desktop Navigation Links - Hidden on Mobile */}
                 <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">

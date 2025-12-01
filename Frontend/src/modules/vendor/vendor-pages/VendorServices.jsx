@@ -305,16 +305,6 @@ export default function VendorServices() {
                 <span className="text-sm font-medium">Back</span>
             </button>
 
-            {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1">
-                    Your Services
-                </h1>
-                <p className="text-[#4A4A4A] text-sm">
-                    Manage your services, prices, and descriptions
-                </p>
-            </div>
-
             {/* Add/Edit Service Modal */}
             {(isAdding || editingId) && (
                 <div
@@ -674,22 +664,22 @@ export default function VendorServices() {
                     }}
                 >
                     <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                        {/* Header with Gradient */}
+                        {/* Header with Light Blue Gradient */}
                         <div
                             className="flex-shrink-0 rounded-t-xl p-5 flex items-center justify-between"
                             style={{
                                 background:
-                                    "linear-gradient(135deg, #0A84FF 0%, #00C2A8 100%)",
+                                    "linear-gradient(to bottom, #E3F2FD 0%, #BBDEFB 50%, #90CAF9 100%)",
                             }}
                         >
-                            <h2 className="text-xl font-bold text-white">
+                            <h2 className="text-xl font-bold text-gray-800">
                                 Service Details
                             </h2>
                             <button
                                 onClick={() => setPreviewingService(null)}
-                                className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                             >
-                                <IoCloseOutline className="text-2xl text-white" />
+                                <IoCloseOutline className="text-2xl text-gray-800" />
                             </button>
                         </div>
 
@@ -701,9 +691,11 @@ export default function VendorServices() {
                                     previewingService.images.length > 0 && (
                                         <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                             <div className="flex items-center gap-2 mb-3">
-                                                <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                    image
-                                                </span>
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                                                    <span className="material-symbols-outlined text-white text-base">
+                                                        image
+                                                    </span>
+                                                </div>
                                                 <h3 className="text-sm font-semibold text-[#3A3A3A]">
                                                     Service Images
                                                 </h3>
@@ -732,9 +724,11 @@ export default function VendorServices() {
                                 {/* Service Name */}
                                 <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                            design_services
-                                        </span>
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                                            <span className="material-symbols-outlined text-white text-base">
+                                                design_services
+                                            </span>
+                                        </div>
                                         <label className="block text-sm font-semibold text-[#3A3A3A]">
                                             Service Name
                                         </label>
@@ -748,9 +742,11 @@ export default function VendorServices() {
                                 {previewingService.description && (
                                     <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                description
-                                            </span>
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                                                <span className="material-symbols-outlined text-white text-base">
+                                                    description
+                                                </span>
+                                            </div>
                                             <label className="block text-sm font-semibold text-[#3A3A3A]">
                                                 Description
                                             </label>
@@ -765,9 +761,11 @@ export default function VendorServices() {
                                 {previewingService.machineType && (
                                     <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                precision_manufacturing
-                                            </span>
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                                                <span className="material-symbols-outlined text-white text-base">
+                                                    precision_manufacturing
+                                                </span>
+                                            </div>
                                             <label className="block text-sm font-semibold text-[#3A3A3A]">
                                                 Machine Type
                                             </label>
@@ -782,14 +780,16 @@ export default function VendorServices() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                payments
-                                            </span>
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                                                <span className="material-symbols-outlined text-white text-base">
+                                                    payments
+                                                </span>
+                                            </div>
                                             <label className="block text-sm font-semibold text-[#3A3A3A]">
                                                 Price
                                             </label>
                                         </div>
-                                        <p className="text-base font-semibold text-[#0A84FF]">
+                                        <p className="text-base font-bold text-[#0A84FF]">
                                             ₹
                                             {previewingService.price?.toLocaleString(
                                                 "en-IN",
@@ -803,9 +803,11 @@ export default function VendorServices() {
                                     {previewingService.duration && (
                                         <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                    schedule
-                                                </span>
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                                                    <span className="material-symbols-outlined text-white text-base">
+                                                        schedule
+                                                    </span>
+                                                </div>
                                                 <label className="block text-sm font-semibold text-[#3A3A3A]">
                                                     Duration
                                                 </label>
@@ -823,9 +825,11 @@ export default function VendorServices() {
                                     {previewingService.category && (
                                         <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                    category
-                                                </span>
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                                                    <span className="material-symbols-outlined text-white text-base">
+                                                        category
+                                                    </span>
+                                                </div>
                                                 <label className="block text-sm font-semibold text-[#3A3A3A]">
                                                     Category
                                                 </label>
@@ -839,9 +843,11 @@ export default function VendorServices() {
                                     {/* Status */}
                                     <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                info
-                                            </span>
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                                                <span className="material-symbols-outlined text-white text-base">
+                                                    info
+                                                </span>
+                                            </div>
                                             <label className="block text-sm font-semibold text-[#3A3A3A]">
                                                 Status
                                             </label>
@@ -870,9 +876,11 @@ export default function VendorServices() {
                                     previewingService.skills.length > 0 && (
                                         <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                             <div className="flex items-center gap-2 mb-3">
-                                                <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                    star
-                                                </span>
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                                                    <span className="material-symbols-outlined text-white text-base">
+                                                        star
+                                                    </span>
+                                                </div>
                                                 <label className="block text-sm font-semibold text-[#3A3A3A]">
                                                     Skills
                                                 </label>
@@ -895,9 +903,11 @@ export default function VendorServices() {
                                 {/* Active Status */}
                                 <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                            toggle_on
-                                        </span>
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
+                                            <span className="material-symbols-outlined text-white text-base">
+                                                toggle_on
+                                            </span>
+                                        </div>
                                         <label className="block text-sm font-semibold text-[#3A3A3A]">
                                             Active Status
                                         </label>

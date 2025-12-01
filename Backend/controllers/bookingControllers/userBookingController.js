@@ -119,12 +119,23 @@ const createBooking = async (req, res) => {
     }
 
     // Check if user has an active booking (only one booking at a time)
-    // Exclude bookings that are cancelled, completed, rejected, or pending without payment
+    // Exclude bookings that are cancelled, completed, rejected, or in final settlement stages
     // An active booking is one that is either paid (advancePaid = true) or already assigned (status != PENDING)
+    // Final stages where user can create new booking: ADMIN_APPROVED, FINAL_SETTLEMENT, FINAL_SETTLEMENT_COMPLETE, APPROVED
     const activeBooking = await Booking.findOne({
       user: userId,
       status: {
-        $nin: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED, BOOKING_STATUS.FAILED, BOOKING_STATUS.SUCCESS]
+        $nin: [
+          BOOKING_STATUS.COMPLETED, 
+          BOOKING_STATUS.CANCELLED, 
+          BOOKING_STATUS.REJECTED, 
+          BOOKING_STATUS.FAILED, 
+          BOOKING_STATUS.SUCCESS,
+          BOOKING_STATUS.ADMIN_APPROVED,
+          BOOKING_STATUS.FINAL_SETTLEMENT,
+          BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE,
+          BOOKING_STATUS.APPROVED
+        ]
       },
       $or: [
         { 'payment.advancePaid': true }, // Any paid booking is active
