@@ -8,6 +8,42 @@ const { getIO } = require('../../sockets');
 const { creditToVendorWallet, debitFromVendorWallet } = require('../../services/walletService');
 
 /**
+ * Get single booking details by ID
+ */
+const getBookingDetails = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+
+    const booking = await Booking.findById(bookingId)
+      .populate('user', 'name email phone')
+      .populate('vendor', 'name email phone')
+      .populate('service', 'name price description machineType');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Booking details retrieved successfully',
+      data: {
+        booking
+      }
+    });
+  } catch (error) {
+    console.error('Get booking details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve booking details',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Get all bookings with filters
  */
 const getAllBookings = async (req, res) => {
@@ -2637,6 +2673,7 @@ module.exports = {
   getPendingUserFinalSettlements,
   getCompletedUserFinalSettlements,
   processNewFinalSettlement,
-  processUserFinalSettlement
+  processUserFinalSettlement,
+  getBookingDetails
 };
 

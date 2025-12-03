@@ -14,6 +14,8 @@ import {
     IoChevronUpOutline,
     IoBarChartOutline,
     IoCalendarOutline,
+    IoStarOutline,
+    IoAlertCircleOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -63,6 +65,18 @@ const navItems = [
         Icon: IoWalletOutline,
     },
     {
+        id: "ratings",
+        label: "Ratings & Reviews",
+        to: "/admin/ratings",
+        Icon: IoStarOutline,
+    },
+    {
+        id: "disputes",
+        label: "Disputes",
+        to: "/admin/disputes",
+        Icon: IoAlertCircleOutline,
+    },
+    {
         id: "settings",
         label: "Settings",
         to: "/admin/settings",
@@ -90,13 +104,18 @@ export default function AdminSidebar() {
         const currentPath = location.pathname;
 
         // For routes that should match exactly
-        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/settings" || path === "/admin/approvals" || path === "/admin/bookings") {
+        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/settings" || path === "/admin/approvals" || path === "/admin/bookings" || path === "/admin/ratings" || path === "/admin/disputes") {
             return currentPath === path || currentPath === path + "/";
         }
 
         // For pending, match the path and sub-routes
         if (path === "/admin/vendors/pending") {
             return currentPath === path || currentPath.startsWith(path + "/");
+        }
+
+        // For bookings, match the path and booking details sub-routes
+        if (path === "/admin/bookings") {
+            return currentPath === path || currentPath === path + "/" || currentPath.startsWith(path + "/");
         }
 
         // For payments, check if any payment route is active
@@ -209,7 +228,8 @@ export default function AdminSidebar() {
                     const Icon = item.Icon;
                     const isActive = checkIsActive(item.to);
                     // Use end prop for routes that should match exactly (not sub-routes)
-                    const shouldEnd = item.to === "/admin/vendors" || item.to === "/admin/users" || item.to === "/admin/dashboard" || item.to === "/admin/settings" || item.to === "/admin/approvals" || item.to === "/admin/bookings";
+                    // Note: bookings should NOT use end because it has sub-routes (booking details)
+                    const shouldEnd = item.to === "/admin/vendors" || item.to === "/admin/users" || item.to === "/admin/dashboard" || item.to === "/admin/settings" || item.to === "/admin/approvals";
 
                     return (
                         <NavLink

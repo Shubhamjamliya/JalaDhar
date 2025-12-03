@@ -16,6 +16,9 @@ import {
     IoArrowBackOutline,
     IoLocationOutline,
     IoCameraOutline,
+    IoAlertCircleOutline,
+    IoStar,
+    IoStarOutline,
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import {
@@ -660,6 +663,36 @@ export default function VendorProfile() {
                         <p className="text-sm font-medium text-gray-700 mt-1 break-words max-w-full px-4">
                             {profileData.email}
                         </p>
+                        {/* Rating Display */}
+                        {vendor?.rating && vendor.rating.totalRatings > 0 && (
+                            <div className="flex flex-col items-center gap-1 mt-2">
+                                <div className="flex items-center gap-1">
+                                    <span className="text-2xl font-bold text-gray-800">
+                                        {vendor.rating.averageRating.toFixed(1)}
+                                    </span>
+                                    <div className="flex items-center gap-0.5">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <IoStar
+                                                key={star}
+                                                className={`text-lg ${
+                                                    star <= Math.round(vendor.rating.averageRating)
+                                                        ? "text-yellow-500"
+                                                        : "text-gray-300"
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-600">
+                                    {vendor.rating.totalRatings} {vendor.rating.totalRatings === 1 ? "rating" : "ratings"}
+                                    {vendor.rating.successRatio > 0 && (
+                                        <span className="ml-2">
+                                            • {vendor.rating.successRatio}% success rate
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                        )}
                             </div>
                     </div>
             </section>
@@ -1437,6 +1470,11 @@ export default function VendorProfile() {
 
             {/* Action List */}
             <div className="w-full mt-6 space-y-3">
+                <ActionRow
+                    icon={IoAlertCircleOutline}
+                    label="Dispute & Help"
+                    onClick={() => navigate("/vendor/disputes")}
+                />
                 <ActionRow
                     icon={IoLogOutOutline}
                     label="Logout"

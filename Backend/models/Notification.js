@@ -54,7 +54,12 @@ const notificationSchema = new mongoose.Schema({
       // Admin
       'NEW_VENDOR_REGISTRATION',
       'NEW_BOOKING_PENDING',
-      'PAYMENT_DISPUTE'
+      'PAYMENT_DISPUTE',
+      'NEW_DISPUTE',
+      'DISPUTE_UPDATED',
+      'DISPUTE_COMMENT',
+      // Rating
+      'NEW_RATING'
     ]
   },
   title: {

@@ -42,7 +42,14 @@ const UserAdvancePaymentConfirmation = lazy(() => import("./modules/user/user-pa
 const UserProfile = lazy(() => import("./modules/user/user-pages/UserProfile"));
 const UserWallet = lazy(() => import("./modules/user/user-pages/UserWallet"));
 const UserVendorProfile = lazy(() => import("./modules/user/user-pages/UserVendorProfile"));
+const UserDisputes = lazy(() => import("./modules/user/user-pages/UserDisputes"));
+const UserCreateDispute = lazy(() => import("./modules/user/user-pages/UserCreateDispute"));
+const UserDisputeDetails = lazy(() => import("./modules/user/user-pages/UserDisputeDetails"));
+const UserRatings = lazy(() => import("./modules/user/user-pages/UserRatings"));
 const VendorDashboard = lazy(() => import("./modules/vendor/vendor-pages/VendorDashboard"));
+const VendorDisputes = lazy(() => import("./modules/vendor/vendor-pages/VendorDisputes"));
+const VendorCreateDispute = lazy(() => import("./modules/vendor/vendor-pages/VendorCreateDispute"));
+const VendorDisputeDetails = lazy(() => import("./modules/vendor/vendor-pages/VendorDisputeDetails"));
 const VendorBookings = lazy(() => import("./modules/vendor/vendor-pages/VendorBookings"));
 const VendorStatus = lazy(() => import("./modules/vendor/vendor-pages/VendorStatus"));
 const VendorAllBookingsStatus = lazy(() => import("./modules/vendor/vendor-pages/VendorAllBookingsStatus"));
@@ -68,6 +75,9 @@ const AdminBookings = lazy(() => import("./modules/admin/admin-pages/AdminBookin
 const AdminWithdrawals = lazy(() => import("./modules/admin/admin-pages/AdminWithdrawals"));
 const AdminUserWithdrawals = lazy(() => import("./modules/admin/admin-pages/AdminUserWithdrawals"));
 const AdminApprovals = lazy(() => import("./modules/admin/admin-pages/AdminApprovals"));
+const AdminBookingDetails = lazy(() => import("./modules/admin/admin-pages/AdminBookingDetails"));
+const AdminRatings = lazy(() => import("./modules/admin/admin-pages/AdminRatings"));
+const AdminDisputes = lazy(() => import("./modules/admin/admin-pages/AdminDisputes"));
 const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavbar"));
 
 function App() {
@@ -246,6 +256,38 @@ function App() {
                                                                 </Suspense>
                                                             }
                                                         />
+                                                        <Route
+                                                            path="/disputes"
+                                                            element={
+                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                    <UserDisputes />
+                                                                </Suspense>
+                                                            }
+                                                        />
+                                                        <Route
+                                                            path="/disputes/create"
+                                                            element={
+                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                    <UserCreateDispute />
+                                                                </Suspense>
+                                                            }
+                                                        />
+                                                        <Route
+                                                            path="/disputes/:disputeId"
+                                                            element={
+                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                    <UserDisputeDetails />
+                                                                </Suspense>
+                                                            }
+                                                        />
+                                                        <Route
+                                                            path="/ratings"
+                                                            element={
+                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                    <UserRatings />
+                                                                </Suspense>
+                                                            }
+                                                        />
                                                     </Routes>
                                                 </Suspense>
                                             </main>
@@ -400,6 +442,30 @@ function App() {
                                                             element={
                                                                 <Suspense fallback={<LoadingSpinner />}>
                                                                     <VendorReviews />
+                                                                </Suspense>
+                                                            }
+                                                        />
+                                                        <Route
+                                                            path="/disputes"
+                                                            element={
+                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                    <VendorDisputes />
+                                                                </Suspense>
+                                                            }
+                                                        />
+                                                        <Route
+                                                            path="/disputes/create"
+                                                            element={
+                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                    <VendorCreateDispute />
+                                                                </Suspense>
+                                                            }
+                                                        />
+                                                        <Route
+                                                            path="/disputes/:disputeId"
+                                                            element={
+                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                    <VendorDisputeDetails />
                                                                 </Suspense>
                                                             }
                                                         />
@@ -575,6 +641,30 @@ function App() {
                                                                     element={
                                                                         <Suspense fallback={<LoadingSpinner />}>
                                                                             <AdminApprovals />
+                                                                        </Suspense>
+                                                                    }
+                                                                />
+                                                                <Route
+                                                                    path="/bookings/:bookingId"
+                                                                    element={
+                                                                        <Suspense fallback={<LoadingSpinner />}>
+                                                                            <AdminBookingDetails />
+                                                                        </Suspense>
+                                                                    }
+                                                                />
+                                                                <Route
+                                                                    path="/ratings"
+                                                                    element={
+                                                                        <Suspense fallback={<LoadingSpinner />}>
+                                                                            <AdminRatings />
+                                                                        </Suspense>
+                                                                    }
+                                                                />
+                                                                <Route
+                                                                    path="/disputes"
+                                                                    element={
+                                                                        <Suspense fallback={<LoadingSpinner />}>
+                                                                            <AdminDisputes />
                                                                         </Suspense>
                                                                     }
                                                                 />

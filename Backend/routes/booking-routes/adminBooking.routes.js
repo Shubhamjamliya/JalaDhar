@@ -26,7 +26,8 @@ const {
   getPendingUserFinalSettlements,
   getCompletedUserFinalSettlements,
   processNewFinalSettlement,
-  processUserFinalSettlement
+  processUserFinalSettlement,
+  getBookingDetails
 } = require('../../controllers/bookingControllers/adminBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isAdmin } = require('../../middleware/roleMiddleware');
@@ -47,6 +48,7 @@ const rejectTravelChargesValidation = [
 
 // Routes
 router.get('/bookings', authenticate, isAdmin, getAllBookings);
+router.get('/bookings/:bookingId', authenticate, isAdmin, getBookingDetails);
 router.get('/statistics', authenticate, isAdmin, getBookingStatistics);
 router.get('/travel-charges', authenticate, isAdmin, getTravelChargesRequests);
 router.patch('/bookings/:bookingId/approve-result', authenticate, isAdmin, approveBorewellResultValidation, approveBorewellResult);

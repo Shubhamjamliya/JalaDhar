@@ -180,6 +180,11 @@ export default function UserServiceProvider() {
                                             {renderStars(vendor.averageRating || 0)}
                                             <span className="text-gray-600 text-xs font-medium ml-1">
                                                 ({vendor.averageRating?.toFixed(1) || "0.0"})
+                                                {vendor.totalRatings > 0 && (
+                                                    <span className="text-gray-500 ml-1">
+                                                        • {vendor.totalRatings} {vendor.totalRatings === 1 ? "rating" : "ratings"}
+                                                    </span>
+                                                )}
                                             </span>
                                         </div>
                                     </div>

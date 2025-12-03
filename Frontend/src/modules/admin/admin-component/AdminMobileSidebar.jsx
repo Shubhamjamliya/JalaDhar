@@ -14,6 +14,8 @@ import {
     IoChevronDownOutline,
     IoChevronUpOutline,
     IoBarChartOutline,
+    IoStarOutline,
+    IoAlertCircleOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -55,6 +57,18 @@ const navItems = [
         label: "Payments",
         to: "/admin/payments",
         Icon: IoWalletOutline,
+    },
+    {
+        id: "ratings",
+        label: "Ratings & Reviews",
+        to: "/admin/ratings",
+        Icon: IoStarOutline,
+    },
+    {
+        id: "disputes",
+        label: "Disputes",
+        to: "/admin/disputes",
+        Icon: IoAlertCircleOutline,
     },
     {
         id: "settings",

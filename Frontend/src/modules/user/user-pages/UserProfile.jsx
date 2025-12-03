@@ -8,10 +8,11 @@ import {
     IoLogOutOutline,
     IoChevronForwardOutline,
     IoPencilOutline,
-    IoHelpCircleOutline,
     IoCheckmarkCircleOutline,
     IoLeafOutline,
     IoCameraOutline,
+    IoAlertCircleOutline,
+    IoStarOutline,
 } from "react-icons/io5";
 import { getUserProfile, updateUserProfile, uploadUserProfilePicture } from "../../../services/authApi";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -148,9 +149,8 @@ export default function UserProfile() {
         navigate("/user/wallet");
     };
 
-    const handleHelpCenter = () => {
-        // Navigate to help center
-        toast.showInfo("Help Center feature coming soon!");
+    const handleDisputes = () => {
+        navigate("/user/disputes");
     };
 
     if (loading) {
@@ -389,9 +389,14 @@ export default function UserProfile() {
                         onClick={handleWallet}
                     />
                     <ActionRow
-                        icon={IoHelpCircleOutline}
-                        label="Help Center"
-                        onClick={handleHelpCenter}
+                        icon={IoStarOutline}
+                        label="My Ratings & Reviews"
+                        onClick={() => navigate("/user/ratings")}
+                    />
+                    <ActionRow
+                        icon={IoAlertCircleOutline}
+                        label="Dispute & Help"
+                        onClick={handleDisputes}
                     />
                     <ActionRow
                         icon={IoLogOutOutline}

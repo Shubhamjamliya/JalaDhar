@@ -652,3 +652,114 @@ export const processUserWithdrawalRequest = async (requestId, data = {}) => {
   return response.data;
 };
 
+/**
+ * Get single booking details
+ * @param {string} bookingId
+ * @returns {Promise}
+ */
+export const getBookingDetails = async (bookingId) => {
+  const response = await api.get(`/admin/bookings/${bookingId}`);
+  return response.data;
+};
+
+/**
+ * Get all ratings
+ * @param {Object} params - { page, limit, vendorId, userId, minRating, maxRating, search }
+ * @returns {Promise}
+ */
+export const getAllRatings = async (params = {}) => {
+  const response = await api.get('/admin/ratings', { params });
+  return response.data;
+};
+
+/**
+ * Get rating statistics
+ * @returns {Promise}
+ */
+export const getRatingStatistics = async () => {
+  const response = await api.get('/admin/ratings/statistics');
+  return response.data;
+};
+
+/**
+ * Get single rating details
+ * @param {string} ratingId
+ * @returns {Promise}
+ */
+export const getRatingDetails = async (ratingId) => {
+  const response = await api.get(`/admin/ratings/${ratingId}`);
+  return response.data;
+};
+
+/**
+ * Delete rating
+ * @param {string} ratingId
+ * @returns {Promise}
+ */
+export const deleteRating = async (ratingId) => {
+  const response = await api.delete(`/admin/ratings/${ratingId}`);
+  return response.data;
+};
+
+/**
+ * Get all disputes
+ * @param {Object} params - { page, limit, status, type, priority, raisedBy, assignedTo, search }
+ * @returns {Promise}
+ */
+export const getAllDisputes = async (params = {}) => {
+  const response = await api.get('/admin/disputes', { params });
+  return response.data;
+};
+
+/**
+ * Get dispute statistics
+ * @returns {Promise}
+ */
+export const getDisputeStatistics = async () => {
+  const response = await api.get('/admin/disputes/statistics');
+  return response.data;
+};
+
+/**
+ * Get single dispute details
+ * @param {string} disputeId
+ * @returns {Promise}
+ */
+export const getDisputeDetails = async (disputeId) => {
+  const response = await api.get(`/admin/disputes/${disputeId}`);
+  return response.data;
+};
+
+/**
+ * Update dispute status
+ * @param {string} disputeId
+ * @param {Object} data - { status, notes, actionTaken }
+ * @returns {Promise}
+ */
+export const updateDisputeStatus = async (disputeId, data = {}) => {
+  const response = await api.patch(`/admin/disputes/${disputeId}/status`, data);
+  return response.data;
+};
+
+/**
+ * Assign dispute to admin
+ * @param {string} disputeId
+ * @param {Object} data - { assignedTo }
+ * @returns {Promise}
+ */
+export const assignDispute = async (disputeId, data = {}) => {
+  const response = await api.patch(`/admin/disputes/${disputeId}/assign`, data);
+  return response.data;
+};
+
+/**
+ * Add comment to dispute
+ * @param {string} disputeId
+ * @param {Object} data - { comment }
+ * @returns {Promise}
+ */
+export const addDisputeComment = async (disputeId, data = {}) => {
+  const response = await api.post(`/admin/disputes/${disputeId}/comment`, data);
+  return response.data;
+};
+

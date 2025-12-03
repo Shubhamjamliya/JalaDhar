@@ -365,3 +365,64 @@ export const getWithdrawalRequests = async () => {
   return response.data;
 };
 
+/**
+ * Vendor Dispute API functions
+ */
+
+/**
+ * Create a new dispute
+ * @param {Object} disputeData - { subject, description, type, priority, bookingId }
+ * @param {Array} attachments - Array of files (optional)
+ * @returns {Promise}
+ */
+export const createDispute = async (disputeData, attachments = []) => {
+  const formData = new FormData();
+  formData.append('subject', disputeData.subject);
+  formData.append('description', disputeData.description);
+  formData.append('type', disputeData.type);
+  if (disputeData.priority) formData.append('priority', disputeData.priority);
+  if (disputeData.bookingId) formData.append('bookingId', disputeData.bookingId);
+  
+  attachments.forEach((file) => {
+    formData.append('attachments', file);
+  });
+
+  const response = await api.post('/vendors/disputes', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+/**
+ * Get vendor's disputes
+ * @param {Object} params - { page, limit, status, type }
+ * @returns {Promise}
+ */
+export const getMyDisputes = async (params = {}) => {
+  const response = await api.get('/vendors/disputes', { params });
+  return response.data;
+};
+
+/**
+ * Get dispute details
+ * @param {string} disputeId
+ * @returns {Promise}
+ */
+export const getDisputeDetails = async (disputeId) => {
+  const response = await api.get(`/vendors/disputes/${disputeId}`);
+  return response.data;
+};
+
+/**
+ * Add comment to dispute
+ * @param {string} disputeId
+ * @param {Object} data - { comment }
+ * @returns {Promise}
+ */
+export const addDisputeComment = async (disputeId, data) => {
+  const response = await api.post(`/vendors/disputes/${disputeId}/comment`, data);
+  return response.data;
+};
+

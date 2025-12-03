@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     IoSearchOutline,
     IoEyeOutline,
@@ -19,6 +20,7 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import api from "../../../services/api";
 
 export default function AdminBookings() {
+    const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedBooking, setSelectedBooking] = useState(null);
@@ -308,7 +310,7 @@ export default function AdminBookings() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <button
-                                                onClick={() => handleViewDetails(booking._id)}
+                                                onClick={() => navigate(`/admin/bookings/${booking._id}`)}
                                                 className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
                                             >
                                                 <IoEyeOutline className="text-lg" />

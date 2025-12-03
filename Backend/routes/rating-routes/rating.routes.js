@@ -5,7 +5,8 @@ const {
   submitRating,
   getVendorRatings,
   getMyRatings,
-  getBookingRating
+  getBookingRating,
+  getUserRatings
 } = require('../../controllers/ratingControllers/ratingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isUser, isVendor } = require('../../middleware/roleMiddleware');
@@ -23,6 +24,7 @@ const submitRatingValidation = [
 router.post('/:bookingId', authenticate, isUser, submitRatingValidation, submitRating);
 router.get('/booking/:bookingId', authenticate, isUser, getBookingRating);
 router.get('/my-ratings', authenticate, isVendor, getMyRatings); // Vendor's own ratings
+router.get('/user/my-ratings', authenticate, isUser, getUserRatings); // User's own ratings
 router.get('/vendor/:vendorId', getVendorRatings); // Public route
 
 module.exports = router;
