@@ -8,6 +8,7 @@ import {
     IoPersonCircleOutline,
     IoMenuOutline,
     IoLogOutOutline,
+    IoWalletOutline,
 } from "react-icons/io5";
 import { useAuth } from "../../../contexts/AuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -35,10 +36,10 @@ const navItems = [
         Icon: IoTimeOutline,
     },
     {
-        id: "history",
-        label: "Booking History",
-        to: "/user/history",
-        Icon: IoCalendarOutline,
+        id: "wallet",
+        label: "Wallet",
+        to: "/user/wallet",
+        Icon: IoWalletOutline,
     },
     {
         id: "profile",

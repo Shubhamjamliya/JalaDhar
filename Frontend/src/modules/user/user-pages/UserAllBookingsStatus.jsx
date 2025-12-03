@@ -17,6 +17,7 @@ export default function UserAllBookingsStatus() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("upcoming");
 
   useEffect(() => {
     loadAllBookings();
@@ -36,14 +37,7 @@ export default function UserAllBookingsStatus() {
 
       if (response.success) {
         const allBookings = response.data.bookings || [];
-        // Show all bookings except cancelled/rejected (include completed ones)
-        const validBookings = allBookings.filter(
-          (booking) => {
-            const status = booking.userStatus || booking.status;
-            return !["CANCELLED", "REJECTED"].includes(status);
-          }
-        );
-        setBookings(validBookings);
+        setBookings(allBookings);
       } else {
         setError(response.message || "Failed to load bookings");
       }
@@ -51,6 +45,35 @@ export default function UserAllBookingsStatus() {
       setError(err.response?.data?.message || "Failed to load bookings");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getFilteredBookings = () => {
+    if (!bookings.length) return [];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    switch (activeTab) {
+      case "upcoming":
+        return bookings.filter((booking) => {
+          const status = booking.userStatus || booking.status;
+          const scheduledDate = booking.scheduledDate ? new Date(booking.scheduledDate) : null;
+          const isUpcoming = scheduledDate && scheduledDate >= today;
+          return !["COMPLETED", "CANCELLED", "REJECTED", "FAILED"].includes(status) && isUpcoming;
+        });
+      case "complete":
+        return bookings.filter((booking) => {
+          const status = booking.userStatus || booking.status;
+          return ["COMPLETED", "SUCCESS"].includes(status);
+        });
+      case "cancelled":
+        return bookings.filter((booking) => {
+          const status = booking.userStatus || booking.status;
+          return ["CANCELLED", "REJECTED", "FAILED"].includes(status);
+        });
+      default:
+        return bookings;
     }
   };
 
@@ -132,6 +155,8 @@ export default function UserAllBookingsStatus() {
     );
   }
 
+  const filteredBookings = getFilteredBookings();
+
   return (
     <PageContainer>
       <ErrorMessage message={error} />
@@ -141,70 +166,111 @@ export default function UserAllBookingsStatus() {
         My Bookings
       </h1>
 
+      {/* Tabs */}
+      <div className="mb-6 flex gap-2 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab("upcoming")}
+          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${
+            activeTab === "upcoming"
+              ? "text-[#0A84FF] border-[#0A84FF]"
+              : "text-gray-500 border-transparent hover:text-[#0A84FF]"
+          }`}
+        >
+          Upcoming
+        </button>
+        <button
+          onClick={() => setActiveTab("complete")}
+          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${
+            activeTab === "complete"
+              ? "text-[#0A84FF] border-[#0A84FF]"
+              : "text-gray-500 border-transparent hover:text-[#0A84FF]"
+          }`}
+        >
+          Complete
+        </button>
+        <button
+          onClick={() => setActiveTab("cancelled")}
+          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${
+            activeTab === "cancelled"
+              ? "text-[#0A84FF] border-[#0A84FF]"
+              : "text-gray-500 border-transparent hover:text-[#0A84FF]"
+          }`}
+        >
+          Cancelled
+        </button>
+      </div>
+
       {/* Bookings List */}
       <div className="space-y-4">
-        {bookings.length === 0 ? (
+        {filteredBookings.length === 0 ? (
           <div className="rounded-xl bg-white p-8 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
             <div className="mb-4 w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center mx-auto">
               <IoCalendarOutline className="text-3xl text-blue-500" />
             </div>
             <p className="text-[#3A3A3A] font-semibold mb-2">
-              No Bookings
+              {activeTab === "upcoming" && "No Upcoming Bookings"}
+              {activeTab === "complete" && "No Completed Bookings"}
+              {activeTab === "cancelled" && "No Cancelled Bookings"}
             </p>
             <p className="text-[#6B7280] text-sm">
-              You don't have any bookings yet. Create a new booking to see them here.
+              {activeTab === "upcoming" && "You don't have any upcoming bookings."}
+              {activeTab === "complete" && "You don't have any completed bookings yet."}
+              {activeTab === "cancelled" && "You don't have any cancelled bookings."}
             </p>
           </div>
         ) : (
-          bookings.map((booking) => (
+          filteredBookings.map((booking) => (
             <div
               key={booking._id}
               onClick={() => navigate(`/user/booking/${booking._id}`)}
               className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] transition-all"
             >
               {/* Vendor Info Header */}
-              <div className="flex items-center gap-4 mb-4">
-                {/* Profile Picture */}
-                {booking.vendor?.documents?.profilePicture?.url ? (
-                  <img
-                    src={booking.vendor.documents.profilePicture.url}
-                    alt="Vendor Avatar"
-                    className="h-14 w-14 rounded-full border-2 border-[#0A84FF] object-cover"
-                  />
-                ) : (
-                  <div className="h-14 w-14 rounded-full border-2 border-[#0A84FF] bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                    {booking.vendor?.name ? (
-                      <span className="text-lg font-bold text-[#0A84FF]">
-                        {booking.vendor.name.charAt(0).toUpperCase()}
-                      </span>
-                    ) : (
-                      <span className="text-xl">👤</span>
-                    )}
-                  </div>
-                )}
+              <div className="mb-4">
+                <div className="flex items-start gap-4 mb-3">
+                  {/* Profile Picture */}
+                  {booking.vendor?.documents?.profilePicture?.url ? (
+                    <img
+                      src={booking.vendor.documents.profilePicture.url}
+                      alt="Vendor Avatar"
+                      className="h-14 w-14 rounded-full border-2 border-[#0A84FF] object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="h-14 w-14 rounded-full border-2 border-[#0A84FF] bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
+                      {booking.vendor?.name ? (
+                        <span className="text-lg font-bold text-[#0A84FF]">
+                          {booking.vendor.name.charAt(0).toUpperCase()}
+                        </span>
+                      ) : (
+                        <span className="text-xl">👤</span>
+                      )}
+                    </div>
+                  )}
 
-                {/* Vendor Details */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-[#3A3A3A]">
+                  {/* Vendor Details */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-[#3A3A3A] mb-1 truncate">
                       {booking.service?.name || "Service"}
                     </h3>
-                    {getStatusBadge(booking.userStatus || booking.status)}
+                    <p className="text-xs text-[#6B7280] mb-2">
+                      Booking ID: {formatBookingId(booking._id)}
+                    </p>
+                    {/* Status Badge - Separate line */}
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(booking.userStatus || booking.status)}
+                    </div>
                   </div>
-                  <p className="text-xs text-[#6B7280]">
-                    Booking ID: {formatBookingId(booking._id)}
-                  </p>
-                </div>
 
-                {/* Payment Amount */}
-                <div className="text-right">
-                  <p className="text-lg font-bold text-[#00C2A8]">
-                    {formatAmount(
-                      booking.payment?.totalAmount ||
-                      booking.payment?.amount ||
-                      0
-                    )}
-                  </p>
+                  {/* Payment Amount */}
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-lg font-bold text-[#00C2A8]">
+                      {formatAmount(
+                        booking.payment?.totalAmount ||
+                        booking.payment?.amount ||
+                        0
+                      )}
+                    </p>
+                  </div>
                 </div>
               </div>
 

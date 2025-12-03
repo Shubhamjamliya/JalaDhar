@@ -191,7 +191,7 @@ export default function UserRemainingPayment() {
                 <div className="text-center py-8">
                     <p className="text-gray-600 mb-4">Booking not found</p>
                     <button
-                        onClick={() => navigate("/user/history")}
+                        onClick={() => navigate("/user/status")}
                         className="bg-[#0A84FF] text-white px-6 py-2 rounded-[10px] font-semibold hover:bg-[#005BBB] transition-colors"
                     >
                         Back to History

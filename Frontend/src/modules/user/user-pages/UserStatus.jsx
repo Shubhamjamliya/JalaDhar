@@ -448,11 +448,11 @@ export default function UserStatus() {
                             Find a Vendor
                         </button>
                         <button
-                            onClick={() => navigate("/user/history")}
+                            onClick={() => navigate("/user/status")}
                             className="flex items-center justify-center gap-2 bg-white text-gray-700 px-6 py-3 rounded-[12px] font-semibold hover:bg-gray-50 transition-colors shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border border-gray-200"
                         >
                             <IoDocumentTextOutline className="text-xl" />
-                            View History
+                            View Bookings
                         </button>
                     </div>
                 </div>

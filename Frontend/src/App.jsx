@@ -34,7 +34,6 @@ const UserServiceProvider = lazy(() => import("./modules/user/user-pages/UserSer
 const UserRequestService = lazy(() => import("./modules/user/user-pages/UserRequestService"));
 const UserStatus = lazy(() => import("./modules/user/user-pages/UserStatus"));
 const UserAllBookingsStatus = lazy(() => import("./modules/user/user-pages/UserAllBookingsStatus"));
-const UserBookingHistory = lazy(() => import("./modules/user/user-pages/UserBookingHistory"));
 const UserBookingDetails = lazy(() => import("./modules/user/user-pages/UserBookingDetails"));
 const UserBookingConfirmation = lazy(() => import("./modules/user/user-pages/UserBookingConfirmation"));
 const UserRemainingPayment = lazy(() => import("./modules/user/user-pages/UserRemainingPayment"));
@@ -189,14 +188,6 @@ function App() {
                                                             element={
                                                                 <Suspense fallback={<LoadingSpinner />}>
                                                                     <UserStatus />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/history"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserBookingHistory />
                                                                 </Suspense>
                                                             }
                                                         />

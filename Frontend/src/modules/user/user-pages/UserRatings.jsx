@@ -200,10 +200,10 @@ export default function UserRatings() {
                                 Rate vendors after completing bookings to see them here
                             </p>
                             <button
-                                onClick={() => navigate("/user/history")}
+                                onClick={() => navigate("/user/status")}
                                 className="bg-[#0A84FF] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#005BBB] transition-colors"
                             >
-                                View Booking History
+                                View Bookings
                             </button>
                         </div>
                     ) : (

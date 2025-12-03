@@ -315,10 +315,10 @@ export default function UserBookingDetails() {
                 <div className="text-center py-8">
                     <p className="text-gray-600 mb-4">Booking not found</p>
                     <button
-                        onClick={() => navigate("/user/history")}
+                        onClick={() => navigate("/user/status")}
                         className="bg-[#0A84FF] text-white px-6 py-2 rounded-[10px] font-semibold hover:bg-[#005BBB] transition-colors"
                     >
-                        Back to History
+                        Back to Bookings
                     </button>
                 </div>
             </div>
@@ -334,11 +334,11 @@ export default function UserBookingDetails() {
 
                 {/* Back Button */}
                 <button
-                    onClick={() => navigate("/user/history")}
+                    onClick={() => navigate("/user/status")}
                     className="flex items-center gap-2 mb-4 text-gray-600 hover:text-[#0A84FF] transition-colors"
                 >
                     <IoChevronBackOutline className="text-xl" />
-                    <span className="text-sm font-medium">Back to History</span>
+                    <span className="text-sm font-medium">Back</span>
                 </button>
 
                 {/* Booking Header Card */}
