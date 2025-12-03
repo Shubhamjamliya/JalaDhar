@@ -159,7 +159,8 @@ export default function UserAllBookingsStatus() {
           bookings.map((booking) => (
             <div
               key={booking._id}
-              className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+              onClick={() => navigate(`/user/booking/${booking._id}`)}
+              className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] transition-all"
             >
               {/* Vendor Info Header */}
               <div className="flex items-center gap-4 mb-4">
@@ -247,9 +248,10 @@ export default function UserAllBookingsStatus() {
 
               {/* View Status Button */}
               <button
-                onClick={() =>
-                  navigate(`/user/booking/${booking._id}/status`)
-                }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/user/booking/${booking._id}/status`);
+                }}
                 className="w-full rounded-lg bg-[#0A84FF] py-3 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#005BBB] flex items-center justify-center gap-2"
               >
                 <IoDocumentTextOutline className="text-xl" />

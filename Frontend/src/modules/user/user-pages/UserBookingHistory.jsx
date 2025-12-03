@@ -141,8 +141,11 @@ export default function UserBookingHistory() {
         if (!showRatingModal) return;
 
         // Validate ratings
-        if (!ratingData.accuracy || !ratingData.professionalism || !ratingData.behavior || !ratingData.visitTiming) {
-            toast.showError("Please provide all ratings");
+        if (!ratingData.accuracy || ratingData.accuracy === 0 || 
+            !ratingData.professionalism || ratingData.professionalism === 0 || 
+            !ratingData.behavior || ratingData.behavior === 0 || 
+            !ratingData.visitTiming || ratingData.visitTiming === 0) {
+            toast.showError("Please provide all ratings (1-5 stars for each category)");
             return;
         }
 
@@ -347,59 +350,13 @@ export default function UserBookingHistory() {
 
                                 {/* Action Buttons */}
                                 <div className="flex flex-col gap-2">
-                                    {/* View Details Button - Always visible */}
+                                    {/* View Details Button - Only button visible */}
                                     <button
                                         onClick={() => navigate(`/user/booking/${booking._id}`)}
                                         className="w-full h-10 bg-gradient-to-b from-[#E3F2FD] via-[#BBDEFB] to-[#90CAF9] text-[#0A84FF] text-sm font-medium rounded-full shadow-[0px_2px_8px_rgba(0,0,0,0.15)] hover:shadow-[0px_3px_10px_rgba(0,0,0,0.2)] transition-all"
                                     >
                                         View Details
                                     </button>
-
-                                    {/* Completed Booking Actions */}
-                                    {(booking.userStatus || booking.status) === "COMPLETED" && (
-                                        <>
-                                            {booking.report?.images && booking.report.images.length > 0 && (
-                                                <button
-                                                    onClick={() => handleViewWorkProof(booking)}
-                                                    className="w-full h-10 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors"
-                                                >
-                                                    View Work Proof
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={() => handleDownloadBill(booking._id)}
-                                                className="w-full h-10 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors"
-                                            >
-                                                Download Bill
-                                            </button>
-                                            <button
-                                                onClick={() => handleRateVendor(booking)}
-                                                className="w-full h-10 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors"
-                                            >
-                                                Rate Vendor
-                                            </button>
-                                        </>
-                                    )}
-
-                                    {/* Payment Button for AWAITING_PAYMENT */}
-                                    {(booking.userStatus || booking.status) === "AWAITING_PAYMENT" && (
-                                        <button
-                                            onClick={() => navigate(`/user/booking/${booking._id}/payment`)}
-                                            className="w-full h-10 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors"
-                                        >
-                                            Pay Remaining Amount
-                                        </button>
-                                    )}
-
-                                    {/* Cancel Button for Active Bookings */}
-                                    {["PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.userStatus || booking.status) && (
-                                        <button
-                                            onClick={() => handleCancelBooking(booking)}
-                                            className="w-full h-10 bg-red-500 text-white text-sm font-semibold rounded-[8px] hover:bg-red-600 transition-colors"
-                                        >
-                                            Cancel Booking
-                                        </button>
-                                )}
                                 </div>
                             </div>
                         ))

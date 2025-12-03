@@ -49,7 +49,7 @@ export default function VendorBookings() {
             const [newResponse, confirmedResponse, historyResponse] = await Promise.all([
                 getVendorBookings({ status: "ASSIGNED", limit: 50 }),
                 getVendorBookings({ status: "ACCEPTED", limit: 50 }),
-                getVendorBookings({ status: "COMPLETED", limit: 50, sortBy: "completedAt", sortOrder: "desc" })
+                getVendorBookings({ status: "COMPLETED", limit: 100, sortBy: "completedAt", sortOrder: "desc" })
             ]);
 
             if (newResponse.success) {
@@ -196,8 +196,7 @@ export default function VendorBookings() {
                     currentBookings.map((booking) => (
                         <div
                             key={booking._id}
-                            onClick={() => handleViewDetails(booking._id)}
-                            className="bg-white rounded-[12px] p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all"
+                            className="bg-white rounded-[12px] p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
                         >
                             {/* Customer Info Header */}
                             <div className="flex items-start gap-4 mb-4">

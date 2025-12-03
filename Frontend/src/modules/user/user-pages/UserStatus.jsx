@@ -15,6 +15,7 @@ import {
     IoCloseCircleOutline,
     IoWalletOutline,
     IoRefreshOutline,
+    IoChevronBackOutline,
 } from "react-icons/io5";
 import { getUserBookings, uploadBorewellResult, getBookingDetails } from "../../../services/bookingApi";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -180,10 +181,10 @@ export default function UserStatus() {
             }
 
             // Check if notification is related to current booking
-            const notificationBookingId = notification.metadata?.bookingId || 
-                                        notification.relatedEntity?.entityId?.toString();
-            
-            if (notificationBookingId === bookingId?.toString() || 
+            const notificationBookingId = notification.metadata?.bookingId ||
+                notification.relatedEntity?.entityId?.toString();
+
+            if (notificationBookingId === bookingId?.toString() ||
                 notificationBookingId === bookingId) {
                 // Only refresh for external changes (not user's own actions)
                 // These are changes from other users (vendor, admin, etc.)
@@ -467,7 +468,7 @@ export default function UserStatus() {
 
 
     return (
-        <div 
+        <div
             ref={containerRef}
             className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 overflow-y-auto"
             style={{
@@ -478,7 +479,7 @@ export default function UserStatus() {
             {/* Pull-to-refresh indicator */}
             {(pullDistance > 0 || isRefreshing) && (
                 <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-transparent pointer-events-none"
-                    style={{ 
+                    style={{
                         height: `${Math.min(pullDistance, 100)}px`,
                         transform: `translateY(${Math.min(pullDistance - 60, 0)}px)`
                     }}
@@ -491,7 +492,7 @@ export default function UserStatus() {
                             </>
                         ) : (
                             <>
-                                <IoRefreshOutline 
+                                <IoRefreshOutline
                                     className={`text-2xl transition-transform ${canRefresh ? 'rotate-180' : ''}`}
                                     style={{ transform: `rotate(${Math.min(pullDistance * 2, 180)}deg)` }}
                                 />
@@ -502,6 +503,17 @@ export default function UserStatus() {
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* Back Button */}
+            {bookingIdFromParams && (
+                <button
+                    onClick={() => navigate("/user/status")}
+                    className="mb-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors font-semibold"
+                >
+                    <IoChevronBackOutline className="text-xl" />
+                    <span>Back to All Bookings</span>
+                </button>
             )}
 
             {/* Booking Info Card */}

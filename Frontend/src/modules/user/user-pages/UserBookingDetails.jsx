@@ -17,6 +17,7 @@ import {
     IoPersonOutline,
     IoConstructOutline,
     IoDocumentTextOutline,
+    IoAlertCircleOutline,
 } from "react-icons/io5";
 import { getBookingDetails, downloadInvoice, cancelBooking, submitRating, getBookingRating, uploadBorewellResult } from "../../../services/bookingApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -221,8 +222,11 @@ export default function UserBookingDetails() {
     };
 
     const handleSubmitRating = async () => {
-        if (!ratingData.accuracy || !ratingData.professionalism || !ratingData.behavior || !ratingData.visitTiming) {
-            toast.showError("Please provide all ratings");
+        if (!ratingData.accuracy || ratingData.accuracy === 0 || 
+            !ratingData.professionalism || ratingData.professionalism === 0 || 
+            !ratingData.behavior || ratingData.behavior === 0 || 
+            !ratingData.visitTiming || ratingData.visitTiming === 0) {
+            toast.showError("Please provide all ratings (1-5 stars for each category)");
             return;
         }
 
@@ -598,6 +602,17 @@ export default function UserBookingDetails() {
                             className="w-full h-12 bg-red-500 text-white text-sm font-semibold rounded-[8px] hover:bg-red-600 transition-colors"
                         >
                             Cancel Booking
+                        </button>
+                    )}
+
+                    {/* Raise Dispute Button - Available for active/completed bookings */}
+                    {!["CANCELLED", "REJECTED"].includes(booking.status) && (
+                        <button
+                            onClick={() => navigate("/user/disputes/create", { state: { bookingId: bookingId } })}
+                            className="w-full h-12 bg-orange-500 text-white text-sm font-semibold rounded-[8px] hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <IoAlertCircleOutline className="text-lg" />
+                            Raise Dispute
                         </button>
                     )}
                 </div>

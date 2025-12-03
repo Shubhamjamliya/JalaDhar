@@ -366,7 +366,8 @@ export default function VendorRequests() {
                     currentRequests.map((request) => (
                         <div
                             key={request._id}
-                            className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                            onClick={() => navigate(`/vendor/bookings/${request._id}`)}
+                            className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] transition-all"
                         >
                             {/* Customer Info Header */}
                             <div className="flex items-center gap-4">
@@ -482,7 +483,7 @@ export default function VendorRequests() {
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="mt-4 flex gap-2">
+                            <div className="mt-4 flex gap-2" onClick={(e) => e.stopPropagation()}>
                                 {/* View Details/Status Button - Changes based on tab */}
                                 <button
                                     onClick={() => {

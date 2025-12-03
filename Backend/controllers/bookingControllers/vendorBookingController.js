@@ -12,21 +12,37 @@ const { creditToVendorWallet, retryFailedCredit } = require('../../services/wall
 const getVendorBookings = async (req, res) => {
   try {
     const vendorId = req.userId;
-    const { status, page = 1, limit = 10 } = req.query;
+    const { status, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
 
     const query = { vendor: vendorId };
     if (status) {
-      // Use vendorStatus for vendor queries
-      query.vendorStatus = status;
+      // For COMPLETED status, check both status and vendorStatus
+      // For other statuses, use vendorStatus
+      if (status === 'COMPLETED') {
+        query.$or = [
+          { status: status },
+          { vendorStatus: status }
+        ];
+      } else {
+        query.vendorStatus = status;
+      }
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    // Build sort object
+    const sortObj = {};
+    if (sortBy === 'completedAt') {
+      sortObj.completedAt = sortOrder === 'asc' ? 1 : -1;
+    } else {
+      sortObj[sortBy || 'createdAt'] = sortOrder === 'asc' ? 1 : -1;
+    }
 
     const [bookings, total] = await Promise.all([
       Booking.find(query)
         .populate('user', 'name email phone address profilePicture documents.profilePicture')
         .populate('service', 'name price machineType')
-        .sort({ createdAt: -1 })
+        .sort(sortObj)
         .skip(skip)
         .limit(parseInt(limit)),
       Booking.countDocuments(query)

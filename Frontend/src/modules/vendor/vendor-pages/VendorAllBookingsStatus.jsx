@@ -166,55 +166,59 @@ export default function VendorAllBookingsStatus() {
           bookings.map((booking) => (
             <div
               key={booking._id}
-              className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+              onClick={() => navigate(`/vendor/bookings/${booking._id}`)}
+              className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all"
             >
               {/* Customer Info Header */}
-              <div className="flex items-center gap-4 mb-4">
-                {/* Profile Picture */}
-                {booking.user?.profilePicture ||
-                  booking.user?.documents?.profilePicture?.url ? (
-                  <img
-                    src={
-                      booking.user.profilePicture ||
-                      booking.user?.documents?.profilePicture?.url
-                    }
-                    alt="User Avatar"
-                    className="h-14 w-14 rounded-full border-2 border-[#0A84FF] object-cover"
-                  />
-                ) : (
-                  <div className="h-14 w-14 rounded-full border-2 border-[#0A84FF] bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                    {booking.user?.name ? (
-                      <span className="text-lg font-bold text-[#0A84FF]">
-                        {booking.user.name.charAt(0).toUpperCase()}
-                      </span>
-                    ) : (
-                      <span className="text-xl">👤</span>
-                    )}
-                  </div>
-                )}
+              <div className="mb-4">
+                <div className="flex items-start gap-4 mb-3">
+                  {/* Profile Picture */}
+                  {booking.user?.profilePicture ||
+                    booking.user?.documents?.profilePicture?.url ? (
+                    <img
+                      src={
+                        booking.user.profilePicture ||
+                        booking.user?.documents?.profilePicture?.url
+                      }
+                      alt="User Avatar"
+                      className="h-14 w-14 rounded-full border-2 border-[#0A84FF] object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="h-14 w-14 rounded-full border-2 border-[#0A84FF] bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
+                      {booking.user?.name ? (
+                        <span className="text-lg font-bold text-[#0A84FF]">
+                          {booking.user.name.charAt(0).toUpperCase()}
+                        </span>
+                      ) : (
+                        <span className="text-xl">👤</span>
+                      )}
+                    </div>
+                  )}
 
-                {/* Customer Details */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-[#3A3A3A]">
+                  {/* Customer Details */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-[#3A3A3A] mb-1 truncate">
                       {booking.user?.name || "Customer"}
                     </h3>
-                    {getStatusBadge(booking.vendorStatus || booking.status)}
+                    <p className="text-xs text-[#6B7280] mb-2">
+                      Booking ID: {formatBookingId(booking._id)}
+                    </p>
+                    {/* Status Badge - Separate line */}
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(booking.vendorStatus || booking.status)}
+                    </div>
                   </div>
-                  <p className="text-xs text-[#6B7280]">
-                    Booking ID: {formatBookingId(booking._id)}
-                  </p>
-                </div>
 
-                {/* Payment Amount */}
-                <div className="text-right">
-                  <p className="text-lg font-bold text-[#00C2A8]">
-                    {formatAmount(
-                      booking.payment?.totalAmount ||
-                      booking.payment?.amount ||
-                      0
-                    )}
-                  </p>
+                  {/* Payment Amount */}
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-lg font-bold text-[#00C2A8]">
+                      {formatAmount(
+                        booking.payment?.totalAmount ||
+                        booking.payment?.amount ||
+                        0
+                      )}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -262,9 +266,10 @@ export default function VendorAllBookingsStatus() {
 
               {/* View Status Button */}
               <button
-                onClick={() =>
-                  navigate(`/vendor/booking/${booking._id}/status`)
-                }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/vendor/booking/${booking._id}/status`);
+                }}
                 className="w-full rounded-lg bg-[#0A84FF] py-3 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#005BBB] flex items-center justify-center gap-2"
               >
                 <IoDocumentTextOutline className="text-xl" />

@@ -14,6 +14,7 @@ import {
     IoCarOutline,
     IoAddCircleOutline,
     IoCloseOutline,
+    IoAlertCircleOutline,
 } from "react-icons/io5";
 import { getBookingDetails, acceptBooking, rejectBooking, markBookingAsVisited, requestTravelCharges } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
@@ -790,6 +791,20 @@ export default function VendorBookingDetails() {
                 cancelText="Cancel"
                 confirmColor="primary"
             />
+
+            {/* Raise Dispute Button - Available for all bookings */}
+            {booking && !["CANCELLED", "REJECTED"].includes(booking.status) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Need Help?</h2>
+                    <button
+                        onClick={() => navigate("/vendor/disputes/create", { state: { bookingId: bookingId } })}
+                        className="w-full bg-orange-500 text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-orange-600 active:bg-orange-700 transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(249,115,22,0.2)]"
+                    >
+                        <IoAlertCircleOutline className="text-xl" />
+                        Raise Dispute
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
