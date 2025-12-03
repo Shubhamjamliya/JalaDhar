@@ -115,7 +115,7 @@ export default function VendorUploadReport() {
         }
 
         if (formData.images.length === 0 && !formData.reportFile) {
-            setError("Please upload at least one image or a report file.");
+            toast.showError("Please upload at least one image.");
             return;
         }
 

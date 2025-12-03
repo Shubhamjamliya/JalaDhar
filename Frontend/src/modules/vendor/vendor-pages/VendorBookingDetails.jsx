@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
     IoChevronBackOutline,
     IoTimeOutline,
@@ -25,6 +25,7 @@ import InputModal from "../../shared/components/InputModal";
 
 export default function VendorBookingDetails() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { bookingId } = useParams();
     const { vendor } = useVendorAuth();
     const [loading, setLoading] = useState(true);
@@ -43,9 +44,21 @@ export default function VendorBookingDetails() {
     });
     const [submittingTravelCharges, setSubmittingTravelCharges] = useState(false);
 
+    // Load data on mount and when location/bookingId changes
     useEffect(() => {
         loadBookingDetails();
-    }, [bookingId]);
+    }, [bookingId, location.pathname]);
+
+    // Refetch when page becomes visible (user switches tabs/windows)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                loadBookingDetails();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
 
     const loadBookingDetails = async () => {
         try {
@@ -80,9 +93,7 @@ export default function VendorBookingDetails() {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking accepted successfully!");
                 await loadBookingDetails(); // Reload to get updated status
-                setTimeout(() => {
-                    navigate("/vendor/bookings");
-                }, 2000);
+                navigate("/vendor/bookings");
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to accept booking");
@@ -92,9 +103,7 @@ export default function VendorBookingDetails() {
             handleApiError(err, "Failed to accept booking");
             // Reload booking details to see current status
             if (err.response?.status === 400) {
-                setTimeout(() => {
-                    loadBookingDetails();
-                }, 1000);
+                await loadBookingDetails();
             }
         } finally {
             setActionLoading(false);
@@ -383,28 +392,49 @@ export default function VendorBookingDetails() {
             {/* Payment Information Card */}
             {booking.payment && (
                 <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Payment Information</h2>
-                    <div className="space-y-2">
-                        <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Total Amount:</span>
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Charges Breakdown</h2>
+                    <div className="space-y-3">
+                        {/* Service Charges */}
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <span className="text-sm text-gray-600">Service Charges</span>
+                                {booking.service?.name && (
+                                    <p className="text-xs text-gray-500 mt-0.5">{booking.service.name}</p>
+                                )}
+                            </div>
                             <span className="font-semibold text-gray-800">
-                                ₹{booking.payment.totalAmount?.toLocaleString() || "0"}
+                                ₹{booking.payment.baseServiceFee?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || booking.service?.price?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
                             </span>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Advance Paid (40%):</span>
-                            <span className={`font-semibold ${booking.payment.advancePaid ? "text-green-600" : "text-gray-800"}`}>
-                                ₹{booking.payment.advanceAmount?.toLocaleString() || "0"} 
-                                {booking.payment.advancePaid ? " ✓" : " (Pending)"}
+
+                        {/* Travel Charges with Distance */}
+                        {booking.payment.travelCharges !== undefined && booking.payment.travelCharges > 0 && (
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <span className="text-sm text-gray-600">Travel Charges</span>
+                                    {booking.payment.distance !== null && booking.payment.distance !== undefined && (
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                            Distance: {booking.payment.distance.toFixed(2)} km
+                                        </p>
+                                    )}
+                                </div>
+                                <span className="font-semibold text-gray-800">
+                                    ₹{booking.payment.travelCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Total (Service + Travel) */}
+                        <div className="pt-2 border-t-2 border-gray-300 flex justify-between items-center">
+                            <span className="text-base font-bold text-gray-800">Total (Service + Travel)</span>
+                            <span className="text-lg font-bold text-[#0A84FF]">
+                                ₹{booking.payment.subtotal !== undefined 
+                                    ? booking.payment.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                    : ((booking.payment.baseServiceFee || 0) + (booking.payment.travelCharges || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
                             </span>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Remaining (60%):</span>
-                            <span className={`font-semibold ${booking.payment.remainingPaid ? "text-green-600" : "text-gray-800"}`}>
-                                ₹{booking.payment.remainingAmount?.toLocaleString() || "0"}
-                                {booking.payment.remainingPaid ? " ✓" : " (Pending)"}
-                            </span>
-                        </div>
+
+                        {/* Payment Status */}
                         <div className="pt-2 border-t border-gray-200 mt-2">
                             <span className="text-xs text-gray-500">Payment Status: </span>
                             <span className={`text-xs font-semibold ${

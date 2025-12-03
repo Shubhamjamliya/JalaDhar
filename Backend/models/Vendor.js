@@ -31,34 +31,8 @@ const vendorSchema = new mongoose.Schema({
     enum: ['VENDOR'],
     default: 'VENDOR'
   },
-  // Bank Details
-  bankDetails: {
-    accountHolderName: {
-      type: String,
-      required: [true, 'Account holder name is required'],
-      trim: true
-    },
-    accountNumber: {
-      type: String,
-      required: [true, 'Account number is required'],
-      trim: true
-    },
-    ifscCode: {
-      type: String,
-      required: [true, 'IFSC code is required'],
-      trim: true,
-      uppercase: true
-    },
-    bankName: {
-      type: String,
-      required: [true, 'Bank name is required'],
-      trim: true
-    },
-    branchName: {
-      type: String,
-      trim: true
-    }
-  },
+  // Bank Details - Now in separate VendorBankDetails collection
+  // bankDetails field removed - use VendorBankDetails model instead
   // Educational Qualifications
   educationalQualifications: [{
     degree: {
@@ -87,34 +61,8 @@ const vendorSchema = new mongoose.Schema({
     required: [true, 'Experience is required'],
     min: 0
   },
-  documents: {
-    aadharCard: {
-      url: String,
-      publicId: String,
-      uploadedAt: Date
-    },
-    panCard: {
-      url: String,
-      publicId: String,
-      uploadedAt: Date
-    },
-    profilePicture: {
-      url: String,
-      publicId: String,
-      uploadedAt: Date
-    },
-    certificates: [{
-      url: String,
-      publicId: String,
-      uploadedAt: Date,
-      name: String
-    }],
-    cancelledCheque: {
-      url: String,
-      publicId: String,
-      uploadedAt: Date
-    }
-  },
+  // Documents - Now in separate VendorDocument collection
+  // documents field removed - use VendorDocument model instead
   isEmailVerified: {
     type: Boolean,
     default: false
@@ -214,7 +162,49 @@ const vendorSchema = new mongoose.Schema({
       type: Number,
       default: 0
     },
-    lastPaymentDate: Date
+    lastPaymentDate: Date,
+    // Wallet system
+    walletBalance: {
+      type: Number,
+      default: 0,
+      min: [0, 'Wallet balance cannot be negative']
+    },
+    totalCredited: {
+      type: Number,
+      default: 0,
+      min: [0, 'Total credited cannot be negative']
+    },
+    withdrawalRequests: [{
+      amount: {
+        type: Number,
+        required: true,
+        min: [0, 'Withdrawal amount cannot be negative']
+      },
+      status: {
+        type: String,
+        enum: ['PENDING', 'APPROVED', 'REJECTED', 'PROCESSED'],
+        default: 'PENDING'
+      },
+      requestedAt: {
+        type: Date,
+        default: Date.now
+      },
+      processedAt: Date,
+      processedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Admin'
+      },
+      razorpayPayoutId: String, // Keep for backward compatibility
+      transactionId: String, // New transaction ID field
+      paymentMethod: {
+        type: String,
+        enum: ['UPI', 'BANK_TRANSFER', 'NEFT', 'IMPS', 'RTGS', 'RAZORPAY', 'CASH', 'OTHER'],
+        default: null
+      },
+      paymentDate: Date,
+      notes: String,
+      rejectionReason: String
+    }]
   },
   // Gallery Images
   gallery: [{

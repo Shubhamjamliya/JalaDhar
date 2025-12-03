@@ -1,5 +1,5 @@
-import { useState, useEffect, Fragment } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect, Fragment, useRef } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
     IoHourglassOutline,
     IoPersonOutline,
@@ -14,8 +14,11 @@ import {
     IoImageOutline,
     IoCloseCircleOutline,
     IoWalletOutline,
+    IoRefreshOutline,
 } from "react-icons/io5";
 import { getUserBookings, uploadBorewellResult, getBookingDetails } from "../../../services/bookingApi";
+import { useNotifications } from "../../../contexts/NotificationContext";
+import { usePullToRefresh } from "../../../hooks/usePullToRefresh";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
@@ -23,6 +26,8 @@ import { handleApiError } from "../../../utils/toastHelper";
 export default function UserStatus() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { bookingId: bookingIdFromParams } = useParams();
+    const { socket } = useNotifications();
     const [loading, setLoading] = useState(true);
     const [currentBooking, setCurrentBooking] = useState(null);
     const toast = useToast();
@@ -32,77 +37,11 @@ export default function UserStatus() {
         images: []
     });
     const [uploadingBorewell, setUploadingBorewell] = useState(false);
+    const loadCurrentBookingRef = useRef(null);
+    const lastActionTimeRef = useRef(0); // Track when user performed an action
+    const ACTION_COOLDOWN = 2000; // 2 seconds - ignore socket updates right after user action
 
-    useEffect(() => {
-        loadCurrentBooking();
-    }, []);
-
-    // Reload booking when bookingId changes (e.g., navigating from booking history)
-    useEffect(() => {
-        const bookingId = location.state?.bookingId;
-        if (bookingId && currentBooking) {
-            const currentId = currentBooking.id || currentBooking._id;
-            if (currentId?.toString() !== bookingId?.toString()) {
-                loadCurrentBooking();
-            }
-        }
-    }, [location.state?.bookingId]);
-
-    const loadCurrentBooking = async () => {
-        try {
-            setLoading(true);
-
-            // Check if bookingId was passed from navigation
-            const bookingId = location.state?.bookingId;
-
-            if (bookingId) {
-                // If specific booking ID provided, try to get it directly using getBookingDetails
-                try {
-                    const response = await getBookingDetails(bookingId);
-                    if (response.success) {
-                        setCurrentBooking(response.data.booking);
-                        setLoading(false);
-                        return;
-                    } else {
-                        // Fallback to loadWithRetry if getBookingDetails fails
-                        await loadWithRetry(bookingId);
-                        return;
-                    }
-                } catch (err) {
-                    // Fallback to loadWithRetry
-                    await loadWithRetry(bookingId);
-                    return;
-                }
-            } else {
-                // Get active bookings (not completed or cancelled)
-                const response = await getUserBookings({
-                    status: undefined, // Get all statuses
-                    limit: 10 // Get more bookings to find the right one
-                });
-
-                if (response.success) {
-                    const bookings = response.data.bookings || [];
-                    // Find the most recent active booking
-                    const activeBooking = bookings.find(
-                        (booking) =>
-                            !["COMPLETED", "CANCELLED", "REJECTED", "FAILED", "SUCCESS"].includes(booking.status)
-                    ) || bookings[0]; // If no active, show most recent
-
-                    if (activeBooking) {
-                        setCurrentBooking(activeBooking);
-                    }
-                } else {
-                    toast.showError(response.message || "Failed to load booking");
-                }
-            }
-        } catch (err) {
-            handleApiError(err, "Failed to load booking status");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Retry loading booking if it was just created
+    // Retry loading booking if it was just created (define before loadCurrentBooking uses it)
     const loadWithRetry = async (bookingId, retries = 3) => {
         try {
             for (let i = 0; i < retries; i++) {
@@ -161,6 +100,120 @@ export default function UserStatus() {
             setLoading(false);
         }
     };
+
+    const loadCurrentBooking = async () => {
+        try {
+            setLoading(true);
+
+            // Get bookingId from URL params or location state
+            const bookingId = bookingIdFromParams || location.state?.bookingId;
+
+            if (bookingId) {
+                // If specific booking ID provided, try to get it directly using getBookingDetails
+                try {
+                    const response = await getBookingDetails(bookingId);
+                    if (response.success) {
+                        setCurrentBooking(response.data.booking);
+                        setLoading(false);
+                        return;
+                    } else {
+                        // Fallback to loadWithRetry if getBookingDetails fails
+                        await loadWithRetry(bookingId);
+                        return;
+                    }
+                } catch (err) {
+                    // Fallback to loadWithRetry
+                    await loadWithRetry(bookingId);
+                    return;
+                }
+            } else {
+                // No bookingId provided - redirect to status page to show all bookings
+                navigate("/user/status", { replace: true });
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to load booking status");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Store loadCurrentBooking in ref for socket listeners
+    useEffect(() => {
+        loadCurrentBookingRef.current = loadCurrentBooking;
+    }, []);
+
+    // Load data on mount and when location changes (navigation back)
+    useEffect(() => {
+        loadCurrentBooking();
+    }, [location.pathname, bookingIdFromParams]);
+
+    // Reload booking when bookingId from URL params changes
+    useEffect(() => {
+        if (bookingIdFromParams) {
+            loadCurrentBooking();
+        }
+    }, [bookingIdFromParams]);
+
+    // Refetch when page becomes visible (user switches tabs/windows)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                loadCurrentBooking();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
+
+    // Listen to socket notifications for booking status updates (ONLY for external changes)
+    useEffect(() => {
+        if (!socket || !currentBooking) return;
+
+        const bookingId = currentBooking.id || currentBooking._id;
+        if (!bookingId) return;
+
+        const handleNewNotification = (notification) => {
+            // Ignore socket updates if user just performed an action (use React state instead)
+            const timeSinceLastAction = Date.now() - lastActionTimeRef.current;
+            if (timeSinceLastAction < ACTION_COOLDOWN) {
+                return; // Skip - user's own action will update via React state
+            }
+
+            // Check if notification is related to current booking
+            const notificationBookingId = notification.metadata?.bookingId || 
+                                        notification.relatedEntity?.entityId?.toString();
+            
+            if (notificationBookingId === bookingId?.toString() || 
+                notificationBookingId === bookingId) {
+                // Only refresh for external changes (not user's own actions)
+                // These are changes from other users (vendor, admin, etc.)
+                if (notification.type === 'BOOKING_STATUS_UPDATED' ||
+                    notification.type === 'BOOKING_ACCEPTED' ||
+                    notification.type === 'BOOKING_VISITED' ||
+                    notification.type === 'REPORT_UPLOADED' ||
+                    notification.type === 'ADMIN_APPROVED' ||
+                    notification.type === 'PAYMENT_RELEASE') {
+                    setTimeout(() => {
+                        if (loadCurrentBookingRef.current) {
+                            loadCurrentBookingRef.current();
+                        }
+                    }, 500);
+                }
+            }
+        };
+
+        socket.on('new_notification', handleNewNotification);
+
+        return () => {
+            socket.off('new_notification', handleNewNotification);
+        };
+    }, [socket, currentBooking]);
+
+    // Pull-to-refresh functionality
+    const { isRefreshing, pullDistance, containerRef, canRefresh } = usePullToRefresh(
+        loadCurrentBooking,
+        { threshold: 80, resistance: 2.5 }
+    );
 
     const getStatusSteps = () => {
         if (!currentBooking) return [];
@@ -333,6 +386,8 @@ export default function UserStatus() {
         const loadingToast = toast.showLoading("Uploading borewell result...");
         try {
             setUploadingBorewell(true);
+            // Mark that user performed an action (prevent socket from triggering duplicate update)
+            lastActionTimeRef.current = Date.now();
 
             const response = await uploadBorewellResult(bookingId, {
                 status: borewellData.status,
@@ -344,6 +399,7 @@ export default function UserStatus() {
                 toast.showSuccess("Borewell result uploaded successfully!");
                 setShowBorewellModal(false);
                 setBorewellData({ status: "", images: [] });
+                // Update state immediately via React (not waiting for socket)
                 await loadCurrentBooking();
             } else {
                 toast.dismissToast(loadingToast);
@@ -411,18 +467,40 @@ export default function UserStatus() {
 
 
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-
-            {/* Refresh Button */}
-            {currentBooking && (
-                <div className="mb-4 flex justify-end">
-                    <button
-                        onClick={loadCurrentBooking}
-                        className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                    >
-                        <IoSearchOutline className="text-lg" />
-                        Refresh
-                    </button>
+        <div 
+            ref={containerRef}
+            className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 overflow-y-auto"
+            style={{
+                transform: pullDistance > 0 ? `translateY(${Math.min(pullDistance, 100)}px)` : 'none',
+                transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none',
+            }}
+        >
+            {/* Pull-to-refresh indicator */}
+            {(pullDistance > 0 || isRefreshing) && (
+                <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-transparent pointer-events-none"
+                    style={{ 
+                        height: `${Math.min(pullDistance, 100)}px`,
+                        transform: `translateY(${Math.min(pullDistance - 60, 0)}px)`
+                    }}
+                >
+                    <div className={`flex flex-col items-center gap-2 ${canRefresh || isRefreshing ? 'text-[#0A84FF]' : 'text-gray-400'}`}>
+                        {isRefreshing ? (
+                            <>
+                                <div className="w-6 h-6 border-2 border-[#0A84FF] border-t-transparent rounded-full animate-spin"></div>
+                                <span className="text-sm font-medium">Refreshing...</span>
+                            </>
+                        ) : (
+                            <>
+                                <IoRefreshOutline 
+                                    className={`text-2xl transition-transform ${canRefresh ? 'rotate-180' : ''}`}
+                                    style={{ transform: `rotate(${Math.min(pullDistance * 2, 180)}deg)` }}
+                                />
+                                <span className="text-sm font-medium">
+                                    {canRefresh ? 'Release to refresh' : 'Pull to refresh'}
+                                </span>
+                            </>
+                        )}
+                    </div>
                 </div>
             )}
 

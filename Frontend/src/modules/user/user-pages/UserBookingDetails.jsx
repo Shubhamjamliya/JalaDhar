@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
     IoChevronBackOutline,
     IoTimeOutline,
@@ -50,10 +50,23 @@ export default function UserBookingDetails() {
         images: []
     });
     const [uploadingBorewell, setUploadingBorewell] = useState(false);
+    const location = useLocation();
 
+    // Load data on mount and when location/bookingId changes
     useEffect(() => {
         loadBookingDetails();
-    }, [bookingId]);
+    }, [bookingId, location.pathname]);
+
+    // Refetch when page becomes visible (user switches tabs/windows)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                loadBookingDetails();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
 
     const loadBookingDetails = async () => {
         try {

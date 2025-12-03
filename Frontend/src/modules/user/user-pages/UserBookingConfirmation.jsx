@@ -126,10 +126,18 @@ export default function UserBookingConfirmation() {
                         </div>
                     </div>
                     {booking.payment && (
-                        <div className="bg-green-50 rounded-[8px] p-3">
+                        <div className="bg-green-50 rounded-[8px] p-3 space-y-2">
+                            <div className="flex justify-between">
+                                <span className="text-sm text-gray-700">Total Amount</span>
+                                <span className="text-base font-bold text-gray-800">₹{booking.payment.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</span>
+                            </div>
                             <div className="flex justify-between mb-1">
                                 <span className="text-sm text-gray-700">Advance Paid (40%)</span>
-                                <span className="text-base font-bold text-green-600">₹{booking.payment.advanceAmount?.toLocaleString()} ✓</span>
+                                <span className="text-base font-bold text-green-600">₹{booking.payment.advanceAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'} ✓</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-sm text-gray-700">Remaining (60%)</span>
+                                <span className="text-base font-semibold text-gray-700">₹{booking.payment.remainingAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</span>
                             </div>
                         </div>
                     )}

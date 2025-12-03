@@ -4,6 +4,7 @@ const { uploadToCloudinary } = require('../../services/cloudinaryService');
 const { Readable } = require('stream');
 const { sendBookingStatusUpdateEmail } = require('../../services/emailService');
 const { sendNotification } = require('../../services/notificationService');
+const { creditToVendorWallet, retryFailedCredit } = require('../../services/walletService');
 
 /**
  * Get vendor bookings
@@ -279,6 +280,54 @@ const markAsVisited = async (req, res) => {
     booking.vendorStatus = BOOKING_STATUS.VISITED;
     booking.userStatus = BOOKING_STATUS.VISITED;
     booking.visitedAt = new Date();
+
+    // Credit first payment (50% of total vendor payment) to vendor wallet
+    if (booking.payment?.vendorWalletPayments?.siteVisitPayment && 
+        !booking.payment.vendorWalletPayments.siteVisitPayment.credited) {
+      const paymentAmount = booking.payment.vendorWalletPayments.siteVisitPayment.amount;
+      
+      if (paymentAmount > 0) {
+        const creditResult = await creditToVendorWallet(
+          vendorId,
+          paymentAmount,
+          'SITE_VISIT',
+          bookingId,
+          { bookingId: bookingId.toString() }
+        );
+
+        if (creditResult.success) {
+          booking.payment.vendorWalletPayments.siteVisitPayment.credited = true;
+          booking.payment.vendorWalletPayments.siteVisitPayment.creditedAt = new Date();
+          booking.payment.vendorWalletPayments.siteVisitPayment.transactionId = creditResult.transaction._id;
+          booking.payment.vendorWalletPayments.totalCredited = 
+            (booking.payment.vendorWalletPayments.totalCredited || 0) + paymentAmount;
+        } else {
+          // Mark as failed but don't block status change
+          booking.payment.vendorWalletPayments.siteVisitPayment.failed = true;
+          booking.payment.vendorWalletPayments.siteVisitPayment.errorMessage = creditResult.error || 'Credit failed';
+          console.error('Failed to credit site visit payment:', creditResult.error);
+          
+          // Schedule retry (async, don't wait)
+          setTimeout(async () => {
+            try {
+              const failedTx = await require('../../models/WalletTransaction').findOne({
+                vendor: vendorId,
+                booking: bookingId,
+                type: 'SITE_VISIT',
+                status: 'FAILED'
+              }).sort({ createdAt: -1 });
+              
+              if (failedTx) {
+                await retryFailedCredit(failedTx._id);
+              }
+            } catch (retryError) {
+              console.error('Retry failed:', retryError);
+            }
+          }, 5000); // Retry after 5 seconds
+        }
+      }
+    }
+
     await booking.save();
 
     // Send notification to user
@@ -411,6 +460,9 @@ const markVisitedAndUploadReport = async (req, res) => {
     booking.status = BOOKING_STATUS.REPORT_UPLOADED;
     booking.vendorStatus = BOOKING_STATUS.REPORT_UPLOADED;
     booking.userStatus = BOOKING_STATUS.AWAITING_PAYMENT;
+
+    // Note: 2nd payment will be credited after admin approves the report (in approveReport function)
+
     await booking.save();
 
     // Send notification to user and admin
@@ -428,43 +480,60 @@ const markVisitedAndUploadReport = async (req, res) => {
         const { getIO } = require('../../sockets');
         const io = getIO();
         
-        // Notify user
+        // Notify vendor - report uploaded confirmation
         await sendNotification({
-        recipient: booking.user._id,
-        recipientModel: 'User',
-        type: 'REPORT_UPLOADED',
-        title: 'Report Ready',
-        message: `Water detection report is ready. Please pay remaining ₹${booking.payment.remainingAmount} to view it.`,
-        relatedEntity: {
-          entityType: 'Booking',
-          entityId: booking._id
-        },
-        metadata: {
-          remainingAmount: booking.payment.remainingAmount,
-          bookingId: booking._id.toString()
-        }
-      }, io);
-
-      // Notify admin (get all admins)
-      const Admin = require('../../models/Admin');
-      const admins = await Admin.find({ isActive: true });
-      for (const admin of admins) {
-        await sendNotification({
-          recipient: admin._id,
-          recipientModel: 'Admin',
+          recipient: booking.vendor,
+          recipientModel: 'Vendor',
           type: 'REPORT_UPLOADED',
-          title: 'New Report Uploaded',
-          message: `New water detection report uploaded for booking #${booking._id.toString().slice(-6)}`,
+          title: 'Report Uploaded',
+          message: `You have successfully uploaded the water detection report for booking #${booking._id.toString().slice(-6)}. User will be notified to pay remaining amount.`,
           relatedEntity: {
             entityType: 'Booking',
             entityId: booking._id
           },
           metadata: {
             bookingId: booking._id.toString(),
-            vendorId: booking.vendor.toString()
+            waterFound: booking.report.waterFound
           }
         }, io);
-      }
+
+        // Notify user - report uploaded by vendor
+        await sendNotification({
+          recipient: booking.user._id,
+          recipientModel: 'User',
+          type: 'REPORT_UPLOADED',
+          title: 'Report Uploaded by Vendor',
+          message: `Vendor has uploaded the water detection report. Please pay remaining ₹${booking.payment.remainingAmount} to view it.`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            remainingAmount: booking.payment.remainingAmount,
+            bookingId: booking._id.toString()
+          }
+        }, io);
+
+        // Notify admin (get all admins)
+        const Admin = require('../../models/Admin');
+        const admins = await Admin.find({ isActive: true });
+        for (const admin of admins) {
+          await sendNotification({
+            recipient: admin._id,
+            recipientModel: 'Admin',
+            type: 'REPORT_UPLOADED',
+            title: 'New Report Uploaded',
+            message: `New water detection report uploaded for booking #${booking._id.toString().slice(-6)}`,
+            relatedEntity: {
+              entityType: 'Booking',
+              entityId: booking._id
+            },
+            metadata: {
+              bookingId: booking._id.toString(),
+              vendorId: booking.vendor.toString()
+            }
+          }, io);
+        }
       } catch (socketError) {
         console.error('Socket notification error:', socketError);
         // Continue even if Socket.io fails

@@ -63,12 +63,14 @@ app.get('/health', (req, res) => {
 // User routes
 app.use('/api/users/auth', require('./routes/user-routes/auth.routes'));
 app.use('/api/users', require('./routes/user-routes/profile.routes'));
+app.use('/api/user/wallet', require('./routes/user-routes/userWallet.routes'));
 
 // Vendor routes
 app.use('/api/vendors/auth', require('./routes/vendor-routes/auth.routes'));
 app.use('/api/vendors', require('./routes/vendor-routes/profile.routes'));
 app.use('/api/vendors', require('./routes/vendor-routes/dashboard.routes'));
 app.use('/api/vendors', require('./routes/vendor-routes/service.routes'));
+app.use('/api/vendor/wallet', require('./routes/vendor-routes/vendorWallet.routes'));
 
 // Admin routes
 app.use('/api/admin/auth', require('./routes/admin-routes/adminAuth.routes'));
@@ -77,6 +79,8 @@ app.use('/api/admin', require('./routes/admin-routes/userManagement.routes'));
 app.use('/api/admin', require('./routes/booking-routes/adminBooking.routes'));
 app.use('/api/admin', require('./routes/payment-routes/adminPayment.routes'));
 app.use('/api/admin/settings', require('./routes/admin-routes/settings.routes'));
+app.use('/api/admin/withdrawals', require('./routes/admin-routes/withdrawal.routes'));
+app.use('/api/admin/user-withdrawals', require('./routes/admin-routes/userWithdrawal.routes'));
 
 // Booking routes
 app.use('/api/bookings', require('./routes/booking-routes/userBooking.routes'));

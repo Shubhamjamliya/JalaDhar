@@ -10,7 +10,7 @@ import {
     IoConstructOutline,
     IoDocumentTextOutline,
 } from "react-icons/io5";
-import { verifyAdvancePayment, cancelBooking } from "../../../services/bookingApi";
+import { verifyAdvancePayment, cancelBooking, getBookingDetails } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
 import { loadRazorpay } from "../../../utils/razorpay";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -26,6 +26,7 @@ export default function UserAdvancePaymentConfirmation() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const [fullBooking, setFullBooking] = useState(null);
     
     // Get booking data from navigation state
     const booking = location.state?.booking;
@@ -33,6 +34,23 @@ export default function UserAdvancePaymentConfirmation() {
     const vendor = location.state?.vendor;
     const paymentData = location.state?.paymentData;
     const razorpayOrder = location.state?.razorpayOrder;
+
+    // Fetch full booking details to get payment breakdown
+    useEffect(() => {
+        const fetchBookingDetails = async () => {
+            if (booking?.id) {
+                try {
+                    const response = await getBookingDetails(booking.id);
+                    if (response.success) {
+                        setFullBooking(response.data.booking);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch booking details:", err);
+                }
+            }
+        };
+        fetchBookingDetails();
+    }, [booking?.id]);
 
     useEffect(() => {
         // If no booking data, redirect back
@@ -318,9 +336,20 @@ export default function UserAdvancePaymentConfirmation() {
         );
     }
 
-    const advanceAmount = Math.round(service.price * 0.4);
-    const remainingAmount = Math.round(service.price * 0.6);
-    const totalAmount = service.price;
+    // Use payment data from paymentData object (includes travel charges and GST)
+    // The backend returns payment details in a separate paymentData object, not in booking.payment
+    // Priority: fullBooking.payment > paymentData > fallback calculation
+    const bookingPayment = fullBooking?.payment;
+    const totalAmount = bookingPayment?.totalAmount || paymentData?.totalAmount || service.price;
+    const advanceAmount = bookingPayment?.advanceAmount || paymentData?.advanceAmount || Math.round(totalAmount * 0.4);
+    const remainingAmount = bookingPayment?.remainingAmount || paymentData?.remainingAmount || Math.round(totalAmount * 0.6);
+    
+    // Get breakdown details for display from full booking if available
+    const baseServiceFee = bookingPayment?.baseServiceFee || service.price;
+    const travelCharges = bookingPayment?.travelCharges || 0;
+    const gst = bookingPayment?.gst || 0;
+    const subtotal = bookingPayment?.subtotal || (baseServiceFee + travelCharges);
+    const gstPercentage = bookingPayment?.gstPercentage || 18;
 
     return (
         <PageContainer>
@@ -430,21 +459,58 @@ export default function UserAdvancePaymentConfirmation() {
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Payment Summary</h2>
                 
                 <div className="space-y-3 mb-4">
+                    {/* Service Fee */}
                     <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Total Amount</span>
-                        <span className="font-semibold text-gray-800">{formatAmount(totalAmount)}</span>
+                        <span className="text-gray-600">Service Fee</span>
+                        <span className="font-semibold text-gray-800">{formatAmount(baseServiceFee)}</span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    
+                    {/* Travel Charges (if applicable) */}
+                    {travelCharges > 0 && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Travel Charges</span>
+                            <span className="font-semibold text-gray-800">{formatAmount(travelCharges)}</span>
+                        </div>
+                    )}
+                    
+                    {/* Subtotal */}
+                    {travelCharges > 0 && (
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                            <span className="text-gray-600">Subtotal</span>
+                            <span className="font-semibold text-gray-800">{formatAmount(subtotal)}</span>
+                        </div>
+                    )}
+                    
+                    {/* GST (if applicable) */}
+                    {gst > 0 && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-600">GST ({gstPercentage}%)</span>
+                            <span className="font-semibold text-gray-800">{formatAmount(gst)}</span>
+                        </div>
+                    )}
+                    
+                    {/* Total Amount */}
+                    <div className="flex justify-between items-center pt-2 border-t-2 border-gray-300">
+                        <span className="text-lg font-bold text-gray-800">Total Amount</span>
+                        <span className="text-lg font-bold text-gray-800">{formatAmount(totalAmount)}</span>
+                    </div>
+                    
+                    {/* Advance Payment */}
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                         <span className="text-gray-600">Advance Payment (40%)</span>
                         <span className="font-semibold text-[#0A84FF]">{formatAmount(advanceAmount)}</span>
                     </div>
+                    
+                    {/* Remaining Amount */}
                     <div className="flex justify-between items-center">
                         <span className="text-gray-600">Remaining (60%)</span>
                         <span className="font-semibold text-gray-800">{formatAmount(remainingAmount)}</span>
                     </div>
-                    <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
+                    
+                    {/* Amount to Pay Now */}
+                    <div className="border-t-2 border-[#0A84FF] pt-3 flex justify-between items-center mt-2">
                         <span className="text-lg font-bold text-gray-800">Amount to Pay Now</span>
-                        <span className="text-lg font-bold text-[#0A84FF]">{formatAmount(advanceAmount)}</span>
+                        <span className="text-xl font-bold text-[#0A84FF]">{formatAmount(advanceAmount)}</span>
                     </div>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     IoBriefcaseOutline,
     IoWalletOutline,
@@ -21,6 +21,7 @@ import { handleApiError } from "../../../utils/toastHelper";
 
 export default function VendorDashboard() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { vendor } = useVendorAuth();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
@@ -44,8 +45,20 @@ export default function VendorDashboard() {
     const [vendorProfileData, setVendorProfileData] = useState(null);
     const toast = useToast();
 
+    // Load data on mount and when location changes (navigation back)
     useEffect(() => {
         loadDashboardData();
+    }, [location.pathname]);
+
+    // Refetch when page becomes visible (user switches tabs/windows)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                loadDashboardData();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
     // Debug: Log when vendor profile data changes
@@ -336,11 +349,11 @@ export default function VendorDashboard() {
             </section>
 
             {/* Upcoming Bookings Section */}
-            {upcomingBookings.length > 0 && (
-                <section className="mt-6">
-                    <h2 className="text-lg font-bold text-[#3A3A3A]">
-                        Pending
-                    </h2>
+            <section className="mt-6">
+                <h2 className="text-lg font-bold text-[#3A3A3A]">
+                    Pending
+                </h2>
+                {upcomingBookings.length > 0 ? (
                     <div className="mt-3 space-y-4">
                         {upcomingBookings.map((booking) => (
                             <div
@@ -410,15 +423,31 @@ export default function VendorDashboard() {
                             </div>
                         ))}
                     </div>
-                </section>
-            )}
+                ) : (
+                    <div className="mt-3 bg-white rounded-lg p-8 shadow-[0_4px_12px_rgba(0,0,0,0.08)] text-center">
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                                <IoBriefcaseOutline className="text-3xl text-gray-400" />
+                            </div>
+                            <div>
+                                <p className="text-base font-semibold text-[#3A3A3A] mb-1">
+                                    No Pending Bookings
+                                </p>
+                                <p className="text-sm text-[#6B7280]">
+                                    You don't have any pending bookings at the moment.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </section>
 
             {/* Recent Bookings Section */}
-            {recentBookings.length > 0 && (
-                <section className="mt-8">
-                    <h2 className="text-lg font-bold text-[#3A3A3A]">
-                        Completed
-                    </h2>
+            <section className="mt-8">
+                <h2 className="text-lg font-bold text-[#3A3A3A]">
+                    Completed
+                </h2>
+                {recentBookings.length > 0 ? (
                     <div className="mt-3 space-y-4">
                         {recentBookings.map((booking) => (
                             <div
@@ -506,8 +535,24 @@ export default function VendorDashboard() {
                             </div>
                         ))}
                     </div>
-                </section>
-            )}
+                ) : (
+                    <div className="mt-3 bg-white rounded-lg p-8 shadow-[0_4px_12px_rgba(0,0,0,0.08)] text-center">
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                                <IoCheckmarkCircleOutline className="text-3xl text-gray-400" />
+                            </div>
+                            <div>
+                                <p className="text-base font-semibold text-[#3A3A3A] mb-1">
+                                    No Completed Bookings
+                                </p>
+                                <p className="text-sm text-[#6B7280]">
+                                    You don't have any completed bookings yet.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </section>
         </div>
     );
 }

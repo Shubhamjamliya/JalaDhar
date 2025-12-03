@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     getVendorBookings,
     acceptBooking,
     rejectBooking,
 } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
@@ -15,7 +16,9 @@ import InputModal from "../../shared/components/InputModal";
 
 export default function VendorRequests() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { vendor } = useVendorAuth();
+    const { socket } = useNotifications();
     const [activeTab, setActiveTab] = useState("New");
     const [newRequests, setNewRequests] = useState([]);
     const [confirmedRequests, setConfirmedRequests] = useState([]);
@@ -28,10 +31,7 @@ export default function VendorRequests() {
     const [showRejectConfirm, setShowRejectConfirm] = useState(false);
     const [selectedBookingId, setSelectedBookingId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState("");
-
-    useEffect(() => {
-        loadAllRequests();
-    }, []);
+    const loadAllRequestsRef = useRef(null);
 
     const loadAllRequests = async () => {
         try {
@@ -78,6 +78,66 @@ export default function VendorRequests() {
         }
     };
 
+    // Store loadAllRequests function in ref so it can be used in socket listeners
+    useEffect(() => {
+        loadAllRequestsRef.current = loadAllRequests;
+    }, []);
+
+    // Load data on mount and when location changes (navigation back)
+    useEffect(() => {
+        loadAllRequests();
+    }, [location.pathname]);
+
+    // Refresh when tab changes
+    useEffect(() => {
+        loadAllRequests();
+    }, [activeTab]);
+
+    // Refetch when page becomes visible (user switches tabs/windows)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                loadAllRequests();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
+
+    // Listen to socket notifications for new bookings
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewNotification = (notification) => {
+            // Refresh when new booking is assigned or created
+            if (notification.type === 'BOOKING_ASSIGNED' || 
+                notification.type === 'BOOKING_CREATED' ||
+                notification.type === 'BOOKING_ASSIGNED_TO_VENDOR') {
+                // Small delay to ensure backend has processed the booking
+                setTimeout(() => {
+                    if (loadAllRequestsRef.current) {
+                        loadAllRequestsRef.current();
+                    }
+                }, 500);
+            }
+            // Also refresh when booking status changes (e.g., accepted)
+            if (notification.type === 'BOOKING_ACCEPTED' ||
+                notification.type === 'BOOKING_STATUS_UPDATED') {
+                setTimeout(() => {
+                    if (loadAllRequestsRef.current) {
+                        loadAllRequestsRef.current();
+                    }
+                }, 300);
+            }
+        };
+
+        socket.on('new_notification', handleNewNotification);
+
+        return () => {
+            socket.off('new_notification', handleNewNotification);
+        };
+    }, [socket]);
+
     const handleAccept = (bookingId) => {
         setSelectedBookingId(bookingId);
         setShowAcceptConfirm(true);
@@ -97,13 +157,14 @@ export default function VendorRequests() {
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking accepted successfully!");
-                // Remove from new requests and reload
+                // Immediately update state - remove from new, will be added to confirmed on reload
                 setNewRequests(
                     newRequests.filter((req) => req._id !== bookingId)
                 );
-                setTimeout(() => {
-                    loadAllRequests();
-                }, 500);
+                // Reload all data immediately to update all tabs
+                await loadAllRequests();
+                // If on New tab and no more new requests, optionally switch to Confirmed tab
+                // But let user stay on current tab - they can switch manually
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to accept booking");
@@ -112,9 +173,7 @@ export default function VendorRequests() {
             toast.dismissToast(loadingToast);
             handleApiError(err, "Failed to accept booking");
             if (err.response?.status === 400) {
-                setTimeout(() => {
-                    loadAllRequests();
-                }, 500);
+                await loadAllRequests();
             }
         } finally {
             setActionLoading(null);
@@ -148,13 +207,12 @@ export default function VendorRequests() {
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking rejected successfully.");
-                // Remove from new requests and reload
+                // Immediately update state and reload
                 setNewRequests(
                     newRequests.filter((req) => req._id !== bookingId)
                 );
-                setTimeout(() => {
-                    loadAllRequests();
-                }, 500);
+                // Reload immediately without delay
+                await loadAllRequests();
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to reject booking");
@@ -163,9 +221,7 @@ export default function VendorRequests() {
             toast.dismissToast(loadingToast);
             handleApiError(err, "Failed to reject booking");
             if (err.response?.status === 400) {
-                setTimeout(() => {
-                    loadAllRequests();
-                }, 500);
+                await loadAllRequests();
             }
         } finally {
             setActionLoading(null);
@@ -271,22 +327,30 @@ export default function VendorRequests() {
                     New ({newRequests.length})
                 </button>
                 <button
-                    onClick={() => setActiveTab("Confirmed")}
+                    onClick={() => {
+                        setActiveTab("Confirmed");
+                        // Refresh when switching tabs
+                        setTimeout(() => loadAllRequests(), 100);
+                    }}
                     className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors ${activeTab === "Confirmed"
                         ? "bg-[#0A84FF] text-white"
                         : "bg-white text-[#6B7280]"
                         }`}
                 >
-                    Confirmed
+                    Confirmed ({confirmedRequests.length})
                 </button>
                 <button
-                    onClick={() => setActiveTab("History")}
+                    onClick={() => {
+                        setActiveTab("History");
+                        // Refresh when switching tabs
+                        setTimeout(() => loadAllRequests(), 100);
+                    }}
                     className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors ${activeTab === "History"
                         ? "bg-[#0A84FF] text-white"
                         : "bg-white text-[#6B7280]"
                         }`}
                 >
-                    History
+                    History ({historyRequests.length})
                 </button>
             </div>
 
@@ -349,11 +413,13 @@ export default function VendorRequests() {
                                     )}
                                 </div>
 
-                                {/* Payment Amount */}
+                                {/* Payment Amount - Show only service charges + travel charges (no GST) */}
                                 <div className="text-right">
                                     <p className="text-lg font-bold text-[#00C2A8]">
                                         {formatAmount(
-                                            request.payment?.totalAmount ||
+                                            request.payment?.subtotal !== undefined 
+                                                ? request.payment.subtotal 
+                                                : (request.payment?.baseServiceFee || 0) + (request.payment?.travelCharges || 0) ||
                                             request.payment?.amount ||
                                             0
                                         )}
@@ -361,6 +427,11 @@ export default function VendorRequests() {
                                     <p className="text-xs text-[#6B7280]">
                                         {getPaymentMethod(request.payment)}
                                     </p>
+                                    {request.payment?.subtotal && request.payment?.totalAmount && (
+                                        <p className="text-xs text-[#6B7280] mt-1">
+                                            Service + Travel
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -412,16 +483,22 @@ export default function VendorRequests() {
 
                             {/* Action Buttons */}
                             <div className="mt-4 flex gap-2">
-                                {/* View Status Button - Always visible */}
+                                {/* View Details/Status Button - Changes based on tab */}
                                 <button
-                                    onClick={() =>
-                                        navigate(`/vendor/booking/${request._id}/status`)
+                                    onClick={() => {
+                                        if (activeTab === "New") {
+                                            navigate(`/vendor/bookings/${request._id}`);
+                                        } else {
+                                            navigate(`/vendor/booking/${request._id}/status`);
                                     }
+                                    }}
                                     className="relative flex-1 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] text-[#1976D2] py-2 px-3 text-xs font-semibold hover:from-[#90CAF9] hover:via-[#BBDEFB] hover:to-[#64B5F6] transition-all shadow-sm hover:shadow-md active:scale-[0.98] overflow-hidden flex items-center justify-center"
                                 >
                                     {/* Glossy/Highlight Effect */}
                                     <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
-                                    <span className="relative z-10">View Status</span>
+                                    <span className="relative z-10">
+                                        {activeTab === "New" ? "View Details" : "View Status"}
+                                    </span>
                                 </button>
 
                                 {/* Accept/Reject Buttons - Only for New/ASSIGNED requests (PENDING bookings don't have action buttons) */}

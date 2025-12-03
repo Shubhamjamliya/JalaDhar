@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     IoDocumentTextOutline,
     IoCalendarOutline,
@@ -28,6 +28,7 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 export default function UserDashboard() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [userName, setUserName] = useState("");
@@ -115,9 +116,21 @@ export default function UserDashboard() {
         }
     }, []);
 
+    // Load data on mount and when location changes (navigation back)
     useEffect(() => {
         loadDashboardData();
         loadVendors();
+    }, [location.pathname]);
+
+    // Refetch when page becomes visible (user switches tabs/windows)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                loadDashboardData();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
     useEffect(() => {

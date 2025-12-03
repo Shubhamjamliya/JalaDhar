@@ -5,6 +5,7 @@ const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { sendSettlementNotificationEmail } = require('../../services/emailService');
 const { sendNotification } = require('../../services/notificationService');
 const { getIO } = require('../../sockets');
+const { creditToVendorWallet, debitFromVendorWallet } = require('../../services/walletService');
 
 /**
  * Get all bookings with filters
@@ -106,11 +107,26 @@ const approveBorewellResult = async (req, res) => {
     booking.borewellResult.approvedBy = adminId;
     // When admin approves borewell result:
     // - User status: ADMIN_APPROVED (user waiting for final settlement/refund)
-    // - Vendor status: APPROVED (vendor waiting for pay_second/second installment)
+    // - Vendor status: APPROVED (vendor waiting for final settlement)
     // - Main status: ADMIN_APPROVED
+    // Initialize finalSettlement as pending for both vendor and user
+    if (!booking.finalSettlement) {
+      booking.finalSettlement = {
+        rewardAmount: 0,
+        penaltyAmount: 0,
+        remittanceAmount: 0,
+        status: 'PENDING',
+        borewellResult: booking.borewellResult.status
+      };
+    } else {
+      // Ensure status is PENDING (both settlements pending)
+      booking.finalSettlement.status = 'PENDING';
+      booking.finalSettlement.borewellResult = booking.borewellResult.status;
+    }
+    
     booking.status = BOOKING_STATUS.ADMIN_APPROVED;
     booking.userStatus = BOOKING_STATUS.ADMIN_APPROVED;
-    booking.vendorStatus = BOOKING_STATUS.APPROVED; // Ready for pay_second (second installment)
+    booking.vendorStatus = BOOKING_STATUS.APPROVED; // Vendor waiting for final settlement
 
     // Calculate vendor settlement
     const settlementAmount = booking.payment.totalAmount * 0.5; // 50% of total
@@ -622,6 +638,74 @@ const approveReport = async (req, res) => {
     
     // Update vendor status to AWAITING_PAYMENT (ready for payment from payments page)
     booking.vendorStatus = BOOKING_STATUS.AWAITING_PAYMENT;
+    
+    // Credit second payment (50% of total vendor payment) to vendor wallet after report approval
+    const { creditToVendorWallet, deductPlatformFee, retryFailedCredit } = require('../../services/walletService');
+    const WalletTransaction = require('../../models/WalletTransaction');
+    
+    if (booking.payment?.vendorWalletPayments?.reportUploadPayment && 
+        !booking.payment.vendorWalletPayments.reportUploadPayment.credited) {
+      const paymentAmount = booking.payment.vendorWalletPayments.reportUploadPayment.amount;
+      
+      if (paymentAmount > 0) {
+        const creditResult = await creditToVendorWallet(
+          booking.vendor._id,
+          paymentAmount,
+          'REPORT_UPLOAD',
+          booking._id,
+          `Second installment (50%) for booking #${booking._id.toString().slice(-6)} after report approval`
+        );
+
+        if (creditResult.success) {
+          booking.payment.vendorWalletPayments.reportUploadPayment.credited = true;
+          booking.payment.vendorWalletPayments.reportUploadPayment.creditedAt = new Date();
+          booking.payment.vendorWalletPayments.reportUploadPayment.transactionId = creditResult.transaction._id;
+          booking.payment.vendorWalletPayments.totalCredited = 
+            (booking.payment.vendorWalletPayments.totalCredited || 0) + paymentAmount;
+        } else {
+          // Mark as failed but don't block approval
+          booking.payment.vendorWalletPayments.reportUploadPayment.failed = true;
+          booking.payment.vendorWalletPayments.reportUploadPayment.errorMessage = creditResult.error || 'Credit failed';
+          console.error('Failed to credit report upload payment:', creditResult.error);
+          
+          // Schedule retry (async, don't wait)
+          setTimeout(async () => {
+            try {
+              const failedTx = await WalletTransaction.findOne({
+                vendor: booking.vendor._id,
+                booking: booking._id,
+                type: 'REPORT_UPLOAD',
+                status: 'FAILED'
+              }).sort({ createdAt: -1 });
+              
+              if (failedTx) {
+                await retryFailedCredit(failedTx._id);
+              }
+            } catch (retryError) {
+              console.error('Retry failed:', retryError);
+            }
+          }, 5000); // Retry after 5 seconds
+        }
+      }
+      
+      // Deduct platform fee from vendor wallet
+      const totalPlatformFee = booking.payment.vendorWalletPayments.totalPlatformFee;
+      if (totalPlatformFee > 0 && !booking.payment.vendorWalletPayments.platformFee.deducted) {
+        try {
+          await deductPlatformFee(
+            booking.vendor._id,
+            totalPlatformFee,
+            booking._id,
+            `Platform fee deduction for booking #${booking._id.toString().slice(-6)}`
+          );
+          booking.payment.vendorWalletPayments.platformFee.deducted = true;
+          booking.payment.vendorWalletPayments.platformFee.deductedAt = new Date();
+        } catch (walletError) {
+          console.error(`Failed to deduct platform fee from vendor wallet for booking ${booking._id}:`, walletError);
+          // Log error, but don't block approval
+        }
+      }
+    }
     
     await booking.save();
 
@@ -1338,8 +1422,22 @@ const processFinalSettlement = async (req, res) => {
       description: `Final settlement for booking ${booking._id} - ${isSuccess ? 'SUCCESS' : 'FAILED'}${settlementIncentive > 0 ? ` + Incentive: ${settlementIncentive}` : ''}${settlementPenalty > 0 ? ` - Penalty: ${settlementPenalty}` : ''}`
     });
 
-    // Create user refund payment record (if failed)
+    // Credit refund to user wallet (if failed)
     if (!isSuccess && userRefundAmount > 0) {
+      try {
+        const { creditToUserWallet } = require('../../services/userWalletService');
+        await creditToUserWallet(
+          booking.user?._id || booking.user,
+          userRefundAmount,
+          booking._id,
+          `Refund for failed borewell - booking #${booking._id.toString().slice(-6)}`
+        );
+      } catch (walletError) {
+        console.error(`Failed to credit refund to user wallet for booking ${booking._id}:`, walletError);
+        // Log error, but don't block settlement
+      }
+      
+      // Also create payment record for tracking
       await Payment.create({
         booking: booking._id,
         user: booking.user?._id || booking.user,
@@ -1507,7 +1605,25 @@ const processUserRefund = async (req, res) => {
     // For now, we'll create the refund payment record
     // In production: const razorpayRefund = await createRefund(paymentId, finalRefundAmount, { reason: 'Failed borewell' });
 
-    // Create refund payment record
+    // Credit refund to user wallet
+    try {
+      const { creditToUserWallet } = require('../../services/userWalletService');
+      await creditToUserWallet(
+        booking.user?._id || booking.user,
+        finalRefundAmount,
+        booking._id,
+        `Refund for failed borewell - booking #${booking._id.toString().slice(-6)}`
+      );
+    } catch (walletError) {
+      console.error(`Failed to credit refund to user wallet for booking ${booking._id}:`, walletError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to credit refund to user wallet',
+        error: walletError.message
+      });
+    }
+    
+    // Also create payment record for tracking
     const refundPayment = await Payment.create({
       booking: booking._id,
       user: booking.user?._id || booking.user,
@@ -1553,8 +1669,953 @@ const processUserRefund = async (req, res) => {
   }
 };
 
+/**
+ * Get bookings pending 1st payment release (after visit)
+ */
+const getPendingFirstPaymentReleases = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const query = {
+      status: BOOKING_STATUS.VISITED,
+      'payment.vendorWalletPayments.siteVisitPayment.credited': false
+    };
+
+    const [bookings, total] = await Promise.all([
+      Booking.find(query)
+        .populate('user', 'name email phone')
+        .populate('vendor', 'name email phone bankDetails')
+        .populate('service', 'name price')
+        .sort({ visitedAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Booking.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Pending 1st payment releases retrieved successfully',
+      data: {
+        bookings,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / parseInt(limit)),
+          totalBookings: total
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get pending 1st payment releases error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve pending 1st payment releases',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get bookings pending 2nd payment release (after report upload)
+ */
+const getPendingSecondPaymentReleases = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const query = {
+      status: BOOKING_STATUS.REPORT_UPLOADED,
+      'payment.vendorWalletPayments.reportUploadPayment.credited': false
+    };
+
+    const [bookings, total] = await Promise.all([
+      Booking.find(query)
+        .populate('user', 'name email phone')
+        .populate('vendor', 'name email phone bankDetails')
+        .populate('service', 'name price')
+        .sort({ reportUploadedAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Booking.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Pending 2nd payment releases retrieved successfully',
+      data: {
+        bookings,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / parseInt(limit)),
+          totalBookings: total
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get pending 2nd payment releases error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve pending 2nd payment releases',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get pending vendor final settlements (bookings with borewell results, waiting for vendor reward/penalty)
+ */
+const getPendingVendorFinalSettlements = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search } = req.query;
+
+    const query = {
+      'borewellResult.status': { $in: ['SUCCESS', 'FAILED'] },
+      'borewellResult.uploadedAt': { $exists: true }
+    };
+
+    // Build search query
+    const searchQuery = search ? {
+      $or: [
+        { 'user.name': { $regex: search, $options: 'i' } },
+        { 'vendor.name': { $regex: search, $options: 'i' } },
+        { 'service.name': { $regex: search, $options: 'i' } }
+      ]
+    } : {};
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [allBookings, totalCount] = await Promise.all([
+      Booking.find({ ...query, ...searchQuery })
+        .populate('user', 'name email phone')
+        .populate('vendor', 'name email phone')
+        .populate('service', 'name price')
+        .sort({ 'borewellResult.uploadedAt': -1 }),
+      Booking.countDocuments({ ...query, ...searchQuery })
+    ]);
+
+    // Filter to only show bookings where vendor settlement is pending
+    // Vendor settlement is pending if: not processed OR processed but reward/penalty are both 0
+    const filteredBookings = allBookings.filter(booking => {
+      const finalSettlement = booking.finalSettlement;
+      if (!finalSettlement || finalSettlement.status !== 'PROCESSED') {
+        return true; // Not processed at all
+      }
+      // Processed but check if vendor settlement (reward/penalty) was done
+      const hasVendorSettlement = (finalSettlement.rewardAmount > 0) || (finalSettlement.penaltyAmount > 0);
+      return !hasVendorSettlement; // Show if vendor settlement not done
+    });
+
+    const paginatedBookings = filteredBookings.slice(skip, skip + parseInt(limit));
+
+    res.json({
+      success: true,
+      message: 'Pending vendor final settlements retrieved successfully',
+      data: {
+        bookings: paginatedBookings.map(booking => ({
+          _id: booking._id,
+          bookingId: booking._id,
+          user: booking.user,
+          vendor: booking.vendor,
+          service: booking.service,
+          borewellResult: booking.borewellResult,
+          payment: {
+            totalAmount: booking.payment.totalAmount,
+            baseServiceFee: booking.payment.baseServiceFee,
+            travelCharges: booking.payment.travelCharges,
+            subtotal: booking.payment.subtotal
+          },
+          finalSettlement: booking.finalSettlement,
+          createdAt: booking.createdAt,
+          borewellUploadedAt: booking.borewellResult.uploadedAt
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: filteredBookings.length,
+          pages: Math.ceil(filteredBookings.length / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get pending vendor final settlements error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve pending vendor final settlements',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get pending user final settlements (bookings with borewell results, waiting for user remittance/completion)
+ */
+const getPendingUserFinalSettlements = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search } = req.query;
+
+    const query = {
+      'borewellResult.status': { $in: ['SUCCESS', 'FAILED'] },
+      'borewellResult.uploadedAt': { $exists: true }
+    };
+
+    // Build search query
+    const searchQuery = search ? {
+      $or: [
+        { 'user.name': { $regex: search, $options: 'i' } },
+        { 'vendor.name': { $regex: search, $options: 'i' } },
+        { 'service.name': { $regex: search, $options: 'i' } }
+      ]
+    } : {};
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [allBookings, totalCount] = await Promise.all([
+      Booking.find({ ...query, ...searchQuery })
+        .populate('user', 'name email phone')
+        .populate('vendor', 'name email phone')
+        .populate('service', 'name price')
+        .sort({ 'borewellResult.uploadedAt': -1 }),
+      Booking.countDocuments({ ...query, ...searchQuery })
+    ]);
+
+    // Filter to only show bookings where user settlement is pending
+    const filteredBookings = allBookings.filter(booking => {
+      const finalSettlement = booking.finalSettlement;
+      const borewellStatus = booking.borewellResult?.status;
+      
+      // Exclude if user settlement is already processed
+      // Check new field first
+      if (finalSettlement?.userSettlementProcessed === true) {
+        return false;
+      }
+      
+      // Also check old format: if remittanceAmount exists and processedBy exists, it's processed
+      // For SUCCESS: remittanceAmount = 0 and processedBy exists means processed
+      // For FAILED: remittanceAmount > 0 and processedBy exists means processed
+      if (finalSettlement?.processedBy && finalSettlement?.remittanceAmount !== undefined) {
+        if (borewellStatus === 'SUCCESS' && finalSettlement.remittanceAmount === 0) {
+          return false; // Processed (no remittance needed for success)
+        }
+        if (borewellStatus === 'FAILED' && finalSettlement.remittanceAmount > 0) {
+          return false; // Processed (remittance paid for failure)
+        }
+      }
+      
+      return true;
+    });
+
+    // Recalculate total after filtering
+    const filteredTotal = filteredBookings.length;
+    const paginatedBookings = filteredBookings.slice(skip, skip + parseInt(limit));
+    
+    // Update totalCount to reflect filtered results
+    const actualTotal = filteredTotal;
+
+    res.json({
+      success: true,
+      message: 'Pending user final settlements retrieved successfully',
+      data: {
+        bookings: paginatedBookings.map(booking => ({
+          _id: booking._id,
+          bookingId: booking._id,
+          user: booking.user,
+          vendor: booking.vendor,
+          service: booking.service,
+          borewellResult: booking.borewellResult,
+          payment: {
+            totalAmount: booking.payment.totalAmount,
+            baseServiceFee: booking.payment.baseServiceFee,
+            travelCharges: booking.payment.travelCharges,
+            subtotal: booking.payment.subtotal,
+            remainingAmount: booking.payment.remainingAmount
+          },
+          finalSettlement: booking.finalSettlement,
+          createdAt: booking.createdAt,
+          borewellUploadedAt: booking.borewellResult.uploadedAt
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: filteredBookings.length,
+          pages: Math.ceil(filteredBookings.length / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get pending user final settlements error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve pending user final settlements',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get completed vendor final settlements (history - where reward/penalty was processed)
+ */
+const getCompletedVendorFinalSettlements = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search } = req.query;
+
+    const query = {
+      'finalSettlement.status': 'PROCESSED',
+      $or: [
+        { 'finalSettlement.rewardAmount': { $gt: 0 } },
+        { 'finalSettlement.penaltyAmount': { $gt: 0 } }
+      ]
+    };
+
+    const searchQuery = search ? {
+      $or: [
+        { 'user.name': { $regex: search, $options: 'i' } },
+        { 'vendor.name': { $regex: search, $options: 'i' } },
+        { 'service.name': { $regex: search, $options: 'i' } }
+      ]
+    } : {};
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [bookings, total] = await Promise.all([
+      Booking.find({ ...query, ...searchQuery })
+        .populate('user', 'name email phone')
+        .populate('vendor', 'name email phone')
+        .populate('service', 'name price')
+        .populate('finalSettlement.processedBy', 'name email')
+        .sort({ 'finalSettlement.processedAt': -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Booking.countDocuments({ ...query, ...searchQuery })
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Completed vendor final settlements retrieved successfully',
+      data: {
+        bookings: bookings.map(booking => ({
+          _id: booking._id,
+          bookingId: booking._id,
+          user: booking.user,
+          vendor: booking.vendor,
+          service: booking.service,
+          borewellResult: booking.borewellResult,
+          payment: {
+            totalAmount: booking.payment.totalAmount,
+            baseServiceFee: booking.payment.baseServiceFee,
+            travelCharges: booking.payment.travelCharges,
+            subtotal: booking.payment.subtotal
+          },
+          finalSettlement: booking.finalSettlement,
+          createdAt: booking.createdAt,
+          borewellUploadedAt: booking.borewellResult.uploadedAt
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get completed vendor final settlements error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve completed vendor final settlements',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get completed user final settlements (history - where remittance was paid or settlement completed)
+ */
+const getCompletedUserFinalSettlements = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search } = req.query;
+
+    // User settlement is complete only if user settlement was actually processed
+    // We need to filter out vendor-only settlements
+    // User settlement is complete if:
+    // - For FAILED: remittanceAmount > 0 (remittance was paid to user)
+    // - For SUCCESS: remittanceAmount is defined (even if 0) - this means processUserFinalSettlement was called
+    // Important: Exclude bookings where only vendor settlement was done (where remittanceAmount was never set)
+    // User settlement is complete only if remittanceAmount was set (meaning processUserFinalSettlement was called)
+    // This ensures we only show user settlements, not vendor-only settlements
+    // User settlement is complete if:
+    // 1. New format: userSettlementProcessed = true
+    // 2. Old format: remittanceAmount exists and processedBy exists
+    const query = {
+      $or: [
+        // New format: userSettlementProcessed = true
+        { 'finalSettlement.userSettlementProcessed': true },
+        // Old format: processedBy exists and remittanceAmount exists
+        {
+          'finalSettlement.processedBy': { $exists: true },
+          'finalSettlement.remittanceAmount': { $exists: true },
+          $or: [
+            // FAILED case: remittanceAmount > 0 (remittance paid to user)
+            { 
+              'finalSettlement.remittanceAmount': { $gt: 0 },
+              'finalSettlement.borewellResult': 'FAILED'
+            },
+            // SUCCESS case: remittanceAmount = 0 (user settlement processed, no payment needed)
+            { 
+              'finalSettlement.borewellResult': 'SUCCESS',
+              'finalSettlement.remittanceAmount': 0
+            }
+          ]
+        }
+      ]
+    };
+
+    const searchQuery = search ? {
+      $or: [
+        { 'user.name': { $regex: search, $options: 'i' } },
+        { 'vendor.name': { $regex: search, $options: 'i' } },
+        { 'service.name': { $regex: search, $options: 'i' } }
+      ]
+    } : {};
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [bookings, total] = await Promise.all([
+      Booking.find({ ...query, ...searchQuery })
+        .populate('user', 'name email phone')
+        .populate('vendor', 'name email phone')
+        .populate('service', 'name price')
+        .populate('finalSettlement.processedBy', 'name email')
+        .sort({ 'finalSettlement.processedAt': -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Booking.countDocuments({ ...query, ...searchQuery })
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Completed user final settlements retrieved successfully',
+      data: {
+        bookings: bookings.map(booking => ({
+          _id: booking._id,
+          bookingId: booking._id,
+          user: booking.user,
+          vendor: booking.vendor,
+          service: booking.service,
+          borewellResult: booking.borewellResult,
+          payment: {
+            totalAmount: booking.payment.totalAmount,
+            baseServiceFee: booking.payment.baseServiceFee,
+            travelCharges: booking.payment.travelCharges,
+            subtotal: booking.payment.subtotal,
+            remainingAmount: booking.payment.remainingAmount
+          },
+          finalSettlement: booking.finalSettlement,
+          createdAt: booking.createdAt,
+          borewellUploadedAt: booking.borewellResult.uploadedAt
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get completed user final settlements error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve completed user final settlements',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Process new final settlement (manual reward/penalty entry)
+ */
+const processNewFinalSettlement = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const adminId = req.userId;
+    const { rewardAmount = 0, penaltyAmount = 0, notes = '' } = req.body;
+
+    // Validate amounts
+    if (rewardAmount < 0 || penaltyAmount < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reward and penalty amounts must be non-negative'
+      });
+    }
+
+    if (rewardAmount > 0 && penaltyAmount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot set both reward and penalty for the same booking'
+      });
+    }
+
+    const booking = await Booking.findById(bookingId)
+      .populate('vendor', 'name email paymentCollection')
+      .populate('user', 'name email');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Check if borewell result is uploaded
+    if (!booking.borewellResult?.status || !booking.borewellResult?.uploadedAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'Borewell result must be uploaded before processing final settlement'
+      });
+    }
+
+    // Check if already processed
+    if (booking.finalSettlement?.status === 'PROCESSED') {
+      return res.status(400).json({
+        success: false,
+        message: 'Final settlement already processed for this booking'
+      });
+    }
+
+    const borewellStatus = booking.borewellResult.status; // 'SUCCESS' or 'FAILED'
+
+    // Validate: SUCCESS should have reward, FAILED should have penalty
+    if (borewellStatus === 'SUCCESS' && penaltyAmount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot apply penalty for successful borewell result'
+      });
+    }
+
+    if (borewellStatus === 'FAILED' && rewardAmount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot apply reward for failed borewell result'
+      });
+    }
+
+    // Process wallet transaction
+    let transactionResult;
+    const amount = rewardAmount > 0 ? rewardAmount : penaltyAmount;
+
+    if (rewardAmount > 0) {
+      // Credit reward to vendor wallet
+      transactionResult = await creditToVendorWallet(
+        booking.vendor._id || booking.vendor,
+        rewardAmount,
+        'FINAL_SETTLEMENT_REWARD',
+        booking._id,
+        {
+          description: `Final settlement reward for successful borewell - booking #${booking._id.toString().slice(-6)}`,
+          bookingId: booking._id.toString(),
+          borewellStatus: 'SUCCESS'
+        }
+      );
+
+      if (!transactionResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to credit reward to vendor wallet',
+          error: transactionResult.error
+        });
+      }
+    } else if (penaltyAmount > 0) {
+      // Debit penalty from vendor wallet
+      transactionResult = await debitFromVendorWallet(
+        booking.vendor._id || booking.vendor,
+        penaltyAmount,
+        'FINAL_SETTLEMENT_PENALTY',
+        booking._id,
+        {
+          description: `Final settlement penalty for failed borewell - booking #${booking._id.toString().slice(-6)}`,
+          bookingId: booking._id.toString(),
+          borewellStatus: 'FAILED'
+        }
+      );
+
+      if (!transactionResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to deduct penalty from vendor wallet',
+          error: transactionResult.error
+        });
+      }
+    }
+
+    // Update booking final settlement (preserve remittanceAmount if exists)
+    if (!booking.finalSettlement) {
+      booking.finalSettlement = {
+        rewardAmount: 0,
+        penaltyAmount: 0,
+        remittanceAmount: 0,
+        status: 'PENDING',
+        borewellResult: null
+      };
+    }
+    
+    booking.finalSettlement.rewardAmount = rewardAmount || 0;
+    booking.finalSettlement.penaltyAmount = penaltyAmount || 0;
+    booking.finalSettlement.borewellResult = borewellStatus;
+    booking.finalSettlement.processedAt = new Date();
+    booking.finalSettlement.processedBy = adminId;
+    booking.finalSettlement.transactionId = transactionResult?.transaction?._id || null;
+    if (notes) {
+      booking.finalSettlement.notes = notes;
+    }
+    
+    // Vendor settlement is independent - mark vendor status as complete
+    // Don't check user settlement - they are independent
+    booking.vendorStatus = BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE;
+    
+    // Update main status and finalSettlement.status based on both settlements
+    // Check if user settlement is also done (for main status only)
+    // User settlement is complete if: remittanceAmount is set (even if 0 for SUCCESS) AND userStatus is COMPLETED
+    const isUserSettlementComplete = booking.finalSettlement.remittanceAmount !== undefined && 
+                                     booking.finalSettlement.processedBy !== undefined &&
+                                     booking.userStatus === BOOKING_STATUS.COMPLETED;
+    
+    if (isUserSettlementComplete) {
+      // Both settlements complete
+      booking.status = BOOKING_STATUS.COMPLETED;
+      booking.finalSettlement.status = 'PROCESSED';
+    } else {
+      // Vendor complete but user pending
+      booking.status = BOOKING_STATUS.FINAL_SETTLEMENT;
+      booking.finalSettlement.status = 'PENDING';
+    }
+
+    await booking.save();
+
+    // Send notifications
+    try {
+      const io = getIO();
+      
+      // Notify vendor
+      await sendNotification({
+        recipient: booking.vendor._id || booking.vendor,
+        recipientModel: 'Vendor',
+        type: 'FINAL_SETTLEMENT_PROCESSED',
+        title: 'Final Settlement Processed',
+        message: rewardAmount > 0 
+          ? `Reward of ₹${rewardAmount.toLocaleString('en-IN')} credited to your wallet for successful borewell - booking #${booking._id.toString().slice(-6)}`
+          : `Penalty of ₹${penaltyAmount.toLocaleString('en-IN')} deducted from your wallet for failed borewell - booking #${booking._id.toString().slice(-6)}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          borewellStatus,
+          rewardAmount,
+          penaltyAmount
+        }
+      }, io);
+
+      // Notify admin (confirmation)
+      await sendNotification({
+        recipient: adminId,
+        recipientModel: 'Admin',
+        type: 'FINAL_SETTLEMENT_PROCESSED',
+        title: 'Final Settlement Processed',
+        message: `Final settlement processed for booking #${booking._id.toString().slice(-6)} - ${rewardAmount > 0 ? `Reward: ₹${rewardAmount.toLocaleString('en-IN')}` : `Penalty: ₹${penaltyAmount.toLocaleString('en-IN')}`}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          borewellStatus,
+          rewardAmount,
+          penaltyAmount
+        }
+      }, io);
+    } catch (notificationError) {
+      console.error('Notification error:', notificationError);
+      // Don't fail the request if notification fails
+    }
+
+    res.json({
+      success: true,
+      message: `Final settlement processed successfully. ${rewardAmount > 0 ? `Reward of ₹${rewardAmount.toLocaleString('en-IN')} credited to vendor wallet.` : `Penalty of ₹${penaltyAmount.toLocaleString('en-IN')} deducted from vendor wallet.`}`,
+      data: {
+        booking: {
+          id: booking._id,
+          finalSettlement: booking.finalSettlement,
+          transaction: transactionResult?.transaction
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Process new final settlement error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process final settlement',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Process user final settlement (remittance for failed borewell, or just mark as complete for success)
+ */
+const processUserFinalSettlement = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const adminId = req.userId;
+    const { remittanceAmount = 0, notes = '' } = req.body;
+
+    const booking = await Booking.findById(bookingId)
+      .populate('user', 'name email')
+      .populate('vendor', 'name email');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Check if borewell result is uploaded
+    if (!booking.borewellResult?.status || !booking.borewellResult?.uploadedAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'Borewell result must be uploaded before processing final settlement'
+      });
+    }
+
+    // Check if user settlement already processed
+    if (booking.finalSettlement?.userSettlementProcessed) {
+      return res.status(400).json({
+        success: false,
+        message: 'User final settlement already processed for this booking'
+      });
+    }
+
+    const borewellStatus = booking.borewellResult.status; // 'SUCCESS' or 'FAILED'
+
+    // For SUCCESS: Just mark as complete (no payment needed)
+    // For FAILED: Process remittance payment
+    if (borewellStatus === 'SUCCESS') {
+      // Just mark as complete, no payment
+      // Initialize finalSettlement if it doesn't exist
+      if (!booking.finalSettlement) {
+        booking.finalSettlement = {
+          rewardAmount: 0,
+          penaltyAmount: 0,
+          remittanceAmount: 0,
+          status: 'PENDING',
+          borewellResult: null
+        };
+      }
+      
+      // User settlement is independent - mark user status as complete
+      // Don't check vendor settlement - they are independent
+      booking.finalSettlement.borewellResult = borewellStatus;
+      booking.finalSettlement.processedAt = new Date();
+      booking.finalSettlement.processedBy = adminId;
+      booking.finalSettlement.remittanceAmount = 0; // No remittance for success
+      booking.finalSettlement.notes = notes || 'Final settlement completed - borewell successful';
+      
+      // Mark user settlement as processed
+      booking.finalSettlement.userSettlementProcessed = true;
+      booking.finalSettlement.userProcessedAt = new Date();
+      booking.finalSettlement.userProcessedBy = adminId;
+
+      // Mark user settlement as processed
+      booking.finalSettlement.userSettlementProcessed = true;
+      booking.finalSettlement.userProcessedAt = new Date();
+      booking.finalSettlement.userProcessedBy = adminId;
+
+      // Mark user status as COMPLETED (independent of vendor settlement)
+      booking.userStatus = BOOKING_STATUS.COMPLETED;
+      
+      // Update main status only if both are complete
+      // Check if vendor settlement is also done
+      const hasVendorSettlement = (booking.finalSettlement.rewardAmount > 0) || (booking.finalSettlement.penaltyAmount > 0);
+      if (hasVendorSettlement && booking.vendorStatus === BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE) {
+        // Both settlements complete
+        booking.status = BOOKING_STATUS.COMPLETED;
+        booking.finalSettlement.status = 'PROCESSED';
+      } else {
+        // User complete but vendor pending
+        booking.status = BOOKING_STATUS.FINAL_SETTLEMENT;
+        booking.finalSettlement.status = 'PENDING';
+      }
+
+      await booking.save();
+
+      // Send notification
+      try {
+        const io = getIO();
+        
+        await sendNotification({
+          recipient: booking.user._id || booking.user,
+          recipientModel: 'User',
+          type: 'FINAL_SETTLEMENT_PROCESSED',
+          title: 'Final Settlement Complete',
+          message: `Final settlement completed for booking #${booking._id.toString().slice(-6)}. Borewell was successful.`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            bookingId: booking._id.toString(),
+            borewellStatus: 'SUCCESS'
+          }
+        }, io);
+      } catch (notificationError) {
+        console.error('Notification error:', notificationError);
+      }
+
+      return res.json({
+        success: true,
+        message: 'Final settlement completed successfully. Borewell was successful.',
+        data: {
+          booking: {
+            id: booking._id,
+            finalSettlement: booking.finalSettlement
+          }
+        }
+      });
+    } else {
+      // FAILED: Process remittance payment
+      if (!remittanceAmount || remittanceAmount <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Remittance amount is required for failed borewell'
+        });
+      }
+
+      // Credit remittance to user wallet
+      const { creditToUserWallet } = require('../../services/userWalletService');
+      const transactionResult = await creditToUserWallet(
+        booking.user._id || booking.user,
+        remittanceAmount,
+        booking._id,
+        `Remittance for failed borewell - booking #${booking._id.toString().slice(-6)}`
+      );
+
+      if (!transactionResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to credit remittance to user wallet',
+          error: transactionResult.error
+        });
+      }
+
+      // Update booking final settlement (preserve rewardAmount/penaltyAmount if exists)
+      if (!booking.finalSettlement) {
+        booking.finalSettlement = {
+          rewardAmount: 0,
+          penaltyAmount: 0,
+          remittanceAmount: 0,
+          status: 'PENDING',
+          borewellResult: null
+        };
+      }
+      
+      // User settlement is independent - mark user status as complete
+      // Don't check vendor settlement - they are independent
+      booking.finalSettlement.remittanceAmount = remittanceAmount;
+      booking.finalSettlement.borewellResult = borewellStatus;
+      booking.finalSettlement.processedAt = new Date();
+      booking.finalSettlement.processedBy = adminId;
+      booking.finalSettlement.transactionId = transactionResult?.transaction?._id || null;
+      if (notes) {
+        booking.finalSettlement.notes = notes;
+      }
+
+      // Mark user settlement as processed
+      booking.finalSettlement.userSettlementProcessed = true;
+      booking.finalSettlement.userProcessedAt = new Date();
+      booking.finalSettlement.userProcessedBy = adminId;
+
+      // Mark user status as COMPLETED (independent of vendor settlement)
+      booking.userStatus = BOOKING_STATUS.COMPLETED;
+      
+      // Update main status only if both are complete
+      // Check if vendor settlement is also done
+      const hasVendorSettlement = (booking.finalSettlement.rewardAmount > 0) || (booking.finalSettlement.penaltyAmount > 0);
+      if (hasVendorSettlement && booking.vendorStatus === BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE) {
+        // Both settlements complete
+        booking.status = BOOKING_STATUS.COMPLETED;
+        booking.finalSettlement.status = 'PROCESSED';
+      } else {
+        // User complete but vendor pending
+        booking.status = BOOKING_STATUS.FINAL_SETTLEMENT;
+        booking.finalSettlement.status = 'PENDING';
+      }
+
+      await booking.save();
+
+      // Create payment record for tracking
+      await Payment.create({
+        booking: booking._id,
+        user: booking.user._id || booking.user,
+        vendor: booking.vendor._id || booking.vendor,
+        paymentType: 'REFUND',
+        amount: remittanceAmount,
+        status: PAYMENT_STATUS.SUCCESS,
+        razorpayOrderId: `remittance_${booking._id}_${Date.now()}`,
+        paidAt: new Date(),
+        description: `Remittance for failed borewell - booking #${booking._id.toString().slice(-6)}`
+      });
+
+      // Send notifications
+      try {
+        const io = getIO();
+        
+        await sendNotification({
+          recipient: booking.user._id || booking.user,
+          recipientModel: 'User',
+          type: 'FINAL_SETTLEMENT_PROCESSED',
+          title: 'Remittance Processed',
+          message: `Remittance of ₹${remittanceAmount.toLocaleString('en-IN')} has been credited to your wallet for failed borewell - booking #${booking._id.toString().slice(-6)}`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            bookingId: booking._id.toString(),
+            borewellStatus: 'FAILED',
+            remittanceAmount
+          }
+        }, io);
+      } catch (notificationError) {
+        console.error('Notification error:', notificationError);
+      }
+
+      return res.json({
+        success: true,
+        message: `Remittance of ₹${remittanceAmount.toLocaleString('en-IN')} credited to user wallet successfully.`,
+        data: {
+          booking: {
+            id: booking._id,
+            finalSettlement: booking.finalSettlement,
+            transaction: transactionResult?.transaction
+          }
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Process user final settlement error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process user final settlement',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllBookings,
+  getPendingFirstPaymentReleases,
+  getPendingSecondPaymentReleases,
   approveBorewellResult,
   processVendorSettlement,
   getBookingStatistics,
@@ -1570,6 +2631,12 @@ module.exports = {
   processUserRefund,
   processFinalSettlement,
   approveReport,
-  rejectReport
+  rejectReport,
+  getPendingVendorFinalSettlements,
+  getCompletedVendorFinalSettlements,
+  getPendingUserFinalSettlements,
+  getCompletedUserFinalSettlements,
+  processNewFinalSettlement,
+  processUserFinalSettlement
 };
 

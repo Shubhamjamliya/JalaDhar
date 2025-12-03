@@ -6,6 +6,7 @@ const { generateInvoice } = require('../../services/pdfService');
 const { sendPaymentConfirmationEmail } = require('../../services/emailService');
 const { sendNotification } = require('../../services/notificationService');
 const { getIO } = require('../../sockets');
+const { creditToVendorWallet } = require('../../services/walletService');
 
 /**
  * Verify and process advance payment
@@ -75,6 +76,45 @@ const verifyAdvancePayment = async (req, res) => {
     
     await booking.save();
 
+    // Credit travel charges to vendor wallet when booking is confirmed
+    // Check if travel charges have already been credited to avoid duplicates
+    if (booking.payment.travelCharges && booking.payment.travelCharges > 0) {
+      try {
+        // Check if travel charges were already credited for this booking
+        const WalletTransaction = require('../../models/WalletTransaction');
+        const existingTransaction = await WalletTransaction.findOne({
+          vendor: booking.vendor._id,
+          booking: booking._id,
+          type: 'TRAVEL_CHARGES',
+          status: 'SUCCESS'
+        });
+
+        if (!existingTransaction) {
+          // Credit travel charges to vendor wallet
+          const walletResult = await creditToVendorWallet(
+            booking.vendor._id,
+            booking.payment.travelCharges,
+            'TRAVEL_CHARGES',
+            booking._id,
+            {
+              description: `Travel charges for booking #${booking._id.toString().slice(-6)}`,
+              bookingId: booking._id.toString(),
+              distance: booking.payment.distance || null
+            }
+          );
+          
+          if (!walletResult.success) {
+            console.error('Failed to credit travel charges to vendor wallet:', walletResult.error);
+            // Don't fail the payment verification if wallet credit fails
+            // The transaction is recorded as failed and can be retried
+          }
+        }
+      } catch (walletError) {
+        console.error('Error crediting travel charges to vendor wallet:', walletError);
+        // Don't fail the payment verification if wallet credit fails
+      }
+    }
+
     // Update payment record
     const payment = await Payment.findOne({
       booking: bookingId,
@@ -120,13 +160,13 @@ const verifyAdvancePayment = async (req, res) => {
         }
       }, io);
 
-      // Notify vendor
+      // Notify vendor - booking confirmed and assigned
       await sendNotification({
         recipient: booking.vendor._id,
         recipientModel: 'Vendor',
         type: 'BOOKING_ASSIGNED',
-        title: 'New Booking Assigned',
-        message: `User has paid advance payment. Booking assigned to you.`,
+        title: 'Booking Confirmed and Assigned',
+        message: `New booking confirmed and assigned from ${booking.user.name} for ${booking.service.name}. Please review and accept.`,
         relatedEntity: {
           entityType: 'Booking',
           entityId: booking._id
@@ -137,6 +177,33 @@ const verifyAdvancePayment = async (req, res) => {
           bookingId: booking._id.toString()
         }
       }, io);
+
+      // Notify admin about payment
+      try {
+        const Admin = require('../../models/Admin');
+        const admins = await Admin.find({ isActive: true });
+        for (const admin of admins) {
+          await sendNotification({
+            recipient: admin._id,
+            recipientModel: 'Admin',
+            type: 'PAYMENT_ADVANCE_SUCCESS',
+            title: 'Advance Payment Received',
+            message: `User ${booking.user.name} paid advance payment of ₹${booking.payment.advanceAmount} for booking #${booking._id.toString().slice(-6)}`,
+            relatedEntity: {
+              entityType: 'Booking',
+              entityId: booking._id
+            },
+            metadata: {
+              amount: booking.payment.advanceAmount,
+              bookingId: booking._id.toString(),
+              userId: booking.user._id.toString(),
+              vendorId: booking.vendor._id.toString()
+            }
+          }, io);
+        }
+      } catch (adminError) {
+        console.error('Admin notification error:', adminError);
+      }
     } catch (emailError) {
       console.error('Email notification error:', emailError);
     }
@@ -289,22 +356,34 @@ const verifyRemainingPayment = async (req, res) => {
         }
       }, io);
 
-      // Notify vendor
+      // No notification to vendor for remaining payment (vendor doesn't need to know about user payments)
+
+      // Notify admin about remaining payment
+      try {
+        const Admin = require('../../models/Admin');
+        const admins = await Admin.find({ isActive: true });
+        for (const admin of admins) {
       await sendNotification({
-        recipient: booking.vendor._id,
-        recipientModel: 'Vendor',
+            recipient: admin._id,
+            recipientModel: 'Admin',
         type: 'PAYMENT_REMAINING_SUCCESS',
-        title: 'User Payment Completed',
-        message: `User has paid remaining amount of ₹${booking.payment.remainingAmount} for booking #${booking._id.toString().slice(-6)}`,
+            title: 'Remaining Payment Received',
+            message: `User ${booking.user.name} paid remaining amount of ₹${booking.payment.remainingAmount} for booking #${booking._id.toString().slice(-6)}`,
         relatedEntity: {
           entityType: 'Booking',
           entityId: booking._id
         },
         metadata: {
           amount: booking.payment.remainingAmount,
-          bookingId: booking._id.toString()
+              bookingId: booking._id.toString(),
+              userId: booking.user._id.toString(),
+              vendorId: booking.vendor._id.toString()
         }
       }, io);
+        }
+      } catch (adminError) {
+        console.error('Admin notification error:', adminError);
+      }
     } catch (emailError) {
       console.error('Email notification error:', emailError);
     }

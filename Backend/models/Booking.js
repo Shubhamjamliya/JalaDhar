@@ -222,7 +222,110 @@ const bookingSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Admin'
       }
+    },
+    // Vendor wallet payments
+    vendorWalletPayments: {
+      // Calculation breakdown
+      base: {
+        type: Number,
+        default: 0
+      },
+      gst: {
+        type: Number,
+        default: 0
+      },
+      platformFee: {
+        type: Number,
+        default: 0
+      },
+      totalVendorPayment: {
+        type: Number,
+        default: 0
+      },
+      // Payment schedule
+      siteVisitPayment: {
+        amount: {
+          type: Number,
+          default: 0
+        },
+        credited: {
+          type: Boolean,
+          default: false
+        },
+        creditedAt: Date,
+        transactionId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'WalletTransaction'
+        },
+        failed: {
+          type: Boolean,
+          default: false
+        },
+        errorMessage: String
+      },
+      reportUploadPayment: {
+        amount: {
+          type: Number,
+          default: 0
+        },
+        credited: {
+          type: Boolean,
+          default: false
+        },
+        creditedAt: Date,
+        transactionId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'WalletTransaction'
+        },
+        failed: {
+          type: Boolean,
+          default: false
+        },
+        errorMessage: String
+      },
+      totalCredited: {
+        type: Number,
+        default: 0
+      }
     }
+  },
+  // Final Settlement (separate from vendorSettlement - for borewell result based rewards/penalties)
+  finalSettlement: {
+    rewardAmount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    penaltyAmount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    remittanceAmount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    status: {
+      type: String,
+      enum: ['PENDING', 'PROCESSED'],
+      default: 'PENDING'
+    },
+    borewellResult: {
+      type: String,
+      enum: ['SUCCESS', 'FAILED'],
+      default: null
+    },
+    processedAt: Date,
+    processedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin'
+    },
+    transactionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'WalletTransaction'
+    },
+    notes: String
   },
   notes: {
     type: String,

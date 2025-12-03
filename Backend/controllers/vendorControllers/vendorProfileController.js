@@ -1,4 +1,6 @@
 const Vendor = require('../../models/Vendor');
+const VendorBankDetails = require('../../models/VendorBankDetails');
+const VendorDocument = require('../../models/VendorDocument');
 const { validationResult } = require('express-validator');
 const cloudinary = require('cloudinary').v2;
 const { Readable } = require('stream');
@@ -42,7 +44,8 @@ const getProfile = async (req, res) => {
   try {
     const vendor = await Vendor.findById(req.userId)
       .populate('services', 'name machineType price status')
-      .select('-password -emailVerificationOTP -emailVerificationOTPExpiry');
+      .select('-password -emailVerificationOTP -emailVerificationOTPExpiry')
+      .lean();
 
     if (!vendor) {
       return res.status(404).json({
@@ -50,6 +53,56 @@ const getProfile = async (req, res) => {
         message: 'Vendor not found'
       });
     }
+
+    // Get bank details and documents from separate collections
+    const [bankDetails, documents] = await Promise.all([
+      VendorBankDetails.findOne({ vendor: req.userId, isActive: true }).lean(),
+      VendorDocument.find({ vendor: req.userId, isActive: true }).lean()
+    ]);
+
+    // Format documents similar to old structure for backward compatibility
+    const formattedDocuments = {};
+    documents.forEach(doc => {
+      if (doc.documentType === 'PROFILE_PICTURE') {
+        formattedDocuments.profilePicture = {
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt
+        };
+      } else if (doc.documentType === 'AADHAR') {
+        formattedDocuments.aadharCard = {
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt
+        };
+      } else if (doc.documentType === 'PAN') {
+        formattedDocuments.panCard = {
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt
+        };
+      } else if (doc.documentType === 'CHEQUE') {
+        formattedDocuments.cancelledCheque = {
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt
+        };
+      } else if (doc.documentType === 'CERTIFICATE') {
+        if (!formattedDocuments.certificates) {
+          formattedDocuments.certificates = [];
+        }
+        formattedDocuments.certificates.push({
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt,
+          name: doc.name || doc.certificateName
+        });
+      }
+    });
+
+    // Add bankDetails and documents to vendor object
+    vendor.bankDetails = bankDetails || null;
+    vendor.documents = formattedDocuments;
 
     res.json({
       success: true,
@@ -90,12 +143,11 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    // Allowed fields to update
+    // Allowed fields to update (excluding bankDetails which is in separate collection)
     const allowedFields = [
       'name',
       'phone',
       'address',
-      'bankDetails',
       'educationalQualifications',
       'experience'
     ];
@@ -103,7 +155,7 @@ const updateProfile = async (req, res) => {
     // Update allowed fields
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        if (typeof req.body[field] === 'string' && (field === 'address' || field === 'bankDetails' || field === 'educationalQualifications')) {
+        if (typeof req.body[field] === 'string' && (field === 'address' || field === 'educationalQualifications')) {
           try {
             vendor[field] = JSON.parse(req.body[field]);
           } catch (e) {
@@ -116,6 +168,44 @@ const updateProfile = async (req, res) => {
     });
 
     await vendor.save();
+
+    // Handle bank details update separately
+    if (req.body.bankDetails !== undefined) {
+      const bankDetailsData = typeof req.body.bankDetails === 'string' 
+        ? JSON.parse(req.body.bankDetails) 
+        : req.body.bankDetails;
+      
+      // Find existing bank details or create new
+      let bankDetails = await VendorBankDetails.findOne({ vendor: vendorId });
+      
+      if (bankDetails) {
+        // Store previous account number for audit
+        bankDetails.previousAccountNumber = bankDetails.accountNumber;
+        bankDetails.accountHolderName = bankDetailsData.accountHolderName;
+        bankDetails.accountNumber = bankDetailsData.accountNumber;
+        bankDetails.ifscCode = bankDetailsData.ifscCode;
+        bankDetails.bankName = bankDetailsData.bankName;
+        bankDetails.branchName = bankDetailsData.branchName || null;
+        bankDetails.isVerified = false; // Reset verification on update
+        bankDetails.verifiedBy = null;
+        bankDetails.verifiedAt = null;
+        bankDetails.updatedBy = vendorId;
+        await bankDetails.save();
+      } else {
+        // Create new bank details
+        bankDetails = await VendorBankDetails.create({
+          vendor: vendorId,
+          accountHolderName: bankDetailsData.accountHolderName,
+          accountNumber: bankDetailsData.accountNumber,
+          ifscCode: bankDetailsData.ifscCode,
+          bankName: bankDetailsData.bankName,
+          branchName: bankDetailsData.branchName || null,
+          isActive: true,
+          isVerified: false,
+          updatedBy: vendorId
+        });
+      }
+    }
 
     res.json({
       success: true,
@@ -154,27 +244,44 @@ const uploadProfilePicture = async (req, res) => {
       });
     }
 
-    // Delete old profile picture if exists
-    if (vendor.documents.profilePicture && vendor.documents.profilePicture.publicId) {
-      await deleteFromCloudinary(vendor.documents.profilePicture.publicId);
+    // Find existing profile picture document
+    const existingProfilePic = await VendorDocument.findOne({
+      vendor: req.userId,
+      documentType: 'PROFILE_PICTURE',
+      isActive: true
+    });
+
+    // Delete old profile picture from Cloudinary if exists
+    if (existingProfilePic && existingProfilePic.publicId) {
+      await deleteFromCloudinary(existingProfilePic.publicId);
+      // Mark old document as inactive
+      existingProfilePic.isActive = false;
+      await existingProfilePic.save();
     }
 
     // Upload new profile picture
     const result = await uploadToCloudinary(req.file.buffer, 'vendor-documents/profile');
 
-    vendor.documents.profilePicture = {
+    // Create new profile picture document
+    const profilePictureDoc = await VendorDocument.create({
+      vendor: req.userId,
+      documentType: 'PROFILE_PICTURE',
       url: result.secure_url,
       publicId: result.public_id,
-      uploadedAt: new Date()
-    };
-
-    await vendor.save();
+      uploadedAt: new Date(),
+      status: existingProfilePic?.status || 'PENDING', // Keep previous status if exists
+      version: existingProfilePic ? existingProfilePic.version + 1 : 1
+    });
 
     res.json({
       success: true,
       message: 'Profile picture uploaded successfully',
       data: {
-        profilePicture: vendor.documents.profilePicture
+        profilePicture: {
+          url: profilePictureDoc.url,
+          publicId: profilePictureDoc.publicId,
+          uploadedAt: profilePictureDoc.uploadedAt
+        }
       }
     });
   } catch (error) {

@@ -39,6 +39,7 @@ const notificationSchema = new mongoose.Schema({
       'SETTLEMENT_APPROVED',
       'SETTLEMENT_COMPLETED',
       'FINAL_SETTLEMENT_PROCESSING',
+      'FINAL_SETTLEMENT_PROCESSED',
       // Travel charges
       'TRAVEL_CHARGES_REQUESTED',
       'TRAVEL_CHARGES_APPROVED',

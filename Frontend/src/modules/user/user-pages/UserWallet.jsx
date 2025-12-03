@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { getWalletBalance, getWalletTransactions, createWithdrawalRequest, getWithdrawalRequests } from "../../../services/vendorApi";
-import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import { getUserWalletBalance, getUserWalletTransactions, createUserWithdrawalRequest } from "../../../services/userApi";
+import { useAuth } from "../../../contexts/AuthContext";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
@@ -9,13 +8,11 @@ import { handleApiError, handleApiSuccess } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
 
-export default function VendorWallet() {
-    const location = useLocation();
-    const { vendor } = useVendorAuth();
+export default function UserWallet() {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [walletBalance, setWalletBalance] = useState(0);
     const [totalCredited, setTotalCredited] = useState(0);
-    const [totalDeducted, setTotalDeducted] = useState(0);
     const [thisMonthEarnings, setThisMonthEarnings] = useState(0);
     const [transactions, setTransactions] = useState([]);
     const [withdrawalRequests, setWithdrawalRequests] = useState([]);
@@ -24,20 +21,8 @@ export default function VendorWallet() {
     const [withdrawAmount, setWithdrawAmount] = useState("");
     const [processingWithdraw, setProcessingWithdraw] = useState(false);
 
-    // Load data on mount and when location changes (navigation back)
     useEffect(() => {
         loadWalletData();
-    }, [location.pathname]);
-
-    // Refetch when page becomes visible (user switches tabs/windows)
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                loadWalletData();
-            }
-        };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
     const loadWalletData = async () => {
@@ -45,17 +30,16 @@ export default function VendorWallet() {
             setLoading(true);
             
             // Get wallet balance and summary
-            const balanceResponse = await getWalletBalance();
+            const balanceResponse = await getUserWalletBalance();
             if (balanceResponse.success) {
                 setWalletBalance(balanceResponse.data.walletBalance || 0);
                 setTotalCredited(balanceResponse.data.totalCredited || 0);
-                setTotalDeducted(balanceResponse.data.totalDeducted || 0);
                 setThisMonthEarnings(balanceResponse.data.thisMonthEarnings || 0);
                 setWithdrawalRequests(balanceResponse.data.withdrawalRequests || []);
             }
 
             // Get transaction history
-            const transactionsResponse = await getWalletTransactions({ limit: 20 });
+            const transactionsResponse = await getUserWalletTransactions({ limit: 20 });
             if (transactionsResponse.success) {
                 setTransactions(transactionsResponse.data.transactions || []);
             }
@@ -95,9 +79,9 @@ export default function VendorWallet() {
 
         try {
             setProcessingWithdraw(true);
-            const response = await createWithdrawalRequest(amount);
+            const response = await createUserWithdrawalRequest(amount);
             if (response.success) {
-                handleApiSuccess("Withdrawal request submitted successfully!");
+                handleApiSuccess(response, "Withdrawal request submitted successfully!");
                 setShowWithdrawModal(false);
                 setWithdrawAmount("");
                 loadWalletData(); // Reload data
@@ -108,7 +92,6 @@ export default function VendorWallet() {
             setProcessingWithdraw(false);
         }
     };
-
 
     // Format amount with 2 decimal places
     const formatAmount = (amount) => {
@@ -133,10 +116,7 @@ export default function VendorWallet() {
     // Get transaction type label
     const getTransactionTypeLabel = (type) => {
         const labels = {
-            'TRAVEL_CHARGES': 'Travel Charges',
-            'SITE_VISIT': '1st Payment (Site Visit)',
-            'REPORT_UPLOAD': '2nd Payment (Report Upload)',
-            'PLATFORM_FEE_DEDUCTION': 'Platform Fee Deduction',
+            'REFUND': 'Refund',
             'WITHDRAWAL_REQUEST': 'Withdrawal Request',
             'WITHDRAWAL_PROCESSED': 'Withdrawal Processed',
             'WITHDRAWAL_REJECTED': 'Withdrawal Rejected'
@@ -165,15 +145,13 @@ export default function VendorWallet() {
         <>
         <PageContainer>
             {/* Total Balance Card */}
-            <section className="relative my-4 overflow-hidden rounded-[12px] bg-gradient-to-b from-[#E3F2FD] via-[#BBDEFB] to-[#90CAF9] p-6 shadow-lg">
-                {/* Subtle Wave Pattern Overlay */}
-                <div className="absolute inset-0 z-0 opacity-20">
-                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
-                        <path fill="#64B5F6" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                    </svg>
-                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ transform: 'translateY(20px)' }}>
-                        <path fill="#90CAF9" d="M0,128L48,138.7C96,149,192,171,288,181.3C384,192,480,192,576,186.7C672,181,768,171,864,165.3C960,160,1056,160,1152,154.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                    </svg>
+            <section className="relative my-4 overflow-hidden rounded-xl bg-gradient-to-br from-[#1A80E5] to-[#26D7C4] p-6 text-white shadow-md">
+                <div className="absolute inset-0 z-0 opacity-10">
+                    <img 
+                        className="h-full w-full object-cover"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSWOEOG7ry6z14TFWGAz7PjaKTwn697LggEX4Vf1U2F-18-Yl362M1a0XmrCPrnxjq3HLvvisiIPbnCcLWbicHHyQVehSZEC56qo5fvTVnSjPmEPPFLj9dncg63DYDUscFj51kK5mnPvn7hznGuHDuYjMiSWsX7r6Nlpe1ss-SQVtV_G_yADjJFZVcqSA8EGeUz4tjBJlabT7hxamjtW25RfdT9g0K2O82ATNS4J1em3nBru9nIKr4YnD72XMjXgETg4PCKTSCxEva"
+                        alt="Background"
+                    />
                 </div>
                 <div className="relative z-10 flex flex-col items-center text-center">
                     <p className="text-sm font-medium opacity-80">Wallet Balance</p>
@@ -192,19 +170,12 @@ export default function VendorWallet() {
             </section>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
                 <div className="rounded-lg bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                     <span className="material-symbols-outlined text-[#00C2A8] !text-2xl">payments</span>
-                    <p className="mt-2 text-xs text-[#6B7280]">Total Credited</p>
+                    <p className="mt-2 text-xs text-[#6B7280]">Total Refunded</p>
                     <p className="mt-0.5 text-sm font-bold text-[#3A3A3A]">
                         ₹{formatAmount(totalCredited)}
-                    </p>
-                </div>
-                <div className="rounded-lg bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                    <span className="material-symbols-outlined text-red-500 !text-2xl">remove_circle</span>
-                    <p className="mt-2 text-xs text-[#6B7280]">Total Deducted</p>
-                    <p className="mt-0.5 text-sm font-bold text-[#3A3A3A]">
-                        ₹{formatAmount(totalDeducted)}
                     </p>
                 </div>
                 <div className="rounded-lg bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
@@ -283,9 +254,7 @@ export default function VendorWallet() {
                     </div>
                 ) : (
                     transactions.map((transaction) => {
-                        // Determine if it's a credit or debit transaction
-                        const isCredit = ['TRAVEL_CHARGES', 'SITE_VISIT', 'REPORT_UPLOAD'].includes(transaction.type);
-                        const isDebit = ['PLATFORM_FEE_DEDUCTION'].includes(transaction.type);
+                        const isCredit = transaction.type === 'REFUND';
                         const isWithdrawal = ['WITHDRAWAL_REQUEST', 'WITHDRAWAL_PROCESSED', 'WITHDRAWAL_REJECTED'].includes(transaction.type);
                         const isSuccess = transaction.status === 'SUCCESS';
                         const isPending = transaction.status === 'PENDING';
@@ -297,14 +266,14 @@ export default function VendorWallet() {
                                 className="flex items-center gap-4 rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
                             >
                                 <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                                    isSuccess ? (isCredit ? "bg-green-100" : isDebit ? "bg-orange-100" : isWithdrawal ? "bg-blue-100" : "bg-gray-100") : 
+                                    isSuccess ? (isCredit ? "bg-green-100" : isWithdrawal ? "bg-blue-100" : "bg-gray-100") : 
                                     isPending ? "bg-yellow-100" : "bg-red-100"
                                 }`}>
                                     <span className={`material-symbols-outlined ${
-                                        isSuccess ? (isCredit ? "text-[#34C759]" : isDebit ? "text-orange-500" : isWithdrawal ? "text-blue-500" : "text-gray-500") : 
+                                        isSuccess ? (isCredit ? "text-[#34C759]" : isWithdrawal ? "text-blue-500" : "text-gray-500") : 
                                         isPending ? "text-[#FF9F0A]" : "text-red-500"
                                     }`}>
-                                        {isCredit ? "arrow_downward_alt" : isDebit ? "arrow_upward_alt" : isWithdrawal ? "account_balance_wallet" : "info"}
+                                        {isCredit ? "arrow_downward_alt" : isWithdrawal ? "account_balance_wallet" : "info"}
                                     </span>
                                 </div>
                                 <div className="flex-1">
@@ -332,10 +301,10 @@ export default function VendorWallet() {
                                 </div>
                                 <div className="text-right">
                                     <p className={`font-bold ${
-                                        isSuccess ? (isCredit ? "text-[#34C759]" : isDebit ? "text-orange-500" : isWithdrawal ? "text-blue-500" : "text-gray-500") : 
+                                        isSuccess ? (isCredit ? "text-[#34C759]" : isWithdrawal ? "text-blue-500" : "text-gray-500") : 
                                         isPending ? "text-[#FF9F0A]" : "text-red-500"
                                     }`}>
-                                        {isCredit ? "+" : isDebit || isWithdrawal ? "-" : ""} ₹{formatAmount(Math.abs(transaction.amount))}
+                                        {isCredit ? "+" : isWithdrawal ? "-" : ""} ₹{formatAmount(Math.abs(transaction.amount))}
                                     </p>
                                     <p className={`text-xs font-medium ${getStatusColor(transaction.status)}`}>
                                         {transaction.status}

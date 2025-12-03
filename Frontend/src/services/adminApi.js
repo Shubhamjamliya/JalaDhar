@@ -271,6 +271,24 @@ export const getPaymentStatistics = async () => {
 };
 
 /**
+ * Get comprehensive admin payment overview
+ * @returns {Promise}
+ */
+export const getAdminPaymentOverview = async () => {
+  const response = await api.get('/admin/payments/overview');
+  return response.data;
+};
+
+/**
+ * Get vendor payment overview statistics
+ * @returns {Promise}
+ */
+export const getVendorPaymentOverview = async () => {
+  const response = await api.get('/admin/payments/vendor-overview');
+  return response.data;
+};
+
+/**
  * Get payment details
  * @param {string} paymentId
  * @returns {Promise}
@@ -443,6 +461,194 @@ export const processUserRefund = async (bookingId, data) => {
  */
 export const processFinalSettlement = async (bookingId, data) => {
   const response = await api.patch(`/admin/bookings/${bookingId}/final-settlement`, data);
+  return response.data;
+};
+
+/**
+ * New Final Settlement API functions (separate from old final settlement)
+ */
+
+/**
+ * Get pending vendor final settlements (bookings with borewell results, waiting for vendor reward/penalty)
+ * @param {Object} params - { page, limit, search }
+ * @returns {Promise}
+ */
+export const getPendingVendorFinalSettlements = async (params = {}) => {
+  const response = await api.get('/admin/bookings/final-settlement/vendor/pending', { params });
+  return response.data;
+};
+
+/**
+ * Get completed vendor final settlements (history - where reward/penalty was processed)
+ * @param {Object} params - { page, limit, search }
+ * @returns {Promise}
+ */
+export const getCompletedVendorFinalSettlements = async (params = {}) => {
+  const response = await api.get('/admin/bookings/final-settlement/vendor/completed', { params });
+  return response.data;
+};
+
+/**
+ * Get pending user final settlements (bookings with borewell results, waiting for user remittance/completion)
+ * @param {Object} params - { page, limit, search }
+ * @returns {Promise}
+ */
+export const getPendingUserFinalSettlements = async (params = {}) => {
+  const response = await api.get('/admin/bookings/final-settlement/user/pending', { params });
+  return response.data;
+};
+
+/**
+ * Get completed user final settlements (history - where remittance was paid or settlement completed)
+ * @param {Object} params - { page, limit, search }
+ * @returns {Promise}
+ */
+export const getCompletedUserFinalSettlements = async (params = {}) => {
+  const response = await api.get('/admin/bookings/final-settlement/user/completed', { params });
+  return response.data;
+};
+
+/**
+ * Process vendor final settlement (manual reward/penalty entry)
+ * @param {string} bookingId
+ * @param {Object} data - { rewardAmount, penaltyAmount, notes }
+ * @returns {Promise}
+ */
+export const processNewFinalSettlement = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/final-settlement/vendor/process`, data);
+  return response.data;
+};
+
+/**
+ * Process user final settlement (remittance for failed, or complete for success)
+ * @param {string} bookingId
+ * @param {Object} data - { remittanceAmount, notes }
+ * @returns {Promise}
+ */
+export const processUserFinalSettlement = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/final-settlement/user/process`, data);
+  return response.data;
+};
+
+/**
+ * Admin Withdrawal Management API functions
+ */
+
+/**
+ * Get all withdrawal requests
+ * @param {Object} params - { status, page, limit }
+ * @returns {Promise}
+ */
+export const getAllWithdrawalRequests = async (params = {}) => {
+  const response = await api.get('/admin/withdrawals', { params });
+  return response.data;
+};
+
+/**
+ * Approve withdrawal request
+ * @param {string} vendorId - Vendor ID
+ * @param {string} requestId - Withdrawal request ID
+ * @param {string} notes - Optional notes
+ * @returns {Promise}
+ */
+export const approveWithdrawalRequest = async (vendorId, requestId, notes = '') => {
+  const response = await api.put(`/admin/withdrawals/${vendorId}/${requestId}/approve`, { notes });
+  return response.data;
+};
+
+/**
+ * Reject withdrawal request
+ * @param {string} vendorId - Vendor ID
+ * @param {string} requestId - Withdrawal request ID
+ * @param {string} rejectionReason - Rejection reason
+ * @returns {Promise}
+ */
+export const rejectWithdrawalRequest = async (vendorId, requestId, rejectionReason) => {
+  const response = await api.put(`/admin/withdrawals/${vendorId}/${requestId}/reject`, { rejectionReason });
+  return response.data;
+};
+
+/**
+ * Process withdrawal (mark as processed after manual Razorpay transfer)
+ * @param {string} vendorId - Vendor ID
+ * @param {string} requestId - Withdrawal request ID
+ * @param {string} razorpayPayoutId - Razorpay payout ID
+ * @param {string} notes - Optional notes
+ * @returns {Promise}
+ */
+export const processWithdrawal = async (vendorId, requestId, transactionId, notes = '', paymentMethod = '', paymentDate = '') => {
+  const response = await api.put(`/admin/withdrawals/${vendorId}/${requestId}/process`, {
+    transactionId: transactionId,
+    paymentMethod: paymentMethod,
+    paymentDate: paymentDate,
+    notes: notes
+  });
+  return response.data;
+};
+
+/**
+ * Get bookings pending 1st payment release
+ * @param {Object} params - { page, limit }
+ * @returns {Promise}
+ */
+export const getPendingFirstPaymentReleases = async (params = {}) => {
+  const response = await api.get('/admin/bookings/pending-first-payment', { params });
+  return response.data;
+};
+
+/**
+ * Get bookings pending 2nd payment release
+ * @param {Object} params - { page, limit }
+ * @returns {Promise}
+ */
+export const getPendingSecondPaymentReleases = async (params = {}) => {
+  const response = await api.get('/admin/bookings/pending-second-payment', { params });
+  return response.data;
+};
+
+/**
+ * Get all user withdrawal requests
+ * @param {Object} params - { page, limit, status }
+ * @returns {Promise}
+ */
+export const getAllUserWithdrawalRequests = async (params = {}) => {
+  const response = await api.get('/admin/user-withdrawals', { params });
+  return response.data;
+};
+
+/**
+ * Approve user withdrawal request
+ * @param {string} userId
+ * @param {string} requestId
+ * @param {Object} data - { notes }
+ * @returns {Promise}
+ */
+export const approveUserWithdrawalRequest = async (userId, requestId, data = {}) => {
+  const response = await api.patch(`/admin/user-withdrawals/${userId}/${requestId}/approve`, data);
+  return response.data;
+};
+
+/**
+ * Reject user withdrawal request
+ * @param {string} userId
+ * @param {string} requestId
+ * @param {Object} data - { rejectionReason }
+ * @returns {Promise}
+ */
+export const rejectUserWithdrawalRequest = async (userId, requestId, data = {}) => {
+  const response = await api.patch(`/admin/user-withdrawals/${userId}/${requestId}/reject`, data);
+  return response.data;
+};
+
+/**
+ * Process user withdrawal request
+ * @param {string} userId
+ * @param {string} requestId
+ * @param {Object} data - { razorpayPayoutId, notes }
+ * @returns {Promise}
+ */
+export const processUserWithdrawalRequest = async (requestId, data = {}) => {
+  const response = await api.patch(`/admin/user-withdrawals/${requestId}/process`, data);
   return response.data;
 };
 

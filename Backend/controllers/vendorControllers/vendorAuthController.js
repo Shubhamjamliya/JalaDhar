@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const Vendor = require('../../models/Vendor');
+const VendorBankDetails = require('../../models/VendorBankDetails');
+const VendorDocument = require('../../models/VendorDocument');
 const Token = require('../../models/Token');
 const { generateTokenPair } = require('../../utils/tokenService');
 const { createOTPToken, verifyOTPToken, markTokenAsUsed } = require('../../services/otpService');
@@ -345,21 +347,102 @@ const register = async (req, res) => {
       }
     }
 
-    // Create vendor with email verified
+    // Create vendor with email verified (without bankDetails and documents)
     const vendorData = {
       name,
       email,
       phone,
       password,
-      bankDetails: typeof bankDetails === 'string' ? JSON.parse(bankDetails) : bankDetails,
       educationalQualifications: parsedQualifications,
       experience: parseInt(experience),
-      documents,
       address: parsedAddress,
       isEmailVerified: true // Email is verified via OTP
     };
 
     const vendor = await Vendor.create(vendorData);
+
+    // Create bank details in separate collection
+    const parsedBankDetails = typeof bankDetails === 'string' ? JSON.parse(bankDetails) : bankDetails;
+    if (parsedBankDetails) {
+      await VendorBankDetails.create({
+        vendor: vendor._id,
+        accountHolderName: parsedBankDetails.accountHolderName,
+        accountNumber: parsedBankDetails.accountNumber,
+        ifscCode: parsedBankDetails.ifscCode,
+        bankName: parsedBankDetails.bankName,
+        branchName: parsedBankDetails.branchName || null,
+        isActive: true,
+        isVerified: false
+      });
+    }
+
+    // Create documents in separate collection
+    const documentPromises = [];
+    if (documents.aadharCard) {
+      documentPromises.push(
+        VendorDocument.create({
+          vendor: vendor._id,
+          documentType: 'AADHAR',
+          url: documents.aadharCard.url,
+          publicId: documents.aadharCard.publicId,
+          uploadedAt: documents.aadharCard.uploadedAt,
+          status: 'PENDING'
+        })
+      );
+    }
+    if (documents.panCard) {
+      documentPromises.push(
+        VendorDocument.create({
+          vendor: vendor._id,
+          documentType: 'PAN',
+          url: documents.panCard.url,
+          publicId: documents.panCard.publicId,
+          uploadedAt: documents.panCard.uploadedAt,
+          status: 'PENDING'
+        })
+      );
+    }
+    if (documents.profilePicture) {
+      documentPromises.push(
+        VendorDocument.create({
+          vendor: vendor._id,
+          documentType: 'PROFILE_PICTURE',
+          url: documents.profilePicture.url,
+          publicId: documents.profilePicture.publicId,
+          uploadedAt: documents.profilePicture.uploadedAt,
+          status: 'PENDING'
+        })
+      );
+    }
+    if (documents.cancelledCheque) {
+      documentPromises.push(
+        VendorDocument.create({
+          vendor: vendor._id,
+          documentType: 'CHEQUE',
+          url: documents.cancelledCheque.url,
+          publicId: documents.cancelledCheque.publicId,
+          uploadedAt: documents.cancelledCheque.uploadedAt,
+          status: 'PENDING'
+        })
+      );
+    }
+    if (documents.certificates && Array.isArray(documents.certificates)) {
+      for (const cert of documents.certificates) {
+        documentPromises.push(
+          VendorDocument.create({
+            vendor: vendor._id,
+            documentType: 'CERTIFICATE',
+            url: cert.url,
+            publicId: cert.publicId,
+            uploadedAt: cert.uploadedAt,
+            name: cert.name,
+            certificateName: cert.name,
+            status: 'PENDING'
+          })
+        );
+      }
+    }
+    await Promise.all(documentPromises);
 
     // Mark token as used
     await markTokenAsUsed(tokenDoc._id);

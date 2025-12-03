@@ -323,3 +323,45 @@ export const deleteServiceImage = async (serviceId, imageId) => {
   return response.data;
 };
 
+/**
+ * Vendor Wallet API functions
+ */
+
+/**
+ * Get wallet balance and summary
+ * @returns {Promise}
+ */
+export const getWalletBalance = async () => {
+  const response = await api.get('/vendor/wallet/balance');
+  return response.data;
+};
+
+/**
+ * Get wallet transaction history
+ * @param {Object} params - { page, limit, type }
+ * @returns {Promise}
+ */
+export const getWalletTransactions = async (params = {}) => {
+  const response = await api.get('/vendor/wallet/transactions', { params });
+  return response.data;
+};
+
+/**
+ * Create withdrawal request
+ * @param {number} amount - Withdrawal amount
+ * @returns {Promise}
+ */
+export const createWithdrawalRequest = async (amount) => {
+  const response = await api.post('/vendor/wallet/withdraw-request', { amount });
+  return response.data;
+};
+
+/**
+ * Get withdrawal requests
+ * @returns {Promise}
+ */
+export const getWithdrawalRequests = async () => {
+  const response = await api.get('/vendor/wallet/withdrawal-requests');
+  return response.data;
+};
+

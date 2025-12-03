@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     IoChevronBackOutline,
     IoMenuOutline,
@@ -16,6 +16,7 @@ import { handleApiError } from "../../../utils/toastHelper";
 
 export default function VendorBookings() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { vendor } = useVendorAuth();
     const [activeTab, setActiveTab] = useState("New");
     const [newBookings, setNewBookings] = useState([]);
@@ -24,8 +25,20 @@ export default function VendorBookings() {
     const [loading, setLoading] = useState(true);
     const toast = useToast();
 
+    // Load data on mount and when location changes (navigation back)
     useEffect(() => {
         loadAllBookings();
+    }, [location.pathname]);
+
+    // Refetch when page becomes visible (user switches tabs/windows)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                loadAllBookings();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
     const loadAllBookings = async () => {

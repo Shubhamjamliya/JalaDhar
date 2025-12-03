@@ -56,6 +56,50 @@ const userSchema = new mongoose.Schema({
     city: String,
     state: String,
     pincode: String
+  },
+  // Wallet system for refunds and withdrawals
+  wallet: {
+    walletBalance: {
+      type: Number,
+      default: 0,
+      min: [0, 'Wallet balance cannot be negative']
+    },
+    totalCredited: {
+      type: Number,
+      default: 0,
+      min: [0, 'Total credited cannot be negative']
+    },
+    withdrawalRequests: [{
+      amount: {
+        type: Number,
+        required: true,
+        min: [0, 'Withdrawal amount cannot be negative']
+      },
+      status: {
+        type: String,
+        enum: ['PENDING', 'APPROVED', 'REJECTED', 'PROCESSED'],
+        default: 'PENDING'
+      },
+      requestedAt: {
+        type: Date,
+        default: Date.now
+      },
+      processedAt: Date,
+      processedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Admin'
+      },
+      razorpayPayoutId: String, // Keep for backward compatibility
+      transactionId: String, // New transaction ID field
+      paymentMethod: {
+        type: String,
+        enum: ['UPI', 'BANK_TRANSFER', 'NEFT', 'IMPS', 'RTGS', 'RAZORPAY', 'CASH', 'OTHER'],
+        default: null
+      },
+      paymentDate: Date,
+      notes: String,
+      rejectionReason: String
+    }]
   }
 }, {
   timestamps: true

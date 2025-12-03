@@ -25,6 +25,7 @@ export default function InputModal({
     onSubmit,
     title = "Enter Information",
     message = "Please provide the required information:",
+    label,
     placeholder = "Type here...",
     submitText = "Submit",
     cancelText = "Cancel",
@@ -33,20 +34,41 @@ export default function InputModal({
     isTextarea = false,
     textareaRows = 4,
     initialValue = "",
+    value,
+    onChange,
+    type = "text",
+    validation,
+    isLoading = false,
+    confirmColor = "primary",
 }) {
-    const [inputValue, setInputValue] = useState(initialValue);
+    const [inputValue, setInputValue] = useState(value !== undefined ? value : initialValue);
     const [error, setError] = useState("");
+    
+    // Use controlled value if provided
+    const currentValue = value !== undefined ? value : inputValue;
+    const handleValueChange = onChange || ((e) => setInputValue(e.target.value));
 
     // Reset input when modal opens/closes
     useEffect(() => {
         if (isOpen) {
-            setInputValue(initialValue);
+            if (value === undefined) {
+                setInputValue(initialValue);
+            }
             setError("");
         }
-    }, [isOpen, initialValue]);
+    }, [isOpen, initialValue, value]);
 
     const handleSubmit = () => {
-        const trimmedValue = inputValue.trim();
+        const trimmedValue = currentValue.trim();
+
+        // Custom validation function
+        if (validation) {
+            const validationError = validation(trimmedValue);
+            if (validationError) {
+                setError(validationError);
+                return;
+            }
+        }
 
         // Validation
         if (minLength && trimmedValue.length < minLength) {
@@ -66,7 +88,9 @@ export default function InputModal({
 
         setError("");
         onSubmit(trimmedValue);
-        onClose();
+        if (!isLoading) {
+            onClose();
+        }
     };
 
     const handleBackdropClick = (e) => {
@@ -106,13 +130,14 @@ export default function InputModal({
 
                 {/* Body */}
                 <div className="p-6">
-                    <p className="text-gray-700 text-base mb-4 leading-relaxed">{message}</p>
+                    {message && <p className="text-gray-700 text-base mb-4 leading-relaxed">{message}</p>}
+                    {label && <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>}
                     
-                    {isTextarea ? (
+                    {isTextarea || type === "textarea" ? (
                         <textarea
-                            value={inputValue}
+                            value={currentValue}
                             onChange={(e) => {
-                                setInputValue(e.target.value);
+                                handleValueChange(e);
                                 setError("");
                             }}
                             onKeyPress={handleKeyPress}
@@ -124,10 +149,10 @@ export default function InputModal({
                         />
                     ) : (
                         <input
-                            type="text"
-                            value={inputValue}
+                            type={type}
+                            value={currentValue}
                             onChange={(e) => {
-                                setInputValue(e.target.value);
+                                handleValueChange(e);
                                 setError("");
                             }}
                             onKeyPress={handleKeyPress}
@@ -147,7 +172,7 @@ export default function InputModal({
 
                     {minLength && (
                         <p className="mt-2 text-xs text-gray-500">
-                            Minimum {minLength} characters required. ({inputValue.trim().length}/{minLength})
+                            Minimum {minLength} characters required. ({currentValue.trim().length}/{minLength})
                         </p>
                     )}
                 </div>
@@ -162,10 +187,16 @@ export default function InputModal({
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className="flex-1 px-4 py-3 rounded-[10px] font-semibold bg-[#0A84FF] hover:bg-[#005BBB] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!inputValue.trim()}
+                        className={`flex-1 px-4 py-3 rounded-[10px] font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                            confirmColor === "danger" 
+                                ? "bg-red-600 hover:bg-red-700" 
+                                : confirmColor === "success"
+                                ? "bg-green-600 hover:bg-green-700"
+                                : "bg-[#0A84FF] hover:bg-[#005BBB]"
+                        }`}
+                        disabled={!currentValue.trim() || isLoading}
                     >
-                        {submitText}
+                        {isLoading ? "Processing..." : submitText}
                     </button>
                 </div>
             </div>

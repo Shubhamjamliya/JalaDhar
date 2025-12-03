@@ -4,7 +4,7 @@ import {
     IoPersonOutline,
     IoCallOutline,
     IoHomeOutline,
-    IoBookmarkOutline,
+    IoWalletOutline,
     IoLogOutOutline,
     IoChevronForwardOutline,
     IoPencilOutline,
@@ -144,9 +144,8 @@ export default function UserProfile() {
         }
     };
 
-    const handleSavedVendors = () => {
-        // Navigate to saved vendors page
-        toast.showInfo("Saved Vendors feature coming soon!");
+    const handleWallet = () => {
+        navigate("/user/wallet");
     };
 
     const handleHelpCenter = () => {
@@ -385,9 +384,9 @@ export default function UserProfile() {
                     {/* Action List */}
                     <div className="w-full mt-4 space-y-2">
                     <ActionRow
-                        icon={IoBookmarkOutline}
-                        label="Saved Vendors"
-                        onClick={handleSavedVendors}
+                        icon={IoWalletOutline}
+                        label="Wallet"
+                        onClick={handleWallet}
                     />
                     <ActionRow
                         icon={IoHelpCircleOutline}

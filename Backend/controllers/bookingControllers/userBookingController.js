@@ -34,7 +34,7 @@ const getAvailableVendors = async (req, res) => {
       isActive: true,
       isApproved: true,
       services: serviceId
-    }).select('name email phone experience rating address documents.profilePicture');
+    }).select('name email phone experience rating address');
 
     // Calculate distance and sort vendors
     const vendorsWithDistance = vendors.map(vendor => {
@@ -277,7 +277,27 @@ const createBooking = async (req, res) => {
         advancePaid: false,
         remainingPaid: false,
         status: PAYMENT_STATUS.PENDING,
-        advanceRazorpayOrderId: razorpayOrder.orderId
+        advanceRazorpayOrderId: razorpayOrder.orderId,
+        // Calculate vendor payment breakdown
+        vendorWalletPayments: (() => {
+          const { calculateVendorPayment } = require('../../services/walletService');
+          const vendorPayment = calculateVendorPayment(baseServiceFee, travelCharges);
+          return {
+            base: vendorPayment.base,
+            gst: vendorPayment.gst,
+            platformFee: vendorPayment.platformFee,
+            totalVendorPayment: vendorPayment.totalVendorPayment,
+            siteVisitPayment: {
+              amount: vendorPayment.totalVendorPayment * 0.5,
+              credited: false
+            },
+            reportUploadPayment: {
+              amount: vendorPayment.totalVendorPayment * 0.5,
+              credited: false
+            },
+            totalCredited: 0
+          };
+        })()
       },
       assignedAt: new Date()
     });
@@ -385,7 +405,7 @@ const getUserBookings = async (req, res) => {
 
     const [bookings, total] = await Promise.all([
       Booking.find(query)
-        .populate('vendor', 'name email phone documents.profilePicture rating')
+        .populate('vendor', 'name email phone rating')
         .populate('service', 'name price machineType')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -428,7 +448,7 @@ const getBookingDetails = async (req, res) => {
       user: userId
     })
       .populate('user', 'name email phone')
-      .populate('vendor', 'name email phone documents.profilePicture rating address')
+      .populate('vendor', 'name email phone rating address')
       .populate('service', 'name price machineType description');
 
     if (!booking) {
@@ -548,7 +568,7 @@ const uploadBorewellResult = async (req, res) => {
       _id: bookingId,
       user: userId,
       userStatus: BOOKING_STATUS.PAYMENT_SUCCESS
-    });
+    }).populate('vendor', 'name email');
 
     if (!booking) {
       return res.status(404).json({
@@ -586,9 +606,30 @@ const uploadBorewellResult = async (req, res) => {
     booking.vendorStatus = BOOKING_STATUS.BOREWELL_UPLOADED;
     await booking.save();
 
-    // Send notification to admin
+    // Send notifications
     try {
       const io = getIO();
+      const { sendNotification } = require('../../services/notificationService');
+      
+      // Notify vendor - borewell result uploaded by user
+      await sendNotification({
+        recipient: booking.vendor._id || booking.vendor,
+        recipientModel: 'Vendor',
+        type: 'BOREWELL_UPLOADED',
+        title: 'Borewell Result Uploaded by User',
+        message: `User has uploaded borewell result for booking #${booking._id.toString().slice(-6)} - Status: ${status}. Awaiting admin approval.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          status: status,
+          userId: userId.toString()
+        }
+      }, io);
+
+      // Notify admin
       const Admin = require('../../models/Admin');
       const admins = await Admin.find({ isActive: true });
       
@@ -704,7 +745,7 @@ const getAllServices = async (req, res) => {
 
     const [services, total] = await Promise.all([
       Service.find(query)
-        .populate('vendor', 'name rating documents.profilePicture')
+        .populate('vendor', 'name rating')
         .select('name description price duration machineType category images vendor')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -760,7 +801,7 @@ const getNearbyVendors = async (req, res) => {
 
     // First, get all vendors with services populated (no status filter - show all services)
     const vendors = await Vendor.find(query)
-      .select('name email phone experience rating address location documents.profilePicture services')
+      .select('name email phone experience rating address location services')
       .populate({
         path: 'services',
         // Removed match filter - show all services regardless of status
@@ -917,7 +958,7 @@ const getVendorProfile = async (req, res) => {
     }
 
     const vendor = await Vendor.findById(vendorId)
-      .select('name email phone experience rating address location documents.profilePicture services isActive isApproved')
+      .select('name email phone experience rating address location services isActive isApproved')
       .populate({
         path: 'services',
         select: 'name category price description images status isActive'
@@ -1010,7 +1051,7 @@ const getDashboardStats = async (req, res) => {
 
     // Get recent bookings (last 5)
     const recentBookings = await Booking.find({ user: userId })
-      .populate('vendor', 'name documents.profilePicture rating')
+      .populate('vendor', 'name rating')
       .populate('service', 'name price')
       .sort({ createdAt: -1 })
       .limit(5)

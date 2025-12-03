@@ -11,6 +11,9 @@ import {
     IoSettingsOutline,
     IoWalletOutline,
     IoCheckmarkCircleOutline,
+    IoChevronDownOutline,
+    IoChevronUpOutline,
+    IoBarChartOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -66,6 +69,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
     const { logout, admin } = useAdminAuth();
     const location = useLocation();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [isPaymentsOpen, setIsPaymentsOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen) closeRef.current?.focus();
@@ -86,7 +90,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
         const currentPath = location.pathname;
         
         // For routes that should match exactly
-        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/payments" || path === "/admin/settings" || path === "/admin/approvals") {
+        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/settings" || path === "/admin/approvals") {
             return currentPath === path || currentPath === path + "/";
         }
         
@@ -95,8 +99,23 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
             return currentPath === path || currentPath.startsWith(path + "/");
         }
         
+        // For payments, check if any payment route is active
+        if (path === "/admin/payments" || path.startsWith("/admin/payments/")) {
+            return currentPath.startsWith("/admin/payments");
+        }
+        
         return false;
     };
+
+    // Check if payments dropdown should be open based on current route
+    const isPaymentsRouteActive = location.pathname.startsWith("/admin/payments");
+    
+    // Auto-open payments dropdown if on a payments route
+    useEffect(() => {
+        if (isPaymentsRouteActive) {
+            setIsPaymentsOpen(true);
+        }
+    }, [isPaymentsRouteActive]);
 
     const overlay = `fixed inset-0 bg-black/30 z-40 transition-opacity ${
         isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -134,8 +153,83 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                 {/* Menu Items */}
                 <nav className="flex flex-col gap-2 flex-1">
                     {navItems.map(({ id, label, to, Icon }) => {
+                        // Special handling for payments dropdown
+                        if (id === "payments") {
+                            const isActive = isPaymentsRouteActive;
+                            
+                            return (
+                                <div key={id} className="flex flex-col">
+                                    <button
+                                        onClick={() => setIsPaymentsOpen(!isPaymentsOpen)}
+                                        className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 w-full ${
+                                            isActive
+                                                ? "bg-[#60A5FA] text-white shadow-md"
+                                                : "text-white/70 hover:bg-white/10 hover:text-white"
+                                        }`}
+                                    >
+                                        <Icon className="text-xl" />
+                                        <span className="text-sm font-medium flex-1 text-left">{label}</span>
+                                        {isPaymentsOpen ? (
+                                            <IoChevronUpOutline className="text-lg" />
+                                        ) : (
+                                            <IoChevronDownOutline className="text-lg" />
+                                        )}
+                                    </button>
+                                    
+                                    {/* Dropdown Menu */}
+                                    {isPaymentsOpen && (
+                                        <div className="ml-4 mt-1 flex flex-col gap-1">
+                                            <NavLink
+                                                to="/admin/payments/admin"
+                                                onClick={onClose}
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${
+                                                        isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                <IoBarChartOutline className="text-lg" />
+                                                <span className="text-sm font-medium">Admin</span>
+                                            </NavLink>
+                                            <NavLink
+                                                to="/admin/payments/user"
+                                                onClick={onClose}
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${
+                                                        isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                <IoPersonCircleOutline className="text-lg" />
+                                                <span className="text-sm font-medium">User</span>
+                                            </NavLink>
+                                            <NavLink
+                                                to="/admin/payments/vendor"
+                                                onClick={onClose}
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${
+                                                        isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                <IoPeopleOutline className="text-lg" />
+                                                <span className="text-sm font-medium">Vendor</span>
+                                            </NavLink>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+
+                        // Regular nav items
                         const isActive = checkIsActive(to);
-                        const shouldEnd = to === "/admin/vendors" || to === "/admin/users" || to === "/admin/dashboard" || to === "/admin/payments" || to === "/admin/settings" || to === "/admin/approvals";
+                        const shouldEnd = to === "/admin/vendors" || to === "/admin/users" || to === "/admin/dashboard" || to === "/admin/settings" || to === "/admin/approvals";
                         return (
                             <NavLink
                                 key={id}

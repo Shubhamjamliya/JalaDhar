@@ -159,12 +159,67 @@ const verifyWebhook = (webhookBody, signature) => {
   }
 };
 
+/**
+ * Create a Razorpay payout (transfer to vendor bank account)
+ * Note: This requires Razorpay Payouts API and vendor's fund account
+ * @param {Number} amount - Amount in rupees
+ * @param {String} fundAccountId - Razorpay fund account ID
+ * @param {Object} options - Additional options (mode, purpose, queue_if_low_balance, etc.)
+ * @returns {Promise<Object>} Payout details
+ */
+const createPayout = async (amount, fundAccountId, options = {}) => {
+  try {
+    // Validate Razorpay credentials
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      throw new Error('Razorpay credentials not configured');
+    }
+
+    // Validate amount
+    const amountInPaise = Math.round(amount * 100);
+    if (amountInPaise < 100) {
+      throw new Error('Minimum payout amount is ₹1.00');
+    }
+
+    const payoutOptions = {
+      account_number: process.env.RAZORPAY_ACCOUNT_NUMBER || '', // Your Razorpay account number
+      fund_account_id: fundAccountId,
+      amount: amountInPaise,
+      currency: 'INR',
+      mode: options.mode || 'NEFT', // NEFT, IMPS, RTGS
+      purpose: options.purpose || 'payout',
+      queue_if_low_balance: options.queue_if_low_balance !== false,
+      reference_id: options.reference_id || `payout_${Date.now()}`,
+      narration: options.narration || `Payout for withdrawal`,
+      ...options
+    };
+
+    // Note: Razorpay Payouts API endpoint
+    const payout = await razorpay.payouts.create(payoutOptions);
+    
+    return {
+      success: true,
+      payoutId: payout.id,
+      amount: payout.amount / 100, // Convert from paise to rupees
+      currency: payout.currency,
+      status: payout.status,
+      mode: payout.mode,
+      fundAccountId: payout.fund_account_id,
+      utr: payout.utr,
+      createdAt: payout.created_at
+    };
+  } catch (error) {
+    console.error('Razorpay create payout error:', error);
+    throw new Error(`Failed to create payout: ${error.message || 'Unknown error'}`);
+  }
+};
+
 module.exports = {
   createOrder,
   verifyPayment,
   getPaymentDetails,
   createRefund,
   verifyWebhook,
+  createPayout,
   razorpay
 };
 

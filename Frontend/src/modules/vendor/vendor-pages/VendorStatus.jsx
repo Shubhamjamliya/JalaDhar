@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, Fragment, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
     IoHourglassOutline,
@@ -12,16 +12,17 @@ import {
     IoChevronBackOutline,
     IoCloseOutline,
     IoImageOutline,
-    IoCarOutline,
     IoWalletOutline,
+    IoRefreshOutline,
 } from "react-icons/io5";
 import {
     getBookingDetails,
     acceptBooking,
     rejectBooking,
     markBookingAsVisited,
-    requestTravelCharges,
 } from "../../../services/vendorApi";
+import { useNotifications } from "../../../contexts/NotificationContext";
+import { usePullToRefresh } from "../../../hooks/usePullToRefresh";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
@@ -31,6 +32,7 @@ import InputModal from "../../shared/components/InputModal";
 export default function VendorStatus() {
     const navigate = useNavigate();
     const { bookingId } = useParams();
+    const { socket } = useNotifications();
     const [loading, setLoading] = useState(true);
     const [booking, setBooking] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
@@ -40,16 +42,9 @@ export default function VendorStatus() {
     const [showRejectConfirm, setShowRejectConfirm] = useState(false);
     const [showVisitConfirm, setShowVisitConfirm] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
-    const [showTravelChargesModal, setShowTravelChargesModal] = useState(false);
-    const [travelChargesData, setTravelChargesData] = useState({
-        amount: "",
-        reason: "",
-    });
-    const [submittingTravelCharges, setSubmittingTravelCharges] = useState(false);
-
-    useEffect(() => {
-        loadBookingDetails();
-    }, [bookingId]);
+    const loadBookingDetailsRef = useRef(null);
+    const lastActionTimeRef = useRef(0); // Track when user performed an action
+    const ACTION_COOLDOWN = 2000; // 2 seconds - ignore socket updates right after user action
 
     const loadBookingDetails = async () => {
         try {
@@ -67,6 +62,64 @@ export default function VendorStatus() {
         }
     };
 
+    // Store loadBookingDetails in ref for socket listeners
+    useEffect(() => {
+        loadBookingDetailsRef.current = loadBookingDetails;
+    }, []);
+
+    useEffect(() => {
+        loadBookingDetails();
+    }, [bookingId]);
+
+    // Listen to socket notifications for booking status updates (ONLY for external changes)
+    useEffect(() => {
+        if (!socket || !bookingId) return;
+
+        const handleNewNotification = (notification) => {
+            // Ignore socket updates if user just performed an action (use React state instead)
+            const timeSinceLastAction = Date.now() - lastActionTimeRef.current;
+            if (timeSinceLastAction < ACTION_COOLDOWN) {
+                return; // Skip - user's own action will update via React state
+            }
+
+            // Check if notification is related to current booking
+            const notificationBookingId = notification.metadata?.bookingId || 
+                                        notification.relatedEntity?.entityId?.toString();
+            
+            if (notificationBookingId === bookingId?.toString() || 
+                notificationBookingId === bookingId) {
+                // Only refresh for external changes (not user's own actions)
+                // These are changes from other users (admin, user, etc.)
+                if (notification.type === 'BOOKING_STATUS_UPDATED' ||
+                    notification.type === 'REPORT_UPLOADED' ||
+                    notification.type === 'BOREWELL_UPLOADED' ||
+                    notification.type === 'ADMIN_APPROVED' ||
+                    notification.type === 'PAYMENT_RELEASE' ||
+                    notification.type === 'PAYMENT_ADVANCE_SUCCESS' ||
+                    notification.type === 'PAYMENT_REMAINING_SUCCESS' ||
+                    notification.type === 'FINAL_SETTLEMENT_PROCESSED') {
+                    setTimeout(() => {
+                        if (loadBookingDetailsRef.current) {
+                            loadBookingDetailsRef.current();
+                        }
+                    }, 500);
+                }
+            }
+        };
+
+        socket.on('new_notification', handleNewNotification);
+
+        return () => {
+            socket.off('new_notification', handleNewNotification);
+        };
+    }, [socket, bookingId]);
+
+    // Pull-to-refresh functionality
+    const { isRefreshing, pullDistance, containerRef, canRefresh } = usePullToRefresh(
+        loadBookingDetails,
+        { threshold: 80, resistance: 2.5 }
+    );
+
     const handleAccept = () => {
         setShowAcceptConfirm(true);
     };
@@ -76,12 +129,15 @@ export default function VendorStatus() {
         const loadingToast = toast.showLoading("Accepting booking...");
         try {
             setActionLoading(true);
+            // Mark that user performed an action (prevent socket from triggering duplicate update)
+            lastActionTimeRef.current = Date.now();
 
             const response = await acceptBooking(bookingId);
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking accepted successfully!");
+                // Update state immediately via React (not waiting for socket)
                 await loadBookingDetails();
             } else {
                 toast.dismissToast(loadingToast);
@@ -111,6 +167,8 @@ export default function VendorStatus() {
         const loadingToast = toast.showLoading("Rejecting booking...");
         try {
             setActionLoading(true);
+            // Mark that user performed an action (prevent socket from triggering duplicate update)
+            lastActionTimeRef.current = Date.now();
 
             const response = await rejectBooking(bookingId, rejectionReason);
 
@@ -118,6 +176,7 @@ export default function VendorStatus() {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking rejected successfully.");
                 setRejectionReason("");
+                // Update state immediately via React (not waiting for socket)
                 await loadBookingDetails();
             } else {
                 toast.dismissToast(loadingToast);
@@ -140,12 +199,15 @@ export default function VendorStatus() {
         const loadingToast = toast.showLoading("Marking as visited...");
         try {
             setActionLoading(true);
+            // Mark that user performed an action (prevent socket from triggering duplicate update)
+            lastActionTimeRef.current = Date.now();
 
             const response = await markBookingAsVisited(bookingId);
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking marked as visited successfully!");
+                // Update state immediately via React (not waiting for socket)
                 await loadBookingDetails();
             } else {
                 toast.dismissToast(loadingToast);
@@ -159,38 +221,6 @@ export default function VendorStatus() {
         }
     };
 
-    const handleRequestTravelCharges = async () => {
-        if (!travelChargesData.amount || !travelChargesData.reason) {
-            toast.showError("Please provide both amount and reason for travel charges");
-            return;
-        }
-
-        const loadingToast = toast.showLoading("Submitting travel charges request...");
-        try {
-            setSubmittingTravelCharges(true);
-
-            const response = await requestTravelCharges(bookingId, {
-                amount: parseFloat(travelChargesData.amount),
-                reason: travelChargesData.reason,
-            });
-
-            if (response.success) {
-                toast.dismissToast(loadingToast);
-                toast.showSuccess("Travel charges request submitted successfully!");
-                setShowTravelChargesModal(false);
-                setTravelChargesData({ amount: "", reason: "" });
-                await loadBookingDetails();
-            } else {
-                toast.dismissToast(loadingToast);
-                toast.showError(response.message || "Failed to request travel charges");
-            }
-        } catch (err) {
-            toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to request travel charges");
-        } finally {
-            setSubmittingTravelCharges(false);
-        }
-    };
 
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
@@ -218,7 +248,7 @@ export default function VendorStatus() {
         const status = booking.vendorStatus || booking.status;
 
         // Define status progression for completed check
-        const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAID_FIRST", "BOREWELL_UPLOADED", "APPROVED", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
+        const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "BOREWELL_UPLOADED", "APPROVED", "COMPLETED"];
         const currentStatusIndex = statusOrder.indexOf(status);
         const effectiveIndex = currentStatusIndex === -1 ? 0 : currentStatusIndex;
 
@@ -238,7 +268,7 @@ export default function VendorStatus() {
                 icon: IoCheckmarkCircleOutline,
                 active: status === "ACCEPTED",
                 completed: effectiveIndex > 1 || !!booking.visitedAt || !!booking.reportUploadedAt,
-                description: "You have accepted the booking. You can request travel charges and mark as visited.",
+                description: "You have accepted the booking. You can mark as visited.",
                 date: booking.acceptedAt,
             },
             {
@@ -247,35 +277,52 @@ export default function VendorStatus() {
                 icon: IoConstructOutline,
                 active: status === "VISITED",
                 completed: effectiveIndex > 2 || !!booking.reportUploadedAt,
-                description: "You have visited the customer site. Please upload the service report.",
+                description: "You have visited the customer site.",
                 date: booking.visitedAt,
             },
             {
-                id: "report",
-                label: "Report Uploaded",
+                id: "first-payment",
+                label: "1st Payment Release",
+                icon: IoWalletOutline,
+                active: status === "VISITED" && !booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited,
+                completed: booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited || effectiveIndex > 2,
+                description: booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited
+                    ? "1st payment (50%) has been credited to your wallet."
+                    : "1st payment (50%) is pending release from admin.",
+                date: booking.payment?.vendorWalletPayments?.siteVisitPayment?.creditedAt,
+            },
+            {
+                id: "upload-report",
+                label: "Upload Report",
                 icon: IoDocumentTextOutline,
-                active: status === "REPORT_UPLOADED",
-                completed: effectiveIndex > 3 || !!booking.payment?.vendorSettlement?.settledAt,
-                description: "Service report has been uploaded. Waiting for admin payment.",
-                date: booking.reportUploadedAt,
+                active: status === "VISITED" && !booking.reportUploadedAt,
+                completed: !!booking.reportUploadedAt || effectiveIndex > 3,
+                description: "Please upload the service report after receiving 1st payment.",
+                date: null,
             },
             {
-                id: "payment",
-                label: "Awaiting Payment (50% + Travel)",
-                icon: IoTimeOutline,
-                active: status === "REPORT_UPLOADED" || status === "AWAITING_PAYMENT",
-                completed: effectiveIndex > 4 || booking.firstInstallment?.paid || status === "PAID_FIRST",
-                description: "Waiting for admin to pay 50% + travel charges.",
-                date: booking.reportUploadedAt,
-            },
-            {
-                id: "paid-first",
-                label: "First Installment Paid (50% + Travel)",
+                id: "report-approved",
+                label: "Report Approved",
                 icon: IoCheckmarkCircleOutline,
-                active: status === "PAID_FIRST",
-                completed: effectiveIndex > 5 || booking.borewellResult?.uploadedAt || status === "BOREWELL_UPLOADED",
-                description: "Admin has paid 50% + travel charges. Waiting for user to upload borewell result.",
-                date: booking.firstInstallment?.paidAt || booking.payment?.vendorSettlement?.settledAt,
+                active: status === "REPORT_UPLOADED" && !booking.report?.approvedAt,
+                completed: !!booking.report?.approvedAt || effectiveIndex > 4,
+                description: booking.report?.approvedAt
+                    ? "Your report has been approved by admin."
+                    : "Waiting for admin to approve your report.",
+                date: booking.report?.approvedAt,
+            },
+            {
+                id: "second-payment",
+                label: "2nd Payment Release",
+                icon: IoWalletOutline,
+                active: status === "REPORT_UPLOADED" && booking.report?.approvedAt && !booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited,
+                completed: booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited || (effectiveIndex > 4 && booking.report?.approvedAt),
+                description: booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited
+                    ? "2nd payment (50%) has been credited to your wallet."
+                    : booking.report?.approvedAt
+                        ? "2nd payment (50%) is pending release from admin."
+                        : "Waiting for report approval before 2nd payment release.",
+                date: booking.payment?.vendorWalletPayments?.reportUploadPayment?.creditedAt,
             },
             {
                 id: "borewell",
@@ -302,11 +349,25 @@ export default function VendorStatus() {
                 label: "Final Settlement Complete",
                 icon: IoWalletOutline,
                 active: status === "FINAL_SETTLEMENT_COMPLETE",
-                completed: status === "FINAL_SETTLEMENT_COMPLETE" || status === "COMPLETED",
-                description: booking.payment?.vendorSettlement?.status === "COMPLETED"
-                    ? "Admin has processed your final settlement. All payments completed."
+                // Vendor settlement is complete if:
+                // 1. vendorStatus is FINAL_SETTLEMENT_COMPLETE, OR
+                // 2. finalSettlement has rewardAmount or penaltyAmount (vendor settlement processed), OR
+                // 3. finalSettlement.status is PROCESSED, OR
+                // 4. old vendorSettlement.status is COMPLETED
+                completed: status === "FINAL_SETTLEMENT_COMPLETE" || 
+                          status === "COMPLETED" || 
+                          booking.finalSettlement?.status === "PROCESSED" || 
+                          booking.finalSettlement?.rewardAmount > 0 || 
+                          booking.finalSettlement?.penaltyAmount > 0 ||
+                          booking.payment?.vendorSettlement?.status === "COMPLETED",
+                description: (booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0) || 
+                            booking.finalSettlement?.status === "PROCESSED" || 
+                            booking.payment?.vendorSettlement?.status === "COMPLETED"
+                    ? booking.finalSettlement?.status === "PROCESSED" || booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0
+                        ? `Admin has processed your final settlement. ${booking.finalSettlement?.rewardAmount > 0 ? `Reward of ₹${booking.finalSettlement.rewardAmount.toLocaleString('en-IN')} credited.` : booking.finalSettlement?.penaltyAmount > 0 ? `Penalty of ₹${booking.finalSettlement.penaltyAmount.toLocaleString('en-IN')} deducted.` : 'All payments completed.'}`
+                        : "Admin has processed your final settlement. All payments completed."
                     : "Waiting for admin to process final settlement.",
-                date: booking.payment?.vendorSettlement?.settledAt,
+                date: booking.finalSettlement?.processedAt || booking.payment?.vendorSettlement?.settledAt,
             },
             {
                 id: "completed",
@@ -348,7 +409,42 @@ export default function VendorStatus() {
     const status = booking?.vendorStatus || booking?.status;
 
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+        <div 
+            ref={containerRef}
+            className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 overflow-y-auto"
+            style={{
+                transform: pullDistance > 0 ? `translateY(${Math.min(pullDistance, 100)}px)` : 'none',
+                transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none',
+            }}
+        >
+            {/* Pull-to-refresh indicator */}
+            {(pullDistance > 0 || isRefreshing) && (
+                <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-transparent pointer-events-none"
+                    style={{ 
+                        height: `${Math.min(pullDistance, 100)}px`,
+                        transform: `translateY(${Math.min(pullDistance - 60, 0)}px)`
+                    }}
+                >
+                    <div className={`flex flex-col items-center gap-2 ${canRefresh || isRefreshing ? 'text-[#0A84FF]' : 'text-gray-400'}`}>
+                        {isRefreshing ? (
+                            <>
+                                <div className="w-6 h-6 border-2 border-[#0A84FF] border-t-transparent rounded-full animate-spin"></div>
+                                <span className="text-sm font-medium">Refreshing...</span>
+                            </>
+                        ) : (
+                            <>
+                                <IoRefreshOutline 
+                                    className={`text-2xl transition-transform ${canRefresh ? 'rotate-180' : ''}`}
+                                    style={{ transform: `rotate(${Math.min(pullDistance * 2, 180)}deg)` }}
+                                />
+                                <span className="text-sm font-medium">
+                                    {canRefresh ? 'Release to refresh' : 'Pull to refresh'}
+                                </span>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Back Button */}
             <button
@@ -470,45 +566,9 @@ export default function VendorStatus() {
                                         </div>
                                     )}
 
-                                    {/* Step 2: ACCEPTED - Request Travel Charges + Mark as Visited */}
+                                    {/* Step 2: ACCEPTED - Mark as Visited */}
                                     {step.id === "accepted" && status === "ACCEPTED" && (
                                         <div className="flex flex-col gap-2 mt-3">
-                                            {/* Travel Charges Status */}
-                                            {booking.travelChargesRequest?.status && (
-                                                <div className="bg-gray-50 rounded-[8px] p-3 mb-2">
-                                                    <p className="text-xs font-semibold text-gray-700 mb-1">
-                                                        Travel Charges Request:
-                                                    </p>
-                                                    <span
-                                                        className={`px-2 py-1 rounded-full text-xs font-semibold ${booking.travelChargesRequest.status === "APPROVED"
-                                                            ? "bg-green-100 text-green-700"
-                                                            : booking.travelChargesRequest.status === "REJECTED"
-                                                                ? "bg-red-100 text-red-700"
-                                                                : "bg-yellow-100 text-yellow-700"
-                                                            }`}
-                                                    >
-                                                        {booking.travelChargesRequest.status}
-                                                    </span>
-                                                    {booking.travelChargesRequest.amount && (
-                                                        <p className="text-xs text-gray-600 mt-1">
-                                                            Amount: {formatAmount(booking.travelChargesRequest.amount)}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {/* Request Travel Charges Button (if not requested or rejected) */}
-                                            {(!booking.travelChargesRequest?.status ||
-                                                booking.travelChargesRequest.status === "REJECTED") && (
-                                                    <button
-                                                        onClick={() => setShowTravelChargesModal(true)}
-                                                        className="w-full h-12 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors flex items-center justify-center gap-2"
-                                                    >
-                                                        <IoCarOutline className="text-xl" />
-                                                        Request Travel Charges
-                                                    </button>
-                                                )}
-
                                             {/* Mark as Visited Button */}
                                             <button
                                                 onClick={handleMarkVisited}
@@ -521,8 +581,58 @@ export default function VendorStatus() {
                                         </div>
                                     )}
 
-                                    {/* Step 3: VISITED - Upload Report */}
-                                    {step.id === "visited" && status === "VISITED" && (
+                                    {/* Step: First Payment Release */}
+                                    {step.id === "first-payment" && (
+                                        <div className="mt-3">
+                                            {booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited ? (
+                                                <div className="bg-green-50 rounded-[8px] p-3">
+                                                    <p className="text-sm font-semibold text-green-700 mb-1">
+                                                        ✓ 1st Payment Credited
+                                                    </p>
+                                                    <p className="text-xs text-green-600">
+                                                        Amount: {formatAmount(booking.payment.vendorWalletPayments.siteVisitPayment.amount || 0)} has been credited to your wallet.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-yellow-50 rounded-[8px] p-3">
+                                                    <p className="text-sm font-semibold text-yellow-700 mb-1">
+                                                        ⏳ Pending Release
+                                                    </p>
+                                                    <p className="text-xs text-yellow-600">
+                                                        Waiting for admin to release 1st payment (50%).
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Step: Second Payment Release */}
+                                    {step.id === "second-payment" && (
+                                        <div className="mt-3">
+                                            {booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited ? (
+                                                <div className="bg-green-50 rounded-[8px] p-3">
+                                                    <p className="text-sm font-semibold text-green-700 mb-1">
+                                                        ✓ 2nd Payment Credited
+                                                    </p>
+                                                    <p className="text-xs text-green-600">
+                                                        Amount: {formatAmount(booking.payment.vendorWalletPayments.reportUploadPayment.amount || 0)} has been credited to your wallet.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-yellow-50 rounded-[8px] p-3">
+                                                    <p className="text-sm font-semibold text-yellow-700 mb-1">
+                                                        ⏳ Pending Release
+                                                    </p>
+                                                    <p className="text-xs text-yellow-600">
+                                                        Waiting for admin to release 2nd payment (50%).
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Step: Upload Report */}
+                                    {step.id === "upload-report" && status === "VISITED" && !booking.reportUploadedAt && (
                                         <button
                                             onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
                                             className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors flex items-center justify-center gap-2 mt-3"
@@ -532,47 +642,36 @@ export default function VendorStatus() {
                                         </button>
                                     )}
 
-                                    {/* Step 4: REPORT_UPLOADED - View Report */}
-                                    {step.id === "report" && status === "REPORT_UPLOADED" && (
-                                        <button
-                                            onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
-                                            className="w-full h-12 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors flex items-center justify-center gap-2 mt-3"
-                                        >
-                                            <IoDocumentTextOutline className="text-xl" />
-                                            View Report
-                                        </button>
-                                    )}
-
-                                    {/* Step 5: AWAITING_PAYMENT - Request Payment from Admin */}
-                                    {step.id === "payment" && status === "AWAITING_PAYMENT" && (
+                                    {/* Step: Report Approved */}
+                                    {step.id === "report-approved" && status === "REPORT_UPLOADED" && (
                                         <div className="mt-3">
-                                            {booking.payment?.remainingPaid ? (
-                                                <div className="bg-green-50 rounded-[8px] p-3">
-                                                    <p className="text-sm font-semibold text-green-700">
-                                                        Payment Received: {formatAmount(booking.payment?.remainingAmount || 0)}
+                                            {booking.report?.approvedAt ? (
+                                                <div className="bg-green-50 rounded-[8px] p-3 mb-2">
+                                                    <p className="text-sm font-semibold text-green-700 mb-1">
+                                                        ✓ Report Approved
+                                                    </p>
+                                                    <p className="text-xs text-green-600">
+                                                        Approved on {formatDate(booking.report.approvedAt)}
                                                     </p>
                                                 </div>
                                             ) : (
-                                                <button
-                                                    onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
-                                                    className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors flex items-center justify-center gap-2"
-                                                >
-                                                    <IoWalletOutline className="text-xl" />
-                                                    View Payment Status
-                                                </button>
+                                                <div className="bg-yellow-50 rounded-[8px] p-3 mb-2">
+                                                    <p className="text-sm font-semibold text-yellow-700 mb-1">
+                                                        ⏳ Pending Approval
+                                                    </p>
+                                                    <p className="text-xs text-yellow-600">
+                                                        Waiting for admin to approve your report.
+                                                    </p>
+                                                </div>
                                             )}
+                                            <button
+                                                onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
+                                                className="w-full h-12 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <IoDocumentTextOutline className="text-xl" />
+                                                View Report
+                                            </button>
                                         </div>
-                                    )}
-
-                                    {/* Step: PAID_FIRST - View Details */}
-                                    {step.id === "paid-first" && status === "PAID_FIRST" && !booking.borewellResult && (
-                                        <button
-                                            onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
-                                            className="w-full h-12 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors flex items-center justify-center gap-2 mt-3"
-                                        >
-                                            <IoDocumentTextOutline className="text-xl" />
-                                            View Details
-                                        </button>
                                     )}
 
                                     {/* Step: APPROVED - View Details */}
@@ -624,25 +723,41 @@ export default function VendorStatus() {
                                     )}
 
                                     {/* Step 8: Settlement - View Settlement Details */}
-                                    {step.id === "settlement" && booking.payment?.vendorSettlement && (
+                                    {step.id === "settlement" && (booking.finalSettlement || booking.payment?.vendorSettlement) && (
                                         <div className="mt-3">
                                             <div className="bg-gray-50 rounded-[8px] p-3 mb-2">
                                                 <p className="text-xs font-semibold text-gray-700 mb-1">
                                                     Settlement Status:{" "}
                                                     <span
-                                                        className={`px-2 py-1 rounded-full text-xs font-semibold ${booking.payment.vendorSettlement.status === "COMPLETED"
-                                                            ? "bg-green-100 text-green-700"
-                                                            : "bg-yellow-100 text-yellow-700"
-                                                            }`}
+                                                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                            (booking.finalSettlement?.status === "PROCESSED" || booking.payment?.vendorSettlement?.status === "COMPLETED")
+                                                                ? "bg-green-100 text-green-700"
+                                                                : "bg-yellow-100 text-yellow-700"
+                                                        }`}
                                                     >
-                                                        {booking.payment.vendorSettlement.status}
+                                                        {booking.finalSettlement?.status === "PROCESSED" 
+                                                            ? "COMPLETE" 
+                                                            : booking.payment?.vendorSettlement?.status === "COMPLETED"
+                                                            ? "COMPLETE"
+                                                            : booking.finalSettlement?.status || booking.payment?.vendorSettlement?.status || "PENDING"}
                                                     </span>
                                                 </p>
-                                                {booking.payment.vendorSettlement.amount && (
+                                                {(booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0) ? (
+                                                    <p className={`text-sm font-bold mt-2 ${
+                                                        booking.finalSettlement?.rewardAmount > 0 
+                                                            ? "text-green-600" 
+                                                            : "text-red-600"
+                                                    }`}>
+                                                        {booking.finalSettlement?.rewardAmount > 0 
+                                                            ? `Reward: ${formatAmount(booking.finalSettlement.rewardAmount)}`
+                                                            : `Penalty: ${formatAmount(booking.finalSettlement.penaltyAmount)}`
+                                                        }
+                                                    </p>
+                                                ) : booking.payment?.vendorSettlement?.amount ? (
                                                     <p className="text-sm font-bold text-gray-800 mt-2">
                                                         Amount: {formatAmount(booking.payment.vendorSettlement.amount)}
                                                     </p>
-                                                )}
+                                                ) : null}
                                             </div>
                                             <button
                                                 onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
@@ -657,94 +772,6 @@ export default function VendorStatus() {
                             </Fragment>
                         );
                     })}
-                </div>
-            )}
-
-            {/* Travel Charges Request Modal */}
-            {showTravelChargesModal && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    onClick={() => !submittingTravelCharges && setShowTravelChargesModal(false)}
-                >
-                    <div
-                        className="bg-white rounded-[16px] w-full max-w-lg max-h-[90vh] flex flex-col shadow-xl"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between p-5 border-b border-gray-200">
-                            <h2 className="text-xl font-bold text-gray-800">Request Travel Charges</h2>
-                            <button
-                                onClick={() => !submittingTravelCharges && setShowTravelChargesModal(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                disabled={submittingTravelCharges}
-                            >
-                                <IoCloseOutline className="text-2xl text-gray-600" />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-5">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-2 block">
-                                        Amount (₹) <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={travelChargesData.amount}
-                                        onChange={(e) =>
-                                            setTravelChargesData({
-                                                ...travelChargesData,
-                                                amount: e.target.value,
-                                            })
-                                        }
-                                        disabled={submittingTravelCharges}
-                                        className="w-full h-12 px-4 border border-gray-300 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] disabled:bg-gray-100"
-                                        placeholder="Enter amount"
-                                        min="0"
-                                        step="0.01"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-2 block">
-                                        Reason <span className="text-red-500">*</span>
-                                    </label>
-                                    <textarea
-                                        value={travelChargesData.reason}
-                                        onChange={(e) =>
-                                            setTravelChargesData({
-                                                ...travelChargesData,
-                                                reason: e.target.value,
-                                            })
-                                        }
-                                        disabled={submittingTravelCharges}
-                                        className="w-full h-24 px-4 py-2 border border-gray-300 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] disabled:bg-gray-100 resize-none"
-                                        placeholder="Explain why you need travel charges"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex gap-3 p-5 border-t border-gray-200">
-                            <button
-                                onClick={() => setShowTravelChargesModal(false)}
-                                className="flex-1 h-10 bg-gray-200 text-gray-700 text-sm font-medium rounded-[8px] hover:bg-gray-300 transition-colors"
-                                disabled={submittingTravelCharges}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleRequestTravelCharges}
-                                disabled={submittingTravelCharges || !travelChargesData.amount || !travelChargesData.reason}
-                                className="flex-1 h-10 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {submittingTravelCharges ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        Submitting...
-                                    </>
-                                ) : (
-                                    "Submit Request"
-                                )}
-                            </button>
-                        </div>
-                    </div>
                 </div>
             )}
 

@@ -29,6 +29,8 @@ const sendNotification = async (notificationData, io = null) => {
         const room = getRoomName(notificationData.recipientModel, notificationData.recipient.toString());
         io.to(room).emit('new_notification', {
           id: notification._id,
+          recipient: notification.recipient.toString(),
+          recipientModel: notification.recipientModel,
           type: notification.type,
           title: notification.title,
           message: notification.message,

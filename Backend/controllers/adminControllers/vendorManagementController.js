@@ -1,4 +1,6 @@
 const Vendor = require('../../models/Vendor');
+const VendorBankDetails = require('../../models/VendorBankDetails');
+const VendorDocument = require('../../models/VendorDocument');
 const Service = require('../../models/Service');
 const Booking = require('../../models/Booking');
 const { validationResult } = require('express-validator');
@@ -134,7 +136,8 @@ const getVendorDetails = async (req, res) => {
     const vendor = await Vendor.findById(vendorId)
       .select('-password -emailVerificationOTP -emailVerificationOTPExpiry')
       .populate('approvedBy', 'name email')
-      .populate('services', 'name machineType price status');
+      .populate('services', 'name machineType price status')
+      .lean();
 
     if (!vendor) {
       return res.status(404).json({
@@ -143,13 +146,64 @@ const getVendorDetails = async (req, res) => {
       });
     }
 
-    // Get vendor statistics
-    const [totalServices, activeServices, totalBookings, completedBookings] = await Promise.all([
+    // Get bank details and documents from separate collections
+    const [bankDetails, documents, totalServices, activeServices, totalBookings, completedBookings] = await Promise.all([
+      VendorBankDetails.findOne({ vendor: vendorId, isActive: true }).lean(),
+      VendorDocument.find({ vendor: vendorId, isActive: true }).lean(),
       Service.countDocuments({ vendor: vendorId }),
       Service.countDocuments({ vendor: vendorId, isActive: true, status: 'APPROVED' }),
       Booking.countDocuments({ vendor: vendorId }),
       Booking.countDocuments({ vendor: vendorId, status: 'COMPLETED' })
     ]);
+
+    // Format documents similar to old structure for backward compatibility
+    const formattedDocuments = {};
+    documents.forEach(doc => {
+      if (doc.documentType === 'PROFILE_PICTURE') {
+        formattedDocuments.profilePicture = {
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt,
+          status: doc.status
+        };
+      } else if (doc.documentType === 'AADHAR') {
+        formattedDocuments.aadharCard = {
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt,
+          status: doc.status
+        };
+      } else if (doc.documentType === 'PAN') {
+        formattedDocuments.panCard = {
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt,
+          status: doc.status
+        };
+      } else if (doc.documentType === 'CHEQUE') {
+        formattedDocuments.cancelledCheque = {
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt,
+          status: doc.status
+        };
+      } else if (doc.documentType === 'CERTIFICATE') {
+        if (!formattedDocuments.certificates) {
+          formattedDocuments.certificates = [];
+        }
+        formattedDocuments.certificates.push({
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt,
+          name: doc.name || doc.certificateName,
+          status: doc.status
+        });
+      }
+    });
+
+    // Add bankDetails and documents to vendor object
+    vendor.bankDetails = bankDetails || null;
+    vendor.documents = formattedDocuments;
 
     res.json({
       success: true,

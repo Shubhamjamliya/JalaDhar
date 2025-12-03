@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '../services/notificationApi';
 import { useAuth } from './AuthContext';
@@ -29,6 +29,16 @@ export const NotificationProvider = ({ children }) => {
   const currentUser = user || vendor || admin;
   const isAuthenticated = isUserAuthenticated || isVendorAuthenticated || isAdminAuthenticated;
   const userRole = user ? 'USER' : vendor ? 'VENDOR' : admin ? 'ADMIN' : null;
+
+  // Use refs to store latest values for socket listener (avoid stale closure)
+  const currentUserRef = useRef(currentUser);
+  const userRoleRef = useRef(userRole);
+
+  // Update refs when values change
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+    userRoleRef.current = userRole;
+  }, [currentUser, userRole]);
 
   // Initialize Socket.io connection
   useEffect(() => {
@@ -81,8 +91,29 @@ export const NotificationProvider = ({ children }) => {
     // Listen for new notifications
     newSocket.on('new_notification', (notification) => {
       console.log('[Socket] New notification received:', notification);
-      setNotifications((prev) => [notification, ...prev]);
-      setUnreadCount((prev) => prev + 1);
+      
+      // Use refs to get latest values (not stale closure values)
+      const currentUserId = currentUserRef.current?._id?.toString() || currentUserRef.current?.id?.toString();
+      const notificationRecipientId = notification.recipient?.toString();
+      const notificationRecipientModel = notification.recipientModel;
+      const currentUserRole = userRoleRef.current;
+      
+      console.log('[Socket] Filtering check:', {
+        notificationRecipientId,
+        currentUserId,
+        notificationRecipientModel,
+        currentUserRole,
+        match: notificationRecipientId === currentUserId && notificationRecipientModel === currentUserRole
+      });
+      
+      // Only add if recipient and model match
+      if (notificationRecipientId === currentUserId && 
+          notificationRecipientModel === currentUserRole) {
+        setNotifications((prev) => [notification, ...prev]);
+        setUnreadCount((prev) => prev + 1);
+      } else {
+        console.log('[Socket] Notification filtered - not for current user');
+      }
     });
 
     setSocket(newSocket);
@@ -175,6 +206,7 @@ export const NotificationProvider = ({ children }) => {
     notifications,
     unreadCount,
     loading,
+    socket,
     markAsRead: markNotificationAsRead,
     markAllAsRead: markAllNotificationsAsRead,
     refreshNotifications

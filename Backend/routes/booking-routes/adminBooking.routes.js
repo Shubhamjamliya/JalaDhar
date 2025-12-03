@@ -18,7 +18,15 @@ const {
   processUserRefund,
   processFinalSettlement,
   approveReport,
-  rejectReport
+  rejectReport,
+  getPendingFirstPaymentReleases,
+  getPendingSecondPaymentReleases,
+  getPendingVendorFinalSettlements,
+  getCompletedVendorFinalSettlements,
+  getPendingUserFinalSettlements,
+  getCompletedUserFinalSettlements,
+  processNewFinalSettlement,
+  processUserFinalSettlement
 } = require('../../controllers/bookingControllers/adminBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isAdmin } = require('../../middleware/roleMiddleware');
@@ -55,6 +63,18 @@ router.get('/bookings/borewell-pending', authenticate, isAdmin, getBorewellPendi
 router.get('/bookings/pending-user-refunds', authenticate, isAdmin, getPendingUserRefunds);
 router.patch('/bookings/:bookingId/user-refund', authenticate, isAdmin, processUserRefund);
 router.patch('/bookings/:bookingId/final-settlement', authenticate, isAdmin, processFinalSettlement);
+router.get('/bookings/pending-first-payment', authenticate, isAdmin, getPendingFirstPaymentReleases);
+router.get('/bookings/pending-second-payment', authenticate, isAdmin, getPendingSecondPaymentReleases);
+
+// New Final Settlement routes (separate from old final settlement)
+// Vendor final settlements
+router.get('/bookings/final-settlement/vendor/pending', authenticate, isAdmin, getPendingVendorFinalSettlements);
+router.get('/bookings/final-settlement/vendor/completed', authenticate, isAdmin, getCompletedVendorFinalSettlements);
+router.patch('/bookings/:bookingId/final-settlement/vendor/process', authenticate, isAdmin, processNewFinalSettlement);
+// User final settlements
+router.get('/bookings/final-settlement/user/pending', authenticate, isAdmin, getPendingUserFinalSettlements);
+router.get('/bookings/final-settlement/user/completed', authenticate, isAdmin, getCompletedUserFinalSettlements);
+router.patch('/bookings/:bookingId/final-settlement/user/process', authenticate, isAdmin, processUserFinalSettlement);
 
 module.exports = router;
 
