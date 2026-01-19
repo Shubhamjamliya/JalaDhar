@@ -56,6 +56,16 @@ export const getBookingDetails = async (bookingId) => {
 };
 
 /**
+ * Download vendor invoice
+ * @param {string} bookingId - Booking ID
+ * @returns {Promise}
+ */
+export const downloadInvoice = async (bookingId) => {
+  const response = await api.get(`/vendors/bookings/${bookingId}/invoice`);
+  return response.data;
+};
+
+/**
  * Accept a booking
  * @param {string} bookingId
  * @returns {Promise}

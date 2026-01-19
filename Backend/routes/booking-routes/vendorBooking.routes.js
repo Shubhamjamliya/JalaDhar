@@ -10,7 +10,8 @@ const {
   markVisitedAndUploadReport,
   markAsCompleted,
   getBookingDetails,
-  requestTravelCharges
+  requestTravelCharges,
+  downloadInvoice
 } = require('../../controllers/bookingControllers/vendorBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isVendor } = require('../../middleware/roleMiddleware');
@@ -85,6 +86,7 @@ router.patch('/:bookingId/reject', authenticate, isVendor, rejectBookingValidati
 router.patch('/:bookingId/visited', authenticate, isVendor, markAsVisited);
 router.patch('/:bookingId/completed', authenticate, isVendor, markAsCompleted);
 router.post('/:bookingId/travel-charges', authenticate, isVendor, travelChargesValidation, requestTravelCharges);
+router.get('/:bookingId/invoice', authenticate, isVendor, downloadInvoice);
 router.post(
   '/:bookingId/visit-report',
   authenticate,

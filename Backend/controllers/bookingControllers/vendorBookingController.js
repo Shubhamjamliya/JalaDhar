@@ -757,6 +757,73 @@ const requestTravelCharges = async (req, res) => {
   }
 };
 
+/**
+ * Download vendor invoice
+ * Available when final settlement is done
+ */
+const downloadInvoice = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const vendorId = req.userId;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      vendor: vendorId,
+      status: { $in: [BOOKING_STATUS.FINAL_SETTLEMENT, BOOKING_STATUS.COMPLETED, BOOKING_STATUS.SUCCESS] }
+    })
+      .populate('user', 'name email phone address')
+      .populate('vendor', 'name email phone')
+      .populate('service', 'name price machineType');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or invoice not available. Final settlement must be completed.'
+      });
+    }
+
+    // Check if final settlement is done
+    if (booking.status !== BOOKING_STATUS.FINAL_SETTLEMENT && booking.status !== BOOKING_STATUS.COMPLETED && booking.status !== BOOKING_STATUS.SUCCESS) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invoice is only available after final settlement is completed'
+      });
+    }
+
+    if (!booking.invoice?.invoiceUrl) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not generated yet'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Invoice retrieved successfully',
+      data: {
+        invoiceUrl: booking.invoice.invoiceUrl,
+        invoiceNumber: booking.invoice.invoiceNumber,
+        booking: {
+          id: booking._id,
+          serviceName: booking.service?.name,
+          totalAmount: booking.payment?.totalAmount || booking.payment?.amount,
+          baseServiceFee: booking.payment?.baseServiceFee,
+          travelCharges: booking.payment?.travelCharges,
+          finalSettlement: booking.finalSettlement,
+          payment: booking.payment
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Download vendor invoice error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve invoice',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getVendorBookings,
   acceptBooking,
@@ -765,6 +832,7 @@ module.exports = {
   markVisitedAndUploadReport,
   markAsCompleted,
   getBookingDetails,
-  requestTravelCharges
+  requestTravelCharges,
+  downloadInvoice
 };
 

@@ -16,7 +16,7 @@ import {
     IoCloseOutline,
     IoAlertCircleOutline,
 } from "react-icons/io5";
-import { getBookingDetails, acceptBooking, rejectBooking, markBookingAsVisited, requestTravelCharges } from "../../../services/vendorApi";
+import { getBookingDetails, acceptBooking, rejectBooking, markBookingAsVisited, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
@@ -213,6 +213,26 @@ export default function VendorBookingDetails() {
             handleApiError(err, "Failed to submit travel charges request");
         } finally {
             setSubmittingTravelCharges(false);
+        }
+    };
+
+    const handleDownloadInvoice = async () => {
+        const loadingToast = toast.showLoading("Downloading invoice...");
+        try {
+            const response = await downloadInvoice(bookingId);
+            
+            if (response.success && response.data.invoiceUrl) {
+                // Open invoice URL in new tab
+                window.open(response.data.invoiceUrl, '_blank');
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Invoice opened successfully!");
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Invoice not available");
+            }
+        } catch (err) {
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to download invoice");
         }
     };
 
@@ -791,6 +811,23 @@ export default function VendorBookingDetails() {
                 cancelText="Cancel"
                 confirmColor="primary"
             />
+
+            {/* Download Invoice - Available when final settlement is done */}
+            {booking && ["FINAL_SETTLEMENT", "COMPLETED", "SUCCESS"].includes(booking.status) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Invoice</h2>
+                    <p className="text-sm text-gray-600 mb-4">
+                        Download your invoice with all payment information and settlement details.
+                    </p>
+                    <button
+                        onClick={handleDownloadInvoice}
+                        className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)]"
+                    >
+                        <IoDownloadOutline className="text-xl" />
+                        Download Invoice
+                    </button>
+                </div>
+            )}
 
             {/* Raise Dispute Button - Available for all bookings */}
             {booking && !["CANCELLED", "REJECTED"].includes(booking.status) && (
