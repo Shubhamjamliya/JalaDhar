@@ -91,12 +91,12 @@ const getAvailableVendors = async (req, res) => {
 const createBooking = async (req, res) => {
   try {
     const userId = req.userId;
-    const { 
-      serviceId, 
-      vendorId, 
-      scheduledDate, 
-      scheduledTime, 
-      address, 
+    const {
+      serviceId,
+      vendorId,
+      scheduledDate,
+      scheduledTime,
+      address,
       notes,
       // Customer Enquiry Form fields
       village,
@@ -126,10 +126,10 @@ const createBooking = async (req, res) => {
       user: userId,
       status: {
         $nin: [
-          BOOKING_STATUS.COMPLETED, 
-          BOOKING_STATUS.CANCELLED, 
-          BOOKING_STATUS.REJECTED, 
-          BOOKING_STATUS.FAILED, 
+          BOOKING_STATUS.COMPLETED,
+          BOOKING_STATUS.CANCELLED,
+          BOOKING_STATUS.REJECTED,
+          BOOKING_STATUS.FAILED,
           BOOKING_STATUS.SUCCESS,
           BOOKING_STATUS.ADMIN_APPROVED,
           BOOKING_STATUS.FINAL_SETTLEMENT,
@@ -215,7 +215,7 @@ const createBooking = async (req, res) => {
           vendorId: vendorId.toString()
         }
       });
-      
+
       // Validate order creation
       if (!razorpayOrder || !razorpayOrder.orderId) {
         throw new Error('Failed to create Razorpay order');
@@ -610,7 +610,7 @@ const uploadBorewellResult = async (req, res) => {
     try {
       const io = getIO();
       const { sendNotification } = require('../../services/notificationService');
-      
+
       // Notify vendor - borewell result uploaded by user
       await sendNotification({
         recipient: booking.vendor._id || booking.vendor,
@@ -632,7 +632,7 @@ const uploadBorewellResult = async (req, res) => {
       // Notify admin
       const Admin = require('../../models/Admin');
       const admins = await Admin.find({ isActive: true });
-      
+
       for (const admin of admins) {
         await sendNotification({
           recipient: admin._id,
@@ -785,7 +785,7 @@ const getAllServices = async (req, res) => {
 const getNearbyVendors = async (req, res) => {
   try {
     const { lat, lng, radius = 50, limit = 10, minPrice, maxPrice, minRating, minExperience, serviceType } = req.query;
-    
+
     // Validate and set radius (50-100km range)
     let searchRadius = parseFloat(radius);
     if (isNaN(searchRadius) || searchRadius < 50) {
@@ -836,7 +836,7 @@ const getNearbyVendors = async (req, res) => {
       // Use address.coordinates for distance calculation
       const vendorLat = vendor.address?.coordinates?.lat;
       const vendorLng = vendor.address?.coordinates?.lng;
-      
+
       if (lat && lng && vendorLat !== null && vendorLat !== undefined && vendorLng !== null && vendorLng !== undefined) {
         // Haversine formula for accurate distance
         const R = 6371; // Earth's radius in km
@@ -904,10 +904,20 @@ const getNearbyVendors = async (req, res) => {
 
     // Filter by service type/category
     if (serviceType) {
-      filteredVendors = filteredVendors.filter(v => 
-        v.serviceTags.some(tag => tag.toLowerCase().includes(serviceType.toLowerCase())) ||
-        v.category?.toLowerCase().includes(serviceType.toLowerCase())
-      );
+      filteredVendors = filteredVendors.filter(v => {
+        const type = serviceType.toLowerCase();
+
+        // Check service tags
+        const hasTag = v.serviceTags.some(tag => tag && tag.toLowerCase().includes(type));
+
+        // Check primary category
+        const hasCategory = v.category && v.category.toLowerCase().includes(type);
+
+        // Check actual service names - more robust
+        const hasServiceName = v.allServices.some(s => s.name.toLowerCase().includes(type) || (s.category && s.category.toLowerCase().includes(type)));
+
+        return hasTag || hasCategory || hasServiceName;
+      });
     }
 
     // Note: We show all vendors, but only calculate distance for those with coordinates
@@ -1197,57 +1207,57 @@ const cancelBooking = async (req, res) => {
 const calculateBookingCharges = async (req, res) => {
   try {
     const { serviceId, vendorId, userLat, userLng } = req.body;
-    
+
     if (!serviceId || !vendorId || !userLat || !userLng) {
       return res.status(400).json({
         success: false,
         message: 'serviceId, vendorId, userLat, and userLng are required'
       });
     }
-    
+
     // Find service and vendor
     const service = await Service.findById(serviceId);
     const vendor = await Vendor.findById(vendorId);
-    
+
     if (!service || !service.isActive) {
       return res.status(404).json({
         success: false,
         message: 'Service not found or not available'
       });
     }
-    
+
     if (!vendor || !vendor.isActive || !vendor.isApproved) {
       return res.status(404).json({
         success: false,
         message: 'Vendor not found or not available'
       });
     }
-    
+
     // Get settings
     const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE']);
     const travelChargePerKm = settings.TRAVEL_CHARGE_PER_KM || 10;
     const baseRadius = settings.BASE_RADIUS_KM || 30;
     const gstPercentage = settings.GST_PERCENTAGE || 18;
-    
+
     // Calculate distance
     const vendorLat = vendor.address?.coordinates?.lat;
     const vendorLng = vendor.address?.coordinates?.lng;
-    
+
     let distance = null;
     let travelCharges = 0;
-    
+
     if (vendorLat && vendorLng) {
       distance = calculateDistance(vendorLat, vendorLng, parseFloat(userLat), parseFloat(userLng));
       travelCharges = calculateTravelCharges(distance, baseRadius, travelChargePerKm);
     }
-    
+
     const baseServiceFee = service.price;
     const subtotal = baseServiceFee + travelCharges;
     const gst = calculateGST(subtotal, gstPercentage);
     const totalAmount = subtotal + gst;
     const advanceAmount = totalAmount * 0.4;
     const remainingAmount = totalAmount * 0.6;
-    
+
     res.json({
       success: true,
       message: 'Charges calculated successfully',

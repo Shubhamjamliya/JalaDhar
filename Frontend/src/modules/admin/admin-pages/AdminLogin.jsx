@@ -27,7 +27,7 @@ export default function AdminLogin() {
 
         try {
             const result = await login({ email, password });
-            
+
             if (result.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Login successful! Redirecting...");

@@ -15,6 +15,10 @@ import {
     IoCheckmarkOutline,
     IoSettingsOutline,
     IoLocationOutline,
+    IoLeafOutline,
+    IoHomeOutline,
+    IoBusinessOutline,
+    IoConstructOutline
 } from "react-icons/io5";
 import { getUserProfile } from "../../../services/authApi";
 import { getUserDashboardStats, getNearbyVendors } from "../../../services/bookingApi";
@@ -134,7 +138,7 @@ export default function UserDashboard() {
     }, []);
 
     useEffect(() => {
-            loadVendors();
+        loadVendors();
     }, [userLocation, radius]);
 
     const loadDashboardData = async () => {
@@ -385,6 +389,42 @@ export default function UserDashboard() {
                 </div>
             </section>
 
+            {/* Survey Booking CTA */}
+            <div
+                onClick={() => navigate("/user/survey")}
+                className="mx-2 mt-4 mb-2 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all"
+            >
+                <div className="text-white">
+                    <h3 className="text-lg font-bold">Book a Survey</h3>
+                    <p className="text-sm opacity-90">Get expert borewell survey services</p>
+                </div>
+                <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm">
+                    <IoLeafOutline className="text-2xl text-white" />
+                </div>
+            </div>
+
+            {/* Survey Categories */}
+            <h2 className="px-2 pt-2 text-md font-semibold text-gray-700">Select Survey Type</h2>
+            <div className="mx-2 mt-2 mb-4 grid grid-cols-2 gap-3">
+                {[
+                    { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "bg-green-100 text-green-600" },
+                    { id: "Domestic/Household", label: "Household", icon: IoHomeOutline, color: "bg-blue-100 text-blue-600" },
+                    { id: "Commercial", label: "Commercial", icon: IoBusinessOutline, color: "bg-purple-100 text-purple-600" },
+                    { id: "Industrial", label: "Industrial", icon: IoConstructOutline, color: "bg-orange-100 text-orange-600" }
+                ].map((cat) => (
+                    <button
+                        key={cat.id}
+                        onClick={() => navigate("/user/survey", { state: { category: cat.id } })}
+                        className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm border border-gray-100 active:scale-[0.98] transition-all"
+                    >
+                        <div className={`p-3 rounded-full ${cat.color} mb-2 text-2xl`}>
+                            <cat.icon />
+                        </div>
+                        <span className="font-medium text-gray-700 text-xs">{cat.label}</span>
+                    </button>
+                ))}
+            </div>
+
             {/* Services Overview */}
             <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
                 Your Services Overview
@@ -497,7 +537,7 @@ export default function UserDashboard() {
                         // Generate different colored backgrounds for profile pictures
                         const colors = ['#B3E5FC', '#FFEB3B', '#C8E6C9', '#FFCCBC', '#E1BEE7'];
                         const bgColor = colors[index % colors.length];
-                        
+
                         return (
                             <div
                                 key={vendor._id}
@@ -555,101 +595,103 @@ export default function UserDashboard() {
             </div>
 
             {/* Request Status Modal */}
-            {showStatusModal && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto"
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget) {
-                            setShowStatusModal(false);
-                        }
-                    }}
-                >
-                    <div className="bg-white rounded-[20px] w-full max-w-lg max-h-[90vh] flex flex-col shadow-xl">
-                        {/* Fixed Header */}
-                        <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between rounded-t-[20px]">
-                            <h2 className="text-xl font-bold text-gray-800">
-                                Request Status
-                            </h2>
-                            <button
-                                onClick={() => setShowStatusModal(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                            >
-                                <IoCloseOutline className="text-2xl text-gray-600" />
-                            </button>
-                        </div>
+            {
+                showStatusModal && (
+                    <div
+                        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                setShowStatusModal(false);
+                            }
+                        }}
+                    >
+                        <div className="bg-white rounded-[20px] w-full max-w-lg max-h-[90vh] flex flex-col shadow-xl">
+                            {/* Fixed Header */}
+                            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between rounded-t-[20px]">
+                                <h2 className="text-xl font-bold text-gray-800">
+                                    Request Status
+                                </h2>
+                                <button
+                                    onClick={() => setShowStatusModal(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                    <IoCloseOutline className="text-2xl text-gray-600" />
+                                </button>
+                            </div>
 
-                        {/* Scrollable Content */}
-                        <div className="flex-1 overflow-y-auto p-6">
-                            {displayRequests.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <p className="text-gray-500 text-sm">
-                                        No requests found
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {displayRequests.map((request) => {
-                                        const statusConfig = getStatusConfig(
-                                            request.status
-                                        );
-                                        const StatusIcon = statusConfig.icon;
-                                        return (
-                                            <div
-                                                key={request.id}
-                                                className="bg-white rounded-[12px] p-5 border-2 border-[#87CEEB] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                                            >
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="flex-1">
-                                                        <h3 className="text-base font-bold text-gray-800 mb-2">
-                                                            {
-                                                                request.serviceType
-                                                            }
-                                                        </h3>
-                                                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                            <IoTimeOutline className="text-base" />
-                                                            <span>
-                                                                {new Date(
-                                                                    request.requestDate
-                                                                ).toLocaleDateString(
-                                                                    "en-IN",
-                                                                    {
-                                                                        day: "numeric",
-                                                                        month: "short",
-                                                                        year: "numeric",
-                                                                    }
-                                                                )}{" "}
-                                                                at{" "}
+                            {/* Scrollable Content */}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                {displayRequests.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <p className="text-gray-500 text-sm">
+                                            No requests found
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {displayRequests.map((request) => {
+                                            const statusConfig = getStatusConfig(
+                                                request.status
+                                            );
+                                            const StatusIcon = statusConfig.icon;
+                                            return (
+                                                <div
+                                                    key={request.id}
+                                                    className="bg-white rounded-[12px] p-5 border-2 border-[#87CEEB] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
+                                                >
+                                                    <div className="flex items-start justify-between mb-4">
+                                                        <div className="flex-1">
+                                                            <h3 className="text-base font-bold text-gray-800 mb-2">
                                                                 {
-                                                                    request.requestTime
+                                                                    request.serviceType
                                                                 }
-                                                            </span>
+                                                            </h3>
+                                                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                                <IoTimeOutline className="text-base" />
+                                                                <span>
+                                                                    {new Date(
+                                                                        request.requestDate
+                                                                    ).toLocaleDateString(
+                                                                        "en-IN",
+                                                                        {
+                                                                            day: "numeric",
+                                                                            month: "short",
+                                                                            year: "numeric",
+                                                                        }
+                                                                    )}{" "}
+                                                                    at{" "}
+                                                                    {
+                                                                        request.requestTime
+                                                                    }
+                                                                </span>
+                                                            </div>
                                                         </div>
+                                                        <span
+                                                            className={`px-3 py-1.5 rounded-full text-xs font-semibold ${statusConfig.color} flex items-center gap-1.5 flex-shrink-0`}
+                                                        >
+                                                            <StatusIcon className="text-sm" />
+                                                            {statusConfig.label}
+                                                        </span>
                                                     </div>
-                                                    <span
-                                                        className={`px-3 py-1.5 rounded-full text-xs font-semibold ${statusConfig.color} flex items-center gap-1.5 flex-shrink-0`}
-                                                    >
-                                                        <StatusIcon className="text-sm" />
-                                                        {statusConfig.label}
-                                                    </span>
+                                                    {request.description && (
+                                                        <div className="pt-3 border-t border-gray-100">
+                                                            <p className="text-sm text-gray-600 leading-relaxed">
+                                                                {
+                                                                    request.description
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                {request.description && (
-                                                    <div className="pt-3 border-t border-gray-100">
-                                                        <p className="text-sm text-gray-600 leading-relaxed">
-                                                            {
-                                                                request.description
-                                                            }
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

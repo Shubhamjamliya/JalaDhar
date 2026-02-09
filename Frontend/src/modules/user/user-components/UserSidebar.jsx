@@ -7,7 +7,7 @@ import ConfirmModal from "../../shared/components/ConfirmModal";
 export default function UserSidebar({ isOpen, onClose, navItems }) {
   const { logout } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  
+
   const handleLogoutClick = () => {
     onClose();
     setShowLogoutConfirm(true);
@@ -23,13 +23,11 @@ export default function UserSidebar({ isOpen, onClose, navItems }) {
     if (isOpen) closeRef.current?.focus();
   }, [isOpen]);
 
-  const overlay = `fixed inset-0 bg-black/30 z-40 transition-opacity ${
-    isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-  }`;
+  const overlay = `fixed inset-0 bg-black/30 z-40 transition-opacity ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+    }`;
 
-  const panel = `fixed right-0 top-0 h-full w-4/5 max-w-xs bg-white z-50 shadow-xl p-5 transform transition-transform ${
-    isOpen ? "translate-x-0" : "translate-x-full"
-  }`;
+  const panel = `fixed right-0 top-0 h-full w-4/5 max-w-xs bg-white z-50 shadow-xl p-5 transform transition-transform ${isOpen ? "translate-x-0" : "translate-x-full"
+    }`;
 
   return (
     <>
@@ -56,10 +54,9 @@ export default function UserSidebar({ isOpen, onClose, navItems }) {
               to={to}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-3 p-3 rounded-xl transition-all ${
-                  isActive
-                    ? "bg-blue-50 text-gray-800"
-                    : "text-gray-700 hover:bg-blue-50"
+                `flex items-center gap-3 p-3 rounded-xl transition-all ${isActive
+                  ? "bg-blue-50 text-gray-800"
+                  : "text-gray-700 hover:bg-blue-50"
                 }`
               }
             >
@@ -69,7 +66,7 @@ export default function UserSidebar({ isOpen, onClose, navItems }) {
               <span className="text-base font-medium">{label}</span>
             </NavLink>
           ))}
-          
+
           {/* Logout Button */}
           <button
             onClick={handleLogoutClick}

@@ -102,28 +102,28 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
     // Helper function to check if a route is active
     const checkIsActive = (path) => {
         const currentPath = location.pathname;
-        
+
         // For routes that should match exactly
         if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/settings" || path === "/admin/approvals") {
             return currentPath === path || currentPath === path + "/";
         }
-        
+
         // For pending, match the path and sub-routes
         if (path === "/admin/vendors/pending") {
             return currentPath === path || currentPath.startsWith(path + "/");
         }
-        
+
         // For payments, check if any payment route is active
         if (path === "/admin/payments" || path.startsWith("/admin/payments/")) {
             return currentPath.startsWith("/admin/payments");
         }
-        
+
         return false;
     };
 
     // Check if payments dropdown should be open based on current route
     const isPaymentsRouteActive = location.pathname.startsWith("/admin/payments");
-    
+
     // Auto-open payments dropdown if on a payments route
     useEffect(() => {
         if (isPaymentsRouteActive) {
@@ -131,13 +131,11 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
         }
     }, [isPaymentsRouteActive]);
 
-    const overlay = `fixed inset-0 bg-black/30 z-40 transition-opacity ${
-        isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-    }`;
+    const overlay = `fixed inset-0 bg-black/30 z-40 transition-opacity ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`;
 
-    const panel = `fixed left-0 top-0 h-full w-4/5 max-w-xs bg-gradient-to-b from-[#1a1f3a] to-[#2d3561] text-white z-50 shadow-xl p-5 transform transition-transform duration-300 ease-in-out ${
-        isOpen ? "translate-x-0" : "-translate-x-full"
-    }`;
+    const panel = `fixed left-0 top-0 h-full w-4/5 max-w-xs bg-gradient-to-b from-[#1a1f3a] to-[#2d3561] text-white z-50 shadow-xl p-5 transform transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full"
+        }`;
 
     return (
         <>
@@ -170,16 +168,15 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                         // Special handling for payments dropdown
                         if (id === "payments") {
                             const isActive = isPaymentsRouteActive;
-                            
+
                             return (
                                 <div key={id} className="flex flex-col">
                                     <button
                                         onClick={() => setIsPaymentsOpen(!isPaymentsOpen)}
-                                        className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 w-full ${
-                                            isActive
+                                        className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 w-full ${isActive
                                                 ? "bg-[#60A5FA] text-white shadow-md"
                                                 : "text-white/70 hover:bg-white/10 hover:text-white"
-                                        }`}
+                                            }`}
                                     >
                                         <Icon className="text-xl" />
                                         <span className="text-sm font-medium flex-1 text-left">{label}</span>
@@ -189,7 +186,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                             <IoChevronDownOutline className="text-lg" />
                                         )}
                                     </button>
-                                    
+
                                     {/* Dropdown Menu */}
                                     {isPaymentsOpen && (
                                         <div className="ml-4 mt-1 flex flex-col gap-1">
@@ -197,10 +194,9 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                                 to="/admin/payments/admin"
                                                 onClick={onClose}
                                                 className={({ isActive }) =>
-                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${
-                                                        isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
                                                     }`
                                                 }
                                             >
@@ -211,10 +207,9 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                                 to="/admin/payments/user"
                                                 onClick={onClose}
                                                 className={({ isActive }) =>
-                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${
-                                                        isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
                                                     }`
                                                 }
                                             >
@@ -225,10 +220,9 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                                 to="/admin/payments/vendor"
                                                 onClick={onClose}
                                                 className={({ isActive }) =>
-                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${
-                                                        isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
                                                     }`
                                                 }
                                             >
@@ -250,11 +244,10 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                 to={to}
                                 end={shouldEnd}
                                 onClick={onClose}
-                                className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
-                                    isActive
+                                className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${isActive
                                         ? "bg-[#60A5FA] text-white shadow-md"
                                         : "text-white/70 hover:bg-white/10 hover:text-white"
-                                }`}
+                                    }`}
                             >
                                 <Icon className="text-xl" />
                                 <span className="text-sm font-medium">{label}</span>

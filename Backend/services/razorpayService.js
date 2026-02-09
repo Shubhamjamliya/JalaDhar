@@ -2,10 +2,19 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 
 // Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+let razorpay;
+try {
+  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET
+    });
+  } else {
+    console.warn('Razorpay credentials missing. Payment features will be disabled.');
+  }
+} catch (error) {
+  console.warn('Failed to initialize Razorpay:', error.message);
+}
 
 /**
  * Create a Razorpay order
@@ -16,9 +25,9 @@ const razorpay = new Razorpay({
  */
 const createOrder = async (amount, currency = 'INR', options = {}) => {
   try {
-    // Validate Razorpay credentials
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      throw new Error('Razorpay credentials not configured');
+    // Validate Razorpay instance
+    if (!razorpay) {
+      throw new Error('Razorpay is not initialized. Check server logs.');
     }
 
     // Validate amount
@@ -36,7 +45,7 @@ const createOrder = async (amount, currency = 'INR', options = {}) => {
     };
 
     const order = await razorpay.orders.create(orderOptions);
-    
+
     if (!order || !order.id) {
       throw new Error('Invalid order response from Razorpay');
     }
@@ -92,6 +101,7 @@ const verifyPayment = (razorpayOrderId, razorpayPaymentId, razorpaySignature) =>
  */
 const getPaymentDetails = async (paymentId) => {
   try {
+    if (!razorpay) throw new Error('Razorpay is not initialized');
     const payment = await razorpay.payments.fetch(paymentId);
     return {
       success: true,
@@ -120,6 +130,7 @@ const getPaymentDetails = async (paymentId) => {
  */
 const createRefund = async (paymentId, amount, notes = {}) => {
   try {
+    if (!razorpay) throw new Error('Razorpay is not initialized');
     const refundOptions = {
       amount: Math.round(amount * 100), // Convert to paise
       notes: notes
@@ -169,9 +180,9 @@ const verifyWebhook = (webhookBody, signature) => {
  */
 const createPayout = async (amount, fundAccountId, options = {}) => {
   try {
-    // Validate Razorpay credentials
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      throw new Error('Razorpay credentials not configured');
+    // Validate Razorpay instance
+    if (!razorpay) {
+      throw new Error('Razorpay is not initialized');
     }
 
     // Validate amount
@@ -195,7 +206,7 @@ const createPayout = async (amount, fundAccountId, options = {}) => {
 
     // Note: Razorpay Payouts API endpoint
     const payout = await razorpay.payouts.create(payoutOptions);
-    
+
     return {
       success: true,
       payoutId: payout.id,

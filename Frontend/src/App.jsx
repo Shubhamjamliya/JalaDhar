@@ -45,6 +45,7 @@ const UserDisputes = lazy(() => import("./modules/user/user-pages/UserDisputes")
 const UserCreateDispute = lazy(() => import("./modules/user/user-pages/UserCreateDispute"));
 const UserDisputeDetails = lazy(() => import("./modules/user/user-pages/UserDisputeDetails"));
 const UserRatings = lazy(() => import("./modules/user/user-pages/UserRatings"));
+const UserSurveyFlow = lazy(() => import("./modules/user/user-pages/UserSurveyFlow"));
 const VendorDashboard = lazy(() => import("./modules/vendor/vendor-pages/VendorDashboard"));
 const VendorDisputes = lazy(() => import("./modules/vendor/vendor-pages/VendorDisputes"));
 const VendorCreateDispute = lazy(() => import("./modules/vendor/vendor-pages/VendorCreateDispute"));
@@ -88,594 +89,602 @@ function App() {
                     <AdminAuthProvider>
                         <NotificationProvider>
                             <Router>
-                            <Routes>
-                                {/* ---------- USER AUTH ---------- */}
-                                <Route
-                                    path="/userlogin"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <UserLogin />
-                                        </Suspense>
-                                    }
-                                />
-                                <Route
-                                    path="/usersignup"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <UserSignup />
-                                        </Suspense>
-                                    }
-                                />
-                                <Route
-                                    path="/user/verify-otp"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <UserOTPVerification />
-                                        </Suspense>
-                                    }
-                                />
-                                <Route
-                                    path="/user/forgot-password"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <UserForgotPassword />
-                                        </Suspense>
-                                    }
-                                />
-                                <Route
-                                    path="/user/reset-password"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <UserResetPassword />
-                                        </Suspense>
-                                    }
-                                />
-
-                                {/* ---------- USER PANEL (Nested with Navbar) ---------- */}
-                                <Route
-                                    path="/user/*"
-                                    element={
-                                        <ProtectedRoute>
+                                <Routes>
+                                    {/* ---------- USER AUTH ---------- */}
+                                    <Route
+                                        path="/userlogin"
+                                        element={
                                             <Suspense fallback={<LoadingSpinner />}>
-                                                <UserNavbar />
+                                                <UserLogin />
                                             </Suspense>
-                                            <main className="px-4 pb-16 pt-16 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
-                                                <Suspense fallback={<LoadingSpinner />}>
-                                                    <Routes>
-                                                        <Route
-                                                            path="/"
-                                                            element={
-                                                                <Navigate
-                                                                    to="/user/dashboard"
-                                                                    replace
-                                                                />
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/dashboard"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserDashboard />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/serviceprovider"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserServiceProvider />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/request-service"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserRequestService />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/status"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserAllBookingsStatus />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/booking/:bookingId/status"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserStatus />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/booking/confirmation/:bookingId"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserBookingConfirmation />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/booking/advance-payment/confirmation"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserAdvancePaymentConfirmation />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/booking/:bookingId"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserBookingDetails />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/booking/:bookingId/payment"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserRemainingPayment />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/profile"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserProfile />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/wallet"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserWallet />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/vendor-profile/:vendorId"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserVendorProfile />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/disputes"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserDisputes />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/disputes/create"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserCreateDispute />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/disputes/:disputeId"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserDisputeDetails />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/ratings"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <UserRatings />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                    </Routes>
-                                                </Suspense>
-                                            </main>
-                                        </ProtectedRoute>
-                                    }
-                                />
-
-                                {/* ---------- VENDOR AUTH ---------- */}
-                                <Route
-                                    path="/vendorlogin"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <VendorLogin />
-                                        </Suspense>
-                                    }
-                                />
-                                <Route
-                                    path="/vendorsignup"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <VendorSignup />
-                                        </Suspense>
-                                    }
-                                />
-                                <Route
-                                    path="/vendor/verify-otp"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <VendorOTPVerification />
-                                        </Suspense>
-                                    }
-                                />
-                                <Route
-                                    path="/vendor/forgot-password"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <VendorForgotPassword />
-                                        </Suspense>
-                                    }
-                                />
-                                <Route
-                                    path="/vendor/reset-password"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <VendorResetPassword />
-                                        </Suspense>
-                                    }
-                                />
-
-                                {/* ---------- VENDOR PANEL (Nested with Navbar) ---------- */}
-                                <Route
-                                    path="/vendor/*"
-                                    element={
-                                        <VendorProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/usersignup"
+                                        element={
                                             <Suspense fallback={<LoadingSpinner />}>
-                                                <VendorNavbar />
+                                                <UserSignup />
                                             </Suspense>
-                                            <main className="px-4 pb-16 pt-16 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
-                                                <Suspense fallback={<LoadingSpinner />}>
-                                                    <Routes>
-                                                        <Route
-                                                            path="/"
-                                                            element={
-                                                                <Navigate
-                                                                    to="/vendor/dashboard"
-                                                                    replace
-                                                                />
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/dashboard"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorDashboard />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/bookings/:bookingId/upload-report"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorUploadReport />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/bookings/:bookingId"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorBookingDetails />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/booking/:bookingId/status"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorStatus />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/bookings"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorRequests />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/status"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorAllBookingsStatus />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/wallet"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorWallet />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/profile"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorProfile />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/requests"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorRequests />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/services"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorServices />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/reviews"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorReviews />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/disputes"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorDisputes />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/disputes/create"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorCreateDispute />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                        <Route
-                                                            path="/disputes/:disputeId"
-                                                            element={
-                                                                <Suspense fallback={<LoadingSpinner />}>
-                                                                    <VendorDisputeDetails />
-                                                                </Suspense>
-                                                            }
-                                                        />
-                                                    </Routes>
-                                                </Suspense>
-                                            </main>
-                                        </VendorProtectedRoute>
-                                    }
-                                />
+                                        }
+                                    />
+                                    <Route
+                                        path="/user/verify-otp"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <UserOTPVerification />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/user/forgot-password"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <UserForgotPassword />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/user/reset-password"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <UserResetPassword />
+                                            </Suspense>
+                                        }
+                                    />
 
-                                {/* ---------- ADMIN AUTH ---------- */}
-                                <Route
-                                    path="/adminlogin"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <AdminLogin />
-                                        </Suspense>
-                                    }
-                                />
-                                <Route
-                                    path="/admin/forgot-password"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <AdminForgotPassword />
-                                        </Suspense>
-                                    }
-                                />
-                                <Route
-                                    path="/admin/reset-password"
-                                    element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <AdminResetPassword />
-                                        </Suspense>
-                                    }
-                                />
-
-                                {/* ---------- ADMIN PANEL (Nested with Sidebar and Topbar) ---------- */}
-                                <Route
-                                    path="/admin/*"
-                                    element={
-                                        <AdminProtectedRoute>
-                                            <div className="flex min-h-screen bg-[#F6F7F9]">
+                                    {/* ---------- USER PANEL (Nested with Navbar) ---------- */}
+                                    <Route
+                                        path="/user/*"
+                                        element={
+                                            <ProtectedRoute>
                                                 <Suspense fallback={<LoadingSpinner />}>
-                                                    <AdminNavbar />
+                                                    <UserNavbar />
                                                 </Suspense>
-                                                <div className="flex-1 flex flex-col md:ml-64">
-                                                    <main className="flex-1 p-6 mt-16">
-                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                            <Routes>
-                                                                <Route
-                                                                    path="/"
-                                                                    element={
-                                                                        <Navigate
-                                                                            to="/admin/dashboard"
-                                                                            replace
-                                                                        />
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/dashboard"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminDashboard />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/vendors"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminVendors />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/vendors/pending"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminPendingVendors />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/vendors/:vendorId"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminVendorDetails />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/users"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminUsers />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/users/:userId"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminUserDetails />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/bookings"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminBookings />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/payments"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminPayments />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/payments/admin"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminPayments defaultTab="admin-overview" />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/payments/user"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminPayments defaultTab="user-payments" />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/payments/vendor"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminPayments defaultTab="vendor-payments" />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/withdrawals"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminWithdrawals />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/user-withdrawals"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminUserWithdrawals />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/settings"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminSettings />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/approvals"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminApprovals />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/bookings/:bookingId"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminBookingDetails />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/ratings"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminRatings />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                                <Route
-                                                                    path="/disputes"
-                                                                    element={
-                                                                        <Suspense fallback={<LoadingSpinner />}>
-                                                                            <AdminDisputes />
-                                                                        </Suspense>
-                                                                    }
-                                                                />
-                                                            </Routes>
-                                                        </Suspense>
-                                                    </main>
+                                                <main className="px-4 pb-16 pt-16 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
+                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                        <Routes>
+                                                            <Route
+                                                                path="/"
+                                                                element={
+                                                                    <Navigate
+                                                                        to="/user/dashboard"
+                                                                        replace
+                                                                    />
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/dashboard"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserDashboard />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/serviceprovider"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserServiceProvider />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/request-service"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserRequestService />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/status"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserAllBookingsStatus />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/booking/:bookingId/status"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserStatus />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/booking/confirmation/:bookingId"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserBookingConfirmation />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/booking/advance-payment/confirmation"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserAdvancePaymentConfirmation />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/booking/:bookingId"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserBookingDetails />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/booking/:bookingId/payment"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserRemainingPayment />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/profile"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserProfile />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/wallet"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserWallet />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/vendor-profile/:vendorId"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserVendorProfile />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/disputes"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserDisputes />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/disputes/create"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserCreateDispute />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/disputes/:disputeId"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserDisputeDetails />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/ratings"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserRatings />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/survey"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserSurveyFlow />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                        </Routes>
+                                                    </Suspense>
+                                                </main>
+                                            </ProtectedRoute>
+                                        }
+                                    />
+
+                                    {/* ---------- VENDOR AUTH ---------- */}
+                                    <Route
+                                        path="/vendorlogin"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <VendorLogin />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/vendorsignup"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <VendorSignup />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/vendor/verify-otp"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <VendorOTPVerification />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/vendor/forgot-password"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <VendorForgotPassword />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/vendor/reset-password"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <VendorResetPassword />
+                                            </Suspense>
+                                        }
+                                    />
+
+                                    {/* ---------- VENDOR PANEL (Nested with Navbar) ---------- */}
+                                    <Route
+                                        path="/vendor/*"
+                                        element={
+                                            <VendorProtectedRoute>
+                                                <Suspense fallback={<LoadingSpinner />}>
+                                                    <VendorNavbar />
+                                                </Suspense>
+                                                <main className="px-4 pb-16 pt-16 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
+                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                        <Routes>
+                                                            <Route
+                                                                path="/"
+                                                                element={
+                                                                    <Navigate
+                                                                        to="/vendor/dashboard"
+                                                                        replace
+                                                                    />
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/dashboard"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorDashboard />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/bookings/:bookingId/upload-report"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorUploadReport />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/bookings/:bookingId"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorBookingDetails />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/booking/:bookingId/status"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorStatus />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/bookings"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorRequests />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/status"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorAllBookingsStatus />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/wallet"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorWallet />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/profile"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorProfile />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/requests"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorRequests />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/services"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorServices />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/reviews"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorReviews />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/disputes"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorDisputes />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/disputes/create"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorCreateDispute />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/disputes/:disputeId"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorDisputeDetails />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                        </Routes>
+                                                    </Suspense>
+                                                </main>
+                                            </VendorProtectedRoute>
+                                        }
+                                    />
+
+                                    {/* ---------- ADMIN AUTH ---------- */}
+                                    <Route
+                                        path="/adminlogin"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <AdminLogin />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/admin/forgot-password"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <AdminForgotPassword />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/admin/reset-password"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <AdminResetPassword />
+                                            </Suspense>
+                                        }
+                                    />
+
+                                    {/* ---------- ADMIN PANEL (Nested with Sidebar and Topbar) ---------- */}
+                                    <Route
+                                        path="/admin/*"
+                                        element={
+                                            <AdminProtectedRoute>
+                                                <div className="flex min-h-screen bg-[#F6F7F9]">
+                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                        <AdminNavbar />
+                                                    </Suspense>
+                                                    <div className="flex-1 flex flex-col md:ml-64">
+                                                        <main className="flex-1 p-6 mt-16">
+                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                <Routes>
+                                                                    <Route
+                                                                        path="/"
+                                                                        element={
+                                                                            <Navigate
+                                                                                to="/admin/dashboard"
+                                                                                replace
+                                                                            />
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/dashboard"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminDashboard />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/vendors"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminVendors />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/vendors/pending"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPendingVendors />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/vendors/:vendorId"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminVendorDetails />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/users"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminUsers />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/users/:userId"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminUserDetails />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/bookings"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminBookings />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/payments"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPayments />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/payments/admin"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPayments defaultTab="admin-overview" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/payments/user"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPayments defaultTab="user-payments" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/payments/vendor"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPayments defaultTab="vendor-payments" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/withdrawals"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminWithdrawals />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/user-withdrawals"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminUserWithdrawals />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/settings"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminSettings />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/approvals"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminApprovals />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/bookings/:bookingId"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminBookingDetails />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/ratings"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminRatings />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/disputes"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminDisputes />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                </Routes>
+                                                            </Suspense>
+                                                        </main>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </AdminProtectedRoute>
-                                    }
-                                />
+                                            </AdminProtectedRoute>
+                                        }
+                                    />
 
-                                {/* ---------- DEFAULT REDIRECT ---------- */}
-                                <Route
-                                    path="/"
-                                    element={
-                                        <Navigate to="/userlogin" replace />
-                                    }
-                                />
-                            </Routes>
+                                    {/* ---------- DEFAULT REDIRECT ---------- */}
+                                    <Route
+                                        path="/"
+                                        element={
+                                            <Navigate to="/userlogin" replace />
+                                        }
+                                    />
+                                </Routes>
                             </Router>
                         </NotificationProvider>
                     </AdminAuthProvider>
