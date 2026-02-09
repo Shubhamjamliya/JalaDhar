@@ -91,10 +91,9 @@ export default function UserNavbar() {
                             key={id}
                             to={to}
                             className={({ isActive }) =>
-                                `flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                                    isActive
-                                        ? "text-[#0A84FF] bg-[#E7F0FB] font-semibold"
-                                        : "text-gray-700 hover:text-[#0A84FF] hover:bg-[#E7F0FB]"
+                                `flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${isActive
+                                    ? "text-[#0A84FF] bg-[#E7F0FB] font-semibold"
+                                    : "text-gray-700 hover:text-[#0A84FF] hover:bg-[#E7F0FB]"
                                 }`
                             }
                             end={id === "dashboard"}
@@ -113,9 +112,9 @@ export default function UserNavbar() {
                             {user.name}
                         </span>
                     )}
-                    
+
                     <NotificationDropdown />
-                    
+
                     {/* Logout Button - Desktop Only */}
                     <button
                         onClick={handleLogoutClick}
@@ -152,19 +151,17 @@ export default function UserNavbar() {
                         key={id}
                         to={to}
                         className={({ isActive }) =>
-                            `flex items-center justify-center flex-1 py-2 transition-all duration-200 ${
-                                isActive ? "text-[#0A84FF]" : "text-gray-500"
+                            `flex items-center justify-center flex-1 py-2 transition-all duration-200 ${isActive ? "text-[#0A84FF]" : "text-gray-500"
                             }`
                         }
                         end={id === "dashboard"}
                     >
                         {({ isActive }) => (
                             <Icon
-                                className={`text-3xl ${
-                                    isActive
-                                        ? "text-[#0A84FF]"
-                                        : "text-gray-500"
-                                }`}
+                                className={`text-3xl ${isActive
+                                    ? "text-[#0A84FF]"
+                                    : "text-gray-500"
+                                    }`}
                             />
                         )}
                     </NavLink>

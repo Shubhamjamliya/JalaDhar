@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { vendorForgotPassword } from "../../../services/vendorAuthApi";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import logo from "../../../assets/Logo.png";
 
 export default function VendorForgotPassword() {
     const [email, setEmail] = useState("");
@@ -50,12 +51,11 @@ export default function VendorForgotPassword() {
                 {/* Logo */}
                 <div className="text-center mb-10 mt-4">
                     <div className="flex flex-col items-center">
-                        <span className="material-symbols-outlined icon-gradient !text-7xl">
-                            water_drop
-                        </span>
-                        <h1 className="mt-2 text-4xl font-bold tracking-tighter text-[#3A3A3A]">
-                            JALADHAARA
-                        </h1>
+                        <img
+                            src={logo}
+                            alt="Jaladhaara Logo"
+                            className="h-32 object-contain mb-4"
+                        />
                     </div>
                 </div>
 

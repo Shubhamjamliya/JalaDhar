@@ -48,7 +48,8 @@ const rejectTravelChargesValidation = [
 
 // Routes
 router.get('/bookings', authenticate, isAdmin, getAllBookings);
-router.get('/bookings/:bookingId', authenticate, isAdmin, getBookingDetails);
+router.get('/bookings', authenticate, isAdmin, getAllBookings);
+// Moved generic /bookings/:bookingId to end to avoid masking other routes
 router.get('/statistics', authenticate, isAdmin, getBookingStatistics);
 router.get('/travel-charges', authenticate, isAdmin, getTravelChargesRequests);
 router.patch('/bookings/:bookingId/approve-result', authenticate, isAdmin, approveBorewellResultValidation, approveBorewellResult);
@@ -77,6 +78,9 @@ router.patch('/bookings/:bookingId/final-settlement/vendor/process', authenticat
 router.get('/bookings/final-settlement/user/pending', authenticate, isAdmin, getPendingUserFinalSettlements);
 router.get('/bookings/final-settlement/user/completed', authenticate, isAdmin, getCompletedUserFinalSettlements);
 router.patch('/bookings/:bookingId/final-settlement/user/process', authenticate, isAdmin, processUserFinalSettlement);
+
+// Generic ID route must be last
+router.get('/bookings/:bookingId', authenticate, isAdmin, getBookingDetails);
 
 module.exports = router;
 

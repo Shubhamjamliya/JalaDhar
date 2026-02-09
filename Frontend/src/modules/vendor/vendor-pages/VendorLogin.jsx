@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useToast } from "../../../hooks/useToast";
 
+import logo from "../../../assets/Logo.png";
+
 export default function VendorLogin() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -58,12 +60,11 @@ export default function VendorLogin() {
         <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-6 overflow-hidden">
             <div className="w-full max-w-sm">
                 <div className="mb-8 flex flex-col items-center">
-                    <span className="material-symbols-outlined icon-gradient !text-7xl">
-                        water_drop
-                    </span>
-                    <h1 className="mt-2 text-4xl font-bold tracking-tighter text-[#3A3A3A]">
-                        JALADHAARA
-                    </h1>
+                    <img
+                        src={logo}
+                        alt="Jaladhaara Logo"
+                        className="h-32 object-contain mb-4"
+                    />
                     <p className="mt-4 text-[#6B7280] text-center">
                         Welcome back! Please login to your account.
                     </p>

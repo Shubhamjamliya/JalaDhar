@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { forgotPassword } from "../../../services/authApi";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import logo from "../../../assets/Logo.png";
 
 export default function UserForgotPassword() {
     const [email, setEmail] = useState("");
@@ -51,9 +52,9 @@ export default function UserForgotPassword() {
                 {/* Logo */}
                 <div className="text-center mb-10 mt-4">
                     <img
-                        src="/src/assets/logo.png"
-                        alt="Jaladhar"
-                        className="w-auto mx-auto mb-2"
+                        src={logo}
+                        alt="Jaladhaara Logo"
+                        className="h-32 w-auto mx-auto mb-2 object-contain"
                     />
                 </div>
 

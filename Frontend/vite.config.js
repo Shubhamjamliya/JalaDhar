@@ -94,7 +94,6 @@ export default defineConfig(({ mode }) => ({
             './src/modules/user/user-pages/UserServiceProvider',
             './src/modules/user/user-pages/UserRequestService',
             './src/modules/user/user-pages/UserStatus',
-            './src/modules/user/user-pages/UserBookingHistory',
             './src/modules/user/user-pages/UserBookingDetails',
             './src/modules/user/user-pages/UserProfile',
           ],
