@@ -90,41 +90,7 @@ const bookingSchema = new mongoose.Schema({
     type: Number,
     min: 0
   },
-  existingBorewell: {
-    hasExisting: {
-      type: Boolean,
-      default: false
-    },
-    yearOfDrilling: {
-      type: Number,
-      min: 1900
-    },
-    depthInFeet: {
-      type: Number,
-      min: 0
-    },
-    gapsAndDepths: {
-      type: String,
-      trim: true
-    },
-    waterQuantity: {
-      type: Number,
-      min: 0
-    },
-    surroundingBorewellDistance: {
-      type: String,
-      trim: true
-    }
-  },
-  techniqueUsed: {
-    type: String,
-    enum: ['Coconut', 'Dowsing L rods', '3D Locator', 'Detector / Diviner', 'Geophysical survey'],
-    trim: true
-  },
-  techniqueProviderName: {
-    type: String,
-    trim: true
-  },
+
   payment: {
     baseServiceFee: {
       type: Number,

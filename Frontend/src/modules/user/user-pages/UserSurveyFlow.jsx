@@ -18,7 +18,7 @@ import {
 import { useToast } from "../../../hooks/useToast";
 import PageContainer from "../../shared/components/PageContainer";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
-import { getNearbyVendors, createBooking, calculateBookingCharges } from "../../../services/bookingApi";
+import { getNearbyVendors, createBooking, calculateBookingCharges, getUserDashboardStats } from "../../../services/bookingApi";
 
 // --- Sub-components for each step ---
 
@@ -26,8 +26,8 @@ const CategorySelection = ({ onSelect }) => {
   const categories = [
     { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "bg-green-100 text-green-600" },
     { id: "Domestic/Household", label: "Domestic/Household", icon: IoHomeOutline, color: "bg-blue-100 text-blue-600" },
-    { id: "Commercial", label: "Commercial", icon: IoBusinessOutline, color: "bg-purple-100 text-purple-600" },
-    { id: "Industrial", label: "Industrial", icon: IoConstructOutline, color: "bg-orange-100 text-orange-600" }
+    { id: "Industrial/Commercial", label: "Industrial/Commercial", icon: IoBusinessOutline, color: "bg-purple-100 text-purple-600" },
+    { id: "Open plots", label: "Open plots", icon: IoConstructOutline, color: "bg-orange-100 text-orange-600" }
   ];
 
   return (
@@ -84,17 +84,34 @@ const TermsAndConditions = ({ category, onAccept, onCancel }) => {
   );
 };
 
-const DetailsForm = ({ data, onSubmit, onBack }) => {
+const DetailsForm = ({ data, category, onSubmit, onBack }) => {
   const [formData, setFormData] = useState(data || {
     village: "",
     mandal: "",
     district: "",
-    name: "" // Optional if already logged in, but good to confirm
+    // Extra fields
+    state: "",
+    purposeExtent: "",
+    surveyNumber: "",
+    plotNumber: "",
+    notes: "",
+    images: [] // placeholder if needed later
   });
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Check if e is processed manually or native event
+    const field = e.target?.name;
+    const value = e.target?.value;
+    if (field) {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
+
+  const updateField = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }
+
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -103,45 +120,102 @@ const DetailsForm = ({ data, onSubmit, onBack }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <h2 className="text-xl font-bold text-gray-800 mb-2">Location Details</h2>
+      <h2 className="text-xl font-bold text-gray-800 mb-2">Project Details</h2>
 
-      <div className="space-y-4">
+      <div className="space-y-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+        <h3 className="font-semibold text-gray-700 mb-2">Location Info</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Village / Locality</label>
+            <input
+              required
+              name="village"
+              value={formData.village}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+              placeholder="Village Name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mandal</label>
+            <input
+              required
+              name="mandal"
+              value={formData.mandal}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+              placeholder="Mandal"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
+            <input
+              required
+              name="district"
+              value={formData.district}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+              placeholder="District"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+            <input
+              required
+              name="state"
+              value={formData.state}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+              placeholder="State"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Fields based on Category */}
+      <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
+        {/* Survey/Plot Number */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Village / Locality</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {category === "Agriculture" ? "Survey No" :
+              (category === "Domestic/Household" || category === "Open plots") ? "Plot No" :
+                "Plot / Survey No"}
+          </label>
           <input
             required
-            name="village"
-            value={formData.village}
+            type="text"
+            name={category === "Agriculture" ? "surveyNumber" : "plotNumber"}
+            value={category === "Agriculture" ? formData.surveyNumber : formData.plotNumber}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none"
-            placeholder="Enter Village Name"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+            placeholder={`Enter ${category === "Agriculture" ? "Survey No" : "Plot No"}`}
           />
         </div>
+
+        {/* Extent */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Mandal</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {category === "Agriculture" ? "Area Extent (Acres / Bhiga)" :
+              (category === "Domestic/Household" || category === "Open plots") ? "Area Extent (Sq Yards / Sq Ft)" :
+                "Area Extent (Acres / Sq Yards)"}
+          </label>
           <input
+            type="number"
             required
-            name="mandal"
-            value={formData.mandal}
+            name="purposeExtent"
+            value={formData.purposeExtent}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none"
-            placeholder="Enter Mandal"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
-          <input
-            required
-            name="district"
-            value={formData.district}
-            onChange={handleChange}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none"
-            placeholder="Enter District"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+            placeholder="Enter extent"
+            min="0"
+            step="0.01"
           />
         </div>
       </div>
 
-      <div className="pt-4 flex gap-3">
+
+
+      <div className="pt-4 flex gap-3 pb-20">
         <button type="button" onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
         <button type="submit" className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors">Continue</button>
       </div>
@@ -248,7 +322,7 @@ const LocationPicker = ({ onLocationSelect, onBack }) => {
           onPlaceSelect={handlePlaceSelect}
           placeholder="Search village or landmark..."
           value={selectedLocation?.address || ""}
-          onChange={(e) => setSelectedLocation(prev => ({ ...prev, address: e.target.value }))} // Allow manual edit of text, though coords won't update unless selected
+          onChange={(e) => setSelectedLocation(prev => ({ ...prev, address: e.target.value }))}
           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 shadow-sm transition-all"
         />
         {selectedLocation && (
@@ -265,7 +339,7 @@ const LocationPicker = ({ onLocationSelect, onBack }) => {
           disabled={!selectedLocation}
           className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          <IoSearchOutline className="text-xl" /> Search Nearby Vendors
+          <IoSearchOutline className="text-xl" /> Confirm Location
         </button>
         <button onClick={onBack} className="w-full text-center py-3 mt-2 text-gray-500 font-medium hover:text-gray-700">Go Back</button>
       </div>
@@ -369,10 +443,13 @@ const ExpertSelection = ({ location, category, onSelect, onBack }) => {
 
 const SlotAndPayment = ({ surveyData, onConfirm, onBack }) => {
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  // Time is removed as per requirement, default will be used
   const [loading, setLoading] = useState(false);
   const [charges, setCharges] = useState(null);
   const toast = useToast();
+
+  const remainingAmount = charges ? (charges.totalAmount - charges.advanceAmount) : 0;
+  const subtotal = charges ? ((charges.baseServiceFee || 0) + (charges.travelCharges || 0)) : 0;
 
   useEffect(() => {
     // Calculate dynamic charges
@@ -382,8 +459,8 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack }) => {
 
       try {
         const res = await calculateBookingCharges(
-          surveyData.vendor.selectedService.id,
-          surveyData.vendor._id,
+          surveyData.vendor.selectedService.id || surveyData.vendor.selectedService._id,
+          surveyData.vendor._id || surveyData.vendor.id,
           surveyData.location.lat,
           surveyData.location.lng
         );
@@ -398,11 +475,12 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack }) => {
   }, []);
 
   const handlePay = () => {
-    if (!date || !time) {
-      toast.showError("Please select date and time");
+    if (!date) {
+      toast.showError("Please select a date");
       return;
     }
-    onConfirm({ scheduledDate: date, scheduledTime: time });
+    // Default time passed as it's no longer selected by user
+    onConfirm({ scheduledDate: date, scheduledTime: "10:00 AM" });
   };
 
   return (
@@ -414,45 +492,110 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack }) => {
         <h3 className="font-semibold text-gray-700 flex items-center gap-2">
           <IoCalendarOutline /> Schedule Visit
         </h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-3">
           <input
             type="date"
-            className="w-full p-2 border rounded-lg text-sm"
+            className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:border-blue-500 outline-none"
             min={new Date().toISOString().split("T")[0]}
             onChange={(e) => setDate(e.target.value)}
           />
-          <select
-            className="w-full p-2 border rounded-lg text-sm"
-            onChange={(e) => setTime(e.target.value)}
-          >
-            <option value="">Time</option>
-            {["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"].map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+          <p className="text-xs text-gray-500 italic">
+            * Our expert will contact you to coordinate the exact time.
+          </p>
         </div>
       </div>
 
-      {/* Bill Info */}
-      <div className="bg-gray-50 p-5 rounded-xl space-y-3 text-sm">
-        <div className="flex justify-between text-gray-600">
-          <span>Base Service Charge</span>
-          <span>₹{charges?.baseServiceFee || surveyData.vendor.selectedService.price}</span>
+      {/* Vendor Info (if pre-selected it's nice to show who) */}
+      {surveyData.vendor && (
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+          <div>
+            <p className="text-xs text-gray-500">Service Provider</p>
+            <p className="font-bold text-gray-800">{surveyData.vendor.name}</p>
+          </div>
+          <div className="h-10 w-10 bg-gray-200 rounded-full bg-cover bg-center"
+            style={{ backgroundImage: `url(${surveyData.vendor.documents?.profilePicture?.url || ''})` }}>
+          </div>
         </div>
-        <div className="flex justify-between text-gray-600">
-          <span>Travel Charges ({charges?.distance ? `${charges.distance}km` : 'Calc..'})</span>
-          <span>₹{charges?.travelCharges ?? 0}</span>
+      )}
+
+      {/* Payment Breakdown Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <IoCashOutline className="text-xl text-yellow-500" />
+            <h3 className="font-bold text-gray-800">Payment Breakdown</h3>
+          </div>
+          <span className="bg-blue-50 text-blue-600 text-xs font-semibold px-2 py-1 rounded-md">Calculated</span>
         </div>
-        <div className="flex justify-between text-gray-600">
-          <span>GST ({charges?.gstPercentage ?? 18}%)</span>
-          <span>₹{charges?.gst ?? 0}</span>
+
+        <div className="space-y-3">
+          {/* Base Service Fee */}
+          <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
+            <div>
+              <p className="font-semibold text-gray-800 text-sm">Base Service Fee</p>
+              <p className="text-xs text-gray-500">Service charge</p>
+            </div>
+            <p className="font-bold text-gray-900">₹{charges?.baseServiceFee?.toFixed(2) || '0.00'}</p>
+          </div>
+
+          {/* Travel Charges */}
+          <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
+            <div>
+              <p className="font-semibold text-gray-800 text-sm">Travel Charges (Two-way)</p>
+              <p className="text-xs text-gray-500">
+                {charges?.distance ? `${charges.distance} km` : '0 km'} from vendor
+              </p>
+            </div>
+            {charges?.travelCharges > 0 ? (
+              <p className="font-bold text-gray-900">₹{charges.travelCharges.toFixed(2)}</p>
+            ) : (
+              <p className="font-bold text-green-600 text-xs">Free (Within Range)</p>
+            )}
+          </div>
+
+          {/* Subtotal */}
+          <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
+            <p className="font-semibold text-gray-800 text-sm">Subtotal</p>
+            <p className="font-bold text-gray-900">₹{subtotal.toFixed(2)}</p>
+          </div>
+
+          {/* GST */}
+          <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
+            <div>
+              <p className="font-semibold text-gray-800 text-sm">GST</p>
+              <p className="text-xs text-gray-500">{charges?.gstPercentage || 18}% on subtotal</p>
+            </div>
+            <p className="font-bold text-gray-900">₹{charges?.gst?.toFixed(2) || '0.00'}</p>
+          </div>
+
+          {/* Total Amount */}
+          <div className="flex justify-between items-center p-3 border border-gray-200 rounded-xl bg-white shadow-sm">
+            <p className="font-bold text-gray-800 text-sm">Total Amount</p>
+            <p className="font-bold text-xl text-gray-900">₹{charges?.totalAmount?.toFixed(2) || '0.00'}</p>
+          </div>
         </div>
-        <div className="border-t border-dashed border-gray-300 pt-3 flex justify-between font-bold text-gray-900 text-base">
-          <span>Total Estimate</span>
-          <span>₹{charges?.totalAmount ?? 0}</span>
-        </div>
-        <div className="bg-blue-100 p-2 rounded text-blue-800 text-xs font-medium text-center">
-          Advance Payable Now: ₹{charges?.advanceAmount ?? 0}
+
+        <div className="mt-6">
+          <p className="text-xs font-bold text-gray-500 uppercase mb-3 tracking-wider">Payment Schedule</p>
+          <div className="space-y-3">
+            {/* Advance Payment */}
+            <div className="flex justify-between items-center p-4 bg-blue-50 border border-blue-100 rounded-xl">
+              <div>
+                <p className="font-semibold text-gray-800 text-sm">Advance Payment</p>
+                <p className="text-xs text-blue-600">40% of total</p>
+              </div>
+              <p className="font-bold text-blue-600 text-lg">₹{charges?.advanceAmount?.toFixed(2) || '0.00'}</p>
+            </div>
+
+            {/* Remaining Payment */}
+            <div className="flex justify-between items-center p-4 bg-gray-50 border border-gray-100 rounded-xl">
+              <div>
+                <p className="font-semibold text-gray-800 text-sm">Remaining Payment</p>
+                <p className="text-xs text-gray-500">60% of total</p>
+              </div>
+              <p className="font-bold text-gray-800 text-lg">₹{remainingAmount.toFixed(2)}</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -461,9 +604,9 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack }) => {
         <button
           onClick={handlePay}
           disabled={!charges}
-          className="flex-1 py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+          className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
         >
-          <IoCashOutline /> Pay Advance
+          <IoCashOutline /> Book & Pay
         </button>
       </div>
     </div>
@@ -471,11 +614,71 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack }) => {
 };
 
 
+const PendingBookingModal = ({ booking, onResume, onIgnore }) => {
+  if (!booking) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all scale-100 p-6 relative overflow-hidden">
+
+        {/* Decorative Top Banner */}
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-400 to-red-500"></div>
+
+        <div className="flex flex-col items-center text-center mb-6 pt-2">
+          <div className="h-16 w-16 bg-orange-50 rounded-full flex items-center justify-center mb-4 ring-8 ring-orange-50/50">
+            <IoTimeOutline className="text-3xl text-orange-500" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900">Pending Booking Found</h3>
+          <p className="text-gray-500 text-sm mt-2 max-w-[80%]">
+            You have an incomplete booking for <span className="font-semibold text-gray-800">{booking.service?.name || "Service"}</span> waiting for payment.
+          </p>
+        </div>
+
+        {/* Booking Summary Card */}
+        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 mb-6 flex items-center gap-4 text-left">
+          <div className="h-10 w-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center shadow-sm shrink-0">
+            <IoCalendarOutline className="text-gray-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800 truncate">
+              {new Date(booking.scheduledDate).toLocaleDateString()}
+            </p>
+            <p className="text-xs text-gray-500">
+              Amount Due: <span className="font-medium text-blue-600">₹{booking.payment?.advanceAmount?.toFixed(2)}</span>
+            </p>
+          </div>
+          <div className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-md uppercase tracking-wide">
+            Action Req.
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => onResume(booking)}
+            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          >
+            Complete Payment <IoCheckmarkCircle className="text-lg" />
+          </button>
+
+          <button
+            onClick={onIgnore}
+            className="w-full py-3 text-gray-500 font-medium hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors text-sm"
+          >
+            Ignore & Start New Booking
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Main Wizard Component ---
 
 export default function UserSurveyFlow() {
   const navigate = useNavigate();
   const toast = useToast();
+  const location = useLocation();
+
   const [step, setStep] = useState(1);
   const [surveyData, setSurveyData] = useState({
     category: null,
@@ -485,14 +688,48 @@ export default function UserSurveyFlow() {
     slot: null
   });
   const [showTerms, setShowTerms] = useState(false);
-  const location = useLocation();
+  const [isVendorPreSelected, setIsVendorPreSelected] = useState(false);
+  const [pendingBookingAlert, setPendingBookingAlert] = useState(null);
 
   useEffect(() => {
+    // Check if we have pre-selected vendor data from navigation (Scenario B)
+    if (location.state?.vendor) {
+      setSurveyData(prev => ({
+        ...prev,
+        vendor: {
+          ...location.state.vendor,
+          // Ensure selectedService is attached if passed separately or needs to be found
+          selectedService: location.state.service || location.state.vendor.selectedService
+        }
+      }));
+      setIsVendorPreSelected(true);
+    }
+
+    // Check if category is passed (Scenario A or B)
     if (location.state?.category) {
       setSurveyData(prev => ({ ...prev, category: location.state.category }));
       setShowTerms(true);
-      // Clear state so back button works nicely? Or keep it? keeping it is fine.
     }
+
+    // Check for pending bookings
+    const checkPendingBookings = async () => {
+      try {
+        const stats = await getUserDashboardStats();
+        if (stats.success && stats.data?.recentBookings) {
+          const pendingBooking = stats.data.recentBookings.find(
+            b => b.status?.toLowerCase() === 'pending' && (!b.payment || !b.payment.advancePaid)
+          );
+
+          if (pendingBooking) {
+            setPendingBookingAlert(pendingBooking);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking pending bookings:", error);
+      }
+    };
+
+    checkPendingBookings();
   }, [location.state]);
 
   // Step 1: Category Selected
@@ -504,8 +741,7 @@ export default function UserSurveyFlow() {
   // Step 2: Terms Accepted
   const handleTermsAccept = () => {
     setShowTerms(false);
-    // Show "Added to Cart" toast
-    toast.showSuccess("Survey added to cart!");
+    // Show "Added to Cart" toast - optional UX choice
     setTimeout(() => setStep(2), 500);
   };
 
@@ -518,10 +754,20 @@ export default function UserSurveyFlow() {
   // Step 4: Location Selected
   const handleLocationSelect = (loc) => {
     setSurveyData({ ...surveyData, location: loc });
-    setStep(4);
+
+    // If vendor is pre-selected, skip the expert selection step (generally step 4->5)
+    // Here we have steps indexed 1..5. Step 4 originally goes to ExpertSelection (Step 4 render).
+    // Wait, step logic:
+    // Step 1: Category. Step 2: Details. Step 3: Location. Step 4: Expert. Step 5: Slot.
+    // If pre-selected, jump to Step 5 (Slot)
+    if (isVendorPreSelected) {
+      setStep(5);
+    } else {
+      setStep(4);
+    }
   };
 
-  // Step 5: Expert Selected
+  // Step 5: Expert Selected (Only for Scenario A)
   const handleExpertSelect = (vendor) => {
     setSurveyData({ ...surveyData, vendor });
     setStep(5);
@@ -531,7 +777,6 @@ export default function UserSurveyFlow() {
   const handleBooking = async ({ scheduledDate, scheduledTime }) => {
     try {
       // Map frontend category to backend enum
-      // Backend accepts: 'Agriculture', 'Industrial/Commercial', 'Domestic/Household', 'Open plots'
       const purposeMap = {
         "Agriculture": "Agriculture",
         "Domestic/Household": "Domestic/Household",
@@ -540,13 +785,12 @@ export default function UserSurveyFlow() {
       };
 
       const bookingPayload = {
-        serviceId: surveyData.vendor.selectedService.id,
-        vendorId: surveyData.vendor._id,
+        serviceId: surveyData.vendor.selectedService.id || surveyData.vendor.selectedService._id,
+        vendorId: surveyData.vendor._id || surveyData.vendor.id,
         scheduledDate,
         scheduledTime,
         address: {
           coordinates: { lat: surveyData.location.lat, lng: surveyData.location.lng },
-          // Simple parsing for now, backend expects components
           street: surveyData.location.address,
           city: surveyData.details.village,
           state: surveyData.details.district,
@@ -555,13 +799,15 @@ export default function UserSurveyFlow() {
         village: surveyData.details.village,
         mandal: surveyData.details.mandal,
         district: surveyData.details.district,
-        purpose: purposeMap[surveyData.category] || "Open plots", // Default fallback
-        notes: `Survey Category: ${surveyData.category}` // Store specific category in notes
+        purpose: purposeMap[surveyData.category] || "Open plots",
+        purposeExtent: surveyData.details.purposeExtent,
+        notes: `Category: ${surveyData.category}. ${surveyData.details.surveyNumber ? `Survey No: ${surveyData.details.surveyNumber}. ` : ''
+          }${surveyData.details.plotNumber ? `Plot No: ${surveyData.details.plotNumber}. ` : ''
+          }${surveyData.details.notes ? surveyData.details.notes : ''}`
       };
 
       const response = await createBooking(bookingPayload);
       if (response.success) {
-        // Navigate to confirmation page (reusing existing one)
         const booking = response.data.booking;
         const paymentData = response.data.payment;
         const razorpayOrder = response.data.razorpayOrder;
@@ -591,26 +837,64 @@ export default function UserSurveyFlow() {
     <PageContainer>
       {/* Header / Progress */}
       <div className="mb-6 flex items-center justify-between">
-        <button onClick={() => step > 1 ? setStep(step - 1) : navigate(-1)} className="p-2 -ml-2 text-gray-600">
+        <button onClick={() => {
+          // Back navigation logic
+          if (step === 1) navigate(-1);
+          else if (step === 5 && isVendorPreSelected) setStep(3); // Jump back from Slot to Location if pre-selected
+          else setStep(step - 1);
+        }} className="p-2 -ml-2 text-gray-600">
           <IoArrowBack className="text-xl" />
         </button>
         <div className="flex gap-1.5">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className={`h-1.5 w-8 rounded-full transition-colors ${i <= step ? 'bg-blue-600' : 'bg-gray-200'}`} />
-          ))}
+          {/* Progress dots - adjust count based on mode? Or keep standard 5 */}
+          {[1, 2, 3, 4, 5].map(i => {
+            // Hide step 4 dot if pre-selected? Or just visually skip it
+            if (isVendorPreSelected && i === 4) return null;
+            return (
+              <div key={i} className={`h-1.5 w-8 rounded-full transition-colors ${i <= step ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            )
+          })}
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-md mx-auto min-h-[60vh] flex flex-col">
         {step === 1 && <CategorySelection onSelect={handleCategorySelect} />}
-        {step === 2 && <DetailsForm data={surveyData.details} onSubmit={handleDetailsSubmit} onBack={() => setStep(1)} />}
+        {step === 2 && <DetailsForm category={surveyData.category} data={surveyData.details} onSubmit={handleDetailsSubmit} onBack={() => setStep(1)} />}
         {step === 3 && <LocationPicker onLocationSelect={handleLocationSelect} onBack={() => setStep(2)} />}
         {step === 4 && <ExpertSelection location={surveyData.location} category={surveyData.category} onSelect={handleExpertSelect} onBack={() => setStep(3)} />}
-        {step === 5 && <SlotAndPayment surveyData={surveyData} onConfirm={handleBooking} onBack={() => setStep(4)} />}
+        {step === 5 && <SlotAndPayment surveyData={surveyData} onConfirm={handleBooking} onBack={() => isVendorPreSelected ? setStep(3) : setStep(4)} />}
       </div>
 
       {/* Modals */}
+      {pendingBookingAlert && (
+        <PendingBookingModal
+          booking={pendingBookingAlert}
+          onResume={(booking) => {
+            navigate("/user/booking/advance-payment/confirmation", {
+              replace: true,
+              state: {
+                booking: booking,
+                service: booking.service,
+                vendor: booking.vendor,
+                paymentData: {
+                  advanceAmount: booking.payment?.advanceAmount,
+                  remainingAmount: booking.payment?.remainingAmount,
+                  totalAmount: booking.payment?.totalAmount,
+                  keyId: import.meta.env.VITE_RAZORPAY_KEY_ID
+                },
+                razorpayOrder: {
+                  id: booking.payment?.advanceRazorpayOrderId,
+                  amount: (booking.payment?.advanceAmount || 0) * 100,
+                  currency: "INR"
+                }
+              }
+            });
+          }}
+          onIgnore={() => setPendingBookingAlert(null)}
+        />
+      )}
+
       {showTerms && (
         <TermsAndConditions
           category={surveyData.category}

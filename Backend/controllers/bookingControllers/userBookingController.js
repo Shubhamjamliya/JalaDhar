@@ -104,10 +104,7 @@ const createBooking = async (req, res) => {
       district,
       state,
       purpose,
-      purposeExtent,
-      existingBorewell,
-      techniqueUsed,
-      techniqueProviderName
+      purposeExtent
     } = req.body;
 
     // Validate required fields
@@ -255,16 +252,6 @@ const createBooking = async (req, res) => {
       state: state || undefined,
       purpose: purpose || undefined,
       purposeExtent: purposeExtent ? parseFloat(purposeExtent) : undefined,
-      existingBorewell: existingBorewell && existingBorewell.hasExisting ? {
-        hasExisting: true,
-        yearOfDrilling: existingBorewell.yearOfDrilling ? parseInt(existingBorewell.yearOfDrilling) : undefined,
-        depthInFeet: existingBorewell.depthInFeet ? parseFloat(existingBorewell.depthInFeet) : undefined,
-        gapsAndDepths: existingBorewell.gapsAndDepths || undefined,
-        waterQuantity: existingBorewell.waterQuantity ? parseFloat(existingBorewell.waterQuantity) : undefined,
-        surroundingBorewellDistance: existingBorewell.surroundingBorewellDistance || undefined
-      } : undefined,
-      techniqueUsed: techniqueUsed || undefined,
-      techniqueProviderName: techniqueProviderName || undefined,
       payment: {
         baseServiceFee,
         distance: distance || null,
@@ -1065,7 +1052,7 @@ const getDashboardStats = async (req, res) => {
       .populate('service', 'name price')
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('status scheduledDate scheduledTime service vendor createdAt');
+      .select('status scheduledDate scheduledTime service vendor createdAt payment');
 
     // Format stats
     const stats = {

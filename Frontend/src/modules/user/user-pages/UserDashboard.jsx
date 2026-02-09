@@ -167,7 +167,10 @@ export default function UserDashboard() {
                     requestDate: booking.scheduledDate || booking.createdAt,
                     requestTime: booking.scheduledTime || "N/A",
                     status: booking.status?.toLowerCase() || "pending",
+                    paymentStatus: booking.payment?.advancePaid ? "PAID" : "PENDING",
+                    payment: booking.payment,
                     description: `Booking for ${booking.service?.name || "service"}`,
+                    bookingData: booking // Keep full booking data reference
                 }));
                 setRequestStatuses(formattedRequests);
             }
@@ -345,6 +348,33 @@ export default function UserDashboard() {
         }
     };
 
+    const handleResumePayment = (request) => {
+        if (!request.bookingData || !request.payment) {
+            toast.showError("Unable to resume payment. Missing details.");
+            return;
+        }
+
+        // Navigate to payment confirmation with reconstructed state
+        navigate("/user/booking/advance-payment/confirmation", {
+            state: {
+                booking: request.bookingData,
+                service: request.bookingData.service,
+                vendor: request.bookingData.vendor,
+                paymentData: {
+                    advanceAmount: request.payment.advanceAmount,
+                    remainingAmount: request.payment.remainingAmount,
+                    totalAmount: request.payment.totalAmount,
+                    keyId: import.meta.env.VITE_RAZORPAY_KEY_ID // Assuming this is needed, though confirmation page might fetch it
+                },
+                razorpayOrder: {
+                    id: request.payment.advanceRazorpayOrderId,
+                    amount: request.payment.advanceAmount * 100, // Amount in paise
+                    currency: "INR"
+                }
+            }
+        });
+    };
+
     const displayRequests = requestStatuses;
 
     const backgroundImageUrl =
@@ -461,18 +491,22 @@ export default function UserDashboard() {
                     </span>
                 </div>
 
-                {/* Find Vendor */}
+                {/* Pending Requests */}
                 <div
-                    onClick={() => navigate("/user/serviceprovider")}
+                    onClick={handleRequestStatusClick}
                     className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all">
                         {/* Highlight/Reflection Effect */}
-                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
-                        <IoSearchOutline className="text-2xl text-[#1976D2] relative z-10" />
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent rounded-t-full"></div>
+                        <IoTimeOutline className="text-2xl text-[#1976D2] relative z-10" />
+                        {/* Show indicator if there are pending unpaid requests */}
+                        {requestStatuses.some(r => r.status === 'pending' && r.paymentStatus === 'PENDING') && (
+                            <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 border-2 border-white z-20 shadow-sm animate-pulse"></div>
+                        )}
                     </div>
                     <span className="text-xs font-bold text-gray-800 text-center">
-                        Find Vendor
+                        Pending Requests
                     </span>
                 </div>
 
@@ -680,6 +714,21 @@ export default function UserDashboard() {
                                                                     request.description
                                                                 }
                                                             </p>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Resume Payment Button */}
+                                                    {request.status === 'pending' && request.paymentStatus === 'PENDING' && (
+                                                        <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleResumePayment(request);
+                                                                }}
+                                                                className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                                            >
+                                                                Complete Payment <IoCheckmarkCircleOutline />
+                                                            </button>
                                                         </div>
                                                     )}
                                                 </div>

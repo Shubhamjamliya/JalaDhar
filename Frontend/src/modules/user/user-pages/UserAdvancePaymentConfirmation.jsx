@@ -27,7 +27,7 @@ export default function UserAdvancePaymentConfirmation() {
     const [error, setError] = useState("");
     const [paymentSuccess, setPaymentSuccess] = useState(false);
     const [fullBooking, setFullBooking] = useState(null);
-    
+
     // Get booking data from navigation state
     const booking = location.state?.booking;
     const service = location.state?.service;
@@ -55,7 +55,7 @@ export default function UserAdvancePaymentConfirmation() {
     useEffect(() => {
         // If no booking data, redirect back
         if (!booking || !service || !vendor || !paymentData || !razorpayOrder) {
-            navigate("/user/request-service", { replace: true });
+            navigate("/user/survey", { replace: true });
         }
     }, [booking, service, vendor, paymentData, razorpayOrder, navigate]);
 
@@ -111,9 +111,9 @@ export default function UserAdvancePaymentConfirmation() {
                             setLoading(false);
                             // Navigate back after a delay
                             setTimeout(() => {
-                                navigate("/user/request-service", { 
+                                navigate("/user/survey", {
                                     state: { service, vendor },
-                                    replace: true 
+                                    replace: true
                                 });
                             }, 3000);
                         }
@@ -127,9 +127,9 @@ export default function UserAdvancePaymentConfirmation() {
                         setLoading(false);
                         // Navigate back after a delay
                         setTimeout(() => {
-                            navigate("/user/request-service", { 
+                            navigate("/user/survey", {
                                 state: { service, vendor },
-                                replace: true 
+                                replace: true
                             });
                         }, 3000);
                     }
@@ -153,9 +153,9 @@ export default function UserAdvancePaymentConfirmation() {
                         setLoading(false);
                         // Navigate back to request service page after a delay
                         setTimeout(() => {
-                            navigate("/user/request-service", { 
+                            navigate("/user/survey", {
                                 state: { service, vendor },
-                                replace: true 
+                                replace: true
                             });
                         }, 2000);
                     },
@@ -175,22 +175,22 @@ export default function UserAdvancePaymentConfirmation() {
                 // Handle payment failure
                 razorpay.on('payment.failed', async function (response) {
                     const errorMsg = response.error?.description || response.error?.reason || response.error?.code || "Payment failed. Please try again.";
-                    
+
                     // Cancel the booking if payment fails
                     try {
                         await cancelBooking(booking.id, `Payment failed: ${errorMsg}`);
                     } catch (cancelErr) {
                         // Failed to cancel booking - silently continue
                     }
-                    
+
                     setError(`Payment failed: ${errorMsg}. Booking has been cancelled.`);
                     setLoading(false);
-                    
+
                     // Navigate back to request service page after a delay
                     setTimeout(() => {
-                        navigate("/user/request-service", { 
+                        navigate("/user/request-service", {
                             state: { service, vendor },
-                            replace: true 
+                            replace: true
                         });
                     }, 3000);
                 });
@@ -198,22 +198,22 @@ export default function UserAdvancePaymentConfirmation() {
                 // Handle payment errors
                 razorpay.on('payment.error', async function (response) {
                     const errorMsg = response.error?.description || response.error?.reason || response.error?.code || "Payment error occurred. Please try again.";
-                    
+
                     // Cancel the booking if payment error occurs
                     try {
                         await cancelBooking(booking.id, `Payment error: ${errorMsg}`);
                     } catch (cancelErr) {
                         // Failed to cancel booking - silently continue
                     }
-                    
+
                     setError(`Payment error: ${errorMsg}. Booking has been cancelled.`);
                     setLoading(false);
-                    
+
                     // Navigate back to request service page after a delay
                     setTimeout(() => {
-                        navigate("/user/request-service", { 
+                        navigate("/user/request-service", {
                             state: { service, vendor },
-                            replace: true 
+                            replace: true
                         });
                     }, 3000);
                 });
@@ -276,11 +276,11 @@ export default function UserAdvancePaymentConfirmation() {
     const formatDate = (dateString) => {
         if (!dateString) return "Not set";
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-IN', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+        return date.toLocaleDateString('en-IN', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
         });
     };
 
@@ -343,7 +343,7 @@ export default function UserAdvancePaymentConfirmation() {
     const totalAmount = bookingPayment?.totalAmount || paymentData?.totalAmount || service.price;
     const advanceAmount = bookingPayment?.advanceAmount || paymentData?.advanceAmount || Math.round(totalAmount * 0.4);
     const remainingAmount = bookingPayment?.remainingAmount || paymentData?.remainingAmount || Math.round(totalAmount * 0.6);
-    
+
     // Get breakdown details for display from full booking if available
     const baseServiceFee = bookingPayment?.baseServiceFee || service.price;
     const travelCharges = bookingPayment?.travelCharges || 0;
@@ -357,7 +357,7 @@ export default function UserAdvancePaymentConfirmation() {
 
             {/* Back Button */}
             <button
-                onClick={() => navigate("/user/request-service", { state: { service, vendor } })}
+                onClick={() => navigate("/user/survey", { state: { service, vendor } })}
                 className="mb-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
             >
                 <IoChevronBackOutline className="text-xl" />
@@ -378,7 +378,7 @@ export default function UserAdvancePaymentConfirmation() {
                     <IoDocumentTextOutline className="text-2xl text-[#0A84FF]" />
                     Booking Details
                 </h2>
-                
+
                 <div className="space-y-4">
                     {/* Service Info */}
                     <div className="bg-[#F6F7F9] rounded-[10px] p-4">
@@ -457,14 +457,14 @@ export default function UserAdvancePaymentConfirmation() {
             {/* Payment Summary Card */}
             <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Payment Summary</h2>
-                
+
                 <div className="space-y-3 mb-4">
                     {/* Service Fee */}
                     <div className="flex justify-between items-center">
                         <span className="text-gray-600">Service Fee</span>
                         <span className="font-semibold text-gray-800">{formatAmount(baseServiceFee)}</span>
                     </div>
-                    
+
                     {/* Travel Charges (if applicable) */}
                     {travelCharges > 0 && (
                         <div className="flex justify-between items-center">
@@ -472,7 +472,7 @@ export default function UserAdvancePaymentConfirmation() {
                             <span className="font-semibold text-gray-800">{formatAmount(travelCharges)}</span>
                         </div>
                     )}
-                    
+
                     {/* Subtotal */}
                     {travelCharges > 0 && (
                         <div className="flex justify-between items-center pt-2 border-t border-gray-200">
@@ -480,7 +480,7 @@ export default function UserAdvancePaymentConfirmation() {
                             <span className="font-semibold text-gray-800">{formatAmount(subtotal)}</span>
                         </div>
                     )}
-                    
+
                     {/* GST (if applicable) */}
                     {gst > 0 && (
                         <div className="flex justify-between items-center">
@@ -488,25 +488,25 @@ export default function UserAdvancePaymentConfirmation() {
                             <span className="font-semibold text-gray-800">{formatAmount(gst)}</span>
                         </div>
                     )}
-                    
+
                     {/* Total Amount */}
                     <div className="flex justify-between items-center pt-2 border-t-2 border-gray-300">
                         <span className="text-lg font-bold text-gray-800">Total Amount</span>
                         <span className="text-lg font-bold text-gray-800">{formatAmount(totalAmount)}</span>
                     </div>
-                    
+
                     {/* Advance Payment */}
                     <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                         <span className="text-gray-600">Advance Payment (40%)</span>
                         <span className="font-semibold text-[#0A84FF]">{formatAmount(advanceAmount)}</span>
                     </div>
-                    
+
                     {/* Remaining Amount */}
                     <div className="flex justify-between items-center">
                         <span className="text-gray-600">Remaining (60%)</span>
                         <span className="font-semibold text-gray-800">{formatAmount(remainingAmount)}</span>
                     </div>
-                    
+
                     {/* Amount to Pay Now */}
                     <div className="border-t-2 border-[#0A84FF] pt-3 flex justify-between items-center mt-2">
                         <span className="text-lg font-bold text-gray-800">Amount to Pay Now</span>

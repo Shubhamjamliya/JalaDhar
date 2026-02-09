@@ -31,7 +31,7 @@ const VendorResetPassword = lazy(() => import("./modules/vendor/vendor-pages/Ven
 const UserNavbar = lazy(() => import("./modules/user/user-components/UserNavbar"));
 const VendorNavbar = lazy(() => import("./modules/vendor/vendor-components/VendorNavbar"));
 const UserServiceProvider = lazy(() => import("./modules/user/user-pages/UserServiceProvider"));
-const UserRequestService = lazy(() => import("./modules/user/user-pages/UserRequestService"));
+
 const UserStatus = lazy(() => import("./modules/user/user-pages/UserStatus"));
 const UserAllBookingsStatus = lazy(() => import("./modules/user/user-pages/UserAllBookingsStatus"));
 const UserBookingDetails = lazy(() => import("./modules/user/user-pages/UserBookingDetails"));
@@ -168,14 +168,7 @@ function App() {
                                                                     </Suspense>
                                                                 }
                                                             />
-                                                            <Route
-                                                                path="/request-service"
-                                                                element={
-                                                                    <Suspense fallback={<LoadingSpinner />}>
-                                                                        <UserRequestService />
-                                                                    </Suspense>
-                                                                }
-                                                            />
+
                                                             <Route
                                                                 path="/status"
                                                                 element={

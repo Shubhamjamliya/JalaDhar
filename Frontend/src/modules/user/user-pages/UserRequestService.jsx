@@ -1,13 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-    IoImageOutline,
+    IoArrowBack,
+    IoCheckmarkCircle,
+    IoLocationSharp,
     IoCalendarOutline,
     IoTimeOutline,
-    IoLocationOutline,
-    IoCloseOutline,
-    IoChevronBackOutline,
-    IoChevronDownOutline,
+    IoLeafOutline,
+    IoHomeOutline,
+    IoBusinessOutline,
+    IoConstructOutline,
+    IoCashOutline,
+    IoSearchOutline,
+    IoChevronDownOutline
 } from "react-icons/io5";
 import { createBooking, calculateBookingCharges } from "../../../services/bookingApi";
 import PageContainer from "../../shared/components/PageContainer";
@@ -15,135 +20,104 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
 
-// Get API key at module level
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+// --- Sub-components ---
 
-export default function UserRequestService() {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const [loading, setLoading] = useState(false);
-    const [service, setService] = useState(null);
-    const [vendor, setVendor] = useState(null);
-    const toast = useToast();
-    const [fullAddress, setFullAddress] = useState("");
-    const [gettingLocation, setGettingLocation] = useState(false);
-    const [chargesBreakdown, setChargesBreakdown] = useState(null);
-    const [calculatingCharges, setCalculatingCharges] = useState(false);
-    const [openDropdown, setOpenDropdown] = useState(null); // 'purpose', 'technique', or 'time'
-    const [formData, setFormData] = useState({
-        scheduledDate: "",
-        scheduledTime: "",
-        address: {
-            coordinates: null,
-            geoLocation: null
-        },
-        notes: "",
-        images: [],
-        // Customer Enquiry Form fields
+const PurposeSelection = ({ onSelect }) => {
+    const purposes = [
+        { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "bg-green-100 text-green-600" },
+        { id: "Domestic/Household", label: "Domestic/Household", icon: IoHomeOutline, color: "bg-blue-100 text-blue-600" },
+        { id: "Industrial/Commercial", label: "Industrial/Commercial", icon: IoBusinessOutline, color: "bg-purple-100 text-purple-600" },
+        { id: "Open plots", label: "Open plots", icon: IoConstructOutline, color: "bg-orange-100 text-orange-600" }
+    ];
+
+    return (
+        <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">Select Purpose</h2>
+            <div className="grid grid-cols-2 gap-4">
+                {purposes.map((p) => (
+                    <button
+                        key={p.id}
+                        onClick={() => onSelect(p.id)}
+                        className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-blue-500 hover:shadow-md transition-all aspect-square"
+                    >
+                        <div className={`p-4 rounded-full ${p.color} mb-3 text-3xl`}>
+                            <p.icon />
+                        </div>
+                        <span className="font-semibold text-gray-700 text-sm text-center">{p.label}</span>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const TermsAndConditions = ({ purpose, onAccept, onCancel }) => {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl animate-in fade-in zoom-in duration-300">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Terms & Conditions</h3>
+                <div className="bg-gray-50 rounded-xl p-4 mb-6 text-sm text-gray-600 space-y-2 max-h-60 overflow-y-auto">
+                    <p>By proceeding with the <strong>{purpose}</strong> service request, you agree to the following:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>The service is provided by independent vendors.</li>
+                        <li>Advance payment is required to book the slot.</li>
+                        <li>Cancellation charges may apply as per company policy.</li>
+                        <li>Safe access to the site must be provided by the customer.</li>
+                    </ul>
+                </div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={onCancel}
+                        className="flex-1 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onAccept}
+                        className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                    >
+                        I Agree
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ProjectDetailsForm = ({ data, onSubmit, onBack }) => {
+    // Initialize with data or defaults
+    const [formData, setFormData] = useState(data || {
         village: "",
         mandal: "",
         district: "",
         state: "",
-        purpose: "", // Agriculture, Industrial/Commercial, Domestic/Household, Open plots
-        purposeExtent: "", // Extent value
+        purposeExtent: "",
         existingBorewell: {
             hasExisting: false,
             yearOfDrilling: "",
             depthInFeet: "",
-            gapsAndDepths: "", // Number of gaps and depths
-            waterQuantity: "", // In inches
+            gapsAndDepths: "",
+            waterQuantity: "",
             surroundingBorewellDistance: ""
         },
-        techniqueUsed: "", // Coconut, Dowsing L rods, 3D Locator, Detector/Diviner, Geophysical survey
-        techniqueProviderName: "" // Name of Individual/Company/Organization
+        techniqueUsed: "",
+        techniqueProviderName: "",
+        notes: "",
+        images: []
     });
 
-    useEffect(() => {
-        // Get service and vendor from navigation state
-        if (location.state?.service && location.state?.vendor) {
-            setService(location.state.service);
-            setVendor(location.state.vendor);
-        } else {
-            // If no service/vendor selected, redirect back
-            navigate("/user/serviceprovider");
-        }
-    }, [location, navigate]);
+    const [openDropdown, setOpenDropdown] = useState(null);
 
-    // Calculate charges when address coordinates change
-    useEffect(() => {
-        const calculateCharges = async () => {
-            // Get service ID - handle both _id and id formats
-            const serviceId = service?._id || service?.id;
-            const vendorId = vendor?._id || vendor?.id;
-            
-            // Check if we have all required data
-            if (!serviceId || !vendorId) {
-                setChargesBreakdown(null);
-                return;
-            }
+    const handleChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
 
-            const lat = formData.address.coordinates?.lat;
-            const lng = formData.address.coordinates?.lng;
-            
-            if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
-                setChargesBreakdown(null);
-                return;
-            }
-
-            setCalculatingCharges(true);
-            try {
-                const response = await calculateBookingCharges(
-                    serviceId,
-                    vendorId,
-                    lat,
-                    lng
-                );
-                
-                if (response && response.success && response.data) {
-                    setChargesBreakdown(response.data);
-                } else {
-                    // Show base service fee at least
-                    setChargesBreakdown({
-                        baseServiceFee: service.price,
-                        distance: null,
-                        travelCharges: 0,
-                        subtotal: service.price,
-                        gst: 0,
-                        totalAmount: service.price,
-                        advanceAmount: service.price * 0.4,
-                        remainingAmount: service.price * 0.6,
-                        baseRadius: 30,
-                        travelChargePerKm: 10,
-                        gstPercentage: 18
-                    });
-                }
-            } catch (err) {
-                // Show base service fee at least on error
-                setChargesBreakdown({
-                    baseServiceFee: service.price,
-                    distance: null,
-                    travelCharges: 0,
-                    subtotal: service.price,
-                    gst: 0,
-                    totalAmount: service.price,
-                    advanceAmount: service.price * 0.4,
-                    remainingAmount: service.price * 0.6,
-                    baseRadius: 30,
-                    travelChargePerKm: 10,
-                    gstPercentage: 18
-                });
-            } finally {
-                setCalculatingCharges(false);
-            }
-        };
-
-        // Add a small delay to ensure coordinates are set
-        const timeoutId = setTimeout(() => {
-            calculateCharges();
-        }, 300);
-
-        return () => clearTimeout(timeoutId);
-    }, [service, vendor, formData.address.coordinates?.lat, formData.address.coordinates?.lng]);
+    const handleExistingBorewellChange = (field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            existingBorewell: { ...prev.existingBorewell, [field]: value }
+        }));
+    };
 
     const handleImageUpload = (e) => {
         const files = Array.from(e.target.files);
@@ -162,918 +136,548 @@ export default function UserRequestService() {
         setFormData({ ...formData, images: newImages });
     };
 
-    // Handle place selection from Google Places Autocomplete
-    const handleAddressSelect = (placeData) => {
-        const selectedFormattedAddress = placeData.formattedAddress || placeData.formatted_address || "";
-        const selectedPlaceId = placeData.placeId || placeData.place_id || "";
-        // Handle both direct lat/lng and nested place.geometry.location
-        let selectedLat = placeData.lat;
-        let selectedLng = placeData.lng;
-        
-        // If lat/lng not directly available, try to get from place.geometry.location
-        if (!selectedLat && placeData.place?.geometry?.location) {
-            if (typeof placeData.place.geometry.location.lat === 'function') {
-                selectedLat = placeData.place.geometry.location.lat();
-                selectedLng = placeData.place.geometry.location.lng();
-            } else {
-                selectedLat = placeData.place.geometry.location.lat;
-                selectedLng = placeData.place.geometry.location.lng;
-            }
-        }
-        
-        // Store in registration format
-        setFormData(prev => ({
-            ...prev,
-            address: {
-                coordinates: (selectedLat && selectedLng) ? {
-                    lat: parseFloat(selectedLat),
-                    lng: parseFloat(selectedLng)
-                } : prev.address.coordinates,
-                geoLocation: (selectedPlaceId && selectedFormattedAddress) ? {
-                    formattedAddress: selectedFormattedAddress,
-                    placeId: selectedPlaceId,
-                    geocodedAt: new Date()
-                } : prev.address.geoLocation
-            }
-        }));
-        
-        setFullAddress(selectedFormattedAddress);
-        toast.showSuccess("Address auto-filled from selected location");
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(formData);
     };
 
-    // Get current location using browser geolocation API
+    return (
+        <form onSubmit={handleSubmit} className="space-y-5 pb-20">
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Project Details</h2>
+
+            {/* Location Details */}
+            <div className="space-y-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <h3 className="font-semibold text-gray-700 mb-2">Location Info</h3>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Village</label>
+                        <input
+                            required
+                            value={formData.village}
+                            onChange={(e) => handleChange("village", e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+                            placeholder="Village Name"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Mandal</label>
+                        <input
+                            required
+                            value={formData.mandal}
+                            onChange={(e) => handleChange("mandal", e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+                            placeholder="Mandal"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
+                        <input
+                            required
+                            value={formData.district}
+                            onChange={(e) => handleChange("district", e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+                            placeholder="District"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                        <input
+                            required
+                            value={formData.state}
+                            onChange={(e) => handleChange("state", e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+                            placeholder="State"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Extent */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Extent (Acres / Sq Yards)</label>
+                <input
+                    type="number"
+                    required
+                    value={formData.purposeExtent}
+                    onChange={(e) => handleChange("purposeExtent", e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none"
+                    placeholder="Enter extent"
+                    min="0"
+                    step="0.01"
+                />
+            </div>
+
+            {/* Existing Borewell */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <label className="flex items-center gap-2 mb-3 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        checked={formData.existingBorewell.hasExisting}
+                        onChange={(e) => handleExistingBorewellChange("hasExisting", e.target.checked)}
+                        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-semibold text-gray-700">Any existing borewell?</span>
+                </label>
+
+                {formData.existingBorewell.hasExisting && (
+                    <div className="grid grid-cols-2 gap-3 mt-3 animate-in fade-in slide-in-from-top-2">
+                        <input
+                            type="number"
+                            placeholder="Year"
+                            value={formData.existingBorewell.yearOfDrilling}
+                            onChange={(e) => handleExistingBorewellChange("yearOfDrilling", e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500"
+                        />
+                        <input
+                            type="number"
+                            placeholder="Depth (ft)"
+                            value={formData.existingBorewell.depthInFeet}
+                            onChange={(e) => handleExistingBorewellChange("depthInFeet", e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500"
+                        />
+                        <input
+                            type="text"
+                            placeholder="Gaps & Depths"
+                            value={formData.existingBorewell.gapsAndDepths}
+                            onChange={(e) => handleExistingBorewellChange("gapsAndDepths", e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500 col-span-2"
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Technique */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Technique Used</label>
+                <div className="relative">
+                    <button
+                        type="button"
+                        onClick={() => setOpenDropdown(openDropdown === 'technique' ? null : 'technique')}
+                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-blue-500 flex items-center justify-between"
+                    >
+                        <span className={formData.techniqueUsed ? "text-gray-800" : "text-gray-400"}>
+                            {formData.techniqueUsed || "Select technique"}
+                        </span>
+                        <IoChevronDownOutline className={`text-gray-400 transition-transform ${openDropdown === 'technique' ? 'rotate-180' : ''}`} />
+                    </button>
+                    {openDropdown === 'technique' && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+                            {["Coconut", "Dowsing L rods", "3D Locator", "Detector / Diviner", "Geophysical survey"].map((option) => (
+                                <div
+                                    key={option}
+                                    className="px-4 py-3 text-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                                    onClick={() => {
+                                        handleChange("techniqueUsed", option);
+                                        setOpenDropdown(null);
+                                    }}
+                                >
+                                    {option}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Images & Notes */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Upload Images (Optional)</label>
+                <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="image-upload"
+                />
+                <label
+                    htmlFor="image-upload"
+                    className="block w-full border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:border-blue-500 transition-colors"
+                >
+                    <span className="text-gray-500 text-sm">Tap to upload images</span>
+                </label>
+                {formData.images.length > 0 && (
+                    <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+                        {formData.images.map((img, idx) => (
+                            <div key={idx} className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200">
+                                <img src={img.preview} alt="preview" className="w-full h-full object-cover" />
+                                <button
+                                    type="button"
+                                    onClick={() => handleRemoveImage(idx)}
+                                    className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 w-5 h-5 flex items-center justify-center text-xs"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <label className="block text-sm font-medium text-gray-700 mt-4 mb-1">Additional Notes</label>
+                <textarea
+                    value={formData.notes}
+                    onChange={(e) => handleChange("notes", e.target.value)}
+                    rows="3"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm resize-none"
+                    placeholder="Any specific instructions..."
+                />
+            </div>
+
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 flex gap-3 z-40 md:relative md:bg-transparent md:border-0 md:p-0">
+                <button type="button" onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
+                <button type="submit" className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors">Continue</button>
+            </div>
+        </form>
+    );
+};
+
+const LocationPicker = ({ onLocationSelect, onBack, initialLocation }) => {
+    const [searching, setSearching] = useState(false);
+    const [selectedLocation, setSelectedLocation] = useState(initialLocation || null);
+    const toast = useToast();
+
+    const handlePlaceSelect = (place) => {
+        if (place.lat && place.lng) {
+            setSelectedLocation({
+                lat: place.lat,
+                lng: place.lng,
+                address: place.formattedAddress
+            });
+        }
+    };
+
     const getCurrentLocation = () => {
         if (!navigator.geolocation) {
-            toast.showError("Geolocation is not supported by your browser");
+            toast.showError("Geolocation not supported");
             return;
         }
-
-        setGettingLocation(true);
-
+        setSearching(true);
         navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
+            async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                let address = "Current Location";
 
-                const apiKey = GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-
-                let formattedAddress = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
-
-                // Try to reverse geocode if API key is available
-                if (apiKey && apiKey.trim() !== "") {
+                // Keep reverse geocoding simple or implement if API key available
+                if (import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
                     try {
-                        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
-
-                        const response = await fetch(geocodeUrl);
-
-                        if (response.ok) {
-                            const data = await response.json();
-
-                            if (data.status === 'OK' && data.results && data.results.length > 0) {
-                                const result = data.results[0];
-                                formattedAddress = result.formatted_address || formattedAddress;
-                                
-                                // Store in registration format
-                                setFormData(prev => ({
-                                    ...prev,
-                                    address: {
-                                        coordinates: {
-                                            lat: lat,
-                                            lng: lng
-                                        },
-                                        geoLocation: formattedAddress && formattedAddress !== `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}` ? {
-                                            formattedAddress: formattedAddress,
-                                            placeId: result.place_id || null,
-                                            geocodedAt: new Date()
-                                        } : prev.address.geoLocation
-                                    }
-                                }));
-                            }
+                        const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`);
+                        const data = await response.json();
+                        if (data.results && data.results[0]) {
+                            address = data.results[0].formatted_address;
                         }
-                    } catch (error) {
-                        // Geocoding error - silently fail
+                    } catch (e) {
+                        console.error(e);
                     }
-                } else {
-                    // Store coordinates even if geocoding fails
-                    setFormData(prev => ({
-                        ...prev,
-                        address: {
-                            coordinates: {
-                                lat: lat,
-                                lng: lng
-                            },
-                            geoLocation: prev.address.geoLocation
-                        }
-                    }));
                 }
 
-                setFullAddress(formattedAddress);
-                toast.showSuccess("Location found! Address auto-filled.");
-                setGettingLocation(false);
+                setSelectedLocation({
+                    lat: latitude,
+                    lng: longitude,
+                    address: address
+                });
+                setSearching(false);
             },
-            (error) => {
-                let errorMessage = "Unable to get your location";
-                if (error.code === error.PERMISSION_DENIED) {
-                    errorMessage = "Location permission denied. Please allow location access in your browser settings.";
-                } else if (error.code === error.POSITION_UNAVAILABLE) {
-                    errorMessage = "Location information unavailable.";
-                } else if (error.code === error.TIMEOUT) {
-                    errorMessage = "Location request timed out.";
-                }
-                toast.showError(errorMessage);
-                setGettingLocation(false);
-            }
+            (err) => {
+                toast.showError("Could not get location");
+                setSearching(false);
+            },
+            { enableHighAccuracy: true }
         );
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        // Validate address
-        if (!formData.address.geoLocation?.formattedAddress && !fullAddress) {
-            toast.showError("Please select or enter an address");
-            return;
+    const handleConfirm = () => {
+        if (selectedLocation) {
+            onLocationSelect(selectedLocation);
+        } else {
+            toast.showError("Please pick a location");
         }
+    };
 
-        if (!service || !vendor) {
-            toast.showError("Service or vendor information is missing");
-            return;
-        }
+    return (
+        <div className="space-y-6">
+            <h2 className="text-xl font-bold text-gray-800">Pin Location</h2>
 
-        const loadingToast = toast.showLoading("Creating booking...");
+            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <p className="text-sm text-blue-800 mb-3">Get accurate pricing by pinning location.</p>
+                <button
+                    onClick={getCurrentLocation}
+                    disabled={searching}
+                    className="w-full flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-200 py-3 rounded-xl font-medium hover:bg-blue-50 transition-colors shadow-sm"
+                >
+                    <IoLocationSharp /> {searching ? "Locating..." : "Use Current Location"}
+                </button>
+            </div>
 
-        try {
-            setLoading(true);
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search Address</label>
+                <PlaceAutocompleteInput
+                    onPlaceSelect={handlePlaceSelect}
+                    placeholder="Search village or landmark..."
+                    value={selectedLocation?.address || ""}
+                    onChange={(e) => setSelectedLocation(prev => ({ ...prev, address: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 shadow-sm transition-all"
+                />
+            </div>
 
-            // Prepare address for backend (convert to old format for compatibility)
-            // Backend expects {street, city, state, pincode} but we store {coordinates, geoLocation}
-            let addressToSend = formData.address;
-            
-            // If user manually typed address but didn't select from autocomplete,
-            // store fullAddress in geoLocation as fallback
-            if (fullAddress && (!addressToSend.geoLocation?.formattedAddress)) {
-                addressToSend = {
-                    ...addressToSend,
-                    geoLocation: {
-                        formattedAddress: fullAddress,
-                        placeId: null,
-                        geocodedAt: new Date()
-                    }
-                };
+            <div className="pt-4 flex gap-3">
+                <button onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
+                <button
+                    onClick={handleConfirm}
+                    disabled={!selectedLocation}
+                    className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors disabled:opacity-50"
+                >
+                    Confirm Location
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const ReviewAndBook = ({ surveyData, service, vendor, onConfirm, onBack }) => {
+    const [date, setDate] = useState("");
+    const [time, setTime] = useState("");
+    const [charges, setCharges] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const toast = useToast();
+
+    useEffect(() => {
+        const fetchCharges = async () => {
+            // Use service/vendor from props
+            if (!service || !vendor || !surveyData.location) return;
+
+            try {
+                const res = await calculateBookingCharges(
+                    service.id || service._id,
+                    vendor.id || vendor._id,
+                    surveyData.location.lat,
+                    surveyData.location.lng
+                );
+                if (res.success) setCharges(res.data);
+            } catch (e) {
+                console.error(e);
             }
+        };
+        fetchCharges();
+    }, []);
 
-            // Parse formattedAddress to extract street, city, state, pincode for backend compatibility
-            const formattedAddr = addressToSend.geoLocation?.formattedAddress || fullAddress || "";
-            const addressParts = formattedAddr.split(",").map(part => part.trim());
-            
-            // Try to extract components (simple parsing - backend should handle this better)
-            const parsedAddress = {
-                street: addressParts[0] || "",
-                city: addressParts[1] || "",
-                state: addressParts[2] || "",
-                pincode: addressParts[addressParts.length - 1] || "",
-                coordinates: addressToSend.coordinates,
-                landmark: ""
+    const handlePay = async () => {
+        if (!date || !time) {
+            toast.showError("Select Date & Time");
+            return;
+        }
+        setLoading(true);
+        await onConfirm({ scheduledDate: date, scheduledTime: time });
+        setLoading(false);
+    };
+
+    return (
+        <div className="space-y-6 pb-20">
+            <h2 className="text-xl font-bold text-gray-800">Review & Book</h2>
+
+            {/* Vendor Info */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 flex items-center justify-between">
+                <div>
+                    <p className="text-xs text-gray-500">Service Provider</p>
+                    <p className="font-bold text-gray-800">{vendor?.name}</p>
+                </div>
+                <div className="text-right">
+                    <p className="text-xs text-gray-500">Service</p>
+                    <p className="font-bold text-gray-800">{service?.name}</p>
+                </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                <h3 className="font-semibold text-gray-700 text-sm">Schedule</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    <input
+                        type="date"
+                        className="w-full p-2 border rounded-lg text-sm"
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => setDate(e.target.value)}
+                    />
+                    <select
+                        className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:border-blue-500 outline-none bg-white"
+                        onChange={(e) => setTime(e.target.value)}
+                    >
+                        <option value="">Select Time</option>
+                        {Array.from({ length: 24 }, (_, i) => {
+                            const hour = i;
+                            const ampm = hour >= 12 ? 'PM' : 'AM';
+                            const hour12 = hour % 12 || 12;
+                            const display = `${hour12}:00 ${ampm}`;
+                            const value = `${String(hour).padStart(2, '0')}:00`;
+                            return <option key={value} value={value}>{display}</option>
+                        })}
+                    </select>
+                </div>
+            </div>
+
+            {/* Charges */}
+            <div className="bg-gray-50 p-5 rounded-xl space-y-3 text-sm">
+                <div className="flex justify-between text-gray-600">
+                    <span>Base Fee</span>
+                    <span>₹{charges?.baseServiceFee || service?.price}</span>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                    <span>Travel ({charges?.distance?.toFixed(1) || '0'} km)</span>
+                    <span>₹{charges?.travelCharges || 0}</span>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                    <span>GST ({charges?.gstPercentage || 18}%)</span>
+                    <span>₹{charges?.gst || 0}</span>
+                </div>
+                <div className="border-t border-dashed border-gray-300 pt-3 flex justify-between font-bold text-gray-900 text-base">
+                    <span>Total Estimate</span>
+                    <span>₹{charges?.totalAmount?.toFixed(2) || 'Calculating...'}</span>
+                </div>
+                <div className="bg-blue-100 p-2 rounded text-blue-800 text-xs font-medium text-center">
+                    Advance Payable: ₹{charges?.advanceAmount?.toFixed(2) || '0.00'}
+                </div>
+            </div>
+
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 flex gap-3 z-40 md:relative md:bg-transparent md:border-0 md:p-0">
+                <button onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
+                <button
+                    onClick={handlePay}
+                    disabled={!charges || loading}
+                    className="flex-1 py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                    {loading ? <div className="spinner-border w-4 h-4 rounded-full border-2 border-white"></div> : <><IoCashOutline /> Pay Advance</>}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// --- Main Wizard ---
+
+export default function UserRequestService() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const toast = useToast();
+    const [step, setStep] = useState(1);
+
+    // Initial state from navigation
+    const [service, setService] = useState(null);
+    const [vendor, setVendor] = useState(null);
+
+    const [formState, setFormState] = useState({
+        category: "", // purpose
+        details: null,
+        location: null
+    });
+
+    const [showTerms, setShowTerms] = useState(false);
+
+    useEffect(() => {
+        if (location.state?.service && location.state?.vendor) {
+            setService(location.state.service);
+            setVendor(location.state.vendor);
+        } else {
+            navigate("/user/serviceprovider");
+        }
+
+    }, [location, navigate]);
+
+    // Steps Handlers
+    const handlePurposeSelect = (purpose) => {
+        setFormState(prev => ({ ...prev, category: purpose }));
+        setShowTerms(true);
+    };
+
+    const handleTermsAccept = () => {
+        setShowTerms(false);
+        setStep(2);
+    };
+
+    const handleDetailsSubmit = (details) => {
+        setFormState(prev => ({ ...prev, details }));
+        setStep(3);
+    };
+
+    const handleLocationSelect = (loc) => {
+        setFormState(prev => ({ ...prev, location: loc }));
+        setStep(4);
+    };
+
+    const handleFinalBooking = async ({ scheduledDate, scheduledTime }) => {
+        try {
+            const bookingPayload = {
+                serviceId: service.id || service._id,
+                vendorId: vendor.id || vendor._id,
+                scheduledDate,
+                scheduledTime,
+                address: {
+                    coordinates: { lat: formState.location.lat, lng: formState.location.lng },
+                    street: formState.location.address,
+                    city: formState.details.village,
+                    state: formState.details.state,
+                    pincode: "000000"
+                },
+                // Flatten details into booking root as per backend expectation
+                village: formState.details.village,
+                mandal: formState.details.mandal,
+                district: formState.details.district,
+                purpose: formState.category,
+                purposeExtent: formState.details.purposeExtent,
+                existingBorewell: formState.details.existingBorewell?.hasExisting ? formState.details.existingBorewell : null,
+                techniqueUsed: formState.details.techniqueUsed,
+                techniqueProviderName: formState.details.techniqueProviderName,
+                notes: formState.details.notes
             };
 
-            // Create booking
-            const bookingData = {
-                serviceId: service._id || service.id,
-                vendorId: vendor._id || vendor.id,
-                scheduledDate: formData.scheduledDate,
-                scheduledTime: formData.scheduledTime,
-                address: parsedAddress,
-                notes: formData.notes || undefined,
-                // Customer Enquiry Form fields
-                village: formData.village,
-                mandal: formData.mandal,
-                district: formData.district,
-                state: formData.state,
-                purpose: formData.purpose,
-                purposeExtent: formData.purposeExtent,
-                existingBorewell: formData.existingBorewell.hasExisting ? formData.existingBorewell : null,
-                techniqueUsed: formData.techniqueUsed,
-                techniqueProviderName: formData.techniqueProviderName || undefined,
-            };
-
-            const response = await createBooking(bookingData);
+            const response = await createBooking(bookingPayload);
 
             if (response.success) {
-                const booking = response.data.booking;
-                const paymentData = response.data.payment;
-                const razorpayOrder = response.data.razorpayOrder;
-
-                if (!razorpayOrder) {
-                    toast.dismissToast(loadingToast);
-                    toast.showError("Payment order not created. Please try again.");
-                    setLoading(false);
-                    return;
-                }
-
-                toast.dismissToast(loadingToast);
-                toast.showSuccess("Booking created successfully! Redirecting to payment...");
-                setLoading(false);
-                
-                // Navigate to confirmation page instead of directly opening payment
-                setTimeout(() => {
-                    navigate("/user/booking/advance-payment/confirmation", {
-                        replace: true,
-                        state: {
-                            booking: booking,
-                            service: service,
-                            vendor: vendor,
-                            paymentData: paymentData,
-                            razorpayOrder: razorpayOrder
-                        }
-                    });
-                }, 500);
+                navigate("/user/booking/advance-payment/confirmation", {
+                    replace: true,
+                    state: {
+                        booking: response.data.booking,
+                        service: service,
+                        vendor: vendor,
+                        paymentData: response.data.payment,
+                        razorpayOrder: response.data.razorpayOrder
+                    }
+                });
             } else {
-                toast.dismissToast(loadingToast);
-                // Check if error is due to existing active booking
-                if (response.message && response.message.includes("active booking")) {
-                    toast.showError(response.message || "You already have an active booking. Please complete or cancel it first.");
-                } else {
-                    toast.showError(response.message || "Failed to create booking");
-                }
-                setLoading(false);
+                toast.showError(response.message || "Booking failed");
             }
+
         } catch (err) {
-            toast.dismissToast(loadingToast);
-            const errorMessage = err.response?.data?.message || "Failed to create booking. Please try again.";
-
-            // Check if error is due to existing active booking
-            if (errorMessage.includes("active booking") || errorMessage.includes("already have")) {
-                toast.showError(errorMessage);
-            } else {
-                handleApiError(err, "Failed to create booking. Please try again.");
-            }
-            setLoading(false);
+            handleApiError(err, "Failed to create booking");
         }
     };
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (openDropdown && !event.target.closest('.relative')) {
-                setOpenDropdown(null);
-            }
-        };
-        if (openDropdown) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [openDropdown]);
-
-    if (!service || !vendor) {
-    return (
-            <PageContainer>
-                <div className="text-center py-8">
-                    <p className="text-gray-600">Loading booking details...</p>
-            </div>
-            </PageContainer>
-        );
-    }
+    if (!service || !vendor) return null;
 
     return (
         <PageContainer>
-
-            {/* Back Button */}
-            <button
-                onClick={() => navigate("/user/serviceprovider")}
-                className="mb-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
-            >
-                <IoChevronBackOutline className="text-xl" />
-                <span className="font-semibold">Back</span>
-            </button>
-
-            {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-                    Book Service
-                </h1>
-                <div className="bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-4">
-                    <p className="text-sm text-gray-600 mb-1">Service</p>
-                    <p className="text-base font-bold text-gray-800">{service.name}</p>
-                    <p className="text-lg font-semibold text-[#0A84FF] mt-1">
-                        ₹{service.price?.toLocaleString()}
-                    </p>
-                </div>
-                <div className="bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                    <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                            <p className="text-sm text-gray-600 mb-1">Vendor</p>
-                            <p className="text-base font-bold text-gray-800">{vendor.name}</p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/user/serviceprovider")}
-                            className="ml-4 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-2"
-                        >
-                            <IoCloseOutline className="text-lg" />
-                            Change Vendor
-                        </button>
-                    </div>
+            {/* Header Steps */}
+            <div className="mb-6 flex items-center justify-between">
+                <button onClick={() => step > 1 ? setStep(step - 1) : navigate(-1)} className="p-2 -ml-2 text-gray-600">
+                    <IoArrowBack className="text-xl" />
+                </button>
+                <div className="flex gap-1.5">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className={`h-1.5 w-8 rounded-full transition-colors ${i <= step ? 'bg-blue-600' : 'bg-gray-200'}`} />
+                    ))}
                 </div>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Section: Schedule */}
-                <div className="bg-white rounded-[16px] p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 pb-3 border-b border-gray-200">
-                        Schedule
-                    </h2>
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                            <IoCalendarOutline className="inline text-base mr-1" />
-                            Date *
-                        </label>
-                        <input
-                            type="date"
-                            value={formData.scheduledDate}
-                            onChange={(e) =>
-                                setFormData({ ...formData, scheduledDate: e.target.value })
-                            }
-                            required
-                            min={new Date().toISOString().split("T")[0]}
-                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                        />
-                    </div>
-                    <div className="relative">
-                        <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                            <IoTimeOutline className="inline text-base mr-1" />
-                            Time *
-                        </label>
-                        <button
-                            type="button"
-                            onClick={() => setOpenDropdown(openDropdown === 'time' ? null : 'time')}
-                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-between"
-                        >
-                            <span className={formData.scheduledTime ? "text-gray-800" : "text-gray-400"}>
-                                {formData.scheduledTime 
-                                    ? (() => {
-                                        const [hours, minutes] = formData.scheduledTime.split(':');
-                                        const hour12 = parseInt(hours) % 12 || 12;
-                                        const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
-                                        return `${hour12}:${minutes} ${ampm}`;
-                                    })()
-                                    : "---"
-                                }
-                            </span>
-                            <IoTimeOutline className="text-gray-400" />
-                        </button>
-                        {openDropdown === 'time' && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
-                                {Array.from({ length: 24 }, (_, i) => {
-                                    const hour24 = i;
-                                    const hour12 = hour24 % 12 || 12;
-                                    const ampm = hour24 >= 12 ? 'PM' : 'AM';
-                                    const timeValue = `${String(hour24).padStart(2, '0')}:00`;
-                                    const displayTime = `${hour12}:00 ${ampm}`;
-                                    const isSelected = formData.scheduledTime === timeValue;
-                                    
-                                    return (
-                                        <div
-                                            key={timeValue}
-                                            className={`px-4 py-3 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
-                                                isSelected ? 'bg-gray-100 text-blue-600 font-medium' : 'text-gray-800'
-                                            }`}
-                                            onClick={() => {
-                                                setFormData({ ...formData, scheduledTime: timeValue });
-                                                setOpenDropdown(null);
-                                            }}
-                                        >
-                                            {displayTime}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                    </div>
-                </div>
+            <div className="max-w-md mx-auto min-h-[60vh] flex flex-col">
+                {step === 1 && <PurposeSelection onSelect={handlePurposeSelect} />}
+                {step === 2 && <ProjectDetailsForm data={formState.details} onSubmit={handleDetailsSubmit} onBack={() => setStep(1)} />}
+                {step === 3 && <LocationPicker initialLocation={formState.location} onLocationSelect={handleLocationSelect} onBack={() => setStep(2)} />}
+                {step === 4 && <ReviewAndBook surveyData={formState} service={service} vendor={vendor} onConfirm={handleFinalBooking} onBack={() => setStep(3)} />}
+            </div>
 
-                {/* Section: Location */}
-                <div className="bg-white rounded-[16px] p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 pb-3 border-b border-gray-200">
-                        Location Details
-                    </h2>
-                {/* Address Input */}
-                <div>
-                    <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                        <IoLocationOutline className="inline text-base mr-1" />
-                        Address *
-                    </label>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <div className="flex flex-col sm:flex-row gap-2 mb-2">
-                            <div className="relative flex-1">
-                                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg z-10">
-                                    search
-                                </span>
-                                <PlaceAutocompleteInput
-                                    onPlaceSelect={handleAddressSelect}
-                                    placeholder="Start typing your address to see suggestions..."
-                                    value={fullAddress}
-                                    onChange={(e) => setFullAddress(e.target.value)}
-                                    disabled={loading || gettingLocation}
-                                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#0A84FF] focus:ring-[#0A84FF] text-sm"
-                                    countryRestriction="in"
-                                    types={["geocode", "establishment"]}
-                                />
-                            </div>
-                            <button
-                                type="button"
-                                onClick={getCurrentLocation}
-                                disabled={loading || gettingLocation}
-                                className="flex items-center justify-center gap-2 bg-[#0A84FF] text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-[#005BBB] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 whitespace-nowrap"
-                                title="Use current location"
-                            >
-                                <IoLocationOutline className="text-lg" />
-                                {gettingLocation ? "Getting..." : "Use Current Location"}
-                            </button>
-                        </div>
-                        <p className="text-xs text-blue-700 mt-1">
-                            💡 Type your address above to see suggestions, or click "Use Current Location" to auto-fill from GPS
-                        </p>
-                    </div>
-                    {/* Display selected address */}
-                    {formData.address?.geoLocation?.formattedAddress && (
-                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                            <p className="text-xs font-medium text-green-800 mb-1">✓ Address Selected:</p>
-                            <p className="text-sm text-green-700">{formData.address.geoLocation.formattedAddress}</p>
-                        </div>
-                    )}
-                </div>
-
-                    {/* Village / Mandal */}
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                    <div>
-                        <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                            Village
-                        </label>
-                        <input
-                            type="text"
-                            value={formData.village}
-                            onChange={(e) => setFormData({ ...formData, village: e.target.value })}
-                            placeholder="Enter village"
-                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                            Mandal
-                        </label>
-                        <input
-                            type="text"
-                            value={formData.mandal}
-                            onChange={(e) => setFormData({ ...formData, mandal: e.target.value })}
-                            placeholder="Enter mandal"
-                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                        />
-                    </div>
-                </div>
-
-                {/* District / State */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                            District
-                        </label>
-                        <input
-                            type="text"
-                            value={formData.district}
-                            onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                            placeholder="Enter district"
-                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                            State
-                        </label>
-                        <input
-                            type="text"
-                            value={formData.state}
-                            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                            placeholder="Enter state"
-                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                        />
-                    </div>
-                    </div>
-                </div>
-
-                {/* Section: Project Details */}
-                <div className="bg-white rounded-[16px] p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 pb-3 border-b border-gray-200">
-                        Project Details
-                    </h2>
-                    {/* Purpose of Bore point checking */}
-                    <div className="relative">
-                    <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                        Purpose of Bore point checking *
-                    </label>
-                    <div className="relative">
-                        <button
-                            type="button"
-                            onClick={() => setOpenDropdown(openDropdown === 'purpose' ? null : 'purpose')}
-                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-between"
-                        >
-                            <span className={formData.purpose ? "text-gray-800" : "text-gray-400"}>
-                                {formData.purpose || "Select purpose"}
-                            </span>
-                            <IoChevronDownOutline className={`text-gray-400 transition-transform ${openDropdown === 'purpose' ? 'rotate-180' : ''}`} />
-                        </button>
-                        {openDropdown === 'purpose' && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
-                                <div 
-                                    className="px-4 py-3 bg-blue-600 text-white text-sm font-medium cursor-pointer"
-                                    onClick={() => {
-                                        setFormData({ ...formData, purpose: "", purposeExtent: "" });
-                                        setOpenDropdown(null);
-                                    }}
-                                >
-                                    Select purpose
-                                </div>
-                                {["Agriculture", "Industrial/Commercial", "Domestic/Household", "Open plots"].map((option) => (
-                                    <div
-                                        key={option}
-                                        className={`px-4 py-3 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
-                                            formData.purpose === option ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-800'
-                                        }`}
-                                        onClick={() => {
-                                            setFormData({ ...formData, purpose: option, purposeExtent: "" });
-                                            setOpenDropdown(null);
-                                        }}
-                                    >
-                                        {option}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    {formData.purpose && (
-                        <div className="mt-3">
-                            <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                                Extent {formData.purpose === "Agriculture" ? "(in acres)" : "(in Sq-Yards)"} *
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.purposeExtent}
-                                onChange={(e) => setFormData({ ...formData, purposeExtent: e.target.value })}
-                                required
-                                placeholder={`Enter extent ${formData.purpose === "Agriculture" ? "in acres" : "in Sq-Yards"}`}
-                                min="0"
-                                step="0.01"
-                                className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                            />
-                        </div>
-                    )}
-                    </div>
-
-                    {/* Existing Borewell */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-[12px] p-4 mt-4">
-                    <label className="flex items-center gap-2 mb-3">
-                        <input
-                            type="checkbox"
-                            checked={formData.existingBorewell.hasExisting}
-                            onChange={(e) => setFormData({
-                                ...formData,
-                                existingBorewell: { ...formData.existingBorewell, hasExisting: e.target.checked }
-                            })}
-                            className="w-4 h-4 text-[#0A84FF] border-gray-300 rounded focus:ring-[#0A84FF]"
-                        />
-                        <span className="text-sm font-semibold text-[#4A4A4A]">
-                            Any existing borewell running or stopped in the land?
-                        </span>
-                    </label>
-                    {formData.existingBorewell.hasExisting && (
-                        <div className="mt-3 space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                                        Year of drilling
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={formData.existingBorewell.yearOfDrilling}
-                                        onChange={(e) => setFormData({
-                                            ...formData,
-                                            existingBorewell: { ...formData.existingBorewell, yearOfDrilling: e.target.value }
-                                        })}
-                                        placeholder="e.g., 2020"
-                                        min="1900"
-                                        max={new Date().getFullYear()}
-                                        className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                                        Depth (in feet)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={formData.existingBorewell.depthInFeet}
-                                        onChange={(e) => setFormData({
-                                            ...formData,
-                                            existingBorewell: { ...formData.existingBorewell, depthInFeet: e.target.value }
-                                        })}
-                                        placeholder="e.g., 200"
-                                        min="0"
-                                        className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">
-                                    Number of Gaps and depths
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.existingBorewell.gapsAndDepths}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        existingBorewell: { ...formData.existingBorewell, gapsAndDepths: e.target.value }
-                                    })}
-                                    placeholder="e.g., 2 gaps at 50ft and 150ft"
-                                    className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                                        Quantity of water (in inches)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={formData.existingBorewell.waterQuantity}
-                                        onChange={(e) => setFormData({
-                                            ...formData,
-                                            existingBorewell: { ...formData.existingBorewell, waterQuantity: e.target.value }
-                                        })}
-                                        placeholder="e.g., 2"
-                                        min="0"
-                                        className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                                        Distance of surrounding borewells
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.existingBorewell.surroundingBorewellDistance}
-                                        onChange={(e) => setFormData({
-                                            ...formData,
-                                            existingBorewell: { ...formData.existingBorewell, surroundingBorewellDistance: e.target.value }
-                                        })}
-                                        placeholder="e.g., 50 meters"
-                                        className="w-full bg-white border border-[#D9DDE4] rounded-[8px] px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF]"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    </div>
-
-                    {/* Techniques used to locate a bore point */}
-                    <div className="mt-4 relative">
-                    <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                        Technique used to locate a bore point *
-                    </label>
-                    <div className="relative">
-                        <button
-                            type="button"
-                            onClick={() => setOpenDropdown(openDropdown === 'technique' ? null : 'technique')}
-                            className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] flex items-center justify-between"
-                        >
-                            <span className={formData.techniqueUsed ? "text-gray-800" : "text-gray-400"}>
-                                {formData.techniqueUsed || "Select technique"}
-                            </span>
-                            <IoChevronDownOutline className={`text-gray-400 transition-transform ${openDropdown === 'technique' ? 'rotate-180' : ''}`} />
-                        </button>
-                        {openDropdown === 'technique' && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
-                                <div 
-                                    className="px-4 py-3 bg-blue-600 text-white text-sm font-medium cursor-pointer"
-                                    onClick={() => {
-                                        setFormData({ ...formData, techniqueUsed: "" });
-                                        setOpenDropdown(null);
-                                    }}
-                                >
-                                    Select technique
-                                </div>
-                                {["Coconut", "Dowsing L rods", "3D Locator", "Detector / Diviner", "Geophysical survey"].map((option) => (
-                                    <div
-                                        key={option}
-                                        className={`px-4 py-3 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
-                                            formData.techniqueUsed === option ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-800'
-                                        }`}
-                                        onClick={() => {
-                                            setFormData({ ...formData, techniqueUsed: option });
-                                            setOpenDropdown(null);
-                                        }}
-                                    >
-                                        {option}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    {formData.techniqueUsed && (
-                        <div className="mt-3">
-                            <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                                Name of Individual / Company / Organization
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.techniqueProviderName}
-                                onChange={(e) => setFormData({ ...formData, techniqueProviderName: e.target.value })}
-                                placeholder="Enter name of provider"
-                                className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)]"
-                            />
-                        </div>
-                    )}
-                    </div>
-                </div>
-
-                {/* Section: Additional Information */}
-                <div className="bg-white rounded-[16px] p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 pb-3 border-b border-gray-200">
-                        Additional Information
-                    </h2>
-                {/* Notes */}
-                <div>
-                    <label className="block text-sm font-semibold text-[#4A4A4A] mb-2">
-                        Additional Notes
-                    </label>
-                    <textarea
-                        value={formData.notes}
-                        onChange={(e) =>
-                            setFormData({ ...formData, notes: e.target.value })
-                        }
-                        rows="4"
-                        placeholder="Any special instructions or requirements..."
-                        className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#0A84FF] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] resize-none"
-                    />
-                </div>
-                </div>
-
-                {/* Razorpay Test Mode Info */}
-                {import.meta.env.VITE_RAZORPAY_KEY_ID && import.meta.env.VITE_RAZORPAY_KEY_ID.startsWith('rzp_test_') && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-[12px] p-4 mb-4">
-                        <p className="text-sm font-semibold text-blue-800 mb-1">
-                            💳 Razorpay Test Mode Active
-                        </p>
-                        <p className="text-xs text-blue-600">
-                            Using Razorpay test environment. Use test card: <strong>4111 1111 1111 1111</strong> (any future expiry, any CVV)
-                        </p>
-                    </div>
-                )}
-
-                {/* Section: Payment Breakdown */}
-                {service && (
-                    <div className="bg-white rounded-[16px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border border-gray-100">
-                        <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-200">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <span className="text-xl">💳</span>
-                                Payment Breakdown
-                            </h2>
-                            {chargesBreakdown && (
-                                <span className="text-xs font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                                    Calculated
-                                </span>
-                            )}
-                        </div>
-                        
-                        {calculatingCharges && !chargesBreakdown ? (
-                            <div className="flex items-center justify-center py-8">
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0A84FF]"></div>
-                                    <p className="text-sm text-gray-600 font-medium">Calculating charges...</p>
-                                </div>
-                            </div>
-                        ) : chargesBreakdown ? (
-                            <div className="space-y-3">
-                                {/* Base Service Fee */}
-                                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="text-sm font-semibold text-gray-700">Base Service Fee</p>
-                                            <p className="text-xs text-gray-500 mt-0.5">Service charge</p>
-                                        </div>
-                                        <span className="text-base font-bold text-gray-800">₹{chargesBreakdown.baseServiceFee?.toFixed(2) || service?.price?.toFixed(2) || '0.00'}</span>
-                                    </div>
-                                </div>
-
-                                {/* Distance & Travel Charges */}
-                                {chargesBreakdown.distance !== null && chargesBreakdown.distance !== undefined && (
-                                    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-700">Distance</p>
-                                                <p className="text-xs text-gray-500 mt-0.5">
-                                                    {chargesBreakdown.distance?.toFixed(2)} km 
-                                                    <span className="ml-1">(Base: {chargesBreakdown.baseRadius || 30} km)</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {chargesBreakdown.travelCharges > 0 && (
-                                            <div className="flex justify-between items-center pt-2 border-t border-gray-200 mt-2">
-                                                <div>
-                                                    <p className="text-sm font-semibold text-gray-700">Travel Charges</p>
-                                                    <p className="text-xs text-gray-500 mt-0.5">
-                                                        ₹{chargesBreakdown.travelChargePerKm || 10}/km beyond base radius
-                                                    </p>
-                                                </div>
-                                                <span className="text-base font-bold text-gray-800">₹{chargesBreakdown.travelCharges?.toFixed(2) || '0.00'}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Subtotal */}
-                                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                                    <div className="flex justify-between items-center">
-                                        <p className="text-sm font-semibold text-gray-700">Subtotal</p>
-                                        <span className="text-base font-bold text-gray-800">₹{chargesBreakdown.subtotal?.toFixed(2) || chargesBreakdown.baseServiceFee?.toFixed(2) || '0.00'}</span>
-                                    </div>
-                                </div>
-
-                                {/* GST */}
-                                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="text-sm font-semibold text-gray-700">GST</p>
-                                            <p className="text-xs text-gray-500 mt-0.5">{chargesBreakdown.gstPercentage || 18}% on subtotal</p>
-                                        </div>
-                                        <span className="text-base font-bold text-gray-800">₹{chargesBreakdown.gst?.toFixed(2) || '0.00'}</span>
-                                    </div>
-                                </div>
-
-                                {/* Total Amount - Highlighted without background color */}
-                                <div className="bg-white rounded-xl p-5 border-2 border-gray-300 shadow-md">
-                                    <div className="flex justify-between items-center">
-                                        <p className="text-base font-bold text-gray-800">Total Amount</p>
-                                        <span className="text-xl font-bold text-gray-800">₹{chargesBreakdown.totalAmount?.toFixed(2) || '0.00'}</span>
-                                    </div>
-                                </div>
-
-                                {/* Payment Split */}
-                                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                                    <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">PAYMENT SCHEDULE</p>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center py-2 px-3 bg-blue-50 rounded-lg">
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-700">Advance Payment</p>
-                                                <p className="text-xs text-gray-500">40% of total</p>
-                                            </div>
-                                            <span className="text-base font-bold text-[#0A84FF]">₹{chargesBreakdown.advanceAmount?.toFixed(2) || '0.00'}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-700">Remaining Payment</p>
-                                                <p className="text-xs text-gray-500">60% of total</p>
-                        </div>
-                                            <span className="text-base font-bold text-gray-800">₹{chargesBreakdown.remainingAmount?.toFixed(2) || '0.00'}</span>
-                        </div>
-                        </div>
-                    </div>
-                </div>
-                        ) : (
-                            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                                <div className="flex justify-between items-center mb-3">
-                                    <div>
-                                        <p className="text-sm font-semibold text-gray-700">Base Service Fee</p>
-                                        <p className="text-xs text-gray-500 mt-0.5">Service charge</p>
-                                    </div>
-                                    <span className="text-base font-bold text-gray-800">₹{service?.price?.toLocaleString() || '0'}</span>
-                                </div>
-                                <div className="pt-3 border-t border-gray-200">
-                                    <p className="text-xs text-center text-gray-500 py-2">
-                                        {formData.address.coordinates?.lat && formData.address.coordinates?.lng 
-                                            ? 'Calculating charges...' 
-                                            : '📍 Select an address to calculate travel charges and GST'}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Submit Button */}
-                <div className="pt-4">
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-[#0A84FF] text-white font-semibold py-4 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors shadow-[0px_4px_10px_rgba(10,132,255,0.2)] text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? "Processing..." : "Book & Pay"}
-                    </button>
-                </div>
-            </form>
+            {showTerms && (
+                <TermsAndConditions
+                    purpose={formState.category}
+                    onAccept={handleTermsAccept}
+                    onCancel={() => setShowTerms(false)}
+                />
+            )}
         </PageContainer>
     );
 }

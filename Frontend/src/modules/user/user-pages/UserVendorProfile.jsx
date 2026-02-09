@@ -96,7 +96,7 @@ export default function UserVendorProfile() {
     };
 
     const handleBookService = (service) => {
-        navigate("/user/request-service", {
+        navigate("/user/survey", {
             state: {
                 service: service,
                 vendor: vendorData,
