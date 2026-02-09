@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { vendorForgotPassword } from "../../../services/vendorAuthApi";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
-import logo from "/src/assets/Logo.png";
+import logo from "@/assets/Logo.png";
 
 export default function VendorForgotPassword() {
     const [email, setEmail] = useState("");
