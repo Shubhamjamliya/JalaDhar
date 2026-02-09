@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useToast } from "../../../hooks/useToast";
 
-import logo from "@/assets/Logo.png";
+import logo from "@/assets/AppLogo.png";
 
 export default function VendorLogin() {
     const [email, setEmail] = useState("");

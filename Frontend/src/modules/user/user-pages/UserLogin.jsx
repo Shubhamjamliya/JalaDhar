@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useToast } from "../../../hooks/useToast";
 
-import logo from "@/assets/Logo.png";
+import logo from "@/assets/AppLogo.png";
 
 export default function UserLogin() {
     const [email, setEmail] = useState("");

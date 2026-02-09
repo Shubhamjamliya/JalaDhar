@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useToast } from "../../../hooks/useToast";
 
-import logo from "@/assets/Logo.png";
+import logo from "@/assets/AppLogo.png";
 
 export default function AdminLogin() {
     const [showPassword, setShowPassword] = useState(false);

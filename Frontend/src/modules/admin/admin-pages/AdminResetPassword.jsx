@@ -4,6 +4,7 @@ import { adminResetPassword } from "../../../services/adminApi";
 import { IoCheckmarkCircleOutline } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import logo from "@/assets/AppLogo.png";
 
 export default function AdminResetPassword() {
     const navigate = useNavigate();
@@ -81,7 +82,7 @@ export default function AdminResetPassword() {
                 <div className="w-full max-w-sm">
                     <div className="text-center mb-10 mt-4">
                         <img
-                            src="/src/assets/logo.png"
+                            src={logo}
                             alt="Jaladhar"
                             className="w-auto mx-auto mb-2"
                         />

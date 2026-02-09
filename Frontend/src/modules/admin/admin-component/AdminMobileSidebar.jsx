@@ -19,7 +19,7 @@ import {
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
-import logo from "../../../assets/logo.png";
+import logo from "@/assets/AppLogo.png";
 
 const navItems = [
     {
@@ -174,8 +174,8 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                     <button
                                         onClick={() => setIsPaymentsOpen(!isPaymentsOpen)}
                                         className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 w-full ${isActive
-                                                ? "bg-[#60A5FA] text-white shadow-md"
-                                                : "text-white/70 hover:bg-white/10 hover:text-white"
+                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                            : "text-white/70 hover:bg-white/10 hover:text-white"
                                             }`}
                                     >
                                         <Icon className="text-xl" />
@@ -245,8 +245,8 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                 end={shouldEnd}
                                 onClick={onClose}
                                 className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${isActive
-                                        ? "bg-[#60A5FA] text-white shadow-md"
-                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                    ? "bg-[#60A5FA] text-white shadow-md"
+                                    : "text-white/70 hover:bg-white/10 hover:text-white"
                                     }`}
                             >
                                 <Icon className="text-xl" />
