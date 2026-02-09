@@ -136,7 +136,7 @@ const createBooking = async (req, res) => {
       },
       $or: [
         { 'payment.advancePaid': true }, // Any paid booking is active
-        { status: { $ne: BOOKING_STATUS.PENDING } } // Any non-PENDING booking is active (shouldn't happen without payment, but handle it)
+        // Removed { status: { $ne: BOOKING_STATUS.PENDING } } to allow multiple pending (unpaid) bookings
       ]
     });
 
@@ -306,37 +306,40 @@ const createBooking = async (req, res) => {
     await booking.populate('vendor', 'name email phone');
     await booking.populate('service', 'name price');
 
-    // Send notifications
-    try {
-      await sendBookingConfirmationEmail({
+    // Send notifications (asynchronously)
+    Promise.all([
+      sendBookingConfirmationEmail({
         email: booking.user.email,
         name: booking.user.name,
         bookingId: booking._id.toString(),
         serviceName: service.name,
         vendorName: vendor.name
-      });
+      }).catch(err => console.error('Email notification error:', err)),
 
-      // Send real-time notification to vendor
-      const io = getIO();
-      await sendNotification({
-        recipient: vendorId,
-        recipientModel: 'Vendor',
-        type: 'BOOKING_CREATED',
-        title: 'New Booking Request',
-        message: `New booking request from ${booking.user.name} for ${service.name}`,
-        relatedEntity: {
-          entityType: 'Booking',
-          entityId: booking._id
-        },
-        metadata: {
-          serviceName: service.name,
-          userName: booking.user.name,
-          scheduledDate: booking.scheduledDate
+      (async () => {
+        try {
+          const io = getIO();
+          await sendNotification({
+            recipient: vendorId,
+            recipientModel: 'Vendor',
+            type: 'BOOKING_CREATED',
+            title: 'New Booking Request',
+            message: `New booking request from ${booking.user.name} for ${service.name}`,
+            relatedEntity: {
+              entityType: 'Booking',
+              entityId: booking._id
+            },
+            metadata: {
+              serviceName: service.name,
+              userName: booking.user.name,
+              scheduledDate: booking.scheduledDate
+            }
+          }, io);
+        } catch (err) {
+          console.error('Socket notification error:', err);
         }
-      }, io);
-    } catch (emailError) {
-      console.error('Email notification error:', emailError);
-    }
+      })()
+    ]);
 
     res.status(201).json({
       success: true,

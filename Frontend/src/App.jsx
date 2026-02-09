@@ -15,6 +15,7 @@ import VendorProtectedRoute from "./components/VendorProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import LoadingSpinner from "./modules/shared/components/LoadingSpinner";
 import ToastProvider from "./components/ToastProvider";
+import LocationPermissionModal from "./components/LocationPermissionModal";
 
 // Lazy load all route components for better performance
 const UserLogin = lazy(() => import("./modules/user/user-pages/UserLogin"));
@@ -89,6 +90,7 @@ function App() {
                     <AdminAuthProvider>
                         <NotificationProvider>
                             <Router>
+                                <LocationPermissionModal />
                                 <Routes>
                                     {/* ---------- USER AUTH ---------- */}
                                     <Route

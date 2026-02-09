@@ -39,6 +39,7 @@ export default function UserDashboard() {
     const toast = useToast();
     const [userAvatar, setUserAvatar] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
+    const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' or 'PENDING_PAYMENT'
     const [requestStatuses, setRequestStatuses] = useState([]);
     const [vendors, setVendors] = useState([]);
     const [userLocation, setUserLocation] = useState({ lat: null, lng: null, address: null });
@@ -314,7 +315,8 @@ export default function UserDashboard() {
         };
     }, [showStatusModal]);
 
-    const handleRequestStatusClick = () => {
+    const handleRequestStatusClick = (filter = 'ALL') => {
+        setStatusFilter(filter);
         setShowStatusModal(true);
     };
 
@@ -375,7 +377,14 @@ export default function UserDashboard() {
         });
     };
 
-    const displayRequests = requestStatuses;
+    const filteredRequests = requestStatuses.filter(req => {
+        if (statusFilter === 'PENDING_PAYMENT') {
+            return req.status === 'pending' && req.paymentStatus === 'PENDING';
+        }
+        return true;
+    });
+
+    const displayRequests = filteredRequests;
 
     const backgroundImageUrl =
         "https://lh3.googleusercontent.com/aida-public/AB6AXuCSWOEOG7ry6z14TFWGAz7PjaKTwn697LggEX4Vf1U2F-18-Yl362M1a0XmrCPrnxjq3HLvvisiIPbnCcLWbicHHyQVehSZEC56qo5fvTVnSjPmEPPFLj9dncg63DYDUscFj51kK5mnPvn7hznGuHDuYjMiSWsX7r6Nlpe1ss-SQVtV_G_yADjJFZVcqSA8EGeUz4tjBJlabT7hxamjtW25RfdT9g0K2O82ATNS4J1em3nBru9nIKr4YnD72XMjXgETg4PCKTSCxEva";
@@ -462,7 +471,7 @@ export default function UserDashboard() {
             <div className="flex items-center justify-between gap-4 mb-4 px-2">
                 {/* Request Status */}
                 <div
-                    onClick={handleRequestStatusClick}
+                    onClick={() => handleRequestStatusClick('ALL')}
                     className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
                     <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
@@ -471,7 +480,7 @@ export default function UserDashboard() {
                         <IoDocumentTextOutline className="text-2xl text-[#1976D2] relative z-10" />
                     </div>
                     <span className="text-xs font-bold text-gray-800 text-center">
-                        Request Status
+                        Booking Status
                     </span>
                 </div>
 
@@ -493,7 +502,7 @@ export default function UserDashboard() {
 
                 {/* Pending Requests */}
                 <div
-                    onClick={handleRequestStatusClick}
+                    onClick={() => handleRequestStatusClick('PENDING_PAYMENT')}
                     className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
                     <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all">
@@ -506,7 +515,7 @@ export default function UserDashboard() {
                         )}
                     </div>
                     <span className="text-xs font-bold text-gray-800 text-center">
-                        Pending Requests
+                        Pending Payments
                     </span>
                 </div>
 
@@ -643,7 +652,7 @@ export default function UserDashboard() {
                             {/* Fixed Header */}
                             <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between rounded-t-[20px]">
                                 <h2 className="text-xl font-bold text-gray-800">
-                                    Request Status
+                                    {statusFilter === 'PENDING_PAYMENT' ? 'Pending Payments' : 'Booking Status'}
                                 </h2>
                                 <button
                                     onClick={() => setShowStatusModal(false)}

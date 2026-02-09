@@ -441,7 +441,7 @@ const ExpertSelection = ({ location, category, onSelect, onBack }) => {
   );
 };
 
-const SlotAndPayment = ({ surveyData, onConfirm, onBack }) => {
+const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
   const [date, setDate] = useState("");
   // Time is removed as per requirement, default will be used
   const [loading, setLoading] = useState(false);
@@ -545,6 +545,11 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack }) => {
               <p className="text-xs text-gray-500">
                 {charges?.distance ? `${charges.distance} km` : '0 km'} from vendor
               </p>
+              {charges?.travelCharges > 0 && (
+                <p className="text-xs font-bold text-gray-500">
+                  2 x ₹{(charges.travelCharges / 2).toFixed(2)}
+                </p>
+              )}
             </div>
             {charges?.travelCharges > 0 ? (
               <p className="font-bold text-gray-900">₹{charges.travelCharges.toFixed(2)}</p>
@@ -603,10 +608,19 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack }) => {
         <button onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
         <button
           onClick={handlePay}
-          disabled={!charges}
-          className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+          disabled={!charges || isSubmitting}
+          className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <IoCashOutline /> Book & Pay
+          {isSubmitting ? (
+            <>
+              <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <IoCashOutline /> Book & Pay
+            </>
+          )}
         </button>
       </div>
     </div>
@@ -690,6 +704,7 @@ export default function UserSurveyFlow() {
   const [showTerms, setShowTerms] = useState(false);
   const [isVendorPreSelected, setIsVendorPreSelected] = useState(false);
   const [pendingBookingAlert, setPendingBookingAlert] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Check if we have pre-selected vendor data from navigation (Scenario B)
@@ -775,6 +790,9 @@ export default function UserSurveyFlow() {
 
   // Step 6: Final Booking
   const handleBooking = async ({ scheduledDate, scheduledTime }) => {
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       // Map frontend category to backend enum
       const purposeMap = {
@@ -828,6 +846,8 @@ export default function UserSurveyFlow() {
     } catch (err) {
       console.error(err);
       toast.showError("Failed to create booking");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -863,7 +883,7 @@ export default function UserSurveyFlow() {
         {step === 2 && <DetailsForm category={surveyData.category} data={surveyData.details} onSubmit={handleDetailsSubmit} onBack={() => setStep(1)} />}
         {step === 3 && <LocationPicker onLocationSelect={handleLocationSelect} onBack={() => setStep(2)} />}
         {step === 4 && <ExpertSelection location={surveyData.location} category={surveyData.category} onSelect={handleExpertSelect} onBack={() => setStep(3)} />}
-        {step === 5 && <SlotAndPayment surveyData={surveyData} onConfirm={handleBooking} onBack={() => isVendorPreSelected ? setStep(3) : setStep(4)} />}
+        {step === 5 && <SlotAndPayment surveyData={surveyData} onConfirm={handleBooking} onBack={() => isVendorPreSelected ? setStep(3) : setStep(4)} isSubmitting={isSubmitting} />}
       </div>
 
       {/* Modals */}
