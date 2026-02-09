@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { forgotPassword } from "../../../services/authApi";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
-import logo from "../../../assets/Logo.png";
+import logo from "/src/assets/Logo.png";
 
 export default function UserForgotPassword() {
     const [email, setEmail] = useState("");
