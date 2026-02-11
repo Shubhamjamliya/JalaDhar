@@ -310,405 +310,6 @@ export default function VendorBookingDetails() {
                 </div>
             </div>
 
-            {/* User Information Card */}
-            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Customer Information</h2>
-                <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] flex items-center justify-center text-white text-2xl font-bold">
-                            {booking.user?.name?.charAt(0).toUpperCase() || "U"}
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-800">
-                                {booking.user?.name || "User"}
-                            </h3>
-                            {booking.user?.email && (
-                                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                                    <IoMailOutline className="text-base" />
-                                    <a href={`mailto:${booking.user.email}`} className="hover:text-[#0A84FF]">
-                                        {booking.user.email}
-                                    </a>
-                                </div>
-                            )}
-                            {booking.user?.phone && (
-                                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                                    <IoCallOutline className="text-base" />
-                                    <a href={`tel:${booking.user.phone}`} className="hover:text-[#0A84FF]">
-                                        {booking.user.phone}
-                                    </a>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Service Information Card */}
-            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Service Information</h2>
-                <div className="space-y-3">
-                    <div>
-                        <p className="text-sm text-gray-500 mb-1">Service Name</p>
-                        <p className="text-lg font-bold text-gray-800">{booking.service?.name || "Service"}</p>
-                    </div>
-                    {booking.service?.machineType && (
-                        <div>
-                            <p className="text-sm text-gray-500 mb-1">Machine Type</p>
-                            <p className="text-base text-gray-800">{booking.service.machineType}</p>
-                        </div>
-                    )}
-                    <div>
-                        <p className="text-sm text-gray-500 mb-1">Service Price</p>
-                        <p className="text-xl font-bold text-[#0A84FF]">
-                            ₹{booking.service?.price?.toLocaleString() || "0"}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Booking Schedule Card */}
-            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Schedule</h2>
-                <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                        <IoTimeOutline className="text-2xl text-[#0A84FF]" />
-                        <div>
-                            <p className="text-sm text-gray-500">Scheduled Date & Time</p>
-                            <p className="text-base font-semibold text-gray-800">
-                                {booking.scheduledDate
-                                    ? new Date(booking.scheduledDate).toLocaleDateString("en-IN", {
-                                        day: "numeric",
-                                        month: "short",
-                                        year: "numeric",
-                                    })
-                                    : "N/A"
-                                } at {booking.scheduledTime || "N/A"}
-                            </p>
-                        </div>
-                    </div>
-                    {booking.address && (
-                        <div className="flex items-start gap-3">
-                            <IoLocationOutline className="text-2xl text-[#0A84FF] mt-1" />
-                            <div>
-                                <p className="text-sm text-gray-500">Service Address</p>
-                                <p className="text-base text-gray-800">
-                                    {booking.address.street && `${booking.address.street}, `}
-                                    {booking.address.city && `${booking.address.city}, `}
-                                    {booking.address.state && `${booking.address.state} - `}
-                                    {booking.address.pincode}
-                                </p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Payment Information Card */}
-            {booking.payment && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Charges Breakdown</h2>
-                    <div className="space-y-3">
-                        {/* Service Charges */}
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <span className="text-sm text-gray-600">Service Charges</span>
-                                {booking.service?.name && (
-                                    <p className="text-xs text-gray-500 mt-0.5">{booking.service.name}</p>
-                                )}
-                            </div>
-                            <span className="font-semibold text-gray-800">
-                                ₹{booking.payment.baseServiceFee?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || booking.service?.price?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
-                            </span>
-                        </div>
-
-                        {/* Travel Charges with Distance */}
-                        {booking.payment.travelCharges !== undefined && booking.payment.travelCharges > 0 && (
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <span className="text-sm text-gray-600">Travel Charges</span>
-                                    {booking.payment.distance !== null && booking.payment.distance !== undefined && (
-                                        <p className="text-xs text-gray-500 mt-0.5">
-                                            Distance: {booking.payment.distance.toFixed(2)} km
-                                        </p>
-                                    )}
-                                </div>
-                                <span className="font-semibold text-gray-800">
-                                    ₹{booking.payment.travelCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                            </div>
-                        )}
-
-                        {/* Total (Service + Travel) */}
-                        <div className="pt-2 border-t-2 border-gray-300 flex justify-between items-center">
-                            <span className="text-base font-bold text-gray-800">Total (Service + Travel)</span>
-                            <span className="text-lg font-bold text-[#0A84FF]">
-                                ₹{booking.payment.subtotal !== undefined
-                                    ? booking.payment.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                    : ((booking.payment.baseServiceFee || 0) + (booking.payment.travelCharges || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
-                            </span>
-                        </div>
-
-                        {/* Payment Status */}
-                        <div className="pt-2 border-t border-gray-200 mt-2">
-                            <span className="text-xs text-gray-500">Payment Status: </span>
-                            <span className={`text-xs font-semibold ${booking.payment.status === "SUCCESS" ? "text-green-600" :
-                                booking.payment.status === "PENDING" ? "text-yellow-600" :
-                                    "text-red-600"
-                                }`}>
-                                {booking.payment.status || "PENDING"}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Notes Card */}
-            {booking.notes && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Customer Notes</h2>
-                    <p className="text-sm text-gray-600 leading-relaxed">{booking.notes}</p>
-                </div>
-            )}
-
-            {/* Report Card (if uploaded) */}
-            {booking.report && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Visit Report</h2>
-                    <div className="space-y-3">
-                        <div>
-                            <p className="text-sm text-gray-500 mb-1">Water Found</p>
-                            <p className={`text-base font-semibold ${booking.report.waterFound ? "text-green-600" : "text-red-600"}`}>
-                                {booking.report.waterFound ? "Yes" : "No"}
-                            </p>
-                        </div>
-                        {booking.report.images && booking.report.images.length > 0 && (
-                            <div>
-                                <p className="text-sm text-gray-500 mb-2">Report Images</p>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {booking.report.images.map((image, index) => (
-                                        <img
-                                            key={index}
-                                            src={image.url}
-                                            alt={`Report ${index + 1}`}
-                                            className="w-full h-32 object-cover rounded-lg"
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {booking.report.reportFile && (
-                            <div>
-                                <a
-                                    href={booking.report.reportFile.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB]"
-                                >
-                                    <IoDownloadOutline className="text-xl" />
-                                    <span>Download Report PDF</span>
-                                </a>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Action Buttons */}
-            {booking.status === "ASSIGNED" && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
-                    <div className="flex gap-4">
-                        <button
-                            onClick={handleAccept}
-                            disabled={actionLoading}
-                            className="flex-1 bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <IoCheckmarkCircleOutline className="text-xl" />
-                            {actionLoading ? "Processing..." : "Accept Booking"}
-                        </button>
-                        <button
-                            onClick={handleReject}
-                            disabled={actionLoading}
-                            className="flex-1 bg-red-500 text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-red-600 active:bg-red-700 transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(239,68,68,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <IoCloseCircleOutline className="text-xl" />
-                            {actionLoading ? "Processing..." : "Reject Booking"}
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Mark as Visited Button */}
-            {booking.status === "ACCEPTED" && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
-                    <button
-                        onClick={handleMarkAsVisited}
-                        disabled={actionLoading}
-                        className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <IoCheckmarkCircleOutline className="text-xl" />
-                        {actionLoading ? "Processing..." : "Mark as Visited"}
-                    </button>
-                </div>
-            )}
-
-            {/* Upload Report Button */}
-            {booking.status === "VISITED" && !booking.report && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
-                    <button
-                        onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
-                        className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)]"
-                    >
-                        <IoDocumentTextOutline className="text-xl" />
-                        Upload Report
-                    </button>
-                </div>
-            )}
-
-            {/* Travel Charges Request Section */}
-            {["ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED"].includes(booking.status) && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-gray-800">Travel Charges</h2>
-                        {booking.travelChargesRequest?.status && (
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${booking.travelChargesRequest.status === "APPROVED"
-                                ? "bg-green-100 text-green-700"
-                                : booking.travelChargesRequest.status === "REJECTED"
-                                    ? "bg-red-100 text-red-700"
-                                    : "bg-yellow-100 text-yellow-700"
-                                }`}>
-                                {booking.travelChargesRequest.status}
-                            </span>
-                        )}
-                    </div>
-
-                    {booking.travelChargesRequest ? (
-                        <div className="space-y-3">
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Requested Amount:</span>
-                                <span className="font-semibold text-gray-800">₹{booking.travelChargesRequest.amount?.toLocaleString() || 0}</span>
-                            </div>
-                            {booking.travelChargesRequest.reason && (
-                                <div>
-                                    <span className="text-gray-600">Reason:</span>
-                                    <p className="text-gray-800 mt-1">{booking.travelChargesRequest.reason}</p>
-                                </div>
-                            )}
-                            {booking.travelChargesRequest.status === "REJECTED" && booking.travelChargesRequest.rejectionReason && (
-                                <div className="bg-red-50 border border-red-200 rounded-[8px] p-3">
-                                    <p className="text-sm text-red-700">
-                                        <strong>Rejection Reason:</strong> {booking.travelChargesRequest.rejectionReason}
-                                    </p>
-                                </div>
-                            )}
-                            {booking.travelChargesRequest.requestedAt && (
-                                <div className="text-sm text-gray-500">
-                                    Requested: {formatDate(booking.travelChargesRequest.requestedAt)}
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div>
-                            <p className="text-sm text-gray-600 mb-4">
-                                Request travel charges if you need reimbursement for travel expenses.
-                            </p>
-                            <button
-                                onClick={() => setShowTravelChargesModal(true)}
-                                className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)]"
-                            >
-                                <IoAddCircleOutline className="text-xl" />
-                                Request Travel Charges
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Travel Charges Request Modal */}
-            {showTravelChargesModal && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    onClick={() => !submittingTravelCharges && setShowTravelChargesModal(false)}
-                >
-                    <div
-                        className="bg-white rounded-[16px] w-full max-w-md flex flex-col shadow-xl"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between p-5 border-b border-gray-200">
-                            <h2 className="text-xl font-bold text-gray-800">Request Travel Charges</h2>
-                            <button
-                                onClick={() => !submittingTravelCharges && setShowTravelChargesModal(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                disabled={submittingTravelCharges}
-                            >
-                                <IoCloseOutline className="text-2xl text-gray-600" />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-5">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-2 block">
-                                        Amount (₹) <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={travelChargesData.amount}
-                                        onChange={(e) => setTravelChargesData({ ...travelChargesData, amount: e.target.value })}
-                                        placeholder="Enter amount"
-                                        className="w-full border border-gray-300 rounded-[8px] px-3 py-2 text-sm focus:outline-none focus:border-[#0A84FF]"
-                                        disabled={submittingTravelCharges}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-2 block">
-                                        Reason (Optional)
-                                    </label>
-                                    <textarea
-                                        value={travelChargesData.reason}
-                                        onChange={(e) => setTravelChargesData({ ...travelChargesData, reason: e.target.value })}
-                                        placeholder="Explain why you need travel charges..."
-                                        rows="4"
-                                        className="w-full border border-gray-300 rounded-[8px] px-3 py-2 text-sm focus:outline-none focus:border-[#0A84FF]"
-                                        disabled={submittingTravelCharges}
-                                        maxLength={500}
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        {travelChargesData.reason.length}/500 characters
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex gap-3 p-5 border-t border-gray-200">
-                            <button
-                                onClick={() => setShowTravelChargesModal(false)}
-                                className="flex-1 h-10 bg-gray-200 text-gray-700 text-sm font-medium rounded-[8px] hover:bg-gray-300 transition-colors"
-                                disabled={submittingTravelCharges}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSubmitTravelCharges}
-                                disabled={submittingTravelCharges || !travelChargesData.amount || parseFloat(travelChargesData.amount) <= 0}
-                                className="flex-1 h-10 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {submittingTravelCharges ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        Submitting...
-                                    </>
-                                ) : (
-                                    "Submit Request"
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Visual Status Timeline */}
             <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
                 <div className="flex items-center justify-between mb-4">
@@ -825,6 +426,454 @@ export default function VendorBookingDetails() {
                     )}
                 </div>
             </div>
+
+            {/* User Information Card */}
+            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Customer Information</h2>
+                <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                        {booking.user?.profilePicture ? (
+                            <img
+                                src={booking.user.profilePicture}
+                                alt={booking.user.name}
+                                className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
+                            />
+                        ) : (
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] flex items-center justify-center text-white text-2xl font-bold shadow-sm border-2 border-white">
+                                {booking.user?.name?.charAt(0).toUpperCase() || "U"}
+                            </div>
+                        )}
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-800">
+                                {booking.user?.name || "User"}
+                            </h3>
+                            {booking.user?.email && (
+                                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                                    <IoMailOutline className="text-base" />
+                                    <a href={`mailto:${booking.user.email}`} className="hover:text-[#0A84FF]">
+                                        {booking.user.email}
+                                    </a>
+                                </div>
+                            )}
+                            {booking.user?.phone && (
+                                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                                    <IoCallOutline className="text-base" />
+                                    <a href={`tel:${booking.user.phone}`} className="hover:text-[#0A84FF]">
+                                        {booking.user.phone}
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Service Information Card */}
+            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Service Information</h2>
+                <div className="space-y-3">
+                    <div>
+                        <p className="text-sm text-gray-500 mb-1">Service Name</p>
+                        <p className="text-lg font-bold text-gray-800">{booking.service?.name || "Service"}</p>
+                    </div>
+                    {booking.service?.machineType && (
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Machine Type</p>
+                            <p className="text-base text-gray-800">{booking.service.machineType}</p>
+                        </div>
+                    )}
+                    <div>
+                        <p className="text-sm text-gray-500 mb-1">Service Price</p>
+                        <p className="text-xl font-bold text-[#0A84FF]">
+                            ₹{booking.service?.price?.toLocaleString() || "0"}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Booking Schedule Card */}
+            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Schedule</h2>
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                        <IoTimeOutline className="text-2xl text-[#0A84FF]" />
+                        <div>
+                            <p className="text-sm text-gray-500">Scheduled Date & Time</p>
+                            <p className="text-base font-semibold text-gray-800">
+                                {booking.scheduledDate
+                                    ? new Date(booking.scheduledDate).toLocaleDateString("en-IN", {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                    })
+                                    : "N/A"
+                                } at {booking.scheduledTime || "N/A"}
+                            </p>
+                        </div>
+                    </div>
+                    {booking.address && (
+                        <div className="flex items-start gap-3">
+                            <IoLocationOutline className="text-2xl text-[#0A84FF] mt-1" />
+                            <div>
+                                <p className="text-sm text-gray-500">Service Address</p>
+                                <p className="text-base text-gray-800">
+                                    {booking.address.street && `${booking.address.street}, `}
+                                    {booking.address.city && `${booking.address.city}, `}
+                                    {booking.address.state && `${booking.address.state} - `}
+                                    {booking.address.pincode}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Payment Information Card */}
+            {booking.payment && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Charges Breakdown</h2>
+                    <div className="space-y-3">
+                        {/* Service Charges */}
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <span className="text-sm text-gray-600">Service Charges</span>
+                                {booking.service?.name && (
+                                    <p className="text-xs text-gray-500 mt-0.5">{booking.service.name}</p>
+                                )}
+                            </div>
+                            <span className="font-semibold text-gray-800">
+                                ₹{booking.payment.baseServiceFee?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || booking.service?.price?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
+                            </span>
+                        </div>
+
+                        {/* Travel Charges with Distance */}
+                        {booking.payment.travelCharges !== undefined && (
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <span className="text-sm text-gray-600">Travel Charges (To & Fro)</span>
+                                    {booking.payment.distance !== null && booking.payment.distance !== undefined && (
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                            Distance: {booking.payment.distance.toFixed(2)} km × 2 (Round Trip)
+                                        </p>
+                                    )}
+                                </div>
+                                <span className="font-semibold text-gray-800">
+                                    ₹{booking.payment.travelCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Total (Service + Travel) */}
+                        <div className="pt-2 border-t-2 border-gray-300 flex justify-between items-center">
+                            <span className="text-base font-bold text-gray-800">Total (Service + Travel)</span>
+                            <span className="text-lg font-bold text-[#0A84FF]">
+                                ₹{booking.payment.subtotal !== undefined
+                                    ? booking.payment.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                    : ((booking.payment.baseServiceFee || 0) + (booking.payment.travelCharges || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
+                            </span>
+                        </div>
+
+                        {/* Payment Status */}
+                        <div className="pt-2 border-t border-gray-200 mt-2">
+                            <span className="text-xs text-gray-500">Payment Status: </span>
+                            <span className={`text-xs font-semibold ${booking.payment.status === "SUCCESS" ? "text-green-600" :
+                                booking.payment.status === "PENDING" ? "text-yellow-600" :
+                                    "text-red-600"
+                                }`}>
+                                {booking.payment.status || "PENDING"}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+            {(booking.notes || booking.purpose || booking.purposeExtent) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Survey Site Info</h2>
+                    <div className="space-y-4">
+                        {booking.purpose && (
+                            <div>
+                                <p className="text-sm text-gray-500 mb-1">Purpose</p>
+                                <p className="text-base font-semibold text-gray-800">{booking.purpose}</p>
+                            </div>
+                        )}
+                        {booking.purposeExtent && (
+                            <div>
+                                <p className="text-sm text-gray-500 mb-1">Extent</p>
+                                <p className="text-base font-semibold text-gray-800">{booking.purposeExtent} Acres</p>
+                            </div>
+                        )}
+                        {booking.notes && (
+                            <div>
+                                <p className="text-sm text-gray-500 mb-1">Additional Notes</p>
+                                <p className="text-sm text-gray-600 leading-relaxed">{booking.notes}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Report Card (if uploaded) - Only show if status is REPORT_UPLOADED or later */}
+            {booking.report && ["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Visit Report</h2>
+                    <div className="space-y-3">
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Water Found</p>
+                            <p className={`text-base font-semibold ${booking.report.waterFound ? "text-green-600" : "text-red-600"}`}>
+                                {booking.report.waterFound ? "Yes" : "No"}
+                            </p>
+                        </div>
+                        {booking.report.images && booking.report.images.length > 0 && (
+                            <div>
+                                <p className="text-sm text-gray-500 mb-2">Report Images</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {booking.report.images.map((image, index) => (
+                                        <img
+                                            key={index}
+                                            src={image.url}
+                                            alt={`Report ${index + 1}`}
+                                            className="w-full h-32 object-cover rounded-lg"
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {booking.report.reportFile && (
+                            <div>
+                                <a
+                                    href={booking.report.reportFile.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB]"
+                                >
+                                    <IoDownloadOutline className="text-xl" />
+                                    <span>Download Report PDF</span>
+                                </a>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Action Buttons */}
+            {booking.status === "ASSIGNED" && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={handleAccept}
+                            disabled={actionLoading}
+                            className="flex-1 bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <IoCheckmarkCircleOutline className="text-xl" />
+                            {actionLoading ? "Processing..." : "Accept Booking"}
+                        </button>
+                        <button
+                            onClick={handleReject}
+                            disabled={actionLoading}
+                            className="flex-1 bg-red-500 text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-red-600 active:bg-red-700 transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(239,68,68,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <IoCloseCircleOutline className="text-xl" />
+                            {actionLoading ? "Processing..." : "Reject Booking"}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Mark as Visited Button */}
+            {booking.status === "ACCEPTED" && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
+                    <button
+                        onClick={handleMarkAsVisited}
+                        disabled={actionLoading}
+                        className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <IoCheckmarkCircleOutline className="text-xl" />
+                        {actionLoading ? "Processing..." : "Mark as Visited"}
+                    </button>
+                </div>
+            )}
+
+            {/* Upload Report Button */}
+            {booking.status === "VISITED" && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
+                    <button
+                        onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
+                        className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)]"
+                    >
+                        <IoDocumentTextOutline className="text-xl" />
+                        Upload Report
+                    </button>
+                </div>
+            )}
+
+            {/* Travel Charges Request Section */}
+            {["ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED"].includes(booking.status) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-gray-800">Travel Charges</h2>
+                        {booking.travelChargesRequest?.status && (
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${booking.travelChargesRequest.status === "APPROVED"
+                                ? "bg-green-100 text-green-700"
+                                : booking.travelChargesRequest.status === "REJECTED"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-yellow-100 text-yellow-700"
+                                }`}>
+                                {booking.travelChargesRequest.status}
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="space-y-4">
+                        {/* Current Applied Travel Charges */}
+                        {booking.payment.travelCharges !== undefined && (
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="font-semibold text-gray-800 text-sm">Applied Travel Charges (To & Fro)</p>
+                                        {booking.payment.distance !== null && booking.payment.distance !== undefined && (
+                                            <p className="text-xs text-gray-600 mt-1">
+                                                Distance: {booking.payment.distance.toFixed(2)} km × 2 (Round Trip)
+                                            </p>
+                                        )}
+                                    </div>
+                                    <p className="font-bold text-gray-800">
+                                        ₹{booking.payment.travelCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Request Status or Button */}
+                        {booking.travelChargesRequest ? (
+                            <div className="space-y-3 border-t border-gray-100 pt-3">
+                                <p className="text-sm font-semibold text-gray-800">Request Details</p>
+
+                                {booking.travelChargesRequest.reason && (
+                                    <div>
+                                        <span className="text-gray-600 text-sm">Reason:</span>
+                                        <p className="text-gray-800 text-sm mt-1">{booking.travelChargesRequest.reason}</p>
+                                    </div>
+                                )}
+                                {booking.travelChargesRequest.status === "REJECTED" && booking.travelChargesRequest.rejectionReason && (
+                                    <div className="bg-red-50 border border-red-200 rounded-[8px] p-3">
+                                        <p className="text-sm text-red-700">
+                                            <strong>Rejection Reason:</strong> {booking.travelChargesRequest.rejectionReason}
+                                        </p>
+                                    </div>
+                                )}
+                                {booking.travelChargesRequest.requestedAt && (
+                                    <div className="text-xs text-gray-500">
+                                        Requested: {formatDate(booking.travelChargesRequest.requestedAt)}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    Request travel charges if you need reimbursement for travel expenses beyond the applied charges.
+                                </p>
+                                <button
+                                    onClick={() => setShowTravelChargesModal(true)}
+                                    className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)]"
+                                >
+                                    <IoAddCircleOutline className="text-xl" />
+                                    Request Additional Charges
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Travel Charges Request Modal */}
+            {showTravelChargesModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={() => !submittingTravelCharges && setShowTravelChargesModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-[16px] w-full max-w-md flex flex-col shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between p-5 border-b border-gray-200">
+                            <h2 className="text-xl font-bold text-gray-800">Request Travel Charges</h2>
+                            <button
+                                onClick={() => !submittingTravelCharges && setShowTravelChargesModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                disabled={submittingTravelCharges}
+                            >
+                                <IoCloseOutline className="text-2xl text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-5">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                        Amount (₹) <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={travelChargesData.amount}
+                                        onChange={(e) => setTravelChargesData({ ...travelChargesData, amount: e.target.value })}
+                                        placeholder="Enter amount"
+                                        className="w-full border border-gray-300 rounded-[8px] px-3 py-2 text-sm focus:outline-none focus:border-[#0A84FF]"
+                                        disabled={submittingTravelCharges}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                        Reason (Optional)
+                                    </label>
+                                    <textarea
+                                        value={travelChargesData.reason}
+                                        onChange={(e) => setTravelChargesData({ ...travelChargesData, reason: e.target.value })}
+                                        placeholder="Explain why you need travel charges..."
+                                        rows="4"
+                                        className="w-full border border-gray-300 rounded-[8px] px-3 py-2 text-sm focus:outline-none focus:border-[#0A84FF]"
+                                        disabled={submittingTravelCharges}
+                                        maxLength={500}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {travelChargesData.reason.length}/500 characters
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 p-5 border-t border-gray-200">
+                            <button
+                                onClick={() => setShowTravelChargesModal(false)}
+                                className="flex-1 h-10 bg-gray-200 text-gray-700 text-sm font-medium rounded-[8px] hover:bg-gray-300 transition-colors"
+                                disabled={submittingTravelCharges}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSubmitTravelCharges}
+                                disabled={submittingTravelCharges || !travelChargesData.amount || parseFloat(travelChargesData.amount) <= 0}
+                                className="flex-1 h-10 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {submittingTravelCharges ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    "Submit Request"
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
 
             {/* Accept Booking Confirmation Modal */}
             <ConfirmModal

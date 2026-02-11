@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
-
     IoTimeOutline,
     IoLocationOutline,
     IoCallOutline,
@@ -32,7 +31,6 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
-import PageContainer from "../../shared/components/PageContainer";
 
 export default function UserBookingDetails() {
     const navigate = useNavigate();
@@ -67,8 +65,6 @@ export default function UserBookingDetails() {
         if (!socket) return;
 
         const handleBookingUpdate = (data) => {
-            // Check if this update relates to current booking
-            // Data might come as a notification object or direct payload depending on implementation
             const updatedBookingId = data.bookingId || data.metadata?.bookingId || data.relatedEntity?.entityId;
 
             if (updatedBookingId === bookingId) {
@@ -77,7 +73,6 @@ export default function UserBookingDetails() {
             }
         };
 
-        // Listen for specific booking events
         socket.on('booking_updated', handleBookingUpdate);
         socket.on('new_notification', handleBookingUpdate);
 
@@ -122,15 +117,33 @@ export default function UserBookingDetails() {
     const handleDownloadBill = async () => {
         const loadingToast = toast.showLoading("Downloading invoice...");
         try {
-            const blob = await downloadInvoice(bookingId);
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `invoice-${bookingId}.pdf`;
-            document.body.appendChild(a);
-            a.click();
+            const response = await downloadInvoice(bookingId);
+
+            // Check if response contains a blob directly or data object
+            // The service might return the blob directly based on axios config
+            // Assuming standard handling here:
+
+            // If the service function already handles creating the blob/link, we might just need to check success
+            // But usually for explicit download buttons we handle the blob creation 
+
+            // Let's assume the previous implementation was correct about blob
+            // But usually my service pattern returns {success: true, data: ...}
+            // If downloadInvoice returns a blob directly (which is common for file downloads):
+
+            const blob = response; // Assuming response IS the blob if headers are set correctly in service
+
+            // However, the previous code had: const blob = await downloadInvoice(bookingId);
+            // Let's stick to that pattern but add error checking if it returns a JSON error structure
+
+            const url = window.URL.createObjectURL(new Blob([blob]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `invoice-${bookingId}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
             window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+
             toast.dismissToast(loadingToast);
             toast.showSuccess("Invoice downloaded successfully!");
         } catch (err) {
@@ -294,22 +307,51 @@ export default function UserBookingDetails() {
         }
     };
 
-    const getStatusConfig = (status) => {
-        const configs = {
-            PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-700", borderColor: "border-yellow-200", icon: IoHourglassOutline, description: "Your request has been received. We are currently looking for expected vendors in your area." },
-            ASSIGNED: { label: "Assigned", color: "bg-blue-100 text-blue-700", borderColor: "border-blue-200", icon: IoPersonOutline, description: "A vendor has been assigned to your request and is reviewing the details." },
-            ACCEPTED: { label: "Accepted", color: "bg-emerald-100 text-emerald-700", borderColor: "border-emerald-200", icon: IoCheckmarkCircleOutline, description: "The vendor has accepted your request and will visit your location at the scheduled time." },
-            VISITED: { label: "Visited", color: "bg-purple-100 text-purple-700", borderColor: "border-purple-200", icon: IoConstructOutline, description: "The site visit has been completed. The vendor will upload the survey report shortly." },
-            REPORT_UPLOADED: { label: "Report Uploaded", color: "bg-indigo-100 text-indigo-700", borderColor: "border-indigo-200", icon: IoDocumentTextOutline, description: "The survey report is ready. Please review the findings below." },
-            AWAITING_PAYMENT: { label: "Awaiting Payment", color: "bg-orange-100 text-orange-700", borderColor: "border-orange-200", icon: IoTimeOutline, description: "Please complete the remaining payment to finalize the service." },
-            PAYMENT_SUCCESS: { label: "Payment Success", color: "bg-emerald-100 text-emerald-700", borderColor: "border-emerald-200", icon: IoCheckmarkCircleOutline, description: "Payment received successfully. Finalizing booking record." },
-            BOREWELL_UPLOADED: { label: "Borewell Uploaded", color: "bg-teal-100 text-teal-700", borderColor: "border-teal-200", icon: IoImageOutline, description: "Borewell result has been uploaded." },
-            COMPLETED: { label: "Completed", color: "bg-green-100 text-green-700", borderColor: "border-green-200", icon: IoCheckmarkCircleOutline, description: "Service has been successfully completed. Thank you for choosing JalaDhar." },
-            CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-700", borderColor: "border-red-200", icon: IoCloseCircleOutline, description: "This booking has been cancelled." },
-            REJECTED: { label: "Rejected", color: "bg-red-100 text-red-700", borderColor: "border-red-200", icon: IoCloseCircleOutline, description: "The vendor could not fulfill this request." },
-            FAILED: { label: "Failed", color: "bg-red-100 text-red-700", borderColor: "border-red-200", icon: IoAlertCircleOutline, description: "The booking process encountered an error." },
+    const getStatusBadge = (status) => {
+        const statusConfig = {
+            PENDING: { color: "bg-yellow-100 text-yellow-700", label: "Requested" },
+            ASSIGNED: { color: "bg-orange-100 text-orange-700", label: "Assigned" },
+            ACCEPTED: { color: "bg-blue-100 text-blue-700", label: "Accepted" },
+            VISITED: { color: "bg-purple-100 text-purple-700", label: "Visited" },
+            REPORT_UPLOADED: { color: "bg-indigo-100 text-indigo-700", label: "Report Ready" },
+            AWAITING_PAYMENT: { color: "bg-orange-100 text-orange-700", label: "Awaiting Payment" },
+            PAYMENT_SUCCESS: { color: "bg-emerald-100 text-emerald-700", label: "Payment Success" },
+            PAID_FIRST: { color: "bg-emerald-100 text-emerald-700", label: "Payment Success" },
+            BOREWELL_UPLOADED: { color: "bg-teal-100 text-teal-700", label: "Borewell Uploaded" },
+            ADMIN_APPROVED: { color: "bg-green-100 text-green-700", label: "Completed" },
+            FINAL_SETTLEMENT: { color: "bg-green-100 text-green-700", label: "Completed" },
+            COMPLETED: { color: "bg-green-100 text-green-700", label: "Completed" },
+            CANCELLED: { color: "bg-gray-100 text-gray-700", label: "Cancelled" },
+            REJECTED: { color: "bg-red-100 text-red-700", label: "Rejected" },
+            FAILED: { color: "bg-red-100 text-red-700", label: "Failed" },
         };
-        return configs[status] || configs.PENDING;
+        const config = statusConfig[status] || { color: "bg-gray-100 text-gray-700", label: status };
+        return (
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${config.color}`}>
+                {config.label}
+            </span>
+        );
+    };
+
+    const getStatusDescription = (status) => {
+        const descriptions = {
+            PENDING: "Finding the best expert for you... Our team is broadcasting your request to top-rated vendors nearby.",
+            ASSIGNED: "Expert matched! A specialized vendor is currently reviewing your request's specific requirements.",
+            ACCEPTED: "Visit Confirmed! Your expert has accepted the task and will arrive at your location as scheduled.",
+            VISITED: "Inspection Complete! Your site visit is done. Our expert is now preparing your detailed detection report.",
+            REPORT_UPLOADED: "Report Ready! Your detailed survey report has been uploaded and is waiting for your review.",
+            AWAITING_PAYMENT: "Unlock Your Report: Please complete the final payment to access your survey results.",
+            PAYMENT_SUCCESS: "Payment Confirmed! Your report is now available for download and view.",
+            PAID_FIRST: "Payment Confirmed! You can now access your survey results.",
+            BOREWELL_UPLOADED: "Result Submitted: Thank you for updating your borewell outcome. We're processing it now.",
+            ADMIN_APPROVED: "Approved: Your borewell result has been verified. Final settlement is in progress.",
+            FINAL_SETTLEMENT: "Settling: We are finalizing the accounts for this booking.",
+            COMPLETED: "Service Complete: Thank you for choosing JalaDhar. We hope you found your expert helpful!",
+            CANCELLED: "Booking Cancelled: This request has been successfully cancelled.",
+            REJECTED: "No Expert Available: Unfortunately, our vendors couldn't fulfill this specific request at this time.",
+            FAILED: "Process Error: Something went wrong. Our support team has been notified.",
+        };
+        return descriptions[status] || "Track your real-time booking progress here.";
     };
 
     const formatDate = (dateString, timeString) => {
@@ -333,7 +375,6 @@ export default function UserBookingDetails() {
 
     const formatAddress = (address) => {
         if (!address) return "Not provided";
-        // Handle if address is just a string
         if (typeof address === 'string') return address;
 
         const parts = [];
@@ -352,96 +393,46 @@ export default function UserBookingDetails() {
 
     if (!booking) {
         return (
-            <PageContainer>
-                <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <IoAlertCircleOutline className="text-3xl text-gray-400" />
-                    </div>
-                    <h2 className="text-lg font-bold text-gray-800 mb-2">Booking Not Found</h2>
-                    <p className="text-gray-600 mb-6">The booking you are looking for doesn't exist or has been removed.</p>
+            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+                <div className="text-center py-8">
+                    <p className="text-gray-600">Booking not found</p>
                     <button
                         onClick={() => navigate("/user/status")}
-                        className="bg-[#0A84FF] text-white px-6 py-2.5 rounded-[10px] font-semibold hover:bg-[#005BBB] transition-colors shadow-sm"
+                        className="mt-4 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
                     >
                         Back to Bookings
                     </button>
                 </div>
-            </PageContainer>
+            </div>
         );
     }
 
-    const statusConfig = getStatusConfig(booking.status);
-    const StatusIcon = statusConfig.icon;
-    const isCompleted = booking.status === "COMPLETED";
-
-    const steps = [
-        { status: "PENDING", label: "Requested", date: booking.createdAt },
-        { status: "ASSIGNED", label: "Assigned", date: booking.createdAt }, // Fallback to createdAt
-        { status: "VISITED", label: "Site Visit", date: booking.visitedAt },
-        { status: "AWAITING_PAYMENT", label: "Payment", date: booking.payment?.createdAt || booking.payment?.updatedAt }, // fallback
-        { status: "COMPLETED", label: "Completed", date: booking.completedAt }
-    ];
-
-    // Determine current step index
-    let currentStepIndex = 0;
-    const statusMap = {
-        PENDING: 0,
-        ASSIGNED: 1,
-        ACCEPTED: 1,
-        VISITED: 2,
-        REPORT_UPLOADED: 2,
-        AWAITING_PAYMENT: 3,
-        PAYMENT_SUCCESS: 4,
-        BOREWELL_UPLOADED: 4,
-        COMPLETED: 5
-    };
-
-    if (booking.status === "CANCELLED" || booking.status === "REJECTED" || booking.status === "FAILED") {
-        currentStepIndex = -1; // Special case
-    } else {
-        currentStepIndex = statusMap[booking.status] || 0;
-        // Adjust for intermediate steps
-        if (booking.status === "ACCEPTED") currentStepIndex = 1;
-        if (booking.status === "REPORT_UPLOADED") currentStepIndex = 2;
-        if (booking.status === "PAYMENT_SUCCESS" || booking.status === "BOREWELL_UPLOADED") currentStepIndex = 4;
-        if (booking.status === "COMPLETED") currentStepIndex = 4;
-    }
-
     return (
-        <PageContainer>
-            {/* Header & Navigation */}
-            {/* Header & Navigation */}
-            <div className="flex flex-row items-center gap-4 mb-6">
-                <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
-                    <span className="text-sm text-gray-500 font-medium">Booking ID:</span>
-                    <span className="text-sm font-bold text-gray-800 font-mono tracking-wide">{bookingId.slice(-8).toUpperCase()}</span>
+        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+
+            {/* Header */}
+            <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                    <p className="text-[#4A4A4A] text-sm">
+                        Booking ID: {booking._id || booking.id || bookingId}
+                    </p>
+                    {getStatusBadge(booking.status)}
                 </div>
             </div>
 
-            {/* Status Card */}
-            <div className="bg-white rounded-[16px] p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] mb-6 border border-gray-50">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-800 mb-1">{booking.service?.name}</h1>
-                        <p className="text-gray-500 flex items-center gap-2">
-                            <IoCalendarOutline /> {formatDate(booking.scheduledDate)}
-                            <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                            <IoTimeOutline /> {booking.scheduledTime || "Time not set"}
-                        </p>
-                    </div>
-                    <div className={`px-5 py-2.5 rounded-full border ${statusConfig.borderColor} ${statusConfig.color} flex items-center gap-2 shadow-sm`}>
-                        <StatusIcon className="text-xl" />
-                        <span className="font-bold text-sm uppercase tracking-wide">{statusConfig.label}</span>
-                    </div>
+            {/* Visual Status Timeline */}
+            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">Booking Status</h2>
                 </div>
 
                 {/* Status Insight Banner */}
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex items-start gap-3">
-                    <IoInformationCircleOutline className="text-2xl text-[#0A84FF] mt-0.5" />
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 flex items-start gap-3 mb-6">
+                    <IoInformationCircleOutline className="text-2xl text-[#0A84FF] flex-shrink-0 mt-0.5" />
                     <div>
-                        <p className="text-gray-800 font-medium leading-relaxed">{statusConfig.description}</p>
-
-                        {/* Cancellation/Rejection Reason */}
+                        <p className="text-gray-800 font-medium leading-relaxed">
+                            {getStatusDescription(booking.status)}
+                        </p>
                         {booking.status === "CANCELLED" && booking.cancellationReason && (
                             <p className="mt-2 text-sm text-red-600 font-medium bg-red-50 p-2 rounded-lg border border-red-100">
                                 Reason: {booking.cancellationReason}
@@ -455,579 +446,793 @@ export default function UserBookingDetails() {
                     </div>
                 </div>
 
-                {/* Progress Stepper (Desktop) */}
-                {currentStepIndex !== -1 && (
-                    <div className="hidden md:flex items-center justify-between relative mt-8 px-4">
-                        {/* Connecting Line */}
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-100 -z-0 rounded-full"></div>
-                        <div
-                            className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-[#0A84FF] -z-0 rounded-full transition-all duration-500"
-                            style={{ width: `${(currentStepIndex / (steps.length - 1)) * 100}%` }}
-                        ></div>
+                {/* Visual Step Timeline */}
+                {(() => {
+                    const status = booking.status;
+                    const timelineSteps = [
+                        { id: "requested", label: "Request Sent", icon: <IoDocumentTextOutline />, statuses: ["PENDING"], date: booking.createdAt },
+                        { id: "assigned", label: "Expert Match", icon: <IoPersonOutline />, statuses: ["ASSIGNED"], date: booking.assignedAt },
+                        { id: "accepted", label: "Visit Scheduled", icon: <IoCheckmarkCircleOutline />, statuses: ["ACCEPTED"], date: booking.acceptedAt },
+                        { id: "visited", label: "Site Visit", icon: <IoConstructOutline />, statuses: ["VISITED"], date: booking.visitedAt },
+                        { id: "report", label: "Report Ready", icon: <IoDocumentTextOutline />, statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt },
+                        { id: "payment", label: "Payment Paid", icon: <IoCashOutline />, statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"], date: booking.payment?.remainingPaidAt || booking.payment?.updatedAt },
+                        { id: "completed", label: "Service Finished", icon: <IoCheckmarkCircleOutline />, statuses: ["COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt },
+                    ];
 
-                        {steps.map((step, index) => {
-                            const isCompletedStep = index <= currentStepIndex;
-                            const isCurrent = index === currentStepIndex;
+                    const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
+                    let currentIndex = -1;
+                    if (!["CANCELLED", "REJECTED", "FAILED"].includes(status)) {
+                        currentIndex = statusOrder.indexOf(status);
+                        if (["PAYMENT_SUCCESS", "BOREWELL_UPLOADED"].includes(status)) currentIndex = Math.max(currentIndex, statusOrder.indexOf("PAYMENT_SUCCESS"));
+                    }
 
-                            return (
-                                <div key={index} className="flex flex-col items-center gap-2 relative z-10">
-                                    <div
-                                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300
-                                            ${isCompletedStep
-                                                ? 'bg-[#0A84FF] border-[#0A84FF] text-white shadow-lg shadow-blue-200'
-                                                : 'bg-white border-gray-300 text-gray-300'}`}
-                                    >
-                                        {isCompletedStep && !isCurrent ? (
-                                            <IoCheckmarkCircleOutline className="text-xl" />
-                                        ) : (
-                                            <span className="text-xs font-bold">{index + 1}</span>
-                                        )}
+                    return (
+                        <div className="relative pt-4 pb-2">
+                            <div className="flex items-center justify-between">
+                                {timelineSteps.map((step, index) => {
+                                    const stepPrimaryStatusIndex = statusOrder.indexOf(step.statuses[0]);
+                                    const isCompleted = currentIndex >= 0 && currentIndex > stepPrimaryStatusIndex;
+                                    const isActive = currentIndex >= 0 && step.statuses.includes(status);
+                                    const isPast = index < timelineSteps.findIndex(s => s.statuses.includes(status)) || (timelineSteps.findIndex(s => s.statuses.includes(status)) === -1 && currentIndex > stepPrimaryStatusIndex);
+
+                                    return (
+                                        <div key={step.id} className="flex flex-col items-center relative flex-1">
+                                            {/* Connector Line */}
+                                            {index < timelineSteps.length - 1 && (
+                                                <div className="absolute left-[50%] right-[-50%] top-4 h-[2px] bg-gray-100 z-0">
+                                                    <div
+                                                        className={`h-full transition-all duration-500 ${isCompleted || isPast ? "bg-emerald-400 w-full" : "w-0"}`}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* Step Circle */}
+                                            <div
+                                                className={`w-9 h-9 rounded-full flex items-center justify-center relative z-10 transition-all duration-300 ${isCompleted || isPast
+                                                    ? "bg-emerald-500 text-white"
+                                                    : isActive
+                                                        ? "bg-[#0A84FF] text-white ring-4 ring-blue-50"
+                                                        : "bg-white border-2 border-gray-200 text-gray-400"
+                                                    }`}
+                                            >
+                                                {isCompleted || isPast ? (
+                                                    <IoCheckmarkCircleOutline className="text-lg" />
+                                                ) : (
+                                                    <span className="text-base">{step.icon}</span>
+                                                )}
+                                            </div>
+
+                                            {/* Label & Date */}
+                                            <div className="mt-2 text-center flex flex-col items-center">
+                                                <span
+                                                    className={`text-[8px] font-bold uppercase leading-tight tracking-tight block max-w-[55px] ${isCompleted || isPast ? "text-emerald-600" : isActive ? "text-[#0A84FF]" : "text-gray-400"
+                                                        }`}
+                                                >
+                                                    {step.label.split(' ').map((word, i) => (
+                                                        <span key={i} className="block">{word}</span>
+                                                    ))}
+                                                </span>
+                                                {step.date && (isCompleted || isPast || isActive) && (
+                                                    <span className="text-[7px] text-gray-400 mt-1 font-medium">
+                                                        {new Date(step.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Active Indicator Pulse */}
+                                            {isActive && (
+                                                <span className="absolute -top-1 right-1/2 translate-x-3.5 w-2.5 h-2.5 bg-[#0A84FF] rounded-full border-2 border-white shadow-sm animate-pulse z-20" />
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })()}
+
+                {/* Big View Timeline Button at the bottom of Status Section */}
+                <div className="mt-8">
+                    <button
+                        onClick={() => navigate(`/user/booking/${bookingId}/status`)}
+                        className="w-full bg-[#0A84FF] text-white py-4 rounded-[16px] font-bold text-lg shadow-[0_4px_12px_rgba(10,132,255,0.3)] hover:bg-[#005BBB] transition-all hover:shadow-[0_6px_20px_rgba(10,132,255,0.4)] active:scale-[0.98] flex items-center justify-center gap-3"
+                    >
+                        <IoTimeOutline className="text-2xl" />
+                        View Detailed Timeline
+                    </button>
+                    <p className="text-center text-xs text-gray-400 mt-3 flex items-center justify-center gap-1">
+                        <IoInformationCircleOutline />
+                        Track real-time progress of your service request
+                    </p>
+                </div>
+            </div>
+
+            {/* Vendor Information Card */}
+            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Vendor Information</h2>
+                {booking.vendor ? (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                            {(() => {
+                                const profileImg = booking.vendor.profilePicture?.url ||
+                                    booking.vendor.profilePicture ||
+                                    booking.vendor.documents?.profilePicture?.url;
+
+                                return profileImg ? (
+                                    <img
+                                        src={profileImg}
+                                        alt={booking.vendor.name}
+                                        className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
+                                    />
+                                ) : (
+                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white text-2xl font-bold shadow-sm border-2 border-white">
+                                        {booking.vendor.name?.charAt(0).toUpperCase() || <IoPersonOutline />}
                                     </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className={`text-xs font-semibold whitespace-nowrap ${isCompletedStep ? 'text-[#0A84FF]' : 'text-gray-400'}`}>
-                                            {step.label}
-                                        </span>
-                                        {step.date && isCompletedStep && (
-                                            <span className="text-[10px] text-gray-400 font-medium">
-                                                {new Date(step.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                                            </span>
-                                        )}
-                                    </div>
+                                );
+                            })()}
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-800">
+                                    {booking.vendor.name}
+                                </h3>
+                                <div className="flex items-center gap-1 text-sm text-yellow-500 mt-1">
+                                    <IoStar />
+                                    <span className="font-semibold text-gray-700">{booking.vendor?.rating?.averageRating?.toFixed(1) || "New"}</span>
                                 </div>
-                            );
-                        })}
+                                {booking.vendor.phone && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                                        <IoCallOutline className="text-base" />
+                                        <a href={`tel:${booking.vendor.phone}`} className="hover:text-[#0A84FF]">
+                                            {booking.vendor.phone}
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-3 text-gray-500 bg-gray-50 p-4 rounded-xl">
+                        <IoHourglassOutline className="text-2xl" />
+                        <p>We are currently searching for the best expert for your request.</p>
                     </div>
                 )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column - Details */}
-                <div className="lg:col-span-2 space-y-6">
+            {/* Service & Schedule Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Service Information Card */}
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                    <div className="mb-6">
+                        <h2 className="text-xl font-bold text-gray-800">Service Details</h2>
+                    </div>
 
-                    {/* Enquiry Details */}
-                    {(booking.village || booking.purpose) && (
-                        <div className="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(0,0,0,0.03)] overflow-hidden border border-gray-50">
-                            <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
-                                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                    <IoInformationCircleOutline className="text-[#0A84FF]" />
-                                    Enquiry Details
-                                </h2>
+                    <div className="space-y-4">
+                        {/* Service Name & Desc */}
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                            <p className="text-sm text-gray-500 mb-1 font-medium">Service Selected</p>
+                            <p className="text-lg font-bold text-gray-800">{booking.service?.name}</p>
+                            {booking.service?.description && (
+                                <p className="text-sm text-gray-600 mt-2 leading-relaxed border-t border-gray-200 pt-2">
+                                    {booking.service.description}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                <p className="text-sm text-gray-500 mb-1 font-medium">Machine Type</p>
+                                <div className="flex items-center gap-2">
+                                    <IoConstructOutline className="text-[#0A84FF]" />
+                                    <p className="text-base font-semibold text-gray-800">{booking.service?.machineType || "Standard"}</p>
+                                </div>
                             </div>
-                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-4">
-                                {booking.purpose && <InfoBlock label="Purpose" value={booking.purpose} icon={IoConstructOutline} />}
-                                {booking.purposeExtent && <InfoBlock label="Extent (Acres)" value={booking.purposeExtent} icon={IoMapOutline} />}
-                                {booking.village && <InfoBlock label="Village" value={booking.village} icon={IoLocationOutline} />}
-                                {booking.mandal && <InfoBlock label="Mandal" value={booking.mandal} icon={IoMapOutline} />}
-                                {booking.district && <InfoBlock label="District" value={booking.district} icon={IoMapOutline} />}
-                                {booking.state && <InfoBlock label="State" value={booking.state} icon={IoMapOutline} />}
+                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                <p className="text-sm text-gray-500 mb-1 font-medium">Base Price</p>
+                                <div className="flex items-center gap-2">
+                                    <IoCashOutline className="text-[#0A84FF]" />
+                                    <p className="text-base font-bold text-gray-800">
+                                        {formatAmount(booking.service?.price)}
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    )}
 
-                    {/* Service & Vendor */}
-                    <div className="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(0,0,0,0.03)] overflow-hidden border border-gray-50">
-                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <IoConstructOutline className="text-[#0A84FF]" />
-                                Service & Vendor Information
-                            </h2>
-                        </div>
-                        <div className="p-6 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Service Details</h3>
-                                    <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-50">
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#0A84FF]">
-                                                <IoConstructOutline className="text-xl" />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-gray-800 text-lg">{booking.service?.name}</p>
-                                                <p className="text-sm text-gray-600 mt-1">{booking.service?.machineType || "Standard Machine"}</p>
-                                                {booking.service?.description && <p className="text-xs text-gray-400 mt-2 line-clamp-2">{booking.service.description}</p>}
-                                            </div>
+                        {/* Report Statuses */}
+                        <div className="pt-2">
+                            <p className="text-sm text-gray-500 mb-3 font-medium uppercase tracking-wider">Deliverable Status</p>
+                            <div className="space-y-3">
+                                {/* Survey Report Status */}
+                                <div className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden relative">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${booking.report && typeof booking.report.waterFound === 'boolean' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
+                                            <IoDocumentTextOutline />
                                         </div>
+                                        <span className="text-sm font-semibold text-gray-700">Survey Report</span>
                                     </div>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${booking.report && typeof booking.report.waterFound === 'boolean'
+                                        ? "bg-indigo-100 text-indigo-700"
+                                        : ["VISITED", "REPORT_UPLOADED"].includes(booking.status)
+                                            ? "bg-orange-50 text-orange-600 animate-pulse"
+                                            : "bg-gray-100 text-gray-500"
+                                        }`}>
+                                        {booking.report && typeof booking.report.waterFound === 'boolean' ? "Available" : ["VISITED", "REPORT_UPLOADED"].includes(booking.status) ? "Processing" : "Pending"}
+                                    </span>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Vendor Details</h3>
-                                    <div className="bg-orange-50/50 rounded-xl p-4 border border-orange-50">
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
-                                                <IoPersonOutline className="text-xl" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="font-bold text-gray-800 text-lg">{booking.vendor?.name}</p>
-                                                <div className="flex flex-col gap-1 mt-1">
-                                                    {booking.vendor?.phone && (
-                                                        <a href={`tel:${booking.vendor.phone}`} className="text-sm text-gray-600 hover:text-[#0A84FF] flex items-center gap-1">
-                                                            <IoCallOutline /> {booking.vendor.phone}
-                                                        </a>
-                                                    )}
-                                                    {booking.vendor?.rating && (
-                                                        <div className="text-sm text-orange-500 flex items-center gap-1">
-                                                            <IoStar />
-                                                            <span className="font-semibold">{booking.vendor.rating.averageRating?.toFixed(1) || "New"}</span>
-                                                            <span className="text-gray-400">({booking.vendor.rating.totalRatings || 0})</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                {/* Borewell Report Status */}
+                                <div className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden relative">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${booking.borewellResult && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED') ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-400'}`}>
+                                            <IoImageOutline />
                                         </div>
+                                        <span className="text-sm font-semibold text-gray-700">Borewell Result</span>
                                     </div>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${booking.borewellResult && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED')
+                                        ? "bg-teal-100 text-teal-700"
+                                        : booking.status === 'COMPLETED'
+                                            ? "bg-orange-50 text-orange-600 animate-pulse"
+                                            : "bg-gray-100 text-gray-500"
+                                        }`}>
+                                        {booking.borewellResult && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED') ? "Uploaded" : booking.status === 'COMPLETED' ? "Awaiting Input" : "Locked"}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    {/* Address */}
-                    <div className="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(0,0,0,0.03)] overflow-hidden border border-gray-50">
-                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <IoLocationOutline className="text-[#0A84FF]" />
-                                Service Location
-                            </h2>
+                {/* Schedule Card */}
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Schedule</h2>
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <IoTimeOutline className="text-2xl text-[#0A84FF]" />
+                            <div>
+                                <p className="text-sm text-gray-500">Scheduled Date & Time</p>
+                                <p className="text-base font-semibold text-gray-800">
+                                    {formatDate(booking.scheduledDate)} at {booking.scheduledTime || "N/A"}
+                                </p>
+                            </div>
                         </div>
-                        <div className="p-6">
+                        {booking.address && (
                             <div className="flex items-start gap-3">
-                                <div className="mt-1 min-w-[24px]">
-                                    <IoLocationOutline className="text-2xl text-red-500" />
-                                </div>
+                                <IoLocationOutline className="text-2xl text-[#0A84FF] mt-1" />
                                 <div>
-                                    <p className="text-gray-800 font-medium text-lg leading-relaxed">
+                                    <p className="text-sm text-gray-500">Service Address</p>
+                                    <p className="text-base text-gray-800">
                                         {formatAddress(booking.address)}
                                     </p>
-                                    {booking.address?.coordinates && (
-                                        <div className="mt-3 inline-flex items-center gap-1 text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                                            <IoMapOutline />
-                                            Lat: {booking.address.coordinates.lat?.toFixed(5)}, Lng: {booking.address.coordinates.lng?.toFixed(5)}
-                                        </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Survey Site Info */}
+            {(booking.purpose || booking.purposeExtent || booking.notes) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Survey Site Info</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {booking.purpose && (
+                            <div>
+                                <p className="text-sm text-gray-500 mb-1">Purpose</p>
+                                <p className="text-base font-semibold text-gray-800">{booking.purpose}</p>
+                            </div>
+                        )}
+                        {booking.purposeExtent && (
+                            <div>
+                                <p className="text-sm text-gray-500 mb-1">Extent</p>
+                                <p className="text-base font-semibold text-gray-800">{booking.purposeExtent} Acres</p>
+                            </div>
+                        )}
+                        {booking.notes && (
+                            <div className="col-span-1 md:col-span-2">
+                                <p className="text-sm text-gray-500 mb-1">Additional Notes</p>
+                                <p className="text-sm text-gray-600 leading-relaxed">{booking.notes}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Payment Information Card */}
+            {booking.payment && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Charges Breakdown</h2>
+                    <div className="space-y-3">
+                        {/* Service Charges */}
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <span className="text-sm text-gray-600">Service Charges</span>
+                                {booking.service?.name && (
+                                    <p className="text-xs text-gray-500 mt-0.5">{booking.service.name}</p>
+                                )}
+                            </div>
+                            <span className="font-semibold text-gray-800">
+                                {formatAmount(booking.payment.baseServiceFee || booking.service?.price)}
+                            </span>
+                        </div>
+
+                        {/* Travel Charges */}
+                        {booking.payment.travelCharges !== undefined && (
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <span className="text-sm text-gray-600">Travel Charges (To & Fro)</span>
+                                    {booking.payment.distance !== null && booking.payment.distance !== undefined && (
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                            Distance: {booking.payment.distance.toFixed(2)} km × 2 (Round Trip)
+                                        </p>
                                     )}
                                 </div>
+                                <span className="font-semibold text-gray-800">
+                                    {formatAmount(booking.payment.travelCharges)}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Total */}
+                        <div className="pt-2 border-t-2 border-gray-300 flex justify-between items-center">
+                            <span className="text-base font-bold text-gray-800">Total</span>
+                            <span className="text-lg font-bold text-[#0A84FF]">
+                                {formatAmount(booking.payment.subtotal || ((booking.payment.baseServiceFee || 0) + (booking.payment.travelCharges || 0)))}
+                            </span>
+                        </div>
+
+                        {/* Installment Breakdown */}
+                        <div className="pt-6 border-t border-gray-100 mt-6 space-y-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-bold text-gray-800 uppercase tracking-widest">Payment Timeline</p>
+                                <div className="text-right">
+                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">Total Status</p>
+                                    <p className={`text-xs font-bold ${booking.payment?.status === "SUCCESS" ? "text-green-600" : "text-orange-500"}`}>
+                                        {booking.payment?.status === "SUCCESS" ? "FULLY PAID" : "PARTIALLY PAID"}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Advance Payment Row */}
+                            <div className={`flex items-center justify-between p-4 rounded-2xl transition-all border ${booking.payment?.advancePaid ? 'bg-green-50/30 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${booking.payment?.advancePaid ? 'bg-white text-green-600' : 'bg-white text-yellow-600'}`}>
+                                        {booking.payment?.advancePaid ? <IoCheckmarkCircleOutline className="text-2xl" /> : <IoTimeOutline className="text-2xl" />}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-800">Advance Payment (40%)</p>
+                                        <p className="text-[11px] text-gray-500">Paid during booking request</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-bold text-gray-800">{formatAmount(booking.payment?.advanceAmount)}</p>
+                                    <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-tight uppercase ${booking.payment?.advancePaid ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                        {booking.payment?.advancePaid ? 'Received' : 'Pending'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Remaining Payment Row */}
+                            <div className={`flex items-center justify-between p-4 rounded-2xl transition-all border ${booking.payment?.remainingPaid ? 'bg-green-50/30 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${booking.payment?.remainingPaid ? 'bg-white text-green-600' : 'bg-white text-orange-400 font-bold'}`}>
+                                        {booking.payment?.remainingPaid ? <IoCheckmarkCircleOutline className="text-2xl" /> : <IoHourglassOutline className="text-2xl" />}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-800">Final Payment (60%)</p>
+                                        <p className="text-[11px] text-gray-500">Payable after report generation</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-bold text-gray-800">{formatAmount(booking.payment?.remainingAmount)}</p>
+                                    <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-tight uppercase ${booking.payment?.remainingPaid ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                        {booking.payment?.remainingPaid ? 'Received' : 'Pending'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Summary Footer */}
+                            <div className="flex justify-between items-center px-2 pt-2">
+                                <span className="text-xs text-gray-500 font-medium tracking-tight">Total Amount Paid</span>
+                                <span className="text-base font-bold text-green-600">
+                                    {formatAmount(booking.payment?.paidAmount || (booking.payment?.advancePaid ? booking.payment?.advanceAmount : 0) + (booking.payment?.remainingPaid ? booking.payment?.remainingAmount : 0))}
+                                </span>
                             </div>
                         </div>
                     </div>
+                </div>
+            )}
 
-                    {/* Survey Report */}
-                    {booking.report && ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "COMPLETED"].includes(booking.status) && (
-                        <div className="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(0,0,0,0.03)] overflow-hidden border border-gray-50">
-                            <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
-                                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                    <IoDocumentTextOutline className="text-[#0A84FF]" />
-                                    Survey Report
-                                </h2>
-                                {booking.report.uploadedAt && (
-                                    <span className="text-xs text-gray-500 font-medium">
-                                        {new Date(booking.report.uploadedAt).toLocaleDateString()}
-                                    </span>
-                                )}
-                            </div>
-                            <div className="p-6 space-y-6">
-                                {/* Report Status Hero Card */}
-                                <div className={`flex items-center gap-5 p-5 rounded-2xl border mb-6 shadow-sm relative overflow-hidden ${booking.report.waterFound
-                                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-emerald-400'
-                                    : 'bg-gradient-to-br from-red-500 to-pink-600 text-white border-red-400'
+            {/* Visit Report Card - Always visible but shows professional empty state until uploaded */}
+            {!["CANCELLED", "REJECTED", "FAILED"].includes(booking.status) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 overflow-hidden">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-gray-800">Survey Report</h2>
+                        {(!booking.report || !["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status)) && (
+                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded-full uppercase tracking-wider">
+                                <IoHourglassOutline className="animate-spin" />
+                                Processing
+                            </span>
+                        )}
+                    </div>
+
+                    {booking.report &&
+                        ["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status) &&
+                        typeof booking.report.waterFound === 'boolean' ? (
+                        <>
+                            {/* Status Banner */}
+                            <div className={`flex items-center gap-4 p-4 rounded-[12px] mb-6 ${booking.report.waterFound
+                                ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100'
+                                : 'bg-gradient-to-r from-red-50 to-pink-50 border border-red-100'
+                                }`}>
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${booking.report.waterFound ? 'bg-white text-emerald-500 shadow-sm' : 'bg-white text-red-500 shadow-sm'
                                     }`}>
-                                    {/* Background Pattern */}
-                                    <div className="absolute top-0 right-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
-                                        {booking.report.waterFound ? <IoWaterOutline className="text-9xl" /> : <IoAlertCircleOutline className="text-9xl" />}
-                                    </div>
-
-                                    <div className="bg-white/20 p-4 rounded-full backdrop-blur-sm relative z-10 border border-white/30">
-                                        <IoWaterOutline className="text-3xl" />
-                                    </div>
-                                    <div className="relative z-10">
-                                        <p className="text-white/80 font-semibold uppercase tracking-wider text-xs mb-1">Survey Outcome</p>
-                                        <p className="text-2xl font-bold tracking-tight">
-                                            {booking.report.waterFound ? "Water Source Success!" : "No Water Source Found"}
-                                        </p>
-                                    </div>
+                                    {booking.report.waterFound ? <IoWaterOutline className="text-2xl" /> : <IoAlertCircleOutline className="text-2xl" />}
                                 </div>
+                                <div>
+                                    <p className={`font-semibold ${booking.report.waterFound ? 'text-emerald-800' : 'text-red-800'}`}>
+                                        {booking.report.waterFound ? "Water Source Found!" : "No Water Source Found"}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                        {booking.report.waterFound
+                                            ? "Based on the survey, potential water sources have been identified."
+                                            : "Unfortunately, no significant water sources were located in the surveyed area."}
+                                    </p>
+                                </div>
+                            </div>
 
-                                {/* Key Recommendations Grid */}
+                            <div className="space-y-4">
                                 {booking.report.waterFound && (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        <InfoBlock label="Recommended Depth" value={booking.report.recommendedDepth ? `${booking.report.recommendedDepth} ft` : "N/A"} icon={IoArrowDownOutline} />
-                                        <InfoBlock label="Casing Length" value={booking.report.recommendedCasingDepth ? `${booking.report.recommendedCasingDepth} ft` : "N/A"} icon={IoConstructOutline} />
-                                        <InfoBlock label="Expected Yield" value={booking.report.expectedYield ? `${booking.report.expectedYield} inches` : "N/A"} icon={IoWaterOutline} />
-                                        <InfoBlock label="Points Located" value={booking.report.pointsLocated || "N/A"} />
-                                        <InfoBlock label="Best Point" value={booking.report.recommendedPointNumber || "N/A"} />
-                                        <InfoBlock label="Fracture Zones" value={booking.report.expectedFractureDepths || "N/A"} />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                            <span className="text-xs text-gray-500 uppercase">Rec. Depth</span>
+                                            <p className="font-semibold text-gray-800">{booking.report.recommendedDepth || "N/A"}</p>
+                                        </div>
+                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                            <span className="text-xs text-gray-500 uppercase">Yield</span>
+                                            <p className="font-semibold text-gray-800">{booking.report.expectedYield || "N/A"}</p>
+                                        </div>
+                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                            <span className="text-xs text-gray-500 uppercase">Casing</span>
+                                            <p className="font-semibold text-gray-800">{booking.report.recommendedCasingDepth || "N/A"}</p>
+                                        </div>
+                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                            <span className="text-xs text-gray-500 uppercase">Points</span>
+                                            <p className="font-semibold text-gray-800">{booking.report.pointsLocated || "N/A"}</p>
+                                        </div>
                                     </div>
                                 )}
 
-                                {/* Geological & Land Details */}
-                                <div className="space-y-3 pt-2 border-t border-gray-100">
-                                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                                        <IoMapOutline className="text-gray-400" />
-                                        Geological & Land Details
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-y-3 gap-x-8 text-sm">
-                                        <div>
-                                            <span className="text-gray-500 block">Rock Type</span>
-                                            <span className="font-medium text-gray-800">{booking.report.rockType || "N/A"}</span>
+                                {booking.report.images && booking.report.images.length > 0 && (
+                                    <div>
+                                        <p className="text-sm text-gray-500 mb-2 font-medium">Site Photos</p>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                            {booking.report.images.map((image, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                                    onClick={() => setShowWorkProof(true)}
+                                                >
+                                                    <img
+                                                        src={image.url || image}
+                                                        alt={`Report ${index + 1}`}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            ))}
                                         </div>
-                                        <div>
-                                            <span className="text-gray-500 block">Soil Type</span>
-                                            <span className="font-medium text-gray-800">{booking.report.soilType || "N/A"}</span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500 block">Land Area</span>
-                                            <span className="font-medium text-gray-800">{booking.report.extent || "N/A"}</span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500 block">Survey No</span>
-                                            <span className="font-medium text-gray-800">{booking.report.surveyNumber || "N/A"}</span>
-                                        </div>
-                                        {booking.report.existingBorewellDetails && (
-                                            <div className="col-span-2 mt-2">
-                                                <span className="text-gray-500 block">Existing Borewells</span>
-                                                <p className="font-medium text-gray-800 mt-1">{booking.report.existingBorewellDetails}</p>
-                                            </div>
-                                        )}
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                                )}
 
-                    {/* Work Proof */}
-                    {booking.report?.images && booking.report.images.length > 0 && (
-                        <div className="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(0,0,0,0.03)] overflow-hidden border border-gray-50">
-                            <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
-                                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                    <IoImageOutline className="text-[#0A84FF]" />
-                                    Work Proof
-                                </h2>
-                                <span className="bg-blue-100 text-[#0A84FF] text-xs font-bold px-2 py-1 rounded-md">
-                                    {booking.report.images.length} Photos
-                                </span>
+                                {booking.report.reportFile && (
+                                    <div className="pt-2">
+                                        <a
+                                            href={booking.report.reportFile.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-center gap-2 p-3 border border-dashed border-[#0A84FF] rounded-xl text-[#0A84FF] hover:bg-blue-50 transition-colors"
+                                        >
+                                            <IoDownloadOutline className="text-xl" />
+                                            <span>Download Full Report PDF</span>
+                                        </a>
+                                    </div>
+                                )}
                             </div>
-                            <div className="p-6">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {booking.report.images.map((img, index) => (
-                                        <div key={index} className="group relative aspect-square rounded-xl overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition-all" onClick={() => setShowWorkProof(true)}>
-                                            <img
-                                                src={img.url || img}
-                                                alt={`Work proof ${index + 1}`}
-                                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-                                            />
-                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                                <IoImageOutline className="text-white opacity-0 group-hover:opacity-100 text-3xl transform scale-50 group-hover:scale-100 transition-all duration-300" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                        </>
+                    ) : (
+                        <div className="text-center py-10 px-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                                <IoDocumentTextOutline className="text-3xl text-gray-300" />
                             </div>
+                            <h3 className="text-gray-800 font-bold mb-1">Awaiting Survey Report</h3>
+                            <p className="text-sm text-gray-500 max-w-[260px] mx-auto">
+                                Our expert will upload the detailed survey findings here once the visit and initial analysis are complete.
+                            </p>
                         </div>
                     )}
                 </div>
+            )}
 
-                {/* Right Column - Payment & Actions */}
-                <div className="space-y-6">
-                    {/* Payment Summary */}
-                    {booking.payment && (
-                        <div className="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(0,0,0,0.03)] overflow-hidden border border-gray-50">
-                            <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
-                                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                    <IoCashOutline className="text-[#0A84FF]" />
-                                    Payment Details
-                                </h2>
-                            </div>
-                            <div className="p-6 space-y-3">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-gray-600">Base Service Fee</span>
-                                    <span className="font-semibold text-gray-800">{formatAmount(booking.payment.baseServiceFee)}</span>
-                                </div>
-
-                                {booking.payment.travelCharges > 0 && (
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-600">Travel Charges ({Math.round(booking.payment.distance || 0)} km)</span>
-                                        <span className="font-semibold text-gray-800">{formatAmount(booking.payment.travelCharges)}</span>
-                                    </div>
-                                )}
-
-                                <div className="flex justify-between items-center text-sm pt-2 border-t border-dashed border-gray-200">
-                                    <span className="text-gray-600 font-medium">Subtotal</span>
-                                    <span className="font-semibold text-gray-800">{formatAmount(booking.payment.subtotal)}</span>
-                                </div>
-
-                                {booking.payment.gst > 0 && (
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-600">GST (18%)</span>
-                                        <span className="font-semibold text-gray-800">{formatAmount(booking.payment.gst)}</span>
-                                    </div>
-                                )}
-
-                                <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg mt-2">
-                                    <span className="text-base font-bold text-gray-800">Total Amount</span>
-                                    <span className="text-lg font-bold text-[#0A84FF]">{formatAmount(booking.payment.totalAmount)}</span>
-                                </div>
-
-                                {booking.payment.transactionId && (
-                                    <div className="text-center">
-                                        <p className="text-[10px] text-gray-400 font-mono mt-1">
-                                            Txn ID: {booking.payment.transactionId}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Paid / Remaining */}
-                                <div className="space-y-2 mt-4 pt-4 border-t border-gray-100">
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-600">Advance (40%)</span>
-                                        <span className={`font-bold ${booking.payment.advancePaid ? "text-green-600 flex items-center gap-1" : "text-gray-800"}`}>
-                                            {formatAmount(booking.payment.advanceAmount)}
-                                            {booking.payment.advancePaid && <IoCheckmarkCircleOutline />}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-600">Remaining (60%)</span>
-                                        <span className={`font-bold ${booking.payment.remainingPaid ? "text-green-600 flex items-center gap-1" : "text-gray-800"}`}>
-                                            {formatAmount(booking.payment.remainingAmount)}
-                                            {booking.payment.remainingPaid && <IoCheckmarkCircleOutline />}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className={`text-center py-2 rounded-lg text-xs font-bold uppercase tracking-wider mt-4 ${booking.payment.status === "SUCCESS" ? "bg-green-100 text-green-700" :
-                                    booking.payment.status === "PENDING" ? "bg-yellow-100 text-yellow-700" :
-                                        "bg-red-100 text-red-700"
-                                    }`}>
-                                    Payment Status: {booking.payment.status || "PENDING"}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Actions Card */}
-                    <div className="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(0,0,0,0.03)] overflow-hidden border border-gray-50 p-6 space-y-3">
-                        <h2 className="text-lg font-bold text-gray-800 mb-4">Actions</h2>
-
-                        {booking.status === "COMPLETED" && (
-                            <>
-                                <button
-                                    onClick={handleDownloadBill}
-                                    className="w-full flex items-center justify-center gap-2 bg-[#E7F0FB] text-[#0A84FF] py-3 rounded-xl font-semibold hover:bg-[#D0E1F7] transition-all active:scale-95"
-                                >
-                                    <IoDownloadOutline className="text-xl" />
-                                    Download Invoice
-                                </button>
-                                <button
-                                    onClick={handleRateVendor}
-                                    className="w-full flex items-center justify-center gap-2 bg-[#0A84FF] text-white py-3 rounded-xl font-semibold hover:bg-[#005BBB] transition-all active:scale-95 shadow-lg shadow-blue-200"
-                                >
-                                    <IoStarOutline className="text-xl" />
-                                    Rate Vendor
-                                </button>
-                            </>
-                        )}
-
-                        {booking.status === "AWAITING_PAYMENT" && !booking.payment?.remainingPaid && (
-                            <button
-                                onClick={() => navigate(`/user/booking/${bookingId}/payment`)}
-                                className="w-full bg-[#0A84FF] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#005BBB] transition-all active:scale-95 shadow-lg shadow-blue-200 flex flex-col items-center"
-                            >
-                                <span className="flex items-center gap-2 text-sm font-normal opacity-90">Pay Remaining Amount</span>
-                                <span>{formatAmount(booking.payment?.remainingAmount)}</span>
-                            </button>
-                        )}
-
-                        {["PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.status) && (
-                            <button
-                                onClick={handleCancelBooking}
-                                className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-100 py-3 rounded-xl font-semibold hover:bg-red-100 transition-all active:scale-95 mt-4"
-                            >
-                                <IoCloseCircleOutline className="text-xl" />
-                                Cancel Booking
-                            </button>
-                        )}
-
-                        {/* Dispute / Help - Always visible unless rejected/cancelled */}
-                        {!["CANCELLED", "REJECTED", "FAILED"].includes(booking.status) && (
-                            <button
-                                onClick={() => navigate("/user/disputes/create", { state: { bookingId: bookingId } })}
-                                className="w-full flex items-center justify-center gap-2 text-orange-500 py-2 text-sm font-medium hover:text-orange-600 transition-colors mt-2"
-                            >
-                                <IoAlertCircleOutline className="text-lg" />
-                                Report an Issue
-                            </button>
+            {/* Borewell Outcome Card - Always visible but shows professional empty state until uploaded */}
+            {!["CANCELLED", "REJECTED", "FAILED"].includes(booking.status) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 overflow-hidden">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-gray-800">Borewell Outcome</h2>
+                        {booking.borewellResult ? (
+                            <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${booking.borewellResult.status === 'SUCCESS' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {booking.borewellResult.status}
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full uppercase tracking-wider">
+                                <IoHourglassOutline className="text-[12px]" />
+                                Pending
+                            </span>
                         )}
                     </div>
 
-                    {/* Borewell Result Action (If Completed but no result) */}
-                    {booking.status === "COMPLETED" && !booking.borewellResult && (
-                        <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-[16px] shadow-lg p-6 text-white text-center">
-                            <IoImageOutline className="text-4xl mx-auto mb-3 opacity-90" />
-                            <h3 className="font-bold text-lg mb-1">Result Upload</h3>
-                            <p className="text-white/90 text-sm mb-4">Please upload the final borewell outcome to complete your record.</p>
-                            <button
-                                onClick={() => setShowBorewellModal(true)}
-                                className="bg-white text-teal-600 px-6 py-2 rounded-lg font-bold shadow-sm hover:shadow-md transition-all active:scale-95 w-full"
-                            >
-                                Upload Result
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Borewell Result Display */}
-                    {booking.borewellResult && (
-                        <div className="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(0,0,0,0.03)] overflow-hidden border border-gray-50 p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-lg font-bold text-gray-800">Borewell Outcome</h2>
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${booking.borewellResult.status === "SUCCESS" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                    {booking.borewellResult && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED') ? (
+                        <div className="space-y-4">
+                            <div className={`flex items-center gap-4 p-4 rounded-[12px] ${booking.borewellResult.status === 'SUCCESS'
+                                ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100'
+                                : 'bg-gradient-to-r from-red-50 to-pink-50 border border-red-100'
+                                }`}>
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${booking.borewellResult.status === 'SUCCESS' ? 'bg-white text-emerald-500' : 'bg-white text-red-500'
                                     }`}>
-                                    {booking.borewellResult.status}
-                                </span>
+                                    {booking.borewellResult.status === 'SUCCESS' ? <IoCheckmarkCircleOutline className="text-2xl" /> : <IoCloseCircleOutline className="text-2xl" />}
+                                </div>
+                                <div>
+                                    <p className={`font-bold ${booking.borewellResult.status === 'SUCCESS' ? 'text-emerald-800' : 'text-red-800'}`}>
+                                        {booking.borewellResult.status === 'SUCCESS' ? "Drilling Successful!" : "Drilling Failed"}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                        The outcome of the drilling process has been recorded for this point.
+                                    </p>
+                                </div>
                             </div>
-                            {booking.borewellResult.images?.length > 0 && (
-                                <div className="grid grid-cols-2 gap-2">
-                                    {booking.borewellResult.images.slice(0, 2).map((img, i) => (
-                                        <img key={i} src={img.url || img} className="w-full h-24 object-cover rounded-lg" alt="Result" />
+
+                            {booking.borewellResult.images && booking.borewellResult.images.length > 0 && (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    {booking.borewellResult.images.map((image, index) => (
+                                        <img
+                                            key={index}
+                                            src={image.url || image}
+                                            alt={`Borewell ${index + 1}`}
+                                            className="w-full aspect-square object-cover rounded-lg border border-gray-100"
+                                        />
                                     ))}
                                 </div>
                             )}
                         </div>
+                    ) : (
+                        <div className="text-center py-10 px-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                                <IoConstructOutline className="text-3xl text-gray-300" />
+                            </div>
+                            <h3 className="text-gray-800 font-bold mb-1">
+                                {!booking.report ? "Awaiting Survey Report" : "No Outcome Shared Yet"}
+                            </h3>
+                            <p className="text-sm text-gray-500 max-w-[260px] mx-auto">
+                                {!booking.report
+                                    ? "Borewell outcome can be shared once the official survey report is generated."
+                                    : "Once the drilling is completed at the surveyed point, share the outcome to help us improve."}
+                            </p>
+                            {booking.status === "COMPLETED" && (
+                                <button
+                                    onClick={() => setShowBorewellModal(true)}
+                                    className="mt-4 text-[#0A84FF] text-sm font-bold flex items-center justify-center gap-1 mx-auto hover:underline"
+                                >
+                                    Share Result Now
+                                </button>
+                            )}
+                        </div>
                     )}
+                </div>
+            )}
+
+            {/* Actions Card */}
+            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
+                <div className="space-y-3">
+                    {booking.status === "AWAITING_PAYMENT" && !booking.payment?.remainingPaid && (
+                        <button
+                            onClick={() => navigate(`/user/booking/${bookingId}/payment`)}
+                            className="w-full bg-[#0A84FF] text-white py-4 rounded-[12px] font-bold text-lg hover:bg-[#005BBB] transition-all active:scale-95 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] flex flex-col items-center justify-center"
+                        >
+                            <span className="flex items-center gap-2 text-sm font-normal opacity-90">Pay Remaining Amount</span>
+                            <span>{formatAmount(booking.payment?.remainingAmount)}</span>
+                        </button>
+                    )}
+
+                    {booking.status === "COMPLETED" && (
+                        <>
+                            <button
+                                onClick={handleDownloadBill}
+                                className="w-full flex items-center justify-center gap-2 bg-[#E7F0FB] text-[#0A84FF] py-3 rounded-[12px] font-semibold hover:bg-[#D0E1F7] transition-all"
+                            >
+                                <IoDownloadOutline className="text-xl" />
+                                Download Invoice
+                            </button>
+                            <button
+                                onClick={handleRateVendor}
+                                className="w-full flex items-center justify-center gap-2 bg-[#0A84FF] text-white py-3 rounded-[12px] font-semibold hover:bg-[#005BBB] transition-all shadow-md"
+                            >
+                                <IoStarOutline className="text-xl" />
+                                Rate Vendor
+                            </button>
+                            {!booking.borewellResult && (
+                                <button
+                                    onClick={() => setShowBorewellModal(true)}
+                                    className="w-full flex items-center justify-center gap-2 bg-teal-500 text-white py-3 rounded-[12px] font-semibold hover:bg-teal-600 transition-all shadow-md"
+                                >
+                                    <IoImageOutline className="text-xl" />
+                                    Upload Borewell Outcome
+                                </button>
+                            )}
+                        </>
+                    )}
+
+
+
+                    {["PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.status) && (
+                        <button
+                            onClick={handleCancelBooking}
+                            className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-100 py-3 rounded-[12px] font-semibold hover:bg-red-100 transition-all active:scale-95"
+                        >
+                            <IoCloseCircleOutline className="text-xl" />
+                            Cancel Booking
+                        </button>
+                    )}
+
+
                 </div>
             </div>
 
-            {/* Modals */}
-            {/* Work Proof Modal */}
-            {
-                showWorkProof && booking.report?.images && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowWorkProof(false)}>
-                        <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-black rounded-2xl" onClick={e => e.stopPropagation()}>
-                            <button onClick={() => setShowWorkProof(false)} className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-2">
-                                <IoCloseOutline className="text-3xl" />
+            {/* Need Help Card */}
+            {!["CANCELLED", "REJECTED", "FAILED"].includes(booking.status) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 border-l-4 border-orange-500">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                            <IoInformationCircleOutline className="text-2xl" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-800">Need Help?</h2>
+                            <p className="text-sm text-gray-500">Having trouble with your booking?</p>
+                        </div>
+                    </div>
+
+                    <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                        If you have any concerns regarding the service, payment, or vendor behavior, please let us know. Our support team is here to assist you.
+                    </p>
+
+                    <button
+                        onClick={() => navigate("/user/disputes/create", { state: { bookingId: bookingId } })}
+                        className="w-full flex items-center justify-center gap-3 bg-orange-500 text-white py-4 rounded-[12px] font-bold text-lg hover:bg-orange-600 transition-all active:scale-[0.98] shadow-lg shadow-orange-200"
+                    >
+                        <IoAlertCircleOutline className="text-2xl" />
+                        Raise a Dispute
+                    </button>
+                </div>
+            )}
+
+            {/* Reuse existing modals */}
+            {showWorkProof && booking.report?.images && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowWorkProof(false)}>
+                    <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-black rounded-2xl" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setShowWorkProof(false)} className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-2">
+                            <IoCloseOutline className="text-3xl" />
+                        </button>
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {booking.report.images.map((img, index) => (
+                                <img key={index} src={img.url || img} alt={`Full proof ${index}`} className="w-full h-auto rounded-lg" />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Borewell Upload Modal */}
+            {showBorewellModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !uploadingBorewell && setShowBorewellModal(false)}>
+                    <div className="bg-white rounded-[24px] w-full max-w-lg overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <h2 className="text-xl font-bold text-gray-800">Upload Borewell Result</h2>
+                            <button onClick={() => !uploadingBorewell && setShowBorewellModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                                <IoCloseOutline className="text-2xl text-gray-500" />
                             </button>
-                            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {booking.report.images.map((img, index) => (
-                                    <img key={index} src={img.url || img} alt={`Full proof ${index}`} className="w-full h-auto rounded-lg" />
-                                ))}
+                        </div>
+                        <div className="p-6 space-y-6">
+                            <div>
+                                <label className="text-sm font-bold text-gray-700 mb-3 block">Result Status</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setBorewellData({ ...borewellData, status: "SUCCESS" })}
+                                        className={`py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${borewellData.status === "SUCCESS"
+                                            ? "bg-green-500 text-white shadow-lg shadow-green-200"
+                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                            }`}
+                                    >
+                                        <IoCheckmarkCircleOutline className="text-xl" /> Success
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setBorewellData({ ...borewellData, status: "FAILED" })}
+                                        className={`py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${borewellData.status === "FAILED"
+                                            ? "bg-red-500 text-white shadow-lg shadow-red-200"
+                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                            }`}
+                                    >
+                                        <IoCloseCircleOutline className="text-xl" /> Failed
+                                    </button>
+                                </div>
                             </div>
+                            <div>
+                                <label className="text-sm font-bold text-gray-700 mb-2 block">Upload Photos</label>
+                                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer relative">
+                                    <input type="file" accept="image/*" multiple onChange={handleBorewellImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                    <IoImageOutline className="text-4xl text-gray-300 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-500 font-medium">Click to upload images</p>
+                                </div>
+                                {borewellData.images.length > 0 && (
+                                    <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+                                        {borewellData.images.map((img, i) => (
+                                            <div key={i} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden group">
+                                                <img src={img.preview} alt="" className="w-full h-full object-cover" />
+                                                <button onClick={() => handleRemoveBorewellImage(i)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <IoCloseOutline />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                onClick={handleSubmitBorewellResult}
+                                disabled={uploadingBorewell || !borewellData.status}
+                                className="w-full bg-[#0A84FF] text-white py-3.5 rounded-xl font-bold hover:bg-[#005BBB] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {uploadingBorewell ? "Uploading..." : "Submit Result"}
+                            </button>
                         </div>
                     </div>
-                )
-            }
-
-            {/* Borewell Upload Modal - Kept same logic but refreshed UI if needed */}
-            {
-                showBorewellModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !uploadingBorewell && setShowBorewellModal(false)}>
-                        <div className="bg-white rounded-[24px] w-full max-w-lg overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                                <h2 className="text-xl font-bold text-gray-800">Upload Borewell Result</h2>
-                                <button onClick={() => !uploadingBorewell && setShowBorewellModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                                    <IoCloseOutline className="text-2xl text-gray-500" />
-                                </button>
-                            </div>
-                            <div className="p-6 space-y-6">
-                                <div>
-                                    <label className="text-sm font-bold text-gray-700 mb-3 block">Result Status</label>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setBorewellData({ ...borewellData, status: "SUCCESS" })}
-                                            className={`py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${borewellData.status === "SUCCESS"
-                                                ? "bg-green-500 text-white shadow-lg shadow-green-200"
-                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                                }`}
-                                        >
-                                            <IoCheckmarkCircleOutline className="text-xl" /> Success
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setBorewellData({ ...borewellData, status: "FAILED" })}
-                                            className={`py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${borewellData.status === "FAILED"
-                                                ? "bg-red-500 text-white shadow-lg shadow-red-200"
-                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                                }`}
-                                        >
-                                            <IoCloseCircleOutline className="text-xl" /> Failed
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="text-sm font-bold text-gray-700 mb-2 block">Upload Photos</label>
-                                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer relative">
-                                        <input type="file" accept="image/*" multiple onChange={handleBorewellImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                                        <IoImageOutline className="text-4xl text-gray-300 mx-auto mb-2" />
-                                        <p className="text-sm text-gray-500 font-medium">Click to upload images</p>
-                                    </div>
-                                    {borewellData.images.length > 0 && (
-                                        <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                                            {borewellData.images.map((img, i) => (
-                                                <div key={i} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden group">
-                                                    <img src={img.preview} alt="" className="w-full h-full object-cover" />
-                                                    <button onClick={() => handleRemoveBorewellImage(i)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <IoCloseOutline />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <button
-                                    onClick={handleSubmitBorewellResult}
-                                    disabled={uploadingBorewell || !borewellData.status}
-                                    className="w-full bg-[#0A84FF] text-white py-3.5 rounded-xl font-bold hover:bg-[#005BBB] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {uploadingBorewell ? "Uploading..." : "Submit Result"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
+                </div>
+            )}
 
             {/* Rating Modal */}
-            {
-                showRatingModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowRatingModal(false)}>
-                        <div className="bg-white rounded-[24px] w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                                <h2 className="text-xl font-bold text-gray-800">Rate Experience</h2>
-                                <button onClick={() => setShowRatingModal(false)} className="p-2 hover:bg-gray-200 rounded-full">
-                                    <IoCloseOutline className="text-2xl text-gray-500" />
-                                </button>
-                            </div>
-                            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-                                <p className="text-center text-gray-600 text-sm">How was your experience with <strong>{booking.vendor?.name}</strong>?</p>
-
-                                {[{ key: "accuracy", label: "Accuracy" }, { key: "professionalism", label: "Professionalism" }, { key: "behavior", label: "Behavior" }, { key: "visitTiming", label: "Visit Timing" }].map(cat => (
-                                    <div key={cat.key} className="text-center">
-                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-2">{cat.label}</label>
-                                        <div className="flex justify-center gap-2">
-                                            {[1, 2, 3, 4, 5].map(star => (
-                                                <button key={star} onClick={() => setRatingData({ ...ratingData, [cat.key]: star })} className="text-3xl focus:outline-none transition-transform active:scale-90 hover:scale-110">
-                                                    {ratingData[cat.key] >= star ? <IoStar className="text-yellow-400" /> : <IoStarOutline className="text-gray-300" />}
-                                                </button>
-                                            ))}
-                                        </div>
+            {showRatingModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowRatingModal(false)}>
+                    <div className="bg-white rounded-[24px] w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <h2 className="text-xl font-bold text-gray-800">Rate Experience</h2>
+                            <button onClick={() => setShowRatingModal(false)} className="p-2 hover:bg-gray-200 rounded-full">
+                                <IoCloseOutline className="text-2xl text-gray-500" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                            <p className="text-center text-gray-600 text-sm">How was your experience with <strong>{booking.vendor?.name}</strong>?</p>
+                            {[{ key: "accuracy", label: "Accuracy" }, { key: "professionalism", label: "Professionalism" }, { key: "behavior", label: "Behavior" }, { key: "visitTiming", label: "Visit Timing" }].map(cat => (
+                                <div key={cat.key} className="text-center">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-2">{cat.label}</label>
+                                    <div className="flex justify-center gap-2">
+                                        {[1, 2, 3, 4, 5].map(star => (
+                                            <button key={star} onClick={() => setRatingData({ ...ratingData, [cat.key]: star })} className="text-3xl focus:outline-none transition-transform active:scale-90 hover:scale-110">
+                                                {ratingData[cat.key] >= star ? <IoStar className="text-yellow-400" /> : <IoStarOutline className="text-gray-300" />}
+                                            </button>
+                                        ))}
                                     </div>
-                                ))}
-
-                                <textarea
-                                    value={ratingData.review}
-                                    onChange={e => setRatingData({ ...ratingData, review: e.target.value })}
-                                    placeholder="Share additional feedback..."
-                                    className="w-full border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF] min-h-[100px]"
-                                ></textarea>
-
-                                <button onClick={handleSubmitRating} disabled={submittingRating} className="w-full bg-[#0A84FF] text-white py-3.5 rounded-xl font-bold hover:bg-[#005BBB] transition-all disabled:opacity-70">
-                                    {submittingRating ? "Submitting..." : "Submit Review"}
-                                </button>
-                            </div>
+                                </div>
+                            ))}
+                            <textarea
+                                value={ratingData.review}
+                                onChange={e => setRatingData({ ...ratingData, review: e.target.value })}
+                                placeholder="Share additional feedback..."
+                                className="w-full border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF] min-h-[100px]"
+                            ></textarea>
+                            <button onClick={handleSubmitRating} disabled={submittingRating} className="w-full bg-[#0A84FF] text-white py-3.5 rounded-xl font-bold hover:bg-[#005BBB] transition-all disabled:opacity-70">
+                                {submittingRating ? "Submitting..." : "Submit Review"}
+                            </button>
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
 
-            {/* Other Modals */}
             <InputModal
                 isOpen={showCancellationInput}
                 onClose={() => setShowCancellationInput(false)}
@@ -1050,20 +1255,6 @@ export default function UserBookingDetails() {
                 cancelText="Go Back"
                 confirmColor="danger"
             />
-        </PageContainer >
-    );
-}
-
-function InfoBlock({ label, value, icon: Icon = IoInformationCircleOutline }) {
-    return (
-        <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#0A84FF] flex-shrink-0">
-                <Icon className="text-lg" />
-            </div>
-            <div>
-                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{label}</p>
-                <p className="text-base font-semibold text-gray-800 break-words">{value}</p>
-            </div>
         </div>
     );
 }

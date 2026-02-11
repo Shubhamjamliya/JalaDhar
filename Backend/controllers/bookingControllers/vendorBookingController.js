@@ -698,7 +698,7 @@ const getBookingDetails = async (req, res) => {
       _id: bookingId,
       vendor: vendorId
     })
-      .populate('user', 'name email phone address')
+      .populate('user', 'name email phone address profilePicture documents.profilePicture')
       .populate('service', 'name price machineType description');
 
     if (!booking) {
