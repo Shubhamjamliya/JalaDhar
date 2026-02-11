@@ -47,6 +47,7 @@ const UserCreateDispute = lazy(() => import("./modules/user/user-pages/UserCreat
 const UserDisputeDetails = lazy(() => import("./modules/user/user-pages/UserDisputeDetails"));
 const UserRatings = lazy(() => import("./modules/user/user-pages/UserRatings"));
 const UserSurveyFlow = lazy(() => import("./modules/user/user-pages/UserSurveyFlow"));
+const UserSurveyReport = lazy(() => import("./modules/user/user-pages/UserSurveyReport"));
 const VendorDashboard = lazy(() => import("./modules/vendor/vendor-pages/VendorDashboard"));
 const VendorDisputes = lazy(() => import("./modules/vendor/vendor-pages/VendorDisputes"));
 const VendorCreateDispute = lazy(() => import("./modules/vendor/vendor-pages/VendorCreateDispute"));
@@ -272,6 +273,14 @@ function App() {
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <UserRatings />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/booking/:bookingId/report"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserSurveyReport />
                                                                     </Suspense>
                                                                 }
                                                             />

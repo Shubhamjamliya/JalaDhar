@@ -14,7 +14,10 @@ import {
     IoCarOutline,
     IoAddCircleOutline,
     IoCloseOutline,
+    IoNavigateOutline,
     IoAlertCircleOutline,
+    IoMap,
+    IoLogoGoogle,
 } from "react-icons/io5";
 import { getBookingDetails, acceptBooking, rejectBooking, markBookingAsVisited, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
@@ -44,6 +47,7 @@ export default function VendorBookingDetails() {
         reason: ""
     });
     const [submittingTravelCharges, setSubmittingTravelCharges] = useState(false);
+    const [showMapPicker, setShowMapPicker] = useState(false);
 
     // Load data on mount and when location/bookingId changes
     useEffect(() => {
@@ -234,6 +238,53 @@ export default function VendorBookingDetails() {
             toast.dismissToast(loadingToast);
             handleApiError(err, "Failed to download invoice");
         }
+    };
+
+    const openMapApp = (appName) => {
+        if (!booking?.address) return;
+
+        const { street, city, state, pincode, location } = booking.address;
+        const [lng, lat] = location?.coordinates || [0, 0];
+        const query = lat && lng ? `${lat},${lng}` : encodeURIComponent(`${street || ""}, ${city || ""}, ${state || ""} ${pincode || ""}`.trim());
+        const label = encodeURIComponent(booking.user?.name || 'Customer Site');
+
+        let url = "";
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+        switch (appName) {
+            case 'google':
+                url = isIOS
+                    ? `comgooglemaps://?q=${query}&center=${query}`
+                    : `geo:${query}?q=${query}(${label})`;
+                break;
+            case 'apple':
+                url = `maps://?q=${label}&ll=${query}`;
+                break;
+            case 'waze':
+                url = `waze://?ll=${query}&navigate=yes`;
+                break;
+            default:
+                url = `https://www.google.com/maps/search/?api=1&query=${query}`;
+        }
+
+        // Attempt to open native app
+        window.location.href = url;
+        setShowMapPicker(false);
+
+        // Safety timeout for web-only environments/desktops
+        setTimeout(() => {
+            if (document.visibilityState === 'visible') {
+                window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+            }
+        }, 1500);
+    };
+
+    const handleGetDirections = () => {
+        if (!booking?.address) {
+            toast.showError("Address not available");
+            return;
+        }
+        setShowMapPicker(true);
     };
 
     const formatDate = (dateString) => {
@@ -525,63 +576,98 @@ export default function VendorBookingDetails() {
                             </div>
                         </div>
                     )}
+                    <button
+                        onClick={handleGetDirections}
+                        className="w-full mt-4 bg-emerald-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
+                    >
+                        <IoNavigateOutline className="text-xl" />
+                        Get Directions (Open Maps)
+                    </button>
                 </div>
             </div>
 
             {/* Payment Information Card */}
             {booking.payment && (
                 <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Charges Breakdown</h2>
-                    <div className="space-y-3">
-                        {/* Service Charges */}
-                        <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-gray-800">Charges Breakdown</h2>
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${booking.payment.status === "SUCCESS" ? "bg-green-100 text-green-700" :
+                            booking.payment.status === "PARTIAL" ? "bg-blue-100 text-blue-700" :
+                                "bg-gray-100 text-gray-500"
+                            }`}>
+                            {booking.payment.status === "SUCCESS" ? "Full Payment Received" :
+                                booking.payment.advancePaid ? "Advance Received" : "Payment Pending"}
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        {/* Summary Line */}
+                        <div className="flex justify-between items-end pb-4 border-b border-gray-100">
                             <div>
-                                <span className="text-sm text-gray-600">Service Charges</span>
-                                {booking.service?.name && (
-                                    <p className="text-xs text-gray-500 mt-0.5">{booking.service.name}</p>
-                                )}
+                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Total Service Value</p>
+                                <p className="text-2xl font-black text-gray-900">
+                                    ₹{booking.payment.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </p>
                             </div>
-                            <span className="font-semibold text-gray-800">
-                                ₹{booking.payment.baseServiceFee?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || booking.service?.price?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
-                            </span>
+                            <div className="text-right">
+                                <p className="text-xs text-gray-500 mb-1">Machine Type</p>
+                                <p className="text-sm font-bold text-[#0A84FF]">{booking.service?.machineType || "Standard"}</p>
+                            </div>
                         </div>
 
-                        {/* Travel Charges with Distance */}
-                        {booking.payment.travelCharges !== undefined && (
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <span className="text-sm text-gray-600">Travel Charges (To & Fro)</span>
-                                    {booking.payment.distance !== null && booking.payment.distance !== undefined && (
-                                        <p className="text-xs text-gray-500 mt-0.5">
-                                            Distance: {booking.payment.distance.toFixed(2)} km × 2 (Round Trip)
-                                        </p>
-                                    )}
+                        {/* Installment Breakdown */}
+                        <div className="space-y-3 pt-2">
+                            {/* Advance Payment (40%) */}
+                            <div className={`p-4 rounded-xl border transition-all ${booking.payment.advancePaid ? 'bg-emerald-50/50 border-emerald-100' : 'bg-gray-50 border-gray-100 opacity-75'}`}>
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${booking.payment.advancePaid ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                            {booking.payment.advancePaid ? <IoCheckmarkCircleOutline className="text-xl" /> : <span className="text-xs font-bold">1st</span>}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-800">Advance Payment (40%)</p>
+                                            <p className="text-[11px] text-gray-500">Collected before site visit</p>
+                                        </div>
+                                    </div>
+                                    <p className={`font-bold ${booking.payment.advancePaid ? 'text-emerald-700' : 'text-gray-600'}`}>
+                                        ₹{booking.payment.advanceAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                    </p>
                                 </div>
-                                <span className="font-semibold text-gray-800">
-                                    ₹{booking.payment.travelCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
                             </div>
-                        )}
 
-                        {/* Total (Service + Travel) */}
-                        <div className="pt-2 border-t-2 border-gray-300 flex justify-between items-center">
-                            <span className="text-base font-bold text-gray-800">Total (Service + Travel)</span>
-                            <span className="text-lg font-bold text-[#0A84FF]">
-                                ₹{booking.payment.subtotal !== undefined
-                                    ? booking.payment.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                    : ((booking.payment.baseServiceFee || 0) + (booking.payment.travelCharges || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
-                            </span>
+                            {/* Final Payment (60%) */}
+                            <div className={`p-4 rounded-xl border transition-all ${booking.payment.remainingPaid ? 'bg-emerald-50/50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${booking.payment.remainingPaid ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                                            {booking.payment.remainingPaid ? <IoCheckmarkCircleOutline className="text-xl" /> : <span className="text-xs font-bold">2nd</span>}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-800">Final Settlement (60%)</p>
+                                            <p className="text-[11px] text-gray-500">Collected after report upload</p>
+                                        </div>
+                                    </div>
+                                    <p className={`font-bold ${booking.payment.remainingPaid ? 'text-emerald-700' : 'text-gray-600'}`}>
+                                        ₹{booking.payment.remainingAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Payment Status */}
-                        <div className="pt-2 border-t border-gray-200 mt-2">
-                            <span className="text-xs text-gray-500">Payment Status: </span>
-                            <span className={`text-xs font-semibold ${booking.payment.status === "SUCCESS" ? "text-green-600" :
-                                booking.payment.status === "PENDING" ? "text-yellow-600" :
-                                    "text-red-600"
-                                }`}>
-                                {booking.payment.status || "PENDING"}
-                            </span>
+                        {/* Charges Breakdown Detail */}
+                        <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                            <div className="flex justify-between text-xs text-gray-600">
+                                <span>Base service fee</span>
+                                <span>₹{booking.payment.baseServiceFee?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-600">
+                                <span>Travel charges ({booking.payment.distance?.toFixed(1)}km x 2)</span>
+                                <span>₹{booking.payment.travelCharges?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-600 font-medium pt-1 border-t border-gray-200">
+                                <span className="text-gray-800">GST (Included)</span>
+                                <span>₹{booking.payment.gst?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -960,6 +1046,74 @@ export default function VendorBookingDetails() {
                         <IoAlertCircleOutline className="text-xl" />
                         Raise Dispute
                     </button>
+                </div>
+            )}
+
+            {/* Map Application Picker Modal */}
+            {showMapPicker && (
+                <div
+                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+                    onClick={() => setShowMapPicker(false)}
+                >
+                    <div
+                        className="bg-white w-full max-w-sm rounded-t-[24px] sm:rounded-[24px] overflow-hidden animate-slide-up"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="text-xl font-bold text-gray-800">Select Map App</h3>
+                            <button onClick={() => setShowMapPicker(false)} className="p-2 bg-gray-50 rounded-full">
+                                <IoCloseOutline className="text-2xl text-gray-400" />
+                            </button>
+                        </div>
+                        <div className="p-4 grid grid-cols-1 gap-3">
+                            <button
+                                onClick={() => openMapApp('google')}
+                                className="flex items-center gap-4 p-4 rounded-2xl bg-blue-50 hover:bg-blue-100 transition-all border border-blue-100 group"
+                            >
+                                <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center">
+                                    <IoLogoGoogle className="text-2xl text-blue-600" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-bold text-gray-800">Google Maps</p>
+                                    <p className="text-xs text-blue-600">Recommended for Android & iOS</p>
+                                </div>
+                            </button>
+
+                            {/iPhone|iPad|iPod/.test(navigator.userAgent) && (
+                                <button
+                                    onClick={() => openMapApp('apple')}
+                                    className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all border border-gray-200"
+                                >
+                                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center">
+                                        <IoMap className="text-2xl text-gray-800" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-bold text-gray-800">Apple Maps</p>
+                                        <p className="text-xs text-gray-500">Native iOS Navigation</p>
+                                    </div>
+                                </button>
+                            )}
+
+                            <button
+                                onClick={() => openMapApp('waze')}
+                                className="flex items-center gap-4 p-4 rounded-2xl bg-sky-50 hover:bg-sky-100 transition-all border border-sky-100"
+                            >
+                                <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center">
+                                    <IoNavigateOutline className="text-2xl text-sky-500" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-bold text-gray-800">Waze</p>
+                                    <p className="text-xs text-sky-600">Live Traffic Updates</p>
+                                </div>
+                            </button>
+                        </div>
+                        <div className="p-6 bg-gray-50/50">
+                            <p className="text-[11px] text-gray-400 text-center leading-relaxed">
+                                Selecting an app will open your device's native navigation system. <br />
+                                Make sure the app is installed on your phone.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

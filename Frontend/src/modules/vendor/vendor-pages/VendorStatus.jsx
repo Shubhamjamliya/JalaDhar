@@ -14,6 +14,9 @@ import {
     IoImageOutline,
     IoWalletOutline,
     IoRefreshOutline,
+    IoNavigateOutline,
+    IoLogoGoogle,
+    IoMap,
 } from "react-icons/io5";
 import {
     getBookingDetails,
@@ -42,6 +45,7 @@ export default function VendorStatus() {
     const [showRejectConfirm, setShowRejectConfirm] = useState(false);
     const [showVisitConfirm, setShowVisitConfirm] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
+    const [showMapPicker, setShowMapPicker] = useState(false);
     const loadBookingDetailsRef = useRef(null);
     const lastActionTimeRef = useRef(0); // Track when user performed an action
     const ACTION_COOLDOWN = 2000; // 2 seconds - ignore socket updates right after user action
@@ -219,6 +223,52 @@ export default function VendorStatus() {
         } finally {
             setActionLoading(false);
         }
+    };
+
+
+    const openMapApp = (appName) => {
+        if (!booking?.address) return;
+
+        const { street, city, state, pincode, location } = booking.address;
+        const [lng, lat] = location?.coordinates || [0, 0];
+        const query = lat && lng ? `${lat},${lng}` : encodeURIComponent(`${street || ""}, ${city || ""}, ${state || ""} ${pincode || ""}`.trim());
+        const label = encodeURIComponent(booking.user?.name || 'Customer Site');
+
+        let url = "";
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+        switch (appName) {
+            case 'google':
+                url = isIOS
+                    ? `comgooglemaps://?q=${query}&center=${query}`
+                    : `geo:${query}?q=${query}(${label})`;
+                break;
+            case 'apple':
+                url = `maps://?q=${label}&ll=${query}`;
+                break;
+            case 'waze':
+                url = `waze://?ll=${query}&navigate=yes`;
+                break;
+            default:
+                url = `https://www.google.com/maps/search/?api=1&query=${query}`;
+        }
+
+        window.location.href = url;
+        setShowMapPicker(false);
+
+        setTimeout(() => {
+            if (document.visibilityState === 'visible') {
+                window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+            }
+        }, 1500);
+    };
+
+    const handleGetDirections = () => {
+        if (!booking?.address) {
+            toast.showError("Address not available");
+            return;
+        }
+        setShowMapPicker(true);
     };
 
 
@@ -559,17 +609,28 @@ export default function VendorStatus() {
                                         </div>
                                     )}
 
-                                    {/* Step 2: ACCEPTED - Mark as Visited */}
-                                    {step.id === "accepted" && status === "ACCEPTED" && (
+                                    {/* Step 2: ACCEPTED - Actions */}
+                                    {step.id === "accepted" && (isActive || isCompleted) && (
                                         <div className="flex flex-col gap-2 mt-3">
-                                            {/* Mark as Visited Button */}
+                                            {/* Mark as Visited Button - Only show if active */}
+                                            {status === "ACCEPTED" && (
+                                                <button
+                                                    onClick={handleMarkVisited}
+                                                    disabled={actionLoading}
+                                                    className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                >
+                                                    <IoConstructOutline className="text-xl" />
+                                                    {actionLoading ? "Processing..." : "Mark as Visited"}
+                                                </button>
+                                            )}
+
+                                            {/* Get Directions Button - Visible as long as booking is accepted/visited */}
                                             <button
-                                                onClick={handleMarkVisited}
-                                                disabled={actionLoading}
-                                                className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                onClick={handleGetDirections}
+                                                className="w-full h-12 bg-emerald-600 text-white text-sm font-bold rounded-[8px] hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md shadow-emerald-100"
                                             >
-                                                <IoConstructOutline className="text-xl" />
-                                                {actionLoading ? "Processing..." : "Mark as Visited"}
+                                                <IoNavigateOutline className="text-xl" />
+                                                Get Directions (Open Maps)
                                             </button>
                                         </div>
                                     )}
@@ -723,8 +784,8 @@ export default function VendorStatus() {
                                                     Settlement Status:{" "}
                                                     <span
                                                         className={`px-2 py-1 rounded-full text-xs font-semibold ${(booking.finalSettlement?.status === "PROCESSED" || booking.payment?.vendorSettlement?.status === "COMPLETED")
-                                                                ? "bg-green-100 text-green-700"
-                                                                : "bg-yellow-100 text-yellow-700"
+                                                            ? "bg-green-100 text-green-700"
+                                                            : "bg-yellow-100 text-yellow-700"
                                                             }`}
                                                     >
                                                         {booking.finalSettlement?.status === "PROCESSED"
@@ -736,8 +797,8 @@ export default function VendorStatus() {
                                                 </p>
                                                 {(booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0) ? (
                                                     <p className={`text-sm font-bold mt-2 ${booking.finalSettlement?.rewardAmount > 0
-                                                            ? "text-green-600"
-                                                            : "text-red-600"
+                                                        ? "text-green-600"
+                                                        : "text-red-600"
                                                         }`}>
                                                         {booking.finalSettlement?.rewardAmount > 0
                                                             ? `Reward: ${formatAmount(booking.finalSettlement.rewardAmount)}`
@@ -820,6 +881,74 @@ export default function VendorStatus() {
                 confirmColor="primary"
                 isLoading={actionLoading}
             />
+
+            {/* Map Application Picker Modal */}
+            {showMapPicker && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+                    onClick={() => setShowMapPicker(false)}
+                >
+                    <div
+                        className="bg-white w-full max-w-sm rounded-t-[24px] sm:rounded-[24px] overflow-hidden animate-slide-up shadow-2xl"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="text-xl font-bold text-gray-800">Select Map App</h3>
+                            <button onClick={() => setShowMapPicker(false)} className="p-2 bg-gray-50 rounded-full">
+                                <IoCloseOutline className="text-2xl text-gray-400" />
+                            </button>
+                        </div>
+                        <div className="p-4 grid grid-cols-1 gap-3">
+                            <button
+                                onClick={() => openMapApp('google')}
+                                className="flex items-center gap-4 p-4 rounded-2xl bg-blue-50 hover:bg-blue-100 transition-all border border-blue-100 group"
+                            >
+                                <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center">
+                                    <IoLogoGoogle className="text-2xl text-blue-600" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-bold text-gray-800">Google Maps</p>
+                                    <p className="text-xs text-blue-600">Recommended for Android & iOS</p>
+                                </div>
+                            </button>
+
+                            {/iPhone|iPad|iPod/.test(navigator.userAgent) && (
+                                <button
+                                    onClick={() => openMapApp('apple')}
+                                    className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all border border-gray-200"
+                                >
+                                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center">
+                                        <IoMap className="text-2xl text-gray-800" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-bold text-gray-800">Apple Maps</p>
+                                        <p className="text-xs text-gray-500">Native iOS Navigation</p>
+                                    </div>
+                                </button>
+                            )}
+
+                            <button
+                                onClick={() => openMapApp('waze')}
+                                className="flex items-center gap-4 p-4 rounded-2xl bg-sky-50 hover:bg-sky-100 transition-all border border-sky-100"
+                            >
+                                <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center">
+                                    <IoNavigateOutline className="text-2xl text-sky-500" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-bold text-gray-800">Waze</p>
+                                    <p className="text-xs text-sky-600">Live Traffic Updates</p>
+                                </div>
+                            </button>
+                        </div>
+                        <div className="p-6 bg-gray-50/50">
+                            <p className="text-[11px] text-gray-400 text-center leading-relaxed">
+                                Selecting an app will open your device's native navigation system. <br />
+                                Make sure the app is installed on your phone.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

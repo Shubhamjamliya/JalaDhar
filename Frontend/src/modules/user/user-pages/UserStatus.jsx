@@ -524,7 +524,7 @@ export default function UserStatus() {
                 </div>
             )}
 
-            {/* Back button removed - handled by UserNavbar */}\n
+            {/* Back button removed - handled by UserNavbar */}
 
             {/* Booking Info Card */}
             {currentBooking && (
@@ -560,144 +560,144 @@ export default function UserStatus() {
 
             {/* Status Timeline */}
             {steps.length === 0 ? (
-                <div className="text-center py-8 bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border-2 border-[#81D4FA]">
-                    <p className="text-gray-600">No status information available</p>
+                <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <p className="text-gray-500 font-medium">No status information available</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-[auto_1fr] gap-x-4">
+                <div className="relative pl-4">
+                    {/* Vertical Connector Main Line */}
+                    <div className="absolute left-[33px] top-8 bottom-8 w-0.5 bg-gray-200" />
+
                     {steps.map((step, index) => {
                         const StepIcon = step.icon;
                         const isLast = index === steps.length - 1;
                         const isActive = step.active;
                         const isCompleted = step.completed;
+                        const isUpcoming = !isActive && !isCompleted;
 
                         return (
-                            <Fragment key={step.id}>
-                                {/* Icon */}
-                                <div className="flex flex-col items-center">
-                                    <div
-                                        className={`relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] overflow-hidden ${isActive || isCompleted ? "" : "opacity-60"
-                                            }`}
-                                    >
-                                        {/* Highlight/Reflection Effect */}
-                                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
-                                        <StepIcon className={`text-2xl relative z-10 ${isActive || isCompleted ? "text-[#1976D2]" : "text-gray-500"}`} />
-                                    </div>
-                                    {!isLast && (
+                            <div key={step.id} className="relative mb-8 last:mb-0">
+                                <div className="flex gap-6">
+                                    {/* Timeline Marker */}
+                                    <div className="relative z-10 flex flex-col items-center">
                                         <div
-                                            className={`w-0.5 grow ${isCompleted
-                                                ? "bg-[#1976D2]"
+                                            className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-500 ${isCompleted
+                                                ? "bg-emerald-500 text-white shadow-[0_0_0_4px_rgba(16,185,129,0.15)]"
                                                 : isActive
-                                                    ? "bg-[#1976D2]"
-                                                    : "bg-gray-300"
+                                                    ? "bg-[#0A84FF] text-white shadow-[0_0_0_4px_rgba(10,132,255,0.2)] animate-pulse"
+                                                    : "bg-white border-2 border-gray-200 text-gray-400"
                                                 }`}
-                                        ></div>
-                                    )}
-                                </div>
+                                        >
+                                            {isCompleted ? (
+                                                <IoCheckmarkCircleOutline className="text-xl" />
+                                            ) : (
+                                                <StepIcon className="text-xl" />
+                                            )}
+                                        </div>
+                                    </div>
 
-                                {/* Content */}
-                                <div
-                                    className={`mb-6 rounded-[12px] bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border-2 ${isActive || isCompleted ? "border-[#81D4FA]" : "border-[#B3E5FC] opacity-60"
-                                        } ${isActive || isCompleted ? "" : "text-gray-400"
-                                        }`}
-                                >
-                                    <p className="text-base font-bold text-gray-800 mb-1">
-                                        {step.label}
-                                    </p>
-                                    {step.date && (
-                                        <p className="mb-2 text-sm text-gray-500">
-                                            {formatDate(step.date)}
-                                        </p>
-                                    )}
-                                    {step.id === "assigned" && vendor && (
-                                        <div className="mb-3 flex items-center gap-3 rounded-[10px] border-2 border-[#B3E5FC] bg-gradient-to-br from-[#E3F2FD] to-[#BBDEFB] p-3">
-                                            <img
-                                                className="h-12 w-12 rounded-full object-cover border-2 border-white"
-                                                src={
-                                                    vendor.documents?.profilePicture?.url ||
-                                                    "https://via.placeholder.com/48"
-                                                }
-                                                alt={vendor.name}
-                                            />
-                                            <div>
-                                                <p className="font-semibold text-gray-800">
-                                                    {vendor.name}
+                                    {/* Content Card */}
+                                    <div className="flex-1">
+                                        <div
+                                            className={`rounded-2xl p-5 transition-all duration-300 ${isActive
+                                                ? "bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] border-l-4 border-[#0A84FF]"
+                                                : isCompleted
+                                                    ? "bg-white/60 border border-gray-100"
+                                                    : "bg-gray-50/50 border border-gray-100 opacity-70"
+                                                }`}
+                                        >
+                                            <div className="flex justify-between items-start mb-1">
+                                                <h3 className={`font-bold text-base ${isActive ? "text-[#0A84FF]" : isCompleted ? "text-gray-800" : "text-gray-500"
+                                                    }`}>
+                                                    {step.label}
+                                                </h3>
+                                                {isCompleted && (
+                                                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                        Done
+                                                    </span>
+                                                )}
+                                                {isActive && (
+                                                    <span className="text-[10px] font-bold text-[#0A84FF] bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                        Active
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {step.date && (
+                                                <p className="text-[11px] text-gray-400 font-medium mb-3 flex items-center gap-1">
+                                                    <IoTimeOutline className="text-sm" />
+                                                    {formatDate(step.date)}
                                                 </p>
-                                                {vendor.rating?.averageRating && (
-                                                    <p className="text-sm text-gray-500">
-                                                        ⭐ {vendor.rating.averageRating.toFixed(1)} Rating
-                                                    </p>
+                                            )}
+
+                                            <p className={`text-sm leading-relaxed ${isActive ? "text-gray-700" : "text-gray-500"
+                                                }`}>
+                                                {step.description}
+                                            </p>
+
+                                            {/* Specialized Content for Steps */}
+                                            {step.id === "assigned" && vendor && (
+                                                <div className="mt-4 flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                                                    <div className="relative">
+                                                        <img
+                                                            className="h-12 w-12 rounded-full object-cover border-2 border-white shadow-sm"
+                                                            src={vendor.profilePicture || vendor.documents?.profilePicture?.url || "https://premium-profile-placeholder.com"}
+                                                            onError={(e) => {
+                                                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name)}&background=0A84FF&color=fff`;
+                                                            }}
+                                                            alt={vendor.name}
+                                                        />
+                                                        <div className="absolute -bottom-1 -right-1 bg-emerald-500 border-2 border-white w-4 h-4 rounded-full" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-900">{vendor.name}</p>
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-yellow-400 text-xs">★</span>
+                                                            <span className="text-xs font-semibold text-gray-600">
+                                                                {vendor.rating?.averageRating?.toFixed(1) || "New"}
+                                                            </span>
+                                                            <span className="text-[10px] text-gray-400 ml-1">Verified Expert</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Action Buttons */}
+                                            <div className="mt-4">
+                                                {step.id === "report" && (
+                                                    <button
+                                                        onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}`)}
+                                                        className="w-full py-3 bg-[#0A84FF] text-white text-sm font-bold rounded-xl hover:bg-[#0070E0] transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+                                                    >
+                                                        <IoDocumentTextOutline className="text-xl" />
+                                                        Access Your Report
+                                                    </button>
+                                                )}
+
+                                                {step.id === "payment" && isActive && (
+                                                    <button
+                                                        onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/payment`)}
+                                                        className="w-full py-3 bg-[#0A84FF] text-white text-sm font-bold rounded-xl hover:bg-[#0070E0] transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+                                                    >
+                                                        <IoWalletOutline className="text-xl" />
+                                                        Complete Payment ({formatAmount(currentBooking.payment?.remainingAmount || 0)})
+                                                    </button>
+                                                )}
+
+                                                {step.id === "borewell-report" && isActive && (
+                                                    <button
+                                                        onClick={() => setShowBorewellModal(true)}
+                                                        className="w-full py-3 bg-white text-[#0A84FF] border-2 border-[#0A84FF] text-sm font-bold rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        <IoImageOutline className="text-xl" />
+                                                        Upload Result Now
+                                                    </button>
                                                 )}
                                             </div>
                                         </div>
-                                    )}
-                                    <p className="text-sm text-gray-600 mb-3">{step.description}</p>
-
-                                    {/* Action Buttons */}
-                                    {step.id === "report" && (
-                                        <button
-                                            onClick={() => {
-                                                const bookingId = currentBooking.id || currentBooking._id;
-                                                navigate(`/user/booking/${bookingId}`);
-                                            }}
-                                            className="w-full h-12 bg-white text-[#0A84FF] border-2 border-[#0A84FF] text-sm font-semibold rounded-[8px] hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 mt-3"
-                                        >
-                                            <IoDocumentTextOutline className="text-xl" />
-                                            View Report
-                                        </button>
-                                    )}
-                                    {step.id === "payment" &&
-                                        (status === "AWAITING_PAYMENT" || status === "REPORT_UPLOADED" || !!currentBooking.reportUploadedAt) &&
-                                        !currentBooking.payment?.remainingPaid && (
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        const bookingId = currentBooking.id || currentBooking._id;
-                                                        if (!bookingId) {
-                                                            toast.showError("Booking ID not found");
-                                                            return;
-                                                        }
-                                                        // Refresh booking data before navigation
-                                                        await loadCurrentBooking();
-                                                        navigate(`/user/booking/${bookingId}/payment`);
-                                                    } catch (err) {
-                                                        toast.showError("Failed to navigate to payment page. Please try again.");
-                                                    }
-                                                }}
-                                                className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors flex items-center justify-center gap-2 mt-3"
-                                            >
-                                                <IoTimeOutline className="text-xl" />
-                                                Pay Remaining 60% ({formatAmount(currentBooking.payment?.remainingAmount || 0)})
-                                            </button>
-                                        )}
-
-                                    {step.id === "view-report" && status === "PAYMENT_SUCCESS" && currentBooking.payment?.remainingPaid && (
-                                        <button
-                                            onClick={() => {
-                                                const bookingId = currentBooking.id || currentBooking._id;
-                                                navigate(`/user/booking/${bookingId}`);
-                                            }}
-                                            className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors flex items-center justify-center gap-2 mt-3"
-                                        >
-                                            <IoDocumentTextOutline className="text-xl" />
-                                            View Report
-                                        </button>
-                                    )}
-
-                                    {step.id === "borewell-report" &&
-                                        status === "PAYMENT_SUCCESS" &&
-                                        currentBooking.payment?.remainingPaid &&
-                                        !currentBooking.borewellResult?.uploadedAt && (
-                                            <button
-                                                onClick={() => setShowBorewellModal(true)}
-                                                className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors flex items-center justify-center gap-2 mt-3"
-                                            >
-                                                <IoImageOutline className="text-xl" />
-                                                Add Borewell Report
-                                            </button>
-                                        )}
+                                    </div>
                                 </div>
-                            </Fragment>
+                            </div>
                         );
                     })}
                 </div>

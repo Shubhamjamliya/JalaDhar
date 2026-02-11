@@ -18,7 +18,8 @@ import {
     IoLeafOutline,
     IoHomeOutline,
     IoBusinessOutline,
-    IoConstructOutline
+    IoConstructOutline,
+    IoNewspaperOutline,
 } from "react-icons/io5";
 import { getUserProfile } from "../../../services/authApi";
 import { getUserDashboardStats, getNearbyVendors } from "../../../services/bookingApi";
@@ -39,7 +40,7 @@ export default function UserDashboard() {
     const toast = useToast();
     const [userAvatar, setUserAvatar] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
-    const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' or 'PENDING_PAYMENT'
+    const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'PENDING_PAYMENT', or 'REPORTS'
     const [requestStatuses, setRequestStatuses] = useState([]);
     const [vendors, setVendors] = useState([]);
     const [userLocation, setUserLocation] = useState({ lat: null, lng: null, address: null });
@@ -179,7 +180,8 @@ export default function UserDashboard() {
                     paymentStatus: booking.payment?.advancePaid ? "PAID" : "PENDING",
                     payment: booking.payment,
                     description: `Booking for ${booking.service?.name || "service"}`,
-                    bookingData: booking // Keep full booking data reference
+                    bookingData: booking, // Keep full booking data reference
+                    hasReport: !!booking.report
                 }));
                 setRequestStatuses(formattedRequests);
             }
@@ -409,6 +411,9 @@ export default function UserDashboard() {
         if (statusFilter === 'PENDING_PAYMENT') {
             return (req.status === 'pending' || req.status === 'awaiting_advance') && req.paymentStatus === 'PENDING';
         }
+        if (statusFilter === 'REPORTS') {
+            return req.hasReport;
+        }
         return true;
     });
 
@@ -496,18 +501,17 @@ export default function UserDashboard() {
             <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
                 Your Services Overview
             </h2>
-            <div className="flex items-center justify-between gap-4 mb-4 px-2">
+            <div className="grid grid-cols-5 gap-1 mb-6 px-1">
                 {/* Request Status */}
                 <div
                     onClick={() => handleRequestStatusClick('ALL')}
-                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
+                    className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
-                        {/* Highlight/Reflection Effect */}
-                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
-                        <IoDocumentTextOutline className="text-2xl text-[#1976D2] relative z-10" />
+                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-blue-50 to-blue-200 shadow-[0px_2px_8px_rgba(59,130,246,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(59,130,246,0.3)] transition-all overflow-hidden shrink-0 border border-blue-100/50">
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/60 to-transparent"></div>
+                        <IoDocumentTextOutline className="text-xl text-blue-600 relative z-10" />
                     </div>
-                    <span className="text-xs font-bold text-gray-800 text-center">
+                    <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
                         Booking Status
                     </span>
                 </div>
@@ -515,15 +519,14 @@ export default function UserDashboard() {
                 {/* Current Booking */}
                 <div
                     onClick={() => navigate("/user/status")}
-                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
+                    className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
-                        {/* Highlight/Reflection Effect */}
-                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
-                        <IoCalendarOutline className="text-2xl text-[#1976D2] relative z-10" />
-                        <IoCheckmarkCircle className="absolute -bottom-0.5 -right-0.5 text-base text-[#1976D2] z-20" />
+                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-emerald-50 to-emerald-200 shadow-[0px_2px_8px_rgba(16,185,129,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(16,185,129,0.3)] transition-all overflow-hidden shrink-0 border border-emerald-100/50">
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/60 to-transparent"></div>
+                        <IoCalendarOutline className="text-xl text-emerald-600 relative z-10" />
+                        <IoCheckmarkCircle className="absolute -bottom-0.5 -right-0.5 text-sm text-emerald-600 z-20" />
                     </div>
-                    <span className="text-xs font-bold text-gray-800 text-center">
+                    <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
                         Current Booking
                     </span>
                 </div>
@@ -531,34 +534,45 @@ export default function UserDashboard() {
                 {/* Pending Requests */}
                 <div
                     onClick={() => handleRequestStatusClick('PENDING_PAYMENT')}
-                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
+                    className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all">
-                        {/* Highlight/Reflection Effect */}
-                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent rounded-t-full"></div>
-                        <IoTimeOutline className="text-2xl text-[#1976D2] relative z-10" />
-                        {/* Show indicator if there are pending unpaid requests */}
+                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-amber-50 to-amber-200 shadow-[0px_2px_8px_rgba(245,158,11,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(245,158,11,0.3)] transition-all shrink-0 border border-amber-100/50">
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/60 to-transparent rounded-t-full"></div>
+                        <IoTimeOutline className="text-xl text-amber-600 relative z-10" />
                         {requestStatuses.some(r => (r.status === 'pending' || r.status === 'awaiting_advance') && r.paymentStatus === 'PENDING') && (
-                            <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 border-2 border-white z-20 shadow-sm animate-pulse"></div>
+                            <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 border-2 border-white z-20 shadow-sm animate-pulse"></div>
                         )}
                     </div>
-                    <span className="text-xs font-bold text-gray-800 text-center">
+                    <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
                         Pending Payments
+                    </span>
+                </div>
+
+                {/* Survey Reports */}
+                <div
+                    onClick={() => handleRequestStatusClick('REPORTS')}
+                    className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-[0.95] transition-transform"
+                >
+                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-indigo-50 to-indigo-200 shadow-[0px_2px_8px_rgba(79,70,229,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(79,70,229,0.3)] transition-all overflow-hidden shrink-0 border border-indigo-100/50">
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/60 to-transparent"></div>
+                        <IoNewspaperOutline className="text-xl text-indigo-600 relative z-10" />
+                    </div>
+                    <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
+                        Survey Reports
                     </span>
                 </div>
 
                 {/* Update Profile */}
                 <div
                     onClick={() => navigate("/user/profile")}
-                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
+                    className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FC] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
-                        {/* Highlight/Reflection Effect */}
-                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
-                        <IoPersonCircleOutline className="text-2xl text-[#1976D2] relative z-10" />
+                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-rose-50 to-rose-200 shadow-[0px_2px_8px_rgba(225,29,72,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(225,29,72,0.3)] transition-all overflow-hidden shrink-0 border border-rose-100/50">
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/60 to-transparent"></div>
+                        <IoPersonCircleOutline className="text-xl text-rose-600 relative z-10" />
                         <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-gray-400 border-2 border-white z-20"></div>
                     </div>
-                    <span className="text-xs font-bold text-gray-800 text-center">
+                    <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
                         Update Profile
                     </span>
                 </div>
@@ -680,7 +694,7 @@ export default function UserDashboard() {
                             {/* Fixed Header */}
                             <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between rounded-t-[20px]">
                                 <h2 className="text-xl font-bold text-gray-800">
-                                    {statusFilter === 'PENDING_PAYMENT' ? 'Pending Payments' : 'Booking Status'}
+                                    {statusFilter === 'REPORTS' ? 'Survey Reports' : statusFilter === 'PENDING_PAYMENT' ? 'Pending Payments' : 'Booking Status'}
                                 </h2>
                                 <button
                                     onClick={() => setShowStatusModal(false)}
@@ -754,9 +768,20 @@ export default function UserDashboard() {
                                                         </div>
                                                     )}
 
-                                                    {/* Resume Payment Button */}
-                                                    {(request.status === 'pending' || request.status === 'awaiting_advance') && request.paymentStatus === 'PENDING' && (
-                                                        <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+                                                    {/* Action Buttons */}
+                                                    <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end gap-3">
+                                                        {request.hasReport && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    navigate(`/user/booking/${request.id}/report`);
+                                                                }}
+                                                                className="px-4 py-2 bg-[#E7F0FB] text-[#0A84FF] text-sm font-bold rounded-lg hover:bg-[#D0E1F7] transition-colors flex items-center gap-2"
+                                                            >
+                                                                View Report <IoNewspaperOutline />
+                                                            </button>
+                                                        )}
+                                                        {(request.status === 'pending' || request.status === 'awaiting_advance') && request.paymentStatus === 'PENDING' && (
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -766,8 +791,8 @@ export default function UserDashboard() {
                                                             >
                                                                 Complete Payment <IoCheckmarkCircleOutline />
                                                             </button>
-                                                        </div>
-                                                    )}
+                                                        )}
+                                                    </div>
                                                 </div>
                                             );
                                         })}

@@ -410,6 +410,33 @@ const getUserBookings = async (req, res) => {
       Booking.countDocuments(query)
     ]);
 
+    // Fetch profile pictures for all vendors in the list
+    const vendorIds = [...new Set(bookings.map(b => b.vendor?._id).filter(id => id))];
+    if (vendorIds.length > 0) {
+      const VendorDocument = require('../../models/VendorDocument');
+      const profilePics = await VendorDocument.find({
+        vendor: { $in: vendorIds },
+        documentType: 'PROFILE_PICTURE',
+        isActive: true
+      }).select('vendor url');
+
+      const profilePicMap = {};
+      profilePics.forEach(pic => {
+        profilePicMap[pic.vendor.toString()] = pic.url;
+      });
+
+      // Update bookings with profile pictures
+      bookings.forEach(booking => {
+        if (booking.vendor && profilePicMap[booking.vendor._id.toString()]) {
+          const vendorObj = booking.vendor.toObject ? booking.vendor.toObject() : booking.vendor;
+          const url = profilePicMap[booking.vendor._id.toString()];
+          vendorObj.profilePicture = url;
+          vendorObj.documents = { profilePicture: { url } };
+          booking.vendor = vendorObj;
+        }
+      });
+    }
+
     res.json({
       success: true,
       message: 'Bookings retrieved successfully',
@@ -453,6 +480,31 @@ const getBookingDetails = async (req, res) => {
         success: false,
         message: 'Booking not found'
       });
+    }
+
+    // Fetch vendor's profile picture from VendorDocument collection
+    if (booking.vendor) {
+      const VendorDocument = require('../../models/VendorDocument');
+      const profilePic = await VendorDocument.findOne({
+        vendor: booking.vendor._id,
+        documentType: 'PROFILE_PICTURE',
+        isActive: true
+      }).select('url');
+
+      if (profilePic) {
+        // Convert to plain object if it's a Mongoose document
+        const vendorObj = booking.vendor.toObject ? booking.vendor.toObject() : booking.vendor;
+        vendorObj.profilePicture = profilePic.url;
+
+        // Also provide standard documents object for compatibility
+        vendorObj.documents = {
+          profilePicture: {
+            url: profilePic.url
+          }
+        };
+
+        booking.vendor = vendorObj;
+      }
     }
 
     // Get payment config if payment is pending
