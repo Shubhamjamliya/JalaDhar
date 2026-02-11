@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
     IoDocumentTextOutline,
@@ -142,6 +142,14 @@ export default function UserDashboard() {
         loadVendors();
     }, [userLocation, radius]);
 
+    // Auto-fetch location on mount if not already saved
+    useEffect(() => {
+        const savedLocation = localStorage.getItem("userLocation");
+        if (!savedLocation && !userLocation.lat) {
+            getCurrentLocation();
+        }
+    }, []);
+
     const loadDashboardData = async () => {
         try {
             setLoading(true);
@@ -182,10 +190,13 @@ export default function UserDashboard() {
         }
     };
 
+    const lastRequestRef = useRef(0);
+
     const loadVendors = async () => {
+        const requestId = ++lastRequestRef.current;
         try {
             const params = { limit: 50 };
-            // Only include location if available (optional)
+            // Only include location if available
             if (userLocation.lat && userLocation.lng) {
                 params.lat = userLocation.lat;
                 params.lng = userLocation.lng;
@@ -193,6 +204,10 @@ export default function UserDashboard() {
             }
             // Load vendors with or without location
             const response = await getNearbyVendors(params);
+
+            // Only update if this is still the latest request
+            if (requestId !== lastRequestRef.current) return;
+
             if (response.success) {
                 const vendorsData = response.data.vendors || [];
                 // Ensure distance is properly set and log for debugging
@@ -205,16 +220,23 @@ export default function UserDashboard() {
                 });
                 setVendors(vendorsWithDistance);
             } else {
-                // If response not successful, try without location
-                const fallbackResponse = await getNearbyVendors({ limit: 50 });
-                if (fallbackResponse.success) {
-                    setVendors(fallbackResponse.data.vendors || []);
+                // If response not successful, try without location (only if we tried with location)
+                if (params.lat) {
+                    const fallbackResponse = await getNearbyVendors({ limit: 50 });
+                    if (requestId !== lastRequestRef.current) return;
+                    if (fallbackResponse.success) {
+                        setVendors(fallbackResponse.data.vendors || []);
+                    }
                 }
             }
         } catch (err) {
+            if (requestId !== lastRequestRef.current) return;
+
             // Even on error, try to show vendors without location
             try {
                 const fallbackResponse = await getNearbyVendors({ limit: 50 });
+                if (requestId !== lastRequestRef.current) return;
+
                 if (fallbackResponse.success) {
                     setVendors(fallbackResponse.data.vendors || []);
                 }

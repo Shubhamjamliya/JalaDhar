@@ -119,6 +119,9 @@ const createBooking = async (req, res) => {
     // Exclude bookings that are cancelled, completed, rejected, or in final settlement stages
     // An active booking is one that is either paid (advancePaid = true) or already assigned (status != PENDING)
     // Final stages where user can create new booking: ADMIN_APPROVED, FINAL_SETTLEMENT, FINAL_SETTLEMENT_COMPLETE, APPROVED
+
+    // DISABLED: Allowing multiple bookings as per user request
+    /*
     const activeBooking = await Booking.findOne({
       user: userId,
       status: {
@@ -150,6 +153,7 @@ const createBooking = async (req, res) => {
         }
       });
     }
+    */
 
     // Find service
     const service = await Service.findById(serviceId);
@@ -448,11 +452,34 @@ const getBookingDetails = async (req, res) => {
       });
     }
 
+    // Get payment config if payment is pending
+    let paymentConfig = null;
+    if (booking.status === BOOKING_STATUS.PENDING || booking.status === BOOKING_STATUS.AWAITING_PAYMENT) {
+      const Payment = require('../../models/Payment');
+      const { PAYMENT_STATUS } = require('../../utils/constants');
+
+      const payment = await Payment.findOne({
+        booking: bookingId,
+        paymentType: 'ADVANCE',
+        status: PAYMENT_STATUS.PENDING
+      });
+
+      if (payment) {
+        paymentConfig = {
+          razorpayOrderId: payment.razorpayOrderId,
+          keyId: process.env.RAZORPAY_KEY_ID,
+          amount: payment.amount,
+          currency: 'INR'
+        };
+      }
+    }
+
     res.json({
       success: true,
       message: 'Booking details retrieved successfully',
       data: {
-        booking
+        booking,
+        paymentConfig
       }
     });
   } catch (error) {

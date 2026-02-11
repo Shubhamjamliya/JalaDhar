@@ -29,7 +29,7 @@ const getVendorBookings = async (req, res) => {
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    
+
     // Build sort object
     const sortObj = {};
     if (sortBy === 'completedAt') {
@@ -233,15 +233,15 @@ const rejectBooking = async (req, res) => {
           type: 'BOOKING_REJECTED',
           title: 'Booking Rejected',
           message: `Your booking has been rejected. Reason: ${rejectionReason}`,
-        relatedEntity: {
-          entityType: 'Booking',
-          entityId: booking._id
-        },
-        metadata: {
-          rejectionReason: rejectionReason,
-          bookingId: booking._id.toString()
-        }
-      }, io);
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            rejectionReason: rejectionReason,
+            bookingId: booking._id.toString()
+          }
+        }, io);
       } catch (socketError) {
         console.error('Socket notification error:', socketError);
         // Continue even if Socket.io fails
@@ -298,10 +298,10 @@ const markAsVisited = async (req, res) => {
     booking.visitedAt = new Date();
 
     // Credit first payment (50% of total vendor payment) to vendor wallet
-    if (booking.payment?.vendorWalletPayments?.siteVisitPayment && 
-        !booking.payment.vendorWalletPayments.siteVisitPayment.credited) {
+    if (booking.payment?.vendorWalletPayments?.siteVisitPayment &&
+      !booking.payment.vendorWalletPayments.siteVisitPayment.credited) {
       const paymentAmount = booking.payment.vendorWalletPayments.siteVisitPayment.amount;
-      
+
       if (paymentAmount > 0) {
         const creditResult = await creditToVendorWallet(
           vendorId,
@@ -315,14 +315,14 @@ const markAsVisited = async (req, res) => {
           booking.payment.vendorWalletPayments.siteVisitPayment.credited = true;
           booking.payment.vendorWalletPayments.siteVisitPayment.creditedAt = new Date();
           booking.payment.vendorWalletPayments.siteVisitPayment.transactionId = creditResult.transaction._id;
-          booking.payment.vendorWalletPayments.totalCredited = 
+          booking.payment.vendorWalletPayments.totalCredited =
             (booking.payment.vendorWalletPayments.totalCredited || 0) + paymentAmount;
         } else {
           // Mark as failed but don't block status change
           booking.payment.vendorWalletPayments.siteVisitPayment.failed = true;
           booking.payment.vendorWalletPayments.siteVisitPayment.errorMessage = creditResult.error || 'Credit failed';
           console.error('Failed to credit site visit payment:', creditResult.error);
-          
+
           // Schedule retry (async, don't wait)
           setTimeout(async () => {
             try {
@@ -332,7 +332,7 @@ const markAsVisited = async (req, res) => {
                 type: 'SITE_VISIT',
                 status: 'FAILED'
               }).sort({ createdAt: -1 });
-              
+
               if (failedTx) {
                 await retryFailedCredit(failedTx._id);
               }
@@ -410,7 +410,30 @@ const markVisitedAndUploadReport = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const vendorId = req.userId;
-    const { waterFound, machineReadings, notes } = req.body;
+    const {
+      waterFound,
+      machineReadings,
+      notes,
+      // New fields
+      customerName,
+      village,
+      mandal,
+      district,
+      state,
+      landLocation,
+      surveyNumber,
+      extent,
+      commandArea,
+      rockType,
+      soilType,
+      existingBorewellDetails,
+      pointsLocated,
+      recommendedPointNumber,
+      recommendedDepth,
+      recommendedCasingDepth,
+      expectedFractureDepths,
+      expectedYield
+    } = req.body;
 
     const booking = await Booking.findOne({
       _id: bookingId,
@@ -467,7 +490,26 @@ const markVisitedAndUploadReport = async (req, res) => {
       images: reportImages,
       reportFile: reportFile,
       uploadedAt: new Date(),
-      uploadedBy: vendorId
+      uploadedBy: vendorId,
+      // New fields
+      customerName,
+      village,
+      mandal,
+      district,
+      state,
+      landLocation,
+      surveyNumber,
+      extent,
+      commandArea,
+      rockType,
+      soilType,
+      existingBorewellDetails,
+      pointsLocated: pointsLocated ? Number(pointsLocated) : undefined,
+      recommendedPointNumber,
+      recommendedDepth: recommendedDepth ? Number(recommendedDepth) : undefined,
+      recommendedCasingDepth: recommendedCasingDepth ? Number(recommendedCasingDepth) : undefined,
+      expectedFractureDepths,
+      expectedYield: expectedYield ? Number(expectedYield) : undefined
     };
     booking.reportUploadedAt = new Date();
     // When vendor uploads report:
@@ -495,7 +537,7 @@ const markVisitedAndUploadReport = async (req, res) => {
       try {
         const { getIO } = require('../../sockets');
         const io = getIO();
-        
+
         // Notify vendor - report uploaded confirmation
         await sendNotification({
           recipient: booking.vendor,

@@ -325,7 +325,7 @@ const LocationPicker = ({ onLocationSelect, onBack }) => {
           onChange={(e) => setSelectedLocation(prev => ({ ...prev, address: e.target.value }))}
           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 shadow-sm transition-all"
         />
-        {selectedLocation && (
+        {selectedLocation?.lat !== undefined && selectedLocation?.lng !== undefined && (
           <p className="mt-2 text-xs text-green-600 flex items-center gap-1">
             <IoCheckmarkCircle className="text-sm" /> Location captured: {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}
           </p>
@@ -336,7 +336,7 @@ const LocationPicker = ({ onLocationSelect, onBack }) => {
       <div className="pt-4">
         <button
           onClick={handleConfirmLocation}
-          disabled={!selectedLocation}
+          disabled={!selectedLocation?.lat || !selectedLocation?.lng}
           className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           <IoSearchOutline className="text-xl" /> Confirm Location

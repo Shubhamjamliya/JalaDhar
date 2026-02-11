@@ -307,6 +307,30 @@ const bookingSchema = new mongoose.Schema({
       type: Boolean,
       default: null
     },
+    // New Report Fields
+    customerName: String,
+    village: String,
+    mandal: String,
+    district: String,
+    state: String,
+    landLocation: String,
+    surveyNumber: String,
+    extent: String,
+    commandArea: {
+      type: String,
+      enum: ['Command', 'Non-command'],
+      default: null
+    },
+    rockType: String,
+    soilType: String,
+    existingBorewellDetails: String,
+    pointsLocated: Number,
+    recommendedPointNumber: String,
+    recommendedDepth: Number,
+    recommendedCasingDepth: Number,
+    expectedFractureDepths: String,
+    expectedYield: Number,
+
     machineReadings: {
       depth: Number,
       flowRate: Number,

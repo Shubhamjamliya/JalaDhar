@@ -624,6 +624,18 @@ export default function UserStatus() {
                                     <p className="text-sm text-gray-600 mb-3">{step.description}</p>
 
                                     {/* Action Buttons */}
+                                    {step.id === "report" && (
+                                        <button
+                                            onClick={() => {
+                                                const bookingId = currentBooking.id || currentBooking._id;
+                                                navigate(`/user/booking/${bookingId}`);
+                                            }}
+                                            className="w-full h-12 bg-white text-[#0A84FF] border-2 border-[#0A84FF] text-sm font-semibold rounded-[8px] hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 mt-3"
+                                        >
+                                            <IoDocumentTextOutline className="text-xl" />
+                                            View Report
+                                        </button>
+                                    )}
                                     {step.id === "payment" &&
                                         (status === "AWAITING_PAYMENT" || status === "REPORT_UPLOADED" || !!currentBooking.reportUploadedAt) &&
                                         !currentBooking.payment?.remainingPaid && (

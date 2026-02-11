@@ -38,7 +38,12 @@ app.use(cors({
 }));
 
 // Body parser middleware
-app.use(express.json());
+// Capture raw body for webhook signature verification
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 

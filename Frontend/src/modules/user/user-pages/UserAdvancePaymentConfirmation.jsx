@@ -26,14 +26,29 @@ export default function UserAdvancePaymentConfirmation() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const [fetchedPaymentConfig, setFetchedPaymentConfig] = useState(null);
     const [fullBooking, setFullBooking] = useState(null);
 
     // Get booking data from navigation state
     const booking = location.state?.booking;
-    const service = location.state?.service;
-    const vendor = location.state?.vendor;
-    const paymentData = location.state?.paymentData;
-    const razorpayOrder = location.state?.razorpayOrder;
+    const stateService = location.state?.service;
+    const stateVendor = location.state?.vendor;
+    const statePaymentData = location.state?.paymentData;
+    const stateRazorpayOrder = location.state?.razorpayOrder;
+
+    // Use fetched data or state data
+    const service = fullBooking?.service || stateService;
+    const vendor = fullBooking?.vendor || stateVendor;
+    const paymentData = fetchedPaymentConfig || statePaymentData;
+    // Use full booking details if available, otherwise fall back to initial state
+    const displayBooking = fullBooking || booking;
+
+    // Ensure razorpayOrder is available even if refreshing (using fetched config)
+    const razorpayOrder = stateRazorpayOrder || (fetchedPaymentConfig ? {
+        id: fetchedPaymentConfig.razorpayOrderId,
+        amount: fetchedPaymentConfig.amount,
+        currency: fetchedPaymentConfig.currency
+    } : null);
 
     // Fetch full booking details to get payment breakdown
     useEffect(() => {
@@ -43,9 +58,13 @@ export default function UserAdvancePaymentConfirmation() {
                     const response = await getBookingDetails(booking.id);
                     if (response.success) {
                         setFullBooking(response.data.booking);
+                        if (response.data.paymentConfig) {
+                            setFetchedPaymentConfig(response.data.paymentConfig);
+                        }
                     }
                 } catch (err) {
                     console.error("Failed to fetch booking details:", err);
+                    toast.showError("Failed to load booking details. Please try again.");
                 }
             }
         };
@@ -53,27 +72,39 @@ export default function UserAdvancePaymentConfirmation() {
     }, [booking?.id]);
 
     useEffect(() => {
-        // If no booking data, redirect back
-        if (!booking || !service || !vendor || !paymentData || !razorpayOrder) {
-            navigate("/user/survey", { replace: true });
+        // Only redirect if absolutely no booking info
+        if (!booking) {
+            navigate("/user/dashboard", { replace: true });
         }
-    }, [booking, service, vendor, paymentData, razorpayOrder, navigate]);
+    }, [booking, navigate]);
 
     const handlePayment = async () => {
         try {
             setLoading(true);
             setError("");
 
+            // Determine config sources
+            const keyId = fetchedPaymentConfig?.keyId || statePaymentData?.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
+            const orderId = fetchedPaymentConfig?.razorpayOrderId || stateRazorpayOrder?.id || stateRazorpayOrder?.orderId;
+            const amount = fetchedPaymentConfig?.amount || stateRazorpayOrder?.amount;
+            const currency = fetchedPaymentConfig?.currency || stateRazorpayOrder?.currency || 'INR';
+
+            if (!keyId || !orderId) {
+                setError("Payment configuration missing. Please return to dashboard and try again.");
+                setLoading(false);
+                return;
+            }
+
             // Load Razorpay script
             await loadRazorpay();
 
             const options = {
-                key: paymentData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_key",
-                amount: razorpayOrder.amount,
-                currency: razorpayOrder.currency || 'INR',
+                key: keyId,
+                amount: amount,
+                currency: currency,
                 name: "Jaladhar",
-                description: `Advance payment for ${service.name}`,
-                order_id: razorpayOrder.id,
+                description: `Advance payment for ${service?.name || 'Service'}`,
+                order_id: orderId,
                 handler: async function (paymentResponse) {
                     // Payment successful - verify payment on backend
                     try {
@@ -138,36 +169,47 @@ export default function UserAdvancePaymentConfirmation() {
                     name: user?.name || "",
                     email: user?.email || "",
                     contact: user?.phone || "",
+                    method: 'upi', // Open UPI tab by default for convenience
+                },
+                // Allow all payment methods but prioritize UPI.
+                // The checkout will show UPI first, but users can switch to Card/Netbanking.
+                upi: {
+                    flow: "intent" // Enhance UPI flow on mobile
                 },
                 theme: {
                     color: "#0A84FF",
                 },
                 modal: {
                     ondismiss: async function () {
-                        // Cancel the booking if payment is cancelled
-                        try {
-                            await cancelBooking(booking.id, "Payment cancelled by user");
-                        } catch (cancelErr) {
-                        }
-                        setError("Payment cancelled. Booking has been cancelled.");
+                        // User closed the popup without paying.
+                        // Do NOT cancel the booking. Keep it PENDING so they can pay later via dashboard.
                         setLoading(false);
-                        // Navigate back to request service page after a delay
+                        toast.showInfo("Payment cancelled. You can complete payment from your Dashboard.");
+
+                        // Navigate to dashboard to show them the new "Pending Payment" status
                         setTimeout(() => {
-                            navigate("/user/survey", {
-                                state: { service, vendor },
-                                replace: true
-                            });
-                        }, 2000);
+                            navigate("/user/dashboard", { replace: true });
+                        }, 1000);
                     },
                 },
             };
 
             // Validate Razorpay key before opening
-            if (!paymentData.keyId || paymentData.keyId === "rzp_test_key" || !razorpayOrder?.id) {
+            let razorpayKeyId = paymentData.keyId;
+            if (!razorpayKeyId || razorpayKeyId === "rzp_test_key") {
+                // Fallback to frontend environment variable if backend key is missing
+                razorpayKeyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+            }
+
+            if (!razorpayKeyId || razorpayKeyId === "rzp_test_key" || !razorpayOrder?.id) {
+                console.error("Razorpay Key Missing. Backend:", paymentData.keyId, "Frontend:", import.meta.env.VITE_RAZORPAY_KEY_ID);
                 setError("Invalid Razorpay configuration. Please contact support or check your payment settings.");
                 setLoading(false);
                 return;
             }
+
+            // Ensure key is set in options
+            options.key = razorpayKeyId;
 
             try {
                 const razorpay = new window.Razorpay(options);
@@ -295,13 +337,20 @@ export default function UserAdvancePaymentConfirmation() {
 
     const formatAddress = (address) => {
         if (!address) return "Not provided";
+        // fallback if address is just a string
+        if (typeof address === 'string') return address;
+
+        // fallback if address object has a display string
+        if (address.address && typeof address.address === 'string') return address.address;
+        if (address.formatted_address) return address.formatted_address;
+
         const parts = [
             address.street,
             address.city,
             address.state,
             address.pincode
         ].filter(Boolean);
-        return parts.join(", ") || "Not provided";
+        return parts.length > 0 ? parts.join(", ") : "Not provided";
     };
 
     // Show success overlay during navigation
@@ -338,18 +387,23 @@ export default function UserAdvancePaymentConfirmation() {
 
     // Use payment data from paymentData object (includes travel charges and GST)
     // The backend returns payment details in a separate paymentData object, not in booking.payment
-    // Priority: fullBooking.payment > paymentData > fallback calculation
-    const bookingPayment = fullBooking?.payment;
+    // Priority: fullBooking.payment > booking.payment > paymentData > fallback calculation
+    const bookingPayment = fullBooking?.payment || booking?.payment;
     const totalAmount = bookingPayment?.totalAmount || paymentData?.totalAmount || service.price;
     const advanceAmount = bookingPayment?.advanceAmount || paymentData?.advanceAmount || Math.round(totalAmount * 0.4);
     const remainingAmount = bookingPayment?.remainingAmount || paymentData?.remainingAmount || Math.round(totalAmount * 0.6);
 
-    // Get breakdown details for display from full booking if available
+    // Get breakdown details for display from full booking or initial booking object
     const baseServiceFee = bookingPayment?.baseServiceFee || service.price;
     const travelCharges = bookingPayment?.travelCharges || 0;
     const gst = bookingPayment?.gst || 0;
     const subtotal = bookingPayment?.subtotal || (baseServiceFee + travelCharges);
     const gstPercentage = bookingPayment?.gstPercentage || 18;
+
+    // Preload Razorpay script for faster button interaction
+    useEffect(() => {
+        loadRazorpay().catch(() => { });
+    }, []);
 
     return (
         <PageContainer>
@@ -413,7 +467,7 @@ export default function UserAdvancePaymentConfirmation() {
                                 <div>
                                     <p className="text-sm text-gray-600">Scheduled Date</p>
                                     <p className="text-base font-semibold text-gray-800">
-                                        {formatDate(booking.scheduledDate)}
+                                        {formatDate(displayBooking.scheduledDate)}
                                     </p>
                                 </div>
                             </div>
@@ -424,7 +478,7 @@ export default function UserAdvancePaymentConfirmation() {
                                 <div>
                                     <p className="text-sm text-gray-600">Scheduled Time</p>
                                     <p className="text-base font-semibold text-gray-800">
-                                        {formatTime(booking.scheduledTime)}
+                                        {formatTime(displayBooking.scheduledTime)}
                                     </p>
                                 </div>
                             </div>
@@ -438,17 +492,17 @@ export default function UserAdvancePaymentConfirmation() {
                             <div className="flex-1">
                                 <p className="text-sm text-gray-600 mb-1">Service Address</p>
                                 <p className="text-base font-semibold text-gray-800">
-                                    {formatAddress(booking.address)}
+                                    {formatAddress(displayBooking.address)}
                                 </p>
                             </div>
                         </div>
                     </div>
 
                     {/* Notes */}
-                    {booking.notes && (
+                    {displayBooking.notes && (
                         <div className="bg-[#F6F7F9] rounded-[10px] p-4">
                             <p className="text-sm text-gray-600 mb-1">Additional Notes</p>
-                            <p className="text-base text-gray-800">{booking.notes}</p>
+                            <p className="text-base text-gray-800">{displayBooking.notes}</p>
                         </div>
                     )}
                 </div>
@@ -541,7 +595,7 @@ export default function UserAdvancePaymentConfirmation() {
                         </>
                     ) : (
                         <>
-                            <span>Pay {formatAmount(advanceAmount)} & Confirm Booking</span>
+                            <span>Pay {formatAmount(advanceAmount)} with UPI / Online</span>
                         </>
                     )}
                 </button>
@@ -549,7 +603,7 @@ export default function UserAdvancePaymentConfirmation() {
                     By proceeding, you agree to pay the advance amount of 40% to confirm your booking.
                 </p>
             </div>
-        </PageContainer>
+        </PageContainer >
     );
 }
 
