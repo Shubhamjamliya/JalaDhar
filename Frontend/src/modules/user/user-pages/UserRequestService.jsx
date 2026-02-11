@@ -19,6 +19,7 @@ import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
+import PolicyModal from "../../shared/components/PolicyModal";
 
 // --- Sub-components ---
 
@@ -436,8 +437,10 @@ const LocationPicker = ({ onLocationSelect, onBack, initialLocation }) => {
 const ReviewAndBook = ({ surveyData, service, vendor, onConfirm, onBack }) => {
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
-    const [charges, setCharges] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [charges, setCharges] = useState(null);
+    const [policiesAccepted, setPoliciesAccepted] = useState(false);
+    const [activePolicy, setActivePolicy] = useState(null); // 'booking' | 'refund' | 'terms' | null
     const toast = useToast();
 
     useEffect(() => {
@@ -535,11 +538,57 @@ const ReviewAndBook = ({ surveyData, service, vendor, onConfirm, onBack }) => {
                 </div>
             </div>
 
+            {/* Policy Acceptance */}
+            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                    <div className="relative flex items-center mt-1">
+                        <input
+                            type="checkbox"
+                            className="peer h-5 w-5 appearance-none rounded-md border-2 border-gray-300 checked:border-blue-600 checked:bg-blue-600 transition-all"
+                            checked={policiesAccepted}
+                            onChange={(e) => setPoliciesAccepted(e.target.checked)}
+                        />
+                        <IoCheckmarkCircle className="absolute left-0.5 top-0.5 h-4 w-4 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" />
+                    </div>
+                    <p className="text-sm text-gray-600 leading-relaxed group-hover:text-gray-900 transition-colors">
+                        I agree to the{" "}
+                        <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('booking'); }}
+                            className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 decoration-2"
+                        >
+                            Booking Policy
+                        </button>
+                        ,{" "}
+                        <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('refund'); }}
+                            className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 decoration-2"
+                        >
+                            Cancellation & Refund Policy
+                        </button>
+                        , and{" "}
+                        <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('terms'); }}
+                            className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 decoration-2"
+                        >
+                            Terms of Service
+                        </button>
+                        .
+                    </p>
+                </label>
+            </div>
+
+            {activePolicy && (
+                <PolicyModal type={activePolicy} onClose={() => setActivePolicy(null)} />
+            )}
+
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 flex gap-3 z-40 md:relative md:bg-transparent md:border-0 md:p-0">
                 <button onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
                 <button
                     onClick={handlePay}
-                    disabled={!charges || loading}
+                    disabled={!charges || loading || !policiesAccepted}
                     className="flex-1 py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                     {loading ? <div className="spinner-border w-4 h-4 rounded-full border-2 border-white"></div> : <><IoCashOutline /> Pay Advance</>}

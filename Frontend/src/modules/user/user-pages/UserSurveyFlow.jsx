@@ -13,12 +13,14 @@ import {
   IoConstructOutline,
   IoCashOutline,
   IoInformationCircleOutline,
-  IoSearchOutline
+  IoSearchOutline,
+  IoClose
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import PageContainer from "../../shared/components/PageContainer";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
 import { getNearbyVendors, createBooking, calculateBookingCharges, getUserDashboardStats } from "../../../services/bookingApi";
+import PolicyModal from "../../shared/components/PolicyModal";
 
 // --- Sub-components for each step ---
 
@@ -50,6 +52,8 @@ const CategorySelection = ({ onSelect }) => {
     </div>
   );
 };
+
+
 
 const TermsAndConditions = ({ category, onAccept, onCancel }) => {
   return (
@@ -443,36 +447,56 @@ const ExpertSelection = ({ location, category, onSelect, onBack }) => {
 
 const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
   const [date, setDate] = useState("");
-  // Time is removed as per requirement, default will be used
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [charges, setCharges] = useState(null);
+  const [activePolicy, setActivePolicy] = useState(null); // 'booking' | 'refund' | 'terms' | null
+  const [policiesAccepted, setPoliciesAccepted] = useState(false);
   const toast = useToast();
 
   const remainingAmount = charges ? (charges.totalAmount - charges.advanceAmount) : 0;
   const subtotal = charges ? ((charges.baseServiceFee || 0) + (charges.travelCharges || 0)) : 0;
 
   useEffect(() => {
-    // Calculate dynamic charges
     const fetchCharges = async () => {
-      // Assuming location.lat/lng and vendor are available
-      if (!surveyData.vendor || !surveyData.location) return;
+      const selectedService = surveyData.vendor?.selectedService;
+      if (!surveyData.vendor || !surveyData.location || !selectedService) {
+        return;
+      }
 
+      setLoading(true);
+      setError(null);
       try {
+        const serviceId = selectedService.id || selectedService._id;
+        const vendorId = surveyData.vendor._id || surveyData.vendor.id;
+
+        if (!serviceId || !vendorId) {
+          setError("Required information is missing");
+          return;
+        }
+
         const res = await calculateBookingCharges(
-          surveyData.vendor.selectedService.id || surveyData.vendor.selectedService._id,
-          surveyData.vendor._id || surveyData.vendor.id,
+          serviceId,
+          vendorId,
           surveyData.location.lat,
           surveyData.location.lng
         );
         if (res.success) {
           setCharges(res.data);
+        } else {
+          setError(res.message || "Failed to calculate charges");
+          toast.showError(res.message || "Failed to calculate charges");
         }
       } catch (err) {
         console.error("Error calculating charges", err);
+        setError("Failed to connect to calculation service");
+        toast.showError("Failed to calculate charges. Check your connection.");
+      } finally {
+        setLoading(false);
       }
     };
     fetchCharges();
-  }, []);
+  }, [surveyData.vendor, surveyData.location]);
 
   const handlePay = () => {
     if (!date) {
@@ -528,6 +552,13 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
           <span className="bg-blue-50 text-blue-600 text-xs font-semibold px-2 py-1 rounded-md">Calculated</span>
         </div>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-sm">
+            <IoInformationCircleOutline className="text-xl shrink-0" />
+            <p>{error}</p>
+          </div>
+        )}
+
         <div className="space-y-3">
           {/* Base Service Fee */}
           <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
@@ -535,7 +566,11 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
               <p className="font-semibold text-gray-800 text-sm">Base Service Fee</p>
               <p className="text-xs text-gray-500">Service charge</p>
             </div>
-            <p className="font-bold text-gray-900">₹{charges?.baseServiceFee?.toFixed(2) || '0.00'}</p>
+            {loading ? (
+              <div className="h-5 w-16 bg-gray-100 animate-pulse rounded"></div>
+            ) : (
+              <p className="font-bold text-gray-900">₹{charges?.baseServiceFee?.toFixed(2) || '0.00'}</p>
+            )}
           </div>
 
           {/* Travel Charges */}
@@ -551,7 +586,9 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
                 </p>
               )}
             </div>
-            {charges?.travelCharges > 0 ? (
+            {loading ? (
+              <div className="h-5 w-20 bg-gray-100 animate-pulse rounded"></div>
+            ) : charges?.travelCharges > 0 ? (
               <p className="font-bold text-gray-900">₹{charges.travelCharges.toFixed(2)}</p>
             ) : (
               <p className="font-bold text-green-600 text-xs">Free (Within Range)</p>
@@ -561,7 +598,11 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
           {/* Subtotal */}
           <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
             <p className="font-semibold text-gray-800 text-sm">Subtotal</p>
-            <p className="font-bold text-gray-900">₹{subtotal.toFixed(2)}</p>
+            {loading ? (
+              <div className="h-5 w-20 bg-gray-100 animate-pulse rounded"></div>
+            ) : (
+              <p className="font-bold text-gray-900">₹{subtotal.toFixed(2)}</p>
+            )}
           </div>
 
           {/* GST */}
@@ -570,13 +611,21 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
               <p className="font-semibold text-gray-800 text-sm">GST</p>
               <p className="text-xs text-gray-500">{charges?.gstPercentage || 18}% on subtotal</p>
             </div>
-            <p className="font-bold text-gray-900">₹{charges?.gst?.toFixed(2) || '0.00'}</p>
+            {loading ? (
+              <div className="h-5 w-16 bg-gray-100 animate-pulse rounded"></div>
+            ) : (
+              <p className="font-bold text-gray-900">₹{charges?.gst?.toFixed(2) || '0.00'}</p>
+            )}
           </div>
 
           {/* Total Amount */}
           <div className="flex justify-between items-center p-3 border border-gray-200 rounded-xl bg-white shadow-sm">
             <p className="font-bold text-gray-800 text-sm">Total Amount</p>
-            <p className="font-bold text-xl text-gray-900">₹{charges?.totalAmount?.toFixed(2) || '0.00'}</p>
+            {loading ? (
+              <div className="h-6 w-24 bg-gray-100 animate-pulse rounded"></div>
+            ) : (
+              <p className="font-bold text-xl text-gray-900">₹{charges?.totalAmount?.toFixed(2) || '0.00'}</p>
+            )}
           </div>
         </div>
 
@@ -589,7 +638,11 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
                 <p className="font-semibold text-gray-800 text-sm">Advance Payment</p>
                 <p className="text-xs text-blue-600">40% of total</p>
               </div>
-              <p className="font-bold text-blue-600 text-lg">₹{charges?.advanceAmount?.toFixed(2) || '0.00'}</p>
+              {loading ? (
+                <div className="h-6 w-20 bg-blue-100 animate-pulse rounded"></div>
+              ) : (
+                <p className="font-bold text-blue-600 text-lg">₹{charges?.advanceAmount?.toFixed(2) || '0.00'}</p>
+              )}
             </div>
 
             {/* Remaining Payment */}
@@ -598,17 +651,67 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
                 <p className="font-semibold text-gray-800 text-sm">Remaining Payment</p>
                 <p className="text-xs text-gray-500">60% of total</p>
               </div>
-              <p className="font-bold text-gray-800 text-lg">₹{remainingAmount.toFixed(2)}</p>
+              {loading ? (
+                <div className="h-6 w-20 bg-gray-100 animate-pulse rounded"></div>
+              ) : (
+                <p className="font-bold text-gray-800 text-lg">₹{remainingAmount.toFixed(2)}</p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
+      {/* Policy Acceptance */}
+      <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
+        <label className="flex items-start gap-3 cursor-pointer group">
+          <div className="relative flex items-center mt-1">
+            <input
+              type="checkbox"
+              className="peer h-5 w-5 appearance-none rounded-md border-2 border-gray-300 checked:border-blue-600 checked:bg-blue-600 transition-all"
+              checked={policiesAccepted}
+              onChange={(e) => setPoliciesAccepted(e.target.checked)}
+            />
+            <IoCheckmarkCircle className="absolute left-0.5 top-0.5 h-4 w-4 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" />
+          </div>
+          <p className="text-sm text-gray-600 leading-relaxed group-hover:text-gray-900 transition-colors">
+            I agree to the{" "}
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('booking'); }}
+              className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 decoration-2"
+            >
+              Booking Policy
+            </button>
+            ,{" "}
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('refund'); }}
+              className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 decoration-2"
+            >
+              Cancellation & Refund Policy
+            </button>
+            , and{" "}
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('terms'); }}
+              className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 decoration-2"
+            >
+              Terms of Service
+            </button>
+            .
+          </p>
+        </label>
+      </div>
+
+      {activePolicy && (
+        <PolicyModal type={activePolicy} onClose={() => setActivePolicy(null)} />
+      )}
+
       <div className="flex gap-3 pt-2">
         <button onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
         <button
           onClick={handlePay}
-          disabled={!charges || isSubmitting}
+          disabled={!charges || isSubmitting || !policiesAccepted}
           className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? (

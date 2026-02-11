@@ -1300,17 +1300,28 @@ const calculateBookingCharges = async (req, res) => {
     const service = await Service.findById(serviceId);
     const vendor = await Vendor.findById(vendorId);
 
-    if (!service || !service.isActive) {
+    if (!service) {
+      console.error(`Service not found: ${serviceId}`);
       return res.status(404).json({
         success: false,
-        message: 'Service not found or not available'
+        message: 'Service not found'
       });
     }
 
-    if (!vendor || !vendor.isActive || !vendor.isApproved) {
+    if (!vendor) {
+      console.error(`Vendor not found: ${vendorId}`);
       return res.status(404).json({
         success: false,
-        message: 'Vendor not found or not available'
+        message: 'Vendor not found'
+      });
+    }
+
+    // Be consistent with listing logic: only check root isActive and isApproved
+    // If we've reached this point, the service was already visible to the user
+    if (vendor.isActive === false || vendor.isApproved === false) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vendor not available'
       });
     }
 
