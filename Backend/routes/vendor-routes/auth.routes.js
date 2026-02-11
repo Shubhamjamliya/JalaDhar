@@ -18,17 +18,17 @@ const { isVendor } = require('../../middleware/roleMiddleware');
 // Configure multer for memory storage (to upload directly to Cloudinary)
 const storage = multer.memoryStorage();
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Accept images only
-    if (file.mimetype.startsWith('image/')) {
+    // Accept images and PDFs
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      cb(new Error('Only image and PDF files are allowed'), false);
     }
   }
 });
@@ -38,7 +38,9 @@ const uploadDocuments = upload.fields([
   { name: 'aadharCard', maxCount: 1 },
   { name: 'panCard', maxCount: 1 },
   { name: 'profilePicture', maxCount: 1 },
-  { name: 'certificates', maxCount: 10 }, // Allow multiple certificates
+  { name: 'certificates', maxCount: 10 }, // Allow multiple degree certificates
+  { name: 'trainingCertificates', maxCount: 10 }, // Allow multiple training certificates
+  { name: 'groundwaterRegDetails', maxCount: 1 },
   { name: 'cancelledCheque', maxCount: 1 }
 ]);
 

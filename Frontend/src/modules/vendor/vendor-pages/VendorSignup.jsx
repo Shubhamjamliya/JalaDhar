@@ -6,14 +6,33 @@ import { sendVendorRegistrationOTP } from "../../../services/vendorAuthApi";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
+import logo from "@/assets/AppLogo.png";
 
 // Get API key at module level
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 export default function VendorSignup() {
+    // Custom snappy animation styles
+    const animationStyles = (
+        <style>{`
+            @keyframes snappy-slide-in {
+                0% { opacity: 0; transform: translateX(15px); }
+                100% { opacity: 1; transform: translateX(0); }
+            }
+            .tab-snappy {
+                animation: snappy-slide-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+            .stable-tab-container {
+                min-height: 480px;
+                transition: min-height 0.3s ease;
+            }
+        `}</style>
+    );
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [registrationStep, setRegistrationStep] = useState(1); // 1: form, 2: OTP
+    const [activeTab, setActiveTab] = useState("basic"); // basic, qualification, training, kyc, address
     const [verificationToken, setVerificationToken] = useState("");
     const [otpCountdown, setOtpCountdown] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -124,9 +143,12 @@ export default function VendorSignup() {
         // Education & Experience
         education: "",
         institution: "",
+        // Experience & Registration
         experience: "",
         experienceDetails: "",
-        certificates: [],
+        groundwaterRegDetails: null, // New: State groundwater department registration
+        trainingCertificates: [], // New: Training/Workshop certificates
+        certificates: [], // Degree certificates
 
         // Bank Details
         bankName: "",
@@ -139,6 +161,19 @@ export default function VendorSignup() {
         // Address - only geoLocation
         address: {}
     });
+
+    // Auto-scroll to top when tab changes to improve UX
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }, [activeTab]);
+
+    const TABS = [
+        { id: "basic", label: "Basic Info", icon: "person" },
+        { id: "qualification", label: "Qualification", icon: "school" },
+        { id: "training", label: "Training", icon: "workspace_premium" },
+        { id: "kyc", label: "KYC & Bank", icon: "badge" },
+        { id: "address", label: "Address", icon: "location_on" }
+    ];
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -303,10 +338,10 @@ export default function VendorSignup() {
     const handleFileChange = (field, e) => {
         const file = e.target.files[0];
         if (file) {
-            if (field === 'certificates') {
+            if (field === 'certificates' || field === 'trainingCertificates') {
                 setFormData(prev => ({
                     ...prev,
-                    certificates: [...prev.certificates, file]
+                    [field]: [...prev[field], file]
                 }));
             } else {
                 setFormData(prev => ({
@@ -317,10 +352,10 @@ export default function VendorSignup() {
         }
     };
 
-    const removeCertificate = (index) => {
+    const removeMultiFile = (field, index) => {
         setFormData(prev => ({
             ...prev,
-            certificates: prev.certificates.filter((_, i) => i !== index)
+            [field]: prev[field].filter((_, i) => i !== index)
         }));
     };
 
@@ -383,6 +418,8 @@ export default function VendorSignup() {
                                 profilePicture: formData.profilePicture,
                                 aadharCard: formData.aadharCard,
                                 panCard: formData.panCard,
+                                groundwaterRegDetails: formData.groundwaterRegDetails,
+                                trainingCertificates: formData.trainingCertificates,
                                 certificates: formData.certificates,
                                 cancelledCheque: formData.cancelledCheque,
                                 accountHolderName: formData.accountHolderName,
@@ -393,6 +430,7 @@ export default function VendorSignup() {
                                 education: formData.education,
                                 institution: formData.institution,
                                 experience: formData.experience,
+                                experienceDetails: formData.experienceDetails,
                                 address: {
                                     ...formData.address,
                                     // Coordinates are already in address.coordinates
@@ -421,314 +459,440 @@ export default function VendorSignup() {
 
     return (
         <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-4 py-6 overflow-y-auto">
+            {animationStyles}
             <div className="w-full max-w-2xl">
                 <div className="mt-4 mb-6 flex flex-col items-center">
-                    <span className="material-symbols-outlined icon-gradient !text-5xl">
-                        water_drop
-                    </span>
-                    <h1 className="mt-2 text-3xl font-bold tracking-tighter text-[#3A3A3A]">
-                        JALADHAR
-                    </h1>
-                    <p className="mt-3 text-sm text-[#6B7280] text-center">
+                    <img
+                        src={logo}
+                        alt="Jaladhaara Logo"
+                        className="h-32 object-contain mb-4"
+                    />
+                    <p className="mt-1 text-sm text-[#6B7280] text-center">
                         Create your vendor account to get started.
                     </p>
                 </div>
 
-                <main className="w-full rounded-xl bg-white p-6 shadow-lg">
-                    <form className="space-y-4" onSubmit={handleSendOTP}>
-                        <div className="flex justify-center mb-3">
-                            <h2 className="button-white text-sm font-bold text-gradient px-3 py-1 rounded-full border-2 border-[#1A80E5]">
-                                Vendor Sign Up
-                            </h2>
-                        </div>
-                        {/* Section 1: Basic Details */}
-                        <div className="mb-4">
-                            <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
-                                Basic Details
-                            </h3>
-                            {/* Profile Image Upload */}
-                            <ProfileImageUpload
-                                file={formData.profilePicture}
-                                onChange={(e) => handleFileChange('profilePicture', e)}
-                            />
+                <main className="w-full rounded-2xl bg-white p-0 shadow-xl overflow-hidden border border-gray-100">
+                    {/* Progress Bar */}
+                    <div className="w-full h-1.5 bg-gray-100 overflow-hidden">
+                        <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-[#26D7C4] transition-all duration-500 ease-out"
+                            style={{ width: `${((TABS.findIndex(t => t.id === activeTab) + 1) / TABS.length) * 100}%` }}
+                        />
+                    </div>
 
-                            {/* Full Name */}
-                            <InputBox
-                                label="Full Name *"
-                                name="name"
-                                type="text"
-                                placeholder="Enter your full name"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
+                    <form className="p-6 sm:p-8" onSubmit={handleSendOTP}>
+                        {/* Modern Step Indicator */}
+                        <div className="flex justify-between items-center mb-8 px-2 relative">
+                            {/* Connector Line behind steps */}
+                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-100 -translate-y-1/2 z-0"></div>
 
-                            {/* Email */}
-                            <InputBox
-                                label="Email *"
-                                name="email"
-                                type="email"
-                                placeholder="Enter your email"
-                                value={formData.email}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
+                            {TABS.map((tab, index) => {
+                                const isCompleted = TABS.findIndex(t => t.id === activeTab) > index;
+                                const isActive = activeTab === tab.id;
 
-                            {/* Mobile */}
-                            <InputBox
-                                label="Mobile *"
-                                name="phone"
-                                type="tel"
-                                placeholder="Enter your mobile number"
-                                value={formData.phone}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
-
-                            {/* Password */}
-                            <PasswordBox
-                                label="Password *"
-                                name="password"
-                                placeholder="Create password"
-                                value={formData.password}
-                                onChange={handleInputChange}
-                                show={showPassword}
-                                toggle={() => setShowPassword(!showPassword)}
-                                disabled={loading}
-                            />
-
-                            {/* Confirm Password */}
-                            <PasswordBox
-                                label="Confirm Password *"
-                                name="confirmPassword"
-                                placeholder="Re-enter password"
-                                value={formData.confirmPassword}
-                                onChange={handleInputChange}
-                                show={showConfirmPassword}
-                                toggle={() => setShowConfirmPassword(!showConfirmPassword)}
-                                disabled={loading}
-                            />
-                        </div>
-
-                        {/* Section 2: KYC Details */}
-                        <div className="mb-4">
-                            <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
-                                KYC Details
-                            </h3>
-                            {/* Upload Aadhaar */}
-                            <FileBox
-                                label="Upload Aadhaar Image"
-                                onChange={(e) => handleFileChange('aadharCard', e)}
-                                file={formData.aadharCard}
-                                disabled={loading}
-                            />
-
-                            {/* Upload PAN */}
-                            <FileBox
-                                label="Upload PAN Image"
-                                onChange={(e) => handleFileChange('panCard', e)}
-                                file={formData.panCard}
-                                disabled={loading}
-                            />
-                        </div>
-
-                        {/* Section 3: Education & Experience */}
-                        <div className="mb-4">
-                            <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
-                                Education & Experience
-                            </h3>
-                            {/* Education/Qualification */}
-                            <InputBox
-                                label="Education/Qualification"
-                                name="education"
-                                type="text"
-                                placeholder="Enter your qualification (e.g., B.Tech, Diploma)"
-                                value={formData.education}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
-
-                            {/* Institution */}
-                            <InputBox
-                                label="Institution Name"
-                                name="institution"
-                                type="text"
-                                placeholder="Enter institution name"
-                                value={formData.institution}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
-
-                            {/* Experience */}
-                            <div className="mb-3">
-                                <label className="block text-xs font-medium text-[#6B7280] mb-1">
-                                    Experience (Years) *
-                                </label>
-                                <div className="flex gap-2">
-                                    <div className="relative w-24">
-                                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg">
-                                            calendar_today
-                                        </span>
-                                        <input
-                                            type="number"
-                                            name="experience"
-                                            placeholder="Years"
-                                            value={formData.experience}
-                                            onChange={handleInputChange}
-                                            min="0"
-                                            className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-10 pr-3 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
-                                            disabled={loading}
-                                        />
-                                    </div>
-                                    <div className="relative flex-1">
-                                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
-                                            description
-                                        </span>
-                                        <input
-                                            type="text"
-                                            name="experienceDetails"
-                                            placeholder="Experience details (optional)"
-                                            value={formData.experienceDetails}
-                                            onChange={handleInputChange}
-                                            className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
-                                            disabled={loading}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Upload Certificates */}
-                            <MultiFileBox
-                                label="Upload Certificates"
-                                files={formData.certificates}
-                                onChange={(e) => handleFileChange('certificates', e)}
-                                onRemove={removeCertificate}
-                                disabled={loading}
-                            />
-                        </div>
-
-                        {/* Section 4: Bank Details */}
-                        <div className="mb-4">
-                            <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
-                                Bank Details *
-                            </h3>
-                            <InputBox
-                                label="Account Holder Name *"
-                                name="accountHolderName"
-                                type="text"
-                                placeholder="Enter account holder name"
-                                value={formData.accountHolderName}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
-                            <InputBox
-                                label="Bank Name *"
-                                name="bankName"
-                                type="text"
-                                placeholder="Enter bank name"
-                                value={formData.bankName}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
-                            <InputBox
-                                label="Account Number *"
-                                name="accountNumber"
-                                type="text"
-                                placeholder="Enter account number"
-                                value={formData.accountNumber}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
-                            <InputBox
-                                label="IFSC Code *"
-                                name="ifscCode"
-                                type="text"
-                                placeholder="Enter IFSC code"
-                                value={formData.ifscCode}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
-                            <InputBox
-                                label="Branch Name"
-                                name="branchName"
-                                type="text"
-                                placeholder="Enter branch name (optional)"
-                                value={formData.branchName}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                            />
-
-                            {/* Upload Cancelled Check */}
-                            <FileBox
-                                label="Upload Cancelled Cheque"
-                                onChange={(e) => handleFileChange('cancelledCheque', e)}
-                                file={formData.cancelledCheque}
-                                disabled={loading}
-                            />
-                        </div>
-
-                        {/* Section 5: Address */}
-                        <div className="mb-4">
-                            <h3 className="text-base font-bold text-[#3A3A3A] mb-3">
-                                Address
-                            </h3>
-
-                            {/* Main Address Search with Autocomplete */}
-                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                <label className="block text-xs font-medium text-[#6B7280] mb-2">
-                                    Search Your Address <span className="text-red-500">*</span>
-                                </label>
-                                <div className="flex flex-col sm:flex-row gap-2 mb-2">
-                                    <div className="relative flex-1">
-                                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg z-10">
-                                            search
-                                        </span>
-                                        <PlaceAutocompleteInput
-                                            onPlaceSelect={handleFullAddressSelect}
-                                            placeholder="Start typing your address to see suggestions..."
-                                            value={fullAddress}
-                                            onChange={(e) => setFullAddress(e.target.value)}
-                                            disabled={loading || gettingLocation}
-                                            className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
-                                            countryRestriction="in"
-                                            types={["geocode", "establishment"]}
-                                        />
-                                    </div>
+                                return (
                                     <button
+                                        key={tab.id}
                                         type="button"
-                                        onClick={getCurrentLocation}
-                                        disabled={loading || gettingLocation}
-                                        className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 whitespace-nowrap"
-                                        title="Use current location"
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className="relative z-10 flex flex-col items-center group"
                                     >
-                                        <IoLocationOutline className="text-lg" />
-                                        {gettingLocation ? "Getting..." : "Use Current Location"}
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isActive
+                                            ? "bg-[#1A80E5] text-white shadow-lg scale-110 shadow-blue-200"
+                                            : isCompleted
+                                                ? "bg-emerald-500 text-white"
+                                                : "bg-white border-2 border-gray-200 text-gray-400 group-hover:border-blue-300 group-hover:text-blue-400"
+                                            }`}>
+                                            <span className="material-symbols-outlined !text-xl font-bold">
+                                                {isCompleted ? "check" : tab.icon}
+                                            </span>
+                                        </div>
+                                        <span className={`absolute -bottom-6 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors duration-300 hidden sm:block ${isActive ? "text-[#1A80E5]" : "text-gray-400"
+                                            }`}>
+                                            {tab.label}
+                                        </span>
                                     </button>
-                                </div>
-                                <p className="text-xs text-blue-700 mt-1">
-                                    💡 Type your address above to see suggestions, or click "Use Current Location" to auto-fill from GPS
-                                </p>
-                            </div>
+                                );
+                            })}
+                        </div>
 
-                            {/* Auto-filled Address Display */}
-                            {formData.address?.geoLocation?.formattedAddress && (
-                                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                    <p className="text-xs font-medium text-green-800 mb-2">✓ Address Selected:</p>
-                                    <div className="text-sm text-green-700">
-                                        <p>{formData.address.geoLocation.formattedAddress}</p>
+                        {/* Stable Tab Content Container */}
+                        <div className="stable-tab-container relative pt-4 overflow-x-hidden">
+
+                            {/* Step 1: Basic Info */}
+                            {activeTab === "basic" && (
+                                <div className="tab-snappy space-y-4">
+                                    <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-blue-500">contact_page</span>
+                                        Basic Information
+                                    </h3>
+                                    <ProfileImageUpload
+                                        file={formData.profilePicture}
+                                        onChange={(e) => handleFileChange('profilePicture', e)}
+                                    />
+                                    <InputBox
+                                        label="Full Name *"
+                                        name="name"
+                                        type="text"
+                                        placeholder="Enter your full name"
+                                        value={formData.name}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                    />
+                                    <InputBox
+                                        label="Email *"
+                                        name="email"
+                                        type="email"
+                                        placeholder="Enter your email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                    />
+                                    <InputBox
+                                        label="Mobile *"
+                                        name="phone"
+                                        type="tel"
+                                        placeholder="Enter your mobile number"
+                                        value={formData.phone}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                    />
+                                    <PasswordBox
+                                        label="Password *"
+                                        name="password"
+                                        placeholder="Create password"
+                                        value={formData.password}
+                                        onChange={handleInputChange}
+                                        show={showPassword}
+                                        toggle={() => setShowPassword(!showPassword)}
+                                        disabled={loading}
+                                    />
+                                    <PasswordBox
+                                        label="Confirm Password *"
+                                        name="confirmPassword"
+                                        placeholder="Re-enter password"
+                                        value={formData.confirmPassword}
+                                        onChange={handleInputChange}
+                                        show={showConfirmPassword}
+                                        toggle={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        disabled={loading}
+                                    />
+                                    <div className="pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab("qualification")}
+                                            className="w-full bg-[#1A80E5] text-white py-3 rounded-full font-bold shadow-md hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            Next: Qualification & Experience
+                                            <span className="material-symbols-outlined">arrow_forward</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 2: Qualification & Experience */}
+                            {activeTab === "qualification" && (
+                                <div className="tab-snappy space-y-4">
+                                    <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-blue-500">school</span>
+                                        Qualification & Experience
+                                    </h3>
+
+                                    <SelectBox
+                                        label="Qualification *"
+                                        name="education"
+                                        options={[
+                                            { value: "", label: "Select Qualification" },
+                                            { value: "MSc in Geology", label: "MSc in Geology" },
+                                            { value: "MSc in Geophysics", label: "MSc in Geophysics" },
+                                            { value: "MSc in Earth Sciences", label: "MSc in Earth Sciences" }
+                                        ]}
+                                        value={formData.education}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                    />
+
+                                    <InputBox
+                                        label="Institution Name *"
+                                        name="institution"
+                                        type="text"
+                                        placeholder="Enter institution name"
+                                        value={formData.institution}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                    />
+
+                                    <div className="mb-3">
+                                        <label className="block text-xs font-medium text-[#6B7280] mb-1">
+                                            Experience (Years) *
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <div className="relative w-24 shrink-0">
+                                                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg">
+                                                    calendar_today
+                                                </span>
+                                                <input
+                                                    type="number"
+                                                    name="experience"
+                                                    placeholder="Yrs"
+                                                    value={formData.experience}
+                                                    onChange={handleInputChange}
+                                                    min="0"
+                                                    className="w-full rounded-2xl border-gray-200 bg-white py-2.5 pl-10 pr-3 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                                                    disabled={loading}
+                                                />
+                                            </div>
+                                            <div className="relative flex-1">
+                                                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
+                                                    description
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    name="experienceDetails"
+                                                    placeholder="Recent project or specialization (optional)"
+                                                    value={formData.experienceDetails}
+                                                    onChange={handleInputChange}
+                                                    className="w-full rounded-2xl border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                                                    disabled={loading}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <MultiFileBox
+                                        label="Degree Certificates *"
+                                        files={formData.certificates}
+                                        onChange={(e) => handleFileChange('certificates', e)}
+                                        onRemove={(idx) => removeMultiFile('certificates', idx)}
+                                        disabled={loading}
+                                    />
+
+                                    <div className="grid grid-cols-2 gap-3 pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab("basic")}
+                                            className="bg-gray-100 text-gray-600 py-3 rounded-full font-bold hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined">arrow_back</span>
+                                            Back
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab("training")}
+                                            className="bg-[#1A80E5] text-white py-3 rounded-full font-bold shadow-md hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            Next: Training
+                                            <span className="material-symbols-outlined">arrow_forward</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 3: Training & Registration */}
+                            {activeTab === "training" && (
+                                <div className="tab-snappy space-y-4">
+                                    <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-blue-500">workspace_premium</span>
+                                        Training & Registration
+                                    </h3>
+
+                                    <FileBox
+                                        label="Groundwater Dept. Registration / ID Card"
+                                        onChange={(e) => handleFileChange('groundwaterRegDetails', e)}
+                                        file={formData.groundwaterRegDetails}
+                                        disabled={loading}
+                                    />
+
+                                    <MultiFileBox
+                                        label="Training / Workshop Certificates"
+                                        files={formData.trainingCertificates}
+                                        onChange={(e) => handleFileChange('trainingCertificates', e)}
+                                        onRemove={(idx) => removeMultiFile('trainingCertificates', idx)}
+                                        disabled={loading}
+                                    />
+
+                                    <div className="grid grid-cols-2 gap-3 pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab("qualification")}
+                                            className="bg-gray-100 text-gray-600 py-3 rounded-full font-bold hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined">arrow_back</span>
+                                            Back
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab("kyc")}
+                                            className="bg-[#1A80E5] text-white py-3 rounded-full font-bold shadow-md hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            Next: KYC
+                                            <span className="material-symbols-outlined">arrow_forward</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 4: KYC & Bank */}
+                            {activeTab === "kyc" && (
+                                <div className="tab-snappy space-y-4">
+                                    <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-blue-500">badge</span>
+                                        KYC & Bank Details
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <FileBox
+                                            label="Aadhar Card Image (JPG/PDF) *"
+                                            onChange={(e) => handleFileChange('aadharCard', e)}
+                                            file={formData.aadharCard}
+                                            disabled={loading}
+                                        />
+                                        <FileBox
+                                            label="PAN Card Image (JPG/PDF) *"
+                                            onChange={(e) => handleFileChange('panCard', e)}
+                                            file={formData.panCard}
+                                            disabled={loading}
+                                        />
+                                    </div>
+
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-2">Bank Account Information</p>
+                                        <InputBox
+                                            label="Account Holder Name *"
+                                            name="accountHolderName"
+                                            type="text"
+                                            placeholder="As per bank records"
+                                            value={formData.accountHolderName}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                        />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3">
+                                            <InputBox
+                                                label="Bank Name *"
+                                                name="bankName"
+                                                type="text"
+                                                placeholder="SBI, HDFC, etc."
+                                                value={formData.bankName}
+                                                onChange={handleInputChange}
+                                                disabled={loading}
+                                            />
+                                            <InputBox
+                                                label="IFSC Code *"
+                                                name="ifscCode"
+                                                type="text"
+                                                placeholder="SBIN0012345"
+                                                value={formData.ifscCode}
+                                                onChange={handleInputChange}
+                                                disabled={loading}
+                                            />
+                                        </div>
+                                        <InputBox
+                                            label="Account Number *"
+                                            name="accountNumber"
+                                            type="text"
+                                            placeholder="Enter full account number"
+                                            value={formData.accountNumber}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                        />
+                                        <FileBox
+                                            label="Cancelled Cheque Image"
+                                            onChange={(e) => handleFileChange('cancelledCheque', e)}
+                                            file={formData.cancelledCheque}
+                                            disabled={loading}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab("training")}
+                                            className="bg-gray-100 text-gray-600 py-3 rounded-full font-bold hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined">arrow_back</span>
+                                            Back
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab("address")}
+                                            className="bg-[#1A80E5] text-white py-3 rounded-full font-bold shadow-md hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            Next: Address
+                                            <span className="material-symbols-outlined">arrow_forward</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 5: Address */}
+                            {activeTab === "address" && (
+                                <div className="tab-snappy space-y-4">
+                                    <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-blue-500">location_on</span>
+                                        Service Area Address
+                                    </h3>
+
+                                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
+                                        <label className="block text-xs font-bold text-blue-700 mb-2 px-1">
+                                            Search Service Center Location *
+                                        </label>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="relative">
+                                                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-blue-400 text-lg z-10">
+                                                    search
+                                                </span>
+                                                <PlaceAutocompleteInput
+                                                    onPlaceSelect={handleFullAddressSelect}
+                                                    placeholder="Enter colony, street or landmark..."
+                                                    value={fullAddress}
+                                                    onChange={(e) => setFullAddress(e.target.value)}
+                                                    disabled={loading || gettingLocation}
+                                                    className="w-full rounded-2xl border-blue-100 bg-white py-3 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                                                    countryRestriction="in"
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={getCurrentLocation}
+                                                disabled={loading || gettingLocation}
+                                                className="flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-200 px-4 py-3 rounded-2xl text-sm font-bold hover:bg-blue-50 transition-all shadow-sm"
+                                            >
+                                                <IoLocationOutline className="text-xl" />
+                                                {gettingLocation ? "Locating..." : "Pin to My Current GPS"}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {formData.address?.geoLocation?.formattedAddress && (
+                                        <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3">
+                                            <span className="material-symbols-outlined text-emerald-500 text-lg mt-0.5">check_circle</span>
+                                            <div className="flex-1">
+                                                <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-tighter">Verified Address</p>
+                                                <p className="text-sm text-emerald-800 font-medium">{formData.address.geoLocation.formattedAddress}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-1 gap-3 pt-6">
+                                        <button
+                                            type="submit"
+                                            disabled={loading}
+                                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-full text-base font-bold shadow-xl shadow-blue-200 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {loading ? "Registering Account..." : "Complete Registration"}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab("kyc")}
+                                            className="w-full text-gray-400 py-2 text-sm font-medium hover:text-gray-600"
+                                        >
+                                            Back to KYC
+                                        </button>
                                     </div>
                                 </div>
                             )}
                         </div>
-
-                        {/* Submit */}
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="button-gradient w-full rounded-full py-3 text-sm font-bold text-white shadow-[0_6px_15px_rgba(26,128,229,0.25)] transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-4"
-                        >
-                            {loading ? "Sending OTP..." : "Sign Up"}
-                        </button>
                     </form>
                 </main>
 
@@ -892,11 +1056,40 @@ function FileBox({ label, onChange, file, disabled }) {
                 )}
                 <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.pdf"
                     onChange={onChange}
                     className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
                     disabled={disabled}
                 />
+            </div>
+        </div>
+    );
+}
+
+function SelectBox({ label, name, options, value, onChange, disabled }) {
+    return (
+        <div className="mb-3">
+            <label className="block text-xs font-medium text-[#6B7280] mb-1">
+                {label}
+            </label>
+            <div className="relative">
+                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
+                    school
+                </span>
+                <select
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm appearance-none"
+                    disabled={disabled}
+                >
+                    {options.map((opt, i) => (
+                        <option key={i} value={opt.value}>{opt.label}</option>
+                    ))}
+                </select>
+                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400">
+                    expand_more
+                </span>
             </div>
         </div>
     );
@@ -931,7 +1124,7 @@ function MultiFileBox({ label, files, onChange, onRemove, disabled }) {
                 )}
                 <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.pdf"
                     multiple
                     onChange={onChange}
                     className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"

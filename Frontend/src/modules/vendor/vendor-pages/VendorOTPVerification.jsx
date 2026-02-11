@@ -9,13 +9,13 @@ export default function VendorOTPVerification() {
     const navigate = useNavigate();
     const location = useLocation();
     const { register } = useVendorAuth();
-    
+
     const [otp, setOtp] = useState("");
     const [otpCountdown, setOtpCountdown] = useState(0);
     const [loading, setLoading] = useState(false);
     const [registrationSuccess, setRegistrationSuccess] = useState(false);
     const toast = useToast();
-    
+
     // Get registration data from location state
     const registrationData = location.state?.registrationData;
     const verificationToken = location.state?.verificationToken;
@@ -87,7 +87,7 @@ export default function VendorOTPVerification() {
         try {
             // Create FormData with all registration data
             const formDataToSend = new FormData();
-            
+
             // Basic details
             formDataToSend.append('name', registrationData.name);
             formDataToSend.append('email', registrationData.email);
@@ -95,7 +95,7 @@ export default function VendorOTPVerification() {
             formDataToSend.append('password', registrationData.password);
             formDataToSend.append('otp', otp);
             formDataToSend.append('token', verificationToken);
-            
+
             // Files
             if (registrationData.profilePicture) {
                 formDataToSend.append('profilePicture', registrationData.profilePicture);
@@ -109,19 +109,27 @@ export default function VendorOTPVerification() {
             if (registrationData.cancelledCheque) {
                 formDataToSend.append('cancelledCheque', registrationData.cancelledCheque);
             }
+            if (registrationData.groundwaterRegDetails) {
+                formDataToSend.append('groundwaterRegDetails', registrationData.groundwaterRegDetails);
+            }
             if (registrationData.certificates && registrationData.certificates.length > 0) {
                 registrationData.certificates.forEach((cert) => {
                     formDataToSend.append('certificates', cert);
                 });
             }
-            
+            if (registrationData.trainingCertificates && registrationData.trainingCertificates.length > 0) {
+                registrationData.trainingCertificates.forEach((cert) => {
+                    formDataToSend.append('trainingCertificates', cert);
+                });
+            }
+
             // Bank details
             formDataToSend.append('bankDetails[accountHolderName]', registrationData.accountHolderName);
             formDataToSend.append('bankDetails[accountNumber]', registrationData.accountNumber);
             formDataToSend.append('bankDetails[ifscCode]', registrationData.ifscCode);
             formDataToSend.append('bankDetails[bankName]', registrationData.bankName);
             formDataToSend.append('bankDetails[branchName]', registrationData.branchName || '');
-            
+
             // Educational qualifications
             const educationalQualifications = (registrationData.education && registrationData.institution) ? [{
                 degree: registrationData.education,
@@ -130,34 +138,37 @@ export default function VendorOTPVerification() {
                 percentage: null
             }] : [];
             formDataToSend.append('educationalQualifications', JSON.stringify(educationalQualifications));
-            
+
             // Experience
             formDataToSend.append('experience', parseInt(registrationData.experience));
-            
+            if (registrationData.experienceDetails) {
+                formDataToSend.append('experienceDetails', registrationData.experienceDetails);
+            }
+
             // Address (coordinates are already in address.coordinates)
             const addressToSend = {
                 ...registrationData.address,
                 coordinates: registrationData.address?.coordinates || null
             };
             formDataToSend.append('address', JSON.stringify(addressToSend));
-            
+
             // Selected place info (if address was selected from dropdown)
             if (registrationData.selectedPlace) {
                 formDataToSend.append('selectedPlace', JSON.stringify(registrationData.selectedPlace));
             }
-            
+
             const result = await register(formDataToSend);
-            
+
             if (result.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess(result.message || "Registration successful! Your account is pending admin approval.");
                 setRegistrationSuccess(true);
                 // Redirect to login after 2 seconds
                 setTimeout(() => {
-                    navigate("/vendorlogin", { 
-                        state: { 
-                            message: "Registration successful! Your account is pending admin approval." 
-                        } 
+                    navigate("/vendorlogin", {
+                        state: {
+                            message: "Registration successful! Your account is pending admin approval."
+                        }
                     });
                 }, 2000);
             } else {

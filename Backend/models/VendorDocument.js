@@ -9,7 +9,7 @@ const vendorDocumentSchema = new mongoose.Schema({
   },
   documentType: {
     type: String,
-    enum: ['AADHAR', 'PAN', 'CERTIFICATE', 'CHEQUE', 'PROFILE_PICTURE'],
+    enum: ['AADHAR', 'PAN', 'CERTIFICATE', 'CHEQUE', 'PROFILE_PICTURE', 'GROUNDWATER_REG', 'TRAINING_CERTIFICATE'],
     required: [true, 'Document type is required'],
     index: true
   },

@@ -61,6 +61,11 @@ const vendorSchema = new mongoose.Schema({
     required: [true, 'Experience is required'],
     min: 0
   },
+  experienceDetails: {
+    type: String,
+    trim: true,
+    default: null
+  },
   // Documents - Now in separate VendorDocument collection
   // documents field removed - use VendorDocument model instead
   isEmailVerified: {

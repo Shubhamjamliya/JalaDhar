@@ -58,8 +58,8 @@ const sendRegistrationOTP = async (req, res) => {
     if (existingVendor) {
       return res.status(400).json({
         success: false,
-        message: existingVendor.email === email 
-          ? 'Email already registered' 
+        message: existingVendor.email === email
+          ? 'Email already registered'
           : 'Phone number already registered'
       });
     }
@@ -130,14 +130,15 @@ const register = async (req, res) => {
       });
     }
 
-    const { 
-      name, 
-      email, 
-      phone, 
-      password, 
-      bankDetails, 
-      educationalQualifications, 
-      experience, 
+    const {
+      name,
+      email,
+      phone,
+      password,
+      bankDetails,
+      educationalQualifications,
+      experience,
+      experienceDetails,
       address,
       otp,
       token
@@ -194,8 +195,8 @@ const register = async (req, res) => {
       await markTokenAsUsed(tokenDoc._id);
       return res.status(400).json({
         success: false,
-        message: existingVendor.email === email 
-          ? 'Email already registered' 
+        message: existingVendor.email === email
+          ? 'Email already registered'
           : 'Phone number already registered'
       });
     }
@@ -250,6 +251,28 @@ const register = async (req, res) => {
             uploadedAt: new Date()
           };
         }
+        // Handle groundwater registration
+        if (req.files.groundwaterRegDetails && req.files.groundwaterRegDetails[0]) {
+          const gwResult = await uploadToCloudinary(req.files.groundwaterRegDetails[0].buffer, 'vendor-documents/groundwater');
+          documents.groundwaterRegDetails = {
+            url: gwResult.secure_url,
+            publicId: gwResult.public_id,
+            uploadedAt: new Date()
+          };
+        }
+        // Handle training certificates
+        if (req.files.trainingCertificates && req.files.trainingCertificates.length > 0) {
+          documents.trainingCertificates = [];
+          for (const trainFile of req.files.trainingCertificates) {
+            const trainResult = await uploadToCloudinary(trainFile.buffer, 'vendor-documents/training');
+            documents.trainingCertificates.push({
+              url: trainResult.secure_url,
+              publicId: trainResult.public_id,
+              uploadedAt: new Date(),
+              name: trainFile.originalname
+            });
+          }
+        }
       } catch (uploadError) {
         console.error('File upload error:', uploadError);
         return res.status(500).json({
@@ -272,7 +295,7 @@ const register = async (req, res) => {
 
     // Parse address if it's a string
     let parsedAddress = typeof address === 'string' ? JSON.parse(address) : address;
-    
+
     // Parse location if it's a string (from "Use Current Location" button) - merge into address
     if (req.body.location) {
       const parsedLocation = typeof req.body.location === 'string' ? JSON.parse(req.body.location) : req.body.location;
@@ -285,19 +308,19 @@ const register = async (req, res) => {
         };
       }
     }
-    
+
     // Parse selectedPlace if it's a string (from dropdown selection)
     let parsedSelectedPlace = null;
     if (req.body.selectedPlace) {
       parsedSelectedPlace = typeof req.body.selectedPlace === 'string' ? JSON.parse(req.body.selectedPlace) : req.body.selectedPlace;
     }
-    
+
     // Check if coordinates are available
     const hasAddressCoordinates = parsedAddress?.coordinates?.lat && parsedAddress?.coordinates?.lng;
     const hasSelectedPlace = parsedSelectedPlace && parsedSelectedPlace.placeId;
-    
+
     // Priority: 1. Selected address from dropdown 2. Geocode address text
-    
+
     // If address was selected from dropdown, use its coordinates and place info
     if (hasAddressCoordinates && hasSelectedPlace) {
       // Address was selected from dropdown - use its coordinates and place info
@@ -355,6 +378,7 @@ const register = async (req, res) => {
       password,
       educationalQualifications: parsedQualifications,
       experience: parseInt(experience),
+      experienceDetails,
       address: parsedAddress,
       isEmailVerified: true // Email is verified via OTP
     };
@@ -441,6 +465,34 @@ const register = async (req, res) => {
           })
         );
       }
+    }
+    if (documents.trainingCertificates && Array.isArray(documents.trainingCertificates)) {
+      for (const tCert of documents.trainingCertificates) {
+        documentPromises.push(
+          VendorDocument.create({
+            vendor: vendor._id,
+            documentType: 'TRAINING_CERTIFICATE',
+            url: tCert.url,
+            publicId: tCert.publicId,
+            uploadedAt: tCert.uploadedAt,
+            name: tCert.name,
+            certificateName: tCert.name,
+            status: 'PENDING'
+          })
+        );
+      }
+    }
+    if (documents.groundwaterRegDetails) {
+      documentPromises.push(
+        VendorDocument.create({
+          vendor: vendor._id,
+          documentType: 'GROUNDWATER_REG',
+          url: documents.groundwaterRegDetails.url,
+          publicId: documents.groundwaterRegDetails.publicId,
+          uploadedAt: documents.groundwaterRegDetails.uploadedAt,
+          status: 'PENDING'
+        })
+      );
     }
     await Promise.all(documentPromises);
 
