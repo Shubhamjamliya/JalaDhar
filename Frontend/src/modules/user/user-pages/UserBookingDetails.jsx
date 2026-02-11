@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
-    IoChevronBackOutline,
+
     IoTimeOutline,
     IoLocationOutline,
     IoCallOutline,
@@ -37,6 +37,7 @@ import PageContainer from "../../shared/components/PageContainer";
 export default function UserBookingDetails() {
     const navigate = useNavigate();
     const { bookingId } = useParams();
+    const location = useLocation();
     const [loading, setLoading] = useState(true);
     const [booking, setBooking] = useState(null);
     const toast = useToast();
@@ -295,18 +296,18 @@ export default function UserBookingDetails() {
 
     const getStatusConfig = (status) => {
         const configs = {
-            PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-700", borderColor: "border-yellow-200", icon: IoHourglassOutline },
-            ASSIGNED: { label: "Assigned", color: "bg-blue-100 text-blue-700", borderColor: "border-blue-200", icon: IoPersonOutline },
-            ACCEPTED: { label: "Accepted", color: "bg-green-100 text-green-700", borderColor: "border-green-200", icon: IoCheckmarkCircleOutline },
-            VISITED: { label: "Visited", color: "bg-purple-100 text-purple-700", borderColor: "border-purple-200", icon: IoConstructOutline },
-            REPORT_UPLOADED: { label: "Report Uploaded", color: "bg-indigo-100 text-indigo-700", borderColor: "border-indigo-200", icon: IoDocumentTextOutline },
-            AWAITING_PAYMENT: { label: "Awaiting Payment", color: "bg-orange-100 text-orange-700", borderColor: "border-orange-200", icon: IoTimeOutline },
-            PAYMENT_SUCCESS: { label: "Payment Success", color: "bg-emerald-100 text-emerald-700", borderColor: "border-emerald-200", icon: IoCheckmarkCircleOutline },
-            BOREWELL_UPLOADED: { label: "Borewell Uploaded", color: "bg-teal-100 text-teal-700", borderColor: "border-teal-200", icon: IoImageOutline },
-            COMPLETED: { label: "Completed", color: "bg-green-100 text-green-700", borderColor: "border-green-200", icon: IoCheckmarkCircleOutline },
-            CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-700", borderColor: "border-red-200", icon: IoCloseCircleOutline },
-            REJECTED: { label: "Rejected", color: "bg-red-100 text-red-700", borderColor: "border-red-200", icon: IoCloseCircleOutline },
-            FAILED: { label: "Failed", color: "bg-red-100 text-red-700", borderColor: "border-red-200", icon: IoAlertCircleOutline },
+            PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-700", borderColor: "border-yellow-200", icon: IoHourglassOutline, description: "Your request has been received. We are currently looking for expected vendors in your area." },
+            ASSIGNED: { label: "Assigned", color: "bg-blue-100 text-blue-700", borderColor: "border-blue-200", icon: IoPersonOutline, description: "A vendor has been assigned to your request and is reviewing the details." },
+            ACCEPTED: { label: "Accepted", color: "bg-emerald-100 text-emerald-700", borderColor: "border-emerald-200", icon: IoCheckmarkCircleOutline, description: "The vendor has accepted your request and will visit your location at the scheduled time." },
+            VISITED: { label: "Visited", color: "bg-purple-100 text-purple-700", borderColor: "border-purple-200", icon: IoConstructOutline, description: "The site visit has been completed. The vendor will upload the survey report shortly." },
+            REPORT_UPLOADED: { label: "Report Uploaded", color: "bg-indigo-100 text-indigo-700", borderColor: "border-indigo-200", icon: IoDocumentTextOutline, description: "The survey report is ready. Please review the findings below." },
+            AWAITING_PAYMENT: { label: "Awaiting Payment", color: "bg-orange-100 text-orange-700", borderColor: "border-orange-200", icon: IoTimeOutline, description: "Please complete the remaining payment to finalize the service." },
+            PAYMENT_SUCCESS: { label: "Payment Success", color: "bg-emerald-100 text-emerald-700", borderColor: "border-emerald-200", icon: IoCheckmarkCircleOutline, description: "Payment received successfully. Finalizing booking record." },
+            BOREWELL_UPLOADED: { label: "Borewell Uploaded", color: "bg-teal-100 text-teal-700", borderColor: "border-teal-200", icon: IoImageOutline, description: "Borewell result has been uploaded." },
+            COMPLETED: { label: "Completed", color: "bg-green-100 text-green-700", borderColor: "border-green-200", icon: IoCheckmarkCircleOutline, description: "Service has been successfully completed. Thank you for choosing JalaDhar." },
+            CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-700", borderColor: "border-red-200", icon: IoCloseCircleOutline, description: "This booking has been cancelled." },
+            REJECTED: { label: "Rejected", color: "bg-red-100 text-red-700", borderColor: "border-red-200", icon: IoCloseCircleOutline, description: "The vendor could not fulfill this request." },
+            FAILED: { label: "Failed", color: "bg-red-100 text-red-700", borderColor: "border-red-200", icon: IoAlertCircleOutline, description: "The booking process encountered an error." },
         };
         return configs[status] || configs.PENDING;
     };
@@ -374,11 +375,11 @@ export default function UserBookingDetails() {
     const isCompleted = booking.status === "COMPLETED";
 
     const steps = [
-        { status: "PENDING", label: "Requested" },
-        { status: "ASSIGNED", label: "Assigned" },
-        { status: "VISITED", label: "Site Visit" },
-        { status: "AWAITING_PAYMENT", label: "Payment" },
-        { status: "COMPLETED", label: "Completed" }
+        { status: "PENDING", label: "Requested", date: booking.createdAt },
+        { status: "ASSIGNED", label: "Assigned", date: booking.createdAt }, // Fallback to createdAt
+        { status: "VISITED", label: "Site Visit", date: booking.visitedAt },
+        { status: "AWAITING_PAYMENT", label: "Payment", date: booking.payment?.createdAt || booking.payment?.updatedAt }, // fallback
+        { status: "COMPLETED", label: "Completed", date: booking.completedAt }
     ];
 
     // Determine current step index
@@ -409,15 +410,9 @@ export default function UserBookingDetails() {
     return (
         <PageContainer>
             {/* Header & Navigation */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <button
-                    onClick={() => navigate("/user/status")}
-                    className="flex items-center gap-2 text-gray-600 hover:text-[#0A84FF] transition-colors self-start"
-                >
-                    <IoChevronBackOutline className="text-xl" />
-                    <span className="font-semibold">Back to Bookings</span>
-                </button>
-                <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 self-start md:self-auto">
+            {/* Header & Navigation */}
+            <div className="flex flex-row items-center gap-4 mb-6">
+                <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
                     <span className="text-sm text-gray-500 font-medium">Booking ID:</span>
                     <span className="text-sm font-bold text-gray-800 font-mono tracking-wide">{bookingId.slice(-8).toUpperCase()}</span>
                 </div>
@@ -427,14 +422,36 @@ export default function UserBookingDetails() {
             <div className="bg-white rounded-[16px] p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] mb-6 border border-gray-50">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800 mb-1">{booking.service?.name}</h1>
+                        <h1 className="text-3xl font-bold text-gray-800 mb-1">{booking.service?.name}</h1>
                         <p className="text-gray-500 flex items-center gap-2">
-                            {formatDate(booking.scheduledDate)} <span className="w-1 h-1 rounded-full bg-gray-300"></span> {booking.scheduledTime || "Time not set"}
+                            <IoCalendarOutline /> {formatDate(booking.scheduledDate)}
+                            <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                            <IoTimeOutline /> {booking.scheduledTime || "Time not set"}
                         </p>
                     </div>
-                    <div className={`px-4 py-2 rounded-full border ${statusConfig.borderColor} ${statusConfig.color} flex items-center gap-2`}>
-                        <StatusIcon className="text-lg" />
+                    <div className={`px-5 py-2.5 rounded-full border ${statusConfig.borderColor} ${statusConfig.color} flex items-center gap-2 shadow-sm`}>
+                        <StatusIcon className="text-xl" />
                         <span className="font-bold text-sm uppercase tracking-wide">{statusConfig.label}</span>
+                    </div>
+                </div>
+
+                {/* Status Insight Banner */}
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex items-start gap-3">
+                    <IoInformationCircleOutline className="text-2xl text-[#0A84FF] mt-0.5" />
+                    <div>
+                        <p className="text-gray-800 font-medium leading-relaxed">{statusConfig.description}</p>
+
+                        {/* Cancellation/Rejection Reason */}
+                        {booking.status === "CANCELLED" && booking.cancellationReason && (
+                            <p className="mt-2 text-sm text-red-600 font-medium bg-red-50 p-2 rounded-lg border border-red-100">
+                                Reason: {booking.cancellationReason}
+                            </p>
+                        )}
+                        {booking.status === "REJECTED" && booking.rejectionReason && (
+                            <p className="mt-2 text-sm text-red-600 font-medium bg-red-50 p-2 rounded-lg border border-red-100">
+                                Vendor Reason: {booking.rejectionReason}
+                            </p>
+                        )}
                     </div>
                 </div>
 
@@ -466,9 +483,16 @@ export default function UserBookingDetails() {
                                             <span className="text-xs font-bold">{index + 1}</span>
                                         )}
                                     </div>
-                                    <span className={`text-xs font-semibold whitespace-nowrap ${isCompletedStep ? 'text-[#0A84FF]' : 'text-gray-400'}`}>
-                                        {step.label}
-                                    </span>
+                                    <div className="flex flex-col items-center">
+                                        <span className={`text-xs font-semibold whitespace-nowrap ${isCompletedStep ? 'text-[#0A84FF]' : 'text-gray-400'}`}>
+                                            {step.label}
+                                        </span>
+                                        {step.date && isCompletedStep && (
+                                            <span className="text-[10px] text-gray-400 font-medium">
+                                                {new Date(step.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}
@@ -586,7 +610,7 @@ export default function UserBookingDetails() {
                     </div>
 
                     {/* Survey Report */}
-                    {booking.report && (
+                    {booking.report && ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "COMPLETED"].includes(booking.status) && (
                         <div className="bg-white rounded-[16px] shadow-[0px_4px_20px_rgba(0,0,0,0.03)] overflow-hidden border border-gray-50">
                             <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
                                 <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -600,15 +624,23 @@ export default function UserBookingDetails() {
                                 )}
                             </div>
                             <div className="p-6 space-y-6">
-                                {/* Report Status */}
-                                <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
-                                    <div className={`p-3 rounded-full ${booking.report.waterFound ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                        <IoWaterOutline className="text-2xl" />
+                                {/* Report Status Hero Card */}
+                                <div className={`flex items-center gap-5 p-5 rounded-2xl border mb-6 shadow-sm relative overflow-hidden ${booking.report.waterFound
+                                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-emerald-400'
+                                    : 'bg-gradient-to-br from-red-500 to-pink-600 text-white border-red-400'
+                                    }`}>
+                                    {/* Background Pattern */}
+                                    <div className="absolute top-0 right-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
+                                        {booking.report.waterFound ? <IoWaterOutline className="text-9xl" /> : <IoAlertCircleOutline className="text-9xl" />}
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500 font-medium uppercase tracking-wider">Survey Outcome</p>
-                                        <p className={`text-xl font-bold ${booking.report.waterFound ? 'text-green-700' : 'text-red-700'}`}>
-                                            {booking.report.waterFound ? "Water Source Found" : "No Water Source Found"}
+
+                                    <div className="bg-white/20 p-4 rounded-full backdrop-blur-sm relative z-10 border border-white/30">
+                                        <IoWaterOutline className="text-3xl" />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <p className="text-white/80 font-semibold uppercase tracking-wider text-xs mb-1">Survey Outcome</p>
+                                        <p className="text-2xl font-bold tracking-tight">
+                                            {booking.report.waterFound ? "Water Source Success!" : "No Water Source Found"}
                                         </p>
                                     </div>
                                 </div>
@@ -616,9 +648,9 @@ export default function UserBookingDetails() {
                                 {/* Key Recommendations Grid */}
                                 {booking.report.waterFound && (
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        <InfoBlock label="Recommended Depth" value={booking.report.recommendedDepth ? `${booking.report.recommendedDepth} ft` : "N/A"} icon={<IoArrowDownOutline />} />
-                                        <InfoBlock label="Casing Length" value={booking.report.recommendedCasingDepth ? `${booking.report.recommendedCasingDepth} ft` : "N/A"} icon={<IoConstructOutline />} />
-                                        <InfoBlock label="Expected Yield" value={booking.report.expectedYield ? `${booking.report.expectedYield} inches` : "N/A"} icon={<IoWaterOutline />} />
+                                        <InfoBlock label="Recommended Depth" value={booking.report.recommendedDepth ? `${booking.report.recommendedDepth} ft` : "N/A"} icon={IoArrowDownOutline} />
+                                        <InfoBlock label="Casing Length" value={booking.report.recommendedCasingDepth ? `${booking.report.recommendedCasingDepth} ft` : "N/A"} icon={IoConstructOutline} />
+                                        <InfoBlock label="Expected Yield" value={booking.report.expectedYield ? `${booking.report.expectedYield} inches` : "N/A"} icon={IoWaterOutline} />
                                         <InfoBlock label="Points Located" value={booking.report.pointsLocated || "N/A"} />
                                         <InfoBlock label="Best Point" value={booking.report.recommendedPointNumber || "N/A"} />
                                         <InfoBlock label="Fracture Zones" value={booking.report.expectedFractureDepths || "N/A"} />
@@ -732,6 +764,14 @@ export default function UserBookingDetails() {
                                     <span className="text-base font-bold text-gray-800">Total Amount</span>
                                     <span className="text-lg font-bold text-[#0A84FF]">{formatAmount(booking.payment.totalAmount)}</span>
                                 </div>
+
+                                {booking.payment.transactionId && (
+                                    <div className="text-center">
+                                        <p className="text-[10px] text-gray-400 font-mono mt-1">
+                                            Txn ID: {booking.payment.transactionId}
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Paid / Remaining */}
                                 <div className="space-y-2 mt-4 pt-4 border-t border-gray-100">
@@ -855,131 +895,137 @@ export default function UserBookingDetails() {
 
             {/* Modals */}
             {/* Work Proof Modal */}
-            {showWorkProof && booking.report?.images && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowWorkProof(false)}>
-                    <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-black rounded-2xl" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setShowWorkProof(false)} className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-2">
-                            <IoCloseOutline className="text-3xl" />
-                        </button>
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {booking.report.images.map((img, index) => (
-                                <img key={index} src={img.url || img} alt={`Full proof ${index}`} className="w-full h-auto rounded-lg" />
-                            ))}
+            {
+                showWorkProof && booking.report?.images && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowWorkProof(false)}>
+                        <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-black rounded-2xl" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => setShowWorkProof(false)} className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-2">
+                                <IoCloseOutline className="text-3xl" />
+                            </button>
+                            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {booking.report.images.map((img, index) => (
+                                    <img key={index} src={img.url || img} alt={`Full proof ${index}`} className="w-full h-auto rounded-lg" />
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Borewell Upload Modal - Kept same logic but refreshed UI if needed */}
-            {showBorewellModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !uploadingBorewell && setShowBorewellModal(false)}>
-                    <div className="bg-white rounded-[24px] w-full max-w-lg overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                            <h2 className="text-xl font-bold text-gray-800">Upload Borewell Result</h2>
-                            <button onClick={() => !uploadingBorewell && setShowBorewellModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                                <IoCloseOutline className="text-2xl text-gray-500" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-6">
-                            <div>
-                                <label className="text-sm font-bold text-gray-700 mb-3 block">Result Status</label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setBorewellData({ ...borewellData, status: "SUCCESS" })}
-                                        className={`py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${borewellData.status === "SUCCESS"
-                                            ? "bg-green-500 text-white shadow-lg shadow-green-200"
-                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                            }`}
-                                    >
-                                        <IoCheckmarkCircleOutline className="text-xl" /> Success
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setBorewellData({ ...borewellData, status: "FAILED" })}
-                                        className={`py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${borewellData.status === "FAILED"
-                                            ? "bg-red-500 text-white shadow-lg shadow-red-200"
-                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                            }`}
-                                    >
-                                        <IoCloseCircleOutline className="text-xl" /> Failed
-                                    </button>
-                                </div>
+            {
+                showBorewellModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !uploadingBorewell && setShowBorewellModal(false)}>
+                        <div className="bg-white rounded-[24px] w-full max-w-lg overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                <h2 className="text-xl font-bold text-gray-800">Upload Borewell Result</h2>
+                                <button onClick={() => !uploadingBorewell && setShowBorewellModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                                    <IoCloseOutline className="text-2xl text-gray-500" />
+                                </button>
                             </div>
-
-                            <div>
-                                <label className="text-sm font-bold text-gray-700 mb-2 block">Upload Photos</label>
-                                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer relative">
-                                    <input type="file" accept="image/*" multiple onChange={handleBorewellImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                                    <IoImageOutline className="text-4xl text-gray-300 mx-auto mb-2" />
-                                    <p className="text-sm text-gray-500 font-medium">Click to upload images</p>
-                                </div>
-                                {borewellData.images.length > 0 && (
-                                    <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                                        {borewellData.images.map((img, i) => (
-                                            <div key={i} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden group">
-                                                <img src={img.preview} alt="" className="w-full h-full object-cover" />
-                                                <button onClick={() => handleRemoveBorewellImage(i)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <IoCloseOutline />
-                                                </button>
-                                            </div>
-                                        ))}
+                            <div className="p-6 space-y-6">
+                                <div>
+                                    <label className="text-sm font-bold text-gray-700 mb-3 block">Result Status</label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setBorewellData({ ...borewellData, status: "SUCCESS" })}
+                                            className={`py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${borewellData.status === "SUCCESS"
+                                                ? "bg-green-500 text-white shadow-lg shadow-green-200"
+                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                }`}
+                                        >
+                                            <IoCheckmarkCircleOutline className="text-xl" /> Success
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setBorewellData({ ...borewellData, status: "FAILED" })}
+                                            className={`py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${borewellData.status === "FAILED"
+                                                ? "bg-red-500 text-white shadow-lg shadow-red-200"
+                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                }`}
+                                        >
+                                            <IoCloseCircleOutline className="text-xl" /> Failed
+                                        </button>
                                     </div>
-                                )}
-                            </div>
+                                </div>
 
-                            <button
-                                onClick={handleSubmitBorewellResult}
-                                disabled={uploadingBorewell || !borewellData.status}
-                                className="w-full bg-[#0A84FF] text-white py-3.5 rounded-xl font-bold hover:bg-[#005BBB] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {uploadingBorewell ? "Uploading..." : "Submit Result"}
-                            </button>
+                                <div>
+                                    <label className="text-sm font-bold text-gray-700 mb-2 block">Upload Photos</label>
+                                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer relative">
+                                        <input type="file" accept="image/*" multiple onChange={handleBorewellImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                        <IoImageOutline className="text-4xl text-gray-300 mx-auto mb-2" />
+                                        <p className="text-sm text-gray-500 font-medium">Click to upload images</p>
+                                    </div>
+                                    {borewellData.images.length > 0 && (
+                                        <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+                                            {borewellData.images.map((img, i) => (
+                                                <div key={i} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden group">
+                                                    <img src={img.preview} alt="" className="w-full h-full object-cover" />
+                                                    <button onClick={() => handleRemoveBorewellImage(i)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <IoCloseOutline />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={handleSubmitBorewellResult}
+                                    disabled={uploadingBorewell || !borewellData.status}
+                                    className="w-full bg-[#0A84FF] text-white py-3.5 rounded-xl font-bold hover:bg-[#005BBB] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {uploadingBorewell ? "Uploading..." : "Submit Result"}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Rating Modal */}
-            {showRatingModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowRatingModal(false)}>
-                    <div className="bg-white rounded-[24px] w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                            <h2 className="text-xl font-bold text-gray-800">Rate Experience</h2>
-                            <button onClick={() => setShowRatingModal(false)} className="p-2 hover:bg-gray-200 rounded-full">
-                                <IoCloseOutline className="text-2xl text-gray-500" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-                            <p className="text-center text-gray-600 text-sm">How was your experience with <strong>{booking.vendor?.name}</strong>?</p>
+            {
+                showRatingModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowRatingModal(false)}>
+                        <div className="bg-white rounded-[24px] w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                <h2 className="text-xl font-bold text-gray-800">Rate Experience</h2>
+                                <button onClick={() => setShowRatingModal(false)} className="p-2 hover:bg-gray-200 rounded-full">
+                                    <IoCloseOutline className="text-2xl text-gray-500" />
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                                <p className="text-center text-gray-600 text-sm">How was your experience with <strong>{booking.vendor?.name}</strong>?</p>
 
-                            {[{ key: "accuracy", label: "Accuracy" }, { key: "professionalism", label: "Professionalism" }, { key: "behavior", label: "Behavior" }, { key: "visitTiming", label: "Visit Timing" }].map(cat => (
-                                <div key={cat.key} className="text-center">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-2">{cat.label}</label>
-                                    <div className="flex justify-center gap-2">
-                                        {[1, 2, 3, 4, 5].map(star => (
-                                            <button key={star} onClick={() => setRatingData({ ...ratingData, [cat.key]: star })} className="text-3xl focus:outline-none transition-transform active:scale-90 hover:scale-110">
-                                                {ratingData[cat.key] >= star ? <IoStar className="text-yellow-400" /> : <IoStarOutline className="text-gray-300" />}
-                                            </button>
-                                        ))}
+                                {[{ key: "accuracy", label: "Accuracy" }, { key: "professionalism", label: "Professionalism" }, { key: "behavior", label: "Behavior" }, { key: "visitTiming", label: "Visit Timing" }].map(cat => (
+                                    <div key={cat.key} className="text-center">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-2">{cat.label}</label>
+                                        <div className="flex justify-center gap-2">
+                                            {[1, 2, 3, 4, 5].map(star => (
+                                                <button key={star} onClick={() => setRatingData({ ...ratingData, [cat.key]: star })} className="text-3xl focus:outline-none transition-transform active:scale-90 hover:scale-110">
+                                                    {ratingData[cat.key] >= star ? <IoStar className="text-yellow-400" /> : <IoStarOutline className="text-gray-300" />}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
 
-                            <textarea
-                                value={ratingData.review}
-                                onChange={e => setRatingData({ ...ratingData, review: e.target.value })}
-                                placeholder="Share additional feedback..."
-                                className="w-full border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF] min-h-[100px]"
-                            ></textarea>
+                                <textarea
+                                    value={ratingData.review}
+                                    onChange={e => setRatingData({ ...ratingData, review: e.target.value })}
+                                    placeholder="Share additional feedback..."
+                                    className="w-full border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF] min-h-[100px]"
+                                ></textarea>
 
-                            <button onClick={handleSubmitRating} disabled={submittingRating} className="w-full bg-[#0A84FF] text-white py-3.5 rounded-xl font-bold hover:bg-[#005BBB] transition-all disabled:opacity-70">
-                                {submittingRating ? "Submitting..." : "Submit Review"}
-                            </button>
+                                <button onClick={handleSubmitRating} disabled={submittingRating} className="w-full bg-[#0A84FF] text-white py-3.5 rounded-xl font-bold hover:bg-[#005BBB] transition-all disabled:opacity-70">
+                                    {submittingRating ? "Submitting..." : "Submit Review"}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Other Modals */}
             <InputModal
@@ -1004,11 +1050,11 @@ export default function UserBookingDetails() {
                 cancelText="Go Back"
                 confirmColor="danger"
             />
-        </PageContainer>
+        </PageContainer >
     );
 }
 
-function InfoBlock({ label, value, icon: Icon }) {
+function InfoBlock({ label, value, icon: Icon = IoInformationCircleOutline }) {
     return (
         <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#0A84FF] flex-shrink-0">

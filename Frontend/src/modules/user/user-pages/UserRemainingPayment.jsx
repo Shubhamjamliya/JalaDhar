@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-    IoChevronBackOutline,
+
     IoCheckmarkCircleOutline,
     IoCloseCircleOutline,
     IoDocumentTextOutline,
@@ -32,7 +32,7 @@ export default function UserRemainingPayment() {
             const response = await getBookingDetails(bookingId);
             if (response.success) {
                 const bookingData = response.data.booking;
-                
+
                 // Check if booking is in correct status (use userStatus for user view)
                 const userStatus = bookingData.userStatus || bookingData.status;
                 if (userStatus !== 'AWAITING_PAYMENT' && userStatus !== 'REPORT_UPLOADED') {
@@ -65,7 +65,7 @@ export default function UserRemainingPayment() {
 
             // Initiate payment
             const paymentResponse = await initiateRemainingPayment(bookingId);
-            
+
             if (!paymentResponse.success) {
                 toast.dismissToast(loadingToast);
                 toast.showError(paymentResponse.message || "Failed to initiate payment");
@@ -104,7 +104,7 @@ export default function UserRemainingPayment() {
                             toast.showSuccess("Payment completed successfully! You can now view the full report.");
                             setPaymentSuccess(true);
                             setProcessing(false);
-                            
+
                             // Navigate to booking details after short delay
                             setTimeout(() => {
                                 navigate(`/user/booking/${bookingId}`, { replace: true });
@@ -141,14 +141,14 @@ export default function UserRemainingPayment() {
 
             try {
                 const razorpay = new window.Razorpay(options);
-                
+
                 razorpay.on('payment.failed', function (response) {
                     const errorMsg = response.error?.description || response.error?.reason || "Payment failed. Please try again.";
                     toast.dismissToast(loadingToast);
                     toast.showError(`Payment failed: ${errorMsg}`);
                     setProcessing(false);
                 });
-                
+
                 razorpay.on('payment.error', function (response) {
                     const errorMsg = response.error?.description || response.error?.reason || "Payment error occurred. Please try again.";
                     toast.dismissToast(loadingToast);
@@ -231,14 +231,7 @@ export default function UserRemainingPayment() {
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <div className="max-w-2xl mx-auto">
 
-                {/* Back Button */}
-                <button
-                    onClick={() => navigate(`/user/booking/${bookingId}`)}
-                    className="flex items-center gap-2 mb-6 text-gray-600 hover:text-[#0A84FF] transition-colors"
-                >
-                    <IoChevronBackOutline className="text-xl" />
-                    <span className="text-sm font-medium">Back to Booking Details</span>
-                </button>
+                {/* Back button removed - handled by UserNavbar */}
 
                 {/* Header */}
                 <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-6">
@@ -253,7 +246,7 @@ export default function UserRemainingPayment() {
                             <IoDocumentTextOutline className="text-2xl text-[#0A84FF]" />
                             <h2 className="text-xl font-bold text-gray-800">Report Preview</h2>
                         </div>
-                        
+
                         <div className="bg-[#F6F7F9] rounded-[10px] p-4 mb-4">
                             <div className="flex items-center gap-3 mb-3">
                                 {report.waterFound ? (
@@ -285,7 +278,7 @@ export default function UserRemainingPayment() {
                 {/* Payment Summary */}
                 <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">Payment Summary</h2>
-                    
+
                     <div className="space-y-3 mb-4">
                         <div className="flex justify-between items-center">
                             <span className="text-gray-600">Service Amount</span>

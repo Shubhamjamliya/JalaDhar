@@ -83,10 +83,10 @@ export default function VendorStatus() {
             }
 
             // Check if notification is related to current booking
-            const notificationBookingId = notification.metadata?.bookingId || 
-                                        notification.relatedEntity?.entityId?.toString();
-            
-            if (notificationBookingId === bookingId?.toString() || 
+            const notificationBookingId = notification.metadata?.bookingId ||
+                notification.relatedEntity?.entityId?.toString();
+
+            if (notificationBookingId === bookingId?.toString() ||
                 notificationBookingId === bookingId) {
                 // Only refresh for external changes (not user's own actions)
                 // These are changes from other users (admin, user, etc.)
@@ -354,15 +354,15 @@ export default function VendorStatus() {
                 // 2. finalSettlement has rewardAmount or penaltyAmount (vendor settlement processed), OR
                 // 3. finalSettlement.status is PROCESSED, OR
                 // 4. old vendorSettlement.status is COMPLETED
-                completed: status === "FINAL_SETTLEMENT_COMPLETE" || 
-                          status === "COMPLETED" || 
-                          booking.finalSettlement?.status === "PROCESSED" || 
-                          booking.finalSettlement?.rewardAmount > 0 || 
-                          booking.finalSettlement?.penaltyAmount > 0 ||
-                          booking.payment?.vendorSettlement?.status === "COMPLETED",
-                description: (booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0) || 
-                            booking.finalSettlement?.status === "PROCESSED" || 
-                            booking.payment?.vendorSettlement?.status === "COMPLETED"
+                completed: status === "FINAL_SETTLEMENT_COMPLETE" ||
+                    status === "COMPLETED" ||
+                    booking.finalSettlement?.status === "PROCESSED" ||
+                    booking.finalSettlement?.rewardAmount > 0 ||
+                    booking.finalSettlement?.penaltyAmount > 0 ||
+                    booking.payment?.vendorSettlement?.status === "COMPLETED",
+                description: (booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0) ||
+                    booking.finalSettlement?.status === "PROCESSED" ||
+                    booking.payment?.vendorSettlement?.status === "COMPLETED"
                     ? booking.finalSettlement?.status === "PROCESSED" || booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0
                         ? `Admin has processed your final settlement. ${booking.finalSettlement?.rewardAmount > 0 ? `Reward of ₹${booking.finalSettlement.rewardAmount.toLocaleString('en-IN')} credited.` : booking.finalSettlement?.penaltyAmount > 0 ? `Penalty of ₹${booking.finalSettlement.penaltyAmount.toLocaleString('en-IN')} deducted.` : 'All payments completed.'}`
                         : "Admin has processed your final settlement. All payments completed."
@@ -409,7 +409,7 @@ export default function VendorStatus() {
     const status = booking?.vendorStatus || booking?.status;
 
     return (
-        <div 
+        <div
             ref={containerRef}
             className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 overflow-y-auto"
             style={{
@@ -420,7 +420,7 @@ export default function VendorStatus() {
             {/* Pull-to-refresh indicator */}
             {(pullDistance > 0 || isRefreshing) && (
                 <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-transparent pointer-events-none"
-                    style={{ 
+                    style={{
                         height: `${Math.min(pullDistance, 100)}px`,
                         transform: `translateY(${Math.min(pullDistance - 60, 0)}px)`
                     }}
@@ -433,7 +433,7 @@ export default function VendorStatus() {
                             </>
                         ) : (
                             <>
-                                <IoRefreshOutline 
+                                <IoRefreshOutline
                                     className={`text-2xl transition-transform ${canRefresh ? 'rotate-180' : ''}`}
                                     style={{ transform: `rotate(${Math.min(pullDistance * 2, 180)}deg)` }}
                                 />
@@ -446,14 +446,7 @@ export default function VendorStatus() {
                 </div>
             )}
 
-            {/* Back Button */}
-            <button
-                onClick={() => navigate("/vendor/requests")}
-                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-[#0A84FF] transition-colors"
-            >
-                <IoChevronBackOutline className="text-xl" />
-                <span className="text-sm font-medium">Back to Bookings</span>
-            </button>
+            {/* Removed Back Button from here as it's now in VendorNavbar */}
 
             {/* Booking Info Card */}
             {booking && (
@@ -729,26 +722,24 @@ export default function VendorStatus() {
                                                 <p className="text-xs font-semibold text-gray-700 mb-1">
                                                     Settlement Status:{" "}
                                                     <span
-                                                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                                            (booking.finalSettlement?.status === "PROCESSED" || booking.payment?.vendorSettlement?.status === "COMPLETED")
+                                                        className={`px-2 py-1 rounded-full text-xs font-semibold ${(booking.finalSettlement?.status === "PROCESSED" || booking.payment?.vendorSettlement?.status === "COMPLETED")
                                                                 ? "bg-green-100 text-green-700"
                                                                 : "bg-yellow-100 text-yellow-700"
-                                                        }`}
+                                                            }`}
                                                     >
-                                                        {booking.finalSettlement?.status === "PROCESSED" 
-                                                            ? "COMPLETE" 
-                                                            : booking.payment?.vendorSettlement?.status === "COMPLETED"
+                                                        {booking.finalSettlement?.status === "PROCESSED"
                                                             ? "COMPLETE"
-                                                            : booking.finalSettlement?.status || booking.payment?.vendorSettlement?.status || "PENDING"}
+                                                            : booking.payment?.vendorSettlement?.status === "COMPLETED"
+                                                                ? "COMPLETE"
+                                                                : booking.finalSettlement?.status || booking.payment?.vendorSettlement?.status || "PENDING"}
                                                     </span>
                                                 </p>
                                                 {(booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0) ? (
-                                                    <p className={`text-sm font-bold mt-2 ${
-                                                        booking.finalSettlement?.rewardAmount > 0 
-                                                            ? "text-green-600" 
+                                                    <p className={`text-sm font-bold mt-2 ${booking.finalSettlement?.rewardAmount > 0
+                                                            ? "text-green-600"
                                                             : "text-red-600"
-                                                    }`}>
-                                                        {booking.finalSettlement?.rewardAmount > 0 
+                                                        }`}>
+                                                        {booking.finalSettlement?.rewardAmount > 0
                                                             ? `Reward: ${formatAmount(booking.finalSettlement.rewardAmount)}`
                                                             : `Penalty: ${formatAmount(booking.finalSettlement.penaltyAmount)}`
                                                         }

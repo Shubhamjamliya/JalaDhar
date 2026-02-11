@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
     IoStar,
     IoStarOutline,
-    IoChevronBackOutline,
+
     IoPersonOutline,
     IoTimeOutline,
     IoCheckmarkCircleOutline,
@@ -50,7 +50,7 @@ export default function UserRatings() {
             setLoading(true);
             setError("");
             const response = await getMyRatings({ page: currentPage, limit: 10 });
-            
+
             if (response.success) {
                 setRatings(response.data.ratings || []);
                 setStats(response.data.stats || stats);
@@ -108,12 +108,7 @@ export default function UserRatings() {
 
             {/* Header */}
             <div className="bg-gray-100 rounded-t-[12px] px-4 py-3 flex items-center justify-between mb-0">
-                <button
-                    onClick={() => navigate("/user/profile")}
-                    className="p-2 hover:bg-gray-200 rounded-full transition-colors"
-                >
-                    <IoChevronBackOutline className="text-xl text-gray-700" />
-                </button>
+                {/* Back button removed - handled by UserNavbar */}
                 <h1 className="text-lg font-bold text-gray-800">My Ratings & Reviews</h1>
                 <div className="w-10"></div>
             </div>

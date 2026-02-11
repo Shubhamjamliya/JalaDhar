@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-    IoChevronBackOutline,
+
     IoCheckmarkCircleOutline,
     IoCalendarOutline,
     IoTimeOutline,
@@ -9,6 +9,7 @@ import {
     IoPersonOutline,
     IoConstructOutline,
     IoDocumentTextOutline,
+    IoCashOutline,
 } from "react-icons/io5";
 import { verifyAdvancePayment, cancelBooking, getBookingDetails } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -29,8 +30,14 @@ export default function UserAdvancePaymentConfirmation() {
     const [fetchedPaymentConfig, setFetchedPaymentConfig] = useState(null);
     const [fullBooking, setFullBooking] = useState(null);
 
-    // Get booking data from navigation state
-    const booking = location.state?.booking;
+    // Get booking data from location state or try to recover from persisted state
+    // We prioritize location state, but robustly handle _id vs id
+    const stateBooking = location.state?.booking;
+    const bookingId = stateBooking?.id || stateBooking?._id || location.state?.bookingId;
+
+    // Construct a minimal booking object if we only have ID, to allow fetching
+    const booking = stateBooking || (bookingId ? { id: bookingId } : null);
+
     const stateService = location.state?.service;
     const stateVendor = location.state?.vendor;
     const statePaymentData = location.state?.paymentData;
@@ -53,9 +60,9 @@ export default function UserAdvancePaymentConfirmation() {
     // Fetch full booking details to get payment breakdown
     useEffect(() => {
         const fetchBookingDetails = async () => {
-            if (booking?.id) {
+            if (bookingId && bookingId !== "undefined") {
                 try {
-                    const response = await getBookingDetails(booking.id);
+                    const response = await getBookingDetails(bookingId);
                     if (response.success) {
                         setFullBooking(response.data.booking);
                         if (response.data.paymentConfig) {
@@ -69,27 +76,47 @@ export default function UserAdvancePaymentConfirmation() {
             }
         };
         fetchBookingDetails();
-    }, [booking?.id]);
+    }, [bookingId]);
 
     useEffect(() => {
-        // Only redirect if absolutely no booking info
-        if (!booking) {
+        // Only redirect if absolutely no booking info and NO ID
+        if (!booking && !bookingId) {
             navigate("/user/dashboard", { replace: true });
         }
-    }, [booking, navigate]);
+    }, [booking, bookingId, navigate]);
 
     const handlePayment = async () => {
         try {
             setLoading(true);
             setError("");
 
-            // Determine config sources
-            const keyId = fetchedPaymentConfig?.keyId || statePaymentData?.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
-            const orderId = fetchedPaymentConfig?.razorpayOrderId || stateRazorpayOrder?.id || stateRazorpayOrder?.orderId;
-            const amount = fetchedPaymentConfig?.amount || stateRazorpayOrder?.amount;
-            const currency = fetchedPaymentConfig?.currency || stateRazorpayOrder?.currency || 'INR';
+            // Determine config sources with fallbacks
+            let keyId = fetchedPaymentConfig?.keyId || statePaymentData?.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
+            let orderId = fetchedPaymentConfig?.razorpayOrderId || stateRazorpayOrder?.id || stateRazorpayOrder?.orderId || fullBooking?.payment?.advanceRazorpayOrderId;
+            let amount = fetchedPaymentConfig?.amount || stateRazorpayOrder?.amount || (fullBooking?.payment?.advanceAmount ? fullBooking.payment.advanceAmount * 100 : 0);
+            let currency = fetchedPaymentConfig?.currency || stateRazorpayOrder?.currency || 'INR';
+
+            // If key or order ID is still missing, try to reload details one last time
+            if (!keyId || !orderId) {
+                console.warn("Payment config missing, retrying fetch...", { keyId, orderId });
+                try {
+                    const response = await getBookingDetails(bookingId);
+                    if (response.success && response.data.booking) {
+                        const newBooking = response.data.booking;
+                        setFullBooking(newBooking);
+
+                        // Retry extraction
+                        keyId = response.data.paymentConfig?.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
+                        orderId = response.data.paymentConfig?.razorpayOrderId || newBooking.payment?.advanceRazorpayOrderId;
+                        amount = response.data.paymentConfig?.amount || (newBooking.payment?.advanceAmount * 100);
+                    }
+                } catch (e) {
+                    console.error("Retry fetch failed", e);
+                }
+            }
 
             if (!keyId || !orderId) {
+                console.error("Payment Config Missing:", { keyId, orderId, amount, currency });
                 setError("Payment configuration missing. Please return to dashboard and try again.");
                 setLoading(false);
                 return;
@@ -109,7 +136,7 @@ export default function UserAdvancePaymentConfirmation() {
                     // Payment successful - verify payment on backend
                     try {
                         const verifyResponse = await verifyAdvancePayment(
-                            booking.id,
+                            bookingId,
                             paymentResponse.razorpay_order_id,
                             paymentResponse.razorpay_payment_id,
                             paymentResponse.razorpay_signature
@@ -121,7 +148,7 @@ export default function UserAdvancePaymentConfirmation() {
                             setLoading(false);
                             // Navigate after a short delay to show success overlay
                             setTimeout(() => {
-                                navigate(`/user/booking/confirmation/${booking.id}`, {
+                                navigate(`/user/booking/confirmation/${bookingId}`, {
                                     replace: true,
                                     state: {
                                         booking: {
@@ -135,7 +162,7 @@ export default function UserAdvancePaymentConfirmation() {
                         } else {
                             // Cancel booking if payment verification fails
                             try {
-                                await cancelBooking(booking.id, "Payment verification failed");
+                                await cancelBooking(bookingId, "Payment verification failed");
                             } catch (cancelErr) {
                             }
                             setError(verifyResponse.message || "Payment verification failed. Booking has been cancelled. Please contact support.");
@@ -151,7 +178,7 @@ export default function UserAdvancePaymentConfirmation() {
                     } catch (verifyErr) {
                         // Cancel booking if verification error occurs
                         try {
-                            await cancelBooking(booking.id, "Payment verification error");
+                            await cancelBooking(bookingId, "Payment verification error");
                         } catch (cancelErr) {
                         }
                         setError(verifyErr.response?.data?.message || "Payment verification failed. Booking has been cancelled. Please contact support.");
@@ -169,12 +196,6 @@ export default function UserAdvancePaymentConfirmation() {
                     name: user?.name || "",
                     email: user?.email || "",
                     contact: user?.phone || "",
-                    method: 'upi', // Open UPI tab by default for convenience
-                },
-                // Allow all payment methods but prioritize UPI.
-                // The checkout will show UPI first, but users can switch to Card/Netbanking.
-                upi: {
-                    flow: "intent" // Enhance UPI flow on mobile
                 },
                 theme: {
                     color: "#0A84FF",
@@ -220,7 +241,7 @@ export default function UserAdvancePaymentConfirmation() {
 
                     // Cancel the booking if payment fails
                     try {
-                        await cancelBooking(booking.id, `Payment failed: ${errorMsg}`);
+                        await cancelBooking(bookingId, `Payment failed: ${errorMsg}`);
                     } catch (cancelErr) {
                         // Failed to cancel booking - silently continue
                     }
@@ -243,7 +264,7 @@ export default function UserAdvancePaymentConfirmation() {
 
                     // Cancel the booking if payment error occurs
                     try {
-                        await cancelBooking(booking.id, `Payment error: ${errorMsg}`);
+                        await cancelBooking(bookingId, `Payment error: ${errorMsg}`);
                     } catch (cancelErr) {
                         // Failed to cancel booking - silently continue
                     }
@@ -340,18 +361,29 @@ export default function UserAdvancePaymentConfirmation() {
         // fallback if address is just a string
         if (typeof address === 'string') return address;
 
+        // NEW: Check if there's a nested 'address' object (common in some geocoding responses)
+        const target = (address.address && typeof address.address === 'object') ? address.address : address;
+
         // fallback if address object has a display string
-        if (address.address && typeof address.address === 'string') return address.address;
-        if (address.formatted_address) return address.formatted_address;
+        if (target.address && typeof target.address === 'string') return target.address;
+        if (target.formatted_address) return target.formatted_address;
 
         const parts = [
-            address.street,
-            address.city,
-            address.state,
-            address.pincode
+            target.street,
+            target.village,
+            target.city,
+            target.mandal,
+            target.district,
+            target.state,
+            target.pincode
         ].filter(Boolean);
         return parts.length > 0 ? parts.join(", ") : "Not provided";
     };
+
+    // Preload Razorpay script for faster button interaction
+    useEffect(() => {
+        loadRazorpay().catch(() => { });
+    }, []);
 
     // Show success overlay during navigation
     if (paymentSuccess) {
@@ -400,23 +432,12 @@ export default function UserAdvancePaymentConfirmation() {
     const subtotal = bookingPayment?.subtotal || (baseServiceFee + travelCharges);
     const gstPercentage = bookingPayment?.gstPercentage || 18;
 
-    // Preload Razorpay script for faster button interaction
-    useEffect(() => {
-        loadRazorpay().catch(() => { });
-    }, []);
 
     return (
         <PageContainer>
             <ErrorMessage message={error} />
 
-            {/* Back Button */}
-            <button
-                onClick={() => navigate("/user/survey", { state: { service, vendor } })}
-                className="mb-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
-            >
-                <IoChevronBackOutline className="text-xl" />
-                <span className="font-semibold">Back</span>
-            </button>
+            {/* Removed Back Button from here as it's now in UserNavbar */}
 
             {/* Header */}
             <div className="mb-6">
@@ -510,61 +531,85 @@ export default function UserAdvancePaymentConfirmation() {
 
             {/* Payment Summary Card */}
             <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Payment Summary</h2>
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <IoCashOutline className="text-xl text-[#0A84FF]" />
+                        <h2 className="text-xl font-bold text-gray-800">Payment Breakdown</h2>
+                    </div>
+                </div>
 
-                <div className="space-y-3 mb-4">
-                    {/* Service Fee */}
-                    <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Service Fee</span>
-                        <span className="font-semibold text-gray-800">{formatAmount(baseServiceFee)}</span>
+                <div className="space-y-3">
+                    {/* Base Service Fee */}
+                    <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
+                        <div>
+                            <p className="font-semibold text-gray-800 text-sm">Base Service Fee</p>
+                            <p className="text-xs text-gray-500">Service charge</p>
+                        </div>
+                        <p className="font-bold text-gray-900">{formatAmount(baseServiceFee)}</p>
                     </div>
 
-                    {/* Travel Charges (if applicable) */}
-                    {travelCharges > 0 && (
-                        <div className="flex justify-between items-center">
-                            <span className="text-gray-600">Travel Charges</span>
-                            <span className="font-semibold text-gray-800">{formatAmount(travelCharges)}</span>
+                    {/* Travel Charges */}
+                    <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
+                        <div>
+                            <p className="font-semibold text-gray-800 text-sm">Travel Charges (Two-way)</p>
+                            <p className="text-xs text-gray-500">
+                                {bookingPayment?.distance ? `${Number(bookingPayment.distance).toFixed(2)} km` : 'Standard'} from vendor
+                            </p>
+                            {travelCharges > 0 && (
+                                <p className="text-xs font-bold text-gray-500">
+                                    2 x ₹{(Number(travelCharges) / 2).toFixed(2)}
+                                </p>
+                            )}
                         </div>
-                    )}
+                        {travelCharges > 0 ? (
+                            <p className="font-bold text-gray-900">{formatAmount(travelCharges)}</p>
+                        ) : (
+                            <p className="font-bold text-green-600 text-xs">Free (Within Range)</p>
+                        )}
+                    </div>
 
                     {/* Subtotal */}
-                    {travelCharges > 0 && (
-                        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                            <span className="text-gray-600">Subtotal</span>
-                            <span className="font-semibold text-gray-800">{formatAmount(subtotal)}</span>
-                        </div>
-                    )}
+                    <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
+                        <p className="font-semibold text-gray-800 text-sm">Subtotal</p>
+                        <p className="font-bold text-gray-900">{formatAmount(subtotal)}</p>
+                    </div>
 
-                    {/* GST (if applicable) */}
-                    {gst > 0 && (
-                        <div className="flex justify-between items-center">
-                            <span className="text-gray-600">GST ({gstPercentage}%)</span>
-                            <span className="font-semibold text-gray-800">{formatAmount(gst)}</span>
+                    {/* GST */}
+                    <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
+                        <div>
+                            <p className="font-semibold text-gray-800 text-sm">GST</p>
+                            <p className="text-xs text-gray-500">{gstPercentage}% on subtotal</p>
                         </div>
-                    )}
+                        <p className="font-bold text-gray-900">{formatAmount(gst)}</p>
+                    </div>
 
                     {/* Total Amount */}
-                    <div className="flex justify-between items-center pt-2 border-t-2 border-gray-300">
-                        <span className="text-lg font-bold text-gray-800">Total Amount</span>
-                        <span className="text-lg font-bold text-gray-800">{formatAmount(totalAmount)}</span>
+                    <div className="flex justify-between items-center p-3 border border-gray-200 rounded-xl bg-white shadow-sm">
+                        <p className="font-bold text-gray-800 text-sm">Total Amount</p>
+                        <p className="font-bold text-xl text-gray-900">{formatAmount(totalAmount)}</p>
                     </div>
+                </div>
 
-                    {/* Advance Payment */}
-                    <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                        <span className="text-gray-600">Advance Payment (40%)</span>
-                        <span className="font-semibold text-[#0A84FF]">{formatAmount(advanceAmount)}</span>
-                    </div>
+                <div className="mt-6">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-3 tracking-wider">Payment Schedule</p>
+                    <div className="space-y-3">
+                        {/* Advance Payment */}
+                        <div className="flex justify-between items-center p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                            <div>
+                                <p className="font-semibold text-gray-800 text-sm">Advance Payment</p>
+                                <p className="text-xs text-blue-600">40% of total</p>
+                            </div>
+                            <p className="font-bold text-blue-600 text-lg">{formatAmount(advanceAmount)}</p>
+                        </div>
 
-                    {/* Remaining Amount */}
-                    <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Remaining (60%)</span>
-                        <span className="font-semibold text-gray-800">{formatAmount(remainingAmount)}</span>
-                    </div>
-
-                    {/* Amount to Pay Now */}
-                    <div className="border-t-2 border-[#0A84FF] pt-3 flex justify-between items-center mt-2">
-                        <span className="text-lg font-bold text-gray-800">Amount to Pay Now</span>
-                        <span className="text-xl font-bold text-[#0A84FF]">{formatAmount(advanceAmount)}</span>
+                        {/* Remaining Payment */}
+                        <div className="flex justify-between items-center p-4 bg-gray-50 border border-gray-100 rounded-xl">
+                            <div>
+                                <p className="font-semibold text-gray-800 text-sm">Remaining Payment</p>
+                                <p className="text-xs text-gray-500">60% of total</p>
+                            </div>
+                            <p className="font-bold text-gray-800 text-lg">{formatAmount(remainingAmount)}</p>
+                        </div>
                     </div>
                 </div>
             </div>

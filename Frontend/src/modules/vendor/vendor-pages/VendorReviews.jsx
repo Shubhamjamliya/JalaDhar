@@ -49,7 +49,7 @@ export default function VendorReviews() {
             setLoading(true);
             setError("");
             const response = await getMyRatings({ page: currentPage, limit: 10 });
-            
+
             if (response.success) {
                 setRatings(response.data.ratings || []);
                 setStats(response.data.stats || stats);
@@ -107,12 +107,7 @@ export default function VendorReviews() {
 
             {/* Header */}
             <div className="bg-gray-100 rounded-t-[12px] px-4 py-3 flex items-center justify-between mb-0">
-                <button
-                    onClick={() => navigate("/vendor/dashboard")}
-                    className="p-2 hover:bg-gray-200 rounded-full transition-colors"
-                >
-                    <IoChevronBackOutline className="text-xl text-gray-700" />
-                </button>
+                {/* Back button removed - handled by VendorNavbar */}
                 <h1 className="text-lg font-bold text-gray-800">Reviews & Ratings</h1>
                 <div className="w-10"></div>
             </div>
@@ -323,8 +318,8 @@ function ReviewCard({ rating, renderStars, formatDate }) {
                 <div className="flex items-center gap-2 text-xs text-gray-500 pt-2 border-t border-gray-100">
                     <IoTimeOutline className="text-base" />
                     <span>
-                        Service Date: {rating.booking.scheduledDate 
-                            ? formatDate(rating.booking.scheduledDate) 
+                        Service Date: {rating.booking.scheduledDate
+                            ? formatDate(rating.booking.scheduledDate)
                             : "N/A"}
                         {rating.booking.scheduledTime && ` at ${rating.booking.scheduledTime}`}
                     </span>

@@ -235,9 +235,9 @@ const createBooking = async (req, res) => {
       user: userId,
       vendor: vendorId,
       service: serviceId,
-      status: BOOKING_STATUS.PENDING,
-      vendorStatus: BOOKING_STATUS.PENDING,
-      userStatus: BOOKING_STATUS.PENDING,
+      status: BOOKING_STATUS.AWAITING_ADVANCE,
+      vendorStatus: BOOKING_STATUS.AWAITING_ADVANCE,
+      userStatus: BOOKING_STATUS.AWAITING_ADVANCE,
       scheduledDate: new Date(scheduledDate),
       scheduledTime,
       address: {
@@ -246,7 +246,10 @@ const createBooking = async (req, res) => {
         state: address.state,
         pincode: address.pincode,
         coordinates: address.coordinates || {},
-        landmark: address.landmark
+        landmark: address.landmark,
+        village: village || address.village,
+        mandal: mandal || address.mandal,
+        district: district || address.district
       },
       notes,
       // Customer Enquiry Form fields
@@ -454,7 +457,7 @@ const getBookingDetails = async (req, res) => {
 
     // Get payment config if payment is pending
     let paymentConfig = null;
-    if (booking.status === BOOKING_STATUS.PENDING || booking.status === BOOKING_STATUS.AWAITING_PAYMENT) {
+    if (booking.status === BOOKING_STATUS.PENDING || booking.status === BOOKING_STATUS.AWAITING_PAYMENT || booking.status === BOOKING_STATUS.AWAITING_ADVANCE) {
       const Payment = require('../../models/Payment');
       const { PAYMENT_STATUS } = require('../../utils/constants');
 
@@ -469,6 +472,14 @@ const getBookingDetails = async (req, res) => {
           razorpayOrderId: payment.razorpayOrderId,
           keyId: process.env.RAZORPAY_KEY_ID,
           amount: payment.amount,
+          currency: 'INR'
+        };
+      } else if (booking.payment?.advanceRazorpayOrderId && !booking.payment?.advancePaid) {
+        // Fallback: use booking's own payment data if Payment record not found
+        paymentConfig = {
+          razorpayOrderId: booking.payment.advanceRazorpayOrderId,
+          keyId: process.env.RAZORPAY_KEY_ID,
+          amount: booking.payment.advanceAmount,
           currency: 'INR'
         };
       }
@@ -1094,7 +1105,7 @@ const getDashboardStats = async (req, res) => {
     };
 
     bookingStats.forEach(stat => {
-      if (stat._id === 'PENDING' || stat._id === 'ASSIGNED') {
+      if (stat._id === 'PENDING' || stat._id === 'ASSIGNED' || stat._id === 'AWAITING_ADVANCE') {
         stats.pending += stat.count;
       } else if (stat._id === 'ACCEPTED' || stat._id === 'VISITED' || stat._id === 'REPORT_UPLOADED' || stat._id === 'AWAITING_PAYMENT') {
         stats.accepted += stat.count;

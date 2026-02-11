@@ -159,7 +159,7 @@ const approveBorewellResult = async (req, res) => {
       booking.finalSettlement.status = 'PENDING';
       booking.finalSettlement.borewellResult = booking.borewellResult.status;
     }
-    
+
     booking.status = BOOKING_STATUS.ADMIN_APPROVED;
     booking.userStatus = BOOKING_STATUS.ADMIN_APPROVED;
     booking.vendorStatus = BOOKING_STATUS.APPROVED; // Vendor waiting for final settlement
@@ -191,7 +191,7 @@ const approveBorewellResult = async (req, res) => {
     } else {
       vendor.rating.failureCount = (vendor.rating.failureCount || 0) + 1;
     }
-    
+
     // Recalculate success ratio
     const total = vendor.rating.successCount + vendor.rating.failureCount;
     vendor.rating.successRatio = total > 0 ? Math.round((vendor.rating.successCount / total) * 100) : 0;
@@ -223,7 +223,7 @@ const approveBorewellResult = async (req, res) => {
 
       // Send real-time notifications
       const io = getIO();
-      
+
       // Notify user
       await sendNotification({
         recipient: booking.user._id,
@@ -660,8 +660,8 @@ const approveReport = async (req, res) => {
     }
 
     // Check if vendor status is correct
-    if (booking.vendorStatus !== BOOKING_STATUS.REPORT_UPLOADED && 
-        booking.vendorStatus !== BOOKING_STATUS.AWAITING_PAYMENT) {
+    if (booking.vendorStatus !== BOOKING_STATUS.REPORT_UPLOADED &&
+      booking.vendorStatus !== BOOKING_STATUS.AWAITING_PAYMENT) {
       return res.status(400).json({
         success: false,
         message: 'Booking is not in correct status for report approval'
@@ -671,18 +671,18 @@ const approveReport = async (req, res) => {
     // Approve the report
     booking.report.approvedAt = new Date();
     booking.report.approvedBy = adminId;
-    
+
     // Update vendor status to AWAITING_PAYMENT (ready for payment from payments page)
     booking.vendorStatus = BOOKING_STATUS.AWAITING_PAYMENT;
-    
+
     // Credit second payment (50% of total vendor payment) to vendor wallet after report approval
     const { creditToVendorWallet, deductPlatformFee, retryFailedCredit } = require('../../services/walletService');
     const WalletTransaction = require('../../models/WalletTransaction');
-    
-    if (booking.payment?.vendorWalletPayments?.reportUploadPayment && 
-        !booking.payment.vendorWalletPayments.reportUploadPayment.credited) {
+
+    if (booking.payment?.vendorWalletPayments?.reportUploadPayment &&
+      !booking.payment.vendorWalletPayments.reportUploadPayment.credited) {
       const paymentAmount = booking.payment.vendorWalletPayments.reportUploadPayment.amount;
-      
+
       if (paymentAmount > 0) {
         const creditResult = await creditToVendorWallet(
           booking.vendor._id,
@@ -696,14 +696,14 @@ const approveReport = async (req, res) => {
           booking.payment.vendorWalletPayments.reportUploadPayment.credited = true;
           booking.payment.vendorWalletPayments.reportUploadPayment.creditedAt = new Date();
           booking.payment.vendorWalletPayments.reportUploadPayment.transactionId = creditResult.transaction._id;
-          booking.payment.vendorWalletPayments.totalCredited = 
+          booking.payment.vendorWalletPayments.totalCredited =
             (booking.payment.vendorWalletPayments.totalCredited || 0) + paymentAmount;
         } else {
           // Mark as failed but don't block approval
           booking.payment.vendorWalletPayments.reportUploadPayment.failed = true;
           booking.payment.vendorWalletPayments.reportUploadPayment.errorMessage = creditResult.error || 'Credit failed';
           console.error('Failed to credit report upload payment:', creditResult.error);
-          
+
           // Schedule retry (async, don't wait)
           setTimeout(async () => {
             try {
@@ -713,7 +713,7 @@ const approveReport = async (req, res) => {
                 type: 'REPORT_UPLOAD',
                 status: 'FAILED'
               }).sort({ createdAt: -1 });
-              
+
               if (failedTx) {
                 await retryFailedCredit(failedTx._id);
               }
@@ -723,7 +723,7 @@ const approveReport = async (req, res) => {
           }, 5000); // Retry after 5 seconds
         }
       }
-      
+
       // Deduct platform fee from vendor wallet
       const totalPlatformFee = booking.payment.vendorWalletPayments.totalPlatformFee;
       if (totalPlatformFee > 0 && !booking.payment.vendorWalletPayments.platformFee.deducted) {
@@ -742,13 +742,13 @@ const approveReport = async (req, res) => {
         }
       }
     }
-    
+
     await booking.save();
 
     // Send notifications to user and vendor
     try {
       const io = getIO();
-      
+
       // Notify user
       await sendNotification({
         recipient: booking.user._id,
@@ -853,8 +853,8 @@ const rejectReport = async (req, res) => {
     }
 
     // Check if vendor status is correct
-    if (booking.vendorStatus !== BOOKING_STATUS.REPORT_UPLOADED && 
-        booking.vendorStatus !== BOOKING_STATUS.AWAITING_PAYMENT) {
+    if (booking.vendorStatus !== BOOKING_STATUS.REPORT_UPLOADED &&
+      booking.vendorStatus !== BOOKING_STATUS.AWAITING_PAYMENT) {
       return res.status(400).json({
         success: false,
         message: 'Booking is not in correct status for report rejection'
@@ -866,10 +866,10 @@ const rejectReport = async (req, res) => {
     booking.report.rejectedAt = new Date();
     booking.report.rejectedBy = adminId;
     booking.report.rejectionReason = rejectionReason.trim();
-    
+
     // Revert vendor status back to REPORT_UPLOADED so vendor can re-upload
     booking.vendorStatus = BOOKING_STATUS.REPORT_UPLOADED;
-    
+
     await booking.save();
 
     res.json({
@@ -933,8 +933,8 @@ const payFirstInstallment = async (req, res) => {
     }
 
     // Check if vendor status is correct
-    if (booking.vendorStatus !== BOOKING_STATUS.REPORT_UPLOADED && 
-        booking.vendorStatus !== BOOKING_STATUS.AWAITING_PAYMENT) {
+    if (booking.vendorStatus !== BOOKING_STATUS.REPORT_UPLOADED &&
+      booking.vendorStatus !== BOOKING_STATUS.AWAITING_PAYMENT) {
       return res.status(400).json({
         success: false,
         message: 'Booking is not in correct status for first installment payment'
@@ -1092,7 +1092,7 @@ const paySecondInstallment = async (req, res) => {
     booking.vendorStatus = BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE;
     booking.status = BOOKING_STATUS.FINAL_SETTLEMENT;
     await booking.save();
-    
+
     // After processing settlement, set both user and vendor status to COMPLETED
     booking.userStatus = BOOKING_STATUS.COMPLETED;
     booking.vendorStatus = BOOKING_STATUS.COMPLETED;
@@ -1472,7 +1472,7 @@ const processFinalSettlement = async (req, res) => {
         console.error(`Failed to credit refund to user wallet for booking ${booking._id}:`, walletError);
         // Log error, but don't block settlement
       }
-      
+
       // Also create payment record for tracking
       await Payment.create({
         booking: booking._id,
@@ -1493,6 +1493,37 @@ const processFinalSettlement = async (req, res) => {
     booking.status = BOOKING_STATUS.COMPLETED;
     booking.completedAt = new Date();
     await booking.save();
+
+    // Send notifications
+    try {
+      // Notify Vendor
+      await sendNotification(
+        booking.vendor._id || booking.vendor,
+        'PAYMENT_RECEIVED',
+        `Final Settlement of ₹${vendorSettlementAmount} processed for booking #${booking._id.toString().slice(-6)}`,
+        { bookingId: booking._id, type: 'PAYMENT' }
+      );
+
+      // Notify User
+      await sendNotification(
+        booking.user._id || booking.user,
+        'BOOKING_COMPLETED',
+        `Your booking #${booking._id.toString().slice(-6)} is now completed. Thank you for using JalaDhar!`,
+        { bookingId: booking._id }
+      );
+
+      // Send email to vendor
+      if (booking.vendor.email) {
+        await sendSettlementNotificationEmail(booking.vendor.email, {
+          vendorName: booking.vendor.name,
+          amount: vendorSettlementAmount,
+          bookingId: booking._id,
+          date: new Date().toLocaleDateString()
+        });
+      }
+    } catch (notifyError) {
+      console.error('Failed to send settlement notifications:', notifyError);
+    }
 
     res.json({
       success: true,
@@ -1531,7 +1562,7 @@ const getPendingUserRefunds = async (req, res) => {
     // 1. Borewell result is approved
     // 2. Borewell result status is FAILED
     // 3. User status is ADMIN_APPROVED (waiting for refund)
-    
+
     const query = {
       'borewellResult.approvedAt': { $exists: true },
       'borewellResult.status': 'FAILED',
@@ -1554,7 +1585,7 @@ const getPendingUserRefunds = async (req, res) => {
         paymentType: 'REFUND',
         status: PAYMENT_STATUS.SUCCESS
       });
-      
+
       if (!existingRefund) {
         bookingsWithPendingRefunds.push(booking);
       }
@@ -1658,7 +1689,7 @@ const processUserRefund = async (req, res) => {
         error: walletError.message
       });
     }
-    
+
     // Also create payment record for tracking
     const refundPayment = await Payment.create({
       booking: booking._id,
@@ -1678,6 +1709,18 @@ const processUserRefund = async (req, res) => {
     booking.status = BOOKING_STATUS.COMPLETED;
     booking.completedAt = new Date();
     await booking.save();
+
+    // Notify User
+    try {
+      await sendNotification(
+        booking.user._id || booking.user,
+        'REFUND_PROCESSED',
+        `Refund of ₹${finalRefundAmount.toLocaleString('en-IN')} has been credited to your wallet. Booking #${booking._id.toString().slice(-6)} is now completed.`,
+        { bookingId: booking._id, type: 'REFUND' }
+      );
+    } catch (notifyError) {
+      console.error('Failed to send refund notification:', notifyError);
+    }
 
     res.json({
       success: true,
@@ -1918,13 +1961,13 @@ const getPendingUserFinalSettlements = async (req, res) => {
     const filteredBookings = allBookings.filter(booking => {
       const finalSettlement = booking.finalSettlement;
       const borewellStatus = booking.borewellResult?.status;
-      
+
       // Exclude if user settlement is already processed
       // Check new field first
       if (finalSettlement?.userSettlementProcessed === true) {
         return false;
       }
-      
+
       // Also check old format: if remittanceAmount exists and processedBy exists, it's processed
       // For SUCCESS: remittanceAmount = 0 and processedBy exists means processed
       // For FAILED: remittanceAmount > 0 and processedBy exists means processed
@@ -1936,14 +1979,14 @@ const getPendingUserFinalSettlements = async (req, res) => {
           return false; // Processed (remittance paid for failure)
         }
       }
-      
+
       return true;
     });
 
     // Recalculate total after filtering
     const filteredTotal = filteredBookings.length;
     const paginatedBookings = filteredBookings.slice(skip, skip + parseInt(limit));
-    
+
     // Update totalCount to reflect filtered results
     const actualTotal = filteredTotal;
 
@@ -2091,12 +2134,12 @@ const getCompletedUserFinalSettlements = async (req, res) => {
           'finalSettlement.remittanceAmount': { $exists: true },
           $or: [
             // FAILED case: remittanceAmount > 0 (remittance paid to user)
-            { 
+            {
               'finalSettlement.remittanceAmount': { $gt: 0 },
               'finalSettlement.borewellResult': 'FAILED'
             },
             // SUCCESS case: remittanceAmount = 0 (user settlement processed, no payment needed)
-            { 
+            {
               'finalSettlement.borewellResult': 'SUCCESS',
               'finalSettlement.remittanceAmount': 0
             }
@@ -2293,7 +2336,7 @@ const processNewFinalSettlement = async (req, res) => {
         borewellResult: null
       };
     }
-    
+
     booking.finalSettlement.rewardAmount = rewardAmount || 0;
     booking.finalSettlement.penaltyAmount = penaltyAmount || 0;
     booking.finalSettlement.borewellResult = borewellStatus;
@@ -2303,18 +2346,18 @@ const processNewFinalSettlement = async (req, res) => {
     if (notes) {
       booking.finalSettlement.notes = notes;
     }
-    
+
     // Vendor settlement is independent - mark vendor status as complete
     // Don't check user settlement - they are independent
     booking.vendorStatus = BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE;
-    
+
     // Update main status and finalSettlement.status based on both settlements
     // Check if user settlement is also done (for main status only)
     // User settlement is complete if: remittanceAmount is set (even if 0 for SUCCESS) AND userStatus is COMPLETED
-    const isUserSettlementComplete = booking.finalSettlement.remittanceAmount !== undefined && 
-                                     booking.finalSettlement.processedBy !== undefined &&
-                                     booking.userStatus === BOOKING_STATUS.COMPLETED;
-    
+    const isUserSettlementComplete = booking.finalSettlement.remittanceAmount !== undefined &&
+      booking.finalSettlement.processedBy !== undefined &&
+      booking.userStatus === BOOKING_STATUS.COMPLETED;
+
     if (isUserSettlementComplete) {
       // Both settlements complete
       booking.status = BOOKING_STATUS.COMPLETED;
@@ -2330,14 +2373,14 @@ const processNewFinalSettlement = async (req, res) => {
     // Send notifications
     try {
       const io = getIO();
-      
+
       // Notify vendor
       await sendNotification({
         recipient: booking.vendor._id || booking.vendor,
         recipientModel: 'Vendor',
         type: 'FINAL_SETTLEMENT_PROCESSED',
         title: 'Final Settlement Processed',
-        message: rewardAmount > 0 
+        message: rewardAmount > 0
           ? `Reward of ₹${rewardAmount.toLocaleString('en-IN')} credited to your wallet for successful borewell - booking #${booking._id.toString().slice(-6)}`
           : `Penalty of ₹${penaltyAmount.toLocaleString('en-IN')} deducted from your wallet for failed borewell - booking #${booking._id.toString().slice(-6)}`,
         relatedEntity: {
@@ -2448,7 +2491,7 @@ const processUserFinalSettlement = async (req, res) => {
           borewellResult: null
         };
       }
-      
+
       // User settlement is independent - mark user status as complete
       // Don't check vendor settlement - they are independent
       booking.finalSettlement.borewellResult = borewellStatus;
@@ -2456,7 +2499,7 @@ const processUserFinalSettlement = async (req, res) => {
       booking.finalSettlement.processedBy = adminId;
       booking.finalSettlement.remittanceAmount = 0; // No remittance for success
       booking.finalSettlement.notes = notes || 'Final settlement completed - borewell successful';
-      
+
       // Mark user settlement as processed
       booking.finalSettlement.userSettlementProcessed = true;
       booking.finalSettlement.userProcessedAt = new Date();
@@ -2469,7 +2512,7 @@ const processUserFinalSettlement = async (req, res) => {
 
       // Mark user status as COMPLETED (independent of vendor settlement)
       booking.userStatus = BOOKING_STATUS.COMPLETED;
-      
+
       // Update main status only if both are complete
       // Check if vendor settlement is also done
       const hasVendorSettlement = (booking.finalSettlement.rewardAmount > 0) || (booking.finalSettlement.penaltyAmount > 0);
@@ -2488,7 +2531,7 @@ const processUserFinalSettlement = async (req, res) => {
       // Send notification
       try {
         const io = getIO();
-        
+
         await sendNotification({
           recipient: booking.user._id || booking.user,
           recipientModel: 'User',
@@ -2554,7 +2597,7 @@ const processUserFinalSettlement = async (req, res) => {
           borewellResult: null
         };
       }
-      
+
       // User settlement is independent - mark user status as complete
       // Don't check vendor settlement - they are independent
       booking.finalSettlement.remittanceAmount = remittanceAmount;
@@ -2573,7 +2616,7 @@ const processUserFinalSettlement = async (req, res) => {
 
       // Mark user status as COMPLETED (independent of vendor settlement)
       booking.userStatus = BOOKING_STATUS.COMPLETED;
-      
+
       // Update main status only if both are complete
       // Check if vendor settlement is also done
       const hasVendorSettlement = (booking.finalSettlement.rewardAmount > 0) || (booking.finalSettlement.penaltyAmount > 0);
@@ -2605,7 +2648,7 @@ const processUserFinalSettlement = async (req, res) => {
       // Send notifications
       try {
         const io = getIO();
-        
+
         await sendNotification({
           recipient: booking.user._id || booking.user,
           recipientModel: 'User',

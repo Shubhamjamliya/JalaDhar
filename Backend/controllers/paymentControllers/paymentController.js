@@ -520,7 +520,7 @@ const handleOrderPaid = async (orderData, paymentDetails) => {
       booking.payment.status = PAYMENT_STATUS.SUCCESS;
 
       // Set status to ASSIGNED only if currently pending/awaiting
-      if (booking.status === BOOKING_STATUS.PENDING || booking.status === BOOKING_STATUS.AWAITING_PAYMENT) {
+      if (booking.status === BOOKING_STATUS.PENDING || booking.status === BOOKING_STATUS.AWAITING_ADVANCE || booking.status === BOOKING_STATUS.AWAITING_PAYMENT) {
         booking.status = BOOKING_STATUS.ASSIGNED;
         booking.vendorStatus = BOOKING_STATUS.ASSIGNED;
         booking.userStatus = BOOKING_STATUS.ASSIGNED;
@@ -566,16 +566,23 @@ const handlePaymentCaptured = async (paymentData) => {
       await payment.save();
 
       // Update booking if needed
+      // Update booking if needed
       const booking = await Booking.findById(payment.booking);
       if (booking) {
         if (payment.paymentType === 'ADVANCE') {
           booking.payment.advancePaid = true;
           booking.payment.advanceRazorpayPaymentId = paymentData.id;
           booking.payment.advancePaidAt = new Date();
+
+          // Update status to ASSIGNED if confirmed via webhook/capture
+          booking.status = BOOKING_STATUS.ASSIGNED;
+          booking.vendorStatus = BOOKING_STATUS.ASSIGNED;
+          booking.userStatus = BOOKING_STATUS.ASSIGNED;
         } else if (payment.paymentType === 'REMAINING') {
           booking.payment.remainingPaid = true;
           booking.payment.remainingRazorpayPaymentId = paymentData.id;
           booking.payment.remainingPaidAt = new Date();
+
           booking.status = BOOKING_STATUS.PAYMENT_SUCCESS;
           booking.userStatus = BOOKING_STATUS.PAYMENT_SUCCESS;
         }

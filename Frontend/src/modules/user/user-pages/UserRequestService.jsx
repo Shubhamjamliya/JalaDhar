@@ -654,9 +654,11 @@ export default function UserRequestService() {
         <PageContainer>
             {/* Header Steps */}
             <div className="mb-6 flex items-center justify-between">
-                <button onClick={() => step > 1 ? setStep(step - 1) : navigate(-1)} className="p-2 -ml-2 text-gray-600">
-                    <IoArrowBack className="text-xl" />
-                </button>
+                {step > 1 && (
+                    <button onClick={() => setStep(step - 1)} className="p-2 -ml-2 text-gray-600">
+                        <IoArrowBack className="text-xl" />
+                    </button>
+                )}
                 <div className="flex gap-1.5">
                     {[1, 2, 3, 4].map(i => (
                         <div key={i} className={`h-1.5 w-8 rounded-full transition-colors ${i <= step ? 'bg-blue-600' : 'bg-gray-200'}`} />

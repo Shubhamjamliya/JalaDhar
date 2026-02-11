@@ -126,12 +126,7 @@ export default function VendorDisputeDetails() {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <button
-                    onClick={() => navigate("/vendor/disputes")}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                    <IoChevronBackOutline className="text-2xl text-gray-600" />
-                </button>
+                {/* Back button removed - handled by VendorNavbar */}
                 <div className="flex-1">
                     <h1 className="text-2xl font-bold text-gray-900">{dispute.subject}</h1>
                     <p className="text-sm text-gray-500">ID: #{dispute._id.toString().slice(-8).toUpperCase()}</p>
@@ -222,11 +217,10 @@ export default function VendorDisputeDetails() {
                         dispute.comments.map((comment, index) => (
                             <div
                                 key={index}
-                                className={`p-4 rounded-lg ${
-                                    comment.commentedByModel === "Admin"
+                                className={`p-4 rounded-lg ${comment.commentedByModel === "Admin"
                                         ? "bg-blue-50 border-l-4 border-blue-500"
                                         : "bg-gray-50"
-                                }`}
+                                    }`}
                             >
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm font-medium text-gray-900">

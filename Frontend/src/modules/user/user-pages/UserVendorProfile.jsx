@@ -5,7 +5,7 @@ import {
     IoStarOutline,
     IoCallOutline,
     IoLocationOutline,
-    IoChevronBackOutline,
+
     IoMailOutline,
     IoTimeOutline,
 } from "react-icons/io5";
@@ -126,13 +126,7 @@ export default function UserVendorProfile() {
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#EDF5FC] to-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             {/* Back Button */}
-            <button
-                onClick={() => navigate(-1)}
-                className="flex items-center gap-2 mb-4 text-gray-600 hover:text-[#0A84FF] transition-colors"
-            >
-                <IoChevronBackOutline className="text-xl" />
-                <span className="text-sm font-medium">Back</span>
-            </button>
+            {/* Back button removed - handled by UserNavbar */}\n
 
             {/* Vendor Profile Header Card with Contact Information */}
             <div className="bg-white rounded-[20px] p-6 shadow-[0_6px_20px_rgba(0,0,0,0.08)] mb-6">

@@ -15,7 +15,7 @@ import {
     IoCloseCircleOutline,
     IoWalletOutline,
     IoRefreshOutline,
-    IoChevronBackOutline,
+
 } from "react-icons/io5";
 import { getUserBookings, uploadBorewellResult, getBookingDetails } from "../../../services/bookingApi";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -128,8 +128,27 @@ export default function UserStatus() {
                     return;
                 }
             } else {
-                // No bookingId provided - redirect to status page to show all bookings
-                navigate("/user/status", { replace: true });
+                // No bookingId provided - find the most recent active booking
+                try {
+                    const response = await getUserBookings({
+                        status: undefined,
+                        limit: 10
+                    });
+
+                    if (response.success) {
+                        const bookings = response.data.bookings || [];
+                        // Find the most recent active (non-terminal) booking
+                        const activeBooking = bookings.find(b =>
+                            !["COMPLETED", "CANCELLED", "REJECTED", "FAILED", "SUCCESS"].includes(b.status)
+                        ) || bookings[0]; // Fall back to most recent booking
+
+                        if (activeBooking) {
+                            setCurrentBooking(activeBooking);
+                        }
+                    }
+                } catch (err) {
+                    handleApiError(err, "Failed to load bookings");
+                }
             }
         } catch (err) {
             handleApiError(err, "Failed to load booking status");
@@ -505,16 +524,7 @@ export default function UserStatus() {
                 </div>
             )}
 
-            {/* Back Button */}
-            {bookingIdFromParams && (
-                <button
-                    onClick={() => navigate("/user/status")}
-                    className="mb-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors font-semibold"
-                >
-                    <IoChevronBackOutline className="text-xl" />
-                    <span>Back to All Bookings</span>
-                </button>
-            )}
+            {/* Back button removed - handled by UserNavbar */}\n
 
             {/* Booking Info Card */}
             {currentBooking && (

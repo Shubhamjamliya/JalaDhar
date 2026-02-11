@@ -857,14 +857,15 @@ export default function UserSurveyFlow() {
     <PageContainer>
       {/* Header / Progress */}
       <div className="mb-6 flex items-center justify-between">
-        <button onClick={() => {
-          // Back navigation logic
-          if (step === 1) navigate(-1);
-          else if (step === 5 && isVendorPreSelected) setStep(3); // Jump back from Slot to Location if pre-selected
-          else setStep(step - 1);
-        }} className="p-2 -ml-2 text-gray-600">
-          <IoArrowBack className="text-xl" />
-        </button>
+        {step > 1 && (
+          <button onClick={() => {
+            // Back navigation logic
+            if (step === 5 && isVendorPreSelected) setStep(3); // Jump back from Slot to Location if pre-selected
+            else setStep(step - 1);
+          }} className="p-2 -ml-2 text-gray-600">
+            <IoArrowBack className="text-xl" />
+          </button>
+        )}
         <div className="flex gap-1.5">
           {/* Progress dots - adjust count based on mode? Or keep standard 5 */}
           {[1, 2, 3, 4, 5].map(i => {

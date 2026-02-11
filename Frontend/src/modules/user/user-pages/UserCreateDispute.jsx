@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-    IoChevronBackOutline,
+
     IoImageOutline,
     IoCloseOutline,
     IoAlertCircleOutline,
@@ -121,12 +121,7 @@ export default function UserCreateDispute() {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <button
-                    onClick={() => navigate("/user/disputes")}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                    <IoChevronBackOutline className="text-2xl text-gray-600" />
-                </button>
+                {/* Back button removed - handled by UserNavbar */}
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Raise a Dispute</h1>
                     <p className="text-sm text-gray-500 mt-1">Report an issue or complaint</p>
@@ -167,9 +162,8 @@ export default function UserCreateDispute() {
                         name="type"
                         value={formData.type}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent ${
-                            errors.type ? "border-red-500" : "border-gray-300"
-                        }`}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent ${errors.type ? "border-red-500" : "border-gray-300"
+                            }`}
                     >
                         <option value="">Select dispute type</option>
                         <option value="PAYMENT_ISSUE">Payment Issue</option>
@@ -212,9 +206,8 @@ export default function UserCreateDispute() {
                         value={formData.subject}
                         onChange={handleInputChange}
                         placeholder="Brief description of the issue"
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent ${
-                            errors.subject ? "border-red-500" : "border-gray-300"
-                        }`}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent ${errors.subject ? "border-red-500" : "border-gray-300"
+                            }`}
                     />
                     {errors.subject && <p className="text-red-500 text-sm mt-1">{errors.subject}</p>}
                 </div>
@@ -230,9 +223,8 @@ export default function UserCreateDispute() {
                         onChange={handleInputChange}
                         rows={6}
                         placeholder="Provide detailed information about the issue..."
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent ${
-                            errors.description ? "border-red-500" : "border-gray-300"
-                        }`}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent ${errors.description ? "border-red-500" : "border-gray-300"
+                            }`}
                     />
                     {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
                 </div>

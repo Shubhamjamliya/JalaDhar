@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
     IoHomeOutline,
     IoCalendarOutline,
@@ -9,6 +9,7 @@ import {
     IoMenuOutline,
     IoLogOutOutline,
     IoStarOutline,
+    IoChevronBackOutline,
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -60,6 +61,8 @@ export default function VendorNavbar() {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const toggleRef = useRef(null);
     const { logout, vendor } = useVendorAuth();
+    const location = useLocation();
+    const navigate = useNavigate();
 
     const handleLogoutClick = () => {
         setShowLogoutConfirm(true);
@@ -80,14 +83,28 @@ export default function VendorNavbar() {
         <>
             {/* Top Navbar - Mobile & Desktop */}
             <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-[#F6F7F9] px-4 py-3 md:px-6 md:py-4">
-                {/* Left Logo */}
-                <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#0A84FF] text-2xl md:text-3xl">
-                        water_drop
-                    </span>
-                    <h1 className="text-xl md:text-2xl font-bold text-[#0A84FF]">
-                        JALADHAARA
-                    </h1>
+                {/* Left Section: Back Button + Logo */}
+                <div className="flex items-center gap-3">
+                    {/* Back Button - Only for sub-pages */}
+                    {!navItems.some(item => item.to === location.pathname) && (
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="flex items-center justify-center w-8 h-8 rounded-full bg-white text-gray-700 hover:text-[#0A84FF] shadow-sm border border-gray-100 transition-all active:scale-95"
+                            aria-label="Go Back"
+                        >
+                            <IoChevronBackOutline className="text-lg" />
+                        </button>
+                    )}
+
+                    {/* Logo */}
+                    <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[#0A84FF] text-2xl md:text-3xl">
+                            water_drop
+                        </span>
+                        <h1 className="text-xl md:text-2xl font-bold text-[#0A84FF]">
+                            JALADHAARA
+                        </h1>
+                    </div>
                 </div>
 
                 {/* Desktop Navigation Links - Hidden on Mobile */}

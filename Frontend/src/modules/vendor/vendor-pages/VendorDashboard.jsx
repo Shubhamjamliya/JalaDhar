@@ -351,7 +351,7 @@ export default function VendorDashboard() {
             {/* Upcoming Bookings Section */}
             <section className="mt-6">
                 <h2 className="text-lg font-bold text-[#3A3A3A]">
-                    Pending
+                    Active Bookings
                 </h2>
                 {upcomingBookings.length > 0 ? (
                     <div className="mt-3 space-y-4">
@@ -431,10 +431,10 @@ export default function VendorDashboard() {
                             </div>
                             <div>
                                 <p className="text-base font-semibold text-[#3A3A3A] mb-1">
-                                    No Pending Bookings
+                                    No Active Bookings
                                 </p>
                                 <p className="text-sm text-[#6B7280]">
-                                    You don't have any pending bookings at the moment.
+                                    You don't have any active bookings at the moment.
                                 </p>
                             </div>
                         </div>
@@ -452,11 +452,10 @@ export default function VendorDashboard() {
                         {recentBookings.map((booking) => (
                             <div
                                 key={booking._id}
-                                className={`rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer ${
-                                    booking.status === "COMPLETED"
+                                className={`rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer ${booking.status === "COMPLETED"
                                         ? "opacity-75"
                                         : ""
-                                }`}
+                                    }`}
                                 onClick={() =>
                                     navigate(`/vendor/bookings/${booking._id}`)
                                 }
@@ -513,11 +512,10 @@ export default function VendorDashboard() {
                                     </div>
                                     <div className="mt-2 flex items-center gap-2 text-sm text-[#6B7280]">
                                         <span
-                                            className={`material-symbols-outlined !text-base text-[#00C2A8] ${
-                                                booking.status === "COMPLETED"
+                                            className={`material-symbols-outlined !text-base text-[#00C2A8] ${booking.status === "COMPLETED"
                                                     ? ""
                                                     : ""
-                                            }`}
+                                                }`}
                                         >
                                             {booking.status === "COMPLETED"
                                                 ? "event_available"
@@ -526,7 +524,7 @@ export default function VendorDashboard() {
                                         <span>
                                             {formatDateTime(
                                                 booking.scheduledDate ||
-                                                    booking.completedAt,
+                                                booking.completedAt,
                                                 booking.scheduledTime
                                             )}
                                         </span>

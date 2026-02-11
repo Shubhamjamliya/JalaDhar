@@ -41,31 +41,32 @@ const TOKEN_TYPES = {
 //
 const BOOKING_STATUS = {
   // Initial stages
-  PENDING: 'PENDING',                    // Booking created, waiting for vendor assignment
+  AWAITING_ADVANCE: 'AWAITING_ADVANCE',  // Booking created, waiting for advance payment
+  PENDING: 'PENDING',                    // Booking created/paid, waiting for vendor assignment
   ASSIGNED: 'ASSIGNED',                  // Vendor auto-assigned, waiting for vendor acceptance
   ACCEPTED: 'ACCEPTED',                  // Vendor accepted the booking
-  
+
   // Service execution
   VISITED: 'VISITED',                    // Vendor visited user's location and completed testing
   REPORT_UPLOADED: 'REPORT_UPLOADED',   // Vendor uploaded service report (user needs to pay 60% to view)
-  
+
   // Payment stages
   AWAITING_PAYMENT: 'AWAITING_PAYMENT',  // User must pay remaining 60% OR Vendor waiting for admin payment (50% + travel)
   PAYMENT_SUCCESS: 'PAYMENT_SUCCESS',    // User paid remaining 60%, can view report
   PAID_FIRST: 'PAID_FIRST',              // Vendor received first payment (50% + travel) from admin
   COMPLETED: 'COMPLETED',                // Final status after all settlements complete
-  
+
   // Final stages
   BOREWELL_UPLOADED: 'BOREWELL_UPLOADED', // User uploaded borewell result, awaiting admin approval
   ADMIN_APPROVED: 'ADMIN_APPROVED',      // Admin approved borewell result (user waiting for final settlement/refund)
   APPROVED: 'APPROVED',                  // Admin approved borewell result (vendor waiting for final settlement)
   FINAL_SETTLEMENT: 'FINAL_SETTLEMENT',  // Admin processing final settlement (user perspective)
   FINAL_SETTLEMENT_COMPLETE: 'FINAL_SETTLEMENT_COMPLETE', // Final settlement complete (vendor perspective)
-  
+
   // Legacy statuses (kept for backward compatibility)
   SUCCESS: 'SUCCESS',                    // Legacy - use FINAL_SETTLEMENT_COMPLETE for vendor
   FAILED: 'FAILED',                      // Legacy - use FINAL_SETTLEMENT_COMPLETE for vendor
-  
+
   // Cancellation/Rejection
   REJECTED: 'REJECTED',                  // Vendor rejected the booking
   CANCELLED: 'CANCELLED'                 // Booking cancelled by user/vendor/admin

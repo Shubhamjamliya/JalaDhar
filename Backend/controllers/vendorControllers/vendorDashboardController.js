@@ -37,8 +37,8 @@ const getDashboardStats = async (req, res) => {
       Booking.countDocuments({
         vendor: vendorId,
         scheduledDate: { $gte: today, $lt: tomorrow },
-        status: { 
-          $nin: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] 
+        status: {
+          $nin: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED]
         }
       }),
       Booking.aggregate([
@@ -77,24 +77,28 @@ const getDashboardStats = async (req, res) => {
     // Get vendor payment collection data
     const vendor = await Vendor.findById(vendorId).select('paymentCollection');
 
-    // Get recent bookings (last 5)
-    const recentBookings = await Booking.find({ vendor: vendorId })
+    // Get recent completed bookings (last 5)
+    const recentBookings = await Booking.find({
+      vendor: vendorId,
+      status: BOOKING_STATUS.COMPLETED
+    })
       .populate('user', 'name email phone profilePicture')
       .populate('service', 'name machineType price')
       .sort({ createdAt: -1 })
       .limit(5)
       .select('status scheduledDate scheduledTime payment address user service');
 
-    // Get upcoming bookings (next 5)
+    // Get active bookings (all bookings that haven't reached terminal status)
     const upcomingBookings = await Booking.find({
       vendor: vendorId,
-      status: { $in: [BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.PENDING] },
-      scheduledDate: { $gte: new Date() }
+      status: {
+        $nin: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED]
+      }
     })
       .populate('user', 'name email phone profilePicture')
       .populate('service', 'name machineType price')
-      .sort({ scheduledDate: 1 })
-      .limit(5)
+      .sort({ createdAt: -1 })
+      .limit(10)
       .select('status scheduledDate scheduledTime address user service');
 
     res.json({
@@ -140,7 +144,7 @@ const getNewBookings = async (req, res) => {
     const { page = 1, limit = 10, status } = req.query;
 
     const query = { vendor: vendorId };
-    
+
     // Filter by status if provided, otherwise get pending bookings
     if (status) {
       query.status = status;
@@ -190,11 +194,11 @@ const getNewBookings = async (req, res) => {
 const getBookingHistory = async (req, res) => {
   try {
     const vendorId = req.userId;
-    const { 
-      page = 1, 
-      limit = 10, 
-      status, 
-      startDate, 
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      startDate,
       endDate,
       sortBy = 'createdAt',
       sortOrder = 'desc'
@@ -520,7 +524,7 @@ const scheduleVisit = async (req, res) => {
     // Update scheduled date and time
     booking.scheduledDate = new Date(scheduledDate);
     booking.scheduledTime = scheduledTime;
-    
+
     // If status is PENDING, change to ACCEPTED
     if (booking.status === BOOKING_STATUS.PENDING) {
       booking.status = BOOKING_STATUS.ACCEPTED;

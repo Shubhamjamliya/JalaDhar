@@ -65,7 +65,7 @@ export default function VendorBookingDetails() {
         try {
             setLoading(true);
             const response = await getBookingDetails(bookingId);
-            
+
             if (response.success) {
                 setBooking(response.data.booking);
             } else {
@@ -87,9 +87,9 @@ export default function VendorBookingDetails() {
         const loadingToast = toast.showLoading("Accepting booking...");
         try {
             setActionLoading(true);
-            
+
             const response = await acceptBooking(bookingId);
-            
+
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking accepted successfully!");
@@ -127,9 +127,9 @@ export default function VendorBookingDetails() {
         const loadingToast = toast.showLoading("Rejecting booking...");
         try {
             setActionLoading(true);
-            
+
             const response = await rejectBooking(bookingId, rejectionReason);
-            
+
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking rejected successfully.");
@@ -164,9 +164,9 @@ export default function VendorBookingDetails() {
         const loadingToast = toast.showLoading("Marking as visited...");
         try {
             setActionLoading(true);
-            
+
             const response = await markBookingAsVisited(bookingId);
-            
+
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking marked as visited successfully!");
@@ -220,7 +220,7 @@ export default function VendorBookingDetails() {
         const loadingToast = toast.showLoading("Downloading invoice...");
         try {
             const response = await downloadInvoice(bookingId);
-            
+
             if (response.success && response.data.invoiceUrl) {
                 // Open invoice URL in new tab
                 window.open(response.data.invoiceUrl, '_blank');
@@ -291,14 +291,7 @@ export default function VendorBookingDetails() {
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
 
-            {/* Back Button */}
-            <button
-                onClick={() => navigate("/vendor/bookings")}
-                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-[#0A84FF] transition-colors"
-            >
-                <IoChevronBackOutline className="text-xl" />
-                <span className="text-sm font-medium">Back to Bookings</span>
-            </button>
+            {/* Removed Back Button from here as it's now in VendorNavbar */}
 
             {/* Header */}
             <div className="mb-6">
@@ -382,7 +375,7 @@ export default function VendorBookingDetails() {
                         <div>
                             <p className="text-sm text-gray-500">Scheduled Date & Time</p>
                             <p className="text-base font-semibold text-gray-800">
-                                {booking.scheduledDate 
+                                {booking.scheduledDate
                                     ? new Date(booking.scheduledDate).toLocaleDateString("en-IN", {
                                         day: "numeric",
                                         month: "short",
@@ -449,7 +442,7 @@ export default function VendorBookingDetails() {
                         <div className="pt-2 border-t-2 border-gray-300 flex justify-between items-center">
                             <span className="text-base font-bold text-gray-800">Total (Service + Travel)</span>
                             <span className="text-lg font-bold text-[#0A84FF]">
-                                ₹{booking.payment.subtotal !== undefined 
+                                ₹{booking.payment.subtotal !== undefined
                                     ? booking.payment.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                     : ((booking.payment.baseServiceFee || 0) + (booking.payment.travelCharges || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
                             </span>
@@ -458,11 +451,10 @@ export default function VendorBookingDetails() {
                         {/* Payment Status */}
                         <div className="pt-2 border-t border-gray-200 mt-2">
                             <span className="text-xs text-gray-500">Payment Status: </span>
-                            <span className={`text-xs font-semibold ${
-                                booking.payment.status === "SUCCESS" ? "text-green-600" :
+                            <span className={`text-xs font-semibold ${booking.payment.status === "SUCCESS" ? "text-green-600" :
                                 booking.payment.status === "PENDING" ? "text-yellow-600" :
-                                "text-red-600"
-                            }`}>
+                                    "text-red-600"
+                                }`}>
                                 {booking.payment.status || "PENDING"}
                             </span>
                         </div>
@@ -581,18 +573,17 @@ export default function VendorBookingDetails() {
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold text-gray-800">Travel Charges</h2>
                         {booking.travelChargesRequest?.status && (
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                booking.travelChargesRequest.status === "APPROVED" 
-                                    ? "bg-green-100 text-green-700" 
-                                    : booking.travelChargesRequest.status === "REJECTED"
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${booking.travelChargesRequest.status === "APPROVED"
+                                ? "bg-green-100 text-green-700"
+                                : booking.travelChargesRequest.status === "REJECTED"
                                     ? "bg-red-100 text-red-700"
                                     : "bg-yellow-100 text-yellow-700"
-                            }`}>
+                                }`}>
                                 {booking.travelChargesRequest.status}
                             </span>
                         )}
                     </div>
-                    
+
                     {booking.travelChargesRequest ? (
                         <div className="space-y-3">
                             <div className="flex justify-between">
@@ -718,10 +709,90 @@ export default function VendorBookingDetails() {
                 </div>
             )}
 
-            {/* Timeline Information */}
-            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Timeline</h2>
-                <div className="space-y-3 text-sm">
+            {/* Visual Status Timeline */}
+            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">Booking Timeline</h2>
+                    <button
+                        onClick={() => navigate(`/vendor/booking/${booking._id || booking.id}/status`)}
+                        className="flex items-center gap-1.5 text-sm font-semibold text-[#0A84FF] hover:text-[#005BBB] transition-colors"
+                    >
+                        <IoDocumentTextOutline className="text-base" />
+                        View Full Status
+                    </button>
+                </div>
+
+                {/* Visual Step Timeline */}
+                {(() => {
+                    const status = booking.vendorStatus || booking.status;
+                    const timelineSteps = [
+                        { id: "assigned", label: "Assigned", icon: "📋", statuses: ["ASSIGNED"], date: booking.assignedAt },
+                        { id: "accepted", label: "Accepted", icon: "✅", statuses: ["ACCEPTED"], date: booking.acceptedAt },
+                        { id: "visited", label: "Visited", icon: "🏠", statuses: ["VISITED"], date: booking.visitedAt },
+                        { id: "report", label: "Report", icon: "📄", statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt },
+                        { id: "payment", label: "Payment", icon: "💰", statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"], date: booking.payment?.remainingPaidAt },
+                        { id: "completed", label: "Completed", icon: "🎉", statuses: ["COMPLETED"], date: booking.completedAt },
+                    ];
+
+                    const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
+                    const currentIndex = statusOrder.indexOf(status);
+
+                    return (
+                        <div className="flex items-center justify-between gap-1">
+                            {timelineSteps.map((step, index) => {
+                                const stepStatusIndex = statusOrder.indexOf(step.statuses[0]);
+                                const isCompleted = currentIndex >= 0 && currentIndex > stepStatusIndex;
+                                const isActive = step.statuses.includes(status);
+                                const isPending = !isCompleted && !isActive;
+
+                                return (
+                                    <div key={step.id} className="flex items-center flex-1">
+                                        <div className="flex flex-col items-center flex-1">
+                                            {/* Step Circle */}
+                                            <div
+                                                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all ${isCompleted
+                                                    ? "bg-green-100 border-2 border-green-500"
+                                                    : isActive
+                                                        ? "bg-blue-100 border-2 border-[#0A84FF] ring-2 ring-blue-200 animate-pulse"
+                                                        : "bg-gray-100 border-2 border-gray-300"
+                                                    }`}
+                                            >
+                                                {isCompleted ? (
+                                                    <IoCheckmarkCircleOutline className="text-green-600 text-xl" />
+                                                ) : (
+                                                    <span className={`text-sm ${isPending ? "grayscale opacity-50" : ""}`}>{step.icon}</span>
+                                                )}
+                                            </div>
+                                            {/* Label */}
+                                            <span
+                                                className={`text-[10px] font-semibold mt-1.5 text-center leading-tight ${isCompleted ? "text-green-700" : isActive ? "text-[#0A84FF]" : "text-gray-400"
+                                                    }`}
+                                            >
+                                                {step.label}
+                                            </span>
+                                            {/* Date */}
+                                            {step.date && (isCompleted || isActive) && (
+                                                <span className="text-[9px] text-gray-400 mt-0.5">
+                                                    {new Date(step.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {/* Connector Line */}
+                                        {index < timelineSteps.length - 1 && (
+                                            <div
+                                                className={`h-0.5 flex-1 min-w-2 -mt-4 ${isCompleted ? "bg-green-400" : "bg-gray-200"
+                                                    }`}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
+
+                {/* Detailed dates */}
+                <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
                     {booking.createdAt && (
                         <div className="flex justify-between">
                             <span className="text-gray-500">Created:</span>

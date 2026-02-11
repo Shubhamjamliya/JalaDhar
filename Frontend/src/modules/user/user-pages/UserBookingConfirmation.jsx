@@ -52,7 +52,7 @@ export default function UserBookingConfirmation() {
             </div>
         );
     }
-    
+
     if (error && !booking) {
         return (
             <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
@@ -68,7 +68,7 @@ export default function UserBookingConfirmation() {
             </div>
         );
     }
-    
+
     if (!booking) {
         return (
             <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
@@ -153,7 +153,7 @@ export default function UserBookingConfirmation() {
             </div>
 
             <button onClick={() => navigate("/user/status", { state: { bookingId, refresh: true } })} className="w-full h-14 bg-[#0A84FF] text-white font-semibold rounded-[12px] hover:bg-[#005BBB] transition-colors text-lg flex items-center justify-center gap-2">
-                <IoChevronBackOutline className="text-xl rotate-180" /> Back to Status
+                Go to Status
             </button>
         </div>
     );

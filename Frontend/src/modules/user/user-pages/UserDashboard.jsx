@@ -344,6 +344,12 @@ export default function UserDashboard() {
 
     const getStatusConfig = (status) => {
         switch (status) {
+            case "awaiting_advance":
+                return {
+                    label: "Advance Pending",
+                    color: "bg-orange-100 text-orange-700",
+                    icon: IoTimeOutline,
+                };
             case "pending":
                 return {
                     label: "Pending",
@@ -401,7 +407,7 @@ export default function UserDashboard() {
 
     const filteredRequests = requestStatuses.filter(req => {
         if (statusFilter === 'PENDING_PAYMENT') {
-            return req.status === 'pending' && req.paymentStatus === 'PENDING';
+            return (req.status === 'pending' || req.status === 'awaiting_advance') && req.paymentStatus === 'PENDING';
         }
         return true;
     });
@@ -532,7 +538,7 @@ export default function UserDashboard() {
                         <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent rounded-t-full"></div>
                         <IoTimeOutline className="text-2xl text-[#1976D2] relative z-10" />
                         {/* Show indicator if there are pending unpaid requests */}
-                        {requestStatuses.some(r => r.status === 'pending' && r.paymentStatus === 'PENDING') && (
+                        {requestStatuses.some(r => (r.status === 'pending' || r.status === 'awaiting_advance') && r.paymentStatus === 'PENDING') && (
                             <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 border-2 border-white z-20 shadow-sm animate-pulse"></div>
                         )}
                     </div>
@@ -749,7 +755,7 @@ export default function UserDashboard() {
                                                     )}
 
                                                     {/* Resume Payment Button */}
-                                                    {request.status === 'pending' && request.paymentStatus === 'PENDING' && (
+                                                    {(request.status === 'pending' || request.status === 'awaiting_advance') && request.paymentStatus === 'PENDING' && (
                                                         <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
                                                             <button
                                                                 onClick={(e) => {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    IoChevronBackOutline,
+
     IoChevronDownOutline,
     IoStarOutline,
 } from "react-icons/io5";
@@ -107,12 +107,7 @@ export default function UserServiceProvider() {
 
             {/* Top Navigation Bar */}
             <div className="sticky top-16 z-10 flex items-center bg-[#F3F7FA]/80 backdrop-blur-sm p-4 pb-3 -mx-4 md:-mx-6 justify-center mb-4">
-                <button
-                    onClick={() => navigate("/user/dashboard")}
-                    className="absolute left-4 flex size-10 items-center justify-center rounded-full text-[#3A3A3A]"
-                >
-                    <IoChevronBackOutline className="text-2xl" />
-                </button>
+                {/* Back button removed - handled by UserNavbar */}
                 <h1 className="text-[#3A3A3A] text-lg font-bold leading-tight">Find a Vendor</h1>
             </div>
 
@@ -138,7 +133,7 @@ export default function UserServiceProvider() {
                         // Generate different colored backgrounds for profile pictures
                         const colors = ['#B3E5FC', '#FFEB3B', '#C8E6C9', '#FFCCBC', '#E1BEE7'];
                         const bgColor = colors[index % colors.length];
-                        
+
                         return (
                             <div
                                 key={vendor._id}
