@@ -148,11 +148,48 @@ const vendorSchema = new mongoose.Schema({
       }]
     }]
   },
-  // Services offered by vendor
+  // Services offered by vendor (legacy - kept for backward compatibility)
   services: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Service'
   }],
+  // Geoscientific Instruments / Devices available with the expert
+  instruments: [{
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    category: {
+      type: String,
+      enum: ['Dowsing Rods', '3D Locator', 'PQWT', 'ADMT', 'Resistivity Meter', 'Other'],
+      required: true
+    },
+    model: {
+      type: String,
+      trim: true,
+      default: null
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: null
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    addedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  // Global service price (expertise fee) - set by vendor
+  servicePrice: {
+    type: Number,
+    min: [0, 'Service price cannot be negative'],
+    default: null
+  },
   // Payment Collection Status
   paymentCollection: {
     totalEarnings: {

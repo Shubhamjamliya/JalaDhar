@@ -3,6 +3,7 @@ const Vendor = require('../../models/Vendor');
 const VendorBankDetails = require('../../models/VendorBankDetails');
 const VendorDocument = require('../../models/VendorDocument');
 const Token = require('../../models/Token');
+const Service = require('../../models/Service');
 const { generateTokenPair } = require('../../utils/tokenService');
 const { createOTPToken, verifyOTPToken, markTokenAsUsed } = require('../../services/otpService');
 const { sendOTPEmail, sendWelcomeEmail } = require('../../services/emailService');
@@ -139,6 +140,9 @@ const register = async (req, res) => {
       educationalQualifications,
       experience,
       experienceDetails,
+      instruments,
+      machineType,
+      servicePrice,
       address,
       otp,
       token
@@ -273,6 +277,18 @@ const register = async (req, res) => {
             });
           }
         }
+        // Handle service images
+        if (req.files.serviceImages && req.files.serviceImages.length > 0) {
+          documents.serviceImages = [];
+          for (const sImg of req.files.serviceImages) {
+            const sImgResult = await uploadToCloudinary(sImg.buffer, 'vendor-services', 'service-images');
+            documents.serviceImages.push({
+              url: sImgResult.secure_url,
+              publicId: sImgResult.public_id,
+              uploadedAt: new Date()
+            });
+          }
+        }
       } catch (uploadError) {
         console.error('File upload error:', uploadError);
         return res.status(500).json({
@@ -370,6 +386,12 @@ const register = async (req, res) => {
       }
     }
 
+    // Parse instruments if it's a string
+    let parsedInstruments = [];
+    if (instruments) {
+      parsedInstruments = typeof instruments === 'string' ? JSON.parse(instruments) : instruments;
+    }
+
     // Create vendor with email verified (without bankDetails and documents)
     const vendorData = {
       name,
@@ -379,6 +401,8 @@ const register = async (req, res) => {
       educationalQualifications: parsedQualifications,
       experience: parseInt(experience),
       experienceDetails,
+      instruments: parsedInstruments,
+      servicePrice: servicePrice ? parseFloat(servicePrice) : null,
       address: parsedAddress,
       isEmailVerified: true // Email is verified via OTP
     };
@@ -495,6 +519,27 @@ const register = async (req, res) => {
       );
     }
     await Promise.all(documentPromises);
+
+    // Create Service if machineType is provided
+    if (machineType) {
+      const newService = await Service.create({
+        vendor: vendor._id,
+        name: "Ground Water Detection",
+        description: "Expert Ground Water Detection Services using advanced instruments.",
+        machineType: machineType,
+        skills: ["Ground Water Detection"],
+        price: servicePrice ? parseFloat(servicePrice) : 0,
+        duration: 60,
+        status: "PENDING",
+        images: documents.serviceImages || [],
+        category: "Ground Water Detection",
+        isActive: true
+      });
+
+      // Update vendor with service reference
+      vendor.services.push(newService._id);
+      await vendor.save();
+    }
 
     // Mark token as used
     await markTokenAsUsed(tokenDoc._id);

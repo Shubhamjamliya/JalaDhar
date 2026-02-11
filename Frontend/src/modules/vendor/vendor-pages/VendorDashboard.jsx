@@ -267,43 +267,43 @@ export default function VendorDashboard() {
 
             {/* Services Overview - Four Circular Icons */}
             <section className="my-6 flex justify-around">
-                {/* Services */}
-                <div
-                    onClick={() => navigate("/vendor/services")}
-                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
-                >
-                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
-                        {/* Highlight/Reflection Effect */}
-                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
-                        <span className="material-symbols-outlined !text-2xl text-[#1976D2] relative z-10">
-                            design_services
-                        </span>
-                    </div>
-                    <span className="text-xs font-bold text-gray-800 text-center">
-                        Services
-                    </span>
-                    <p className="text-[10px] text-[#6B7280] -mt-1">
-                        {stats.servicesCount || 0} services
-                    </p>
-                </div>
-
-                {/* Requests */}
+                {/* Pendings */}
                 <div
                     onClick={() => navigate("/vendor/requests")}
                     className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#FFF3E0] via-[#FFE0B2] to-[#FFCC80] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
                         {/* Highlight/Reflection Effect */}
                         <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
-                        <span className="material-symbols-outlined !text-2xl text-[#1976D2] relative z-10">
-                            receipt_long
+                        <span className="material-symbols-outlined !text-2xl text-[#EF6C00] relative z-10">
+                            pending_actions
                         </span>
                     </div>
                     <span className="text-xs font-bold text-gray-800 text-center">
-                        Requests
+                        Pendings
                     </span>
                     <p className="text-[10px] text-[#6B7280] -mt-1">
                         {pendingRequests} pending
+                    </p>
+                </div>
+
+                {/* Completed */}
+                <div
+                    onClick={() => navigate("/vendor/bookings")}
+                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
+                >
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#E8F5E9] via-[#C8E6C9] to-[#A5D6A7] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] flex items-center justify-center hover:shadow-[0px_6px_15px_rgba(0,0,0,0.15)] transition-all overflow-hidden">
+                        {/* Highlight/Reflection Effect */}
+                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
+                        <span className="material-symbols-outlined !text-2xl text-[#2E7D32] relative z-10">
+                            check_circle
+                        </span>
+                    </div>
+                    <span className="text-xs font-bold text-gray-800 text-center">
+                        Completed
+                    </span>
+                    <p className="text-[10px] text-[#6B7280] -mt-1">
+                        {stats.completedBookings || 0} completed
                     </p>
                 </div>
 
@@ -453,8 +453,8 @@ export default function VendorDashboard() {
                             <div
                                 key={booking._id}
                                 className={`rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer ${booking.status === "COMPLETED"
-                                        ? "opacity-75"
-                                        : ""
+                                    ? "opacity-75"
+                                    : ""
                                     }`}
                                 onClick={() =>
                                     navigate(`/vendor/bookings/${booking._id}`)
@@ -513,8 +513,8 @@ export default function VendorDashboard() {
                                     <div className="mt-2 flex items-center gap-2 text-sm text-[#6B7280]">
                                         <span
                                             className={`material-symbols-outlined !text-base text-[#00C2A8] ${booking.status === "COMPLETED"
-                                                    ? ""
-                                                    : ""
+                                                ? ""
+                                                : ""
                                                 }`}
                                         >
                                             {booking.status === "COMPLETED"

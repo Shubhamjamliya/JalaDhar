@@ -41,7 +41,8 @@ const uploadDocuments = upload.fields([
   { name: 'certificates', maxCount: 10 }, // Allow multiple degree certificates
   { name: 'trainingCertificates', maxCount: 10 }, // Allow multiple training certificates
   { name: 'groundwaterRegDetails', maxCount: 1 },
-  { name: 'cancelledCheque', maxCount: 1 }
+  { name: 'cancelledCheque', maxCount: 1 },
+  { name: 'serviceImages', maxCount: 10 }
 ]);
 
 // Validation rules

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     IoPersonOutline,
@@ -41,6 +41,14 @@ import ConfirmModal from "../../shared/components/ConfirmModal";
 // Get API key at module level
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
+const MACHINE_OPTIONS = [
+    'Dowsing Rods',
+    '3D Locator',
+    'PQWT',
+    'ADMT',
+    'Resistivity Meter'
+];
+
 export default function VendorProfile() {
     const navigate = useNavigate();
     const { logout, vendor: authVendor } = useVendorAuth();
@@ -67,6 +75,13 @@ export default function VendorProfile() {
         category: "",
     });
     const [serviceImagePreviews, setServiceImagePreviews] = useState([]);
+
+    // Machine Multi-select State
+    const machineDropdownRef = useRef(null);
+    const [isMachineDropdownOpen, setIsMachineDropdownOpen] = useState(false);
+    const [selectedMachines, setSelectedMachines] = useState([]);
+    const [customMachine, setCustomMachine] = useState("");
+
     const [fullAddress, setFullAddress] = useState("");
     const [gettingLocation, setGettingLocation] = useState(false);
     const [profileData, setProfileData] = useState({
@@ -111,10 +126,10 @@ export default function VendorProfile() {
                     coordinates: null,
                     geoLocation: null
                 };
-                
+
                 // Get full address string from geoLocation for display
                 const fullAddressStr = address?.geoLocation?.formattedAddress || "";
-                
+
                 setProfileData({
                     name: vendorData.name || "",
                     email: vendorData.email || "",
@@ -124,7 +139,7 @@ export default function VendorProfile() {
                     profilePicture:
                         vendorData.documents?.profilePicture?.url || null,
                 });
-                
+
                 setFullAddress(fullAddressStr);
             } else {
                 setError("Failed to load profile");
@@ -136,10 +151,51 @@ export default function VendorProfile() {
         }
     };
 
+
+    // Sync machine selection to form data
+    useEffect(() => {
+        setServiceFormData(prev => ({
+            ...prev,
+            machineType: selectedMachines.join(', ')
+        }));
+    }, [selectedMachines]);
+
+    // Handle click outside machine dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (machineDropdownRef.current && !machineDropdownRef.current.contains(event.target)) {
+                setIsMachineDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const handleMachineToggle = (machine) => {
+        if (selectedMachines.includes(machine)) {
+            setSelectedMachines(prev => prev.filter(m => m !== machine));
+        } else {
+            setSelectedMachines(prev => [...prev, machine]);
+        }
+    };
+
+    const handleAddCustomMachine = () => {
+        if (customMachine.trim()) {
+            const newMachine = customMachine.trim();
+            if (!selectedMachines.includes(newMachine)) {
+                setSelectedMachines(prev => [...prev, newMachine]);
+            }
+            setCustomMachine("");
+        }
+    };
+
     const handleLogout = async () => {
         if (window.confirm("Are you sure you want to logout?")) {
             await logout();
-        navigate("/vendorlogin");
+            navigate("/vendorlogin");
         }
     };
 
@@ -153,7 +209,7 @@ export default function VendorProfile() {
         const selectedPlaceId = placeData.placeId || "";
         const selectedLat = placeData.lat;
         const selectedLng = placeData.lng;
-        
+
         // Store in registration format
         setProfileData(prev => ({
             ...prev,
@@ -169,7 +225,7 @@ export default function VendorProfile() {
                 } : prev.address.geoLocation
             }
         }));
-        
+
         setFullAddress(selectedFormattedAddress);
         toast.showSuccess("Address auto-filled from selected location");
     };
@@ -206,7 +262,7 @@ export default function VendorProfile() {
                             if (data.status === 'OK' && data.results && data.results.length > 0) {
                                 const result = data.results[0];
                                 formattedAddress = result.formatted_address || formattedAddress;
-                                
+
                                 // Store in registration format
                                 setProfileData(prev => ({
                                     ...prev,
@@ -300,7 +356,7 @@ export default function VendorProfile() {
                 }
 
                 toast.showSuccess("Profile updated successfully!");
-        setIsEditing(false);
+                setIsEditing(false);
                 await loadProfile();
             } else {
                 setError(response.message || "Failed to update profile");
@@ -336,7 +392,7 @@ export default function VendorProfile() {
         } catch (err) {
             setError(
                 err.response?.data?.message ||
-                    "Failed to upload profile picture"
+                "Failed to upload profile picture"
             );
         } finally {
             setSaving(false);
@@ -350,7 +406,7 @@ export default function VendorProfile() {
 
         const newPreviews = [];
         files.forEach((file) => {
-                const reader = new FileReader();
+            const reader = new FileReader();
             reader.onloadend = () => {
                 newPreviews.push({ file, preview: reader.result });
                 if (newPreviews.length === files.length) {
@@ -360,8 +416,8 @@ export default function VendorProfile() {
                     ]);
                 }
             };
-                reader.readAsDataURL(file);
-            });
+            reader.readAsDataURL(file);
+        });
     };
 
     const handleRemoveServiceImage = (index) => {
@@ -376,15 +432,14 @@ export default function VendorProfile() {
             if (
                 !serviceFormData.name ||
                 !serviceFormData.machineType ||
-                !serviceFormData.price ||
-                !serviceFormData.duration
+                !serviceFormData.price
             ) {
                 setError("Please fill in all required service fields");
                 return;
             }
 
             const formData = new FormData();
-            formData.append("name", serviceFormData.name);
+            formData.append("name", "Ground Water Detection"); // Force fixed name
             formData.append("description", serviceFormData.description || "");
             formData.append("machineType", serviceFormData.machineType);
             formData.append(
@@ -396,7 +451,7 @@ export default function VendorProfile() {
                 )
             );
             formData.append("price", serviceFormData.price);
-            formData.append("duration", serviceFormData.duration);
+            formData.append("duration", serviceFormData.duration || "60"); // Default to 60 if empty
             formData.append("category", serviceFormData.category || "");
 
             // Add images
@@ -410,15 +465,17 @@ export default function VendorProfile() {
                 toast.showSuccess("Service added successfully!");
                 setIsAddingService(false);
                 setServiceFormData({
-                    name: "",
+                    name: "Ground Water Detection",
                     description: "",
                     machineType: "",
                     skills: "",
                     price: "",
-                    duration: "",
+                    duration: "60",
                     category: "",
                 });
                 setServiceImagePreviews([]);
+                setSelectedMachines([]);
+                setCustomMachine("");
                 // Reload services
                 const servicesResponse = await getMyServices();
                 if (servicesResponse.success) {
@@ -434,20 +491,30 @@ export default function VendorProfile() {
 
     const handleEditService = (service) => {
         setEditingServiceId(service._id);
+
+        // Parse existing machine types
+        if (service.machineType) {
+            const types = service.machineType.split(',').map(t => t.trim()).filter(Boolean);
+            setSelectedMachines(types);
+        } else {
+            setSelectedMachines([]);
+        }
+        setCustomMachine("");
+
         setServiceFormData({
-            name: service.name || "",
+            name: "Ground Water Detection", // Force fixed name on edit
             description: service.description || "",
             machineType: service.machineType || "",
             skills: Array.isArray(service.skills)
                 ? service.skills.join(", ")
                 : "",
             price: service.price?.toString() || "",
-            duration: service.duration?.toString() || "",
+            duration: service.duration?.toString() || "60", // Default to 60 if missing
             category: service.category || "",
         });
         setServiceImagePreviews(
             service.images?.map((img) => ({ preview: img.url, file: null })) ||
-                []
+            []
         );
         setIsAddingService(true);
     };
@@ -459,15 +526,14 @@ export default function VendorProfile() {
             if (
                 !serviceFormData.name ||
                 !serviceFormData.machineType ||
-                !serviceFormData.price ||
-                !serviceFormData.duration
+                !serviceFormData.price
             ) {
                 setError("Please fill in all required service fields");
                 return;
             }
 
             const updateData = {
-                name: serviceFormData.name,
+                name: "Ground Water Detection", // Force fixed name
                 description: serviceFormData.description || "",
                 machineType: serviceFormData.machineType,
                 skills: JSON.stringify(
@@ -476,7 +542,7 @@ export default function VendorProfile() {
                         : []
                 ),
                 price: parseFloat(serviceFormData.price),
-                duration: parseInt(serviceFormData.duration),
+                duration: parseInt(serviceFormData.duration || "60"), // Default to 60
                 category: serviceFormData.category || "",
             };
 
@@ -496,15 +562,17 @@ export default function VendorProfile() {
                 setIsAddingService(false);
                 setEditingServiceId(null);
                 setServiceFormData({
-                    name: "",
+                    name: "Ground Water Detection",
                     description: "",
                     machineType: "",
                     skills: "",
                     price: "",
-                    duration: "",
+                    duration: "60",
                     category: "",
                 });
                 setServiceImagePreviews([]);
+                setSelectedMachines([]);
+                setCustomMachine("");
                 // Reload services
                 const servicesResponse = await getMyServices();
                 if (servicesResponse.success) {
@@ -556,7 +624,7 @@ export default function VendorProfile() {
         setIsAddingService(false);
         setEditingServiceId(null);
         setServiceFormData({
-            name: "",
+            name: "Ground Water Detection",
             description: "",
             machineType: "",
             skills: "",
@@ -565,10 +633,12 @@ export default function VendorProfile() {
             category: "",
         });
         setServiceImagePreviews([]);
+        setSelectedMachines([]);
+        setCustomMachine("");
     };
 
     if (loading) {
-    return (
+        return (
             <PageContainer>
                 <LoadingSpinner message="Loading profile..." />
             </PageContainer>
@@ -612,14 +682,14 @@ export default function VendorProfile() {
                                     {profileData.profilePicture ? (
                                         <img
                                             src={profileData.profilePicture}
-                                    alt="Profile"
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
+                                            alt="Profile"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
                                         <div className="w-full h-full bg-gradient-to-br from-[#BBDEFB] to-[#90CAF9] flex items-center justify-center">
                                             <span className="text-4xl">👤</span>
                                         </div>
-                            )}
+                                    )}
                                 </div>
                                 {/* Camera Icon Overlay - Outside circle to overlap */}
                                 <div className="absolute -bottom-1 -right-1 h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg border-4 border-white hover:bg-blue-700 transition-colors z-10">
@@ -658,7 +728,7 @@ export default function VendorProfile() {
                                 <p className="text-2xl font-bold leading-tight tracking-tight break-words max-w-full px-4 text-gray-800">
                                     {profileData.name || "Vendor"}
                                 </p>
-                            </> 
+                            </>
                         )}
                         <p className="text-sm font-medium text-gray-700 mt-1 break-words max-w-full px-4">
                             {profileData.email}
@@ -674,11 +744,10 @@ export default function VendorProfile() {
                                         {[1, 2, 3, 4, 5].map((star) => (
                                             <IoStar
                                                 key={star}
-                                                className={`text-lg ${
-                                                    star <= Math.round(vendor.rating.averageRating)
-                                                        ? "text-yellow-500"
-                                                        : "text-gray-300"
-                                                }`}
+                                                className={`text-lg ${star <= Math.round(vendor.rating.averageRating)
+                                                    ? "text-yellow-500"
+                                                    : "text-gray-300"
+                                                    }`}
                                             />
                                         ))}
                                     </div>
@@ -693,8 +762,8 @@ export default function VendorProfile() {
                                 </p>
                             </div>
                         )}
-                            </div>
                     </div>
+                </div>
             </section>
 
             {/* Vendor Information Card */}
@@ -721,9 +790,9 @@ export default function VendorProfile() {
                         label="Name"
                         value={profileData.name}
                         isEditing={isEditing}
-                            onChange={(e) =>
-                                setProfileData({
-                                    ...profileData,
+                        onChange={(e) =>
+                            setProfileData({
+                                ...profileData,
                                 name: e.target.value,
                             })
                         }
@@ -736,9 +805,9 @@ export default function VendorProfile() {
                         label="Phone Number"
                         value={profileData.phone}
                         isEditing={isEditing}
-                            onChange={(e) =>
-                                setProfileData({
-                                    ...profileData,
+                        onChange={(e) =>
+                            setProfileData({
+                                ...profileData,
                                 phone: e.target.value,
                             })
                         }
@@ -751,9 +820,9 @@ export default function VendorProfile() {
                         label="Experience (Years)"
                         value={profileData.experience}
                         isEditing={isEditing}
-                            onChange={(e) =>
-                                setProfileData({
-                                    ...profileData,
+                        onChange={(e) =>
+                            setProfileData({
+                                ...profileData,
                                 experience: e.target.value,
                             })
                         }
@@ -854,9 +923,21 @@ export default function VendorProfile() {
                         <h2 className="text-xl font-bold text-[#3A3A3A]">
                             My Services
                         </h2>
-                        {!isAddingService && (
+                        {/* Only show Add button if no services exist and not currently adding */}
+                        {services.length === 0 && !isAddingService && (
                             <button
-                                onClick={() => setIsAddingService(true)}
+                                onClick={() => {
+                                    setServiceFormData({
+                                        name: "Ground Water Detection",
+                                        description: "",
+                                        machineType: "",
+                                        skills: "",
+                                        price: "",
+                                        duration: "60", // Default duration
+                                        category: "",
+                                    });
+                                    setIsAddingService(true);
+                                }}
                                 className="flex items-center gap-2 bg-[#0A84FF] text-white font-semibold py-2 px-4 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:bg-[#005BBB] transition-colors"
                             >
                                 <IoAddCircleOutline className="text-lg" />
@@ -874,150 +955,168 @@ export default function VendorProfile() {
                                     : "Add New Service"}
                             </h3>
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+
+                                {/* Service Name - Fixed Display */}
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-[#0A84FF]">water_drop</span>
                                     <div>
-                                        <label className="mb-1 block text-sm font-medium text-[#6B7280]">
-                                            Service Name *
+                                        <label className="block text-xs font-bold text-blue-600 uppercase tracking-wider">
+                                            Service Name
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={serviceFormData.name}
-                                            onChange={(e) =>
-                                                setServiceFormData({
-                                                    ...serviceFormData,
-                                                    name: e.target.value,
-                                                })
-                                            }
-                                            placeholder="e.g., Ground Water Detection"
-                                            className="w-full rounded-lg border-gray-200 bg-[#F3F7FA] p-3 text-sm transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
-                                        />
+                                        <p className="text-lg font-bold text-[#3A3A3A]">
+                                            Ground Water Detection
+                                        </p>
                                     </div>
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium text-[#6B7280]">
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Machine Type Multi-Select */}
+                                    <div className="relative" ref={machineDropdownRef}>
+                                        <label className="mb-2 block text-sm font-medium text-[#6B7280]">
                                             Machine Type *
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={serviceFormData.machineType}
-                                            onChange={(e) =>
-                                                setServiceFormData({
-                                                    ...serviceFormData,
-                                                    machineType: e.target.value,
-                                                })
-                                            }
-                                            placeholder="e.g., Water Detection Machine"
-                                            className="w-full rounded-lg border-gray-200 bg-[#F3F7FA] p-3 text-sm transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
-                                        />
+
+                                        {/* Dropdown Trigger */}
+                                        <div
+                                            onClick={() => !loading && setIsMachineDropdownOpen(!isMachineDropdownOpen)}
+                                            className={`w-full min-h-[46px] rounded-xl border-gray-200 bg-[#F3F7FA] p-2 text-sm font-medium text-[#3A3A3A] transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] flex items-center justify-between cursor-pointer border hover:border-gray-300 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                            <div className="flex flex-wrap gap-2">
+                                                {selectedMachines.length > 0 ? (
+                                                    selectedMachines.map(machine => (
+                                                        <span key={machine} className="bg-white border border-gray-200 text-[#0A84FF] px-2 py-1 rounded-md text-xs flex items-center gap-1">
+                                                            {machine}
+                                                            <IoCloseOutline
+                                                                className="cursor-pointer hover:text-red-500"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (!loading) handleMachineToggle(machine);
+                                                                }}
+                                                            />
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-gray-400 px-1">Select Machines</span>
+                                                )}
+                                            </div>
+                                            <span className="material-symbols-outlined text-xl text-gray-500 px-1">expand_more</span>
                                         </div>
+
+                                        {/* Dropdown Menu */}
+                                        {isMachineDropdownOpen && (
+                                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto p-2">
+                                                {MACHINE_OPTIONS.map((option) => (
+                                                    <div
+                                                        key={option}
+                                                        onClick={() => handleMachineToggle(option)}
+                                                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                                                    >
+                                                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedMachines.includes(option) ? 'bg-[#0A84FF] border-[#0A84FF]' : 'border-gray-300'}`}>
+                                                            {selectedMachines.includes(option) && <IoCheckmarkOutline className="text-white text-sm" />}
+                                                        </div>
+                                                        <span className="text-sm text-[#3A3A3A] font-medium">{option}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Add Custom Machine Input */}
+                                        <div className="mt-3 flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={customMachine}
+                                                onChange={(e) => setCustomMachine(e.target.value)}
+                                                placeholder="Add other machine type..."
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleAddCustomMachine();
+                                                    }
+                                                }}
+                                                disabled={loading}
+                                                className="flex-1 rounded-xl border-gray-200 bg-[#F3F7FA] p-3 text-sm font-medium text-[#3A3A3A] transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleAddCustomMachine}
+                                                disabled={loading || !customMachine.trim()}
+                                                className="bg-[#0A84FF] text-white px-4 py-2 rounded-xl font-medium hover:bg-[#005BBB] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                Add
+                                            </button>
                                         </div>
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-[#6B7280]">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        value={serviceFormData.description}
-                                        onChange={(e) =>
-                                            setServiceFormData({
-                                                ...serviceFormData,
-                                                description: e.target.value,
-                                            })
-                                        }
-                                        placeholder="Describe your service..."
-                                        rows="3"
-                                        className="w-full rounded-lg border-gray-200 bg-[#F3F7FA] p-3 text-sm transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                    </div>
+
+                                    {/* Price */}
                                     <div>
-                                        <label className="mb-1 block text-sm font-medium text-[#6B7280]">
+                                        <label className="mb-2 block text-sm font-medium text-[#6B7280]">
                                             Price (₹) *
                                         </label>
-                                        <input
-                                            type="number"
-                                            value={serviceFormData.price}
-                                            onChange={(e) =>
-                                                setServiceFormData({
-                                                    ...serviceFormData,
-                                                    price: e.target.value,
-                                                })
-                                            }
-                                            placeholder="0.00"
-                                            min="0"
-                                            step="0.01"
-                                            className="w-full rounded-lg border-gray-200 bg-[#F3F7FA] p-3 text-sm transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium text-[#6B7280]">
-                                            Duration (minutes) *
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={serviceFormData.duration}
-                                            onChange={(e) =>
-                                                setServiceFormData({
-                                                    ...serviceFormData,
-                                                    duration: e.target.value,
-                                                })
-                                            }
-                                            placeholder="e.g., 120"
-                                            min="1"
-                                            className="w-full rounded-lg border-gray-200 bg-[#F3F7FA] p-3 text-sm transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
-                                        />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="text-sm font-semibold text-[#4A4A4A] mb-2 block">
-                                        Service Images
-                            </label>
-                                    {serviceImagePreviews.length > 0 && (
-                                        <div className="grid grid-cols-4 gap-2 mb-2">
-                                            {serviceImagePreviews.map(
-                                                (item, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className="relative"
-                                                    >
-                                                        <img
-                                                            src={item.preview}
-                                                            alt={`Preview ${
-                                                                index + 1
-                                                            }`}
-                                                className="w-full h-24 object-cover rounded-[8px]"
+                                        <div className="relative">
+                                            <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-500 font-bold">₹</span>
+                                            <input
+                                                type="number"
+                                                value={serviceFormData.price}
+                                                onChange={(e) =>
+                                                    setServiceFormData({
+                                                        ...serviceFormData,
+                                                        price: e.target.value,
+                                                    })
+                                                }
+                                                placeholder="0.00"
+                                                min="0"
+                                                step="0.01"
+                                                className="w-full rounded-xl border-gray-200 bg-[#F3F7FA] p-3 pl-8 text-sm font-bold text-[#3A3A3A] transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
                                             />
-                                                <button
-                                                    onClick={() =>
-                                                                handleRemoveServiceImage(
-                                                                    index
-                                                                )
-                                                    }
-                                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
-                                                >
-                                                    <IoCloseOutline className="text-sm" />
-                                                </button>
-                                                    </div>
-                                                )
-                                            )}
                                         </div>
-                                    )}
-                                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[#D9DDE4] rounded-[8px] cursor-pointer hover:border-[#0A84FF] transition-colors">
-                                    <IoImageOutline className="text-2xl text-gray-400 mb-1" />
-                                    <p className="text-xs text-gray-500">
-                                            Add Service Images
-                                    </p>
-                                    <input
-                                        type="file"
-                                        className="hidden"
-                                        accept="image/*"
-                                        multiple
-                                            onChange={handleServiceImageChange}
-                                    />
-                                </label>
+                                    </div>
                                 </div>
-                                <div className="flex gap-3 justify-end">
+
+                                {/* Images */}
+                                <div>
+                                    <label className="text-sm font-semibold text-[#4A4A4A] mb-3 block">
+                                        Service Images
+                                    </label>
+
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                                        {serviceImagePreviews.map((item, index) => (
+                                            <div key={index} className="relative group rounded-xl overflow-hidden aspect-square shadow-sm border border-gray-100">
+                                                <img
+                                                    src={item.preview}
+                                                    alt={`Preview ${index + 1}`}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <button
+                                                        onClick={() => handleRemoveServiceImage(index)}
+                                                        className="bg-white/20 hover:bg-red-500 text-white p-2 rounded-full backdrop-blur-sm transition-colors"
+                                                    >
+                                                        <IoTrashOutline className="text-lg" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        <label className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-[#D9DDE4] rounded-xl cursor-pointer hover:border-[#0A84FF] hover:bg-blue-50/50 transition-all group">
+                                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mb-2 group-hover:bg-[#0A84FF] transition-colors">
+                                                <IoImageOutline className="text-lg text-[#0A84FF] group-hover:text-white transition-colors" />
+                                            </div>
+                                            <p className="text-xs font-medium text-gray-500 group-hover:text-[#0A84FF]">Add Image</p>
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={handleServiceImageChange}
+                                            />
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
                                     <button
                                         onClick={cancelServiceForm}
-                                        className="px-6 bg-gray-200 text-[#3A3A3A] font-semibold py-3 rounded-lg hover:bg-gray-300 transition-colors"
+                                        className="px-6 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
                                     >
                                         Cancel
                                     </button>
@@ -1027,10 +1126,10 @@ export default function VendorProfile() {
                                                 ? handleUpdateService
                                                 : handleAddService
                                         }
-                                        className="px-6 bg-[#0A84FF] text-white font-semibold py-3 rounded-lg hover:bg-[#005BBB] transition-colors shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                                        className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-[#0A84FF] text-white hover:bg-[#005BBB] shadow-md hover:shadow-lg transition-all"
                                     >
                                         {editingServiceId
-                                            ? "Update"
+                                            ? "Save Changes"
                                             : "Add Service"}
                                     </button>
                                 </div>
@@ -1038,142 +1137,170 @@ export default function VendorProfile() {
                         </div>
                     )}
 
-                    {/* Services List */}
-                    <div className="flex flex-col gap-5">
-                        {services.length === 0 ? (
-                            <div className="bg-white rounded-xl p-8 text-center shadow-[0_6px_16px_rgba(10,132,255,0.1)]">
-                                <IoConstructOutline className="text-4xl text-gray-400 mx-auto mb-4" />
-                                <p className="text-gray-600 mb-4">
-                                    No services added yet
-                                </p>
-                                <button
-                                    onClick={() => setIsAddingService(true)}
-                                    className="bg-[#0A84FF] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#005BBB] transition-colors"
-                                >
-                                    Add Your First Service
-                                </button>
-                        </div>
-                        ) : (
-                            services.map((service) => (
+                    {/* Services List - Only Show First Service if Exists */}
+                    {!isAddingService && services.length > 0 && (
+                        <div className="flex flex-col">
+                            {/* We only show the first service as per requirement */}
+                            {[services[0]].map((service) => (
                                 <div
                                     key={service._id}
-                                    className="flex flex-col rounded-xl bg-white p-4 shadow-[0_6px_16px_rgba(10,132,255,0.1)]"
+                                    className="group relative flex flex-col sm:flex-row gap-6 rounded-2xl bg-white p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        {/* Service Image */}
-                                        {service.images &&
-                                        service.images.length > 0 ? (
-                                            <div
-                                                className="h-24 w-24 shrink-0 rounded-lg bg-cover bg-center bg-no-repeat"
-                                                style={{
-                                                    backgroundImage: `url("${service.images[0].url}")`,
-                                                }}
-                                            ></div>
+                                    {/* Service Image */}
+                                    <div className="w-full sm:w-64 aspect-[4/3] sm:aspect-square shrink-0 rounded-xl bg-gray-50 overflow-hidden relative">
+                                        {service.images && service.images.length > 0 ? (
+                                            <img
+                                                src={service.images[0].url}
+                                                alt={service.name}
+                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                            />
                                         ) : (
-                                            <div className="h-24 w-24 shrink-0 rounded-lg bg-gray-200 flex items-center justify-center">
-                                                <IoImageOutline className="text-3xl text-gray-400" />
-                    </div>
+                                            <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 bg-gray-50">
+                                                <IoImageOutline className="text-4xl mb-2 opacity-50" />
+                                                <span className="text-xs font-medium">No Image</span>
+                                            </div>
+                                        )}
+                                        {/* Image Count Badge */}
+                                        {service.images && service.images.length > 1 && (
+                                            <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs font-semibold px-2 py-1 rounded-md backdrop-blur-md">
+                                                +{service.images.length - 1} photos
+                                            </div>
                                         )}
 
-                                        <div className="flex-1">
-                                            <h2 className="text-base font-bold text-[#3A3A3A]">
-                                                {service.name}
-                                            </h2>
-                                            {service.description && (
-                                                <p className="mt-1 text-xs text-[#6B7280]">
-                                                    {service.description}
-                                                </p>
-                                            )}
-                                            <p className="mt-2 text-base font-semibold text-[#0A84FF]">
-                                                ₹
-                                                {service.price?.toLocaleString(
-                                                    "en-IN",
-                                                    {
-                                                        minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2,
-                                                    }
-                                                )}
-                                                {service.duration &&
-                                                    ` / ${service.duration} min`}
-                                            </p>
-                </div>
-
-                                        <button
-                                            onClick={() =>
-                                                setPreviewingService(service)
-                                            }
-                                            className="text-[#00C2A8] self-start"
-                                            disabled={
-                                                isAddingService ||
-                                                editingServiceId !== null
-                                            }
-                                        >
-                                            <span className="material-symbols-outlined">
-                                                visibility
+                                        {/* Status Badge Overlay */}
+                                        <div className="absolute top-3 left-3">
+                                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold backdrop-blur-md shadow-sm ${service.isActive
+                                                ? "bg-green-500/90 text-white"
+                                                : "bg-gray-500/90 text-white"
+                                                }`}>
+                                                {service.isActive ? "Active" : "Inactive"}
                                             </span>
-                                        </button>
+                                        </div>
                                     </div>
 
-                                    <div className="mt-4 flex items-center justify-end border-t border-gray-100 pt-3">
-                                        <label className="switch-container relative inline-flex cursor-pointer items-center">
-                                            <input
-                                                checked={
-                                                    service.isActive || false
-                                                }
-                                                className="peer sr-only"
-                                                type="checkbox"
-                                                onChange={async (e) => {
-                                                    if (isAddingService || editingServiceId !== null) {
-                                                        e.preventDefault();
-                                                        return;
-                                                    }
-                                                    try {
-                                                        const newActiveStatus = e.target.checked;
-                                                        const response = await updateService(service._id, {
-                                                            isActive: newActiveStatus
-                                                        });
-                                                        if (response.success) {
-                                                            toast.showSuccess(
-                                                                newActiveStatus 
-                                                                    ? "Service activated successfully!" 
-                                                                    : "Service deactivated successfully!"
-                                                            );
-                                                            // Reload services
-                                                            const servicesResponse = await getMyServices();
-                                                            if (servicesResponse.success) {
-                                                                setServices(servicesResponse.data.services || []);
+                                    <div className="flex-1 flex flex-col">
+                                        <div className="flex items-start justify-between">
+                                            <div className="space-y-1">
+                                                <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                                                    {service.name}
+                                                </h2>
+                                                {service.machineType && (
+                                                    <div className="flex items-center gap-1.5 text-blue-600">
+                                                        <IoConstructOutline className="text-sm" />
+                                                        <span className="text-sm font-semibold">{service.machineType}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Actions */}
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => setPreviewingService(service)}
+                                                    className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all"
+                                                    title="View Details"
+                                                >
+                                                    <span className="material-symbols-outlined text-xl">visibility</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleEditService(service)}
+                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                                    title="Edit Service"
+                                                >
+                                                    <IoPencilOutline className="text-xl" />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 mb-6">
+                                            <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">
+                                                {service.description || "No description provided."}
+                                            </p>
+                                        </div>
+
+                                        <div className="mt-auto pt-4 border-t border-gray-50 flex items-end justify-between">
+                                            <div>
+                                                <p className="text-xs text-gray-400 font-medium mb-0.5 uppercase tracking-wider">Service Charge</p>
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className="text-2xl font-bold text-gray-900">
+                                                        ₹{service.price?.toLocaleString("en-IN")}
+                                                    </span>
+                                                    <span className="text-sm text-gray-500 font-medium">/ visit</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Status Toggle */}
+                                            <div className="flex items-center gap-3">
+                                                <span className={`text-sm font-medium transition-colors ${service.isActive ? "text-gray-700" : "text-gray-400"}`}>
+                                                    {service.isActive ? "Online" : "Offline"}
+                                                </span>
+                                                <label className="relative inline-flex cursor-pointer items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="peer sr-only"
+                                                        checked={service.isActive || false}
+                                                        onChange={async (e) => {
+                                                            try {
+                                                                const newActiveStatus = e.target.checked;
+                                                                const response = await updateService(service._id, {
+                                                                    isActive: newActiveStatus
+                                                                });
+                                                                if (response.success) {
+                                                                    toast.showSuccess(
+                                                                        newActiveStatus
+                                                                            ? "Service activated"
+                                                                            : "Service deactivated"
+                                                                    );
+                                                                    // Reload services
+                                                                    const servicesResponse = await getMyServices();
+                                                                    if (servicesResponse.success) {
+                                                                        setServices(servicesResponse.data.services || []);
+                                                                    }
+                                                                } else {
+                                                                    setError(response.message || "Failed to update status");
+                                                                    e.target.checked = !newActiveStatus;
+                                                                }
+                                                            } catch (err) {
+                                                                setError("Failed to update status");
+                                                                e.target.checked = !e.target.checked;
                                                             }
-                                                        } else {
-                                                            setError(response.message || "Failed to update service status");
-                                                            // Revert the toggle
-                                                            e.target.checked = !newActiveStatus;
-                                                        }
-                                                    } catch (err) {
-                                                        setError("Failed to update service status. Please try again.");
-                                                        // Revert the toggle
-                                                        e.target.checked = !e.target.checked;
-                                                    }
-                                                }}
-                                                disabled={isAddingService || editingServiceId !== null}
-                                            />
-                                            <div
-                                                className={`slider peer h-6 w-10 rounded-full after:absolute after:top-[4px] after:left-[4px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:content-[''] peer-focus:outline-none transition-all ${
-                                                    service.isActive
-                                                        ? "bg-[#0A84FF] after:translate-x-4"
-                                                        : "bg-gray-200"
-                                                }`}
-                                            ></div>
-                                            <span className="ml-3 text-sm font-medium text-[#3A3A3A]">
-                                                {service.isActive
-                                                    ? "Active"
-                                                    : "Inactive"}
-                                            </span>
-                                        </label>
+                                                        }}
+                                                    />
+                                                    <div className="peer h-7 w-12 rounded-full bg-gray-200 after:absolute after:top-[2px] after:left-[2px] after:h-6 after:w-6 after:rounded-full after:bg-white after:shadow-sm after:transition-all peer-checked:bg-[#0A84FF] peer-checked:after:translate-x-full peer-focus:outline-none ring-2 ring-transparent peer-focus:ring-blue-100"></div>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Empty State */}
+                    {!isAddingService && services.length === 0 && (
+                        <div className="bg-white rounded-xl p-8 text-center shadow-[0_6px_16px_rgba(10,132,255,0.1)]">
+                            <IoConstructOutline className="text-4xl text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-600 mb-4 font-medium">
+                                You haven't added your service yet.
+                            </p>
+                            <button
+                                onClick={() => {
+                                    setServiceFormData({
+                                        name: "Ground Water Detection",
+                                        description: "",
+                                        machineType: "",
+                                        skills: "",
+                                        price: "",
+                                        duration: "60",
+                                        category: "",
+                                    });
+                                    setIsAddingService(true);
+                                }}
+                                className="bg-[#0A84FF] text-white font-semibold py-3 px-8 rounded-xl hover:bg-[#005BBB] transition-colors shadow-lg hover:shadow-xl hover:scale-105 transform duration-200"
+                            >
+                                Setup Service
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -1231,15 +1358,14 @@ export default function VendorProfile() {
                                                         >
                                                             <img
                                                                 src={image.url}
-                                                                alt={`Service ${
-                                                                    index + 1
-                                                                }`}
+                                                                alt={`Service ${index + 1
+                                                                    }`}
                                                                 className="w-full h-auto object-cover rounded-lg"
-                        />
-                    </div>
+                                                            />
+                                                        </div>
                                                     )
                                                 )}
-                </div>
+                                            </div>
                                         </div>
                                     )}
 
@@ -1313,7 +1439,7 @@ export default function VendorProfile() {
                                                 }
                                             )}
                                         </p>
-                    </div>
+                                    </div>
                                     {previewingService.duration && (
                                         <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                             <div className="flex items-center gap-2 mb-2">
@@ -1330,7 +1456,7 @@ export default function VendorProfile() {
                                             </p>
                                         </div>
                                     )}
-                </div>
+                                </div>
 
                                 {/* Category and Status in Grid */}
                                 <div className="grid grid-cols-2 gap-4">
@@ -1361,18 +1487,17 @@ export default function VendorProfile() {
                                             </label>
                                         </div>
                                         <span
-                                            className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                                                previewingService.status ===
+                                            className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${previewingService.status ===
                                                 "APPROVED"
-                                                    ? "bg-green-100 text-green-700"
-                                                    : previewingService.status ===
-                                                      "PENDING"
+                                                ? "bg-green-100 text-green-700"
+                                                : previewingService.status ===
+                                                    "PENDING"
                                                     ? "bg-yellow-100 text-yellow-700"
                                                     : previewingService.status ===
-                                                      "REJECTED"
-                                                    ? "bg-red-100 text-red-700"
-                                                    : "bg-gray-100 text-gray-700"
-                                            }`}
+                                                        "REJECTED"
+                                                        ? "bg-red-100 text-red-700"
+                                                        : "bg-gray-100 text-gray-700"
+                                                }`}
                                         >
                                             {previewingService.status}
                                         </span>
@@ -1417,11 +1542,10 @@ export default function VendorProfile() {
                                         </label>
                                     </div>
                                     <span
-                                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                                            previewingService.isActive
-                                                ? "bg-green-100 text-green-700"
-                                                : "bg-gray-100 text-gray-700"
-                                        }`}
+                                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${previewingService.isActive
+                                            ? "bg-green-100 text-green-700"
+                                            : "bg-gray-100 text-gray-700"
+                                            }`}
                                     >
                                         {previewingService.isActive
                                             ? "Active"
@@ -1433,7 +1557,7 @@ export default function VendorProfile() {
 
                         {/* Footer with Actions */}
                         <form className="flex-shrink-0 border-t border-gray-100 bg-white p-5 flex gap-3 justify-start rounded-b-xl">
-                        <button
+                            <button
                                 type="button"
                                 onClick={() => {
                                     handleEditService(previewingService);
@@ -1447,7 +1571,7 @@ export default function VendorProfile() {
                                 <span className="material-symbols-outlined text-base">
                                     edit
                                 </span>
-                        </button>
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => {
@@ -1465,8 +1589,8 @@ export default function VendorProfile() {
                             </button>
                         </form>
                     </div>
-                    </div>
-                )}
+                </div>
+            )}
 
             {/* Action List */}
             <div className="w-full mt-6 space-y-3">
@@ -1521,21 +1645,21 @@ function InfoRow({
             </div>
             <div className="flex flex-col flex-1 min-w-0 w-full overflow-hidden">
                 <span className="text-xs text-[#6B7280] mb-1 font-semibold uppercase tracking-wide truncate">
-                {label}
+                    {label}
                 </span>
-            {isEditing ? (
-                <input
-                    type={type}
-                    value={value || ""}
-                    onChange={onChange}
+                {isEditing ? (
+                    <input
+                        type={type}
+                        value={value || ""}
+                        onChange={onChange}
                         disabled={disabled}
                         className="w-full text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] disabled:opacity-50 transition-all"
-                />
-            ) : (
+                    />
+                ) : (
                     <span className="text-base font-semibold text-[#3A3A3A] break-words">
                         {value || "Not provided"}
                     </span>
-            )}
+                )}
             </div>
         </div>
     );
@@ -1550,24 +1674,21 @@ function ActionRow({ icon, label, isLogout, onClick }) {
         >
             <div className="flex items-center gap-4">
                 <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg shrink-0 ${
-                        isLogout ? "bg-red-100" : "bg-[#00C2A8]/10"
-                    }`}
+                    className={`flex h-10 w-10 items-center justify-center rounded-lg shrink-0 ${isLogout ? "bg-red-100" : "bg-[#00C2A8]/10"
+                        }`}
                 >
                     <IconComponent
-                        className={`text-xl ${
-                            isLogout ? "text-red-500" : "text-[#00C2A8]"
-                        }`}
+                        className={`text-xl ${isLogout ? "text-red-500" : "text-[#00C2A8]"
+                            }`}
                     />
                 </div>
                 <p
-                    className={`flex-1 truncate text-base font-medium ${
-                        isLogout ? "text-red-500" : "text-[#3A3A3A]"
-                    }`}
+                    className={`flex-1 truncate text-base font-medium ${isLogout ? "text-red-500" : "text-[#3A3A3A]"
+                        }`}
                 >
-                {label}
+                    {label}
                 </p>
-                </div>
+            </div>
             <IoChevronForwardOutline className="text-xl text-[#6B7280]" />
         </div>
     );

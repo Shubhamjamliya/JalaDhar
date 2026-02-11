@@ -58,7 +58,7 @@ const VendorAllBookingsStatus = lazy(() => import("./modules/vendor/vendor-pages
 const VendorWallet = lazy(() => import("./modules/vendor/vendor-pages/VendorWallet"));
 const VendorProfile = lazy(() => import("./modules/vendor/vendor-pages/VendorProfile"));
 const VendorRequests = lazy(() => import("./modules/vendor/vendor-pages/VendorRequests"));
-const VendorServices = lazy(() => import("./modules/vendor/vendor-pages/VendorServices"));
+
 const VendorBookingDetails = lazy(() => import("./modules/vendor/vendor-pages/VendorBookingDetails"));
 const VendorUploadReport = lazy(() => import("./modules/vendor/vendor-pages/VendorUploadReport"));
 const VendorReviews = lazy(() => import("./modules/vendor/vendor-pages/VendorReviews"));
@@ -433,14 +433,7 @@ function App() {
                                                                     </Suspense>
                                                                 }
                                                             />
-                                                            <Route
-                                                                path="/services"
-                                                                element={
-                                                                    <Suspense fallback={<LoadingSpinner />}>
-                                                                        <VendorServices />
-                                                                    </Suspense>
-                                                                }
-                                                            />
+
                                                             <Route
                                                                 path="/reviews"
                                                                 element={

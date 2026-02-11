@@ -1051,7 +1051,7 @@ const getVendorProfile = async (req, res) => {
       .select('name email phone experience rating address location services isActive isApproved')
       .populate({
         path: 'services',
-        select: 'name category price description images status isActive'
+        select: 'name category price description images status isActive machineType'
       })
       .lean();
 
@@ -1097,7 +1097,8 @@ const getVendorProfile = async (req, res) => {
         description: s.description,
         images: s.images,
         status: s.status,
-        isActive: s.isActive
+        isActive: s.isActive,
+        machineType: s.machineType
       }))
     };
 

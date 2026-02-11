@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { IoLocationOutline } from "react-icons/io5";
+import { IoLocationOutline, IoCloseOutline, IoCheckmarkOutline, IoTrashOutline, IoImageOutline } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { sendVendorRegistrationOTP } from "../../../services/vendorAuthApi";
 import { useToast } from "../../../hooks/useToast";
@@ -10,6 +10,14 @@ import logo from "@/assets/AppLogo.png";
 
 // Get API key at module level
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+
+const MACHINE_OPTIONS = [
+    'Dowsing Rods',
+    '3D Locator',
+    'PQWT',
+    'ADMT',
+    'Resistivity Meter'
+];
 
 export default function VendorSignup() {
     // Custom snappy animation styles
@@ -39,6 +47,14 @@ export default function VendorSignup() {
     const [mapsLoaded, setMapsLoaded] = useState(false);
     const [fullAddress, setFullAddress] = useState("");
     const [gettingLocation, setGettingLocation] = useState(false);
+
+    // Machine Multi-select State
+    const machineDropdownRef = useRef(null);
+    const [isMachineDropdownOpen, setIsMachineDropdownOpen] = useState(false);
+    const [selectedMachines, setSelectedMachines] = useState([]);
+    const [customMachine, setCustomMachine] = useState("");
+    // Service Image Previews
+    const [serviceImagePreviews, setServiceImagePreviews] = useState([]);
 
     const navigate = useNavigate();
     const { register } = useVendorAuth();
@@ -150,6 +166,11 @@ export default function VendorSignup() {
         trainingCertificates: [], // New: Training/Workshop certificates
         certificates: [], // Degree certificates
 
+        // Service Details
+        machineType: "",
+        serviceImages: [],
+        servicePrice: "", // Global expertise fee
+
         // Bank Details
         bankName: "",
         accountHolderName: "",
@@ -161,6 +182,80 @@ export default function VendorSignup() {
         // Address - only geoLocation
         address: {}
     });
+
+    // Sync machine selection to form data
+    useEffect(() => {
+        setFormData(prev => ({
+            ...prev,
+            machineType: selectedMachines.join(', ')
+        }));
+    }, [selectedMachines]);
+
+    // Handle click outside machine dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (machineDropdownRef.current && !machineDropdownRef.current.contains(event.target)) {
+                setIsMachineDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const handleMachineToggle = (machine) => {
+        if (selectedMachines.includes(machine)) {
+            setSelectedMachines(prev => prev.filter(m => m !== machine));
+        } else {
+            setSelectedMachines(prev => [...prev, machine]);
+        }
+    };
+
+    const handleAddCustomMachine = () => {
+        if (customMachine.trim()) {
+            const newMachine = customMachine.trim();
+            if (!selectedMachines.includes(newMachine)) {
+                setSelectedMachines(prev => [...prev, newMachine]);
+            }
+            setCustomMachine("");
+        }
+    };
+
+    const handleServiceImageChange = (e) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+
+            // Add new files to formData
+            setFormData(prev => ({
+                ...prev,
+                serviceImages: [...prev.serviceImages, ...files]
+            }));
+
+            // Create previews
+            const newPreviews = files.map(file => ({
+                file,
+                preview: URL.createObjectURL(file)
+            }));
+            setServiceImagePreviews(prev => [...prev, ...newPreviews]);
+        }
+    };
+
+    const removeServiceImage = (index) => {
+        // Remove from formData
+        setFormData(prev => ({
+            ...prev,
+            serviceImages: prev.serviceImages.filter((_, i) => i !== index)
+        }));
+
+        // Remove preview
+        setServiceImagePreviews(prev => {
+            const newPreviews = [...prev];
+            URL.revokeObjectURL(newPreviews[index].preview);
+            return newPreviews.filter((_, i) => i !== index);
+        });
+    };
 
     // Auto-scroll to top when tab changes to improve UX
     useEffect(() => {
@@ -394,6 +489,18 @@ export default function VendorSignup() {
             return;
         }
 
+        if (!formData.machineType) {
+            toast.showError("Please select at least one Machine Type");
+            setLoading(false);
+            return;
+        }
+
+        if (!formData.servicePrice || parseFloat(formData.servicePrice) <= 0) {
+            toast.showError("Please enter a valid Service Charge");
+            setLoading(false);
+            return;
+        }
+
         const loadingToast = toast.showLoading("Sending OTP...");
 
         try {
@@ -431,6 +538,9 @@ export default function VendorSignup() {
                                 institution: formData.institution,
                                 experience: formData.experience,
                                 experienceDetails: formData.experienceDetails,
+                                machineType: formData.machineType,
+                                serviceImages: formData.serviceImages,
+                                servicePrice: formData.servicePrice,
                                 address: {
                                     ...formData.address,
                                     // Coordinates are already in address.coordinates
@@ -711,6 +821,172 @@ export default function VendorSignup() {
                                         onRemove={(idx) => removeMultiFile('trainingCertificates', idx)}
                                         disabled={loading}
                                     />
+
+                                    {/* Setup Your Service Section */}
+                                    <div className="mt-6 pt-5 border-t border-gray-100">
+                                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-blue-500">settings_account_box</span>
+                                            Setup Your Service
+                                        </h3>
+
+                                        {/* Service Name - Fixed Display */}
+                                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-center gap-3 mb-6">
+                                            <span className="material-symbols-outlined text-[#0A84FF]">water_drop</span>
+                                            <div>
+                                                <label className="block text-xs font-bold text-blue-600 uppercase tracking-wider">
+                                                    Service Name
+                                                </label>
+                                                <p className="text-lg font-bold text-[#3A3A3A]">
+                                                    Ground Water Detection
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                            {/* Machine Type Multi-Select */}
+                                            <div className="relative" ref={machineDropdownRef}>
+                                                <label className="mb-2 block text-sm font-medium text-[#6B7280]">
+                                                    Machine Type *
+                                                </label>
+
+                                                {/* Dropdown Trigger */}
+                                                <div
+                                                    onClick={() => !loading && setIsMachineDropdownOpen(!isMachineDropdownOpen)}
+                                                    className={`w-full min-h-[46px] rounded-xl border-gray-200 bg-[#F3F7FA] p-2 text-sm font-medium text-[#3A3A3A] transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] flex items-center justify-between cursor-pointer border hover:border-gray-300 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                >
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {selectedMachines.length > 0 ? (
+                                                            selectedMachines.map(machine => (
+                                                                <span key={machine} className="bg-white border border-gray-200 text-[#0A84FF] px-2 py-1 rounded-md text-xs flex items-center gap-1">
+                                                                    {machine}
+                                                                    <IoCloseOutline
+                                                                        className="cursor-pointer hover:text-red-500"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            if (!loading) handleMachineToggle(machine);
+                                                                        }}
+                                                                    />
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span className="text-gray-400 px-1">Select Machines</span>
+                                                        )}
+                                                    </div>
+                                                    <span className="material-symbols-outlined text-xl text-gray-500 px-1">expand_more</span>
+                                                </div>
+
+                                                {/* Dropdown Menu */}
+                                                {isMachineDropdownOpen && (
+                                                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto p-2">
+                                                        {MACHINE_OPTIONS.map((option) => (
+                                                            <div
+                                                                key={option}
+                                                                onClick={() => handleMachineToggle(option)}
+                                                                className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                                                            >
+                                                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedMachines.includes(option) ? 'bg-[#0A84FF] border-[#0A84FF]' : 'border-gray-300'}`}>
+                                                                    {selectedMachines.includes(option) && <IoCheckmarkOutline className="text-white text-sm" />}
+                                                                </div>
+                                                                <span className="text-sm text-[#3A3A3A] font-medium">{option}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Add Custom Machine Input */}
+                                                <div className="mt-3 flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={customMachine}
+                                                        onChange={(e) => setCustomMachine(e.target.value)}
+                                                        placeholder="Add other machine type..."
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                handleAddCustomMachine();
+                                                            }
+                                                        }}
+                                                        disabled={loading}
+                                                        className="flex-1 rounded-xl border-gray-200 bg-[#F3F7FA] p-3 text-sm font-medium text-[#3A3A3A] transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleAddCustomMachine}
+                                                        disabled={loading || !customMachine.trim()}
+                                                        className="bg-[#0A84FF] text-white px-4 py-2 rounded-xl font-medium hover:bg-[#005BBB] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                    >
+                                                        Add
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Service Charge */}
+                                            <div>
+                                                <label className="mb-2 block text-sm font-medium text-[#6B7280]">
+                                                    Service Charge (₹) *
+                                                </label>
+                                                <div className="relative">
+                                                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-500 font-bold">₹</span>
+                                                    <input
+                                                        type="number"
+                                                        name="servicePrice"
+                                                        value={formData.servicePrice}
+                                                        onChange={handleInputChange}
+                                                        placeholder="0.00"
+                                                        min="0"
+                                                        step="0.01"
+                                                        disabled={loading}
+                                                        className="w-full rounded-xl border-gray-200 bg-[#F3F7FA] p-3 pl-8 text-sm font-bold text-[#3A3A3A] transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Service Images */}
+                                        <div className="mb-4">
+                                            <label className="text-sm font-semibold text-[#4A4A4A] mb-3 block">
+                                                Service Images
+                                            </label>
+
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                                {serviceImagePreviews.map((item, index) => (
+                                                    <div key={index} className="relative group rounded-xl overflow-hidden aspect-square shadow-sm border border-gray-100">
+                                                        <img
+                                                            src={item.preview}
+                                                            alt={`Preview ${index + 1}`}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeServiceImage(index)}
+                                                                className="bg-white/20 hover:bg-red-500 text-white p-2 rounded-full backdrop-blur-sm transition-colors"
+                                                            >
+                                                                <IoTrashOutline className="text-lg" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+
+                                                <label className={`flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-[#D9DDE4] rounded-xl cursor-pointer hover:border-[#0A84FF] hover:bg-blue-50/50 transition-all group ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mb-2 group-hover:bg-[#0A84FF] transition-colors">
+                                                        <IoImageOutline className="text-lg text-[#0A84FF] group-hover:text-white transition-colors" />
+                                                    </div>
+                                                    <p className="text-xs font-medium text-gray-500 group-hover:text-[#0A84FF]">Add Image</p>
+                                                    <input
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept="image/*"
+                                                        multiple
+                                                        onChange={handleServiceImageChange}
+                                                        disabled={loading}
+                                                    />
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
 
                                     <div className="grid grid-cols-2 gap-3 pt-4">
                                         <button

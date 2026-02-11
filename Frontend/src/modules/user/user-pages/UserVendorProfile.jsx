@@ -5,13 +5,15 @@ import {
     IoStarOutline,
     IoCallOutline,
     IoLocationOutline,
-
     IoMailOutline,
-    IoTimeOutline,
+    IoChevronBackOutline,
+    IoConstructOutline,
+    IoBriefcaseOutline
 } from "react-icons/io5";
 import { getVendorProfile } from "../../../services/bookingApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
+import PageContainer from "../../shared/components/PageContainer";
 
 export default function UserVendorProfile() {
     const navigate = useNavigate();
@@ -56,6 +58,7 @@ export default function UserVendorProfile() {
             }
             const response = await getVendorProfile(vendorId, params.lat, params.lng);
             if (response.success) {
+                console.log("Vendor Data Debug:", response.data.vendor);
                 setVendorData(response.data.vendor);
             } else {
                 setError(response.message || "Failed to load vendor profile");
@@ -67,31 +70,15 @@ export default function UserVendorProfile() {
         }
     };
 
-    const renderStars = (rating) => {
-        const ratingValue = rating || 0;
-        const fullStars = Math.floor(ratingValue);
-        const hasHalfStar = ratingValue % 1 >= 0.5;
-        return [...Array(5)].map((_, i) => {
-            if (i < fullStars) {
-                // Filled dark yellow stars for full rating
-                return <IoStar key={i} className="text-lg" style={{ fill: '#CA8A04', color: '#CA8A04' }} />;
-            } else if (i === fullStars && hasHalfStar) {
-                // Half star - filled with dark yellow
-                return <IoStar key={i} className="text-lg" style={{ fill: '#CA8A04', color: '#CA8A04' }} />;
-            } else {
-                // Empty stars - filled with dark yellow (lighter shade)
-                return <IoStar key={i} className="text-lg" style={{ fill: '#CA8A04', color: '#CA8A04', opacity: 0.3 }} />;
-            }
-        });
-    };
-
     const formatAddress = (address) => {
         if (!address) return "Address not available";
+        if (address.geoLocation && address.geoLocation.formattedAddress) {
+            return address.geoLocation.formattedAddress;
+        }
         const parts = [];
         if (address.street) parts.push(address.street);
         if (address.city) parts.push(address.city);
         if (address.state) parts.push(address.state);
-        if (address.pincode) parts.push(address.pincode);
         return parts.join(", ") || "Address not available";
     };
 
@@ -105,175 +92,181 @@ export default function UserVendorProfile() {
     };
 
     if (loading) {
-        return <LoadingSpinner message="Loading vendor profile..." />;
+        return (
+            <PageContainer>
+                <div className="flex h-[80vh] items-center justify-center">
+                    <LoadingSpinner message="Loading profile..." />
+                </div>
+            </PageContainer>
+        );
     }
 
     if (error || !vendorData) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-                <ErrorMessage message={error || "Vendor not found"} />
-                <button
-                    onClick={() => navigate(-1)}
-                    className="mt-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
-                >
-                    <IoChevronBackOutline className="text-xl" />
-                    <span className="font-semibold">Go Back</span>
-                </button>
-            </div>
+            <PageContainer>
+                <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+                    <ErrorMessage message={error || "Vendor not found"} />
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="mt-6 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
+                    >
+                        <IoChevronBackOutline className="text-xl" />
+                        <span className="font-semibold">Go Back</span>
+                    </button>
+                </div>
+            </PageContainer>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[#EDF5FC] to-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-            {/* Back Button */}
-            {/* Back button removed - handled by UserNavbar */}\n
-
-            {/* Vendor Profile Header Card with Contact Information */}
-            <div className="bg-white rounded-[20px] p-6 shadow-[0_6px_20px_rgba(0,0,0,0.08)] mb-6">
-                <div className="flex flex-col items-center text-center mb-6">
+        <PageContainer title="Vendor Profile">
+            {/* Vendor Profile Header Card */}
+            <section className="relative mb-6 overflow-hidden rounded-3xl bg-white p-6 shadow-sm">
+                <div className="flex flex-col items-center text-center">
                     {/* Profile Image */}
                     <div className="relative mb-4">
-                        <div
-                            className="h-32 w-32 rounded-full bg-slate-200 bg-cover bg-center bg-no-repeat shadow-[0_4px_15px_rgba(0,0,0,0.1)] ring-4 ring-white"
-                            style={{
-                                backgroundImage: vendorData.documents?.profilePicture?.url
-                                    ? `url("${vendorData.documents.profilePicture.url}")`
-                                    : "none",
-                                backgroundColor: vendorData.documents?.profilePicture?.url ? "transparent" : "#E5E7EB"
-                            }}
-                        >
-                            {!vendorData.documents?.profilePicture?.url && (
-                                <div className="w-full h-full flex items-center justify-center">
-                                    <span className="text-5xl">👤</span>
+                        <div className="h-28 w-28 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100">
+                            {vendorData.profilePicture ? (
+                                <img
+                                    src={vendorData.profilePicture}
+                                    alt={vendorData.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-blue-50 text-4xl">
+                                    👤
                                 </div>
                             )}
                         </div>
+                        <div className="absolute bottom-0 right-0 bg-green-500 h-6 w-6 rounded-full border-2 border-white"></div>
                     </div>
 
-                    {/* Name */}
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">
+                    {/* Name & Basic Info */}
+                    <h1 className="text-2xl font-bold text-gray-900 mb-1">
                         {vendorData.name}
                     </h1>
-
-                    {/* Rating and Reviews */}
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                        <div className="flex items-center gap-1">
-                            {renderStars(vendorData.averageRating || 0)}
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-100">
+                            <IoStar className="text-yellow-500 text-sm" />
+                            <span className="font-bold text-gray-800 text-sm">
+                                {vendorData.rating?.averageRating?.toFixed(1) || "New"}
+                            </span>
                         </div>
-                        <span className="font-bold text-gray-800 text-base">
-                            {vendorData.averageRating?.toFixed(1) || "0.0"}
-                        </span>
-                        <span className="text-gray-500 text-sm">
-                            ({vendorData.totalRatings || 0} reviews)
+                        <span className="text-gray-400 text-sm">•</span>
+                        <span className="text-gray-500 text-sm font-medium">
+                            {vendorData.experience ? `${vendorData.experience} Years Exp.` : "Fresher"}
                         </span>
                     </div>
 
-                    {/* Quick Info Grid */}
-                    <div className="grid grid-cols-2 gap-4 w-full max-w-xs mb-6 pt-4 border-t border-gray-100">
-                        {vendorData.experience && (
-                            <div className="text-center">
-                                <p className="text-xs text-gray-500 mb-1">Experience</p>
-                                <p className="text-lg font-bold text-gray-800">{vendorData.experience} years</p>
-                            </div>
-                        )}
-                        {vendorData.services && vendorData.services.length > 0 && (
-                            <div className="text-center">
-                                <p className="text-xs text-gray-500 mb-1">Services</p>
-                                <p className="text-lg font-bold text-gray-800">{vendorData.services.length}</p>
-                            </div>
-                        )}
+                    {/* Stats Cards - Success/Fail - Using Mock Data if actual stats missing */}
+                    <div className="grid grid-cols-2 gap-3 w-full max-w-sm mb-6">
+                        <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-100 flex flex-col items-center">
+                            <span className="text-2xl font-bold text-emerald-600">
+                                {vendorData.stats?.completedBookings || 0}
+                            </span>
+                            <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
+                                Success
+                            </span>
+                        </div>
+                        <div className="bg-red-50 rounded-2xl p-3 border border-red-100 flex flex-col items-center">
+                            <span className="text-2xl font-bold text-red-600">
+                                {vendorData.stats?.cancelledBookings || 0}
+                            </span>
+                            <span className="text-xs font-semibold text-red-700 uppercase tracking-wide">
+                                Failed
+                            </span>
+                        </div>
                     </div>
-                </div>
 
-                {/* Contact Information Section */}
-                <div className="pt-6 border-t border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Contact Information</h2>
-                    <div className="space-y-4">
+                    {/* Contact Information Section */}
+                    <div className="w-full space-y-4 pt-4 border-t border-gray-100">
                         {vendorData.phone && (
                             <InfoRow
                                 icon={IoCallOutline}
                                 label="Phone Number"
                                 value={vendorData.phone}
-                            />
-                        )}
-                        {vendorData.email && (
-                            <InfoRow
-                                icon={IoMailOutline}
-                                label="Email"
-                                value={vendorData.email}
+                                color="bg-blue-500"
                             />
                         )}
                         <InfoRow
                             icon={IoLocationOutline}
-                            label="Address"
+                            label="Service Location"
                             value={formatAddress(vendorData.address)}
+                            color="bg-teal-500"
                         />
                     </div>
                 </div>
-            </div>
+            </section>
 
-            {/* Services Section */}
+            {/* Service & Machines Section */}
             {vendorData.services && vendorData.services.length > 0 && (
-                <div className="mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4 px-2">
-                        Services Offered ({vendorData.services.length})
-                    </h2>
-                    <div className="space-y-4">
-                        {vendorData.services.map((service) => (
-                            <div
-                                key={service.id}
-                                className="bg-white rounded-[16px] p-5 shadow-[0_4px_15px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.12)] transition-all"
-                            >
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-gray-800 mb-2">
-                                            {service.name}
-                                        </h3>
-                                        {service.description && (
-                                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                                                {service.description}
-                                            </p>
-                                        )}
-                                        {service.category && (
-                                            <span className="inline-block text-xs text-[#0A84FF] bg-[#0A84FF]/10 px-3 py-1 rounded-full font-medium">
-                                                {service.category}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="text-right ml-4">
-                                        <p className="text-2xl font-bold text-[#0A84FF] mb-1">
-                                            ₹{service.price?.toLocaleString() || "0"}
-                                        </p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => handleBookService(service)}
-                                    className="w-full bg-gradient-to-r from-[#0A84FF] to-[#005BBB] text-white font-semibold py-3 px-4 rounded-[12px] hover:shadow-lg transition-all active:scale-[0.98]"
-                                >
-                                    Book This Service
-                                </button>
+                <section className="bg-white rounded-3xl p-6 shadow-sm space-y-6">
+                    {/* Main Service Card - Since single service per vendor */}
+                    <div>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-3 bg-blue-50 rounded-2xl text-blue-600">
+                                <IoBriefcaseOutline className="text-2xl" />
                             </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900">
+                                    {vendorData.services[0].name}
+                                </h2>
+                                <p className="text-sm font-bold text-blue-600">
+                                    ₹{vendorData.services[0].price?.toLocaleString()} <span className="text-gray-400 font-normal">/ visit</span>
+                                </p>
+                            </div>
+                        </div>
 
-        </div>
+                        {/* Machines List */}
+                        {vendorData.services[0].machineType && (
+                            <div className="mb-6">
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 block">
+                                    Equipment & Machines
+                                </label>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {vendorData.services[0].machineType.split(',').map((machine, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100"
+                                        >
+                                            <div className="bg-white p-2 rounded-xl shadow-sm text-[#0A84FF]">
+                                                <IoConstructOutline className="text-lg" />
+                                            </div>
+                                            <span className="text-sm font-bold text-gray-700">
+                                                {machine.trim()}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => handleBookService(vendorData.services[0])}
+                            className="w-full bg-[#0A84FF] text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        >
+                            <span>Book Now</span>
+                            <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                        </button>
+                    </div>
+                </section>
+            )}
+        </PageContainer>
     );
 }
 
 /* ---------------------------
    REUSABLE COMPONENTS
 ---------------------------- */
-function InfoRow({ icon: Icon, label, value }) {
+function InfoRow({ icon: Icon, label, value, color = "bg-blue-500" }) {
     return (
-        <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 shrink-0">
-                <Icon className="text-xl text-white" />
+        <div className="flex items-start gap-4 text-left">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-full ${color} shrink-0 text-white shadow-sm`}>
+                <Icon className="text-lg" />
             </div>
             <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-xs text-gray-500 mb-1 font-medium">{label}</span>
-                <span className="text-base font-semibold text-gray-800 break-words">
+                <span className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-0.5">{label}</span>
+                <span className="text-sm font-semibold text-gray-900 break-words leading-snug">
                     {value}
                 </span>
             </div>

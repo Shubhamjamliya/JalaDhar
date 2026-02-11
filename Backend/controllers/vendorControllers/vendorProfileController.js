@@ -149,13 +149,16 @@ const updateProfile = async (req, res) => {
       'phone',
       'address',
       'educationalQualifications',
-      'experience'
+      'experience',
+      'experienceDetails',
+      'instruments',
+      'servicePrice'
     ];
 
     // Update allowed fields
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        if (typeof req.body[field] === 'string' && (field === 'address' || field === 'educationalQualifications')) {
+        if (typeof req.body[field] === 'string' && (field === 'address' || field === 'educationalQualifications' || field === 'instruments')) {
           try {
             vendor[field] = JSON.parse(req.body[field]);
           } catch (e) {
@@ -171,13 +174,13 @@ const updateProfile = async (req, res) => {
 
     // Handle bank details update separately
     if (req.body.bankDetails !== undefined) {
-      const bankDetailsData = typeof req.body.bankDetails === 'string' 
-        ? JSON.parse(req.body.bankDetails) 
+      const bankDetailsData = typeof req.body.bankDetails === 'string'
+        ? JSON.parse(req.body.bankDetails)
         : req.body.bankDetails;
-      
+
       // Find existing bank details or create new
       let bankDetails = await VendorBankDetails.findOne({ vendor: vendorId });
-      
+
       if (bankDetails) {
         // Store previous account number for audit
         bankDetails.previousAccountNumber = bankDetails.accountNumber;
@@ -443,8 +446,8 @@ const updateAvailability = async (req, res) => {
     }
 
     if (workingDays !== undefined) {
-      vendor.availability.workingDays = Array.isArray(workingDays) 
-        ? workingDays 
+      vendor.availability.workingDays = Array.isArray(workingDays)
+        ? workingDays
         : (typeof workingDays === 'string' ? JSON.parse(workingDays) : []);
     }
 

@@ -4,6 +4,7 @@ import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { sendVendorRegistrationOTP } from "../../../services/vendorAuthApi";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import logo from "@/assets/AppLogo.png";
 
 export default function VendorOTPVerification() {
     const navigate = useNavigate();
@@ -145,6 +146,19 @@ export default function VendorOTPVerification() {
                 formDataToSend.append('experienceDetails', registrationData.experienceDetails);
             }
 
+            // Service Details
+            if (registrationData.machineType) {
+                formDataToSend.append('machineType', registrationData.machineType);
+            }
+            if (registrationData.serviceImages && registrationData.serviceImages.length > 0) {
+                registrationData.serviceImages.forEach((image) => {
+                    formDataToSend.append('serviceImages', image);
+                });
+            }
+            if (registrationData.servicePrice) {
+                formDataToSend.append('servicePrice', registrationData.servicePrice);
+            }
+
             // Address (coordinates are already in address.coordinates)
             const addressToSend = {
                 ...registrationData.address,
@@ -188,12 +202,11 @@ export default function VendorOTPVerification() {
             <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-4 py-6 overflow-y-auto">
                 <div className="w-full max-w-sm">
                     <div className="mt-4 mb-6 flex flex-col items-center">
-                        <span className="material-symbols-outlined icon-gradient !text-5xl">
-                            water_drop
-                        </span>
-                        <h1 className="mt-2 text-3xl font-bold tracking-tighter text-[#3A3A3A]">
-                            JALADHAR
-                        </h1>
+                        <img
+                            src={logo}
+                            alt="Jaladhaara Logo"
+                            className="h-32 object-contain mb-4"
+                        />
                     </div>
 
                     <main className="w-full rounded-xl bg-white p-6 shadow-lg text-center">
@@ -220,13 +233,12 @@ export default function VendorOTPVerification() {
         <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-4 py-6 overflow-y-auto">
             <div className="w-full max-w-sm">
                 <div className="mt-4 mb-6 flex flex-col items-center">
-                    <span className="material-symbols-outlined icon-gradient !text-5xl">
-                        water_drop
-                    </span>
-                    <h1 className="mt-2 text-3xl font-bold tracking-tighter text-[#3A3A3A]">
-                        JALADHAR
-                    </h1>
-                    <p className="mt-3 text-sm text-[#6B7280] text-center">
+                    <img
+                        src={logo}
+                        alt="Jaladhaara Logo"
+                        className="h-32 object-contain mb-4"
+                    />
+                    <p className="mt-1 text-sm text-[#6B7280] text-center">
                         Verify your email to complete registration.
                     </p>
                 </div>

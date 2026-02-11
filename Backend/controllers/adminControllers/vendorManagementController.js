@@ -136,7 +136,7 @@ const getVendorDetails = async (req, res) => {
     const vendor = await Vendor.findById(vendorId)
       .select('-password -emailVerificationOTP -emailVerificationOTPExpiry')
       .populate('approvedBy', 'name email')
-      .populate('services', 'name machineType price status')
+      .populate('services', 'name machineType price status images')
       .lean();
 
     if (!vendor) {
@@ -187,11 +187,29 @@ const getVendorDetails = async (req, res) => {
           uploadedAt: doc.uploadedAt,
           status: doc.status
         };
+      } else if (doc.documentType === 'GROUNDWATER_REG') {
+        formattedDocuments.groundwaterRegDetails = {
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt,
+          status: doc.status
+        };
       } else if (doc.documentType === 'CERTIFICATE') {
         if (!formattedDocuments.certificates) {
           formattedDocuments.certificates = [];
         }
         formattedDocuments.certificates.push({
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt,
+          name: doc.name || doc.certificateName,
+          status: doc.status
+        });
+      } else if (doc.documentType === 'TRAINING_CERTIFICATE') {
+        if (!formattedDocuments.trainingCertificates) {
+          formattedDocuments.trainingCertificates = [];
+        }
+        formattedDocuments.trainingCertificates.push({
           url: doc.url,
           publicId: doc.publicId,
           uploadedAt: doc.uploadedAt,
@@ -259,6 +277,26 @@ const approveVendor = async (req, res) => {
     vendor.rejectionReason = null;
     await vendor.save();
 
+    // Approve all pending services
+    await Service.updateMany(
+      { vendor: vendor._id, status: 'PENDING' },
+      {
+        status: 'APPROVED',
+        approvedBy: adminId,
+        approvedAt: new Date()
+      }
+    );
+
+    // Approve all pending documents
+    await VendorDocument.updateMany(
+      { vendor: vendor._id, status: 'PENDING' },
+      {
+        status: 'APPROVED',
+        approvedBy: adminId,
+        approvedAt: new Date()
+      }
+    );
+
     // Send approval email
     await sendVendorApprovalEmail({
       email: vendor.email,
@@ -270,7 +308,7 @@ const approveVendor = async (req, res) => {
       const { sendNotification } = require('../../services/notificationService');
       const { getIO } = require('../../sockets');
       const io = getIO();
-      
+
       await sendNotification({
         recipient: vendor._id,
         recipientModel: 'Vendor',
@@ -371,7 +409,7 @@ const rejectVendor = async (req, res) => {
       const { sendNotification } = require('../../services/notificationService');
       const { getIO } = require('../../sockets');
       const io = getIO();
-      
+
       await sendNotification({
         recipient: vendor._id,
         recipientModel: 'Vendor',
