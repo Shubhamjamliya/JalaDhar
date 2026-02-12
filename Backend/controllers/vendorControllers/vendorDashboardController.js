@@ -25,6 +25,7 @@ const getDashboardStats = async (req, res) => {
       visitedBookings,
       completedBookings,
       todayBookings,
+      totalBookings,
       totalEarnings,
       pendingEarnings,
       servicesCount
@@ -41,6 +42,7 @@ const getDashboardStats = async (req, res) => {
           $nin: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED]
         }
       }),
+      Booking.countDocuments({ vendor: vendorId }), // Total bookings (all time)
       Booking.aggregate([
         {
           $match: {
@@ -112,6 +114,7 @@ const getDashboardStats = async (req, res) => {
           visitedBookings,
           completedBookings,
           todayBookings,
+          totalBookings,
           servicesCount,
           totalEarnings: totalEarnings[0]?.total || 0,
           pendingEarnings: pendingEarnings[0]?.total || 0,

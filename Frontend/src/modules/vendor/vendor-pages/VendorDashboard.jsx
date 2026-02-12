@@ -31,6 +31,7 @@ export default function VendorDashboard() {
         visitedBookings: 0,
         completedBookings: 0,
         todayBookings: 0,
+        totalBookings: 0,
         servicesCount: 0,
         totalEarnings: 0,
         pendingEarnings: 0,
@@ -232,19 +233,19 @@ export default function VendorDashboard() {
 
             {/* Two Prominent Cards */}
             <section className="my-6 grid grid-cols-2 gap-4">
-                {/* Pending Requests Card */}
+                {/* Total Bookings Card (Replaces Pending Requests) */}
                 <div className="flex items-center gap-3 rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                    <div className="flex w-10 h-10 items-center justify-center rounded-full bg-orange-100 shrink-0">
-                        <span className="material-symbols-outlined text-orange-500 text-xl">
-                            pending_actions
+                    <div className="flex w-10 h-10 items-center justify-center rounded-full bg-blue-100 shrink-0">
+                        <span className="material-symbols-outlined text-blue-500 text-xl">
+                            assignment
                         </span>
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-lg font-bold text-[#3A3A3A]">
-                            {pendingRequests}
+                            {stats.totalBookings || 0}
                         </p>
                         <p className="text-xs text-[#6B7280]">
-                            Pending Requests
+                            Total Bookings
                         </p>
                     </div>
                 </div>

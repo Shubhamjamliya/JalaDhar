@@ -46,8 +46,20 @@ const submitRating = async (req, res) => {
       });
     }
 
-    // Get success status from booking
-    const isSuccess = booking.status === BOOKING_STATUS.SUCCESS;
+    // Determine success status
+    // Primary check: Borewell result status (SUCCESS/FAILED)
+    // Secondary check: Legacy status or Report findings
+    let isSuccess = false;
+    if (booking.borewellResult && booking.borewellResult.status === 'SUCCESS') {
+      isSuccess = true;
+    } else if (booking.status === BOOKING_STATUS.SUCCESS) {
+      isSuccess = true;
+    } else if (booking.report && booking.report.waterFound === true) {
+      // If no borewell result yet, but report found water, consider it a success for now? 
+      // User is rating based on visit/report usually.
+      // However, true success is finding water.
+      isSuccess = true;
+    }
 
     // Calculate overall rating (average of all ratings)
     const accuracy = parseInt(ratings.accuracy);
@@ -80,7 +92,7 @@ const submitRating = async (req, res) => {
 
     // Get user details for notification
     const user = await User.findById(userId).select('name');
-    
+
     // Send notification to vendor
     try {
       const io = getIO();
@@ -141,7 +153,7 @@ const updateVendorRating = async (vendorId, newRating, isSuccess) => {
 
     // Get all ratings for this vendor
     const allRatings = await Rating.find({ vendor: vendorId });
-    
+
     // Calculate average rating
     const totalRatings = allRatings.length;
     const sumRatings = allRatings.reduce((sum, r) => sum + r.overallRating, 0);
@@ -150,6 +162,7 @@ const updateVendorRating = async (vendorId, newRating, isSuccess) => {
     // Update success/failure counts
     const successCount = allRatings.filter(r => r.isSuccess === true).length;
     const failureCount = allRatings.filter(r => r.isSuccess === false).length;
+    const totalJobsCompleted = successCount + failureCount;
 
     // Update vendor
     vendor.rating = {
@@ -157,7 +170,8 @@ const updateVendorRating = async (vendorId, newRating, isSuccess) => {
       totalRatings: totalRatings,
       successCount,
       failureCount,
-      successRatio: totalRatings > 0 ? Math.round((successCount / totalRatings) * 100) : 0
+      successRatio: totalRatings > 0 ? Math.round((successCount / totalRatings) * 100) : 0,
+      totalJobsCompleted
     };
 
     await vendor.save();

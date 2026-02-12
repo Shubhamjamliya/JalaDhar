@@ -273,7 +273,18 @@ const vendorSchema = new mongoose.Schema({
       default: 0,
       min: 0,
       max: 100
+    },
+    totalJobsCompleted: {
+      type: Number,
+      default: 0
     }
+  },
+  // All time booking stats (separate from rating based stats)
+  bookingStats: {
+    total: { type: Number, default: 0 },
+    success: { type: Number, default: 0 }, // Based on borewell success
+    failed: { type: Number, default: 0 }, // Based on borewell failure
+    cancelled: { type: Number, default: 0 } // Cancelled or rejected
   }
 }, {
   timestamps: true

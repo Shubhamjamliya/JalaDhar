@@ -162,6 +162,7 @@ export default function VendorSignup() {
 
         // Education & Experience
         education: "",
+        customEducation: "",
         institution: "",
         // Experience & Registration
         experience: "",
@@ -505,6 +506,12 @@ export default function VendorSignup() {
             return;
         }
 
+        if (formData.education === 'Other' && !formData.customEducation?.trim()) {
+            toast.showError("Please specify your qualification");
+            setLoading(false);
+            return;
+        }
+
         const loadingToast = toast.showLoading("Sending OTP...");
 
         try {
@@ -541,7 +548,7 @@ export default function VendorSignup() {
                                 ifscCode: formData.ifscCode,
                                 bankName: formData.bankName,
                                 branchName: formData.branchName,
-                                education: formData.education,
+                                education: formData.education === 'Other' ? formData.customEducation : formData.education,
                                 institution: formData.institution,
                                 experience: formData.experience,
                                 experienceDetails: formData.experienceDetails,
@@ -770,14 +777,27 @@ export default function VendorSignup() {
                                         name="education"
                                         options={[
                                             { value: "", label: "Select Qualification" },
-                                            { value: "MSc in Geology", label: "MSc in Geology" },
                                             { value: "MSc in Geophysics", label: "MSc in Geophysics" },
-                                            { value: "MSc in Earth Sciences", label: "MSc in Earth Sciences" }
+                                            { value: "MSc in Geology", label: "MSc in Geology" },
+                                            { value: "MSc in Earth Sciences", label: "MSc in Earth Sciences" },
+                                            { value: "Other", label: "Other" }
                                         ]}
                                         value={formData.education}
                                         onChange={handleInputChange}
                                         disabled={loading}
                                     />
+
+                                    {formData.education === "Other" && (
+                                        <InputBox
+                                            label="Specify Qualification *"
+                                            name="customEducation"
+                                            type="text"
+                                            placeholder="Enter your qualification"
+                                            value={formData.customEducation}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                        />
+                                    )}
 
                                     <InputBox
                                         label="Institution Name *"

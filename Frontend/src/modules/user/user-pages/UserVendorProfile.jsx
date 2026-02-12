@@ -156,21 +156,25 @@ export default function UserVendorProfile() {
                         <span className="text-gray-500 text-sm font-medium">
                             {vendorData.experience ? `${vendorData.experience} Years Exp.` : "Fresher"}
                         </span>
+                        <span className="text-gray-400 text-sm">•</span>
+                        <span className="text-gray-500 text-sm font-medium">
+                            {vendorData.rating?.totalJobsCompleted || 0} Jobs
+                        </span>
                     </div>
 
-                    {/* Stats Cards - Success/Fail - Using Mock Data if actual stats missing */}
+                    {/* Stats Cards - Success/Fail */}
                     <div className="grid grid-cols-2 gap-3 w-full max-w-sm mb-6">
                         <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-100 flex flex-col items-center">
                             <span className="text-2xl font-bold text-emerald-600">
-                                {vendorData.stats?.completedBookings || 0}
+                                {vendorData.rating?.successCount || 0}
                             </span>
                             <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
-                                Success
+                                Success ({vendorData.rating?.successRatio || 0}%)
                             </span>
                         </div>
                         <div className="bg-red-50 rounded-2xl p-3 border border-red-100 flex flex-col items-center">
                             <span className="text-2xl font-bold text-red-600">
-                                {vendorData.stats?.cancelledBookings || 0}
+                                {vendorData.rating?.failureCount || 0}
                             </span>
                             <span className="text-xs font-semibold text-red-700 uppercase tracking-wide">
                                 Failed

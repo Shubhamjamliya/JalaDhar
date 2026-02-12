@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
     IoHomeOutline,
-    IoCarOutline,
+    IoConstructOutline,
     IoTimeOutline,
     IoChevronBackOutline,
     IoCalendarOutline,
@@ -26,9 +26,9 @@ const navItems = [
     },
     {
         id: "service",
-        label: "Find a Vendor",
+        label: "Service Provider",
         to: "/user/serviceprovider",
-        Icon: IoCarOutline,
+        Icon: IoConstructOutline,
     },
     {
         id: "status",

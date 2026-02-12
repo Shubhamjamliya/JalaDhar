@@ -31,6 +31,7 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
+import RatingModal from "../../shared/components/RatingModal";
 
 export default function UserBookingDetails() {
     const navigate = useNavigate();
@@ -104,6 +105,47 @@ export default function UserBookingDetails() {
             const response = await getBookingDetails(bookingId);
             if (response.success) {
                 setBooking(response.data.booking);
+
+                // Check if booking is completed and not rated yet
+                if (response.data.booking.status === 'COMPLETED' || response.data.booking.status === 'ADMIN_APPROVED' || response.data.booking.status === 'FINAL_SETTLEMENT') {
+                    // We might need to check if user has already rated.
+                    // Ideally the booking object or a separate calls tells us.
+                    // Let's assume we need to call getBookingRating to be sure, or check a flag.
+                    try {
+                        const ratingResponse = await getBookingRating(bookingId);
+                        if (ratingResponse.success && !ratingResponse.data?.rating) {
+                            // No rating found, prompt user
+                            setRatingData({
+                                accuracy: 0,
+                                professionalism: 0,
+                                behavior: 0,
+                                visitTiming: 0,
+                                review: ""
+                            });
+                            setTimeout(() => setShowRatingModal(true), 1500);
+                        } else if (ratingResponse.success && ratingResponse.data?.rating) {
+                            // Rating exists, load it
+                            const existingRating = ratingResponse.data.rating;
+                            setRatingData({
+                                accuracy: existingRating.ratings?.accuracy || 0,
+                                professionalism: existingRating.ratings?.professionalism || 0,
+                                behavior: existingRating.ratings?.behavior || 0,
+                                visitTiming: existingRating.ratings?.visitTiming || 0,
+                                review: existingRating.review || ""
+                            });
+                        }
+                    } catch (e) {
+                        // Fallback: If API errors (e.g. 404), assume not rated and prompt
+                        setRatingData({
+                            accuracy: 0,
+                            professionalism: 0,
+                            behavior: 0,
+                            visitTiming: 0,
+                            review: ""
+                        });
+                        setTimeout(() => setShowRatingModal(true), 1500);
+                    }
+                }
             } else {
                 toast.showError(response.message || "Failed to load booking details");
             }
@@ -268,11 +310,11 @@ export default function UserBookingDetails() {
         }
     };
 
-    const handleSubmitRating = async () => {
-        if (!ratingData.accuracy || ratingData.accuracy === 0 ||
-            !ratingData.professionalism || ratingData.professionalism === 0 ||
-            !ratingData.behavior || ratingData.behavior === 0 ||
-            !ratingData.visitTiming || ratingData.visitTiming === 0) {
+    const handleSubmitRating = async (submittedData = ratingData) => {
+        if (!submittedData.accuracy || submittedData.accuracy === 0 ||
+            !submittedData.professionalism || submittedData.professionalism === 0 ||
+            !submittedData.behavior || submittedData.behavior === 0 ||
+            !submittedData.visitTiming || submittedData.visitTiming === 0) {
             toast.showError("Please provide all ratings (1-5 stars for each category)");
             return;
         }
@@ -282,12 +324,12 @@ export default function UserBookingDetails() {
             setSubmittingRating(true);
             const response = await submitRating(bookingId, {
                 ratings: {
-                    accuracy: ratingData.accuracy,
-                    professionalism: ratingData.professionalism,
-                    behavior: ratingData.behavior,
-                    visitTiming: ratingData.visitTiming
+                    accuracy: submittedData.accuracy,
+                    professionalism: submittedData.professionalism,
+                    behavior: submittedData.behavior,
+                    visitTiming: submittedData.visitTiming
                 },
-                review: ratingData.review || undefined
+                review: submittedData.review || undefined
             });
 
             if (response.success) {
@@ -1196,42 +1238,16 @@ export default function UserBookingDetails() {
             )}
 
             {/* Rating Modal */}
-            {showRatingModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowRatingModal(false)}>
-                    <div className="bg-white rounded-[24px] w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                            <h2 className="text-xl font-bold text-gray-800">Rate Experience</h2>
-                            <button onClick={() => setShowRatingModal(false)} className="p-2 hover:bg-gray-200 rounded-full">
-                                <IoCloseOutline className="text-2xl text-gray-500" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-                            <p className="text-center text-gray-600 text-sm">How was your experience with <strong>{booking.vendor?.name}</strong>?</p>
-                            {[{ key: "accuracy", label: "Accuracy" }, { key: "professionalism", label: "Professionalism" }, { key: "behavior", label: "Behavior" }, { key: "visitTiming", label: "Visit Timing" }].map(cat => (
-                                <div key={cat.key} className="text-center">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-2">{cat.label}</label>
-                                    <div className="flex justify-center gap-2">
-                                        {[1, 2, 3, 4, 5].map(star => (
-                                            <button key={star} onClick={() => setRatingData({ ...ratingData, [cat.key]: star })} className="text-3xl focus:outline-none transition-transform active:scale-90 hover:scale-110">
-                                                {ratingData[cat.key] >= star ? <IoStar className="text-yellow-400" /> : <IoStarOutline className="text-gray-300" />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                            <textarea
-                                value={ratingData.review}
-                                onChange={e => setRatingData({ ...ratingData, review: e.target.value })}
-                                placeholder="Share additional feedback..."
-                                className="w-full border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF] min-h-[100px]"
-                            ></textarea>
-                            <button onClick={handleSubmitRating} disabled={submittingRating} className="w-full bg-[#0A84FF] text-white py-3.5 rounded-xl font-bold hover:bg-[#005BBB] transition-all disabled:opacity-70">
-                                {submittingRating ? "Submitting..." : "Submit Review"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <RatingModal
+                isOpen={showRatingModal}
+                onClose={() => setShowRatingModal(false)}
+                onSubmit={async (data) => {
+                    setRatingData(data);
+                    await handleSubmitRating(data); // Pass data directly
+                }}
+                vendorName={booking.vendor?.name}
+                initialData={ratingData}
+            />
 
             <InputModal
                 isOpen={showCancellationInput}
