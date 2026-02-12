@@ -88,6 +88,15 @@ export default function UserBookingDetails() {
         loadBookingDetails();
     }, [bookingId, location.pathname]);
 
+    // Handle auto-opening modal from navigation state
+    useEffect(() => {
+        if (location.state?.openBorewellModal) {
+            setShowBorewellModal(true);
+            // Clear location state to prevent reopening on refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
+
     // Refetch when page becomes visible (user switches tabs/windows)
     useEffect(() => {
         const handleVisibilityChange = () => {
@@ -1061,6 +1070,7 @@ export default function UserBookingDetails() {
             <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
                 <div className="space-y-3">
+                    {/* Main Action Buttons */}
                     {(booking.status === "AWAITING_PAYMENT" || booking.status === "REPORT_UPLOADED") && !booking.payment?.remainingPaid && (
                         <button
                             onClick={() => navigate(`/user/booking/${bookingId}/payment`)}
@@ -1071,35 +1081,59 @@ export default function UserBookingDetails() {
                         </button>
                     )}
 
-                    {booking.status === "COMPLETED" && (
-                        <>
-                            <button
-                                onClick={handleDownloadBill}
-                                className="w-full flex items-center justify-center gap-2 bg-[#E7F0FB] text-[#0A84FF] py-3 rounded-[12px] font-semibold hover:bg-[#D0E1F7] transition-all"
-                            >
-                                <IoDownloadOutline className="text-xl" />
-                                Download Invoice
-                            </button>
-                            <button
-                                onClick={handleRateVendor}
-                                className="w-full flex items-center justify-center gap-2 bg-[#0A84FF] text-white py-3 rounded-[12px] font-semibold hover:bg-[#005BBB] transition-all shadow-md"
-                            >
-                                <IoStarOutline className="text-xl" />
-                                Rate Vendor
-                            </button>
-                            {!booking.borewellResult && (
-                                <button
-                                    onClick={() => setShowBorewellModal(true)}
-                                    className="w-full flex items-center justify-center gap-2 bg-teal-500 text-white py-3 rounded-[12px] font-semibold hover:bg-teal-600 transition-all shadow-md"
-                                >
-                                    <IoImageOutline className="text-xl" />
-                                    Upload Borewell Outcome
-                                </button>
-                            )}
-                        </>
-                    )}
+                    {(() => {
+                        const effectiveStatus = booking.userStatus || booking.status;
+                        const hasBorewell = !!(booking.borewellResult && (booking.borewellResult.status || booking.borewellResult.uploadedAt));
 
+                        // Whitelist for statuses where report/borewell actions are valid
+                        const isPostReportPhase = ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(effectiveStatus);
 
+                        return (
+                            <div className="space-y-3">
+                                {/* Report Button */}
+                                {(booking.report || isPostReportPhase) && (
+                                    <button
+                                        onClick={() => navigate(`/user/booking/${bookingId}/report`)}
+                                        className="w-full flex items-center justify-center gap-2 bg-indigo-50 text-indigo-600 border border-indigo-100 py-3 rounded-[12px] font-semibold hover:bg-indigo-100 transition-all active:scale-95"
+                                    >
+                                        <IoDocumentTextOutline className="text-xl" />
+                                        View Survey Report
+                                    </button>
+                                )}
+
+                                {/* Borewell Upload Button - Extremely permissive check */}
+                                {!(booking.borewellResult?.uploadedAt) && ["PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(effectiveStatus.toUpperCase()) && (
+                                    <button
+                                        onClick={() => setShowBorewellModal(true)}
+                                        className="w-full flex items-center justify-center gap-2 bg-white text-[#0A84FF] border-2 border-[#0A84FF] py-3 rounded-[12px] font-bold hover:bg-blue-50 transition-all shadow-sm"
+                                    >
+                                        <IoImageOutline className="text-xl" />
+                                        Upload Borewell Outcome
+                                    </button>
+                                )}
+
+                                {/* Rating & Invoice for Completed */}
+                                {effectiveStatus === "COMPLETED" && (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={handleDownloadBill}
+                                            className="flex items-center justify-center gap-2 bg-[#E7F0FB] text-[#0A84FF] py-3 rounded-[12px] font-semibold hover:bg-[#D0E1F7] transition-all"
+                                        >
+                                            <IoDownloadOutline className="text-xl" />
+                                            Invoice
+                                        </button>
+                                        <button
+                                            onClick={handleRateVendor}
+                                            className="flex items-center justify-center gap-2 bg-[#0A84FF] text-white py-3 rounded-[12px] font-semibold hover:bg-[#005BBB] transition-all shadow-md"
+                                        >
+                                            <IoStarOutline className="text-xl" />
+                                            Rate
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
 
                     {["PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.status) && (
                         <button
@@ -1110,8 +1144,6 @@ export default function UserBookingDetails() {
                             Cancel Booking
                         </button>
                     )}
-
-
                 </div>
             </div>
 

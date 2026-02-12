@@ -18,6 +18,7 @@ import {
     IoAlertCircleOutline,
     IoMap,
     IoLogoGoogle,
+    IoWaterOutline,
 } from "react-icons/io5";
 import { getBookingDetails, acceptBooking, rejectBooking, markBookingAsVisited, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
@@ -817,6 +818,65 @@ export default function VendorBookingDetails() {
                                     <IoDownloadOutline className="text-xl" />
                                     <span>Download Report PDF</span>
                                 </a>
+                            </div>
+                        )}
+
+                        {/* Link to Online Report View */}
+                        <div className="pt-4 mt-2 border-t border-gray-100">
+                            <button
+                                onClick={() => navigate(`/vendor/booking/${booking._id || booking.id}/report`)}
+                                className="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-600 font-bold py-3 rounded-xl hover:bg-blue-100 transition-colors"
+                            >
+                                <IoDocumentTextOutline className="text-xl" />
+                                <span>View Digital Report</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Borewell Outcome Card (Uploaded by User) */}
+            {booking.borewellResult && (booking.borewellResult.status || booking.borewellResult.images?.length > 0) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 border-l-4 border-[#0A84FF]">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${booking.borewellResult.status === 'SUCCESS' ? 'bg-green-500' : 'bg-red-500'}`}>
+                            {booking.borewellResult.status === 'SUCCESS' ? <IoCheckmarkCircleOutline className="text-xl" /> : <IoCloseCircleOutline className="text-xl" />}
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-800">Borewell Outcome</h2>
+                            <p className="text-sm text-gray-500">Uploaded by customer</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Status</p>
+                            <p className={`text-lg font-bold ${booking.borewellResult.status === 'SUCCESS' ? 'text-green-600' : 'text-red-600'}`}>
+                                {booking.borewellResult.status === 'SUCCESS' ? 'Water Found (Success)' : 'No Water (Failed)'}
+                            </p>
+                        </div>
+
+                        {booking.borewellResult.uploadedAt && (
+                            <div>
+                                <p className="text-sm text-gray-500 mb-1">Date Uploaded</p>
+                                <p className="text-base text-gray-800 font-medium">{formatDate(booking.borewellResult.uploadedAt)}</p>
+                            </div>
+                        )}
+
+                        {booking.borewellResult.images && booking.borewellResult.images.length > 0 && (
+                            <div>
+                                <p className="text-sm text-gray-500 mb-2">Outcome Photos</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {booking.borewellResult.images.map((image, index) => (
+                                        <img
+                                            key={index}
+                                            src={image.url || image}
+                                            alt={`Borewell Outcome ${index + 1}`}
+                                            className="w-full h-32 object-cover rounded-xl border border-gray-100 cursor-pointer"
+                                            onClick={() => window.open(image.url || image, '_blank')}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>

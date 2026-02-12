@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   IoChevronBackOutline,
   IoDownloadOutline,
@@ -14,7 +14,8 @@ import {
   IoConstructOutline,
   IoMapOutline
 } from "react-icons/io5";
-import { getBookingDetails } from "../../../services/bookingApi";
+import { getBookingDetails as getUserBookingDetails } from "../../../services/bookingApi";
+import { getBookingDetails as getVendorBookingDetails } from "../../../services/vendorApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import { useToast } from "../../../hooks/useToast";
@@ -24,6 +25,7 @@ import SurveyReportPDF from "../components/SurveyReportPDF";
 export default function UserSurveyReport() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -36,7 +38,9 @@ export default function UserSurveyReport() {
   const loadReportData = async () => {
     try {
       setLoading(true);
-      const response = await getBookingDetails(bookingId);
+      const isVendor = location.pathname.startsWith('/vendor');
+      const apiCall = isVendor ? getVendorBookingDetails : getUserBookingDetails;
+      const response = await apiCall(bookingId);
       if (response.success) {
         if (!response.data.booking.report) {
           setError("Survey report has not been uploaded yet for this booking.");

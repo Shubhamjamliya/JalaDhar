@@ -11,16 +11,18 @@ import {
     IoCheckmarkCircleOutline,
     IoCheckmarkCircle,
     IoCloseCircleOutline,
-    IoTimeOutline,
-    IoCheckmarkOutline,
-    IoSettingsOutline,
-    IoLocationOutline,
+    IoInformationCircleOutline,
+    IoWaterOutline,
+    IoArrowDownOutline,
+    IoImageOutline,
+    IoWalletOutline,
+    IoNewspaperOutline,
     IoLeafOutline,
     IoHomeOutline,
     IoBusinessOutline,
     IoConstructOutline,
-    IoNewspaperOutline,
-    IoWalletOutline,
+    IoTimeOutline,
+    IoLocationOutline,
 } from "react-icons/io5";
 import { getUserProfile } from "../../../services/authApi";
 import { getUserDashboardStats, getNearbyVendors, cancelBooking, getUserBookings } from "../../../services/bookingApi";
@@ -218,7 +220,7 @@ export default function UserDashboard() {
                 // Combine and deduplicate bookings, prioritizing the full list
                 const recentBookings = statsResponse.data.recentBookings || [];
                 const combinedBookings = [...allBookingsList];
-                
+
                 recentBookings.forEach(rb => {
                     if (!combinedBookings.some(b => b._id === rb._id)) {
                         combinedBookings.push(rb);
@@ -236,7 +238,8 @@ export default function UserDashboard() {
                     description: `Booking for ${booking.service?.name || "service"}`,
                     bookingData: booking, // Keep full booking data reference
                     hasReport: !!booking.report && (booking.report.uploadedAt || booking.report.waterFound !== null || booking.status === 'REPORT_UPLOADED' || booking.userStatus === 'REPORT_UPLOADED'),
-                    waterFound: booking.report?.waterFound === true || booking.report?.waterFound === "true"
+                    waterFound: booking.report?.waterFound === true || booking.report?.waterFound === "true",
+                    hasBorewellResult: !!booking.borewellResult?.uploadedAt
                 }));
                 setRequestStatuses(formattedRequests);
             }
@@ -725,13 +728,23 @@ export default function UserDashboard() {
                                         </button>
                                     )}
 
-                                    {['pending', 'assigned', 'accepted'].includes(activeBooking.status) && (
+                                    {['pending', 'assigned', 'accepted'].includes(activeBooking.status.toLowerCase()) && (
                                         <button
                                             onClick={() => handleInitiateCancel(activeBooking)}
                                             className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-100 py-3 rounded-[12px] font-semibold hover:bg-red-100 transition-all active:scale-95"
                                         >
                                             <IoCloseCircleOutline className="text-xl" />
                                             Cancel Booking
+                                        </button>
+                                    )}
+
+                                    {!activeBooking.hasBorewellResult && ["PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes((activeBooking.bookingData?.userStatus || activeBooking.bookingData?.status || "").toUpperCase()) && (
+                                        <button
+                                            onClick={() => navigate(`/user/booking/${activeBooking.id}`, { state: { openBorewellModal: true } })}
+                                            className="w-full flex items-center justify-center gap-2 bg-white text-[#0A84FF] border-2 border-[#0A84FF] py-3 rounded-[12px] font-bold hover:bg-blue-50 transition-all shadow-sm"
+                                        >
+                                            <IoImageOutline className="text-xl" />
+                                            Upload Borewell Outcome
                                         </button>
                                     )}
 

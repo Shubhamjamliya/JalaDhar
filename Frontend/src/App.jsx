@@ -443,6 +443,14 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/booking/:bookingId/report"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserSurveyReport />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/disputes"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
