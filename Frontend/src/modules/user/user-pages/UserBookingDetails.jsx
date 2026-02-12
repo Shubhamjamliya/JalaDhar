@@ -1112,8 +1112,8 @@ export default function UserBookingDetails() {
                                     </button>
                                 )}
 
-                                {/* Rating & Invoice for Completed */}
-                                {effectiveStatus === "COMPLETED" && (
+                                {/* Rating & Invoice for Completed and Post-Payment stages */}
+                                {["PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(effectiveStatus.toUpperCase()) && (
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
                                             onClick={handleDownloadBill}

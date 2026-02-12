@@ -417,6 +417,7 @@ export default function VendorBookingDetails() {
                         { id: "visited", label: "Visited", icon: "🏠", statuses: ["VISITED"], date: booking.visitedAt },
                         { id: "report", label: "Report", icon: "📄", statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt },
                         { id: "payment", label: "Payment", icon: "💰", statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"], date: booking.payment?.remainingPaidAt },
+                        { id: "borewell", label: "Borewell", icon: "🚰", statuses: ["BOREWELL_UPLOADED"], date: booking.borewellResult?.uploadedAt },
                         { id: "completed", label: "Completed", icon: "🎉", statuses: ["COMPLETED"], date: booking.completedAt },
                     ];
 
@@ -507,6 +508,12 @@ export default function VendorBookingDetails() {
                         <div className="flex justify-between">
                             <span className="text-gray-500">Completed:</span>
                             <span className="text-gray-800 font-medium">{formatDate(booking.completedAt)}</span>
+                        </div>
+                    )}
+                    {booking.borewellResult?.uploadedAt && (
+                        <div className="flex justify-between">
+                            <span className="text-gray-500">Borewell Result:</span>
+                            <span className="text-gray-800 font-medium">{formatDate(booking.borewellResult.uploadedAt)}</span>
                         </div>
                     )}
                 </div>
