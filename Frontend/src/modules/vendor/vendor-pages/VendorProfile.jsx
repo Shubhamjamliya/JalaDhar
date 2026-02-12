@@ -16,9 +16,23 @@ import {
     IoArrowBackOutline,
     IoLocationOutline,
     IoCameraOutline,
-    IoAlertCircleOutline,
     IoStar,
     IoStarOutline,
+    IoShieldCheckmarkOutline,
+    IoBriefcaseOutline,
+    IoWalletOutline,
+    IoTimeOutline,
+    IoCalendarOutline,
+    IoNotificationsOutline,
+    IoRibbonOutline,
+    IoAlertCircleOutline,
+    IoWaterOutline,
+    IoSchoolOutline,
+    IoDocumentTextOutline,
+    IoHardwareChipOutline,
+    IoCardOutline,
+    IoCloudUploadOutline,
+    IoCheckmarkCircle
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import {
@@ -30,6 +44,7 @@ import {
     updateService,
     deleteService,
     uploadServiceImages,
+    getDashboardStats,
 } from "../../../services/vendorApi";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -59,6 +74,12 @@ export default function VendorProfile() {
     const [error, setError] = useState("");
     const [vendor, setVendor] = useState(null);
     const [services, setServices] = useState([]);
+    const [stats, setStats] = useState({
+        completedBookings: 0,
+        totalEarnings: 0,
+        averageRating: 0,
+        totalRatings: 0
+    });
     const [isAddingService, setIsAddingService] = useState(false);
     const [editingServiceId, setEditingServiceId] = useState(null);
     const [previewingService, setPreviewingService] = useState(null);
@@ -88,6 +109,9 @@ export default function VendorProfile() {
         name: "",
         email: "",
         phone: "",
+        bloodGroup: "",
+        gender: "",
+        designation: "",
         experience: "",
         address: {
             coordinates: null,
@@ -99,6 +123,16 @@ export default function VendorProfile() {
     useEffect(() => {
         loadProfile();
     }, []);
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate("/vendor/login");
+        } catch (err) {
+            console.error("Logout failed:", err);
+        }
+    };
+
 
     const loadProfile = async () => {
         try {
@@ -134,6 +168,9 @@ export default function VendorProfile() {
                     name: vendorData.name || "",
                     email: vendorData.email || "",
                     phone: vendorData.phone || "",
+                    bloodGroup: vendorData.bloodGroup || "",
+                    gender: vendorData.gender || "",
+                    designation: vendorData.designation || "",
                     experience: vendorData.experience?.toString() || "",
                     address: address,
                     profilePicture:
@@ -141,6 +178,21 @@ export default function VendorProfile() {
                 });
 
                 setFullAddress(fullAddressStr);
+
+                // Load Stats for Professional View
+                try {
+                    const statsResponse = await getDashboardStats();
+                    if (statsResponse.success) {
+                        setStats({
+                            completedBookings: statsResponse.data.stats.completedBookings || 0,
+                            totalEarnings: statsResponse.data.stats.totalEarnings || 0,
+                            averageRating: vendorData.rating?.averageRating || 0,
+                            totalRatings: vendorData.rating?.totalRatings || 0,
+                        });
+                    }
+                } catch (err) {
+                    console.error("Failed to load stats", err);
+                }
             } else {
                 setError("Failed to load profile");
             }
@@ -192,12 +244,7 @@ export default function VendorProfile() {
         }
     };
 
-    const handleLogout = async () => {
-        if (window.confirm("Are you sure you want to logout?")) {
-            await logout();
-            navigate("/vendorlogin");
-        }
-    };
+
 
     const handleEdit = () => {
         setIsEditing(true);
@@ -337,6 +384,9 @@ export default function VendorProfile() {
             const updateData = {
                 name: profileData.name,
                 phone: profileData.phone,
+                bloodGroup: profileData.bloodGroup,
+                gender: profileData.gender,
+                designation: profileData.designation,
                 experience: parseInt(profileData.experience) || 0,
                 address: addressToSave, // Send as object, not stringified
             };
@@ -639,9 +689,9 @@ export default function VendorProfile() {
 
     if (loading) {
         return (
-            <PageContainer>
-                <LoadingSpinner message="Loading profile..." />
-            </PageContainer>
+            <div className="flex h-screen items-center justify-center bg-[#F6F7F9]">
+                <LoadingSpinner message="Loading your professional profile..." />
+            </div>
         );
     }
 
@@ -649,281 +699,458 @@ export default function VendorProfile() {
         <PageContainer>
             <ErrorMessage message={error} />
 
-            {/* Back Button */}
-            <button
-                onClick={() => navigate(-1)}
-                className="mb-4 flex items-center gap-2 text-[#3A3A3A] hover:text-[#0A84FF] transition-colors"
-            >
-                <IoArrowBackOutline className="text-lg" />
-                <span className="text-sm font-medium">Back</span>
-            </button>
-
-            {/* Profile Header with Light Blue Gradient */}
+            {/* Profile Header - Premium Professional Look */}
             <section
-                className="relative my-4 overflow-hidden rounded-xl p-8 text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                className="relative my-4 overflow-hidden rounded-2xl p-6 text-white shadow-xl"
                 style={{
-                    background: "linear-gradient(to bottom, #E3F2FD 0%, #BBDEFB 50%, #90CAF9 100%)",
+                    background: "linear-gradient(135deg, #0A84FF 0%, #00C2A8 100%)",
                 }}
             >
-                <div className="absolute -top-1/4 -right-1/4 z-0 h-48 w-48 rounded-full bg-white/10"></div>
-                <div className="absolute -bottom-1/4 -left-1/4 z-0 h-40 w-40 rounded-full bg-white/5"></div>
+                {/* Decorative Elements */}
+                <div className="absolute -top-10 -right-10 z-0 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+                <div className="absolute -bottom-10 -left-10 z-0 h-40 w-40 rounded-full bg-white/5 blur-3xl"></div>
 
-                <div className="relative z-10 flex flex-col items-center gap-5 pt-4">
-                    {/* Profile Image with Camera Overlay */}
-                    <div className="relative">
-                        <label
-                            htmlFor="profileImage"
-                            className="cursor-pointer"
-                        >
-                            <div className="relative">
-                                {/* Light Blue Background Circle */}
-                                <div className="absolute inset-0 bg-blue-200 rounded-full scale-110 blur-sm opacity-30 transition-opacity"></div>
-                                <div className="relative h-28 w-28 shrink-0 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white flex items-center justify-center ring-4 ring-white/30">
-                                    {profileData.profilePicture ? (
-                                        <img
-                                            src={profileData.profilePicture}
-                                            alt="Profile"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full bg-gradient-to-br from-[#BBDEFB] to-[#90CAF9] flex items-center justify-center">
-                                            <span className="text-4xl">👤</span>
-                                        </div>
-                                    )}
-                                </div>
-                                {/* Camera Icon Overlay - Outside circle to overlap */}
-                                <div className="absolute -bottom-1 -right-1 h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg border-4 border-white hover:bg-blue-700 transition-colors z-10">
-                                    <IoCameraOutline className="text-white text-lg" />
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+                    {/* Profile Image with Status Indicator */}
+                    <div className="relative group">
+                        <label htmlFor="profileImage" className="cursor-pointer block relative">
+                            <div className="h-32 w-32 rounded-2xl border-4 border-white/30 shadow-2xl overflow-hidden bg-white/20 backdrop-blur-md flex items-center justify-center transition-transform hover:scale-[1.02]">
+                                {profileData.profilePicture ? (
+                                    <img
+                                        src={profileData.profilePicture}
+                                        alt="Profile"
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-blue-400 to-teal-400 flex items-center justify-center">
+                                        <span className="text-5xl text-white">👤</span>
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <IoCameraOutline className="text-white text-3xl" />
                                 </div>
                             </div>
-                            <input
-                                type="file"
-                                id="profileImage"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                className="hidden"
-                                disabled={saving}
-                            />
+                            {/* Availability Dot */}
+                            <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-green-500 border-4 border-white shadow-lg"></div>
                         </label>
+                        <input
+                            type="file"
+                            id="profileImage"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                            disabled={saving}
+                        />
                     </div>
 
-                    {/* Name + Email */}
-                    <div className="flex flex-col items-center text-center space-y-1 w-full px-4">
-                        {isEditing ? (
-                            <input
-                                type="text"
-                                value={profileData.name}
-                                onChange={(e) =>
-                                    setProfileData({
-                                        ...profileData,
-                                        name: e.target.value,
-                                    })
-                                }
-                                className="w-full max-w-xs text-xl font-bold leading-tight text-center bg-white/20 backdrop-blur-sm border border-white/50 rounded-xl px-4 py-2.5 text-white placeholder-white/70 focus:outline-none focus:border-white/80 focus:bg-white/30 transition-all"
-                                placeholder="Your Name"
-                                disabled={saving}
-                            />
-                        ) : (
-                            <>
-                                <p className="text-2xl font-bold leading-tight tracking-tight break-words max-w-full px-4 text-gray-800">
-                                    {profileData.name || "Vendor"}
-                                </p>
-                            </>
-                        )}
-                        <p className="text-sm font-medium text-gray-700 mt-1 break-words max-w-full px-4">
-                            {profileData.email}
-                        </p>
-                        {/* Rating Display */}
-                        {vendor?.rating && vendor.rating.totalRatings > 0 && (
-                            <div className="flex flex-col items-center gap-1 mt-2">
-                                <div className="flex items-center gap-1">
-                                    <span className="text-2xl font-bold text-gray-800">
-                                        {vendor.rating.averageRating.toFixed(1)}
-                                    </span>
-                                    <div className="flex items-center gap-0.5">
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                            <IoStar
-                                                key={star}
-                                                className={`text-lg ${star <= Math.round(vendor.rating.averageRating)
-                                                    ? "text-yellow-500"
-                                                    : "text-gray-300"
-                                                    }`}
-                                            />
-                                        ))}
-                                    </div>
+                    {/* Name & Title */}
+                    <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left">
+                        <div className="flex items-center gap-2 mb-1">
+                            {isEditing ? (
+                                <input
+                                    type="text"
+                                    value={profileData.name}
+                                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                                    className="bg-white/20 border border-white/50 rounded-lg px-3 py-1 text-2xl font-bold text-white focus:outline-none focus:bg-white/30 truncate max-w-[200px]"
+                                />
+                            ) : (
+                                <h1 className="text-3xl font-extrabold tracking-tight">
+                                    {profileData.name || "Professional"}
+                                </h1>
+                            )}
+                            {vendor?.isApproved && (
+                                <div className="bg-white text-[#0A84FF] p-1 rounded-full shadow-lg" title="Verified Professional">
+                                    <IoShieldCheckmarkOutline className="text-xl" />
                                 </div>
-                                <p className="text-xs text-gray-600">
-                                    {vendor.rating.totalRatings} {vendor.rating.totalRatings === 1 ? "rating" : "ratings"}
-                                    {vendor.rating.successRatio > 0 && (
-                                        <span className="ml-2">
-                                            • {vendor.rating.successRatio}% success rate
-                                        </span>
-                                    )}
-                                </p>
+                            )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-2">
+                            <div className="flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/10">
+                                <IoBriefcaseOutline className="text-sm" />
+                                <span className="text-sm font-medium">{profileData.designation || "Ground Water Professional"}</span>
                             </div>
+                            <div className="flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/10">
+                                <IoLocationOutline className="text-sm" />
+                                <span className="text-sm font-medium">{fullAddress ? fullAddress.split(',').pop() : 'Location N/A'}</span>
+                            </div>
+                        </div>
+
+                        {!isEditing && (
+                            <button
+                                onClick={handleEdit}
+                                className="mt-4 flex items-center gap-2 px-4 py-2 bg-white text-[#0A84FF] rounded-xl text-sm font-bold shadow-lg hover:bg-blue-50 transition-colors"
+                            >
+                                <IoPencilOutline />
+                                Edit Profile
+                            </button>
                         )}
+                    </div>
+
+                    {/* Quick Stats in Header */}
+                    <div className="flex gap-4 md:border-l md:border-white/20 md:pl-8">
+                        <div className="text-center">
+                            <p className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
+                            <p className="text-[10px] uppercase font-bold tracking-widest opacity-80">Rating</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-2xl font-bold">{stats.completedBookings}</p>
+                            <p className="text-[10px] uppercase font-bold tracking-widest opacity-80">Jobs</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-2xl font-bold">{profileData.experience}+</p>
+                            <p className="text-[10px] uppercase font-bold tracking-widest opacity-80">Years</p>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Vendor Information Card */}
-            <div className="w-full mt-6 rounded-xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden">
-                <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-lg font-bold text-[#3A3A3A]">
-                        Personal Information
-                    </h3>
-                    {/* Edit Profile Button - Top Right */}
-                    {!isEditing && (
-                        <button
-                            onClick={handleEdit}
-                            className="flex h-8 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#0A84FF] to-[#00C2A8] text-white text-xs font-semibold px-3 shadow-md hover:shadow-lg transition-all hover:scale-[1.02] shrink-0"
-                        >
-                            <IoPencilOutline className="text-sm" />
-                            <span>Edit Profile</span>
-                        </button>
-                    )}
-                </div>
-                <div className="flex flex-col space-y-4 w-full">
-                    {/* Name */}
-                    <InfoRow
-                        icon={IoPersonOutline}
-                        label="Name"
-                        value={profileData.name}
-                        isEditing={isEditing}
-                        onChange={(e) =>
-                            setProfileData({
-                                ...profileData,
-                                name: e.target.value,
-                            })
-                        }
-                        disabled={saving}
-                    />
+            {/* Performance Stats Bar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <StatItem
+                    icon={IoStar}
+                    label="Customer Rating"
+                    value={stats.averageRating ? `${stats.averageRating.toFixed(1)} / 5.0` : "No Ratings"}
+                    subValue={`${stats.totalRatings} Reviews`}
+                    color="text-yellow-500"
+                    bgColor="bg-yellow-50"
+                />
+                <StatItem
+                    icon={IoCalendarOutline}
+                    label="Total Bookings"
+                    value={stats.completedBookings}
+                    subValue="Completed"
+                    color="text-blue-500"
+                    bgColor="bg-blue-50"
+                />
+                <StatItem
+                    icon={IoWalletOutline}
+                    label="Total Earnings"
+                    value={`₹${stats.totalEarnings.toLocaleString()}`}
+                    subValue="Life-time"
+                    color="text-green-500"
+                    bgColor="bg-green-50"
+                />
+                <StatItem
+                    icon={IoRibbonOutline}
+                    label="Membership"
+                    value={vendor?.isApproved ? "Verified Pro" : "Pending"}
+                    subValue="Account Status"
+                    color="text-teal-500"
+                    bgColor="bg-teal-50"
+                />
+            </div>
 
-                    {/* Phone */}
-                    <InfoRow
-                        icon={IoCallOutline}
-                        label="Phone Number"
-                        value={profileData.phone}
-                        isEditing={isEditing}
-                        onChange={(e) =>
-                            setProfileData({
-                                ...profileData,
-                                phone: e.target.value,
-                            })
-                        }
-                        disabled={saving}
-                    />
-
-                    {/* Experience */}
-                    <InfoRow
-                        icon={IoConstructOutline}
-                        label="Experience (Years)"
-                        value={profileData.experience}
-                        isEditing={isEditing}
-                        onChange={(e) =>
-                            setProfileData({
-                                ...profileData,
-                                experience: e.target.value,
-                            })
-                        }
-                        disabled={saving}
-                        type="number"
-                    />
-
-                    {/* Address */}
-                    {isEditing ? (
-                        <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-[#F3F7FA] transition-colors">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
-                                <IoHomeOutline className="text-xl text-white" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+                {/* Left Column: Account & Profile Info */}
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Section: Account Information */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <IoPersonOutline className="text-blue-500" />
+                                Account Details
+                            </h3>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <InfoField
+                                    label="Full Name"
+                                    value={profileData.name}
+                                    isEditing={isEditing}
+                                    onChange={(val) => setProfileData({ ...profileData, name: val })}
+                                    icon={IoPersonOutline}
+                                />
+                                <InfoField
+                                    label="Email Address"
+                                    value={profileData.email}
+                                    isEditing={false} // Email typically not editable directly
+                                    icon={IoCallOutline}
+                                />
+                                <InfoField
+                                    label="Phone Number"
+                                    value={profileData.phone}
+                                    isEditing={isEditing}
+                                    onChange={(val) => setProfileData({ ...profileData, phone: val })}
+                                    icon={IoCallOutline}
+                                />
+                                <InfoField
+                                    label="Experience (Years)"
+                                    value={profileData.experience}
+                                    isEditing={isEditing}
+                                    onChange={(val) => setProfileData({ ...profileData, experience: val })}
+                                    icon={IoConstructOutline}
+                                    type="number"
+                                />
+                                <InfoField
+                                    label="Designation"
+                                    value={profileData.designation}
+                                    isEditing={isEditing}
+                                    onChange={(val) => setProfileData({ ...profileData, designation: val })}
+                                    icon={IoBriefcaseOutline}
+                                    type="select"
+                                    options={['Hydrogeologist', 'Geophysicist', 'Earth Scientist', 'Detector', 'Devinor']}
+                                />
+                                <InfoField
+                                    label="Gender"
+                                    value={profileData.gender}
+                                    isEditing={isEditing}
+                                    onChange={(val) => setProfileData({ ...profileData, gender: val })}
+                                    icon={IoPersonOutline}
+                                    type="select"
+                                    options={['Male', 'Female', 'Other']}
+                                />
+                                <InfoField
+                                    label="Blood Group"
+                                    value={profileData.bloodGroup}
+                                    isEditing={isEditing}
+                                    onChange={(val) => setProfileData({ ...profileData, bloodGroup: val })}
+                                    icon={IoWaterOutline}
+                                    type="select"
+                                    options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']}
+                                />
                             </div>
-                            <div className="flex flex-col flex-1 min-w-0 gap-3 w-full overflow-hidden">
-                                <span className="text-xs text-[#6B7280] mb-1 font-semibold uppercase tracking-wide">
-                                    Primary Address
-                                </span>
-                                <div className="flex flex-col sm:flex-row gap-2">
-                                    <div className="relative flex-1">
-                                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg z-10">
-                                            search
-                                        </span>
+                        </div>
+                    </div>
+
+                    {/* Section: Location and Address */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <IoLocationOutline className="text-red-500" />
+                                Service Location
+                            </h3>
+                        </div>
+                        <div className="p-6">
+                            {isEditing ? (
+                                <div className="space-y-4">
+                                    <div className="relative">
                                         <PlaceAutocompleteInput
                                             onPlaceSelect={handleAddressSelect}
-                                            placeholder="Start typing your address to see suggestions..."
+                                            placeholder="Update your primary address..."
                                             value={fullAddress}
                                             onChange={(e) => setFullAddress(e.target.value)}
                                             disabled={saving || gettingLocation}
-                                            className="w-full rounded-full border-gray-200 bg-[#F3F7FA] py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#0A84FF] focus:ring-[#0A84FF] text-sm"
+                                            className="w-full rounded-xl border-gray-200 bg-gray-50 p-4 pl-12 focus:border-blue-500 focus:ring-blue-500"
                                             countryRestriction="in"
-                                            types={["geocode", "establishment"]}
                                         />
+                                        <IoLocationOutline className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-xl" />
                                     </div>
                                     <button
                                         type="button"
                                         onClick={getCurrentLocation}
                                         disabled={saving || gettingLocation}
-                                        className="flex items-center justify-center gap-2 bg-[#0A84FF] text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-[#005BBB] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 whitespace-nowrap"
-                                        title="Use current location"
+                                        className="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-50 text-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-100 transition-colors"
                                     >
                                         <IoLocationOutline className="text-lg" />
-                                        {gettingLocation ? "Getting..." : "Use Current Location"}
+                                        {gettingLocation ? "Detecting location..." : "Use My Current GPS Location"}
                                     </button>
                                 </div>
-                                <p className="text-xs text-blue-700 mt-1">
-                                    💡 Type your address above to see suggestions, or click "Use Current Location" to auto-fill from GPS
+                            ) : (
+                                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                                        <IoHomeOutline className="text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Primary Operations Base</p>
+                                        <p className="text-base font-semibold text-gray-800">{fullAddress || "Address details not provided"}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Section: Professional Details */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <IoBriefcaseOutline className="text-purple-500" />
+                                Professional Details
+                            </h3>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            {/* Experience Details */}
+                            <div>
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    <IoDocumentTextOutline /> Experience Summary
+                                </h4>
+                                <p className="text-gray-700 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    {vendor?.experienceDetails || "No detailed experience summary provided."}
                                 </p>
                             </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Education */}
+                                <div>
+                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <IoSchoolOutline /> Education
+                                    </h4>
+                                    {vendor?.educationalQualifications && vendor.educationalQualifications.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {vendor.educationalQualifications.map((edu, index) => (
+                                                <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                    <div className="mt-1 h-2 w-2 rounded-full bg-purple-400 shrink-0"></div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-900">{edu.degree}</p>
+                                                        <p className="text-xs text-gray-600">{edu.institution}</p>
+                                                        <p className="text-[10px] text-gray-400 mt-1">{edu.year} • {edu.percentage}%</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-500 italic">No education details added.</p>
+                                    )}
+                                </div>
+
+                                {/* Instruments */}
+                                <div>
+                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <IoHardwareChipOutline /> Instruments & Equipment
+                                    </h4>
+                                    {vendor?.instruments && vendor.instruments.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {vendor.instruments.map((inst, index) => (
+                                                <span key={index} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100">
+                                                    {inst}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-500 italic">No instruments listed.</p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                    ) : (
-                        <InfoRow
-                            icon={IoHomeOutline}
-                            label="Primary Address"
-                            value={fullAddress || "Not provided"}
-                            isEditing={false}
+                    </div>
+
+                    {/* Section: Bank & Documents */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <IoCardOutline className="text-green-500" />
+                                Bank & Documents
+                            </h3>
+                        </div>
+                        <div className="p-6 space-y-8">
+                            {/* Bank Details */}
+                            <div>
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Bank Information</h4>
+                                {vendor?.bankDetails ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <InfoBlock label="Account Holder" value={vendor.bankDetails.accountHolderName} />
+                                        <InfoBlock label="Bank Name" value={vendor.bankDetails.bankName} />
+                                        <InfoBlock label="Account Number" value={vendor.bankDetails.accountNumber ? `••••${vendor.bankDetails.accountNumber.slice(-4)}` : "N/A"} />
+                                        <InfoBlock label="IFSC Code" value={vendor.bankDetails.ifscCode} />
+                                        {vendor.bankDetails.branchName && (
+                                            <InfoBlock label="Branch" value={vendor.bankDetails.branchName} />
+                                        )}
+                                        <div className="md:col-span-2 mt-2">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${vendor.bankDetails.isVerified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {vendor.bankDetails.isVerified ? <IoCheckmarkCircle /> : <IoAlertCircleOutline />}
+                                                {vendor.bankDetails.isVerified ? 'Verified Account' : 'Verification Pending'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100 text-center">
+                                        <p className="text-sm text-yellow-800 font-medium">No bank details added yet.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Documents */}
+                            <div>
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Uploaded Documents</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <DocumentCard
+                                        title="Aadhar Card"
+                                        doc={vendor?.documents?.aadharCard}
+                                    />
+                                    <DocumentCard
+                                        title="PAN Card"
+                                        doc={vendor?.documents?.panCard}
+                                    />
+                                    <DocumentCard
+                                        title="Cancelled Cheque"
+                                        doc={vendor?.documents?.cancelledCheque}
+                                    />
+                                    {vendor?.documents?.certificates && vendor.documents.certificates.map((cert, idx) => (
+                                        <DocumentCard
+                                            key={idx}
+                                            title={cert.name || `Certificate ${idx + 1}`}
+                                            doc={cert}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Column: Mini Dashboard Actions */}
+                <div className="space-y-6">
+                    {/* Verification Status Card */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 overflow-hidden relative">
+                        {vendor?.isApproved && (
+                            <div className="absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 bg-green-500/10 rounded-full"></div>
+                        )}
+                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Account Status</h4>
+                        <div className="flex items-center gap-4">
+                            <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${vendor?.isApproved ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                                <IoShieldCheckmarkOutline className="text-2xl" />
+                            </div>
+                            <div>
+                                <p className="font-extrabold text-gray-800">{vendor?.isApproved ? 'Verified Partner' : 'Verification Pending'}</p>
+                                <p className="text-xs text-gray-500">{vendor?.isApproved ? 'You have full access to all features' : 'Your account is under review'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    {/* Logout and Help Actions */}
+                    <div className="space-y-3">
+                        <ActionRow
+                            icon={IoAlertCircleOutline}
+                            label="Help & Disputes"
+                            onClick={() => navigate("/vendor/disputes")}
                         />
-                    )}
+
+                        <ActionRow
+                            icon={IoLogOutOutline}
+                            label="Sign Out"
+                            isLogout
+                            onClick={handleLogout}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* Save/Cancel Buttons - When Editing */}
+            {/* Reorganized Button Layout for Editing */}
             {isEditing && (
-                <div className="mt-6 flex gap-3">
+                <div className="fixed bottom-0 inset-x-0 bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.1)] p-4 z-50 flex gap-4 max-w-lg mx-auto md:rounded-t-3xl border-t border-gray-100">
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex h-14 flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-[#0A84FF] to-[#00C2A8] text-white font-bold shadow-[0_4px_12px_rgba(10,132,255,0.3)] transition-all hover:shadow-[0_6px_16px_rgba(10,132,255,0.4)] hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        className="flex-1 h-14 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2"
                     >
-                        {saving ? (
-                            <span className="flex items-center gap-2">
-                                <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                Saving...
-                            </span>
-                        ) : (
-                            <>
-                                <IoCheckmarkOutline className="mr-2 text-xl" />
-                                Save Changes
-                            </>
-                        )}
+                        {saving ? <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : "Save Profile"}
                     </button>
                     <button
-                        onClick={() => {
-                            setIsEditing(false);
-                            loadProfile(); // Reload to reset changes
-                        }}
-                        disabled={saving}
-                        className="flex h-14 flex-1 items-center justify-center rounded-xl bg-gray-200 text-[#3A3A3A] font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all hover:bg-gray-300 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+                        onClick={() => { setIsEditing(false); loadProfile(); }}
+                        className="flex-1 h-14 bg-gray-100 text-gray-600 font-bold rounded-2xl active:scale-95 transition-all"
                     >
                         Cancel
                     </button>
                 </div>
             )}
 
-            {/* Services Section (Only if approved) */}
+            {/* My Services Section - Distinct and Professional */}
             {vendor?.isApproved && (
-                <div className="w-full mt-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-[#3A3A3A]">
-                            My Services
-                        </h2>
-                        {/* Only show Add button if no services exist and not currently adding */}
+                <div className="mt-12 mb-20 px-1">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-black text-gray-800 tracking-tight">Professional Services</h2>
                         {services.length === 0 && !isAddingService && (
                             <button
                                 onClick={() => {
@@ -933,15 +1160,14 @@ export default function VendorProfile() {
                                         machineType: "",
                                         skills: "",
                                         price: "",
-                                        duration: "60", // Default duration
+                                        duration: "60",
                                         category: "",
                                     });
                                     setIsAddingService(true);
                                 }}
-                                className="flex items-center gap-2 bg-[#0A84FF] text-white font-semibold py-2 px-4 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:bg-[#005BBB] transition-colors"
+                                className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-blue-100"
                             >
-                                <IoAddCircleOutline className="text-lg" />
-                                Add Service
+                                <IoAddCircleOutline className="text-lg" /> Add New Service
                             </button>
                         )}
                     </div>
@@ -1137,11 +1363,10 @@ export default function VendorProfile() {
                         </div>
                     )}
 
-                    {/* Services List - Only Show First Service if Exists */}
+                    {/* Services List */}
                     {!isAddingService && services.length > 0 && (
-                        <div className="flex flex-col">
-                            {/* We only show the first service as per requirement */}
-                            {[services[0]].map((service) => (
+                        <div className="flex flex-col gap-6">
+                            {services.map((service) => (
                                 <div
                                     key={service._id}
                                     className="group relative flex flex-col sm:flex-row gap-6 rounded-2xl bg-white p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden"
@@ -1304,308 +1529,298 @@ export default function VendorProfile() {
                 </div>
             )}
 
+
             {/* Preview Service Modal */}
-            {previewingService && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto"
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget) {
-                            setPreviewingService(null);
-                        }
-                    }}
-                >
-                    <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                        {/* Header with Gradient */}
-                        <div
-                            className="flex-shrink-0 rounded-t-xl p-5 flex items-center justify-between"
-                            style={{
-                                background:
-                                    "linear-gradient(135deg, #0A84FF 0%, #00C2A8 100%)",
-                            }}
-                        >
-                            <h2 className="text-xl font-bold text-white">
-                                Service Details
-                            </h2>
-                            <button
-                                onClick={() => setPreviewingService(null)}
-                                className="p-2 hover:bg-white/20 rounded-full transition-colors"
+            {
+                previewingService && (
+                    <div
+                        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                setPreviewingService(null);
+                            }
+                        }}
+                    >
+                        <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                            {/* Header with Gradient */}
+                            <div
+                                className="flex-shrink-0 rounded-t-xl p-5 flex items-center justify-between"
+                                style={{
+                                    background:
+                                        "linear-gradient(135deg, #0A84FF 0%, #00C2A8 100%)",
+                                }}
                             >
-                                <IoCloseOutline className="text-2xl text-white" />
-                            </button>
-                        </div>
+                                <h2 className="text-xl font-bold text-white">
+                                    Service Details
+                                </h2>
+                                <button
+                                    onClick={() => setPreviewingService(null)}
+                                    className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                                >
+                                    <IoCloseOutline className="text-2xl text-white" />
+                                </button>
+                            </div>
 
-                        {/* Scrollable Content */}
-                        <div className="flex-1 overflow-y-auto p-6 bg-[#F3F7FA]">
-                            <div className="space-y-5">
-                                {/* Service Images */}
-                                {previewingService.images &&
-                                    previewingService.images.length > 0 && (
-                                        <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                    image
-                                                </span>
-                                                <h3 className="text-sm font-semibold text-[#3A3A3A]">
-                                                    Service Images
-                                                </h3>
+                            {/* Scrollable Content */}
+                            <div className="flex-1 overflow-y-auto p-6 bg-[#F3F7FA]">
+                                <div className="space-y-5">
+                                    {/* Service Images */}
+                                    {previewingService.images &&
+                                        previewingService.images.length > 0 && (
+                                            <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="material-symbols-outlined text-[#00C2A8] text-lg">
+                                                        image
+                                                    </span>
+                                                    <h3 className="text-sm font-semibold text-[#3A3A3A]">
+                                                        Service Images
+                                                    </h3>
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    {previewingService.images.map(
+                                                        (image, index) => (
+                                                            <div
+                                                                key={index}
+                                                                className="relative w-full rounded-lg overflow-hidden"
+                                                            >
+                                                                <img
+                                                                    src={image.url}
+                                                                    alt={`Service ${index + 1}`}
+                                                                    className="w-full h-auto object-cover rounded-lg"
+                                                                />
+                                                            </div>
+                                                        )
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="grid grid-cols-1 gap-4">
-                                                {previewingService.images.map(
-                                                    (image, index) => (
-                                                        <div
-                                                            key={index}
-                                                            className="relative w-full rounded-lg overflow-hidden"
-                                                        >
-                                                            <img
-                                                                src={image.url}
-                                                                alt={`Service ${index + 1
-                                                                    }`}
-                                                                className="w-full h-auto object-cover rounded-lg"
-                                                            />
-                                                        </div>
-                                                    )
+                                        )}
+
+                                    {/* Service Name */}
+                                    <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="material-symbols-outlined text-[#00C2A8] text-lg">
+                                                design_services
+                                            </span>
+                                            <label className="block text-sm font-semibold text-[#3A3A3A]">
+                                                Service Name
+                                            </label>
+                                        </div>
+                                        <p className="text-base font-bold text-[#3A3A3A]">
+                                            {previewingService.name}
+                                        </p>
+                                    </div>
+
+                                    {/* Description */}
+                                    {previewingService.description && (
+                                        <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="material-symbols-outlined text-[#00C2A8] text-lg">
+                                                    description
+                                                </span>
+                                                <label className="block text-sm font-semibold text-[#3A3A3A]">
+                                                    Description
+                                                </label>
+                                            </div>
+                                            <p className="text-sm text-[#6B7280] leading-relaxed">
+                                                {previewingService.description}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Machine Type */}
+                                    {previewingService.machineType && (
+                                        <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="material-symbols-outlined text-[#00C2A8] text-lg">
+                                                    precision_manufacturing
+                                                </span>
+                                                <label className="block text-sm font-semibold text-[#3A3A3A]">
+                                                    Machine Type
+                                                </label>
+                                            </div>
+                                            <p className="text-sm text-[#3A3A3A]">
+                                                {previewingService.machineType}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Price and Duration */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="material-symbols-outlined text-[#00C2A8] text-lg">
+                                                    payments
+                                                </span>
+                                                <label className="block text-sm font-semibold text-[#3A3A3A]">
+                                                    Price
+                                                </label>
+                                            </div>
+                                            <p className="text-base font-semibold text-[#0A84FF]">
+                                                ₹
+                                                {previewingService.price?.toLocaleString(
+                                                    "en-IN",
+                                                    {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2,
+                                                    }
                                                 )}
+                                            </p>
+                                        </div>
+                                        {previewingService.duration && (
+                                            <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="material-symbols-outlined text-[#00C2A8] text-lg">
+                                                        schedule
+                                                    </span>
+                                                    <label className="block text-sm font-semibold text-[#3A3A3A]">
+                                                        Duration
+                                                    </label>
+                                                </div>
+                                                <p className="text-sm text-[#3A3A3A]">
+                                                    {previewingService.duration}{" "}
+                                                    minutes
+                                                </p>
                                             </div>
-                                        </div>
-                                    )}
-
-                                {/* Service Name */}
-                                <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                            design_services
-                                        </span>
-                                        <label className="block text-sm font-semibold text-[#3A3A3A]">
-                                            Service Name
-                                        </label>
+                                        )}
                                     </div>
-                                    <p className="text-base font-bold text-[#3A3A3A]">
-                                        {previewingService.name}
-                                    </p>
-                                </div>
 
-                                {/* Description */}
-                                {previewingService.description && (
-                                    <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                description
-                                            </span>
-                                            <label className="block text-sm font-semibold text-[#3A3A3A]">
-                                                Description
-                                            </label>
-                                        </div>
-                                        <p className="text-sm text-[#6B7280] leading-relaxed">
-                                            {previewingService.description}
-                                        </p>
-                                    </div>
-                                )}
+                                    {/* Category and Status in Grid */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {previewingService.category && (
+                                            <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="material-symbols-outlined text-[#00C2A8] text-lg">
+                                                        category
+                                                    </span>
+                                                    <label className="block text-sm font-semibold text-[#3A3A3A]">
+                                                        Category
+                                                    </label>
+                                                </div>
+                                                <p className="text-sm text-[#3A3A3A]">
+                                                    {previewingService.category}
+                                                </p>
+                                            </div>
+                                        )}
 
-                                {/* Machine Type */}
-                                {previewingService.machineType && (
-                                    <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                precision_manufacturing
-                                            </span>
-                                            <label className="block text-sm font-semibold text-[#3A3A3A]">
-                                                Machine Type
-                                            </label>
-                                        </div>
-                                        <p className="text-sm text-[#3A3A3A]">
-                                            {previewingService.machineType}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Price and Duration */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                payments
-                                            </span>
-                                            <label className="block text-sm font-semibold text-[#3A3A3A]">
-                                                Price
-                                            </label>
-                                        </div>
-                                        <p className="text-base font-semibold text-[#0A84FF]">
-                                            ₹
-                                            {previewingService.price?.toLocaleString(
-                                                "en-IN",
-                                                {
-                                                    minimumFractionDigits: 2,
-                                                    maximumFractionDigits: 2,
-                                                }
-                                            )}
-                                        </p>
-                                    </div>
-                                    {previewingService.duration && (
+                                        {/* Status */}
                                         <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                    schedule
+                                                    info
                                                 </span>
                                                 <label className="block text-sm font-semibold text-[#3A3A3A]">
-                                                    Duration
+                                                    Status
                                                 </label>
                                             </div>
-                                            <p className="text-sm text-[#3A3A3A]">
-                                                {previewingService.duration}{" "}
-                                                minutes
-                                            </p>
+                                            <span
+                                                className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${previewingService.status ===
+                                                    "APPROVED"
+                                                    ? "bg-green-100 text-green-700"
+                                                    : previewingService.status ===
+                                                        "PENDING"
+                                                        ? "bg-yellow-100 text-yellow-700"
+                                                        : previewingService.status ===
+                                                            "REJECTED"
+                                                            ? "bg-red-100 text-red-700"
+                                                            : "bg-gray-100 text-gray-700"
+                                                    }`}
+                                            >
+                                                {previewingService.status}
+                                            </span>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
 
-                                {/* Category and Status in Grid */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    {previewingService.category && (
-                                        <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                    category
-                                                </span>
-                                                <label className="block text-sm font-semibold text-[#3A3A3A]">
-                                                    Category
-                                                </label>
+                                    {/* Skills */}
+                                    {previewingService.skills &&
+                                        previewingService.skills.length > 0 && (
+                                            <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="material-symbols-outlined text-[#00C2A8] text-lg">
+                                                        star
+                                                    </span>
+                                                    <label className="block text-sm font-semibold text-[#3A3A3A]">
+                                                        Skills
+                                                    </label>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {previewingService.skills.map(
+                                                        (skill, idx) => (
+                                                            <span
+                                                                key={idx}
+                                                                className="px-3 py-1.5 bg-[#0A84FF]/10 text-[#0A84FF] rounded-full text-xs font-medium"
+                                                            >
+                                                                {skill}
+                                                            </span>
+                                                        )
+                                                    )}
+                                                </div>
                                             </div>
-                                            <p className="text-sm text-[#3A3A3A]">
-                                                {previewingService.category}
-                                            </p>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {/* Status */}
+                                    {/* Active Status */}
                                     <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                info
+                                                toggle_on
                                             </span>
                                             <label className="block text-sm font-semibold text-[#3A3A3A]">
-                                                Status
+                                                Active Status
                                             </label>
                                         </div>
                                         <span
-                                            className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${previewingService.status ===
-                                                "APPROVED"
+                                            className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${previewingService.isActive
                                                 ? "bg-green-100 text-green-700"
-                                                : previewingService.status ===
-                                                    "PENDING"
-                                                    ? "bg-yellow-100 text-yellow-700"
-                                                    : previewingService.status ===
-                                                        "REJECTED"
-                                                        ? "bg-red-100 text-red-700"
-                                                        : "bg-gray-100 text-gray-700"
+                                                : "bg-gray-100 text-gray-700"
                                                 }`}
                                         >
-                                            {previewingService.status}
+                                            {previewingService.isActive
+                                                ? "Active"
+                                                : "Inactive"}
                                         </span>
                                     </div>
-                                </div>
-
-                                {/* Skills */}
-                                {previewingService.skills &&
-                                    previewingService.skills.length > 0 && (
-                                        <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                    star
-                                                </span>
-                                                <label className="block text-sm font-semibold text-[#3A3A3A]">
-                                                    Skills
-                                                </label>
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {previewingService.skills.map(
-                                                    (skill, idx) => (
-                                                        <span
-                                                            key={idx}
-                                                            className="px-3 py-1.5 bg-[#0A84FF]/10 text-[#0A84FF] rounded-full text-xs font-medium"
-                                                        >
-                                                            {skill}
-                                                        </span>
-                                                    )
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                {/* Active Status */}
-                                <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                            toggle_on
-                                        </span>
-                                        <label className="block text-sm font-semibold text-[#3A3A3A]">
-                                            Active Status
-                                        </label>
-                                    </div>
-                                    <span
-                                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${previewingService.isActive
-                                            ? "bg-green-100 text-green-700"
-                                            : "bg-gray-100 text-gray-700"
-                                            }`}
-                                    >
-                                        {previewingService.isActive
-                                            ? "Active"
-                                            : "Inactive"}
-                                    </span>
                                 </div>
                             </div>
+
+                            {/* Footer with Actions */}
+                            <form className="flex-shrink-0 border-t border-gray-100 bg-white p-5 flex gap-3 justify-start rounded-b-xl">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        handleEditService(previewingService);
+                                        setPreviewingService(null);
+                                    }}
+                                    className="bg-[#0A84FF] text-white py-3.5 px-6 rounded-lg hover:bg-[#005BBB] transition-colors flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                                    disabled={
+                                        isAddingService || editingServiceId !== null
+                                    }
+                                >
+                                    <span className="material-symbols-outlined text-base">
+                                        edit
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        handleDeleteService(previewingService._id);
+                                        setPreviewingService(null);
+                                    }}
+                                    className="bg-red-500 text-white py-3.5 px-6 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                                    disabled={
+                                        isAddingService || editingServiceId !== null
+                                    }
+                                >
+                                    <span className="material-symbols-outlined text-base">
+                                        delete
+                                    </span>
+                                </button>
+                            </form>
                         </div>
-
-                        {/* Footer with Actions */}
-                        <form className="flex-shrink-0 border-t border-gray-100 bg-white p-5 flex gap-3 justify-start rounded-b-xl">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    handleEditService(previewingService);
-                                    setPreviewingService(null);
-                                }}
-                                className="bg-[#0A84FF] text-white py-3.5 px-6 rounded-lg hover:bg-[#005BBB] transition-colors flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-                                disabled={
-                                    isAddingService || editingServiceId !== null
-                                }
-                            >
-                                <span className="material-symbols-outlined text-base">
-                                    edit
-                                </span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    handleDeleteService(previewingService._id);
-                                    setPreviewingService(null);
-                                }}
-                                className="bg-red-500 text-white py-3.5 px-6 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-                                disabled={
-                                    isAddingService || editingServiceId !== null
-                                }
-                            >
-                                <span className="material-symbols-outlined text-base">
-                                    delete
-                                </span>
-                            </button>
-                        </form>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {/* Action List */}
-            <div className="w-full mt-6 space-y-3">
-                <ActionRow
-                    icon={IoAlertCircleOutline}
-                    label="Dispute & Help"
-                    onClick={() => navigate("/vendor/disputes")}
-                />
-                <ActionRow
-                    icon={IoLogOutOutline}
-                    label="Logout"
-                    isLogout
-                    onClick={handleLogout}
-                />
-            </div>
+
+
 
             {/* Delete Service Confirmation Modal */}
             <ConfirmModal
@@ -1628,6 +1843,62 @@ export default function VendorProfile() {
 
 /* -------------------- REUSABLE COMPONENTS -------------------- */
 
+function StatItem({ icon, label, value, subValue, color, bgColor }) {
+    const Icon = icon;
+    return (
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${bgColor}`}>
+                <Icon className={`text-xl ${color}`} />
+            </div>
+            <div>
+                <p className="text-[10px] items-center font-bold text-gray-400 uppercase tracking-widest">{label}</p>
+                <p className="text-lg font-extrabold text-gray-800 leading-none mt-1">{value}</p>
+                <p className="text-[10px] font-medium text-gray-500 mt-1">{subValue}</p>
+            </div>
+        </div>
+    );
+}
+
+function InfoField({ icon, label, value, isEditing, onChange, type = "text", options }) {
+    const Icon = icon;
+    return (
+        <div className="space-y-2">
+            <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <Icon className="text-sm" />
+                {label}
+            </label>
+            {isEditing ? (
+                type === "select" ? (
+                    <div className="relative">
+                        <select
+                            value={value || ""}
+                            onChange={(e) => onChange(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all appearance-none"
+                        >
+                            <option value="">Select Value</option>
+                            {options.map((opt, i) => (
+                                <option key={i} value={opt}>{opt}</option>
+                            ))}
+                        </select>
+                        <IoChevronForwardOutline className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 rotate-90 pointer-events-none" />
+                    </div>
+                ) : (
+                    <input
+                        type={type}
+                        value={value || ""}
+                        onChange={(e) => onChange(e.target.value)}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all"
+                    />
+                )
+            ) : (
+                <div className="px-1">
+                    <p className="text-base font-extrabold text-gray-800">{value || "Not specified"}</p>
+                </div>
+            )}
+        </div>
+    );
+}
+
 function InfoRow({
     icon,
     label,
@@ -1639,12 +1910,12 @@ function InfoRow({
 }) {
     const IconComponent = icon;
     return (
-        <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#F3F7FA] transition-colors">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-500 shrink-0 flex-shrink-0 border-2 border-white shadow-sm">
-                <IconComponent className="text-lg text-white" />
+        <div className="flex items-start gap-4 p-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 shrink-0">
+                <IconComponent className="text-lg text-gray-400" />
             </div>
-            <div className="flex flex-col flex-1 min-w-0 w-full overflow-hidden">
-                <span className="text-xs text-[#6B7280] mb-1 font-semibold uppercase tracking-wide truncate">
+            <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
                     {label}
                 </span>
                 {isEditing ? (
@@ -1653,10 +1924,10 @@ function InfoRow({
                         value={value || ""}
                         onChange={onChange}
                         disabled={disabled}
-                        className="w-full text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] disabled:opacity-50 transition-all"
+                        className="w-full mt-1 text-sm font-bold text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"
                     />
                 ) : (
-                    <span className="text-base font-semibold text-[#3A3A3A] break-words">
+                    <span className="text-base font-extrabold text-gray-800 mt-0.5">
                         {value || "Not provided"}
                     </span>
                 )}
@@ -1670,26 +1941,63 @@ function ActionRow({ icon, label, isLogout, onClick }) {
     return (
         <div
             onClick={onClick}
-            className="flex min-h-14 w-full cursor-pointer items-center justify-between gap-4 rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] transition-all"
+            className="flex h-14 w-full cursor-pointer items-center justify-between gap-4 rounded-2xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all group"
         >
             <div className="flex items-center gap-4">
                 <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg shrink-0 ${isLogout ? "bg-red-100" : "bg-[#00C2A8]/10"
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl shrink-0 ${isLogout ? "bg-red-50" : "bg-gray-50"
                         }`}
                 >
                     <IconComponent
-                        className={`text-xl ${isLogout ? "text-red-500" : "text-[#00C2A8]"
+                        className={`text-xl ${isLogout ? "text-red-500" : "text-gray-600 group-hover:text-blue-500 transition-colors"
                             }`}
                     />
                 </div>
                 <p
-                    className={`flex-1 truncate text-base font-medium ${isLogout ? "text-red-500" : "text-[#3A3A3A]"
+                    className={`text-sm font-black ${isLogout ? "text-red-600" : "text-gray-800"
                         }`}
                 >
                     {label}
                 </p>
             </div>
-            <IoChevronForwardOutline className="text-xl text-[#6B7280]" />
+            <IoChevronForwardOutline className="text-xl text-gray-300 group-hover:text-gray-500" />
+        </div>
+    );
+}
+
+function InfoBlock({ label, value }) {
+    return (
+        <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+            <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">{label}</p>
+            <p className="text-sm font-bold text-gray-800">{value || "Not provided"}</p>
+        </div>
+    );
+}
+
+function DocumentCard({ title, doc }) {
+    if (!doc) return null;
+    return (
+        <div className="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100 gap-3 group hover:border-blue-200 transition-colors">
+            <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 text-blue-600">
+                <IoDocumentTextOutline className="text-xl" />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-gray-700 truncate">{title}</p>
+                <p className="text-[10px] text-gray-400">
+                    Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
+                </p>
+            </div>
+            {doc.url && (
+                <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-colors"
+                    title="View Document"
+                >
+                    <IoCloudUploadOutline className="text-lg" />
+                </a>
+            )}
         </div>
     );
 }

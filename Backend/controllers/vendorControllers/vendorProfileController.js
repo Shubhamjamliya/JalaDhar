@@ -104,6 +104,23 @@ const getProfile = async (req, res) => {
     vendor.bankDetails = bankDetails || null;
     vendor.documents = formattedDocuments;
 
+    // Extract unique instruments from services machineType
+    const instrumentsSet = new Set();
+    if (vendor.services && Array.isArray(vendor.services)) {
+      vendor.services.forEach(service => {
+        if (service.machineType) {
+          // split by comma, trim, and add to set
+          const types = service.machineType.split(',').map(t => t.trim()).filter(Boolean);
+          types.forEach(type => instrumentsSet.add(type));
+        }
+      });
+    }
+
+    // Override instruments with derived list if services exist
+    if (instrumentsSet.size > 0) {
+      vendor.instruments = Array.from(instrumentsSet);
+    }
+
     res.json({
       success: true,
       message: 'Profile retrieved successfully',
@@ -411,76 +428,7 @@ const deleteGalleryImage = async (req, res) => {
   }
 };
 
-/**
- * Update availability settings
- */
-const updateAvailability = async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
-      });
-    }
 
-    const vendor = await Vendor.findById(req.userId);
-    if (!vendor) {
-      return res.status(404).json({
-        success: false,
-        message: 'Vendor not found'
-      });
-    }
-
-    const {
-      isAvailable,
-      workingDays,
-      workingHours,
-      timeSlots
-    } = req.body;
-
-    // Update availability
-    if (isAvailable !== undefined) {
-      vendor.availability.isAvailable = isAvailable;
-    }
-
-    if (workingDays !== undefined) {
-      vendor.availability.workingDays = Array.isArray(workingDays)
-        ? workingDays
-        : (typeof workingDays === 'string' ? JSON.parse(workingDays) : []);
-    }
-
-    if (workingHours !== undefined) {
-      const hours = typeof workingHours === 'string' ? JSON.parse(workingHours) : workingHours;
-      if (hours.start) vendor.availability.workingHours.start = hours.start;
-      if (hours.end) vendor.availability.workingHours.end = hours.end;
-    }
-
-    if (timeSlots !== undefined) {
-      vendor.availability.timeSlots = Array.isArray(timeSlots)
-        ? timeSlots
-        : (typeof timeSlots === 'string' ? JSON.parse(timeSlots) : []);
-    }
-
-    await vendor.save();
-
-    res.json({
-      success: true,
-      message: 'Availability updated successfully',
-      data: {
-        availability: vendor.availability
-      }
-    });
-  } catch (error) {
-    console.error('Update availability error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update availability',
-      error: error.message
-    });
-  }
-};
 
 /**
  * Get payment collection status
@@ -525,7 +473,7 @@ module.exports = {
   uploadProfilePicture,
   uploadGalleryImages,
   deleteGalleryImage,
-  updateAvailability,
+
   getPaymentStatus
 };
 

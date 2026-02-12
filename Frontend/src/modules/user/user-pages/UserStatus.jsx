@@ -315,7 +315,7 @@ export default function UserStatus() {
             },
             {
                 id: "borewell-report",
-                label: "Add Borewell Report",
+                label: "Add Borewell Drilling Status",
                 icon: IoImageOutline,
                 active: status === "PAYMENT_SUCCESS" && remainingPaid && !borewellUploaded,
                 completed: borewellUploaded || effectiveIndex > 7,

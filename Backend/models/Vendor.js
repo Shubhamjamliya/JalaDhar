@@ -20,6 +20,21 @@ const vendorSchema = new mongoose.Schema({
     required: [true, 'Phone number is required'],
     trim: true
   },
+  bloodGroup: {
+    type: String,
+    enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+    default: null
+  },
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Other'],
+    default: null
+  },
+  designation: {
+    type: String,
+    enum: ['Hydrogeologist', 'Geophysicist', 'Earth Scientist', 'Detector', 'Devinor'],
+    default: null
+  },
   password: {
     type: String,
     required: [true, 'Password is required'],
@@ -116,38 +131,7 @@ const vendorSchema = new mongoose.Schema({
       geocodedAt: Date
     }
   },
-  // Availability Settings
-  availability: {
-    isAvailable: {
-      type: Boolean,
-      default: true
-    },
-    workingDays: [{
-      type: String,
-      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    }],
-    workingHours: {
-      start: {
-        type: String,
-        default: '09:00'
-      },
-      end: {
-        type: String,
-        default: '18:00'
-      }
-    },
-    timeSlots: [{
-      date: Date,
-      slots: [{
-        start: String,
-        end: String,
-        isAvailable: {
-          type: Boolean,
-          default: true
-        }
-      }]
-    }]
-  },
+
   // Services offered by vendor (legacy - kept for backward compatibility)
   services: [{
     type: mongoose.Schema.Types.ObjectId,

@@ -10,6 +10,7 @@ import { getVendorBookings } from "../../../services/vendorApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import CustomDropdown from "../../shared/components/CustomDropdown";
 
 export default function VendorCreateDispute() {
     const navigate = useNavigate();
@@ -130,26 +131,22 @@ export default function VendorCreateDispute() {
             <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
                 {/* Related Booking */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Related Booking (Optional)
-                    </label>
-                    <select
+                    <CustomDropdown
                         name="bookingId"
+                        label="Related Booking (Optional)"
                         value={formData.bookingId}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
-                    >
-                        <option value="">Select a booking (optional)</option>
-                        {loadingBookings ? (
-                            <option>Loading bookings...</option>
-                        ) : (
-                            bookings.map((booking) => (
-                                <option key={booking._id} value={booking._id}>
-                                    Booking #{booking._id.toString().slice(-8).toUpperCase()} - {booking.service?.name || "Service"} - {new Date(booking.scheduledDate).toLocaleDateString()}
-                                </option>
-                            ))
-                        )}
-                    </select>
+                        options={[
+                            { value: "", label: "Select a booking (optional)" },
+                            ...(loadingBookings
+                                ? [{ value: "", label: "Loading bookings..." }]
+                                : bookings.map(booking => ({
+                                    value: booking._id,
+                                    label: `Booking #${booking._id.toString().slice(-8).toUpperCase()} - ${booking.service?.name || "Service"} - ${new Date(booking.scheduledDate).toLocaleDateString()}`
+                                }))
+                            )
+                        ]}
+                    />
                 </div>
 
                 {/* Dispute Type */}
@@ -157,41 +154,38 @@ export default function VendorCreateDispute() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Dispute Type <span className="text-red-500">*</span>
                     </label>
-                    <select
+                    <CustomDropdown
                         name="type"
                         value={formData.type}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent ${errors.type ? "border-red-500" : "border-gray-300"
-                            }`}
-                    >
-                        <option value="">Select dispute type</option>
-                        <option value="PAYMENT_ISSUE">Payment Issue</option>
-                        <option value="SERVICE_QUALITY">Service Quality</option>
-                        <option value="VENDOR_BEHAVIOR">Vendor Behavior</option>
-                        <option value="REPORT_ISSUE">Report Issue</option>
-                        <option value="CANCELLATION">Cancellation</option>
-                        <option value="REFUND">Refund</option>
-                        <option value="OTHER">Other</option>
-                    </select>
+                        className={errors.type ? "border-red-500" : "border-gray-300"}
+                        options={[
+                            { value: "", label: "Select dispute type" },
+                            { value: "PAYMENT_ISSUE", label: "Payment Issue" },
+                            { value: "CLIENT_BEHAVIOR", label: "Client Behavior" },
+                            { value: "CANCELLATION_DISPUTE", label: "Cancellation Dispute" },
+                            { value: "SERVICE_COMPLETION", label: "Service Completion Issue" },
+                            { value: "UNREACHABLE_CLIENT", label: "Unreachable Client" },
+                            { value: "OTHER", label: "Other" }
+                        ]}
+                    />
                     {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
                 </div>
 
                 {/* Priority */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Priority
-                    </label>
-                    <select
+                    <CustomDropdown
                         name="priority"
+                        label="Priority"
                         value={formData.priority}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
-                    >
-                        <option value="LOW">Low</option>
-                        <option value="MEDIUM">Medium</option>
-                        <option value="HIGH">High</option>
-                        <option value="URGENT">Urgent</option>
-                    </select>
+                        options={[
+                            { value: "LOW", label: "Low" },
+                            { value: "MEDIUM", label: "Medium" },
+                            { value: "HIGH", label: "High" },
+                            { value: "URGENT", label: "Urgent" }
+                        ]}
+                    />
                 </div>
 
                 {/* Subject */}

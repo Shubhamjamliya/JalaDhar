@@ -8,7 +8,7 @@ const {
   uploadProfilePicture,
   uploadGalleryImages,
   deleteGalleryImage,
-  updateAvailability,
+
   getPaymentStatus
 } = require('../../controllers/vendorControllers/vendorProfileController');
 const { authenticate } = require('../../middleware/authMiddleware');
@@ -61,8 +61,7 @@ router.post('/profile/picture', authenticate, isVendor, upload.single('image'), 
 router.post('/gallery', authenticate, isVendor, upload.array('images', 10), uploadGalleryImages);
 router.delete('/gallery/:imageId', authenticate, isVendor, deleteGalleryImage);
 
-// Availability management
-router.put('/availability', authenticate, isVendor, updateAvailabilityValidation, updateAvailability);
+
 
 // Payment status
 router.get('/payment-status', authenticate, isVendor, getPaymentStatus);

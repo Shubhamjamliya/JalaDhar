@@ -103,6 +103,50 @@ export default function VendorDisputes() {
         return colors[priority] || "bg-gray-100 text-gray-700";
     };
 
+    const CustomDropdown = ({ options, value, onChange }) => {
+        const [isOpen, setIsOpen] = useState(false);
+        const dropdownRef = useState(null)[1]; // simplified ref for outside click if needed, but simple toggle is enough for now
+
+        // Close logic could be added with a click-outside hook, but for now simple toggle
+
+        return (
+            <div className="relative min-w-0">
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="w-full h-10 px-4 text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white flex items-center justify-between truncate"
+                >
+                    <span className="truncate">{options.find(o => o.value === value)?.label || options[0].label}</span>
+                    <span className="ml-2 text-gray-400 text-xs">▼</span>
+                </button>
+
+                {isOpen && (
+                    <>
+                        <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setIsOpen(false)}
+                        ></div>
+                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            {options.map((option) => (
+                                <div
+                                    key={option.value}
+                                    onClick={() => {
+                                        onChange(option.value);
+                                        setIsOpen(false);
+                                    }}
+                                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-50 truncate ${value === option.value ? "text-[#0A84FF] font-medium bg-blue-50" : "text-gray-700"
+                                        }`}
+                                >
+                                    {option.label}
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -122,39 +166,41 @@ export default function VendorDisputes() {
 
             {/* Filters */}
             <div className="bg-white rounded-lg shadow-sm p-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <select
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm md:text-base">
+                    <CustomDropdown
+                        options={[
+                            { value: "", label: "All Status" },
+                            { value: "PENDING", label: "Pending" },
+                            { value: "IN_PROGRESS", label: "In Progress" },
+                            { value: "RESOLVED", label: "Resolved" },
+                            { value: "CLOSED", label: "Closed" },
+                            { value: "REJECTED", label: "Rejected" },
+                        ]}
                         value={filters.status}
-                        onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
-                    >
-                        <option value="">All Status</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="RESOLVED">Resolved</option>
-                        <option value="CLOSED">Closed</option>
-                        <option value="REJECTED">Rejected</option>
-                    </select>
-                    <select
+                        onChange={(val) => setFilters({ ...filters, status: val, page: 1 })}
+                    />
+                    <CustomDropdown
+                        options={[
+                            { value: "", label: "All Types" },
+                            { value: "PAYMENT_ISSUE", label: "Payment Issue" },
+                            { value: "SERVICE_QUALITY", label: "Service Quality" },
+                            { value: "VENDOR_BEHAVIOR", label: "Vendor Behavior" },
+                            { value: "REPORT_ISSUE", label: "Report Issue" },
+                            { value: "CANCELLATION", label: "Cancellation" },
+                            { value: "REFUND", label: "Refund" },
+                            { value: "OTHER", label: "Other" },
+                        ]}
                         value={filters.type}
-                        onChange={(e) => setFilters({ ...filters, type: e.target.value, page: 1 })}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
-                    >
-                        <option value="">All Types</option>
-                        <option value="PAYMENT_ISSUE">Payment Issue</option>
-                        <option value="SERVICE_QUALITY">Service Quality</option>
-                        <option value="VENDOR_BEHAVIOR">Vendor Behavior</option>
-                        <option value="REPORT_ISSUE">Report Issue</option>
-                        <option value="CANCELLATION">Cancellation</option>
-                        <option value="REFUND">Refund</option>
-                        <option value="OTHER">Other</option>
-                    </select>
-                    <button
-                        onClick={() => setFilters({ status: "", type: "", page: 1 })}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                        Clear Filters
-                    </button>
+                        onChange={(val) => setFilters({ ...filters, type: val, page: 1 })}
+                    />
+                    <div className="min-w-0">
+                        <button
+                            onClick={() => setFilters({ status: "", type: "", page: 1 })}
+                            className="w-full h-10 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors bg-white font-medium border border-gray-300"
+                        >
+                            Clear Filters
+                        </button>
+                    </div>
                 </div>
             </div>
 

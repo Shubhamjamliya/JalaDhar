@@ -6,6 +6,7 @@ import { sendVendorRegistrationOTP } from "../../../services/vendorAuthApi";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
+import CustomDropdown from "../../shared/components/CustomDropdown";
 import logo from "@/assets/AppLogo.png";
 
 // Get API key at module level
@@ -146,6 +147,9 @@ export default function VendorSignup() {
         name: "",
         email: "",
         phone: "",
+        bloodGroup: "",
+        gender: "",
+        designation: "",
         password: "",
         confirmPassword: "",
         profilePicture: null,
@@ -521,6 +525,9 @@ export default function VendorSignup() {
                                 name: formData.name,
                                 email: formData.email,
                                 phone: formData.phone,
+                                bloodGroup: formData.bloodGroup,
+                                gender: formData.gender,
+                                designation: formData.designation,
                                 password: formData.password,
                                 profilePicture: formData.profilePicture,
                                 aadharCard: formData.aadharCard,
@@ -667,6 +674,55 @@ export default function VendorSignup() {
                                         value={formData.phone}
                                         onChange={handleInputChange}
                                         disabled={loading}
+                                    />
+                                    <SelectBox
+                                        label="Gender *"
+                                        name="gender"
+                                        options={[
+                                            { value: "", label: "Select Gender" },
+                                            { value: "Male", label: "Male" },
+                                            { value: "Female", label: "Female" },
+                                            { value: "Other", label: "Other" }
+                                        ]}
+                                        value={formData.gender}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                        icon="person"
+                                    />
+                                    <SelectBox
+                                        label="Blood Group *"
+                                        name="bloodGroup"
+                                        options={[
+                                            { value: "", label: "Select Blood Group" },
+                                            { value: "A+", label: "A+" },
+                                            { value: "A-", label: "A-" },
+                                            { value: "B+", label: "B+" },
+                                            { value: "B-", label: "B-" },
+                                            { value: "AB+", label: "AB+" },
+                                            { value: "AB-", label: "AB-" },
+                                            { value: "O+", label: "O+" },
+                                            { value: "O-", label: "O-" }
+                                        ]}
+                                        value={formData.bloodGroup}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                        icon="bloodtype"
+                                    />
+                                    <SelectBox
+                                        label="Designation *"
+                                        name="designation"
+                                        options={[
+                                            { value: "", label: "Select Designation" },
+                                            { value: "Hydrogeologist", label: "Hydrogeologist" },
+                                            { value: "Geophysicist", label: "Geophysicist" },
+                                            { value: "Earth Scientist", label: "Earth Scientist" },
+                                            { value: "Detector", label: "Detector" },
+                                            { value: "Devinor", label: "Devinor" }
+                                        ]}
+                                        value={formData.designation}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                        icon="badge"
                                     />
                                     <PasswordBox
                                         label="Password *"
@@ -1342,31 +1398,18 @@ function FileBox({ label, onChange, file, disabled }) {
     );
 }
 
-function SelectBox({ label, name, options, value, onChange, disabled }) {
+function SelectBox({ label, name, options, value, onChange, disabled, icon }) {
     return (
         <div className="mb-3">
-            <label className="block text-xs font-medium text-[#6B7280] mb-1">
-                {label}
-            </label>
-            <div className="relative">
-                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
-                    school
-                </span>
-                <select
-                    name={name}
-                    value={value}
-                    onChange={onChange}
-                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm appearance-none"
-                    disabled={disabled}
-                >
-                    {options.map((opt, i) => (
-                        <option key={i} value={opt.value}>{opt.label}</option>
-                    ))}
-                </select>
-                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400">
-                    expand_more
-                </span>
-            </div>
+            <CustomDropdown
+                label={label}
+                name={name}
+                options={options}
+                value={value}
+                onChange={onChange}
+                disabled={disabled}
+                placeholder={`Select ${label.replace('*', '').trim()}`}
+            />
         </div>
     );
 }
