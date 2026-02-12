@@ -412,8 +412,8 @@ const ExpertSelection = ({ location, category, onSelect, onBack }) => {
                 className="w-full flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-blue-500 transition-all text-left group"
               >
                 <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center text-xl shrink-0">
-                  {expert.documents?.profilePicture ? (
-                    <img src={expert.documents.profilePicture.url} alt="" className="h-full w-full rounded-full object-cover" />
+                  {expert.profilePicture ? (
+                    <img src={expert.profilePicture} alt="" className="h-full w-full rounded-full object-cover" />
                   ) : (
                     "👨‍🔧"
                   )}
@@ -537,7 +537,7 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
             <p className="font-bold text-gray-800">{surveyData.vendor.name}</p>
           </div>
           <div className="h-10 w-10 bg-gray-200 rounded-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${surveyData.vendor.documents?.profilePicture?.url || ''})` }}>
+            style={{ backgroundImage: surveyData.vendor.profilePicture ? `url("${surveyData.vendor.profilePicture}")` : '' }}>
           </div>
         </div>
       )}

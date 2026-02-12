@@ -145,7 +145,11 @@ const register = async (req, res) => {
       servicePrice,
       address,
       otp,
-      token
+      token,
+      gender,
+      designation,
+      education,
+      institution
     } = req.body;
 
     if (!otp || !token) {
@@ -299,14 +303,28 @@ const register = async (req, res) => {
       }
     }
 
-    // Parse educational qualifications if it's a string
+    // Parse educational qualifications
     let parsedQualifications = [];
     if (educationalQualifications) {
       if (typeof educationalQualifications === 'string') {
-        parsedQualifications = JSON.parse(educationalQualifications);
+        try {
+          parsedQualifications = JSON.parse(educationalQualifications);
+        } catch (e) {
+          // If parse fails, assume it's a raw string, but schema expects array of objects
+          // We can't easily map a single string to [{degree, ...}] without institution
+          console.log("Failed to parse educationalQualifications JSON", e);
+        }
       } else {
         parsedQualifications = educationalQualifications;
       }
+    } else if (education) {
+      // Construct from separate fields
+      parsedQualifications = [{
+        degree: education,
+        institution: institution || 'Not Specified',
+        year: new Date().getFullYear(), // Default as not asked in form
+        percentage: 0 // Default
+      }];
     }
 
     // Parse address if it's a string
@@ -404,7 +422,9 @@ const register = async (req, res) => {
       instruments: parsedInstruments,
       servicePrice: servicePrice ? parseFloat(servicePrice) : null,
       address: parsedAddress,
-      isEmailVerified: true // Email is verified via OTP
+      isEmailVerified: true, // Email is verified via OTP
+      gender,
+      designation
     };
 
     const vendor = await Vendor.create(vendorData);

@@ -1,6 +1,7 @@
 const Booking = require('../../models/Booking');
 const Service = require('../../models/Service');
 const Vendor = require('../../models/Vendor');
+const VendorDocument = require('../../models/VendorDocument');
 const Payment = require('../../models/Payment');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { createOrder } = require('../../services/razorpayService');
@@ -910,6 +911,20 @@ const getNearbyVendors = async (req, res) => {
       return v;
     }).filter(v => v.services && v.services.length > 0); // Only keep vendors with services
 
+    // Fetch profile pictures for all vendors at once
+    const vendorIds = vendorsWithServices.map(v => v._id);
+    const profilePics = await VendorDocument.find({
+      vendor: { $in: vendorIds },
+      documentType: 'PROFILE_PICTURE',
+      isActive: true
+    }).select('vendor url').lean();
+
+    // Create a map for quick lookup
+    const profilePicMap = profilePics.reduce((acc, pic) => {
+      acc[pic.vendor.toString()] = pic.url;
+      return acc;
+    }, {});
+
     // Calculate distance and format vendors
     const formattedVendors = vendorsWithServices.map(vendor => {
       let distance = null;
@@ -942,6 +957,7 @@ const getNearbyVendors = async (req, res) => {
       return {
         ...vendor, // Already a plain object due to lean()
         distance,
+        profilePicture: profilePicMap[vendor._id.toString()] || null, // Added this field
         averageRating: vendor.rating?.averageRating || 0,
         totalRatings: vendor.rating?.totalRatings || 0,
         category: primaryService?.category || 'General',
@@ -1031,9 +1047,6 @@ const getNearbyVendors = async (req, res) => {
   }
 };
 
-/**
- * Get vendor profile details (for users to view)
- */
 const getVendorProfile = async (req, res) => {
   try {
     const { vendorId } = req.params;
@@ -1048,7 +1061,7 @@ const getVendorProfile = async (req, res) => {
     }
 
     const vendor = await Vendor.findById(vendorId)
-      .select('name email phone experience rating address location services isActive isApproved')
+      .select('name email phone experience rating address location services isActive isApproved gender designation educationalQualifications')
       .populate({
         path: 'services',
         select: 'name category price description images status isActive machineType'
@@ -1069,6 +1082,17 @@ const getVendorProfile = async (req, res) => {
       });
     }
 
+    // specific documents fetch (Profile Picture and Certificates)
+    const documents = await VendorDocument.find({
+      vendor: vendorId,
+      documentType: { $in: ['CERTIFICATE', 'TRAINING_CERTIFICATE', 'PROFILE_PICTURE'] },
+      isActive: true
+    }).select('documentType url name certificateName');
+
+    const profilePicDoc = documents.find(doc => doc.documentType === 'PROFILE_PICTURE');
+    const degreeCertificates = documents.filter(doc => doc.documentType === 'CERTIFICATE');
+    const trainingCertificates = documents.filter(doc => doc.documentType === 'TRAINING_CERTIFICATE');
+
     // Calculate distance if user location provided
     let distance = null;
     if (lat && lng && vendor.address?.coordinates?.lat && vendor.address?.coordinates?.lng) {
@@ -1087,8 +1111,12 @@ const getVendorProfile = async (req, res) => {
     const formattedVendor = {
       ...vendor,
       distance,
+      profilePicture: profilePicDoc ? profilePicDoc.url : null,
+      education: vendor.educationalQualifications, // Map for frontend compatibility
       averageRating: vendor.rating?.averageRating || 0,
       totalRatings: vendor.rating?.totalRatings || 0,
+      degreeCertificates,
+      trainingCertificates,
       services: (vendor.services || []).filter(s => s !== null && s !== undefined).map(s => ({
         id: s._id,
         name: s.name,
@@ -1141,12 +1169,35 @@ const getDashboardStats = async (req, res) => {
     const totalBookings = await Booking.countDocuments({ user: userId });
 
     // Get recent bookings (last 5)
-    const recentBookings = await Booking.find({ user: userId })
+    let recentBookings = await Booking.find({ user: userId })
       .populate('vendor', 'name rating')
       .populate('service', 'name price')
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('status scheduledDate scheduledTime service vendor createdAt payment');
+      .select('status scheduledDate scheduledTime service vendor createdAt payment')
+      .lean();
+
+    // Fetch profile pictures for vendors in recent bookings
+    const vendorIds = [...new Set(recentBookings.filter(b => b.vendor).map(b => b.vendor._id.toString()))];
+    if (vendorIds.length > 0) {
+      const profilePics = await VendorDocument.find({
+        vendor: { $in: vendorIds },
+        documentType: 'PROFILE_PICTURE',
+        isActive: true
+      }).select('vendor url').lean();
+
+      const profilePicMap = profilePics.reduce((acc, pic) => {
+        acc[pic.vendor.toString()] = pic.url;
+        return acc;
+      }, {});
+
+      recentBookings = recentBookings.map(booking => {
+        if (booking.vendor) {
+          booking.vendor.profilePicture = profilePicMap[booking.vendor._id.toString()] || null;
+        }
+        return booking;
+      });
+    }
 
     // Format stats
     const stats = {

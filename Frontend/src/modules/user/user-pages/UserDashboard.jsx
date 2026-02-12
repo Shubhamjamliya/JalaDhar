@@ -641,13 +641,13 @@ export default function UserDashboard() {
                                     <div
                                         className="h-20 w-20 rounded-full bg-cover bg-center bg-no-repeat border-4 border-white shadow-md"
                                         style={{
-                                            backgroundImage: vendor.documents?.profilePicture?.url
-                                                ? `url("${vendor.documents.profilePicture.url}")`
+                                            backgroundImage: vendor.profilePicture
+                                                ? `url("${vendor.profilePicture}")`
                                                 : "none",
-                                            backgroundColor: vendor.documents?.profilePicture?.url ? "transparent" : bgColor
+                                            backgroundColor: vendor.profilePicture ? "transparent" : bgColor
                                         }}
                                     >
-                                        {!vendor.documents?.profilePicture?.url && (
+                                        {!vendor.profilePicture && (
                                             <div className="w-full h-full flex items-center justify-center rounded-full">
                                                 <span className="text-3xl">👤</span>
                                             </div>

@@ -8,7 +8,11 @@ import {
     IoMailOutline,
     IoChevronBackOutline,
     IoConstructOutline,
-    IoBriefcaseOutline
+    IoBriefcaseOutline,
+    IoBookOutline,
+    IoSchoolOutline,
+    IoPersonOutline,
+    IoShieldCheckmarkOutline
 } from "react-icons/io5";
 import { getVendorProfile } from "../../../services/bookingApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -138,47 +142,47 @@ export default function UserVendorProfile() {
                                 </div>
                             )}
                         </div>
-                        <div className="absolute bottom-0 right-0 bg-green-500 h-6 w-6 rounded-full border-2 border-white"></div>
+                        <div className="absolute bottom-1 right-1 bg-blue-500 h-8 w-8 rounded-full border-4 border-white flex items-center justify-center shadow-sm">
+                            <IoShieldCheckmarkOutline className="text-white text-sm" />
+                        </div>
                     </div>
 
                     {/* Name & Basic Info */}
                     <h1 className="text-2xl font-bold text-gray-900 mb-1">
                         {vendorData.name}
                     </h1>
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-100">
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="flex items-center gap-1 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100 shadow-sm">
                             <IoStar className="text-yellow-500 text-sm" />
-                            <span className="font-bold text-gray-800 text-sm">
+                            <span className="font-bold text-gray-800 text-sm ml-0.5">
                                 {vendorData.rating?.averageRating?.toFixed(1) || "New"}
                             </span>
+                            <span className="text-xs text-gray-400 font-medium ml-1">
+                                ({vendorData.rating?.totalRatings || 0} reviews)
+                            </span>
                         </div>
-                        <span className="text-gray-400 text-sm">•</span>
-                        <span className="text-gray-500 text-sm font-medium">
-                            {vendorData.experience ? `${vendorData.experience} Years Exp.` : "Fresher"}
-                        </span>
-                        <span className="text-gray-400 text-sm">•</span>
-                        <span className="text-gray-500 text-sm font-medium">
-                            {vendorData.rating?.totalJobsCompleted || 0} Jobs
-                        </span>
                     </div>
 
                     {/* Stats Cards - Success/Fail */}
-                    <div className="grid grid-cols-2 gap-3 w-full max-w-sm mb-6">
-                        <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-100 flex flex-col items-center">
-                            <span className="text-2xl font-bold text-emerald-600">
-                                {vendorData.rating?.successCount || 0}
+                    {/* Modern Stats Cards */}
+                    <div className="grid grid-cols-3 gap-3 w-full mb-6">
+                        <div className="bg-blue-50/50 rounded-xl p-3 flex flex-col items-center justify-center border border-blue-100">
+                            <span className="text-lg font-bold text-blue-700">
+                                {vendorData.experience || 0}<span className="text-xs font-normal text-blue-500">+</span>
                             </span>
-                            <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
-                                Success ({vendorData.rating?.successRatio || 0}%)
-                            </span>
+                            <span className="text-[10px] uppercase tracking-wider font-semibold text-blue-400 mt-1">Yrs Exp.</span>
                         </div>
-                        <div className="bg-red-50 rounded-2xl p-3 border border-red-100 flex flex-col items-center">
-                            <span className="text-2xl font-bold text-red-600">
-                                {vendorData.rating?.failureCount || 0}
+                        <div className="bg-emerald-50/50 rounded-xl p-3 flex flex-col items-center justify-center border border-emerald-100">
+                            <span className="text-lg font-bold text-emerald-700">
+                                {vendorData.rating?.successRatio || 0}<span className="text-xs font-normal text-emerald-500">%</span>
                             </span>
-                            <span className="text-xs font-semibold text-red-700 uppercase tracking-wide">
-                                Failed
+                            <span className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400 mt-1">Success</span>
+                        </div>
+                        <div className="bg-purple-50/50 rounded-xl p-3 flex flex-col items-center justify-center border border-purple-100">
+                            <span className="text-lg font-bold text-purple-700">
+                                {vendorData.rating?.totalJobsCompleted || 0}
                             </span>
+                            <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-400 mt-1">Projects</span>
                         </div>
                     </div>
 
@@ -193,12 +197,83 @@ export default function UserVendorProfile() {
                             />
                         )}
                         <InfoRow
+                            icon={IoBriefcaseOutline}
+                            label="Designation"
+                            value={vendorData.designation || 'Not specified'}
+                            color="bg-purple-500"
+                        />
+                        <InfoRow
+                            icon={IoPersonOutline}
+                            label="Gender"
+                            value={vendorData.gender || 'Not specified'}
+                            color="bg-pink-500"
+                        />
+                        <InfoRow
+                            icon={IoSchoolOutline}
+                            label="Qualification"
+                            value={
+                                Array.isArray(vendorData.education)
+                                    ? vendorData.education.map(e => typeof e === 'string' ? e : e.degree).join(', ')
+                                    : (vendorData.education || 'Not specified')
+                            }
+                            color="bg-indigo-500"
+                        />
+                        <InfoRow
                             icon={IoLocationOutline}
                             label="Service Location"
                             value={formatAddress(vendorData.address)}
                             color="bg-teal-500"
                         />
                     </div>
+
+                    {/* Certificates Section */}
+                    {(vendorData.degreeCertificates?.length > 0 || vendorData.trainingCertificates?.length > 0) && (
+                        <div className="w-full pt-4 border-t border-gray-100">
+                            <h3 className="text-sm font-bold text-gray-800 mb-3 px-1">Verified Credentials</h3>
+
+                            {/* Degree Certificates */}
+                            {vendorData.degreeCertificates?.length > 0 && (
+                                <div className="mb-3">
+                                    <p className="text-xs text-gray-500 mb-2 font-medium">Degree Certificates</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {vendorData.degreeCertificates.map((cert, index) => (
+                                            <a
+                                                key={index}
+                                                href={cert.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors border border-blue-100"
+                                            >
+                                                <IoSchoolOutline className="text-sm" />
+                                                <span>{cert.name || `Certificate ${index + 1}`}</span>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Training Certificates */}
+                            {vendorData.trainingCertificates?.length > 0 && (
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-2 font-medium">Training Certificates</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {vendorData.trainingCertificates.map((cert, index) => (
+                                            <a
+                                                key={index}
+                                                href={cert.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors border border-green-100"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">workspace_premium</span>
+                                                <span>{cert.name || `Training ${index + 1}`}</span>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </section>
 

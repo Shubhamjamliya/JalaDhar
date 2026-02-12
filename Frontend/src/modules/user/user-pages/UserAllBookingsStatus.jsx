@@ -170,31 +170,28 @@ export default function UserAllBookingsStatus() {
       <div className="mb-6 flex gap-2 border-b border-gray-200">
         <button
           onClick={() => setActiveTab("upcoming")}
-          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${
-            activeTab === "upcoming"
+          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${activeTab === "upcoming"
               ? "text-[#0A84FF] border-[#0A84FF]"
               : "text-gray-500 border-transparent hover:text-[#0A84FF]"
-          }`}
+            }`}
         >
           Upcoming
         </button>
         <button
           onClick={() => setActiveTab("complete")}
-          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${
-            activeTab === "complete"
+          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${activeTab === "complete"
               ? "text-[#0A84FF] border-[#0A84FF]"
               : "text-gray-500 border-transparent hover:text-[#0A84FF]"
-          }`}
+            }`}
         >
           Complete
         </button>
         <button
           onClick={() => setActiveTab("cancelled")}
-          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${
-            activeTab === "cancelled"
+          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${activeTab === "cancelled"
               ? "text-[#0A84FF] border-[#0A84FF]"
               : "text-gray-500 border-transparent hover:text-[#0A84FF]"
-          }`}
+            }`}
         >
           Cancelled
         </button>
@@ -229,9 +226,9 @@ export default function UserAllBookingsStatus() {
               <div className="mb-4">
                 <div className="flex items-start gap-4 mb-3">
                   {/* Profile Picture */}
-                  {booking.vendor?.documents?.profilePicture?.url ? (
+                  {booking.vendor?.profilePicture ? (
                     <img
-                      src={booking.vendor.documents.profilePicture.url}
+                      src={booking.vendor.profilePicture}
                       alt="Vendor Avatar"
                       className="h-14 w-14 rounded-full border-2 border-[#0A84FF] object-cover flex-shrink-0"
                     />

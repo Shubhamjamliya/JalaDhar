@@ -20,7 +20,7 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  
+
   const { user, isAuthenticated: isUserAuthenticated } = useAuth();
   const { vendor, isAuthenticated: isVendorAuthenticated } = useVendorAuth();
   const { admin, isAuthenticated: isAdminAuthenticated } = useAdminAuth();
@@ -28,7 +28,7 @@ export const NotificationProvider = ({ children }) => {
   // Determine current user and role
   const currentUser = user || vendor || admin;
   const isAuthenticated = isUserAuthenticated || isVendorAuthenticated || isAdminAuthenticated;
-  const userRole = user ? 'USER' : vendor ? 'VENDOR' : admin ? 'ADMIN' : null;
+  const userRole = user ? 'User' : vendor ? 'Vendor' : admin ? 'Admin' : null;
 
   // Use refs to store latest values for socket listener (avoid stale closure)
   const currentUserRef = useRef(currentUser);
@@ -52,11 +52,11 @@ export const NotificationProvider = ({ children }) => {
     }
 
     // Get token from localStorage
-    const tokenKey = userRole === 'ADMIN' 
-      ? 'adminAccessToken' 
-      : userRole === 'VENDOR' 
-      ? 'vendorAccessToken' 
-      : 'accessToken';
+    const tokenKey = userRole === 'Admin'
+      ? 'adminAccessToken'
+      : userRole === 'Vendor'
+        ? 'vendorAccessToken'
+        : 'accessToken';
     const token = localStorage.getItem(tokenKey);
 
     if (!token) {
@@ -91,13 +91,13 @@ export const NotificationProvider = ({ children }) => {
     // Listen for new notifications
     newSocket.on('new_notification', (notification) => {
       console.log('[Socket] New notification received:', notification);
-      
+
       // Use refs to get latest values (not stale closure values)
       const currentUserId = currentUserRef.current?._id?.toString() || currentUserRef.current?.id?.toString();
       const notificationRecipientId = notification.recipient?.toString();
       const notificationRecipientModel = notification.recipientModel;
       const currentUserRole = userRoleRef.current;
-      
+
       console.log('[Socket] Filtering check:', {
         notificationRecipientId,
         currentUserId,
@@ -105,10 +105,10 @@ export const NotificationProvider = ({ children }) => {
         currentUserRole,
         match: notificationRecipientId === currentUserId && notificationRecipientModel === currentUserRole
       });
-      
+
       // Only add if recipient and model match
-      if (notificationRecipientId === currentUserId && 
-          notificationRecipientModel === currentUserRole) {
+      if (notificationRecipientId === currentUserId &&
+        notificationRecipientModel === currentUserRole) {
         setNotifications((prev) => [notification, ...prev]);
         setUnreadCount((prev) => prev + 1);
       } else {
