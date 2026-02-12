@@ -1061,7 +1061,7 @@ export default function UserBookingDetails() {
             <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
                 <div className="space-y-3">
-                    {booking.status === "AWAITING_PAYMENT" && !booking.payment?.remainingPaid && (
+                    {(booking.status === "AWAITING_PAYMENT" || booking.status === "REPORT_UPLOADED") && !booking.payment?.remainingPaid && (
                         <button
                             onClick={() => navigate(`/user/booking/${bookingId}/payment`)}
                             className="w-full bg-[#0A84FF] text-white py-4 rounded-[12px] font-bold text-lg hover:bg-[#005BBB] transition-all active:scale-95 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] flex flex-col items-center justify-center"

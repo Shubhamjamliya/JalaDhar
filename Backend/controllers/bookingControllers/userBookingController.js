@@ -1174,7 +1174,7 @@ const getDashboardStats = async (req, res) => {
       .populate('service', 'name price')
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('status scheduledDate scheduledTime service vendor createdAt payment')
+      .select('status scheduledDate scheduledTime service vendor createdAt payment report')
       .lean();
 
     // Fetch profile pictures for vendors in recent bookings

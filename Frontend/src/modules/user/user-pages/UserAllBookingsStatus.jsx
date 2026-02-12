@@ -8,6 +8,7 @@ import {
   IoCalendarOutline,
 } from "react-icons/io5";
 import { getUserBookings } from "../../../services/bookingApi";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
@@ -19,9 +20,33 @@ export default function UserAllBookingsStatus() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("upcoming");
 
+  const { socket } = useNotifications();
+
   useEffect(() => {
     loadAllBookings();
   }, []);
+
+  // Real-time updates via socket
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewNotification = (notification) => {
+      // Refresh for status updates
+      if (
+        notification.type === "BOOKING_STATUS_UPDATED" ||
+        notification.type === "BOOKING_ACCEPTED" ||
+        notification.type === "BOOKING_VISITED" ||
+        notification.type === "REPORT_UPLOADED" ||
+        notification.type === "ADMIN_APPROVED" ||
+        notification.type === "PAYMENT_RELEASE"
+      ) {
+        loadAllBookings();
+      }
+    };
+
+    socket.on("new_notification", handleNewNotification);
+    return () => socket.off("new_notification", handleNewNotification);
+  }, [socket]);
 
   const loadAllBookings = async () => {
     try {
@@ -171,8 +196,8 @@ export default function UserAllBookingsStatus() {
         <button
           onClick={() => setActiveTab("upcoming")}
           className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${activeTab === "upcoming"
-              ? "text-[#0A84FF] border-[#0A84FF]"
-              : "text-gray-500 border-transparent hover:text-[#0A84FF]"
+            ? "text-[#0A84FF] border-[#0A84FF]"
+            : "text-gray-500 border-transparent hover:text-[#0A84FF]"
             }`}
         >
           Upcoming
@@ -180,8 +205,8 @@ export default function UserAllBookingsStatus() {
         <button
           onClick={() => setActiveTab("complete")}
           className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${activeTab === "complete"
-              ? "text-[#0A84FF] border-[#0A84FF]"
-              : "text-gray-500 border-transparent hover:text-[#0A84FF]"
+            ? "text-[#0A84FF] border-[#0A84FF]"
+            : "text-gray-500 border-transparent hover:text-[#0A84FF]"
             }`}
         >
           Complete
@@ -189,8 +214,8 @@ export default function UserAllBookingsStatus() {
         <button
           onClick={() => setActiveTab("cancelled")}
           className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${activeTab === "cancelled"
-              ? "text-[#0A84FF] border-[#0A84FF]"
-              : "text-gray-500 border-transparent hover:text-[#0A84FF]"
+            ? "text-[#0A84FF] border-[#0A84FF]"
+            : "text-gray-500 border-transparent hover:text-[#0A84FF]"
             }`}
         >
           Cancelled

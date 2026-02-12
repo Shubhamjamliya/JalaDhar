@@ -664,15 +664,7 @@ export default function UserStatus() {
 
                                             {/* Action Buttons */}
                                             <div className="mt-4">
-                                                {step.id === "report" && (
-                                                    <button
-                                                        onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}`)}
-                                                        className="w-full py-3 bg-[#0A84FF] text-white text-sm font-bold rounded-xl hover:bg-[#0070E0] transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm"
-                                                    >
-                                                        <IoDocumentTextOutline className="text-xl" />
-                                                        Access Your Report
-                                                    </button>
-                                                )}
+
 
                                                 {step.id === "payment" && isActive && (
                                                     <button
@@ -681,6 +673,16 @@ export default function UserStatus() {
                                                     >
                                                         <IoWalletOutline className="text-xl" />
                                                         Complete Payment ({formatAmount(currentBooking.payment?.remainingAmount || 0)})
+                                                    </button>
+                                                )}
+
+                                                {step.id === "view-report" && isActive && (
+                                                    <button
+                                                        onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/report`)}
+                                                        className="w-full py-3 bg-[#E7F0FB] text-[#0A84FF] text-sm font-bold rounded-xl hover:bg-[#D0E1F7] transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+                                                    >
+                                                        <IoDocumentTextOutline className="text-xl" />
+                                                        View Full Report
                                                     </button>
                                                 )}
 

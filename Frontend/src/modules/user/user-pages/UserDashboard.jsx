@@ -20,10 +20,14 @@ import {
     IoBusinessOutline,
     IoConstructOutline,
     IoNewspaperOutline,
+    IoWalletOutline,
 } from "react-icons/io5";
 import { getUserProfile } from "../../../services/authApi";
-import { getUserDashboardStats, getNearbyVendors } from "../../../services/bookingApi";
+import { getUserDashboardStats, getNearbyVendors, cancelBooking, getUserBookings } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
+import InputModal from "../../shared/components/InputModal";
+import ConfirmModal from "../../shared/components/ConfirmModal";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
@@ -55,6 +59,12 @@ export default function UserDashboard() {
         completed: 0,
         cancelled: 0
     });
+
+    // Cancellation State
+    const [showCancellationInput, setShowCancellationInput] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [cancellationReason, setCancellationReason] = useState("");
+    const [selectedBookingForAction, setSelectedBookingForAction] = useState(null);
 
     // Load Google Maps API
     useEffect(() => {
@@ -143,6 +153,30 @@ export default function UserDashboard() {
         loadVendors();
     }, [userLocation, radius]);
 
+    const { socket } = useNotifications();
+
+    // Real-time updates via socket
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewNotification = (notification) => {
+            // Refresh for status updates
+            if (
+                notification.type === "BOOKING_STATUS_UPDATED" ||
+                notification.type === "BOOKING_ACCEPTED" ||
+                notification.type === "BOOKING_VISITED" ||
+                notification.type === "REPORT_UPLOADED" ||
+                notification.type === "ADMIN_APPROVED" ||
+                notification.type === "PAYMENT_RELEASE"
+            ) {
+                loadDashboardData();
+            }
+        };
+
+        socket.on("new_notification", handleNewNotification);
+        return () => socket.off("new_notification", handleNewNotification);
+    }, [socket]);
+
     // Auto-fetch location on mount if not already saved
     useEffect(() => {
         const savedLocation = localStorage.getItem("userLocation");
@@ -169,9 +203,29 @@ export default function UserDashboard() {
 
             if (statsResponse.success) {
                 setDashboardStats(statsResponse.data.stats || dashboardStats);
-                // Convert recent bookings to request statuses format
+
+                // Fetch all bookings to ensure we have older reports as well
+                let allBookingsList = [];
+                try {
+                    const allBookingsResponse = await getUserBookings({ limit: 50 });
+                    if (allBookingsResponse.success) {
+                        allBookingsList = allBookingsResponse.data.bookings || [];
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch all bookings:", err);
+                }
+
+                // Combine and deduplicate bookings, prioritizing the full list
                 const recentBookings = statsResponse.data.recentBookings || [];
-                const formattedRequests = recentBookings.map((booking, index) => ({
+                const combinedBookings = [...allBookingsList];
+                
+                recentBookings.forEach(rb => {
+                    if (!combinedBookings.some(b => b._id === rb._id)) {
+                        combinedBookings.push(rb);
+                    }
+                });
+
+                const formattedRequests = combinedBookings.map((booking, index) => ({
                     id: booking._id || index,
                     serviceType: booking.service?.name || "Service",
                     requestDate: booking.scheduledDate || booking.createdAt,
@@ -181,7 +235,8 @@ export default function UserDashboard() {
                     payment: booking.payment,
                     description: `Booking for ${booking.service?.name || "service"}`,
                     bookingData: booking, // Keep full booking data reference
-                    hasReport: !!booking.report
+                    hasReport: !!booking.report && (booking.report.uploadedAt || booking.report.waterFound !== null || booking.status === 'REPORT_UPLOADED' || booking.userStatus === 'REPORT_UPLOADED'),
+                    waterFound: booking.report?.waterFound === true || booking.report?.waterFound === "true"
                 }));
                 setRequestStatuses(formattedRequests);
             }
@@ -407,6 +462,41 @@ export default function UserDashboard() {
         });
     };
 
+    const handleInitiateCancel = (booking) => {
+        setSelectedBookingForAction(booking);
+        setShowCancellationInput(true);
+    };
+
+    const handleCancellationReasonSubmit = (reason) => {
+        setCancellationReason(reason);
+        setShowCancellationInput(false);
+        setShowCancelConfirm(true);
+    };
+
+    const handleCancelConfirm = async () => {
+        if (!selectedBookingForAction) return;
+
+        try {
+            const loadingToast = toast.showLoading("Cancelling booking...");
+            const response = await cancelBooking(selectedBookingForAction.id, cancellationReason);
+
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Booking cancelled successfully");
+                setShowCancelConfirm(false);
+                setSelectedBookingForAction(null);
+                setCancellationReason("");
+                // Refresh data
+                loadDashboardData();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to cancel booking");
+            }
+        } catch (err) {
+            toast.showError(err.response?.data?.message || "Failed to cancel booking");
+        }
+    };
+
     const filteredRequests = requestStatuses.filter(req => {
         if (statusFilter === 'PENDING_PAYMENT') {
             return (req.status === 'pending' || req.status === 'awaiting_advance') && req.paymentStatus === 'PENDING';
@@ -553,9 +643,12 @@ export default function UserDashboard() {
                     onClick={() => handleRequestStatusClick('REPORTS')}
                     className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-indigo-50 to-indigo-200 shadow-[0px_2px_8px_rgba(79,70,229,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(79,70,229,0.3)] transition-all overflow-hidden shrink-0 border border-indigo-100/50">
+                    <div className={`relative w-12 h-12 rounded-full bg-gradient-to-br from-indigo-50 to-indigo-200 shadow-[0px_2px_8px_rgba(79,70,229,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(79,70,229,0.3)] transition-all overflow-hidden shrink-0 border border-indigo-100/50 ${requestStatuses.some(r => r.hasReport) ? (requestStatuses.find(r => r.hasReport)?.waterFound ? 'animate-blink-green' : 'animate-blink-red') : ''}`}>
                         <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/60 to-transparent"></div>
-                        <IoNewspaperOutline className="text-xl text-indigo-600 relative z-10" />
+                        <IoNewspaperOutline className={`text-xl relative z-10 ${requestStatuses.some(r => r.hasReport) ? 'text-white' : 'text-indigo-600'}`} />
+                        {requestStatuses.some(r => r.hasReport) && (
+                            <div className={`absolute -top-1 -right-1 h-4 w-4 rounded-full border-2 border-white z-20 shadow-sm ${requestStatuses.find(r => r.hasReport)?.waterFound ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                        )}
                     </div>
                     <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
                         Survey Reports
@@ -577,6 +670,83 @@ export default function UserDashboard() {
                     </span>
                 </div>
             </div>
+
+
+            {
+                (() => {
+                    // Find the most recent active booking OR the most recent completed booking with a report
+                    const activeBooking = requestStatuses.find(r =>
+                        !['cancelled', 'rejected', 'failed'].includes(r.status.toLowerCase()) &&
+                        (!['completed', 'success'].includes(r.status.toLowerCase()) || r.hasReport)
+                    );
+                    if (!activeBooking) return null;
+
+                    return (
+                        <>
+                            <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
+                                Current Actions
+                            </h2>
+                            <div className="mx-2 mb-6 bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h3 className="font-bold text-gray-800">{activeBooking.serviceType}</h3>
+                                        <p className="text-xs text-gray-500">Booking ID: #{activeBooking.id.toString().slice(-4).toUpperCase()}</p>
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusConfig(activeBooking.status).color}`}>
+                                        {getStatusConfig(activeBooking.status).label}
+                                    </span>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {(activeBooking.status === 'awaiting_payment' || activeBooking.status === 'report_uploaded') && !activeBooking.bookingData?.payment?.remainingPaid && (
+                                        <button
+                                            onClick={() => navigate(`/user/booking/${activeBooking.id}/payment`)}
+                                            className="w-full bg-[#0A84FF] text-white py-3 rounded-[12px] font-bold text-base hover:bg-[#005BBB] transition-all active:scale-95 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] flex items-center justify-center gap-2"
+                                        >
+                                            Pay Remaining <IoWalletOutline />
+                                        </button>
+                                    )}
+
+                                    {(activeBooking.status === 'pending' || activeBooking.status === 'awaiting_advance') && activeBooking.paymentStatus === 'PENDING' && (
+                                        <button
+                                            onClick={() => handleResumePayment(activeBooking)}
+                                            className="w-full bg-blue-600 text-white py-3 rounded-[12px] font-bold text-base hover:bg-blue-700 transition-all active:scale-95 shadow-sm flex items-center justify-center gap-2"
+                                        >
+                                            Complete Payment <IoCheckmarkCircleOutline />
+                                        </button>
+                                    )}
+
+                                    {activeBooking.hasReport && (
+                                        <button
+                                            onClick={() => navigate(`/user/booking/${activeBooking.id}/report`)}
+                                            className={`w-full py-3 rounded-[12px] font-bold text-base transition-all flex items-center justify-center gap-2 ${activeBooking.waterFound ? 'bg-emerald-600 text-white animate-blink-green' : 'bg-red-600 text-white animate-blink-red'}`}
+                                        >
+                                            View Report <IoNewspaperOutline />
+                                        </button>
+                                    )}
+
+                                    {['pending', 'assigned', 'accepted'].includes(activeBooking.status) && (
+                                        <button
+                                            onClick={() => handleInitiateCancel(activeBooking)}
+                                            className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-100 py-3 rounded-[12px] font-semibold hover:bg-red-100 transition-all active:scale-95"
+                                        >
+                                            <IoCloseCircleOutline className="text-xl" />
+                                            Cancel Booking
+                                        </button>
+                                    )}
+
+                                    <button
+                                        onClick={() => navigate(`/user/booking/${activeBooking.id}`)}
+                                        className="w-full flex items-center justify-center gap-2 text-gray-500 py-2 text-sm font-medium hover:text-gray-700 transition-colors"
+                                    >
+                                        View Details
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    );
+                })()
+            }
 
             {/* Top Vendors Near You */}
             <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
@@ -776,7 +946,7 @@ export default function UserDashboard() {
                                                                     e.stopPropagation();
                                                                     navigate(`/user/booking/${request.id}/report`);
                                                                 }}
-                                                                className="px-4 py-2 bg-[#E7F0FB] text-[#0A84FF] text-sm font-bold rounded-lg hover:bg-[#D0E1F7] transition-colors flex items-center gap-2"
+                                                                className={`px-4 py-2 rounded-lg font-bold transition-colors flex items-center gap-2 ${request.waterFound ? 'bg-emerald-600 text-white animate-blink-green' : 'bg-red-600 text-white animate-blink-red'}`}
                                                             >
                                                                 View Report <IoNewspaperOutline />
                                                             </button>
@@ -792,6 +962,17 @@ export default function UserDashboard() {
                                                                 Complete Payment <IoCheckmarkCircleOutline />
                                                             </button>
                                                         )}
+                                                        {(request.status === 'awaiting_payment' || request.status === 'report_uploaded') && !request.bookingData?.payment?.remainingPaid && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    navigate(`/user/booking/${request.id}/payment`);
+                                                                }}
+                                                                className="px-4 py-2 bg-[#0A84FF] text-white text-sm font-bold rounded-lg shadow-sm hover:bg-[#005BBB] transition-colors flex items-center gap-2"
+                                                            >
+                                                                Pay Remaining <IoWalletOutline />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
@@ -803,6 +984,29 @@ export default function UserDashboard() {
                     </div>
                 )
             }
+
+            <InputModal
+                isOpen={showCancellationInput}
+                onClose={() => setShowCancellationInput(false)}
+                onSubmit={handleCancellationReasonSubmit}
+                title="Cancel Booking"
+                message="Please tell us why you are cancelling:"
+                placeholder="Reason for cancellation..."
+                submitText="Continue"
+                cancelText="Keep Booking"
+                isTextarea={true}
+            />
+
+            <ConfirmModal
+                isOpen={showCancelConfirm}
+                onClose={() => setShowCancelConfirm(false)}
+                onConfirm={handleCancelConfirm}
+                title="Confirm Cancellation"
+                message="Are you sure? This action cannot be undone."
+                confirmText="Yes, Cancel"
+                cancelText="Go Back"
+                confirmColor="danger"
+            />
         </div >
     );
 }
