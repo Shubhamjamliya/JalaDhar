@@ -10,6 +10,7 @@ import {
 } from "react-icons/io5";
 import { getVendorBookings } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
@@ -18,6 +19,7 @@ export default function VendorBookings() {
     const navigate = useNavigate();
     const location = useLocation();
     const { vendor } = useVendorAuth();
+    const { socket } = useNotifications();
     const [activeTab, setActiveTab] = useState("New");
     const [newBookings, setNewBookings] = useState([]);
     const [activeBookings, setActiveBookings] = useState([]);
@@ -40,6 +42,34 @@ export default function VendorBookings() {
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
+
+    // Listen for real-time notifications via Socket.IO
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewNotification = (notification) => {
+            console.log('[VendorBookings] New notification received:', notification);
+
+            // Auto-refresh bookings for any booking-related notification
+            if (notification.type === 'BOOKING_CREATED' ||
+                notification.type === 'BOOKING_ASSIGNED' ||
+                notification.type === 'BOOKING_STATUS_UPDATED' ||
+                notification.type === 'PAYMENT_RECEIVED' ||
+                notification.type === 'NEW_BOOKING' ||
+                notification.type === 'BOOKING_ACCEPTED' ||
+                notification.type === 'BOOKING_REJECTED' ||
+                notification.type === 'BOOKING_CANCELLED') {
+                console.log('[VendorBookings] Refreshing bookings list...');
+                loadAllBookings();
+            }
+        };
+
+        socket.on('new_notification', handleNewNotification);
+
+        return () => {
+            socket.off('new_notification', handleNewNotification);
+        };
+    }, [socket]);
 
     const loadAllBookings = async () => {
         try {

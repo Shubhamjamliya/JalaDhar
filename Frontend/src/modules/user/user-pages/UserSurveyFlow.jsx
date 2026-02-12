@@ -559,103 +559,87 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
           </div>
         )}
 
-        <div className="space-y-3">
-          {/* Base Service Fee */}
-          <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
-            <div>
-              <p className="font-semibold text-gray-800 text-sm">Base Service Fee</p>
-              <p className="text-xs text-gray-500">Service charge</p>
-            </div>
-            {loading ? (
-              <div className="h-5 w-16 bg-gray-100 animate-pulse rounded"></div>
-            ) : (
-              <p className="font-bold text-gray-900">₹{charges?.baseServiceFee?.toFixed(2) || '0.00'}</p>
-            )}
-          </div>
-
-          {/* Travel Charges */}
-          <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
-            <div>
-              <p className="font-semibold text-gray-800 text-sm">Travel Charges (Two-way)</p>
-              <p className="text-xs text-gray-500">
-                {charges?.distance ? `${charges.distance} km` : '0 km'} from vendor
-              </p>
-              {charges?.travelCharges > 0 && (
-                <p className="text-xs font-bold text-gray-500">
-                  2 x ₹{(charges.travelCharges / 2).toFixed(2)}
-                </p>
-              )}
-            </div>
-            {loading ? (
-              <div className="h-5 w-20 bg-gray-100 animate-pulse rounded"></div>
-            ) : charges?.travelCharges > 0 ? (
-              <p className="font-bold text-gray-900">₹{charges.travelCharges.toFixed(2)}</p>
-            ) : (
-              <p className="font-bold text-green-600 text-xs">Free (Within Range)</p>
-            )}
-          </div>
-
-          {/* Subtotal */}
-          <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
-            <p className="font-semibold text-gray-800 text-sm">Subtotal</p>
-            {loading ? (
-              <div className="h-5 w-20 bg-gray-100 animate-pulse rounded"></div>
-            ) : (
-              <p className="font-bold text-gray-900">₹{subtotal.toFixed(2)}</p>
-            )}
-          </div>
-
-          {/* GST */}
-          <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
-            <div>
-              <p className="font-semibold text-gray-800 text-sm">GST</p>
-              <p className="text-xs text-gray-500">{charges?.gstPercentage || 18}% on subtotal</p>
-            </div>
-            {loading ? (
-              <div className="h-5 w-16 bg-gray-100 animate-pulse rounded"></div>
-            ) : (
-              <p className="font-bold text-gray-900">₹{charges?.gst?.toFixed(2) || '0.00'}</p>
-            )}
-          </div>
-
-          {/* Total Amount */}
-          <div className="flex justify-between items-center p-3 border border-gray-200 rounded-xl bg-white shadow-sm">
-            <p className="font-bold text-gray-800 text-sm">Total Amount</p>
-            {loading ? (
-              <div className="h-6 w-24 bg-gray-100 animate-pulse rounded"></div>
-            ) : (
-              <p className="font-bold text-xl text-gray-900">₹{charges?.totalAmount?.toFixed(2) || '0.00'}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <p className="text-xs font-bold text-gray-500 uppercase mb-3 tracking-wider">Payment Schedule</p>
-          <div className="space-y-3">
-            {/* Advance Payment */}
-            <div className="flex justify-between items-center p-4 bg-blue-50 border border-blue-100 rounded-xl">
-              <div>
-                <p className="font-semibold text-gray-800 text-sm">Advance Payment</p>
-                <p className="text-xs text-blue-600">40% of total</p>
-              </div>
+        <div className="space-y-4">
+          <div className="bg-white/50 border border-gray-100 rounded-2xl p-5 space-y-4 shadow-sm">
+            {/* Base Fee */}
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-500 font-medium">Base Service Fee</span>
               {loading ? (
-                <div className="h-6 w-20 bg-blue-100 animate-pulse rounded"></div>
+                <div className="h-4 w-16 bg-gray-100 animate-pulse rounded"></div>
               ) : (
-                <p className="font-bold text-blue-600 text-lg">₹{charges?.advanceAmount?.toFixed(2) || '0.00'}</p>
+                <span className="text-gray-900 font-bold">₹{charges?.baseServiceFee?.toFixed(2) || '0.00'}/-</span>
               )}
             </div>
 
-            {/* Remaining Payment */}
-            <div className="flex justify-between items-center p-4 bg-gray-50 border border-gray-100 rounded-xl">
-              <div>
-                <p className="font-semibold text-gray-800 text-sm">Remaining Payment</p>
-                <p className="text-xs text-gray-500">60% of total</p>
+            {/* Travel Section */}
+            <div className="space-y-2 pt-2 border-t border-gray-100">
+              {/* Travel KM */}
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-500">Travel Distance</span>
+                <span className="text-gray-700 font-semibold">{charges?.distance ? `${charges.distance} km` : '0 km'}</span>
               </div>
+              {/* One Way */}
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-500">One Way Charge</span>
+                <span className="text-gray-700 font-semibold">₹{(charges?.travelCharges / 2 || 0).toFixed(2)}</span>
+              </div>
+              {/* Two Way */}
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-500">Round Trip (Two Way)</span>
+                <span className="text-blue-600 font-bold text-[10px] uppercase">Included (X 2)</span>
+              </div>
+              {/* Total Travel Charges */}
+              <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-100/50">
+                <span className="text-gray-600 font-bold">Total Travel Charges</span>
+                {loading ? (
+                  <div className="h-4 w-20 bg-gray-100 animate-pulse rounded"></div>
+                ) : (
+                  <span className="text-gray-900 font-bold">₹{charges?.travelCharges?.toFixed(2) || '0.00'}</span>
+                )}
+              </div>
+            </div>
+
+            {/* GST */}
+            <div className="flex justify-between items-center text-xs font-medium pt-2 border-t border-gray-200">
+              <span className="text-gray-500">GST (18%)</span>
               {loading ? (
-                <div className="h-6 w-20 bg-gray-100 animate-pulse rounded"></div>
+                <div className="h-4 w-16 bg-gray-100 animate-pulse rounded"></div>
               ) : (
-                <p className="font-bold text-gray-800 text-lg">₹{remainingAmount.toFixed(2)}</p>
+                <span className="text-gray-900 font-bold">₹{charges?.gst?.toFixed(2) || '0.00'}</span>
               )}
+            </div>
+
+            {/* TOTAL */}
+            <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
+              <span className="text-base font-black text-gray-800">TOTAL AMOUNT</span>
+              {loading ? (
+                <div className="h-6 w-24 bg-gray-100 animate-pulse rounded"></div>
+              ) : (
+                <span className="text-xl font-black text-blue-600">₹{charges?.totalAmount?.toFixed(2) || '0.00'}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Payment Schedule (8 & 9) */}
+          <div className="mt-6 pt-4 space-y-3">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Payment Schedule</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                <p className="text-[10px] text-blue-600 font-bold uppercase mb-1">Advance (40%)</p>
+                {loading ? (
+                  <div className="h-5 w-16 bg-blue-100 animate-pulse rounded"></div>
+                ) : (
+                  <p className="text-lg font-black text-blue-700">₹{charges?.advanceAmount?.toFixed(2) || '0.00'}</p>
+                )}
+              </div>
+              <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl">
+                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Remaining (60%)</p>
+                {loading ? (
+                  <div className="h-5 w-16 bg-gray-100 animate-pulse rounded"></div>
+                ) : (
+                  <p className="text-lg font-black text-gray-800">₹{remainingAmount.toFixed(2)}</p>
+                )}
+              </div>
             </div>
           </div>
         </div>

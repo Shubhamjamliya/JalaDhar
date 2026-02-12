@@ -21,6 +21,7 @@ import {
 } from "react-icons/io5";
 import { getBookingDetails, acceptBooking, rejectBooking, markBookingAsVisited, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
@@ -32,6 +33,7 @@ export default function VendorBookingDetails() {
     const location = useLocation();
     const { bookingId } = useParams();
     const { vendor } = useVendorAuth();
+    const { socket } = useNotifications();
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [booking, setBooking] = useState(null);
@@ -64,6 +66,37 @@ export default function VendorBookingDetails() {
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
+
+    // Listen for real-time notifications via Socket.IO
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewNotification = (notification) => {
+            console.log('[VendorBookingDetails] New notification received:', notification);
+
+            // Auto-refresh booking details for relevant notifications
+            if (notification.type === 'BOOKING_STATUS_UPDATED' ||
+                notification.type === 'PAYMENT_RECEIVED' ||
+                notification.type === 'BOOKING_ACCEPTED' ||
+                notification.type === 'BOOKING_REJECTED' ||
+                notification.type === 'BOOKING_CANCELLED') {
+                // Check if notification is for this specific booking
+                const notificationBookingId = notification.data?.bookingId?.toString() || notification.bookingId?.toString();
+                const currentBookingId = bookingId?.toString();
+
+                if (notificationBookingId === currentBookingId) {
+                    console.log('[VendorBookingDetails] Refreshing booking details for this booking...');
+                    loadBookingDetails();
+                }
+            }
+        };
+
+        socket.on('new_notification', handleNewNotification);
+
+        return () => {
+            socket.off('new_notification', handleNewNotification);
+        };
+    }, [socket, bookingId]);
 
     const loadBookingDetails = async () => {
         try {
@@ -655,18 +688,65 @@ export default function VendorBookingDetails() {
                         </div>
 
                         {/* Charges Breakdown Detail */}
-                        <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                            <div className="flex justify-between text-xs text-gray-600">
-                                <span>Base service fee</span>
-                                <span>₹{booking.payment.baseServiceFee?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        <div className="bg-gray-50/80 backdrop-blur-sm rounded-2xl p-5 space-y-4 border border-gray-100 shadow-inner">
+                            {/* Base Fee */}
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-500 font-medium">Base Service Fee</span>
+                                <span className="text-gray-900 font-bold">₹{booking.payment.baseServiceFee?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
-                            <div className="flex justify-between text-xs text-gray-600">
-                                <span>Travel charges ({booking.payment.distance?.toFixed(1)}km x 2)</span>
-                                <span>₹{booking.payment.travelCharges?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+
+                            {/* Travel Section */}
+                            <div className="space-y-2 pt-2 border-t border-gray-100">
+                                {/* Travel KM */}
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-gray-500">Travel Distance</span>
+                                    <span className="text-gray-700 font-semibold">{booking.payment.distance?.toFixed(2)} km</span>
+                                </div>
+                                {/* One Way */}
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-gray-500">One Way Charge</span>
+                                    <span className="text-gray-700 font-semibold">₹{(booking.payment.travelCharges / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                </div>
+                                {/* Two Way */}
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-gray-500">Round Trip (Two Way)</span>
+                                    <span className="text-blue-600 font-bold">Included (X 2)</span>
+                                </div>
+                                {/* Total Travel Charges */}
+                                <div className="flex justify-between items-center text-sm pt-1 border-t border-gray-100/50">
+                                    <span className="text-gray-600 font-bold">Total Travel Charges</span>
+                                    <span className="text-gray-900 font-bold">₹{booking.payment.travelCharges?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                </div>
                             </div>
-                            <div className="flex justify-between text-xs text-gray-600 font-medium pt-1 border-t border-gray-200">
-                                <span className="text-gray-800">GST (Included)</span>
-                                <span>₹{booking.payment.gst?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+
+                            {/* GST */}
+                            <div className="flex justify-between items-center text-xs font-medium pt-2 border-t border-gray-200">
+                                <span className="text-gray-500">GST (18%)</span>
+                                <span className="text-gray-900 font-bold">₹{booking.payment.gst?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+
+                            {/* TOTAL */}
+                            <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
+                                <span className="text-base font-black text-gray-800">TOTAL AMOUNT</span>
+                                <span className="text-xl font-black text-blue-600">₹{booking.payment.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+
+                            {/* Payment Schedule */}
+                            <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-3">
+                                <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                                    <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-1">Advance (40%)</p>
+                                    <p className="text-sm font-black text-blue-700">₹{booking.payment.advanceAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold inline-block mt-1 ${booking.payment.advancePaid ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                        {booking.payment.advancePaid ? 'RECEIVED' : 'PENDING'}
+                                    </span>
+                                </div>
+                                <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Remaining (60%)</p>
+                                    <p className="text-sm font-black text-gray-800">₹{booking.payment.remainingAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold inline-block mt-1 ${booking.payment.remainingPaid ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                        {booking.payment.remainingPaid ? 'RECEIVED' : 'PENDING'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>

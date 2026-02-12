@@ -11,6 +11,7 @@ import {
     IoCheckmarkCircleOutline,
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import {
     getDashboardStats,
     getVendorProfile,
@@ -23,6 +24,7 @@ export default function VendorDashboard() {
     const navigate = useNavigate();
     const location = useLocation();
     const { vendor } = useVendorAuth();
+    const { socket } = useNotifications();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         pendingBookings: 0,
@@ -61,6 +63,31 @@ export default function VendorDashboard() {
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
+
+    // Listen for real-time notifications via Socket.IO
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewNotification = (notification) => {
+            console.log('[VendorDashboard] New notification received:', notification);
+
+            // Auto-refresh dashboard for booking-related notifications
+            if (notification.type === 'BOOKING_CREATED' ||
+                notification.type === 'BOOKING_ASSIGNED' ||
+                notification.type === 'BOOKING_STATUS_UPDATED' ||
+                notification.type === 'PAYMENT_RECEIVED' ||
+                notification.type === 'NEW_BOOKING') {
+                console.log('[VendorDashboard] Refreshing dashboard...');
+                loadDashboardData();
+            }
+        };
+
+        socket.on('new_notification', handleNewNotification);
+
+        return () => {
+            socket.off('new_notification', handleNewNotification);
+        };
+    }, [socket]);
 
     // Debug: Log when vendor profile data changes
     useEffect(() => {

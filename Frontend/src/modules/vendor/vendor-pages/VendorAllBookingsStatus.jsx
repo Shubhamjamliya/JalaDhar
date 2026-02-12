@@ -8,12 +8,14 @@ import {
   IoCalendarOutline,
 } from "react-icons/io5";
 import { getVendorBookings } from "../../../services/vendorApi";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 
 export default function VendorAllBookingsStatus() {
   const navigate = useNavigate();
+  const { socket } = useNotifications();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -21,6 +23,34 @@ export default function VendorAllBookingsStatus() {
   useEffect(() => {
     loadConfirmedBookings();
   }, []);
+
+  // Listen for real-time notifications via Socket.IO
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewNotification = (notification) => {
+      console.log('[VendorAllBookingsStatus] New notification received:', notification);
+
+      // Auto-refresh for any booking-related notification
+      if (notification.type === 'BOOKING_CREATED' ||
+        notification.type === 'BOOKING_ASSIGNED' ||
+        notification.type === 'BOOKING_STATUS_UPDATED' ||
+        notification.type === 'PAYMENT_RECEIVED' ||
+        notification.type === 'NEW_BOOKING' ||
+        notification.type === 'BOOKING_ACCEPTED' ||
+        notification.type === 'BOOKING_REJECTED' ||
+        notification.type === 'BOOKING_CANCELLED') {
+        console.log('[VendorAllBookingsStatus] Refreshing confirmed bookings list...');
+        loadConfirmedBookings();
+      }
+    };
+
+    socket.on('new_notification', handleNewNotification);
+
+    return () => {
+      socket.off('new_notification', handleNewNotification);
+    };
+  }, [socket]);
 
   const loadConfirmedBookings = async () => {
     try {
