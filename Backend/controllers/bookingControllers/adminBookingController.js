@@ -142,10 +142,24 @@ const approveBorewellResult = async (req, res) => {
     booking.borewellResult.approvedAt = new Date();
     booking.borewellResult.approvedBy = adminId;
     // When admin approves borewell result:
-    // - User status: ADMIN_APPROVED (user waiting for final settlement/refund)
-    // - Vendor status: APPROVED (vendor waiting for final settlement)
-    // - Main status: ADMIN_APPROVED
-    // Initialize finalSettlement as pending for both vendor and user
+    // - SUCCESS: User is done (no refund/settlement needed for user). Mark as COMPLETED for user.
+    // - FAILED: User waiting for final settlement/refund. Mark as ADMIN_APPROVED.
+    // - Vendor: Always APPROVED (vendor waiting for final settlement reward/penalty).
+
+    if (approved) {
+      // SUCCESS Case
+      booking.status = BOOKING_STATUS.COMPLETED;
+      booking.userStatus = BOOKING_STATUS.COMPLETED;
+      booking.completedAt = new Date(); // It's effectively done for the user
+    } else {
+      // FAILED Case
+      booking.status = BOOKING_STATUS.ADMIN_APPROVED;
+      booking.userStatus = BOOKING_STATUS.ADMIN_APPROVED;
+    }
+
+    booking.vendorStatus = BOOKING_STATUS.APPROVED; // Vendor always waits for final settlement reward/penalty
+
+    // Initialize/Update final settlement object
     if (!booking.finalSettlement) {
       booking.finalSettlement = {
         rewardAmount: 0,
@@ -155,14 +169,9 @@ const approveBorewellResult = async (req, res) => {
         borewellResult: booking.borewellResult.status
       };
     } else {
-      // Ensure status is PENDING (both settlements pending)
       booking.finalSettlement.status = 'PENDING';
       booking.finalSettlement.borewellResult = booking.borewellResult.status;
     }
-
-    booking.status = BOOKING_STATUS.ADMIN_APPROVED;
-    booking.userStatus = BOOKING_STATUS.ADMIN_APPROVED;
-    booking.vendorStatus = BOOKING_STATUS.APPROVED; // Vendor waiting for final settlement
 
     // Calculate vendor settlement
     const settlementAmount = booking.payment.totalAmount * 0.5; // 50% of total
@@ -313,6 +322,9 @@ const processVendorSettlement = async (req, res) => {
     if (booking.vendorStatus === BOOKING_STATUS.APPROVED) {
       // Final settlement after borewell approval
       booking.vendorStatus = BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE;
+      // Admin requested: booking becomes completed automatically
+      booking.status = BOOKING_STATUS.COMPLETED;
+      booking.completedAt = new Date();
     } else if (booking.vendorStatus !== BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE) {
       // First payment (50% + travel) before borewell
       booking.vendorStatus = BOOKING_STATUS.PAID_FIRST;
@@ -1875,6 +1887,11 @@ const getPendingVendorFinalSettlements = async (req, res) => {
     // Filter to only show bookings where vendor settlement is pending
     // Vendor settlement is pending if: not processed OR processed but reward/penalty are both 0
     const filteredBookings = allBookings.filter(booking => {
+      // If vendor status is already FINAL_SETTLEMENT_COMPLETE, it's NOT pending
+      if (booking.vendorStatus === BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE) {
+        return false;
+      }
+
       const finalSettlement = booking.finalSettlement;
       if (!finalSettlement || finalSettlement.status !== 'PROCESSED') {
         return true; // Not processed at all
@@ -2038,10 +2055,15 @@ const getCompletedVendorFinalSettlements = async (req, res) => {
     const { page = 1, limit = 10, search } = req.query;
 
     const query = {
-      'finalSettlement.status': 'PROCESSED',
       $or: [
-        { 'finalSettlement.rewardAmount': { $gt: 0 } },
-        { 'finalSettlement.penaltyAmount': { $gt: 0 } }
+        { vendorStatus: BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE },
+        {
+          'finalSettlement.status': 'PROCESSED',
+          $or: [
+            { 'finalSettlement.rewardAmount': { $gt: 0 } },
+            { 'finalSettlement.penaltyAmount': { $gt: 0 } }
+          ]
+        }
       ]
     };
 
@@ -2348,23 +2370,21 @@ const processNewFinalSettlement = async (req, res) => {
     }
 
     // Vendor settlement is independent - mark vendor status as complete
-    // Don't check user settlement - they are independent
     booking.vendorStatus = BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE;
 
-    // Update main status and finalSettlement.status based on both settlements
-    // Check if user settlement is also done (for main status only)
-    // User settlement is complete if: remittanceAmount is set (even if 0 for SUCCESS) AND userStatus is COMPLETED
-    const isUserSettlementComplete = booking.finalSettlement.remittanceAmount !== undefined &&
-      booking.finalSettlement.processedBy !== undefined &&
-      booking.userStatus === BOOKING_STATUS.COMPLETED;
+    // Admin requested: booking becomes completed automatically when vendor settlement is done
+    booking.status = BOOKING_STATUS.COMPLETED;
+    booking.completedAt = new Date();
+
+    // Check if user settlement is also done (for finalSettlement status records only)
+    const isUserSettlementComplete = booking.userStatus === BOOKING_STATUS.COMPLETED ||
+      booking.finalSettlement?.userSettlementProcessed === true;
 
     if (isUserSettlementComplete) {
       // Both settlements complete
-      booking.status = BOOKING_STATUS.COMPLETED;
       booking.finalSettlement.status = 'PROCESSED';
     } else {
-      // Vendor complete but user pending
-      booking.status = BOOKING_STATUS.FINAL_SETTLEMENT;
+      // Vendor complete but user pending (still show as COMPLETED globally)
       booking.finalSettlement.status = 'PENDING';
     }
 
@@ -2619,11 +2639,11 @@ const processUserFinalSettlement = async (req, res) => {
 
       // Update main status only if both are complete
       // Check if vendor settlement is also done
-      const hasVendorSettlement = (booking.finalSettlement.rewardAmount > 0) || (booking.finalSettlement.penaltyAmount > 0);
-      if (hasVendorSettlement && booking.vendorStatus === BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE) {
+      if (booking.vendorStatus === BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE) {
         // Both settlements complete
         booking.status = BOOKING_STATUS.COMPLETED;
         booking.finalSettlement.status = 'PROCESSED';
+        booking.completedAt = new Date();
       } else {
         // User complete but vendor pending
         booking.status = BOOKING_STATUS.FINAL_SETTLEMENT;

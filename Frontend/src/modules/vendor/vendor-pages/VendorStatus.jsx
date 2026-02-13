@@ -298,9 +298,11 @@ export default function VendorStatus() {
         const status = booking.vendorStatus || booking.status;
 
         // Define status progression for completed check
-        const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "BOREWELL_UPLOADED", "APPROVED", "COMPLETED"];
+        const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "BOREWELL_UPLOADED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
         const currentStatusIndex = statusOrder.indexOf(status);
-        const effectiveIndex = currentStatusIndex === -1 ? 0 : currentStatusIndex;
+        const effectiveIndex = currentStatusIndex === -1 ?
+            (status === "SUCCESS" || status === "FAILED" ? 8 : 0) :
+            currentStatusIndex;
 
         const steps = [
             {
@@ -412,8 +414,9 @@ export default function VendorStatus() {
                     booking.payment?.vendorSettlement?.status === "COMPLETED",
                 description: (booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0) ||
                     booking.finalSettlement?.status === "PROCESSED" ||
+                    booking.vendorStatus === "FINAL_SETTLEMENT_COMPLETE" ||
                     booking.payment?.vendorSettlement?.status === "COMPLETED"
-                    ? booking.finalSettlement?.status === "PROCESSED" || booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0
+                    ? booking.finalSettlement?.status === "PROCESSED" || booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0 || booking.vendorStatus === "FINAL_SETTLEMENT_COMPLETE"
                         ? `Admin has processed your final settlement. ${booking.finalSettlement?.rewardAmount > 0 ? `Reward of ₹${booking.finalSettlement.rewardAmount.toLocaleString('en-IN')} credited.` : booking.finalSettlement?.penaltyAmount > 0 ? `Penalty of ₹${booking.finalSettlement.penaltyAmount.toLocaleString('en-IN')} deducted.` : 'All payments completed.'}`
                         : "Admin has processed your final settlement. All payments completed."
                     : "Waiting for admin to process final settlement.",
@@ -423,10 +426,10 @@ export default function VendorStatus() {
                 id: "completed",
                 label: "Completed",
                 icon: IoCheckmarkCircleOutline,
-                active: status === "COMPLETED",
-                completed: status === "COMPLETED",
+                active: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"].includes(status),
+                completed: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"].includes(status),
                 description: "Booking process completed successfully. All settlements are done.",
-                date: booking.completedAt || booking.payment?.vendorSettlement?.settledAt,
+                date: booking.completedAt || booking.finalSettlement?.processedAt || booking.payment?.vendorSettlement?.settledAt,
             },
         ];
 
@@ -783,16 +786,14 @@ export default function VendorStatus() {
                                                 <p className="text-xs font-semibold text-gray-700 mb-1">
                                                     Settlement Status:{" "}
                                                     <span
-                                                        className={`px-2 py-1 rounded-full text-xs font-semibold ${(booking.finalSettlement?.status === "PROCESSED" || booking.payment?.vendorSettlement?.status === "COMPLETED")
+                                                        className={`px-2 py-1 rounded-full text-xs font-semibold ${(booking.finalSettlement?.status === "PROCESSED" || booking.payment?.vendorSettlement?.status === "COMPLETED" || booking.vendorStatus === "FINAL_SETTLEMENT_COMPLETE" || (booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0))
                                                             ? "bg-green-100 text-green-700"
                                                             : "bg-yellow-100 text-yellow-700"
                                                             }`}
                                                     >
-                                                        {booking.finalSettlement?.status === "PROCESSED"
+                                                        {(booking.finalSettlement?.status === "PROCESSED" || booking.payment?.vendorSettlement?.status === "COMPLETED" || booking.vendorStatus === "FINAL_SETTLEMENT_COMPLETE" || (booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0))
                                                             ? "COMPLETE"
-                                                            : booking.payment?.vendorSettlement?.status === "COMPLETED"
-                                                                ? "COMPLETE"
-                                                                : booking.finalSettlement?.status || booking.payment?.vendorSettlement?.status || "PENDING"}
+                                                            : booking.finalSettlement?.status || booking.payment?.vendorSettlement?.status || "PENDING"}
                                                     </span>
                                                 </p>
                                                 {(booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0) ? (

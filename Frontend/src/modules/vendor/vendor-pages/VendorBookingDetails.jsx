@@ -417,17 +417,21 @@ export default function VendorBookingDetails() {
                         { id: "visited", label: "Visited", icon: "🏠", statuses: ["VISITED"], date: booking.visitedAt },
                         { id: "report", label: "Report", icon: "📄", statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt },
                         { id: "payment", label: "Payment", icon: "💰", statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"], date: booking.payment?.remainingPaidAt },
-                        { id: "borewell", label: "Borewell", icon: "🚰", statuses: ["BOREWELL_UPLOADED"], date: booking.borewellResult?.uploadedAt },
-                        { id: "completed", label: "Completed", icon: "🎉", statuses: ["COMPLETED"], date: booking.completedAt },
+                        { id: "borewell", label: "Borewell", icon: "🚰", statuses: ["BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED"], date: booking.borewellResult?.uploadedAt },
+                        { id: "completed", label: "Completed", icon: "🎉", statuses: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"], date: booking.completedAt || booking.finalSettlement?.processedAt },
                     ];
-
-                    const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
+                    const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
                     const currentIndex = statusOrder.indexOf(status);
 
                     return (
                         <div className="flex items-center justify-between gap-1">
                             {timelineSteps.map((step, index) => {
-                                const stepStatusIndex = statusOrder.indexOf(step.statuses[0]);
+                                // For the completed step, multiple final statuses should count as completion for the vendor
+                                const stepStatuses = step.id === "completed"
+                                    ? ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"]
+                                    : step.statuses;
+
+                                const stepStatusIndex = Math.max(...stepStatuses.map(s => statusOrder.indexOf(s)));
                                 const isCompleted = currentIndex >= 0 && currentIndex > stepStatusIndex;
                                 const isActive = step.statuses.includes(status);
                                 const isPending = !isCompleted && !isActive;
@@ -437,14 +441,14 @@ export default function VendorBookingDetails() {
                                         <div className="flex flex-col items-center flex-1">
                                             {/* Step Circle */}
                                             <div
-                                                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all ${isCompleted
+                                                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all ${isCompleted || (isActive && step.id === "completed")
                                                     ? "bg-green-100 border-2 border-green-500"
                                                     : isActive
                                                         ? "bg-blue-100 border-2 border-[#0A84FF] ring-2 ring-blue-200 animate-pulse"
                                                         : "bg-gray-100 border-2 border-gray-300"
                                                     }`}
                                             >
-                                                {isCompleted ? (
+                                                {isCompleted || (isActive && step.id === "completed") ? (
                                                     <IoCheckmarkCircleOutline className="text-green-600 text-xl" />
                                                 ) : (
                                                     <span className={`text-sm ${isPending ? "grayscale opacity-50" : ""}`}>{step.icon}</span>
