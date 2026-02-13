@@ -574,6 +574,95 @@ export default function UserBookingDetails() {
                 </div>
             </div>
 
+            {/* Actions Card */}
+            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
+                <div className="space-y-3">
+                    {/* Main Action Buttons */}
+                    {(booking.status === "AWAITING_PAYMENT" || booking.status === "REPORT_UPLOADED") && !booking.payment?.remainingPaid && (
+                        <button
+                            onClick={() => navigate(`/user/booking/${bookingId}/payment`)}
+                            className="w-full bg-[#0A84FF] text-white py-4 rounded-[12px] font-bold text-lg hover:bg-[#005BBB] transition-all active:scale-95 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] flex flex-col items-center justify-center"
+                        >
+                            <span className="flex items-center gap-2 text-sm font-normal opacity-90">Pay Remaining Amount</span>
+                            <span>{formatAmount(booking.payment?.remainingAmount)}</span>
+                        </button>
+                    )}
+
+                    {(() => {
+                        const effectiveStatus = booking.userStatus || booking.status;
+                        const hasBorewell = !!(booking.borewellResult && (booking.borewellResult.status || booking.borewellResult.uploadedAt));
+
+                        // Whitelist for statuses where report/borewell actions are valid
+                        const isPostReportPhase = ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(effectiveStatus);
+
+                        return (
+                            <div className="space-y-3">
+                                {/* Report Button */}
+                                {(booking.report || isPostReportPhase) && (
+                                    <button
+                                        onClick={handleReportClick}
+                                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-[12px] font-semibold transition-all active:scale-95 ${!booking.payment?.remainingPaid
+                                            ? "bg-gray-100 text-gray-500 border border-gray-200"
+                                            : "bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100"
+                                            }`}
+                                    >
+                                        <div className="relative">
+                                            <IoDocumentTextOutline className="text-xl" />
+                                            {!booking.payment?.remainingPaid && (
+                                                <IoLockClosedOutline className="absolute -top-1 -right-1 text-[10px] bg-white rounded-full p-0.5" />
+                                            )}
+                                        </div>
+                                        <span>{booking.payment?.remainingPaid ? "View Survey Report" : "Unlock Survey Report"}</span>
+                                    </button>
+                                )}
+
+                                {/* Borewell Upload Button - Extremely permissive check */}
+                                {!(booking.borewellResult?.uploadedAt) && ["PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(effectiveStatus.toUpperCase()) && (
+                                    <button
+                                        onClick={() => setShowBorewellModal(true)}
+                                        className="w-full flex items-center justify-center gap-2 bg-white text-[#0A84FF] border-2 border-[#0A84FF] py-3 rounded-[12px] font-bold hover:bg-blue-50 transition-all shadow-sm"
+                                    >
+                                        <IoImageOutline className="text-xl" />
+                                        Upload Borewell Outcome
+                                    </button>
+                                )}
+
+                                {/* Rating & Invoice for Completed and Post-Payment stages */}
+                                {["PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(effectiveStatus.toUpperCase()) && (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={() => navigate(`/user/booking/${bookingId}/invoice`)}
+                                            className="flex items-center justify-center gap-2 bg-[#E7F0FB] text-[#0A84FF] py-3 rounded-[12px] font-semibold hover:bg-[#D0E1F7] transition-all"
+                                        >
+                                            <IoDownloadOutline className="text-xl" />
+                                            Invoice
+                                        </button>
+                                        <button
+                                            onClick={handleRateVendor}
+                                            className="flex items-center justify-center gap-2 bg-[#0A84FF] text-white py-3 rounded-[12px] font-semibold hover:bg-[#005BBB] transition-all shadow-md"
+                                        >
+                                            <IoStarOutline className="text-xl" />
+                                            Rate
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
+
+                    {["AWAITING_ADVANCE", "PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.status) && (
+                        <button
+                            onClick={handleCancelBooking}
+                            className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-100 py-3 rounded-[12px] font-semibold hover:bg-red-100 transition-all active:scale-95"
+                        >
+                            <IoCloseCircleOutline className="text-xl" />
+                            Cancel Booking
+                        </button>
+                    )}
+                </div>
+            </div>
+
             {/* Vendor Information Card */}
             <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Vendor Information</h2>
@@ -1052,94 +1141,7 @@ export default function UserBookingDetails() {
                 )
             }
 
-            {/* Actions Card */}
-            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
-                <div className="space-y-3">
-                    {/* Main Action Buttons */}
-                    {(booking.status === "AWAITING_PAYMENT" || booking.status === "REPORT_UPLOADED") && !booking.payment?.remainingPaid && (
-                        <button
-                            onClick={() => navigate(`/user/booking/${bookingId}/payment`)}
-                            className="w-full bg-[#0A84FF] text-white py-4 rounded-[12px] font-bold text-lg hover:bg-[#005BBB] transition-all active:scale-95 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] flex flex-col items-center justify-center"
-                        >
-                            <span className="flex items-center gap-2 text-sm font-normal opacity-90">Pay Remaining Amount</span>
-                            <span>{formatAmount(booking.payment?.remainingAmount)}</span>
-                        </button>
-                    )}
 
-                    {(() => {
-                        const effectiveStatus = booking.userStatus || booking.status;
-                        const hasBorewell = !!(booking.borewellResult && (booking.borewellResult.status || booking.borewellResult.uploadedAt));
-
-                        // Whitelist for statuses where report/borewell actions are valid
-                        const isPostReportPhase = ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(effectiveStatus);
-
-                        return (
-                            <div className="space-y-3">
-                                {/* Report Button */}
-                                {(booking.report || isPostReportPhase) && (
-                                    <button
-                                        onClick={handleReportClick}
-                                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-[12px] font-semibold transition-all active:scale-95 ${!booking.payment?.remainingPaid
-                                            ? "bg-gray-100 text-gray-500 border border-gray-200"
-                                            : "bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100"
-                                            }`}
-                                    >
-                                        <div className="relative">
-                                            <IoDocumentTextOutline className="text-xl" />
-                                            {!booking.payment?.remainingPaid && (
-                                                <IoLockClosedOutline className="absolute -top-1 -right-1 text-[10px] bg-white rounded-full p-0.5" />
-                                            )}
-                                        </div>
-                                        <span>{booking.payment?.remainingPaid ? "View Survey Report" : "Unlock Survey Report"}</span>
-                                    </button>
-                                )}
-
-                                {/* Borewell Upload Button - Extremely permissive check */}
-                                {!(booking.borewellResult?.uploadedAt) && ["PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(effectiveStatus.toUpperCase()) && (
-                                    <button
-                                        onClick={() => setShowBorewellModal(true)}
-                                        className="w-full flex items-center justify-center gap-2 bg-white text-[#0A84FF] border-2 border-[#0A84FF] py-3 rounded-[12px] font-bold hover:bg-blue-50 transition-all shadow-sm"
-                                    >
-                                        <IoImageOutline className="text-xl" />
-                                        Upload Borewell Outcome
-                                    </button>
-                                )}
-
-                                {/* Rating & Invoice for Completed and Post-Payment stages */}
-                                {["PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(effectiveStatus.toUpperCase()) && (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <button
-                                            onClick={() => navigate(`/user/booking/${bookingId}/invoice`)}
-                                            className="flex items-center justify-center gap-2 bg-[#E7F0FB] text-[#0A84FF] py-3 rounded-[12px] font-semibold hover:bg-[#D0E1F7] transition-all"
-                                        >
-                                            <IoDownloadOutline className="text-xl" />
-                                            Invoice
-                                        </button>
-                                        <button
-                                            onClick={handleRateVendor}
-                                            className="flex items-center justify-center gap-2 bg-[#0A84FF] text-white py-3 rounded-[12px] font-semibold hover:bg-[#005BBB] transition-all shadow-md"
-                                        >
-                                            <IoStarOutline className="text-xl" />
-                                            Rate
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })()}
-
-                    {["AWAITING_ADVANCE", "PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.status) && (
-                        <button
-                            onClick={handleCancelBooking}
-                            className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-100 py-3 rounded-[12px] font-semibold hover:bg-red-100 transition-all active:scale-95"
-                        >
-                            <IoCloseCircleOutline className="text-xl" />
-                            Cancel Booking
-                        </button>
-                    )}
-                </div>
-            </div>
 
             {/* Need Help Card */}
             {

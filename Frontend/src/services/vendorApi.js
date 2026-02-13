@@ -29,8 +29,8 @@ export const getVendorBookings = async (params = {}) => {
  * @returns {Promise}
  */
 export const getNewBookings = async (params = {}) => {
-  const response = await api.get('/vendors/bookings/my-bookings', { 
-    params: { ...params, status: 'ASSIGNED' } 
+  const response = await api.get('/vendors/bookings/my-bookings', {
+    params: { ...params, status: 'ASSIGNED' }
   });
   return response.data;
 };
@@ -84,6 +84,19 @@ export const acceptBooking = async (bookingId) => {
 export const rejectBooking = async (bookingId, rejectionReason) => {
   const response = await api.patch(`/vendors/bookings/${bookingId}/reject`, {
     rejectionReason
+  });
+  return response.data;
+};
+
+/**
+ * Cancel a booking (after acceptance but before visit)
+ * @param {string} bookingId
+ * @param {string} cancellationReason
+ * @returns {Promise}
+ */
+export const cancelBooking = async (bookingId, cancellationReason) => {
+  const response = await api.patch(`/vendors/bookings/${bookingId}/cancel`, {
+    cancellationReason
   });
   return response.data;
 };
@@ -392,7 +405,7 @@ export const createDispute = async (disputeData, attachments = []) => {
   formData.append('type', disputeData.type);
   if (disputeData.priority) formData.append('priority', disputeData.priority);
   if (disputeData.bookingId) formData.append('bookingId', disputeData.bookingId);
-  
+
   attachments.forEach((file) => {
     formData.append('attachments', file);
   });

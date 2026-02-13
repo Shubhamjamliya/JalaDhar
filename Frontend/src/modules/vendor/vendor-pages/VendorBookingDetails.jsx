@@ -20,7 +20,7 @@ import {
     IoLogoGoogle,
     IoWaterOutline,
 } from "react-icons/io5";
-import { getBookingDetails, acceptBooking, rejectBooking, markBookingAsVisited, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
+import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, markBookingAsVisited, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -45,6 +45,9 @@ export default function VendorBookingDetails() {
     const [showVisitConfirm, setShowVisitConfirm] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
     const [showTravelChargesModal, setShowTravelChargesModal] = useState(false);
+    const [showCancelInput, setShowCancelInput] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [cancellationReason, setCancellationReason] = useState("");
     const [travelChargesData, setTravelChargesData] = useState({
         amount: "",
         reason: ""
@@ -216,6 +219,44 @@ export default function VendorBookingDetails() {
         } catch (err) {
             toast.dismissToast(loadingToast);
             handleApiError(err, "Failed to mark booking as visited");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleCancel = () => {
+        setCancellationReason("");
+        setShowCancelInput(true);
+    };
+
+    const handleCancelReasonSubmit = (reason) => {
+        setCancellationReason(reason);
+        setShowCancelInput(false);
+        setShowCancelConfirm(true);
+    };
+
+    const handleCancelConfirm = async () => {
+        setShowCancelConfirm(false);
+        const loadingToast = toast.showLoading("Cancelling booking...");
+        try {
+            setActionLoading(true);
+
+            const response = await cancelBooking(bookingId, cancellationReason);
+
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Booking cancelled successfully.");
+                setCancellationReason("");
+                setTimeout(() => {
+                    navigate("/vendor/bookings");
+                }, 2000);
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to cancel booking");
+            }
+        } catch (err) {
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to cancel booking");
         } finally {
             setActionLoading(false);
         }
@@ -543,13 +584,23 @@ export default function VendorBookingDetails() {
                             <IoCheckmarkCircleOutline className="text-2xl" />
                             {actionLoading ? "Processing..." : "Mark as Visited"}
                         </button>
-                        <button
-                            onClick={() => setShowMapPicker(true)}
-                            className="w-full bg-white text-emerald-600 font-bold py-3.5 rounded-2xl border-2 border-emerald-50 hover:bg-emerald-50 transition-all active:scale-95 flex items-center justify-center gap-2"
-                        >
-                            <IoNavigateOutline className="text-xl" />
-                            Get Directions (Open Maps)
-                        </button>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleCancel}
+                                disabled={actionLoading}
+                                className="flex-1 bg-red-50 text-red-600 font-bold py-3.5 rounded-2xl border-2 border-red-50 hover:bg-red-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <IoCloseCircleOutline className="text-xl" />
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => setShowMapPicker(true)}
+                                className="flex-[2] bg-white text-emerald-600 font-bold py-3.5 rounded-2xl border-2 border-emerald-50 hover:bg-emerald-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <IoNavigateOutline className="text-xl" />
+                                Get Directions
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1262,6 +1313,29 @@ export default function VendorBookingDetails() {
                     </div>
                 </div>
             )}
+            {/* Cancellation Modals */}
+            <InputModal
+                isOpen={showCancelInput}
+                onClose={() => setShowCancelInput(false)}
+                onSubmit={handleCancelReasonSubmit}
+                title="Cancel Booking"
+                message="Please provide a reason for cancellation. This will be visible to the customer."
+                placeholder="Reason for cancellation..."
+                submitText="Submit Reason"
+                cancelText="Nevermind"
+                isTextarea={true}
+            />
+
+            <ConfirmModal
+                isOpen={showCancelConfirm}
+                onClose={() => setShowCancelConfirm(false)}
+                onConfirm={handleCancelConfirm}
+                title="Confirm Cancellation"
+                message={`Are you sure you want to cancel this booking? Reason: "${cancellationReason}"`}
+                confirmText="Yes, Cancel Booking"
+                cancelText="No, Keep It"
+                confirmColor="danger"
+            />
         </div>
     );
 }
