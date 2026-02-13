@@ -127,6 +127,36 @@ export const registerAdminWithOTP = async (data) => {
 };
 
 /**
+ * Get all admins (Super Admin only)
+ * @returns {Promise}
+ */
+export const getAllAdmins = async () => {
+  const response = await api.get('/admin/auth/manage/all');
+  return response.data;
+};
+
+/**
+ * Update admin details (Super Admin only)
+ * @param {string} adminId
+ * @param {Object} data - { name, role, isActive }
+ * @returns {Promise}
+ */
+export const updateAdmin = async (adminId, data) => {
+  const response = await api.patch(`/admin/auth/manage/update/${adminId}`, data);
+  return response.data;
+};
+
+/**
+ * Delete admin (Super Admin only)
+ * @param {string} adminId
+ * @returns {Promise}
+ */
+export const deleteAdmin = async (adminId) => {
+  const response = await api.delete(`/admin/auth/manage/delete/${adminId}`);
+  return response.data;
+};
+
+/**
  * Admin Vendor Management API functions
  */
 

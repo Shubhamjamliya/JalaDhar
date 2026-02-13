@@ -9,10 +9,13 @@ const {
   forgotPassword,
   resetPassword,
   sendAdminRegistrationOTP,
-  registerAdminWithOTP
+  registerAdminWithOTP,
+  getAllAdmins,
+  updateAdmin,
+  deleteAdmin
 } = require('../../controllers/adminControllers/adminAuthController');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin } = require('../../middleware/roleMiddleware');
+const { isAdmin, isSuperAdmin } = require('../../middleware/roleMiddleware');
 const { adminRegistrationRateLimiter } = require('../../middleware/rateLimiter');
 
 // Validation rules
@@ -38,7 +41,6 @@ const resetPasswordValidation = [
   body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
 ];
 
-// Validation rules for admin-to-admin registration
 const adminRegistrationOTPValidation = [
   body('email').isEmail().withMessage('Please provide a valid email'),
   body('name').trim().notEmpty().withMessage('Name is required')
@@ -60,9 +62,13 @@ router.get('/profile', authenticate, isAdmin, getProfile);
 router.post('/forgot-password', forgotPasswordValidation, forgotPassword);
 router.post('/reset-password', resetPasswordValidation, resetPassword);
 
-// Admin-to-admin registration with OTP (requires authentication)
-router.post('/register/send-otp', authenticate, isAdmin, adminRegistrationOTPValidation, sendAdminRegistrationOTP);
-router.post('/register/verify-otp', authenticate, isAdmin, registerAdminWithOTPValidation, registerAdminWithOTP);
+// Admin-to-admin registration with OTP (managed by Super Admin ONLY)
+router.post('/register/send-otp', authenticate, isSuperAdmin, adminRegistrationOTPValidation, sendAdminRegistrationOTP);
+router.post('/register/verify-otp', authenticate, isSuperAdmin, registerAdminWithOTPValidation, registerAdminWithOTP);
+
+// Admin Management (Super Admin only)
+router.get('/manage/all', authenticate, isSuperAdmin, getAllAdmins);
+router.patch('/manage/update/:adminId', authenticate, isSuperAdmin, updateAdmin);
+router.delete('/manage/delete/:adminId', authenticate, isSuperAdmin, deleteAdmin);
 
 module.exports = router;
-

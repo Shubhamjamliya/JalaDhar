@@ -10,6 +10,7 @@ import {
     IoCloseOutline,
     IoCashOutline,
     IoBusinessOutline,
+    IoShieldCheckmarkOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { sendAdminRegistrationOTP, registerAdminWithOTP, getAllSettings, updateMultipleSettings } from "../../../services/adminApi";
@@ -32,6 +33,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
         email: "",
         password: "",
         confirmPassword: "",
+        role: "ADMIN",
     });
     const [otpData, setOtpData] = useState({
         otp: "",
@@ -176,6 +178,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 name: registrationData.name,
                 email: registrationData.email,
                 password: registrationData.password,
+                role: registrationData.role,
                 otp: otpData.otp,
                 token: otpData.token,
             });
@@ -189,6 +192,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                     email: "",
                     password: "",
                     confirmPassword: "",
+                    role: "ADMIN",
                 });
                 setOtpData({
                     otp: "",
@@ -727,6 +731,33 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
                                                 placeholder="Confirm password"
                                             />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <IoShieldCheckmarkOutline className="inline text-base mr-1" />
+                                                Designated Role *
+                                            </label>
+                                            <select
+                                                value={registrationData.role}
+                                                onChange={(e) =>
+                                                    setRegistrationData({
+                                                        ...registrationData,
+                                                        role: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white"
+                                            >
+                                                <option value="ADMIN">General Admin</option>
+                                                <option value="SUPER_ADMIN">Super Admin (Owner)</option>
+                                                <option value="FINANCE_ADMIN">Finance Admin</option>
+                                                <option value="OPERATIONS_ADMIN">Operations Admin</option>
+                                                <option value="VERIFIER_ADMIN">Expert Verifier Admin</option>
+                                                <option value="SUPPORT_ADMIN">Support Admin</option>
+                                            </select>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                This will determine the sections the admin can access.
+                                            </p>
                                         </div>
                                         <div className="flex justify-end">
                                             <button

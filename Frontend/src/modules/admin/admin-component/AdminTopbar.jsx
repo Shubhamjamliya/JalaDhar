@@ -35,7 +35,9 @@ export default function AdminTopbar() {
                                 <p className="text-sm font-semibold text-gray-800">
                                     {admin?.name || "Admin"}
                                 </p>
-                                <p className="text-xs text-gray-500">Administrator</p>
+                                <p className="text-xs text-gray-500 font-medium">
+                                    {admin?.role ? admin.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : "Administrator"}
+                                </p>
                             </div>
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A84FF] to-[#005BBB] flex items-center justify-center">
                                 <span className="text-white font-bold text-sm">

@@ -44,6 +44,11 @@ const authenticate = async (req, res, next) => {
         user = await Vendor.findById(decoded.userId).select('-password');
         break;
       case 'ADMIN':
+      case 'SUPER_ADMIN':
+      case 'FINANCE_ADMIN':
+      case 'OPERATIONS_ADMIN':
+      case 'VERIFIER_ADMIN':
+      case 'SUPPORT_ADMIN':
         user = await Admin.findById(decoded.userId).select('-password');
         break;
       default:
@@ -105,6 +110,11 @@ const optionalAuth = async (req, res, next) => {
             user = await Vendor.findById(decoded.userId).select('-password');
             break;
           case 'ADMIN':
+          case 'SUPER_ADMIN':
+          case 'FINANCE_ADMIN':
+          case 'OPERATIONS_ADMIN':
+          case 'VERIFIER_ADMIN':
+          case 'SUPPORT_ADMIN':
             user = await Admin.findById(decoded.userId).select('-password');
             break;
         }

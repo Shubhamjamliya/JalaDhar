@@ -16,6 +16,8 @@ import {
     IoBarChartOutline,
     IoStarOutline,
     IoAlertCircleOutline,
+    IoCalendarOutline,
+    IoLockClosedOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -27,54 +29,77 @@ const navItems = [
         label: "Dashboard",
         to: "/admin/dashboard",
         Icon: IoHomeOutline,
+        roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"]
     },
     {
         id: "vendors",
         label: "All Vendors",
         to: "/admin/vendors",
         Icon: IoPeopleOutline,
+        roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"]
     },
     {
         id: "pending",
-        label: "Pending Approvals",
+        label: "Pending Vendor Approvals",
         to: "/admin/vendors/pending",
         Icon: IoDocumentTextOutline,
+        roles: ["SUPER_ADMIN", "VERIFIER_ADMIN"]
     },
     {
         id: "users",
         label: "Users",
         to: "/admin/users",
         Icon: IoPersonCircleOutline,
+        roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"]
     },
     {
         id: "approvals",
         label: "Approvals",
         to: "/admin/approvals",
         Icon: IoCheckmarkCircleOutline,
+        roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN"]
+    },
+    {
+        id: "bookings",
+        label: "Bookings",
+        to: "/admin/bookings",
+        Icon: IoCalendarOutline,
+        roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"]
     },
     {
         id: "payments",
         label: "Payments",
         to: "/admin/payments",
         Icon: IoWalletOutline,
+        roles: ["SUPER_ADMIN", "FINANCE_ADMIN"]
     },
     {
         id: "ratings",
         label: "Ratings & Reviews",
         to: "/admin/ratings",
         Icon: IoStarOutline,
+        roles: ["SUPER_ADMIN", "SUPPORT_ADMIN"]
     },
     {
         id: "disputes",
         label: "Disputes",
         to: "/admin/disputes",
         Icon: IoAlertCircleOutline,
+        roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN", "SUPPORT_ADMIN"]
+    },
+    {
+        id: "team",
+        label: "Admin Management",
+        to: "/admin/team",
+        Icon: IoLockClosedOutline,
+        roles: ["SUPER_ADMIN"]
     },
     {
         id: "settings",
         label: "Settings",
         to: "/admin/settings",
         Icon: IoSettingsOutline,
+        roles: ["SUPER_ADMIN"]
     },
 ];
 
@@ -149,7 +174,9 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                         </div>
                         <div>
                             <h2 className="text-lg font-bold text-white">Jaladhaara</h2>
-                            <p className="text-xs text-white/70">Admin Panel</p>
+                            <p className="text-xs text-white/70 font-medium capitalize">
+                                {admin?.role ? admin.role.replace(/_/g, ' ').toLowerCase() : "Admin Panel"}
+                            </p>
                         </div>
                     </div>
                     <button
@@ -164,96 +191,98 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
 
                 {/* Menu Items */}
                 <nav className="flex flex-col gap-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                    {navItems.map(({ id, label, to, Icon }) => {
-                        // Special handling for payments dropdown
-                        if (id === "payments") {
-                            const isActive = isPaymentsRouteActive;
+                    {navItems
+                        .filter(item => !item.roles || item.roles.includes(admin?.role))
+                        .map(({ id, label, to, Icon }) => {
+                            // Special handling for payments dropdown
+                            if (id === "payments") {
+                                const isActive = isPaymentsRouteActive;
 
-                            return (
-                                <div key={id} className="flex flex-col">
-                                    <button
-                                        onClick={() => setIsPaymentsOpen(!isPaymentsOpen)}
-                                        className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 w-full ${isActive
-                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                            }`}
-                                    >
-                                        <Icon className="text-xl" />
-                                        <span className="text-sm font-medium flex-1 text-left">{label}</span>
-                                        {isPaymentsOpen ? (
-                                            <IoChevronUpOutline className="text-lg" />
-                                        ) : (
-                                            <IoChevronDownOutline className="text-lg" />
+                                return (
+                                    <div key={id} className="flex flex-col">
+                                        <button
+                                            onClick={() => setIsPaymentsOpen(!isPaymentsOpen)}
+                                            className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 w-full ${isActive
+                                                ? "bg-[#60A5FA] text-white shadow-md"
+                                                : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                }`}
+                                        >
+                                            <Icon className="text-xl" />
+                                            <span className="text-sm font-medium flex-1 text-left">{label}</span>
+                                            {isPaymentsOpen ? (
+                                                <IoChevronUpOutline className="text-lg" />
+                                            ) : (
+                                                <IoChevronDownOutline className="text-lg" />
+                                            )}
+                                        </button>
+
+                                        {/* Dropdown Menu */}
+                                        {isPaymentsOpen && (
+                                            <div className="ml-4 mt-1 flex flex-col gap-1">
+                                                <NavLink
+                                                    to="/admin/payments/admin"
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                        }`
+                                                    }
+                                                >
+                                                    <IoBarChartOutline className="text-lg" />
+                                                    <span className="text-sm font-medium">Admin</span>
+                                                </NavLink>
+                                                <NavLink
+                                                    to="/admin/payments/user"
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                        }`
+                                                    }
+                                                >
+                                                    <IoPersonCircleOutline className="text-lg" />
+                                                    <span className="text-sm font-medium">User</span>
+                                                </NavLink>
+                                                <NavLink
+                                                    to="/admin/payments/vendor"
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                        }`
+                                                    }
+                                                >
+                                                    <IoPeopleOutline className="text-lg" />
+                                                    <span className="text-sm font-medium">Vendor</span>
+                                                </NavLink>
+                                            </div>
                                         )}
-                                    </button>
+                                    </div>
+                                );
+                            }
 
-                                    {/* Dropdown Menu */}
-                                    {isPaymentsOpen && (
-                                        <div className="ml-4 mt-1 flex flex-col gap-1">
-                                            <NavLink
-                                                to="/admin/payments/admin"
-                                                onClick={onClose}
-                                                className={({ isActive }) =>
-                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                        ? "bg-[#60A5FA] text-white shadow-md"
-                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                    }`
-                                                }
-                                            >
-                                                <IoBarChartOutline className="text-lg" />
-                                                <span className="text-sm font-medium">Admin</span>
-                                            </NavLink>
-                                            <NavLink
-                                                to="/admin/payments/user"
-                                                onClick={onClose}
-                                                className={({ isActive }) =>
-                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                        ? "bg-[#60A5FA] text-white shadow-md"
-                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                    }`
-                                                }
-                                            >
-                                                <IoPersonCircleOutline className="text-lg" />
-                                                <span className="text-sm font-medium">User</span>
-                                            </NavLink>
-                                            <NavLink
-                                                to="/admin/payments/vendor"
-                                                onClick={onClose}
-                                                className={({ isActive }) =>
-                                                    `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                        ? "bg-[#60A5FA] text-white shadow-md"
-                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                    }`
-                                                }
-                                            >
-                                                <IoPeopleOutline className="text-lg" />
-                                                <span className="text-sm font-medium">Vendor</span>
-                                            </NavLink>
-                                        </div>
-                                    )}
-                                </div>
+                            // Regular nav items
+                            const isActive = checkIsActive(to);
+                            const shouldEnd = to === "/admin/vendors" || to === "/admin/users" || to === "/admin/dashboard" || to === "/admin/settings" || to === "/admin/approvals";
+                            return (
+                                <NavLink
+                                    key={id}
+                                    to={to}
+                                    end={shouldEnd}
+                                    onClick={onClose}
+                                    className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${isActive
+                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                        }`}
+                                >
+                                    <Icon className="text-xl" />
+                                    <span className="text-sm font-medium">{label}</span>
+                                </NavLink>
                             );
-                        }
-
-                        // Regular nav items
-                        const isActive = checkIsActive(to);
-                        const shouldEnd = to === "/admin/vendors" || to === "/admin/users" || to === "/admin/dashboard" || to === "/admin/settings" || to === "/admin/approvals";
-                        return (
-                            <NavLink
-                                key={id}
-                                to={to}
-                                end={shouldEnd}
-                                onClick={onClose}
-                                className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${isActive
-                                    ? "bg-[#60A5FA] text-white shadow-md"
-                                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                                    }`}
-                            >
-                                <Icon className="text-xl" />
-                                <span className="text-sm font-medium">{label}</span>
-                            </NavLink>
-                        );
-                    })}
+                        })}
                 </nav>
 
                 {/* Logout Button */}

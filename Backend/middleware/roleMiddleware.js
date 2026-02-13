@@ -25,9 +25,34 @@ const authorize = (...allowedRoles) => {
 };
 
 /**
- * Check if user is admin
+ * Check if user is admin (any type)
  */
-const isAdmin = authorize(ROLES.ADMIN);
+const isAdmin = authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.FINANCE_ADMIN, ROLES.OPERATIONS_ADMIN, ROLES.VERIFIER_ADMIN, ROLES.SUPPORT_ADMIN);
+
+/**
+ * Check if user is super admin
+ */
+const isSuperAdmin = authorize(ROLES.SUPER_ADMIN);
+
+/**
+ * Check if user is finance admin or super admin
+ */
+const isFinanceAdmin = authorize(ROLES.FINANCE_ADMIN, ROLES.SUPER_ADMIN);
+
+/**
+ * Check if user is operations admin or super admin
+ */
+const isOperationsAdmin = authorize(ROLES.OPERATIONS_ADMIN, ROLES.SUPER_ADMIN);
+
+/**
+ * Check if user is verifier admin or super admin
+ */
+const isVerifierAdmin = authorize(ROLES.VERIFIER_ADMIN, ROLES.SUPER_ADMIN);
+
+/**
+ * Check if user is support admin or super admin
+ */
+const isSupportAdmin = authorize(ROLES.SUPPORT_ADMIN, ROLES.SUPER_ADMIN);
 
 /**
  * Check if user is vendor
@@ -42,7 +67,7 @@ const isUser = authorize(ROLES.USER);
 /**
  * Check if user is vendor or admin
  */
-const isVendorOrAdmin = authorize(ROLES.VENDOR, ROLES.ADMIN);
+const isVendorOrAdmin = authorize(ROLES.VENDOR, ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.FINANCE_ADMIN, ROLES.OPERATIONS_ADMIN, ROLES.VERIFIER_ADMIN, ROLES.SUPPORT_ADMIN);
 
 /**
  * Check if user is user or vendor
@@ -52,6 +77,11 @@ const isUserOrVendor = authorize(ROLES.USER, ROLES.VENDOR);
 module.exports = {
   authorize,
   isAdmin,
+  isSuperAdmin,
+  isFinanceAdmin,
+  isOperationsAdmin,
+  isVerifierAdmin,
+  isSupportAdmin,
   isVendor,
   isUser,
   isVendorOrAdmin,

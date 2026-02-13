@@ -425,14 +425,8 @@ const registerAdminWithOTP = async (req, res) => {
       });
     }
 
-    const { name, email, password, otp, token } = req.body;
+    const { name, email, password, otp, token, role } = req.body;
 
-    if (!name || !email || !password || !otp || !token) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields are required'
-      });
-    }
 
     // Verify OTP using token
     const tokenDoc = await Token.findOne({
@@ -484,7 +478,7 @@ const registerAdminWithOTP = async (req, res) => {
       name,
       email,
       password,
-      role: 'ADMIN',
+      role: role || 'ADMIN',
       permissions: ['all'],
       isActive: true
     });
@@ -515,6 +509,124 @@ const registerAdminWithOTP = async (req, res) => {
   }
 };
 
+/**
+ * Get all admins (Super Admin only)
+ */
+const getAllAdmins = async (req, res) => {
+  try {
+    const admins = await Admin.find({}).sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      data: { admins }
+    });
+  } catch (error) {
+    console.error('Get all admins error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch admins',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update admin role or status (Super Admin only)
+ */
+const updateAdmin = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const { name, role, isActive } = req.body;
+
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+
+    // Don't allow changing own role if it's the last super admin
+    if (admin._id.toString() === req.userId && role && role !== 'SUPER_ADMIN') {
+      const superAdminCount = await Admin.countDocuments({ role: 'SUPER_ADMIN', isActive: true });
+      if (superAdminCount <= 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot change role of the last active Super Admin'
+        });
+      }
+    }
+
+    if (name) admin.name = name;
+    if (role) admin.role = role;
+    if (isActive !== undefined) admin.isActive = isActive;
+
+    await admin.save();
+
+    res.json({
+      success: true,
+      message: 'Admin updated successfully',
+      data: { admin }
+    });
+  } catch (error) {
+    console.error('Update admin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update admin',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Delete admin (Super Admin only)
+ */
+const deleteAdmin = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+
+    // Don't allow deleting self
+    if (admin._id.toString() === req.userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot delete your own account'
+      });
+    }
+
+    // Check if it's the last super admin
+    if (admin.role === 'SUPER_ADMIN') {
+      const superAdminCount = await Admin.countDocuments({ role: 'SUPER_ADMIN' });
+      if (superAdminCount <= 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot delete the last Super Admin'
+        });
+      }
+    }
+
+    await Admin.findByIdAndDelete(adminId);
+
+    res.json({
+      success: true,
+      message: 'Admin deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete admin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete admin',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -523,6 +635,9 @@ module.exports = {
   forgotPassword,
   resetPassword,
   sendAdminRegistrationOTP,
-  registerAdminWithOTP
+  registerAdminWithOTP,
+  getAllAdmins,
+  updateAdmin,
+  deleteAdmin
 };
 

@@ -24,7 +24,7 @@ const initializeSocket = (server) => {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
-      
+
       if (!token) {
         return next(new Error('Authentication error: No token provided'));
       }
@@ -47,6 +47,11 @@ const initializeSocket = (server) => {
           user = await Vendor.findById(decoded.userId).select('-password');
           break;
         case 'ADMIN':
+        case 'SUPER_ADMIN':
+        case 'FINANCE_ADMIN':
+        case 'OPERATIONS_ADMIN':
+        case 'VERIFIER_ADMIN':
+        case 'SUPPORT_ADMIN':
           user = await Admin.findById(decoded.userId).select('-password');
           break;
         default:
@@ -61,7 +66,7 @@ const initializeSocket = (server) => {
       socket.userId = decoded.userId;
       socket.userRole = decoded.role;
       socket.userModel = decoded.role === 'USER' ? 'User' : decoded.role === 'VENDOR' ? 'Vendor' : 'Admin';
-      
+
       next();
     } catch (error) {
       console.error('Socket authentication error:', error);

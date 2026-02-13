@@ -23,7 +23,7 @@ const adminSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['ADMIN'],
+    enum: ['ADMIN', 'SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'VERIFIER_ADMIN', 'SUPPORT_ADMIN'],
     default: 'ADMIN'
   },
   permissions: {
@@ -43,19 +43,19 @@ const adminSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-adminSchema.pre('save', async function(next) {
+adminSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
 // Compare password method
-adminSchema.methods.comparePassword = async function(candidatePassword) {
+adminSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Remove sensitive data before sending JSON
-adminSchema.methods.toJSON = function() {
+adminSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
   return obj;

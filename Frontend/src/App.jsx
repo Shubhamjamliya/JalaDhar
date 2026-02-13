@@ -81,6 +81,7 @@ const AdminApprovals = lazy(() => import("./modules/admin/admin-pages/AdminAppro
 const AdminBookingDetails = lazy(() => import("./modules/admin/admin-pages/AdminBookingDetails"));
 const AdminRatings = lazy(() => import("./modules/admin/admin-pages/AdminRatings"));
 const AdminDisputes = lazy(() => import("./modules/admin/admin-pages/AdminDisputes"));
+const AdminTeamManagement = lazy(() => import("./modules/admin/admin-pages/AdminTeamManagement"));
 const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavbar"));
 
 function App() {
@@ -619,10 +620,26 @@ function App() {
                                                                         }
                                                                     />
                                                                     <Route
+                                                                        path="/payments/admin/transactions"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPayments defaultTab="admin-transactions" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
                                                                         path="/payments/user"
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPayments defaultTab="user-payments" />
+                                                                                <AdminPayments defaultTab="user-overview" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/payments/user/transactions"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPayments defaultTab="user-transactions" />
                                                                             </Suspense>
                                                                         }
                                                                     />
@@ -631,6 +648,14 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminPayments defaultTab="vendor-payments" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/payments/vendor/transactions"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPayments defaultTab="vendor-transactions" />
                                                                             </Suspense>
                                                                         }
                                                                     />
@@ -695,6 +720,14 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminSettings defaultTab="register" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/team"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminTeamManagement />
                                                                             </Suspense>
                                                                         }
                                                                     />
