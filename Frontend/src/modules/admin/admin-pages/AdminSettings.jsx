@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     IoSettingsOutline,
     IoLockClosedOutline,
@@ -8,16 +9,19 @@ import {
     IoCheckmarkCircleOutline,
     IoCloseOutline,
     IoCashOutline,
+    IoBusinessOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { sendAdminRegistrationOTP, registerAdminWithOTP, getAllSettings, updateMultipleSettings } from "../../../services/adminApi";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import { useToast } from "../../../hooks/useToast";
 
-export default function AdminSettings() {
+export default function AdminSettings({ defaultTab = "general" }) {
+    const navigate = useNavigate();
+    const location = useLocation();
     const { admin } = useAdminAuth();
     const toast = useToast();
-    const [activeTab, setActiveTab] = useState("general");
+    const [activeTab, setActiveTab] = useState(defaultTab);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -40,6 +44,7 @@ export default function AdminSettings() {
     const settingsTabs = [
         { id: "general", label: "General", icon: IoSettingsOutline },
         { id: "pricing", label: "Pricing", icon: IoCashOutline },
+        { id: "billing", label: "Billing Info", icon: IoBusinessOutline },
         { id: "security", label: "Security", icon: IoLockClosedOutline },
         { id: "register", label: "Register Admin", icon: IoPersonAddOutline },
     ];
@@ -51,6 +56,16 @@ export default function AdminSettings() {
         GST_PERCENTAGE: 18,
     });
     const [pricingLoading, setPricingLoading] = useState(false);
+
+    // Billing Settings State
+    const [billingSettings, setBillingSettings] = useState({
+        BILLING_COMPANY_NAME: "",
+        BILLING_ADDRESS: "",
+        BILLING_GSTIN: "",
+        BILLING_PHONE: "",
+        BILLING_EMAIL: "",
+    });
+    const [billingLoading, setBillingLoading] = useState(false);
 
     // Countdown timer for OTP resend
     useEffect(() => {
@@ -107,6 +122,14 @@ export default function AdminSettings() {
             setLoading(false);
         }
     };
+
+    // Sync activeTab with prop
+    useEffect(() => {
+        if (defaultTab && activeTab !== defaultTab) {
+            setActiveTab(defaultTab);
+            setError("");
+        }
+    }, [defaultTab]);
 
     const handleResendOTP = async () => {
         if (otpCountdown > 0) return;
@@ -213,6 +236,30 @@ export default function AdminSettings() {
         }
     }, [activeTab]);
 
+    // Load billing settings
+    useEffect(() => {
+        const loadBillingSettings = async () => {
+            try {
+                const response = await getAllSettings('billing');
+                if (response.success && response.data.settings) {
+                    const settingsObj = {};
+                    response.data.settings.forEach(setting => {
+                        settingsObj[setting.key] = setting.value;
+                    });
+                    setBillingSettings(prev => ({
+                        ...prev,
+                        ...settingsObj
+                    }));
+                }
+            } catch (err) {
+                console.error('Error loading billing settings:', err);
+            }
+        };
+        if (activeTab === 'billing') {
+            loadBillingSettings();
+        }
+    }, [activeTab]);
+
     // Handle pricing settings update
     const handlePricingSettingsUpdate = async (e) => {
         e.preventDefault();
@@ -240,6 +287,35 @@ export default function AdminSettings() {
         }
     };
 
+    // Handle billing settings update
+    const handleBillingSettingsUpdate = async (e) => {
+        e.preventDefault();
+        setError("");
+        setBillingLoading(true);
+
+        try {
+            const settings = [
+                { key: 'BILLING_COMPANY_NAME', value: billingSettings.BILLING_COMPANY_NAME },
+                { key: 'BILLING_ADDRESS', value: billingSettings.BILLING_ADDRESS },
+                { key: 'BILLING_GSTIN', value: billingSettings.BILLING_GSTIN },
+                { key: 'BILLING_PHONE', value: billingSettings.BILLING_PHONE },
+                { key: 'BILLING_EMAIL', value: billingSettings.BILLING_EMAIL },
+            ];
+
+            const response = await updateMultipleSettings(settings);
+            if (response.success) {
+                toast.showSuccess("Billing information updated successfully!");
+            } else {
+                setError(response.message || "Failed to update billing information");
+            }
+        } catch (err) {
+            console.error("Update billing settings error:", err);
+            setError(err.response?.data?.message || "Failed to update billing information. Please try again.");
+        } finally {
+            setBillingLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-[calc(100vh-5rem)]">
             {/* Header */}
@@ -248,42 +324,36 @@ export default function AdminSettings() {
                 <p className="text-gray-600">Manage your admin panel preferences and configurations</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Settings Sidebar */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <nav className="space-y-2">
-                            {settingsTabs.map((tab) => {
-                                const Icon = tab.icon;
-                                const isActive = activeTab === tab.id;
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => {
-                                            setActiveTab(tab.id);
-                                            setError("");
-                                            if (tab.id !== "register") {
-                                                setRegistrationStep(1);
-                                                setOtpSent(false);
-                                            }
-                                        }}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                                            isActive
-                                                ? "bg-[#0A84FF] text-white shadow-md"
-                                                : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                    >
-                                        <Icon className="text-xl" />
-                                        <span className="font-medium text-sm">{tab.label}</span>
-                                    </button>
-                                );
-                            })}
-                        </nav>
-                    </div>
+            {/* Tabs */}
+            <div className="mb-6">
+                <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
+                    {settingsTabs.map((tab) => {
+                        const Icon = tab.icon;
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => {
+                                    setActiveTab(tab.id);
+                                    navigate(`/admin/settings/${tab.id}`);
+                                    setError("");
+                                }}
+                                className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${isActive
+                                    ? "border-[#0A84FF] text-[#0A84FF]"
+                                    : "border-transparent text-gray-600 hover:text-gray-800"
+                                    }`}
+                            >
+                                <Icon className="text-lg" />
+                                {tab.label}
+                            </button>
+                        );
+                    })}
                 </div>
+            </div>
 
+            <div className="max-w-4xl">
                 {/* Settings Content */}
-                <div className="lg:col-span-3">
+                <div className="w-full">
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <ErrorMessage message={error} />
 
@@ -331,6 +401,120 @@ export default function AdminSettings() {
                             </div>
                         )}
 
+                        {activeTab === "billing" && (
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-800 mb-6">Billing Information</h2>
+                                <p className="text-sm text-gray-500 mb-6">
+                                    This information will be displayed on all invoices generated for users and vendors.
+                                </p>
+                                <form onSubmit={handleBillingSettingsUpdate} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Company Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={billingSettings.BILLING_COMPANY_NAME}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_COMPANY_NAME: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                placeholder="Legal Company Name"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Billing Address
+                                            </label>
+                                            <textarea
+                                                value={billingSettings.BILLING_ADDRESS}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_ADDRESS: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                                rows={3}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                placeholder="Complete business address"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                GSTIN
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={billingSettings.BILLING_GSTIN}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_GSTIN: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                placeholder="GST Registration Number"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Contact Phone
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={billingSettings.BILLING_PHONE}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_PHONE: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                placeholder="Contact Number for Invoices"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Billing Email
+                                            </label>
+                                            <input
+                                                type="email"
+                                                value={billingSettings.BILLING_EMAIL}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_EMAIL: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                placeholder="Billing Support Email"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end pt-4">
+                                        <button
+                                            type="submit"
+                                            disabled={billingLoading}
+                                            className="px-6 py-3 bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        >
+                                            {billingLoading && (
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            )}
+                                            {billingLoading ? "Saving..." : "Save Billing Info"}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
                         {activeTab === "pricing" && (
                             <div>
                                 <h2 className="text-xl font-bold text-gray-800 mb-6">Pricing Settings</h2>
@@ -464,7 +648,7 @@ export default function AdminSettings() {
                         {activeTab === "register" && (
                             <div>
                                 <h2 className="text-xl font-bold text-gray-800 mb-6">Register New Admin</h2>
-                                
+
                                 {registrationStep === 1 ? (
                                     <form onSubmit={handleSendOTP} className="space-y-6">
                                         <div>

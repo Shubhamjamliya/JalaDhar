@@ -12,11 +12,13 @@ import { getAllUsers, deactivateUser, activateUser } from "../../../services/adm
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
+import ErrorMessage from "../../shared/components/ErrorMessage";
 
 export default function AdminUsers() {
     const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
     const [actionLoading, setActionLoading] = useState(null);
     const toast = useToast();
     const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
@@ -43,18 +45,18 @@ export default function AdminUsers() {
         try {
             setLoading(true);
             setError("");
-            
+
             const params = {
                 page: filters.page,
                 limit: filters.limit,
             };
-            
+
             if (filters.search) params.search = filters.search;
             if (filters.isActive !== "") params.isActive = filters.isActive;
             if (filters.isEmailVerified !== "") params.isEmailVerified = filters.isEmailVerified;
-            
+
             const response = await getAllUsers(params);
-            
+
             if (response.success) {
                 setUsers(response.data.users || []);
                 setPagination(response.data.pagination || {
@@ -86,7 +88,7 @@ export default function AdminUsers() {
         try {
             setActionLoading(userId);
             const response = await deactivateUser(userId);
-            
+
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("User deactivated successfully!");
@@ -118,7 +120,7 @@ export default function AdminUsers() {
         try {
             setActionLoading(userId);
             const response = await activateUser(userId);
-            
+
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("User activated successfully!");
@@ -159,204 +161,204 @@ export default function AdminUsers() {
 
     return (
         <>
-        <div className="min-h-[calc(100vh-5rem)]">
+            <div className="min-h-[calc(100vh-5rem)]">
+                <ErrorMessage message={error} />
 
-            {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-                    All Users
-                </h1>
-                <p className="text-[#4A4A4A] text-sm">
-                    Manage and review all user accounts
-                </p>
-            </div>
-
-            {/* Filters */}
-            <div className="bg-white rounded-[12px] p-4 mb-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    {/* Search */}
-                    <div className="relative">
-                        <IoSearchOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
-                        <input
-                            type="text"
-                            placeholder="Search users..."
-                            value={filters.search}
-                            onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
-                            className="w-full pl-10 pr-4 py-2 border border-[#D9DDE4] rounded-[8px] text-sm focus:outline-none focus:border-[#0A84FF]"
-                        />
-                    </div>
-
-                    {/* Active Status Filter */}
-                    <select
-                        value={filters.isActive}
-                        onChange={(e) => setFilters({ ...filters, isActive: e.target.value, page: 1 })}
-                        className="w-full px-4 py-2 border border-[#D9DDE4] rounded-[8px] text-sm focus:outline-none focus:border-[#0A84FF]"
-                    >
-                        <option value="">All Status</option>
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                    </select>
-
-                    {/* Email Verified Filter */}
-                    <select
-                        value={filters.isEmailVerified}
-                        onChange={(e) => setFilters({ ...filters, isEmailVerified: e.target.value, page: 1 })}
-                        className="w-full px-4 py-2 border border-[#D9DDE4] rounded-[8px] text-sm focus:outline-none focus:border-[#0A84FF]"
-                    >
-                        <option value="">All Verification</option>
-                        <option value="true">Verified</option>
-                        <option value="false">Unverified</option>
-                    </select>
-
-                    {/* Clear Filters */}
-                    <button
-                        onClick={() => setFilters({ search: "", isActive: "", isEmailVerified: "", page: 1, limit: 10 })}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-[8px] text-sm font-medium hover:bg-gray-200 transition-colors"
-                    >
-                        Clear Filters
-                    </button>
+                {/* Header */}
+                <div className="mb-6">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+                        All Users
+                    </h1>
+                    <p className="text-[#4A4A4A] text-sm">
+                        Manage and review all user accounts
+                    </p>
                 </div>
-            </div>
 
-            {/* Users List */}
-            <div className="space-y-4">
-                {users.length === 0 ? (
-                    <div className="bg-white rounded-[12px] p-8 text-center shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                        <p className="text-[#4A4A4A] text-sm">
-                            No users found
-                        </p>
-                    </div>
-                ) : (
-                    users.map((user) => (
-                        <div
-                            key={user._id}
-                            className="bg-white rounded-[12px] p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all"
+                {/* Filters */}
+                <div className="bg-white rounded-[12px] p-4 mb-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {/* Search */}
+                        <div className="relative">
+                            <IoSearchOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+                            <input
+                                type="text"
+                                placeholder="Search users..."
+                                value={filters.search}
+                                onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                                className="w-full pl-10 pr-4 py-2 border border-[#D9DDE4] rounded-[8px] text-sm focus:outline-none focus:border-[#0A84FF]"
+                            />
+                        </div>
+
+                        {/* Active Status Filter */}
+                        <select
+                            value={filters.isActive}
+                            onChange={(e) => setFilters({ ...filters, isActive: e.target.value, page: 1 })}
+                            className="w-full px-4 py-2 border border-[#D9DDE4] rounded-[8px] text-sm focus:outline-none focus:border-[#0A84FF]"
                         >
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h3 className="text-lg font-bold text-gray-800">
-                                            {user.name}
-                                        </h3>
-                                        <span
-                                            className={`px-2 py-1 rounded-[6px] text-xs font-semibold ${
-                                                user.isActive
+                            <option value="">All Status</option>
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+
+                        {/* Email Verified Filter */}
+                        <select
+                            value={filters.isEmailVerified}
+                            onChange={(e) => setFilters({ ...filters, isEmailVerified: e.target.value, page: 1 })}
+                            className="w-full px-4 py-2 border border-[#D9DDE4] rounded-[8px] text-sm focus:outline-none focus:border-[#0A84FF]"
+                        >
+                            <option value="">All Verification</option>
+                            <option value="true">Verified</option>
+                            <option value="false">Unverified</option>
+                        </select>
+
+                        {/* Clear Filters */}
+                        <button
+                            onClick={() => setFilters({ search: "", isActive: "", isEmailVerified: "", page: 1, limit: 10 })}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-[8px] text-sm font-medium hover:bg-gray-200 transition-colors"
+                        >
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
+
+                {/* Users List */}
+                <div className="space-y-4">
+                    {users.length === 0 ? (
+                        <div className="bg-white rounded-[12px] p-8 text-center shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
+                            <p className="text-[#4A4A4A] text-sm">
+                                No users found
+                            </p>
+                        </div>
+                    ) : (
+                        users.map((user) => (
+                            <div
+                                key={user._id}
+                                className="bg-white rounded-[12px] p-5 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all"
+                            >
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <h3 className="text-lg font-bold text-gray-800">
+                                                {user.name}
+                                            </h3>
+                                            <span
+                                                className={`px-2 py-1 rounded-[6px] text-xs font-semibold ${user.isActive
                                                     ? "bg-blue-100 text-blue-700"
                                                     : "bg-red-100 text-red-700"
-                                            }`}
-                                        >
-                                            {user.isActive ? "Active" : "Inactive"}
-                                        </span>
-                                        {user.isEmailVerified && (
-                                            <span className="px-2 py-1 rounded-[6px] text-xs font-semibold bg-green-100 text-green-700">
-                                                Verified
+                                                    }`}
+                                            >
+                                                {user.isActive ? "Active" : "Inactive"}
                                             </span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-4 text-sm text-[#4A4A4A] mb-1">
-                                        <div className="flex items-center gap-1">
-                                            <IoMailOutline className="text-base" />
-                                            <span>{user.email}</span>
+                                            {user.isEmailVerified && (
+                                                <span className="px-2 py-1 rounded-[6px] text-xs font-semibold bg-green-100 text-green-700">
+                                                    Verified
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <IoCallOutline className="text-base" />
-                                            <span>{user.phone}</span>
+                                        <div className="flex items-center gap-4 text-sm text-[#4A4A4A] mb-1">
+                                            <div className="flex items-center gap-1">
+                                                <IoMailOutline className="text-base" />
+                                                <span>{user.email}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <IoCallOutline className="text-base" />
+                                                <span>{user.phone}</span>
+                                            </div>
                                         </div>
+                                        <p className="text-xs text-[#4A4A4A]">
+                                            Registered: {formatDate(user.createdAt)}
+                                        </p>
                                     </div>
-                                    <p className="text-xs text-[#4A4A4A]">
-                                        Registered: {formatDate(user.createdAt)}
-                                    </p>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
+                                    <button
+                                        onClick={() => navigate(`/admin/users/${user._id}`)}
+                                        className="px-3 py-2 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors flex items-center gap-2"
+                                    >
+                                        <IoEyeOutline className="text-base" />
+                                        View Details
+                                    </button>
+
+                                    {user.isActive ? (
+                                        <button
+                                            onClick={() => handleDeactivate(user._id)}
+                                            disabled={actionLoading === user._id}
+                                            className="px-3 py-2 bg-orange-600 text-white text-sm font-semibold rounded-[8px] hover:bg-orange-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <IoBanOutline className="text-base" />
+                                            {actionLoading === user._id ? "Processing..." : "Deactivate"}
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleActivate(user._id)}
+                                            disabled={actionLoading === user._id}
+                                            className="px-3 py-2 bg-green-600 text-white text-sm font-semibold rounded-[8px] hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <IoCheckmarkOutline className="text-base" />
+                                            {actionLoading === user._id ? "Processing..." : "Activate"}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
+                        ))
+                    )}
+                </div>
 
-                            {/* Actions */}
-                            <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
-                                <button
-                                    onClick={() => navigate(`/admin/users/${user._id}`)}
-                                    className="px-3 py-2 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors flex items-center gap-2"
-                                >
-                                    <IoEyeOutline className="text-base" />
-                                    View Details
-                                </button>
-                                
-                                {user.isActive ? (
-                                    <button
-                                        onClick={() => handleDeactivate(user._id)}
-                                        disabled={actionLoading === user._id}
-                                        className="px-3 py-2 bg-orange-600 text-white text-sm font-semibold rounded-[8px] hover:bg-orange-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <IoBanOutline className="text-base" />
-                                        {actionLoading === user._id ? "Processing..." : "Deactivate"}
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => handleActivate(user._id)}
-                                        disabled={actionLoading === user._id}
-                                        className="px-3 py-2 bg-green-600 text-white text-sm font-semibold rounded-[8px] hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <IoCheckmarkOutline className="text-base" />
-                                        {actionLoading === user._id ? "Processing..." : "Activate"}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    ))
+                {/* Pagination */}
+                {pagination.totalPages > 1 && (
+                    <div className="mt-6 flex items-center justify-center gap-2">
+                        <button
+                            onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
+                            disabled={filters.page === 1}
+                            className="px-4 py-2 bg-white border border-[#D9DDE4] rounded-[8px] text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Previous
+                        </button>
+                        <span className="px-4 py-2 text-sm text-gray-600">
+                            Page {pagination.currentPage} of {pagination.totalPages}
+                        </span>
+                        <button
+                            onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
+                            disabled={filters.page >= pagination.totalPages}
+                            className="px-4 py-2 bg-white border border-[#D9DDE4] rounded-[8px] text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next
+                        </button>
+                    </div>
                 )}
             </div>
 
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-center gap-2">
-                    <button
-                        onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
-                        disabled={filters.page === 1}
-                        className="px-4 py-2 bg-white border border-[#D9DDE4] rounded-[8px] text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Previous
-                    </button>
-                    <span className="px-4 py-2 text-sm text-gray-600">
-                        Page {pagination.currentPage} of {pagination.totalPages}
-                    </span>
-                    <button
-                        onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
-                        disabled={filters.page >= pagination.totalPages}
-                        className="px-4 py-2 bg-white border border-[#D9DDE4] rounded-[8px] text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Next
-                    </button>
-                </div>
-            )}
-        </div>
+            {/* Deactivate User Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showDeactivateConfirm}
+                onClose={() => {
+                    setShowDeactivateConfirm(false);
+                    setSelectedUserId(null);
+                }}
+                onConfirm={handleDeactivateConfirm}
+                title="Deactivate User"
+                message="Are you sure you want to deactivate this user?"
+                confirmText="Yes, Deactivate"
+                cancelText="Cancel"
+                confirmColor="warning"
+            />
 
-        {/* Deactivate User Confirmation Modal */}
-        <ConfirmModal
-            isOpen={showDeactivateConfirm}
-            onClose={() => {
-                setShowDeactivateConfirm(false);
-                setSelectedUserId(null);
-            }}
-            onConfirm={handleDeactivateConfirm}
-            title="Deactivate User"
-            message="Are you sure you want to deactivate this user?"
-            confirmText="Yes, Deactivate"
-            cancelText="Cancel"
-            confirmColor="warning"
-        />
-
-        {/* Activate User Confirmation Modal */}
-        <ConfirmModal
-            isOpen={showActivateConfirm}
-            onClose={() => {
-                setShowActivateConfirm(false);
-                setSelectedUserId(null);
-            }}
-            onConfirm={handleActivateConfirm}
-            title="Activate User"
-            message="Are you sure you want to activate this user?"
-            confirmText="Yes, Activate"
-            cancelText="Cancel"
-            confirmColor="primary"
-        />
-    </>);
+            {/* Activate User Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showActivateConfirm}
+                onClose={() => {
+                    setShowActivateConfirm(false);
+                    setSelectedUserId(null);
+                }}
+                onConfirm={handleActivateConfirm}
+                title="Activate User"
+                message="Are you sure you want to activate this user?"
+                confirmText="Yes, Activate"
+                cancelText="Cancel"
+                confirmColor="primary"
+            />
+        </>);
 }
 

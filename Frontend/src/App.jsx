@@ -659,6 +659,46 @@ function App() {
                                                                         }
                                                                     />
                                                                     <Route
+                                                                        path="/settings/general"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminSettings defaultTab="general" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/settings/billing"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminSettings defaultTab="billing" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/settings/pricing"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminSettings defaultTab="pricing" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/settings/security"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminSettings defaultTab="security" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/settings/register"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminSettings defaultTab="register" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
                                                                         path="/approvals"
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>

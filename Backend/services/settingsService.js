@@ -86,6 +86,46 @@ const initializeDefaultSettings = async () => {
       description: 'GST percentage applied on total amount',
       type: 'number',
       category: 'pricing'
+    },
+    {
+      key: 'BILLING_COMPANY_NAME',
+      value: 'JalaDhar Tech Pvt Ltd',
+      label: 'Company Name',
+      description: 'Business name shown on invoices',
+      type: 'string',
+      category: 'billing'
+    },
+    {
+      key: 'BILLING_ADDRESS',
+      value: '123, Water Tower Complex,\nNear Borewell Circle, Civil Lines,\nRaipur, Chhattisgarh - 492001',
+      label: 'Billing Address',
+      description: 'Physical address shown on invoices',
+      type: 'string',
+      category: 'billing'
+    },
+    {
+      key: 'BILLING_GSTIN',
+      value: '22AAAAA0000A1Z5',
+      label: 'GSTIN',
+      description: 'Goods and Services Tax Identification Number',
+      type: 'string',
+      category: 'billing'
+    },
+    {
+      key: 'BILLING_PHONE',
+      value: '+91 98765 43210',
+      label: 'Billing Phone',
+      description: 'Contact number shown on invoices',
+      type: 'string',
+      category: 'billing'
+    },
+    {
+      key: 'BILLING_EMAIL',
+      value: 'billing@jaladhar.com',
+      label: 'Billing Email',
+      description: 'Email address shown on invoices',
+      type: 'string',
+      category: 'billing'
     }
   ];
 

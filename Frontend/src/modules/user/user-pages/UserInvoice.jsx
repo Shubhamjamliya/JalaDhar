@@ -14,6 +14,7 @@ import { getBookingDetails as getVendorBookingDetails } from "../../../services/
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import { useToast } from "../../../hooks/useToast";
+import { getPublicSettings } from "../../../services/settingsApi";
 import { handleApiError } from "../../../utils/toastHelper";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import InvoicePDF from "../components/InvoicePDF";
@@ -23,6 +24,13 @@ export default function UserInvoice() {
   const navigate = useNavigate();
   const location = useLocation();
   const [booking, setBooking] = useState(null);
+  const [billingInfo, setBillingInfo] = useState({
+    BILLING_COMPANY_NAME: "JalaDhar Tech Pvt Ltd",
+    BILLING_ADDRESS: "123, Water Tower Complex,\nNear Borewell Circle, Civil Lines,\nRaipur, Chhattisgarh - 492001",
+    BILLING_GSTIN: "22AAAAA0000A1Z5",
+    BILLING_PHONE: "+91 98765 43210",
+    BILLING_EMAIL: "billing@jaladhar.com"
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const toast = useToast();
@@ -37,12 +45,29 @@ export default function UserInvoice() {
     try {
       setLoading(true);
       setError("");
+      
+      // Load booking and settings in parallel
       const apiCall = isVendor ? getVendorBookingDetails : getUserBookingDetails;
-      const response = await apiCall(bookingId);
-      if (response.success) {
-        setBooking(response.data.booking);
+      const [bookingRes, settingsRes] = await Promise.all([
+        apiCall(bookingId),
+        getPublicSettings('billing').catch(err => {
+          console.error("Failed to load billing settings", err);
+          return null;
+        })
+      ]);
+
+      if (bookingRes.success) {
+        setBooking(bookingRes.data.booking);
       } else {
-        setError(response.message || "Failed to load invoice data");
+        setError(bookingRes.message || "Failed to load invoice data");
+      }
+
+      if (settingsRes && settingsRes.success && settingsRes.data.settings) {
+        const info = {};
+        settingsRes.data.settings.forEach(s => {
+          info[s.key] = s.value;
+        });
+        setBillingInfo(prev => ({ ...prev, ...info }));
       }
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load invoice data");
@@ -97,7 +122,7 @@ export default function UserInvoice() {
           </button>
 
           <PDFDownloadLink
-            document={<InvoicePDF booking={booking} />}
+            document={<InvoicePDF booking={booking} billingInfo={billingInfo} />}
             fileName={`Invoice-${bookingId.slice(-6).toUpperCase()}.pdf`}
             className="flex items-center gap-2 px-6 py-2 bg-[#0A84FF] text-white rounded-lg font-bold shadow-md hover:bg-[#005BBB] transition-all active:scale-95"
           >
@@ -148,13 +173,11 @@ export default function UserInvoice() {
                 </span>
               </div>
               <div className="space-y-1">
-                <h3 className="text-sm font-black text-gray-900 uppercase">JalaDhar Tech Pvt Ltd</h3>
+                <h3 className="text-sm font-black text-gray-900 uppercase">{billingInfo.BILLING_COMPANY_NAME}</h3>
                 <p className="text-xs text-gray-500 whitespace-pre-line">
-                  123, Water Tower Complex,{'\n'}
-                  Near Borewell Circle, Civil Lines,{'\n'}
-                  Raipur, Chhattisgarh - 492001
+                  {billingInfo.BILLING_ADDRESS}
                 </p>
-                <p className="text-xs font-bold text-blue-600 mt-2">GSTIN: 22AAAAA0000A1Z5</p>
+                <p className="text-xs font-bold text-blue-600 mt-2">GSTIN: {billingInfo.BILLING_GSTIN}</p>
               </div>
             </div>
           </div>

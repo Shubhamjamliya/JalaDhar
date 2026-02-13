@@ -203,12 +203,21 @@ const formatCurrency = (amount) => {
   return `Rs. ${Number(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 };
 
-const InvoicePDF = ({ booking }) => {
+const InvoicePDF = ({ booking, billingInfo }) => {
   if (!booking) return null;
 
   const { user, vendor, service, payment, createdAt } = booking;
   const invoiceDate = payment?.createdAt || createdAt;
   const isFullyPaid = payment?.remainingPaid;
+
+  // Destructure billingInfo with fallbacks
+  const {
+    BILLING_COMPANY_NAME = "JalaDhar Tech Pvt Ltd",
+    BILLING_ADDRESS = "123, Water Tower Complex,\nNear Borewell Circle, Civil Lines,\nRaipur, Chhattisgarh - 492001",
+    BILLING_GSTIN = "22AAAAA0000A1Z5",
+    BILLING_PHONE = "+91 98765 43210",
+    BILLING_EMAIL = "billing@jaladhar.com"
+  } = billingInfo || {};
 
   return (
     <Document>
@@ -229,11 +238,13 @@ const InvoicePDF = ({ booking }) => {
               <Text>{isFullyPaid ? 'Fully Paid' : 'Partially Paid'}</Text>
             </View>
             <View style={styles.sellerInfo}>
-              <Text style={{ fontWeight: 700, color: '#111', marginBottom: 2 }}>JalaDhar Tech Pvt Ltd</Text>
-              <Text>123, Water Tower Complex,</Text>
-              <Text>Near Borewell Circle, Civil Lines,</Text>
-              <Text>Raipur, Chhattisgarh - 492001</Text>
-              <Text style={{ marginTop: 4, color: '#0A84FF', fontWeight: 700 }}>GSTIN: 22AAAAA0000A1Z5</Text>
+              <Text style={{ fontWeight: 700, color: '#111', marginBottom: 2 }}>{BILLING_COMPANY_NAME}</Text>
+              {BILLING_ADDRESS.split('\n').map((line, i) => (
+                <Text key={i}>{line}</Text>
+              ))}
+              <Text style={{ marginTop: 4, color: '#0A84FF', fontWeight: 700 }}>GSTIN: {BILLING_GSTIN}</Text>
+              <Text style={{ marginTop: 2 }}>Ph: {BILLING_PHONE}</Text>
+              <Text>Email: {BILLING_EMAIL}</Text>
             </View>
           </View>
         </View>
@@ -336,7 +347,7 @@ const InvoicePDF = ({ booking }) => {
         <View style={styles.footer}>
           <Text style={styles.thanks}>Thank you for your business!</Text>
           <Text style={styles.disclaimer}>This is a computer generated invoice and does not require a physical signature.</Text>
-          <Text style={[styles.disclaimer, { marginTop: 2 }]}>© {new Date().getFullYear()} JalaDhar Tech Pvt Ltd. All rights reserved.</Text>
+          <Text style={[styles.disclaimer, { marginTop: 2 }]}>© {new Date().getFullYear()} {BILLING_COMPANY_NAME}. All rights reserved.</Text>
         </View>
       </Page>
     </Document>

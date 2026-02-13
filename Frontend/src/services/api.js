@@ -31,7 +31,7 @@ const shouldCache = (config) => {
   if (!CACHEABLE_METHODS.includes(config.method?.toUpperCase())) {
     return false;
   }
-  
+
   const url = config.url || '';
   return CACHEABLE_ENDPOINTS.some(endpoint => url.includes(endpoint));
 };
@@ -50,21 +50,21 @@ api.interceptors.request.use(
         });
       }
     }
-    
+
     // Determine which token to use based on the API endpoint
     let token = null;
     const url = config.url || '';
-    
+
     // Public auth endpoints don't need tokens
-    const isPublicAuthEndpoint = 
-      url.includes('/auth/register') || 
-      url.includes('/auth/login') || 
+    const isPublicAuthEndpoint =
+      url.includes('/auth/register') ||
+      url.includes('/auth/login') ||
       url.includes('/auth/forgot-password') ||
       url.includes('/auth/reset-password');
-    
+
     if (!isPublicAuthEndpoint) {
       // Admin routes - use admin token
-      if (url.startsWith('/admin/')) {
+      if (url.startsWith('/admin/') || url === '/admin' || url.startsWith('/admin?')) {
         token = localStorage.getItem('adminAccessToken');
       }
       // Vendor routes - use vendor token
@@ -91,7 +91,7 @@ api.interceptors.request.use(
         }
       }
     }
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -122,7 +122,7 @@ api.interceptors.response.use(
         config: {}
       });
     }
-    
+
     // Clear cache on mutations to ensure fresh data
     if (error.config && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(error.config.method?.toUpperCase())) {
       const url = error.config.url || '';
@@ -135,18 +135,18 @@ api.interceptors.response.use(
         clearCache('/users');
       }
     }
-    
+
     // Handle 401 Unauthorized - Token expired or invalid
     if (error.response?.status === 401) {
       const isVendorRoute = window.location.pathname.startsWith('/vendor');
       const isAdminRoute = window.location.pathname.startsWith('/admin');
-      
+
       if (isAdminRoute) {
         // Clear admin tokens
         localStorage.removeItem('adminAccessToken');
         localStorage.removeItem('adminRefreshToken');
         localStorage.removeItem('admin');
-        
+
         // Redirect to admin login if not already there
         if (window.location.pathname !== '/adminlogin') {
           window.location.href = '/adminlogin';
@@ -156,7 +156,7 @@ api.interceptors.response.use(
         localStorage.removeItem('vendorAccessToken');
         localStorage.removeItem('vendorRefreshToken');
         localStorage.removeItem('vendor');
-        
+
         // Redirect to vendor login if not already there
         if (window.location.pathname !== '/vendorlogin' && window.location.pathname !== '/vendorsignup') {
           window.location.href = '/vendorlogin';
@@ -166,7 +166,7 @@ api.interceptors.response.use(
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        
+
         // Redirect to user login if not already there
         if (window.location.pathname !== '/userlogin' && window.location.pathname !== '/usersignup') {
           window.location.href = '/userlogin';

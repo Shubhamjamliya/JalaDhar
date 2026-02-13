@@ -101,6 +101,9 @@ app.use('/api/payments', require('./routes/payment-routes/payment.routes'));
 // Rating routes
 app.use('/api/ratings', require('./routes/rating-routes/rating.routes'));
 
+// Public settings route
+app.use('/api/settings', require('./routes/settings.routes'));
+
 // Notification routes
 app.use('/api/notifications', require('./routes/notification.routes'));
 

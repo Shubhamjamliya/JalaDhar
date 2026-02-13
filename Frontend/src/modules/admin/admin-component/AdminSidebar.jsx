@@ -16,6 +16,11 @@ import {
     IoCalendarOutline,
     IoStarOutline,
     IoAlertCircleOutline,
+    IoBuildOutline,
+    IoBusinessOutline,
+    IoCashOutline,
+    IoLockClosedOutline,
+    IoPersonAddOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -89,6 +94,7 @@ export default function AdminSidebar() {
     const location = useLocation();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [isPaymentsOpen, setIsPaymentsOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const handleLogoutClick = () => {
         setShowLogoutConfirm(true);
@@ -126,15 +132,19 @@ export default function AdminSidebar() {
         return false;
     };
 
-    // Check if payments dropdown should be open based on current route
+    // Check if payments or settings dropdown should be open based on current route
     const isPaymentsRouteActive = location.pathname.startsWith("/admin/payments");
+    const isSettingsRouteActive = location.pathname.startsWith("/admin/settings");
 
-    // Auto-open payments dropdown if on a payments route
+    // Auto-open dropdowns if on their respective routes
     useEffect(() => {
         if (isPaymentsRouteActive) {
             setIsPaymentsOpen(true);
         }
-    }, [isPaymentsRouteActive]);
+        if (isSettingsRouteActive) {
+            setIsSettingsOpen(true);
+        }
+    }, [isPaymentsRouteActive, isSettingsRouteActive]);
 
     return (
         <aside className="fixed left-0 top-0 h-screen w-64 bg-gradient-to-b from-[#1a1f3a] to-[#2d3561] text-white z-40 shadow-2xl">
@@ -213,6 +223,98 @@ export default function AdminSidebar() {
                                         >
                                             <IoPeopleOutline className="text-lg flex-shrink-0" />
                                             <span className="font-medium text-sm">Vendor</span>
+                                        </NavLink>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    }
+
+                    // Special handling for settings dropdown
+                    if (item.id === "settings") {
+                        const isActive = isSettingsRouteActive;
+                        const Icon = item.Icon;
+
+                        return (
+                            <div key={item.id} className="flex flex-col">
+                                <button
+                                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                                    className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group w-full ${isActive
+                                        ? "bg-[#60A5FA] text-white shadow-lg shadow-[#60A5FA]/30"
+                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                        }`}
+                                >
+                                    <Icon className={`text-xl flex-shrink-0 ${isActive ? "text-white" : "text-white/70 group-hover:text-white"}`} />
+                                    <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
+                                    {isSettingsOpen ? (
+                                        <IoChevronUpOutline className="text-lg flex-shrink-0" />
+                                    ) : (
+                                        <IoChevronDownOutline className="text-lg flex-shrink-0" />
+                                    )}
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {isSettingsOpen && (
+                                    <div className="ml-4 mt-2 flex flex-col gap-1">
+                                        <NavLink
+                                            to="/admin/settings/general"
+                                            className={({ isActive }) =>
+                                                `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                    ? "bg-[#60A5FA] text-white shadow-md"
+                                                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                }`
+                                            }
+                                        >
+                                            <IoBuildOutline className="text-lg flex-shrink-0" />
+                                            <span className="font-medium text-sm">General</span>
+                                        </NavLink>
+                                        <NavLink
+                                            to="/admin/settings/billing"
+                                            className={({ isActive }) =>
+                                                `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                    ? "bg-[#60A5FA] text-white shadow-md"
+                                                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                }`
+                                            }
+                                        >
+                                            <IoBusinessOutline className="text-lg flex-shrink-0" />
+                                            <span className="font-medium text-sm">Billing Info</span>
+                                        </NavLink>
+                                        <NavLink
+                                            to="/admin/settings/pricing"
+                                            className={({ isActive }) =>
+                                                `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                    ? "bg-[#60A5FA] text-white shadow-md"
+                                                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                }`
+                                            }
+                                        >
+                                            <IoCashOutline className="text-lg flex-shrink-0" />
+                                            <span className="font-medium text-sm">Pricing</span>
+                                        </NavLink>
+                                        <NavLink
+                                            to="/admin/settings/security"
+                                            className={({ isActive }) =>
+                                                `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                    ? "bg-[#60A5FA] text-white shadow-md"
+                                                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                }`
+                                            }
+                                        >
+                                            <IoLockClosedOutline className="text-lg flex-shrink-0" />
+                                            <span className="font-medium text-sm">Security</span>
+                                        </NavLink>
+                                        <NavLink
+                                            to="/admin/settings/register"
+                                            className={({ isActive }) =>
+                                                `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                    ? "bg-[#60A5FA] text-white shadow-md"
+                                                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                }`
+                                            }
+                                        >
+                                            <IoPersonAddOutline className="text-lg flex-shrink-0" />
+                                            <span className="font-medium text-sm">Register Admin</span>
                                         </NavLink>
                                     </div>
                                 )}
