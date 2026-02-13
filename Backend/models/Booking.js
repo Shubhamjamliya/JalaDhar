@@ -12,6 +12,10 @@ const bookingSchema = new mongoose.Schema({
     ref: 'Vendor',
     required: [true, 'Vendor is required']
   },
+  rejectedVendors: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vendor'
+  }],
   service: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Service',

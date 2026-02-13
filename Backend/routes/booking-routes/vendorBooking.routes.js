@@ -6,6 +6,7 @@ const {
   getVendorBookings,
   acceptBooking,
   rejectBooking,
+  cancelBooking,
   markAsVisited,
   markVisitedAndUploadReport,
   markAsCompleted,
@@ -83,6 +84,7 @@ router.patch('/:bookingId/accept', (req, res, next) => {
 }, acceptBooking);
 
 router.patch('/:bookingId/reject', authenticate, isVendor, rejectBookingValidation, rejectBooking);
+router.patch('/:bookingId/cancel', authenticate, isVendor, cancelBooking);
 router.patch('/:bookingId/visited', authenticate, isVendor, markAsVisited);
 router.patch('/:bookingId/completed', authenticate, isVendor, markAsCompleted);
 router.post('/:bookingId/travel-charges', authenticate, isVendor, travelChargesValidation, requestTravelCharges);

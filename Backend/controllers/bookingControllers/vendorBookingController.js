@@ -4,6 +4,7 @@ const { uploadToCloudinary } = require('../../services/cloudinaryService');
 const { Readable } = require('stream');
 const { sendBookingStatusUpdateEmail } = require('../../services/emailService');
 const { sendNotification } = require('../../services/notificationService');
+const { autoReassignBooking } = require('../../services/bookingReassignmentService');
 const { creditToVendorWallet, retryFailedCredit } = require('../../services/walletService');
 
 /**
@@ -213,51 +214,18 @@ const rejectBooking = async (req, res) => {
     booking.rejectionReason = rejectionReason.trim();
     await booking.save();
 
-    // Send notification to user
-    try {
-      await sendBookingStatusUpdateEmail({
-        email: booking.user.email,
-        name: booking.user.name,
-        bookingId: booking._id.toString(),
-        status: 'REJECTED',
-        message: `Vendor has rejected your booking. Reason: ${rejectionReason}`
-      });
-
-      // Send real-time notification
-      try {
-        const { getIO } = require('../../sockets');
-        const io = getIO();
-        await sendNotification({
-          recipient: booking.user._id,
-          recipientModel: 'User',
-          type: 'BOOKING_REJECTED',
-          title: 'Booking Rejected',
-          message: `Your booking has been rejected. Reason: ${rejectionReason}`,
-          relatedEntity: {
-            entityType: 'Booking',
-            entityId: booking._id
-          },
-          metadata: {
-            rejectionReason: rejectionReason,
-            bookingId: booking._id.toString()
-          }
-        }, io);
-      } catch (socketError) {
-        console.error('Socket notification error:', socketError);
-        // Continue even if Socket.io fails
-      }
-    } catch (emailError) {
-      console.error('Email notification error:', emailError);
-    }
+    // Automatically reassign to next best vendor
+    const reassignmentResult = await autoReassignBooking(bookingId, rejectionReason, 'VENDOR');
 
     res.json({
       success: true,
-      message: 'Booking rejected successfully',
+      message: reassignmentResult.success
+        ? `Booking rejected and reassigned successfully.`
+        : `Booking rejected successfully. No other vendors available.`,
       data: {
-        booking: {
-          id: booking._id,
-          status: booking.status
-        }
+        bookingId: booking._id,
+        reassigned: reassignmentResult.success,
+        newVendor: reassignmentResult.data?.vendorName
       }
     });
   } catch (error) {
@@ -866,10 +834,83 @@ const downloadInvoice = async (req, res) => {
   }
 };
 
+/**
+ * Cancel booking by vendor (for unavoidable circumstances)
+ * Reassigns the booking to another vendor
+ */
+const cancelBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { cancellationReason } = req.body;
+    const vendorId = req.userId;
+
+    if (!cancellationReason || cancellationReason.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cancellation reason must be at least 10 characters'
+      });
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      vendor: vendorId
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or not assigned to you'
+      });
+    }
+
+    // Check if status is cancellable (ACCEPTED or VISITED)
+    const cancellableStatuses = [BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.VISITED];
+    if (!cancellableStatuses.includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Booking cannot be cancelled in status: ${booking.status}`
+      });
+    }
+
+    // Update terminal status temporarily
+    booking.status = BOOKING_STATUS.CANCELLED;
+    booking.vendorStatus = BOOKING_STATUS.CANCELLED;
+    booking.userStatus = BOOKING_STATUS.CANCELLED;
+    booking.rejectionReason = cancellationReason.trim(); // Reuse this field for audit
+    booking.cancelledBy = 'VENDOR';
+    booking.cancelledAt = new Date();
+    await booking.save();
+
+    // Trigger auto-reassignment
+    const reassignmentResult = await autoReassignBooking(bookingId, cancellationReason, 'VENDOR');
+
+    res.json({
+      success: true,
+      message: reassignmentResult.success
+        ? `Booking cancelled and reassigned successfully.`
+        : `Booking cancelled successfully.`,
+      data: {
+        bookingId: booking._id,
+        reassigned: reassignmentResult.success,
+        newVendor: reassignmentResult.data?.vendorName
+      }
+    });
+
+  } catch (error) {
+    console.error('Vendor cancel booking error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel booking',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getVendorBookings,
   acceptBooking,
   rejectBooking,
+  cancelBooking,
   markAsVisited,
   markVisitedAndUploadReport,
   markAsCompleted,

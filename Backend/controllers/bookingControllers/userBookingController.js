@@ -1125,6 +1125,9 @@ const getVendorProfile = async (req, res) => {
       education: vendor.educationalQualifications, // Map for frontend compatibility
       averageRating: vendor.rating?.averageRating || 0,
       totalRatings: vendor.rating?.totalRatings || 0,
+      successCount: vendor.rating?.successCount || 0,
+      failureCount: vendor.rating?.failureCount || 0,
+      successRatio: vendor.rating?.successRatio || 0,
       degreeCertificates,
       trainingCertificates,
       services: (vendor.services || []).filter(s => s !== null && s !== undefined).map(s => ({
