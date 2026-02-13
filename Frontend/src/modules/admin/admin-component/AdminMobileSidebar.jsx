@@ -134,7 +134,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
     const overlay = `fixed inset-0 bg-black/30 z-40 transition-opacity ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`;
 
-    const panel = `fixed left-0 top-0 h-full w-4/5 max-w-xs bg-gradient-to-b from-[#1a1f3a] to-[#2d3561] text-white z-50 shadow-xl p-5 transform transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full"
+    const panel = `fixed left-0 top-0 h-full w-4/5 max-w-xs bg-gradient-to-b from-[#1a1f3a] to-[#2d3561] text-white z-50 shadow-xl p-5 transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? "translate-x-0" : "-translate-x-full"
         }`;
 
     return (
@@ -148,7 +148,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                             <IoShieldCheckmarkOutline className="text-xl text-white" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-white">Jaladhar</h2>
+                            <h2 className="text-lg font-bold text-white">Jaladhaara</h2>
                             <p className="text-xs text-white/70">Admin Panel</p>
                         </div>
                     </div>
@@ -163,7 +163,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                 </div>
 
                 {/* Menu Items */}
-                <nav className="flex flex-col gap-2 flex-1">
+                <nav className="flex flex-col gap-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     {navItems.map(({ id, label, to, Icon }) => {
                         // Special handling for payments dropdown
                         if (id === "payments") {

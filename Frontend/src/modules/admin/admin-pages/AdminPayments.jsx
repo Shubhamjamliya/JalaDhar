@@ -12,6 +12,8 @@ import {
     IoSearchOutline,
     IoFilterOutline,
     IoCarOutline,
+    IoDownloadOutline,
+    IoRefreshOutline,
 } from "react-icons/io5";
 import { getAllPayments, getPaymentStatistics, getAdminPaymentOverview, getVendorPaymentOverview, getAllBookings, payFirstInstallment, paySecondInstallment, getPendingUserRefunds, processUserRefund, getAllWithdrawalRequests, getAllUserWithdrawalRequests, approveUserWithdrawalRequest, rejectUserWithdrawalRequest, processUserWithdrawalRequest, approveWithdrawalRequest, rejectWithdrawalRequest, processWithdrawal, getPendingVendorFinalSettlements, getCompletedVendorFinalSettlements, getPendingUserFinalSettlements, getCompletedUserFinalSettlements, processNewFinalSettlement, processUserFinalSettlement } from "../../../services/adminApi";
 import { useTheme } from "../../../contexts/ThemeContext";
@@ -45,17 +47,29 @@ export default function AdminPayments({ defaultTab = "overview" }) {
     useEffect(() => {
         if (isUserRoute) {
             // Default to overview for user route
-            if (activeTab !== "user-overview" && activeTab !== "user-withdrawals" && activeTab !== "user-final-settlement") {
+            if (pathname === "/admin/payments/user/transactions") {
+                if (activeTab !== "user-transactions") {
+                    setActiveTab("user-transactions");
+                }
+            } else if (activeTab !== "user-overview" && activeTab !== "user-withdrawals" && activeTab !== "user-final-settlement" && activeTab !== "user-transactions") {
                 setActiveTab("user-overview");
             }
         } else if (isVendorRoute) {
             // Default to overview for vendor route
-            if (activeTab !== "vendor-overview" && activeTab !== "vendor-withdrawals" && activeTab !== "vendor-final-settlement") {
+            if (pathname === "/admin/payments/vendor/transactions") {
+                if (activeTab !== "vendor-transactions") {
+                    setActiveTab("vendor-transactions");
+                }
+            } else if (activeTab !== "vendor-overview" && activeTab !== "vendor-withdrawals" && activeTab !== "vendor-final-settlement" && activeTab !== "vendor-transactions") {
                 setActiveTab("vendor-overview");
             }
         } else if (isAdminRoute) {
             // Set to admin-overview for admin route
-            if (activeTab !== "admin-overview") {
+            if (pathname === "/admin/payments/admin/transactions") {
+                if (activeTab !== "admin-transactions") {
+                    setActiveTab("admin-transactions");
+                }
+            } else if (activeTab !== "admin-overview" && activeTab !== "admin-transactions") {
                 setActiveTab("admin-overview");
             }
         } else if (isMainRoute) {
@@ -97,6 +111,39 @@ export default function AdminPayments({ defaultTab = "overview" }) {
         currentPage: 1,
         totalPages: 1,
         totalPayments: 0,
+    });
+    const [adminTransactions, setAdminTransactions] = useState([]);
+    const [adminTransactionsPagination, setAdminTransactionsPagination] = useState({
+        currentPage: 1,
+        totalPages: 1,
+        totalPayments: 0,
+    });
+    const [adminTransactionsFilters, setAdminTransactionsFilters] = useState({
+        status: "",
+        paymentType: "",
+        search: "",
+    });
+    const [userTransactions, setUserTransactions] = useState([]);
+    const [userTransactionsPagination, setUserTransactionsPagination] = useState({
+        currentPage: 1,
+        totalPages: 1,
+        totalPayments: 0,
+    });
+    const [userTransactionsFilters, setUserTransactionsFilters] = useState({
+        status: "",
+        paymentType: "",
+        search: "",
+    });
+    const [vendorTransactions, setVendorTransactions] = useState([]);
+    const [vendorTransactionsPagination, setVendorTransactionsPagination] = useState({
+        currentPage: 1,
+        totalPages: 1,
+        totalPayments: 0,
+    });
+    const [vendorTransactionsFilters, setVendorTransactionsFilters] = useState({
+        status: "",
+        paymentType: "",
+        search: "",
     });
     const [userFilters, setUserFilters] = useState({
         status: "",
@@ -176,7 +223,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
 
     useEffect(() => {
         loadPaymentData();
-    }, [activeTab, userFilters, vendorFilters, userPagination.currentPage, vendorPagination.currentPage, location.pathname, finalSettlementSubTab, finalSettlementPagination.currentPage, finalSettlementHistoryPagination.currentPage, userFinalSettlementSubTab, userFinalSettlementPagination.currentPage, userFinalSettlementHistoryPagination.currentPage]);
+    }, [activeTab, userFilters, vendorFilters, adminTransactionsFilters, userTransactionsFilters, vendorTransactionsFilters, userPagination.currentPage, vendorPagination.currentPage, adminTransactionsPagination.currentPage, userTransactionsPagination.currentPage, vendorTransactionsPagination.currentPage, location.pathname, finalSettlementSubTab, finalSettlementPagination.currentPage, finalSettlementHistoryPagination.currentPage, userFinalSettlementSubTab, userFinalSettlementPagination.currentPage, userFinalSettlementHistoryPagination.currentPage]);
 
     // Refetch when page becomes visible (user switches tabs/windows)
     useEffect(() => {
@@ -203,6 +250,40 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                 const overviewResponse = await getAdminPaymentOverview();
                 if (overviewResponse.success) {
                     setAdminOverview(overviewResponse.data.overview);
+                }
+            } else if (activeTab === "admin-transactions") {
+                const params = {
+                    page: adminTransactionsPagination.currentPage,
+                    limit: 20,
+                    ...(adminTransactionsFilters.status && { status: adminTransactionsFilters.status }),
+                    ...(adminTransactionsFilters.paymentType && { paymentType: adminTransactionsFilters.paymentType }),
+                    ...(adminTransactionsFilters.search && { search: adminTransactionsFilters.search }),
+                };
+
+                const response = await getAllPayments(params);
+                if (response.success) {
+                    setAdminTransactions(response.data.payments);
+                    setAdminTransactionsPagination(response.data.pagination);
+                }
+            } else if (activeTab === "user-transactions") {
+                const params = {
+                    page: userTransactionsPagination.currentPage,
+                    limit: 20,
+                    ...(userTransactionsFilters.status && { status: userTransactionsFilters.status }),
+                    paymentType: userTransactionsFilters.paymentType || undefined, // Will be overridden if specified
+                    ...(userTransactionsFilters.search && { search: userTransactionsFilters.search }),
+                };
+
+                const response = await getAllPayments(params);
+                if (response.success) {
+                    // Filter to only show ADVANCE and REMAINING payments if no specific type is selected
+                    // Or keep all if we want to include REFUNDS to users?
+                    // The user said "all users payment only"
+                    const userPaymentsOnly = response.data.payments.filter(
+                        (p) => p.paymentType === "ADVANCE" || p.paymentType === "REMAINING" || p.paymentType === "REFUND"
+                    );
+                    setUserTransactions(userPaymentsOnly);
+                    setUserTransactionsPagination(response.data.pagination);
                 }
             } else if (activeTab === "user-payments") {
                 // Load user payments (ADVANCE and REMAINING)
@@ -440,36 +521,23 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                 if (response.success) {
                     setUserWithdrawalRequests(response.data.withdrawalRequests || []);
                 }
-            } else if (activeTab === "user-final-settlement") {
-                // Load user final settlements (same as vendor, but filtered by user perspective)
-                if (userFinalSettlementSubTab === "pending") {
-                    const params = {
-                        page: userFinalSettlementPagination.currentPage,
-                        limit: 10,
-                    };
-                    const response = await getPendingUserFinalSettlements(params);
-                    if (response.success) {
-                        setPendingUserFinalSettlements(response.data.bookings || []);
-                        setUserFinalSettlementPagination(response.data.pagination || {
-                            currentPage: 1,
-                            totalPages: 1,
-                            total: 0,
-                        });
-                    }
-                } else {
-                    const params = {
-                        page: userFinalSettlementHistoryPagination.currentPage,
-                        limit: 10,
-                    };
-                    const response = await getCompletedUserFinalSettlements(params);
-                    if (response.success) {
-                        setCompletedUserFinalSettlements(response.data.bookings || []);
-                        setUserFinalSettlementHistoryPagination(response.data.pagination || {
-                            currentPage: 1,
-                            totalPages: 1,
-                            total: 0,
-                        });
-                    }
+            } else if (activeTab === "vendor-transactions") {
+                const params = {
+                    page: vendorTransactionsPagination.currentPage,
+                    limit: 20,
+                    ...(vendorTransactionsFilters.status && { status: vendorTransactionsFilters.status }),
+                    paymentType: vendorTransactionsFilters.paymentType || undefined,
+                    ...(vendorTransactionsFilters.search && { search: vendorTransactionsFilters.search }),
+                };
+
+                const response = await getAllPayments(params);
+                if (response.success) {
+                    // Filter to only show vendor-related payments
+                    const vendorPaymentsOnly = response.data.payments.filter(
+                        (p) => p.paymentType === "SETTLEMENT" || p.paymentType === "WITHDRAWAL" || p.paymentType === "TRAVEL_CHARGES" || p.paymentType === "SITE_VISIT" || p.paymentType === "REPORT_UPLOAD" || p.paymentType === "VENDOR_FIRST_INSTALLMENT" || p.paymentType === "VENDOR_SECOND_INSTALLMENT"
+                    );
+                    setVendorTransactions(vendorPaymentsOnly);
+                    setVendorTransactionsPagination(response.data.pagination);
                 }
             } else if (activeTab === "vendor-overview") {
                 // Load vendor payment overview statistics
@@ -479,6 +547,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                 }
             }
         } catch (err) {
+            console.error("Error loading payment data:", err);
             setError("Failed to load payment data");
         } finally {
             setLoading(false);
@@ -957,6 +1026,58 @@ export default function AdminPayments({ defaultTab = "overview" }) {
         }
     };
 
+    const exportToCSV = () => {
+        if (adminTransactions.length === 0) {
+            toast.showError("No data to export");
+            return;
+        }
+
+        // Define headers
+        const headers = [
+            "Transaction Date",
+            "Payment ID",
+            "Razorpay Order ID",
+            "Service Type",
+            "User Name",
+            "Vendor Name",
+            "Amount",
+            "Status",
+            "Type"
+        ];
+
+        // Prepare data rows
+        const rows = adminTransactions.map(t => [
+            new Date(t.paidAt || t.createdAt).toLocaleDateString("en-IN"),
+            t._id?.toString() || "N/A",
+            t.razorpayOrderId || "N/A",
+            t.booking?.service?.name || "Service Payment",
+            t.user?.name || "N/A",
+            t.vendor?.name || "System/Vendor",
+            t.amount,
+            t.status,
+            t.paymentType
+        ]);
+
+        // Combine headers and rows
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+        ].join("\n");
+
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `jaladhaara_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast.showSuccess("CSV report exported successfully!");
+    };
+
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat("en-IN", {
             style: "currency",
@@ -1027,7 +1148,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                         navigate("/admin/payments");
                                     }}
                                     className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "overview"
-                                        ? `border-[${currentTheme.primary}] text-[${currentTheme.primary}]`
+                                        ? "border-indigo-500 text-indigo-600"
                                         : "border-transparent text-gray-600 hover:text-gray-800"
                                         }`}
                                     style={activeTab === "overview" ? { borderColor: currentTheme.primary, color: currentTheme.primary } : {}}
@@ -1045,6 +1166,18 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                         }`}
                                 >
                                     Admin Overview
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setActiveTab("admin-transactions");
+                                        navigate("/admin/payments/admin/transactions");
+                                    }}
+                                    className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "admin-transactions"
+                                        ? "border-emerald-500 text-emerald-600"
+                                        : "border-transparent text-gray-600 hover:text-gray-800"
+                                        }`}
+                                >
+                                    Transactions
                                 </button>
                             </>
                         )}
@@ -1078,6 +1211,18 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                         }`}
                                 >
                                     Final Settlement
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setActiveTab("user-transactions");
+                                        navigate("/admin/payments/user/transactions");
+                                    }}
+                                    className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "user-transactions"
+                                        ? "border-amber-500 text-amber-600"
+                                        : "border-transparent text-gray-600 hover:text-gray-800"
+                                        }`}
+                                >
+                                    Transactions
                                 </button>
                             </>
                         )}
@@ -1116,6 +1261,18 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                         }`}
                                 >
                                     Final Settlement
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setActiveTab("vendor-transactions");
+                                        navigate("/admin/payments/vendor/transactions");
+                                    }}
+                                    className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "vendor-transactions"
+                                        ? "border-amber-500 text-amber-600"
+                                        : "border-transparent text-gray-600 hover:text-gray-800"
+                                        }`}
+                                >
+                                    Transactions
                                 </button>
                             </>
                         )}
@@ -1283,6 +1440,192 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                 <p className="text-gray-500">No data available</p>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* Admin Transactions Tab */}
+                {activeTab === "admin-transactions" && (
+                    <div className="space-y-6">
+                        {/* Header & Export */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-800">Admin Transactions Report</h2>
+                                <p className="text-sm text-gray-500">Comprehensive list of all platform transactions</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={loadPaymentData}
+                                    className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-gray-200"
+                                    title="Refresh Data"
+                                >
+                                    <IoRefreshOutline className={`text-xl ${loading ? "animate-spin" : ""}`} />
+                                </button>
+                                <button
+                                    onClick={exportToCSV}
+                                    className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+                                >
+                                    <IoDownloadOutline className="text-xl" />
+                                    Export CSV
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Filters */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <div className="relative">
+                                    <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search ID, User, Vendor..."
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-sans"
+                                        value={adminTransactionsFilters.search}
+                                        onChange={(e) => setAdminTransactionsFilters({ ...adminTransactionsFilters, search: e.target.value })}
+                                    />
+                                </div>
+                                <select
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                    value={adminTransactionsFilters.status}
+                                    onChange={(e) => setAdminTransactionsFilters({ ...adminTransactionsFilters, status: e.target.value })}
+                                >
+                                    <option value="">All Statuses</option>
+                                    <option value="SUCCESS">Success</option>
+                                    <option value="PENDING">Pending</option>
+                                    <option value="FAILED">Failed</option>
+                                </select>
+                                <select
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                    value={adminTransactionsFilters.paymentType}
+                                    onChange={(e) => setAdminTransactionsFilters({ ...adminTransactionsFilters, paymentType: e.target.value })}
+                                >
+                                    <option value="">All Types</option>
+                                    <option value="ADVANCE">Advance (40%)</option>
+                                    <option value="REMAINING">Remaining (60%)</option>
+                                    <option value="SETTLEMENT">Settlement</option>
+                                    <option value="REFUND">Refund</option>
+                                </select>
+                                <button
+                                    onClick={() => setAdminTransactionsFilters({ status: "", paymentType: "", search: "" })}
+                                    className="text-gray-500 hover:text-red-600 font-medium transition-colors text-sm"
+                                >
+                                    Clear Filters
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Table */}
+                        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-gray-50 border-b border-gray-100">
+                                        <tr>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Date & ID</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Details</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">User/Vendor</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Amount</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Type</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {loading ? (
+                                            <tr>
+                                                <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+                                                    Loading transactions...
+                                                </td>
+                                            </tr>
+                                        ) : adminTransactions.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                                    No transactions found matching your criteria.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            adminTransactions?.map((transaction) => (
+                                                <tr key={transaction._id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <p className="text-sm font-semibold text-gray-900">{formatDate(transaction.paidAt || transaction.createdAt)}</p>
+                                                        <p className="text-xs text-gray-500 font-mono mt-1 text-[10px]">
+                                                            #{transaction._id.toString().slice(-12).toUpperCase()}
+                                                        </p>
+                                                        {transaction.razorpayPaymentId && (
+                                                            <p className="text-[10px] text-gray-400 mt-0.5">RP: {transaction.razorpayPaymentId}</p>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-medium text-gray-800">
+                                                                {transaction.booking?.service?.name || "Service Payment"}
+                                                            </span>
+                                                            <span className="text-[11px] text-gray-500">
+                                                                Booking: #{transaction.booking?.bookingId || "N/A"}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 rounded font-bold uppercase">U</span>
+                                                                <span className="text-sm text-gray-700 truncate max-w-[150px]">{transaction.user?.name || "N/A"}</span>
+                                                            </div>
+                                                            {transaction.vendor && (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded font-bold uppercase">V</span>
+                                                                    <span className="text-sm text-gray-700 truncate max-w-[150px]">{transaction.vendor?.name || "System"}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-sm font-bold text-gray-900">
+                                                            {formatCurrency(transaction.amount)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${getPaymentTypeBadge(transaction.paymentType)}`}>
+                                                            {transaction.paymentType === "ADVANCE" ? "40% Advance" :
+                                                                transaction.paymentType === "REMAINING" ? "60% Remaining" :
+                                                                    transaction.paymentType}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${getStatusBadge(transaction.status)}`}>
+                                                            {transaction.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination */}
+                            {!loading && adminTransactions.length > 0 && (
+                                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                                    <p className="text-sm text-gray-600">
+                                        Showing page <span className="font-semibold">{adminTransactionsPagination.currentPage}</span> of <span className="font-semibold">{adminTransactionsPagination.totalPages}</span>
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button
+                                            disabled={adminTransactionsPagination.currentPage === 1}
+                                            onClick={() => setAdminTransactionsPagination({ ...adminTransactionsPagination, currentPage: adminTransactionsPagination.currentPage - 1 })}
+                                            className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-white transition-all disabled:opacity-50"
+                                        >
+                                            Previous
+                                        </button>
+                                        <button
+                                            disabled={adminTransactionsPagination.currentPage === adminTransactionsPagination.totalPages}
+                                            onClick={() => setAdminTransactionsPagination({ ...adminTransactionsPagination, currentPage: adminTransactionsPagination.currentPage + 1 })}
+                                            className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-white transition-all disabled:opacity-50"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -2795,6 +3138,186 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                     </div>
                 )}
 
+                {/* User Transactions Tab */}
+                {activeTab === "user-transactions" && (
+                    <div className="space-y-6">
+                        {/* Header & Export */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-800">User Transactions Report</h2>
+                                <p className="text-sm text-gray-500">List of all payments received from users</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={loadPaymentData}
+                                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
+                                    title="Refresh Data"
+                                >
+                                    <IoRefreshOutline className={`text-xl ${loading ? "animate-spin" : ""}`} />
+                                </button>
+                                <button
+                                    onClick={exportToCSV}
+                                    className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+                                >
+                                    <IoDownloadOutline className="text-xl" />
+                                    Export CSV
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Filters */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <div className="relative">
+                                    <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search User, ID..."
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-sans"
+                                        value={userTransactionsFilters.search}
+                                        onChange={(e) => setUserTransactionsFilters({ ...userTransactionsFilters, search: e.target.value })}
+                                    />
+                                </div>
+                                <select
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-sans"
+                                    value={userTransactionsFilters.status}
+                                    onChange={(e) => setUserTransactionsFilters({ ...userTransactionsFilters, status: e.target.value })}
+                                >
+                                    <option value="">All Statuses</option>
+                                    <option value="SUCCESS">Success</option>
+                                    <option value="PENDING">Pending</option>
+                                    <option value="FAILED">Failed</option>
+                                </select>
+                                <select
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-sans"
+                                    value={userTransactionsFilters.paymentType}
+                                    onChange={(e) => setUserTransactionsFilters({ ...userTransactionsFilters, paymentType: e.target.value })}
+                                >
+                                    <option value="">All Types</option>
+                                    <option value="ADVANCE">Advance (40%)</option>
+                                    <option value="REMAINING">Remaining (60%)</option>
+                                    <option value="REFUND">Refund</option>
+                                </select>
+                                <button
+                                    onClick={() => setUserTransactionsFilters({ status: "", paymentType: "", search: "" })}
+                                    className="text-gray-500 hover:text-red-600 font-medium transition-colors text-sm font-sans"
+                                >
+                                    Clear Filters
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Table */}
+                        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left font-sans">
+                                    <thead className="bg-gray-50 border-b border-gray-100">
+                                        <tr>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Date & ID</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Service Details</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">User Information</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Amount</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Type</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50 font-sans">
+                                        {loading ? (
+                                            <tr>
+                                                <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                                                    Loading user transactions...
+                                                </td>
+                                            </tr>
+                                        ) : userTransactions.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="6" className="px-6 py-12 text-center text-gray-500 text-sm">
+                                                    No transactions found matching your criteria.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            userTransactions?.map((transaction) => (
+                                                <tr key={transaction._id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <p className="text-sm font-semibold text-gray-900">{formatDate(transaction.paidAt || transaction.createdAt)}</p>
+                                                        <p className="text-xs text-gray-500 font-mono mt-1 text-[10px]">
+                                                            #{transaction._id.toString().slice(-12).toUpperCase()}
+                                                        </p>
+                                                        {transaction.razorpayPaymentId && (
+                                                            <p className="text-[10px] text-gray-400 mt-0.5">RP: {transaction.razorpayPaymentId}</p>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-medium text-gray-800">
+                                                                {transaction.booking?.service?.name || "Service Payment"}
+                                                            </span>
+                                                            <span className="text-[11px] text-gray-500">
+                                                                Booking: #{transaction.booking?.bookingId || transaction.booking?._id?.toString().slice(-8) || "N/A"}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-semibold text-gray-900">{transaction.user?.name || "N/A"}</span>
+                                                            <span className="text-[11px] text-gray-500">{transaction.user?.phone || "No Phone"}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-sm font-bold text-gray-900">
+                                                            {formatCurrency(transaction.amount)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${getPaymentTypeBadge(transaction.paymentType)}`}>
+                                                            {transaction.paymentType === "ADVANCE" ? "40% Advance" :
+                                                                transaction.paymentType === "REMAINING" ? "60% Final" :
+                                                                    transaction.paymentType}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${transaction.status === "SUCCESS" ? "bg-green-100 text-green-700" :
+                                                            transaction.status === "PENDING" ? "bg-yellow-100 text-yellow-700" :
+                                                                "bg-red-100 text-red-700"
+                                                            }`}>
+                                                            {transaction.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination */}
+                            {userTransactionsPagination.totalPages > 1 && (
+                                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                                    <p className="text-xs text-gray-600 font-sans">
+                                        Showing page {userTransactionsPagination.currentPage} of {userTransactionsPagination.totalPages}
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setUserTransactionsPagination({ ...userTransactionsPagination, currentPage: Math.max(1, userTransactionsPagination.currentPage - 1) })}
+                                            disabled={userTransactionsPagination.currentPage === 1}
+                                            className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white disabled:opacity-50 font-sans"
+                                        >
+                                            Previous
+                                        </button>
+                                        <button
+                                            onClick={() => setUserTransactionsPagination({ ...userTransactionsPagination, currentPage: Math.min(userTransactionsPagination.totalPages, userTransactionsPagination.currentPage + 1) })}
+                                            disabled={userTransactionsPagination.currentPage === userTransactionsPagination.totalPages}
+                                            className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white disabled:opacity-50 font-sans"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Vendor Overview Tab */}
                 {activeTab === "vendor-overview" && (
                     <div>
@@ -3003,6 +3526,185 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                 <p className="text-gray-500">No data available</p>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* Vendor Transactions Tab */}
+                {activeTab === "vendor-transactions" && (
+                    <div className="space-y-6">
+                        {/* Header & Export */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-800">Vendor Transactions Report</h2>
+                                <p className="text-sm text-gray-500">List of all payments made to vendors</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={loadPaymentData}
+                                    className="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors border border-gray-200"
+                                    title="Refresh Data"
+                                >
+                                    <IoRefreshOutline className={`text-xl ${loading ? "animate-spin" : ""}`} />
+                                </button>
+                                <button
+                                    onClick={exportToCSV}
+                                    className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+                                >
+                                    <IoDownloadOutline className="text-xl" />
+                                    Export CSV
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Filters */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <div className="relative">
+                                    <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search Vendor, ID..."
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-sans"
+                                        value={vendorTransactionsFilters.search}
+                                        onChange={(e) => setVendorTransactionsFilters({ ...vendorTransactionsFilters, search: e.target.value })}
+                                    />
+                                </div>
+                                <select
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-sans"
+                                    value={vendorTransactionsFilters.status}
+                                    onChange={(e) => setVendorTransactionsFilters({ ...vendorTransactionsFilters, status: e.target.value })}
+                                >
+                                    <option value="">All Statuses</option>
+                                    <option value="SUCCESS">Success</option>
+                                    <option value="PENDING">Pending</option>
+                                    <option value="FAILED">Failed</option>
+                                </select>
+                                <select
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-sans"
+                                    value={vendorTransactionsFilters.paymentType}
+                                    onChange={(e) => setVendorTransactionsFilters({ ...vendorTransactionsFilters, paymentType: e.target.value })}
+                                >
+                                    <option value="">All Types</option>
+                                    <option value="TRAVEL_CHARGES">Travel Charges</option>
+                                    <option value="SETTLEMENT">Settlement</option>
+                                    <option value="WITHDRAWAL">Withdrawal</option>
+                                    <option value="SITE_VISIT">Site Visit</option>
+                                    <option value="REPORT_UPLOAD">Report Upload</option>
+                                    <option value="VENDOR_FIRST_INSTALLMENT">1st Installment</option>
+                                    <option value="VENDOR_SECOND_INSTALLMENT">2nd Installment (Final)</option>
+                                </select>
+                                <button
+                                    onClick={() => setVendorTransactionsFilters({ status: "", paymentType: "", search: "" })}
+                                    className="text-gray-500 hover:text-red-600 font-medium transition-colors text-sm font-sans"
+                                >
+                                    Clear Filters
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Table */}
+                        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left font-sans">
+                                    <thead className="bg-gray-50 border-b border-gray-100">
+                                        <tr>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Date & ID</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Service Details</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Vendor Information</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Amount</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Type</th>
+                                            <th className="px-6 py-4 text-sm font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50 font-sans">
+                                        {loading ? (
+                                            <tr>
+                                                <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                                                    Loading vendor transactions...
+                                                </td>
+                                            </tr>
+                                        ) : vendorTransactions.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="6" className="px-6 py-12 text-center text-gray-500 text-sm">
+                                                    No transactions found matching your criteria.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            vendorTransactions?.map((transaction) => (
+                                                <tr key={transaction._id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <p className="text-sm font-semibold text-gray-900">{formatDate(transaction.paidAt || transaction.createdAt)}</p>
+                                                        <p className="text-xs text-gray-500 font-mono mt-1 text-[10px]">
+                                                            #{transaction._id.toString().slice(-12).toUpperCase()}
+                                                        </p>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-medium text-gray-800">
+                                                                {transaction.booking?.service?.name || "Service Payment"}
+                                                            </span>
+                                                            <span className="text-[11px] text-gray-500">
+                                                                Booking: #{transaction.booking?.bookingId || transaction.booking?._id?.toString().slice(-8) || "N/A"}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-semibold text-gray-900">{transaction.vendor?.name || "N/A"}</span>
+                                                            <span className="text-[11px] text-gray-500">{transaction.vendor?.phone || "No Phone"}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-sm font-bold text-gray-900">
+                                                            {formatCurrency(transaction.amount)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${getPaymentTypeBadge(transaction.paymentType)}`}>
+                                                            {transaction.paymentType.replace(/_/g, ' ')}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${transaction.status === "SUCCESS" ? "bg-green-100 text-green-700" :
+                                                            transaction.status === "PENDING" ? "bg-yellow-100 text-yellow-700" :
+                                                                "bg-red-100 text-red-700"
+                                                            }`}>
+                                                            {transaction.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination */}
+                            {vendorTransactionsPagination.totalPages > 1 && (
+                                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                                    <p className="text-xs text-gray-600 font-sans">
+                                        Showing page {vendorTransactionsPagination.currentPage} of {vendorTransactionsPagination.totalPages}
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setVendorTransactionsPagination({ ...vendorTransactionsPagination, currentPage: Math.max(1, vendorTransactionsPagination.currentPage - 1) })}
+                                            disabled={vendorTransactionsPagination.currentPage === 1}
+                                            className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white disabled:opacity-50 font-sans"
+                                        >
+                                            Previous
+                                        </button>
+                                        <button
+                                            onClick={() => setVendorTransactionsPagination({ ...vendorTransactionsPagination, currentPage: Math.min(vendorTransactionsPagination.totalPages, vendorTransactionsPagination.currentPage + 1) })}
+                                            disabled={vendorTransactionsPagination.currentPage === vendorTransactionsPagination.totalPages}
+                                            className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white disabled:opacity-50 font-sans"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 

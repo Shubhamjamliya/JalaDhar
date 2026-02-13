@@ -83,7 +83,7 @@ export default function AdminResetPassword() {
                     <div className="text-center mb-10 mt-4">
                         <img
                             src={logo}
-                            alt="Jaladhar"
+                            alt="Jaladhaara"
                             className="w-auto mx-auto mb-2"
                         />
                     </div>
@@ -109,7 +109,7 @@ export default function AdminResetPassword() {
                 <div className="text-center mb-10 mt-4">
                     <img
                         src="/src/assets/logo.png"
-                        alt="Jaladhar"
+                        alt="Jaladhaara"
                         className="w-auto mx-auto mb-2"
                     />
                 </div>

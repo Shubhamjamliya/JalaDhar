@@ -147,20 +147,20 @@ export default function AdminSidebar() {
     }, [isPaymentsRouteActive, isSettingsRouteActive]);
 
     return (
-        <aside className="fixed left-0 top-0 h-screen w-64 bg-gradient-to-b from-[#1a1f3a] to-[#2d3561] text-white z-40 shadow-2xl">
+        <aside className="fixed left-0 top-0 h-screen w-64 bg-gradient-to-b from-[#1a1f3a] to-[#2d3561] text-white z-40 shadow-2xl flex flex-col">
             {/* Logo Section */}
             <div className="flex items-center gap-3 p-6 border-b border-white/10">
                 <div className="w-10 h-10 rounded-lg bg-[#0A84FF] flex items-center justify-center flex-shrink-0">
                     <IoShieldCheckmarkOutline className="text-xl text-white" />
                 </div>
                 <div>
-                    <h1 className="text-lg font-bold text-white">Jaladhar</h1>
+                    <h1 className="text-lg font-bold text-white">Jaladhaara</h1>
                     <p className="text-xs text-white/70">Admin Panel</p>
                 </div>
             </div>
 
             {/* Navigation Items */}
-            <nav className="flex flex-col gap-2 p-4 mt-4 flex-1 overflow-y-auto">
+            <nav className="flex flex-col gap-2 p-4 mt-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                 {navItems.map((item) => {
                     // Special handling for payments dropdown
                     if (item.id === "payments") {
