@@ -20,10 +20,16 @@ import {
     IoLeafOutline,
     IoHomeOutline,
     IoBusinessOutline,
-    IoConstructOutline,
+    IoBuildOutline,
     IoTimeOutline,
     IoLocationOutline,
 } from "react-icons/io5";
+import {
+    HiOutlineHome,
+    HiOutlineBuildingOffice2,
+    HiOutlineBriefcase,
+    HiOutlineWrenchScrewdriver
+} from "react-icons/hi2";
 import { getUserProfile } from "../../../services/authApi";
 import { getUserDashboardStats, getNearbyVendors, cancelBooking, getUserBookings } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -569,23 +575,30 @@ export default function UserDashboard() {
             </div>
 
             {/* Survey Categories */}
-            <h2 className="px-2 pt-2 text-md font-semibold text-gray-700">Select Survey Type</h2>
-            <div className="mx-2 mt-2 mb-4 grid grid-cols-2 gap-3">
+            <div className="px-4 pt-6 pb-2">
+                <h2 className="text-xl font-bold text-gray-800 tracking-tight">Select Survey Type</h2>
+                <p className="text-sm text-gray-500 mt-1">Choose the service that fits your needs</p>
+            </div>
+            <div className="mx-4 mt-2 mb-8 grid grid-cols-2 gap-4">
                 {[
-                    { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "bg-green-100 text-green-600" },
-                    { id: "Domestic/Household", label: "Household", icon: IoHomeOutline, color: "bg-blue-100 text-blue-600" },
-                    { id: "Commercial", label: "Commercial", icon: IoBusinessOutline, color: "bg-purple-100 text-purple-600" },
-                    { id: "Industrial", label: "Industrial", icon: IoConstructOutline, color: "bg-orange-100 text-orange-600" }
+                    { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "from-emerald-50 to-emerald-100", iconColor: "text-emerald-600", border: "border-emerald-200" },
+                    { id: "Domestic/Household", label: "Household", icon: HiOutlineHome, color: "from-blue-50 to-blue-100", iconColor: "text-blue-600", border: "border-blue-200" },
+                    { id: "Commercial", label: "Commercial", icon: HiOutlineBuildingOffice2, color: "from-indigo-50 to-indigo-100", iconColor: "text-indigo-600", border: "border-indigo-200" },
+                    { id: "Industrial", label: "Industrial", icon: HiOutlineWrenchScrewdriver, color: "from-amber-50 to-amber-100", iconColor: "text-amber-600", border: "border-amber-200" }
                 ].map((cat) => (
                     <button
                         key={cat.id}
                         onClick={() => navigate("/user/survey", { state: { category: cat.id } })}
-                        className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm border border-gray-100 active:scale-[0.98] transition-all"
+                        className={`group relative flex flex-col items-center justify-center p-6 bg-gradient-to-br ${cat.color} rounded-3xl border ${cat.border} shadow-sm hover:shadow-md active:scale-[0.96] transition-all duration-300`}
                     >
-                        <div className={`p-3 rounded-full ${cat.color} mb-2 text-2xl`}>
-                            <cat.icon />
+                        {/* Decorative background element */}
+                        <div className="absolute top-0 right-0 -mr-2 -mt-2 w-12 h-12 bg-white/40 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+
+                        <div className={`relative p-4 rounded-2xl bg-white shadow-sm mb-4 transition-transform duration-300 group-hover:-translate-y-1`}>
+                            <cat.icon className={`text-3xl ${cat.iconColor}`} />
                         </div>
-                        <span className="font-medium text-gray-700 text-xs">{cat.label}</span>
+                        <span className="font-bold text-gray-800 text-sm tracking-wide">{cat.label}</span>
+                        <div className="mt-1 h-1 w-0 bg-gray-400/20 rounded-full group-hover:w-12 transition-all duration-300"></div>
                     </button>
                 ))}
             </div>

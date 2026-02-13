@@ -9,13 +9,13 @@ export default function UserOTPVerification() {
     const navigate = useNavigate();
     const location = useLocation();
     const { register } = useAuth();
-    
+
     const [otp, setOtp] = useState("");
     const [otpCountdown, setOtpCountdown] = useState(0);
     const [loading, setLoading] = useState(false);
     const [registrationSuccess, setRegistrationSuccess] = useState(false);
     const toast = useToast();
-    
+
     // Get registration data from location state
     const registrationData = location.state?.registrationData;
     const verificationToken = location.state?.verificationToken;
@@ -93,17 +93,17 @@ export default function UserOTPVerification() {
                 otp: otp,
                 token: verificationToken
             });
-            
+
             if (result.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess(result.message || "Registration successful! Redirecting to login...");
                 setRegistrationSuccess(true);
                 // Redirect to login after 2 seconds
                 setTimeout(() => {
-                    navigate("/userlogin", { 
-                        state: { 
-                            message: "Registration successful! Please login to continue." 
-                        } 
+                    navigate("/userlogin", {
+                        state: {
+                            message: "Registration successful! Please login to continue."
+                        }
                     });
                 }, 2000);
             } else {
@@ -127,7 +127,7 @@ export default function UserOTPVerification() {
                             water_drop
                         </span>
                         <h1 className="mt-2 text-3xl font-bold tracking-tighter text-[#3A3A3A]">
-                            JALADHAR
+                            JALADHAARA
                         </h1>
                     </div>
 
@@ -156,7 +156,7 @@ export default function UserOTPVerification() {
                         water_drop
                     </span>
                     <h1 className="mt-2 text-3xl font-bold tracking-tighter text-[#3A3A3A]">
-                        JALADHAR
+                        JALADHAARA
                     </h1>
                     <p className="mt-3 text-sm text-[#6B7280] text-center">
                         Verify your email to complete registration.

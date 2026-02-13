@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
     IoHomeOutline,
-    IoConstructOutline,
     IoTimeOutline,
     IoChevronBackOutline,
     IoCalendarOutline,
@@ -10,10 +9,21 @@ import {
     IoMenuOutline,
     IoLogOutOutline,
     IoWalletOutline,
+    IoChevronUpOutline,
+    IoBarChartOutline,
+    IoStarOutline,
+    IoAlertCircleOutline,
+    IoBuildOutline,
+    IoBusinessOutline,
+    IoCashOutline,
+    IoLockClosedOutline,
+    IoPersonAddOutline,
+    IoPeopleOutline,
 } from "react-icons/io5";
 import { useAuth } from "../../../contexts/AuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import NotificationDropdown from "../../../components/NotificationDropdown";
+import logo from "@/assets/Header-logoo.png";
 
 import UserSidebar from "./UserSidebar";
 
@@ -28,7 +38,7 @@ const navItems = [
         id: "service",
         label: "Service Provider",
         to: "/user/serviceprovider",
-        Icon: IoConstructOutline,
+        Icon: IoPeopleOutline,
     },
     {
         id: "status",
@@ -91,13 +101,12 @@ export default function UserNavbar() {
                     )}
 
                     {/* Logo */}
-                    <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[#0A84FF] text-2xl md:text-3xl">
-                            water_drop
-                        </span>
-                        <h1 className="text-xl md:text-2xl font-bold text-[#0A84FF]">
-                            JALADHAARA
-                        </h1>
+                    <div className="flex items-center">
+                        <img
+                            src={logo}
+                            alt="Jaladhaara Logo"
+                            className="h-12 md:h-14 w-40 md:w-48 object-contain ml-4 md:ml-6"
+                        />
                     </div>
                 </div>
 

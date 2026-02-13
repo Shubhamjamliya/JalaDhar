@@ -14,6 +14,7 @@ import {
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import NotificationDropdown from "../../../components/NotificationDropdown";
+import logo from "@/assets/Header-logoo.png";
 
 import VendorSidebar from "./VendorSidebar";
 
@@ -97,13 +98,12 @@ export default function VendorNavbar() {
                     )}
 
                     {/* Logo */}
-                    <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[#0A84FF] text-2xl md:text-3xl">
-                            water_drop
-                        </span>
-                        <h1 className="text-xl md:text-2xl font-bold text-[#0A84FF]">
-                            JALADHAARA
-                        </h1>
+                    <div className="flex items-center">
+                        <img
+                            src={logo}
+                            alt="Jaladhaara Logo"
+                            className="h-12 md:h-14 w-40 md:w-48 object-contain ml-4 md:ml-6"
+                        />
                     </div>
                 </div>
 
