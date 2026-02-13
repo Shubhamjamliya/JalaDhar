@@ -22,7 +22,8 @@ import {
     IoCalendarOutline,
     IoInformationCircleOutline,
     IoWaterOutline,
-    IoArrowDownOutline
+    IoArrowDownOutline,
+    IoLockClosedOutline
 } from "react-icons/io5";
 import { getBookingDetails, downloadInvoice, cancelBooking, submitRating, getBookingRating, uploadBorewellResult } from "../../../services/bookingApi";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -59,6 +60,7 @@ export default function UserBookingDetails() {
         images: []
     });
     const [uploadingBorewell, setUploadingBorewell] = useState(false);
+    const [showPaymentPrompt, setShowPaymentPrompt] = useState(false);
     const { socket } = useNotifications();
 
     // Listen to socket notifications for real-time status updates
@@ -167,6 +169,14 @@ export default function UserBookingDetails() {
 
     const handleDownloadBill = () => {
         navigate(`/booking/${bookingId}/invoice`);
+    };
+
+    const handleReportClick = () => {
+        if (!booking?.payment?.remainingPaid) {
+            setShowPaymentPrompt(true);
+        } else {
+            navigate(`/user/booking/${bookingId}/report`);
+        }
     };
 
     const handleCancelBooking = () => {
@@ -658,12 +668,22 @@ export default function UserBookingDetails() {
                             <p className="text-sm text-gray-500 mb-3 font-medium uppercase tracking-wider">Deliverable Status</p>
                             <div className="space-y-3">
                                 {/* Survey Report Status */}
-                                <div className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden relative">
+                                <div
+                                    className={`flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden relative cursor-pointer active:scale-[0.98] transition-all`}
+                                    onClick={handleReportClick}
+                                >
                                     <div className="flex items-center gap-3">
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${booking.report && typeof booking.report.waterFound === 'boolean' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
                                             <IoDocumentTextOutline />
                                         </div>
-                                        <span className="text-sm font-semibold text-gray-700">Survey Report</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-semibold text-gray-700">Survey Report</span>
+                                            {!booking.payment?.remainingPaid && booking.report && (
+                                                <span className="text-[9px] text-orange-500 font-bold flex items-center gap-0.5">
+                                                    <IoLockClosedOutline className="text-[10px]" /> PAY TO UNLOCK
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${booking.report && typeof booking.report.waterFound === 'boolean'
                                         ? "bg-indigo-100 text-indigo-700"
@@ -1059,11 +1079,19 @@ export default function UserBookingDetails() {
                                 {/* Report Button */}
                                 {(booking.report || isPostReportPhase) && (
                                     <button
-                                        onClick={() => navigate(`/user/booking/${bookingId}/report`)}
-                                        className="w-full flex items-center justify-center gap-2 bg-indigo-50 text-indigo-600 border border-indigo-100 py-3 rounded-[12px] font-semibold hover:bg-indigo-100 transition-all active:scale-95"
+                                        onClick={handleReportClick}
+                                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-[12px] font-semibold transition-all active:scale-95 ${!booking.payment?.remainingPaid
+                                            ? "bg-gray-100 text-gray-500 border border-gray-200"
+                                            : "bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100"
+                                            }`}
                                     >
-                                        <IoDocumentTextOutline className="text-xl" />
-                                        View Survey Report
+                                        <div className="relative">
+                                            <IoDocumentTextOutline className="text-xl" />
+                                            {!booking.payment?.remainingPaid && (
+                                                <IoLockClosedOutline className="absolute -top-1 -right-1 text-[10px] bg-white rounded-full p-0.5" />
+                                            )}
+                                        </div>
+                                        <span>{booking.payment?.remainingPaid ? "View Survey Report" : "Unlock Survey Report"}</span>
                                     </button>
                                 )}
 
@@ -1101,7 +1129,7 @@ export default function UserBookingDetails() {
                         );
                     })()}
 
-                    {["PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.status) && (
+                    {["AWAITING_ADVANCE", "PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.status) && (
                         <button
                             onClick={handleCancelBooking}
                             className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-100 py-3 rounded-[12px] font-semibold hover:bg-red-100 transition-all active:scale-95"
@@ -1264,6 +1292,56 @@ export default function UserBookingDetails() {
                 cancelText="Go Back"
                 confirmColor="danger"
             />
+
+            {/* Payment Prompt Modal */}
+            <PaymentPromptModal
+                isOpen={showPaymentPrompt}
+                onClose={() => setShowPaymentPrompt(false)}
+                onPay={() => {
+                    setShowPaymentPrompt(false);
+                    navigate(`/user/booking/${bookingId}/payment`);
+                }}
+                amount={booking?.payment?.remainingAmount}
+            />
         </div >
+    );
+}
+
+/* ---------------------------
+   REUSABLE COMPONENTS
+---------------------------- */
+function PaymentPromptModal({ isOpen, onClose, onPay, amount }) {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
+            <div className="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+                <div className="p-8 text-center">
+                    <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <IoLockClosedOutline className="text-4xl text-orange-500" />
+                    </div>
+
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">Report Locked</h2>
+                    <p className="text-gray-500 mb-8 leading-relaxed">
+                        To access your detailed survey report and findings, please complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString()}</span>.
+                    </p>
+
+                    <div className="space-y-3">
+                        <button
+                            onClick={onPay}
+                            className="w-full bg-[#0A84FF] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-[0.98] transition-all"
+                        >
+                            Pay & Unlock Now
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="w-full bg-gray-50 text-gray-500 py-4 rounded-xl font-bold hover:bg-gray-100 transition-all"
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

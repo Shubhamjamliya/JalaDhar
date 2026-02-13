@@ -23,6 +23,7 @@ import {
     IoBuildOutline,
     IoTimeOutline,
     IoLocationOutline,
+    IoLockClosedOutline
 } from "react-icons/io5";
 import {
     HiOutlineHome,
@@ -73,6 +74,8 @@ export default function UserDashboard() {
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [cancellationReason, setCancellationReason] = useState("");
     const [selectedBookingForAction, setSelectedBookingForAction] = useState(null);
+    const [showPaymentPrompt, setShowPaymentPrompt] = useState(false);
+    const [bookingToUnlock, setBookingToUnlock] = useState(null);
 
     // Load Google Maps API
     useEffect(() => {
@@ -506,6 +509,19 @@ export default function UserDashboard() {
         }
     };
 
+    const handleReportClick = (e, request) => {
+        if (e) e.stopPropagation();
+
+        const isPaid = request.bookingData?.payment?.remainingPaid;
+
+        if (!isPaid) {
+            setBookingToUnlock(request);
+            setShowPaymentPrompt(true);
+        } else {
+            navigate(`/user/booking/${request.id}/report`);
+        }
+    };
+
     const filteredRequests = requestStatuses.filter(req => {
         if (statusFilter === 'PENDING_PAYMENT') {
             return (req.status === 'pending' || req.status === 'awaiting_advance') && req.paymentStatus === 'PENDING';
@@ -659,11 +675,18 @@ export default function UserDashboard() {
                     onClick={() => handleRequestStatusClick('REPORTS')}
                     className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-[0.95] transition-transform"
                 >
-                    <div className={`relative w-12 h-12 rounded-full bg-gradient-to-br from-indigo-50 to-indigo-200 shadow-[0px_2px_8px_rgba(79,70,229,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(79,70,229,0.3)] transition-all overflow-hidden shrink-0 border border-indigo-100/50 ${requestStatuses.some(r => r.hasReport) ? (requestStatuses.find(r => r.hasReport)?.waterFound ? 'animate-blink-green' : 'animate-blink-red') : ''}`}>
+                    <div className={`relative w-12 h-12 rounded-full bg-gradient-to-br from-indigo-50 to-indigo-200 shadow-[0px_2px_8px_rgba(79,70,229,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(79,70,229,0.3)] transition-all overflow-hidden shrink-0 border border-indigo-100/50 ${requestStatuses.some(r => r.hasReport && r.bookingData?.payment?.remainingPaid) ? (requestStatuses.find(r => r.hasReport && r.bookingData?.payment?.remainingPaid)?.waterFound ? 'animate-blink-green' : 'animate-blink-red') : ''}`}>
                         <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/60 to-transparent"></div>
-                        <IoNewspaperOutline className={`text-xl relative z-10 ${requestStatuses.some(r => r.hasReport) ? 'text-white' : 'text-indigo-600'}`} />
+                        <IoNewspaperOutline className={`text-xl relative z-10 ${requestStatuses.some(r => r.hasReport && r.bookingData?.payment?.remainingPaid) ? 'text-white' : 'text-indigo-600'}`} />
                         {requestStatuses.some(r => r.hasReport) && (
-                            <div className={`absolute -top-1 -right-1 h-4 w-4 rounded-full border-2 border-white z-20 shadow-sm ${requestStatuses.find(r => r.hasReport)?.waterFound ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                            <div className={`absolute -top-1 -right-1 h-4 w-4 rounded-full border-2 border-white z-20 shadow-sm flex items-center justify-center ${requestStatuses.find(r => r.hasReport && !r.bookingData?.payment?.remainingPaid)
+                                ? 'bg-gray-400'
+                                : (requestStatuses.find(r => r.hasReport)?.waterFound ? 'bg-emerald-500' : 'bg-red-500')
+                                }`}>
+                                {requestStatuses.some(r => r.hasReport && !r.bookingData?.payment?.remainingPaid) && (
+                                    <IoLockClosedOutline className="text-[8px] text-white" />
+                                )}
+                            </div>
                         )}
                     </div>
                     <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
@@ -734,14 +757,23 @@ export default function UserDashboard() {
 
                                     {activeBooking.hasReport && (
                                         <button
-                                            onClick={() => navigate(`/user/booking/${activeBooking.id}/report`)}
-                                            className={`w-full py-3 rounded-[12px] font-bold text-base transition-all flex items-center justify-center gap-2 ${activeBooking.waterFound ? 'bg-emerald-600 text-white animate-blink-green' : 'bg-red-600 text-white animate-blink-red'}`}
+                                            onClick={(e) => handleReportClick(e, activeBooking)}
+                                            className={`w-full py-3 rounded-[12px] font-bold text-base transition-all flex items-center justify-center gap-2 ${!activeBooking.bookingData?.payment?.remainingPaid
+                                                ? "bg-gray-100 text-gray-500 border border-gray-200"
+                                                : activeBooking.waterFound ? 'bg-emerald-600 text-white animate-blink-green' : 'bg-red-600 text-white animate-blink-red'
+                                                }`}
                                         >
-                                            View Report <IoNewspaperOutline />
+                                            <div className="relative">
+                                                <IoNewspaperOutline className="text-xl" />
+                                                {!activeBooking.bookingData?.payment?.remainingPaid && (
+                                                    <IoLockClosedOutline className="absolute -top-1 -right-1 text-[10px] bg-white rounded-full p-0.5 text-gray-700" />
+                                                )}
+                                            </div>
+                                            <span>{activeBooking.bookingData?.payment?.remainingPaid ? "View Report" : "Unlock Report"}</span>
                                         </button>
                                     )}
 
-                                    {['pending', 'assigned', 'accepted'].includes(activeBooking.status.toLowerCase()) && (
+                                    {['pending', 'assigned', 'accepted', 'awaiting_advance'].includes(activeBooking.status.toLowerCase()) && (
                                         <button
                                             onClick={() => handleInitiateCancel(activeBooking)}
                                             className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-100 py-3 rounded-[12px] font-semibold hover:bg-red-100 transition-all active:scale-95"
@@ -968,13 +1000,19 @@ export default function UserDashboard() {
                                                     <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end gap-3">
                                                         {request.hasReport && (
                                                             <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    navigate(`/user/booking/${request.id}/report`);
-                                                                }}
-                                                                className={`px-4 py-2 rounded-lg font-bold transition-colors flex items-center gap-2 ${request.waterFound ? 'bg-emerald-600 text-white animate-blink-green' : 'bg-red-600 text-white animate-blink-red'}`}
+                                                                onClick={(e) => handleReportClick(e, request)}
+                                                                className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${!request.bookingData?.payment?.remainingPaid
+                                                                    ? "bg-gray-100 text-gray-500 border border-gray-200"
+                                                                    : request.waterFound ? 'bg-emerald-600 text-white animate-blink-green' : 'bg-red-600 text-white animate-blink-red'
+                                                                    }`}
                                                             >
-                                                                View Report <IoNewspaperOutline />
+                                                                <div className="relative">
+                                                                    <IoNewspaperOutline className="text-xl" />
+                                                                    {!request.bookingData?.payment?.remainingPaid && (
+                                                                        <IoLockClosedOutline className="absolute -top-1 -right-1 text-[10px] bg-white rounded-full p-0.5 text-gray-700" />
+                                                                    )}
+                                                                </div>
+                                                                <span>{request.bookingData?.payment?.remainingPaid ? "View Report" : "Unlock Report"}</span>
                                                             </button>
                                                         )}
                                                         {(request.status === 'pending' || request.status === 'awaiting_advance') && request.paymentStatus === 'PENDING' && (
@@ -1033,6 +1071,56 @@ export default function UserDashboard() {
                 cancelText="Go Back"
                 confirmColor="danger"
             />
+
+            {/* Payment Prompt Modal */}
+            <PaymentPromptModal
+                isOpen={showPaymentPrompt}
+                onClose={() => setShowPaymentPrompt(false)}
+                onPay={() => {
+                    setShowPaymentPrompt(false);
+                    navigate(`/user/booking/${bookingToUnlock?.id}/payment`);
+                }}
+                amount={bookingToUnlock?.payment?.remainingAmount}
+            />
         </div >
+    );
+}
+
+/* ---------------------------
+   REUSABLE COMPONENTS
+---------------------------- */
+function PaymentPromptModal({ isOpen, onClose, onPay, amount }) {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
+            <div className="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+                <div className="p-8 text-center">
+                    <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <IoLockClosedOutline className="text-4xl text-orange-500" />
+                    </div>
+
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">Report Locked</h2>
+                    <p className="text-gray-500 mb-8 leading-relaxed">
+                        To access your detailed survey report and findings, please complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString()}</span>.
+                    </p>
+
+                    <div className="space-y-3">
+                        <button
+                            onClick={onPay}
+                            className="w-full bg-[#0A84FF] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-[0.98] transition-all"
+                        >
+                            Pay & Unlock Now
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="w-full bg-gray-50 text-gray-500 py-4 rounded-xl font-bold hover:bg-gray-100 transition-all"
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

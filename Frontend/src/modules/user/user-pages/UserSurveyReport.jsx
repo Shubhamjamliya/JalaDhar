@@ -42,10 +42,19 @@ export default function UserSurveyReport() {
       const apiCall = isVendor ? getVendorBookingDetails : getUserBookingDetails;
       const response = await apiCall(bookingId);
       if (response.success) {
-        if (!response.data.booking.report) {
+        const b = response.data.booking;
+
+        // Security Check: If user is trying to view report without payment
+        if (!isVendor && !b.payment?.remainingPaid) {
+          toast.showWarning("Please complete the remaining payment to access the report.");
+          navigate(`/user/booking/${bookingId}/payment`, { replace: true });
+          return;
+        }
+
+        if (!b.report) {
           setError("Survey report has not been uploaded yet for this booking.");
         } else {
-          setBooking(response.data.booking);
+          setBooking(b);
         }
       } else {
         setError(response.message || "Failed to load report");

@@ -165,24 +165,30 @@ export default function UserVendorProfile() {
 
                     {/* Stats Cards - Success/Fail */}
                     {/* Modern Stats Cards */}
-                    <div className="grid grid-cols-3 gap-3 w-full mb-6">
-                        <div className="bg-blue-50/50 rounded-xl p-3 flex flex-col items-center justify-center border border-blue-100">
-                            <span className="text-lg font-bold text-blue-700">
-                                {vendorData.experience || 0}<span className="text-xs font-normal text-blue-500">+</span>
+                    <div className="grid grid-cols-4 gap-2 w-full mb-6">
+                        <div className="bg-blue-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-blue-100">
+                            <span className="text-base font-bold text-blue-700">
+                                {vendorData.experience || 0}<span className="text-[10px] font-normal text-blue-500">+</span>
                             </span>
-                            <span className="text-[10px] uppercase tracking-wider font-semibold text-blue-400 mt-1">Yrs Exp.</span>
+                            <span className="text-[9px] uppercase tracking-tight font-bold text-blue-400 mt-1 text-center">Experience</span>
                         </div>
-                        <div className="bg-emerald-50/50 rounded-xl p-3 flex flex-col items-center justify-center border border-emerald-100">
-                            <span className="text-lg font-bold text-emerald-700">
-                                {vendorData.rating?.successRatio || 0}<span className="text-xs font-normal text-emerald-500">%</span>
+                        <div className="bg-emerald-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-emerald-100">
+                            <span className="text-base font-bold text-emerald-700">
+                                {vendorData.successCount || 0}
                             </span>
-                            <span className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400 mt-1">Success</span>
+                            <span className="text-[9px] uppercase tracking-tight font-bold text-emerald-400 mt-1 text-center">Success</span>
                         </div>
-                        <div className="bg-purple-50/50 rounded-xl p-3 flex flex-col items-center justify-center border border-purple-100">
-                            <span className="text-lg font-bold text-purple-700">
+                        <div className="bg-rose-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-rose-100">
+                            <span className="text-base font-bold text-rose-700">
+                                {vendorData.failureCount || 0}
+                            </span>
+                            <span className="text-[9px] uppercase tracking-tight font-bold text-rose-400 mt-1 text-center">Failed</span>
+                        </div>
+                        <div className="bg-purple-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-purple-100">
+                            <span className="text-base font-bold text-purple-700">
                                 {vendorData.rating?.totalJobsCompleted || 0}
                             </span>
-                            <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-400 mt-1">Projects</span>
+                            <span className="text-[9px] uppercase tracking-tight font-bold text-purple-400 mt-1 text-center">Projects</span>
                         </div>
                     </div>
 

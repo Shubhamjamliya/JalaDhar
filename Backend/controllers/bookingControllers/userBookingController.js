@@ -1275,6 +1275,7 @@ const cancelBooking = async (req, res) => {
 
     // Check if booking can be cancelled
     const cancellableStatuses = [
+      BOOKING_STATUS.AWAITING_ADVANCE,
       BOOKING_STATUS.PENDING,
       BOOKING_STATUS.ASSIGNED,
       BOOKING_STATUS.ACCEPTED
