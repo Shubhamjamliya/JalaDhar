@@ -48,6 +48,7 @@ const UserDisputeDetails = lazy(() => import("./modules/user/user-pages/UserDisp
 const UserRatings = lazy(() => import("./modules/user/user-pages/UserRatings"));
 const UserSurveyFlow = lazy(() => import("./modules/user/user-pages/UserSurveyFlow"));
 const UserSurveyReport = lazy(() => import("./modules/user/user-pages/UserSurveyReport"));
+const UserInvoice = lazy(() => import("./modules/user/user-pages/UserInvoice"));
 const VendorDashboard = lazy(() => import("./modules/vendor/vendor-pages/VendorDashboard"));
 const VendorDisputes = lazy(() => import("./modules/vendor/vendor-pages/VendorDisputes"));
 const VendorCreateDispute = lazy(() => import("./modules/vendor/vendor-pages/VendorCreateDispute"));
@@ -285,6 +286,14 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/booking/:bookingId/invoice"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserInvoice />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/survey"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
@@ -447,6 +456,14 @@ function App() {
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <UserSurveyReport />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/booking/:bookingId/invoice"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserInvoice />
                                                                     </Suspense>
                                                                 }
                                                             />

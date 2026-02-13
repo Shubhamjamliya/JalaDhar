@@ -464,12 +464,23 @@ export default function VendorStatus() {
     return (
         <div
             ref={containerRef}
-            className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 overflow-y-auto"
+            className="min-h-screen bg-[#F6F7F9] pb-10"
             style={{
                 transform: pullDistance > 0 ? `translateY(${Math.min(pullDistance, 100)}px)` : 'none',
                 transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none',
             }}
         >
+            {/* Header with Title and "View Details" button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pt-4">
+                <h1 className="text-2xl font-black text-gray-800 tracking-tight">Booking Status</h1>
+                <button
+                    onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-[#0A84FF] rounded-xl text-base font-bold shadow-sm border border-blue-50 hover:bg-blue-50 transition-all active:scale-95"
+                >
+                    <IoDocumentTextOutline className="text-xl" />
+                    Full Booking Details
+                </button>
+            </div>
             {/* Pull-to-refresh indicator */}
             {(pullDistance > 0 || isRefreshing) && (
                 <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-transparent pointer-events-none"
@@ -541,290 +552,169 @@ export default function VendorStatus() {
 
             {/* Status Timeline */}
             {steps.length === 0 ? (
-                <div className="text-center py-8 bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                    <p className="text-gray-600">No status information available</p>
+                <div className="text-center py-12 bg-white rounded-3xl p-6 shadow-sm border border-gray-50">
+                    <p className="text-gray-500 font-medium">No status information available</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-[auto_1fr] gap-x-4">
-                    {steps.map((step, index) => {
-                        const StepIcon = step.icon;
-                        const isLast = index === steps.length - 1;
-                        const isActive = step.active;
-                        const isCompleted = step.completed;
+                <div className="relative pl-2">
+                    {/* Continuous Vertical Line */}
+                    <div className="absolute left-[23px] top-6 bottom-6 w-[2px] bg-gray-100 z-0"></div>
 
-                        return (
-                            <Fragment key={step.id}>
-                                {/* Icon */}
-                                <div className="flex flex-col items-center">
+                    <div className="space-y-8">
+                        {steps.map((step, index) => {
+                            const StepIcon = step.icon;
+                            const isActive = step.active;
+                            const isCompleted = step.completed;
+
+                            return (
+                                <div key={step.id} className="relative flex gap-6">
+                                    {/* Timeline Marker */}
+                                    <div className="relative z-10 flex-shrink-0">
+                                        <div
+                                            className={`flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm transition-all duration-300 ${isCompleted
+                                                ? "bg-[#00C2A8] text-white"
+                                                : isActive
+                                                    ? "bg-[#0A84FF] text-white scale-110 shadow-lg shadow-blue-100"
+                                                    : "bg-white border border-gray-100 text-gray-300"
+                                                }`}
+                                        >
+                                            {isCompleted ? (
+                                                <IoCheckmarkCircleOutline className="text-2xl" />
+                                            ) : (
+                                                <StepIcon className="text-xl" />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Step Content Card */}
                                     <div
-                                        className={`relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] shadow-[0px_4px_10px_rgba(0,0,0,0.1)] overflow-hidden ${isActive || isCompleted ? "" : "opacity-60"
+                                        className={`flex-1 rounded-2xl bg-white p-5 shadow-sm border transition-all duration-300 ${isActive
+                                            ? "border-[#0A84FF] ring-4 ring-blue-50/50"
+                                            : isCompleted
+                                                ? "border-emerald-50"
+                                                : "border-gray-50 opacity-80"
                                             }`}
                                     >
-                                        {/* Highlight/Reflection Effect */}
-                                        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
-                                        <StepIcon className={`text-2xl relative z-10 ${isActive || isCompleted ? "text-[#1976D2]" : "text-gray-500"}`} />
-                                    </div>
-                                    {!isLast && (
-                                        <div
-                                            className={`w-0.5 grow ${isCompleted
-                                                ? "bg-[#1976D2]"
-                                                : isActive
-                                                    ? "bg-[#1976D2]"
-                                                    : "bg-gray-300"
-                                                }`}
-                                        ></div>
-                                    )}
-                                </div>
-
-                                {/* Content */}
-                                <div
-                                    className={`mb-6 rounded-[12px] bg-white p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border-2 ${isActive || isCompleted ? "border-[#81D4FA]" : "border-[#B3E5FC] opacity-60"
-                                        }`}
-                                >
-                                    <p className="text-base font-bold text-gray-800 mb-1">
-                                        {step.label}
-                                    </p>
-                                    {step.date && (
-                                        <p className="mb-2 text-sm text-gray-500">
-                                            {formatDate(step.date)}
-                                        </p>
-                                    )}
-                                    <p className={`text-sm mb-3 ${isActive || isCompleted ? "text-gray-600" : "text-gray-400"}`}>{step.description}</p>
-
-                                    {/* Action Buttons */}
-                                    {/* Step 1: ASSIGNED - Accept/Reject */}
-                                    {step.id === "assigned" && status === "ASSIGNED" && (
-                                        <div className="flex gap-2 mt-3">
-                                            <button
-                                                onClick={handleReject}
-                                                disabled={actionLoading}
-                                                className="flex-1 h-12 bg-red-100 text-red-600 text-sm font-semibold rounded-[8px] hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {actionLoading ? "Processing..." : "Reject"}
-                                            </button>
-                                            <button
-                                                onClick={handleAccept}
-                                                disabled={actionLoading}
-                                                className="flex-1 h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {actionLoading ? "Processing..." : "Accept"}
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {/* Step 2: ACCEPTED - Actions */}
-                                    {step.id === "accepted" && (isActive || isCompleted) && (
-                                        <div className="flex flex-col gap-2 mt-3">
-                                            {/* Mark as Visited Button - Only show if active */}
-                                            {status === "ACCEPTED" && (
-                                                <button
-                                                    onClick={handleMarkVisited}
-                                                    disabled={actionLoading}
-                                                    className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                                >
-                                                    <IoConstructOutline className="text-xl" />
-                                                    {actionLoading ? "Processing..." : "Mark as Visited"}
-                                                </button>
-                                            )}
-
-                                            {/* Get Directions Button - Visible as long as booking is accepted/visited */}
-                                            <button
-                                                onClick={handleGetDirections}
-                                                className="w-full h-12 bg-emerald-600 text-white text-sm font-bold rounded-[8px] hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md shadow-emerald-100"
-                                            >
-                                                <IoNavigateOutline className="text-xl" />
-                                                Get Directions (Open Maps)
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {/* Step: First Payment Release */}
-                                    {step.id === "first-payment" && (
-                                        <div className="mt-3">
-                                            {booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited ? (
-                                                <div className="bg-green-50 rounded-[8px] p-3">
-                                                    <p className="text-sm font-semibold text-green-700 mb-1">
-                                                        ✓ 1st Payment Credited
-                                                    </p>
-                                                    <p className="text-xs text-green-600">
-                                                        Amount: {formatAmount(booking.payment.vendorWalletPayments.siteVisitPayment.amount || 0)} has been credited to your wallet.
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                <div className="bg-yellow-50 rounded-[8px] p-3">
-                                                    <p className="text-sm font-semibold text-yellow-700 mb-1">
-                                                        ⏳ Pending Release
-                                                    </p>
-                                                    <p className="text-xs text-yellow-600">
-                                                        Waiting for admin to release 1st payment (50%).
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Step: Second Payment Release */}
-                                    {step.id === "second-payment" && (
-                                        <div className="mt-3">
-                                            {booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited ? (
-                                                <div className="bg-green-50 rounded-[8px] p-3">
-                                                    <p className="text-sm font-semibold text-green-700 mb-1">
-                                                        ✓ 2nd Payment Credited
-                                                    </p>
-                                                    <p className="text-xs text-green-600">
-                                                        Amount: {formatAmount(booking.payment.vendorWalletPayments.reportUploadPayment.amount || 0)} has been credited to your wallet.
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                <div className="bg-yellow-50 rounded-[8px] p-3">
-                                                    <p className="text-sm font-semibold text-yellow-700 mb-1">
-                                                        ⏳ Pending Release
-                                                    </p>
-                                                    <p className="text-xs text-yellow-600">
-                                                        Waiting for admin to release 2nd payment (50%).
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Step: Upload Report */}
-                                    {step.id === "upload-report" && status === "VISITED" && !booking.reportUploadedAt && (
-                                        <button
-                                            onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
-                                            className="w-full h-12 bg-[#0A84FF] text-white text-sm font-semibold rounded-[8px] hover:bg-[#005BBB] transition-colors flex items-center justify-center gap-2 mt-3"
-                                        >
-                                            <IoDocumentTextOutline className="text-xl" />
-                                            Upload Report
-                                        </button>
-                                    )}
-
-                                    {/* Step: Report Approved */}
-                                    {step.id === "report-approved" && status === "REPORT_UPLOADED" && (
-                                        <div className="mt-3">
-                                            {booking.report?.approvedAt ? (
-                                                <div className="bg-green-50 rounded-[8px] p-3 mb-2">
-                                                    <p className="text-sm font-semibold text-green-700 mb-1">
-                                                        ✓ Report Approved
-                                                    </p>
-                                                    <p className="text-xs text-green-600">
-                                                        Approved on {formatDate(booking.report.approvedAt)}
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                <div className="bg-yellow-50 rounded-[8px] p-3 mb-2">
-                                                    <p className="text-sm font-semibold text-yellow-700 mb-1">
-                                                        ⏳ Pending Approval
-                                                    </p>
-                                                    <p className="text-xs text-yellow-600">
-                                                        Waiting for admin to approve your report.
-                                                    </p>
-                                                </div>
-                                            )}
-                                            <button
-                                                onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
-                                                className="w-full h-12 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <IoDocumentTextOutline className="text-xl" />
-                                                View Report
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {/* Step: APPROVED - View Details */}
-                                    {step.id === "approved" && status === "APPROVED" && (
-                                        <button
-                                            onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
-                                            className="w-full h-12 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors flex items-center justify-center gap-2 mt-3"
-                                        >
-                                            <IoDocumentTextOutline className="text-xl" />
-                                            View Details
-                                        </button>
-                                    )}
-
-                                    {/* Step: COMPLETED - View Details */}
-                                    {step.id === "completed" && status === "COMPLETED" && (
-                                        <button
-                                            onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
-                                            className="w-full h-12 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors flex items-center justify-center gap-2 mt-3"
-                                        >
-                                            <IoDocumentTextOutline className="text-xl" />
-                                            View Details
-                                        </button>
-                                    )}
-
-                                    {/* Step 7: Borewell Result - View Result */}
-                                    {step.id === "borewell" && booking.borewellResult && (
-                                        <div className="mt-3">
-                                            <div className="bg-gray-50 rounded-[8px] p-3 mb-2">
-                                                <p className="text-xs font-semibold text-gray-700 mb-1">
-                                                    Borewell Result:
-                                                </p>
-                                                <span
-                                                    className={`px-2 py-1 rounded-full text-xs font-semibold ${booking.borewellResult.status === "SUCCESS"
-                                                        ? "bg-green-100 text-green-700"
-                                                        : "bg-red-100 text-red-700"
-                                                        }`}
-                                                >
-                                                    {booking.borewellResult.status}
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className={`text-base font-black tracking-tight ${isActive ? "text-[#0A84FF]" : "text-gray-800"}`}>
+                                                {step.label}
+                                            </h3>
+                                            {step.date && (
+                                                <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">
+                                                    {formatDate(step.date)}
                                                 </span>
-                                            </div>
-                                            <button
-                                                onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
-                                                className="w-full h-12 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <IoImageOutline className="text-xl" />
-                                                View Borewell Result
-                                            </button>
+                                            )}
                                         </div>
-                                    )}
 
-                                    {/* Step 8: Settlement - View Settlement Details */}
-                                    {step.id === "settlement" && (booking.finalSettlement || booking.payment?.vendorSettlement) && (
-                                        <div className="mt-3">
-                                            <div className="bg-gray-50 rounded-[8px] p-3 mb-2">
-                                                <p className="text-xs font-semibold text-gray-700 mb-1">
-                                                    Settlement Status:{" "}
-                                                    <span
-                                                        className={`px-2 py-1 rounded-full text-xs font-semibold ${(booking.finalSettlement?.status === "PROCESSED" || booking.payment?.vendorSettlement?.status === "COMPLETED" || booking.vendorStatus === "FINAL_SETTLEMENT_COMPLETE" || (booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0))
-                                                            ? "bg-green-100 text-green-700"
-                                                            : "bg-yellow-100 text-yellow-700"
-                                                            }`}
-                                                    >
-                                                        {(booking.finalSettlement?.status === "PROCESSED" || booking.payment?.vendorSettlement?.status === "COMPLETED" || booking.vendorStatus === "FINAL_SETTLEMENT_COMPLETE" || (booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0))
-                                                            ? "COMPLETE"
-                                                            : booking.finalSettlement?.status || booking.payment?.vendorSettlement?.status || "PENDING"}
-                                                    </span>
-                                                </p>
-                                                {(booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0) ? (
-                                                    <p className={`text-sm font-bold mt-2 ${booking.finalSettlement?.rewardAmount > 0
-                                                        ? "text-green-600"
-                                                        : "text-red-600"
-                                                        }`}>
-                                                        {booking.finalSettlement?.rewardAmount > 0
-                                                            ? `Reward: ${formatAmount(booking.finalSettlement.rewardAmount)}`
-                                                            : `Penalty: ${formatAmount(booking.finalSettlement.penaltyAmount)}`
-                                                        }
+                                        <p className={`text-sm leading-relaxed ${isActive || isCompleted ? "text-gray-600" : "text-gray-400"}`}>
+                                            {step.description}
+                                        </p>
+
+                                        {/* Simplified card content - removed internal actions */}
+                                        {(step.id === "first-payment" || step.id === "second-payment") && (
+                                            <div className={`mt-3 p-3 rounded-xl border flex items-center gap-3 ${(step.id === "first-payment" ? booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited : booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited)
+                                                    ? "bg-emerald-50 border-emerald-100" : "bg-orange-50 border-orange-100"
+                                                }`}>
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${(step.id === "first-payment" ? booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited : booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited) ? "bg-emerald-500 text-white" : "bg-orange-500 text-white"}`}>
+                                                    <IoWalletOutline className="text-lg" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-gray-800">
+                                                        {(step.id === "first-payment" ? booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited : booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited) ? "Payment Credited" : "Pending Release"}
                                                     </p>
-                                                ) : booking.payment?.vendorSettlement?.amount ? (
-                                                    <p className="text-sm font-bold text-gray-800 mt-2">
-                                                        Amount: {formatAmount(booking.payment.vendorSettlement.amount)}
+                                                    <p className="text-[10px] text-gray-500">
+                                                        {formatAmount((step.id === "first-payment" ? booking.payment?.vendorWalletPayments?.siteVisitPayment?.amount : booking.payment?.vendorWalletPayments?.reportUploadPayment?.amount) || 0)}
                                                     </p>
-                                                ) : null}
+                                                </div>
                                             </div>
-                                            <button
-                                                onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
-                                                className="w-full h-12 bg-[#E7F0FB] text-[#0A84FF] text-sm font-medium rounded-[8px] hover:bg-[#D0E1F7] transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <IoWalletOutline className="text-xl" />
-                                                View Settlement Details
-                                            </button>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
-                            </Fragment>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Active Actions Section - Below Booking Status */}
+            {status && !["CANCELLED", "REJECTED", "COMPLETED"].includes(status) && (
+                <div className="mt-12 mb-8 animate-slide-up">
+                    <div className="bg-white rounded-[24px] p-6 shadow-[0px_20px_40px_rgba(0,0,0,0.08)] border border-blue-50/50 relative overflow-hidden">
+                        {/* Decorative background element */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/30 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+
+                        <div className="relative z-10">
+                            <h2 className="text-lg font-black text-gray-800 mb-5 flex items-center gap-2">
+                                <span className="w-1.5 h-6 bg-[#0A84FF] rounded-full"></span>
+                                Required Action
+                            </h2>
+
+                            {/* ASSIGNED ACTIONS */}
+                            {status === "ASSIGNED" && (
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        onClick={handleReject}
+                                        disabled={actionLoading}
+                                        className="flex-1 h-14 bg-red-50 text-red-600 text-base font-bold rounded-2xl hover:bg-red-100 transition-all active:scale-95 disabled:opacity-50"
+                                    >
+                                        Reject Booking
+                                    </button>
+                                    <button
+                                        onClick={handleAccept}
+                                        disabled={actionLoading}
+                                        className="flex-[2] h-14 bg-[#0A84FF] text-white text-base font-black rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 shadow-xl shadow-blue-100 disabled:opacity-50"
+                                    >
+                                        Accept Booking Now
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* ACCEPTED ACTIONS */}
+                            {status === "ACCEPTED" && (
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={handleMarkVisited}
+                                        disabled={actionLoading}
+                                        className="w-full h-14 bg-[#0A84FF] text-white text-base font-black rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100"
+                                    >
+                                        <IoConstructOutline className="text-2xl" />
+                                        Mark Site Visited
+                                    </button>
+                                    <button
+                                        onClick={handleGetDirections}
+                                        className="w-full h-13 bg-white text-emerald-600 text-sm font-bold rounded-2xl border-2 border-emerald-50 hover:bg-emerald-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <IoNavigateOutline className="text-xl" />
+                                        Get Site Directions
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* VISITED ACTIONS */}
+                            {status === "VISITED" && !booking.reportUploadedAt && (
+                                <button
+                                    onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
+                                    className="w-full h-14 bg-[#0A84FF] text-white text-base font-black rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100"
+                                >
+                                    <IoDocumentTextOutline className="text-2xl" />
+                                    Upload Technical Report
+                                </button>
+                            )}
+
+                            {/* REPORT UPLOADED / AWAITING PAYMENTS */}
+                            {(status === "REPORT_UPLOADED" || status === "AWAITING_PAYMENT") && (
+                                <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center text-white shrink-0">
+                                        <IoTimeOutline className="text-2xl" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-orange-800 text-sm">Waiting for Customer Payment</p>
+                                        <p className="text-xs text-orange-600 mt-0.5">Payment release will be triggered automatically.</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
 

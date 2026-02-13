@@ -165,42 +165,8 @@ export default function UserBookingDetails() {
         }
     };
 
-    const handleDownloadBill = async () => {
-        const loadingToast = toast.showLoading("Downloading invoice...");
-        try {
-            const response = await downloadInvoice(bookingId);
-
-            // Check if response contains a blob directly or data object
-            // The service might return the blob directly based on axios config
-            // Assuming standard handling here:
-
-            // If the service function already handles creating the blob/link, we might just need to check success
-            // But usually for explicit download buttons we handle the blob creation 
-
-            // Let's assume the previous implementation was correct about blob
-            // But usually my service pattern returns {success: true, data: ...}
-            // If downloadInvoice returns a blob directly (which is common for file downloads):
-
-            const blob = response; // Assuming response IS the blob if headers are set correctly in service
-
-            // However, the previous code had: const blob = await downloadInvoice(bookingId);
-            // Let's stick to that pattern but add error checking if it returns a JSON error structure
-
-            const url = window.URL.createObjectURL(new Blob([blob]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `invoice-${bookingId}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.parentNode.removeChild(link);
-            window.URL.revokeObjectURL(url);
-
-            toast.dismissToast(loadingToast);
-            toast.showSuccess("Invoice downloaded successfully!");
-        } catch (err) {
-            toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to download invoice");
-        }
+    const handleDownloadBill = () => {
+        navigate(`/booking/${bookingId}/invoice`);
     };
 
     const handleCancelBooking = () => {
@@ -1116,7 +1082,7 @@ export default function UserBookingDetails() {
                                 {["PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(effectiveStatus.toUpperCase()) && (
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
-                                            onClick={handleDownloadBill}
+                                            onClick={() => navigate(`/user/booking/${bookingId}/invoice`)}
                                             className="flex items-center justify-center gap-2 bg-[#E7F0FB] text-[#0A84FF] py-3 rounded-[12px] font-semibold hover:bg-[#D0E1F7] transition-all"
                                         >
                                             <IoDownloadOutline className="text-xl" />

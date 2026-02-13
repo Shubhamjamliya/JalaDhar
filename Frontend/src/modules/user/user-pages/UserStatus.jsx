@@ -695,6 +695,16 @@ export default function UserStatus() {
                                                         Upload Result Now
                                                     </button>
                                                 )}
+
+                                                {["view-report", "borewell-report", "admin-approved", "final-settlement", "completed"].includes(step.id) && (isCompleted || isActive) && (
+                                                    <button
+                                                        onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/invoice`)}
+                                                        className="w-full mt-2 py-3 bg-indigo-50 text-indigo-600 text-sm font-bold rounded-xl hover:bg-indigo-100 transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+                                                    >
+                                                        <IoDownloadOutline className="text-xl" />
+                                                        Download Invoice
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

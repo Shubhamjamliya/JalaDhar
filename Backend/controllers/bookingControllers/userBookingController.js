@@ -768,7 +768,17 @@ const downloadInvoice = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       user: userId,
-      status: { $in: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.SUCCESS, BOOKING_STATUS.FAILED] }
+      status: {
+        $in: [
+          BOOKING_STATUS.PAYMENT_SUCCESS,
+          BOOKING_STATUS.BOREWELL_UPLOADED,
+          BOOKING_STATUS.ADMIN_APPROVED,
+          BOOKING_STATUS.FINAL_SETTLEMENT,
+          BOOKING_STATUS.COMPLETED,
+          BOOKING_STATUS.SUCCESS,
+          BOOKING_STATUS.FAILED
+        ]
+      }
     })
       .populate('user', 'name email phone address')
       .populate('vendor', 'name email phone')

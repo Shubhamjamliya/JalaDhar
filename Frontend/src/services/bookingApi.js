@@ -117,9 +117,7 @@ export const uploadBorewellResult = async (bookingId, data) => {
  * @returns {Promise}
  */
 export const downloadInvoice = async (bookingId) => {
-  const response = await api.get(`/bookings/${bookingId}/invoice`, {
-    responseType: 'blob',
-  });
+  const response = await api.get(`/bookings/${bookingId}/invoice`);
   return response.data;
 };
 

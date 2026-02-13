@@ -254,24 +254,8 @@ export default function VendorBookingDetails() {
         }
     };
 
-    const handleDownloadInvoice = async () => {
-        const loadingToast = toast.showLoading("Downloading invoice...");
-        try {
-            const response = await downloadInvoice(bookingId);
-
-            if (response.success && response.data.invoiceUrl) {
-                // Open invoice URL in new tab
-                window.open(response.data.invoiceUrl, '_blank');
-                toast.dismissToast(loadingToast);
-                toast.showSuccess("Invoice opened successfully!");
-            } else {
-                toast.dismissToast(loadingToast);
-                toast.showError(response.message || "Invoice not available");
-            }
-        } catch (err) {
-            toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to download invoice");
-        }
+    const handleDownloadInvoice = () => {
+        navigate(`/vendor/booking/${bookingId}/invoice`);
     };
 
     const openMapApp = (appName) => {
@@ -397,90 +381,83 @@ export default function VendorBookingDetails() {
 
             {/* Visual Status Timeline */}
             <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-800">Booking Timeline</h2>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <h2 className="text-xl font-bold text-gray-800">Booking Status</h2>
                     <button
                         onClick={() => navigate(`/vendor/booking/${booking._id || booking.id}/status`)}
-                        className="flex items-center gap-1.5 text-sm font-semibold text-[#0A84FF] hover:text-[#005BBB] transition-colors"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-[#E7F0FB] text-[#0A84FF] rounded-xl text-base font-bold hover:bg-[#D0E1F7] active:scale-95 transition-all shadow-sm border border-[#D0E1F7]"
                     >
-                        <IoDocumentTextOutline className="text-base" />
-                        View Full Status
+                        <IoDocumentTextOutline className="text-xl" />
+                        View Full Status Timeline
                     </button>
                 </div>
 
-                {/* Visual Step Timeline */}
-                {(() => {
-                    const status = booking.vendorStatus || booking.status;
-                    const timelineSteps = [
-                        { id: "assigned", label: "Assigned", icon: "📋", statuses: ["ASSIGNED"], date: booking.assignedAt },
-                        { id: "accepted", label: "Accepted", icon: "✅", statuses: ["ACCEPTED"], date: booking.acceptedAt },
-                        { id: "visited", label: "Visited", icon: "🏠", statuses: ["VISITED"], date: booking.visitedAt },
-                        { id: "report", label: "Report", icon: "📄", statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt },
-                        { id: "payment", label: "Payment", icon: "💰", statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"], date: booking.payment?.remainingPaidAt },
-                        { id: "borewell", label: "Borewell", icon: "🚰", statuses: ["BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED"], date: booking.borewellResult?.uploadedAt },
-                        { id: "completed", label: "Completed", icon: "🎉", statuses: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"], date: booking.completedAt || booking.finalSettlement?.processedAt },
-                    ];
-                    const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
-                    const currentIndex = statusOrder.indexOf(status);
+                {/* Visual Step Timeline - Improved Scrollable Container */}
+                <div className="relative">
+                    <div className="flex items-start justify-between gap-2 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2">
+                        {(() => {
+                            const status = booking.vendorStatus || booking.status;
+                            const timelineSteps = [
+                                { id: "assigned", label: "Assigned", icon: "📋", statuses: ["ASSIGNED"] },
+                                { id: "accepted", label: "Accepted", icon: "✅", statuses: ["ACCEPTED"] },
+                                { id: "visited", label: "Visited", icon: "🏠", statuses: ["VISITED"] },
+                                { id: "report", label: "Report", icon: "📄", statuses: ["REPORT_UPLOADED"] },
+                                { id: "payment", label: "Payment", icon: "💰", statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"] },
+                                { id: "borewell", label: "Borewell", icon: "🚰", statuses: ["BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED"] },
+                                { id: "completed", label: "Completed", icon: "🎉", statuses: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"] },
+                            ];
+                            const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
+                            const currentIndex = statusOrder.indexOf(status);
 
-                    return (
-                        <div className="flex items-center justify-between gap-1">
-                            {timelineSteps.map((step, index) => {
-                                // For the completed step, multiple final statuses should count as completion for the vendor
+                            return timelineSteps.map((step, index) => {
                                 const stepStatuses = step.id === "completed"
                                     ? ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"]
                                     : step.statuses;
 
                                 const stepStatusIndex = Math.max(...stepStatuses.map(s => statusOrder.indexOf(s)));
                                 const isCompleted = currentIndex >= 0 && currentIndex > stepStatusIndex;
-                                const isActive = step.statuses.includes(status);
+                                const isActive = step.statuses.includes(status) || (step.id === "completed" && ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"].includes(status));
                                 const isPending = !isCompleted && !isActive;
 
                                 return (
-                                    <div key={step.id} className="flex items-center flex-1">
-                                        <div className="flex flex-col items-center flex-1">
-                                            {/* Step Circle */}
-                                            <div
-                                                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all ${isCompleted || (isActive && step.id === "completed")
-                                                    ? "bg-green-100 border-2 border-green-500"
-                                                    : isActive
-                                                        ? "bg-blue-100 border-2 border-[#0A84FF] ring-2 ring-blue-200 animate-pulse"
-                                                        : "bg-gray-100 border-2 border-gray-300"
-                                                    }`}
-                                            >
-                                                {isCompleted || (isActive && step.id === "completed") ? (
-                                                    <IoCheckmarkCircleOutline className="text-green-600 text-xl" />
-                                                ) : (
-                                                    <span className={`text-sm ${isPending ? "grayscale opacity-50" : ""}`}>{step.icon}</span>
-                                                )}
-                                            </div>
-                                            {/* Label */}
-                                            <span
-                                                className={`text-[10px] font-semibold mt-1.5 text-center leading-tight ${isCompleted ? "text-green-700" : isActive ? "text-[#0A84FF]" : "text-gray-400"
-                                                    }`}
-                                            >
-                                                {step.label}
-                                            </span>
-                                            {/* Date */}
-                                            {step.date && (isCompleted || isActive) && (
-                                                <span className="text-[9px] text-gray-400 mt-0.5">
-                                                    {new Date(step.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                                                </span>
-                                            )}
-                                        </div>
+                                    <div key={step.id} className="flex flex-col items-center min-w-[70px] relative first:pl-0 last:pr-0">
                                         {/* Connector Line */}
                                         {index < timelineSteps.length - 1 && (
                                             <div
-                                                className={`h-0.5 flex-1 min-w-2 -mt-4 ${isCompleted ? "bg-green-400" : "bg-gray-200"
+                                                className={`absolute left-[50%] top-6 w-full h-[3px] z-0 ${isCompleted ? "bg-[#00C2A8]" : "bg-gray-100"
                                                     }`}
                                             />
                                         )}
+
+                                        {/* Step Circle */}
+                                        <div
+                                            className={`relative z-10 w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all duration-300 shadow-sm ${isCompleted || isActive
+                                                ? isActive ? "bg-[#0A84FF] text-white scale-110 shadow-lg shadow-blue-100" : "bg-[#00C2A8] text-white"
+                                                : "bg-white border border-gray-100 text-gray-300"
+                                                }`}
+                                        >
+                                            {isCompleted ? (
+                                                <IoCheckmarkCircleOutline className="text-2xl" />
+                                            ) : (
+                                                <span className={`${isPending ? "opacity-40" : ""}`}>{step.icon}</span>
+                                            )}
+                                        </div>
+
+                                        {/* Label */}
+                                        <span
+                                            className={`text-[11px] font-bold mt-3 text-center leading-tight tracking-tight transition-colors duration-300 ${isCompleted ? "text-[#00C2A8]" : isActive ? "text-[#0A84FF]" : "text-gray-400"
+                                                }`}
+                                        >
+                                            {step.label}
+                                        </span>
                                     </div>
                                 );
-                            })}
-                        </div>
-                    );
-                })()}
+                            });
+                        })()}
+                    </div>
+                    {/* Shadow indicators for scroll */}
+                    <div className="absolute right-0 top-0 bottom-6 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none opacity-50 sm:hidden"></div>
+                </div>
 
                 {/* Detailed dates */}
                 <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
@@ -522,6 +499,76 @@ export default function VendorBookingDetails() {
                     )}
                 </div>
             </div>
+
+            {/* Action Buttons - Moved to right below Booking Status */}
+            {booking.status === "ASSIGNED" && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(10,132,255,0.08)] mb-6 border-2 border-blue-50 ring-4 ring-blue-50/30">
+                    <h2 className="text-lg font-black text-gray-800 mb-4 flex items-center gap-2">
+                        <span className="w-1.5 h-6 bg-[#0A84FF] rounded-full"></span>
+                        Current Action
+                    </h2>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={handleReject}
+                            disabled={actionLoading}
+                            className="flex-1 bg-red-50 text-red-600 font-bold py-4 rounded-2xl hover:bg-red-100 transition-all active:scale-95 disabled:opacity-50"
+                        >
+                            <IoCloseCircleOutline className="text-xl inline mr-1" />
+                            Reject
+                        </button>
+                        <button
+                            onClick={handleAccept}
+                            disabled={actionLoading}
+                            className="flex-[2] bg-[#0A84FF] text-white font-black py-4 rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 shadow-xl shadow-blue-100 disabled:opacity-50"
+                        >
+                            <IoCheckmarkCircleOutline className="text-xl inline mr-1" />
+                            {actionLoading ? "Accepting..." : "Accept Booking"}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {booking.status === "ACCEPTED" && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(10,132,255,0.08)] mb-6 border-2 border-blue-50 ring-4 ring-blue-50/30">
+                    <h2 className="text-lg font-black text-gray-800 mb-4 flex items-center gap-2">
+                        <span className="w-1.5 h-6 bg-[#0A84FF] rounded-full"></span>
+                        Next Step
+                    </h2>
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={handleMarkAsVisited}
+                            disabled={actionLoading}
+                            className="w-full bg-[#0A84FF] text-white font-black py-4 rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100 disabled:opacity-50"
+                        >
+                            <IoCheckmarkCircleOutline className="text-2xl" />
+                            {actionLoading ? "Processing..." : "Mark as Visited"}
+                        </button>
+                        <button
+                            onClick={() => setShowMapPicker(true)}
+                            className="w-full bg-white text-emerald-600 font-bold py-3.5 rounded-2xl border-2 border-emerald-50 hover:bg-emerald-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            <IoNavigateOutline className="text-xl" />
+                            Get Directions (Open Maps)
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {booking.status === "VISITED" && !booking.reportUploadedAt && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(10,132,255,0.08)] mb-6 border-2 border-blue-50 ring-4 ring-blue-50/30">
+                    <h2 className="text-lg font-black text-gray-800 mb-4 flex items-center gap-2">
+                        <span className="w-1.5 h-6 bg-[#0A84FF] rounded-full"></span>
+                        Pending Action
+                    </h2>
+                    <button
+                        onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
+                        className="w-full bg-[#0A84FF] text-white font-black py-4 rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100"
+                    >
+                        <IoDocumentTextOutline className="text-2xl" />
+                        Fill & Upload Report
+                    </button>
+                </div>
+            )}
 
             {/* User Information Card */}
             <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
@@ -894,59 +941,7 @@ export default function VendorBookingDetails() {
                 </div>
             )}
 
-            {/* Action Buttons */}
-            {booking.status === "ASSIGNED" && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
-                    <div className="flex gap-4">
-                        <button
-                            onClick={handleAccept}
-                            disabled={actionLoading}
-                            className="flex-1 bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <IoCheckmarkCircleOutline className="text-xl" />
-                            {actionLoading ? "Processing..." : "Accept Booking"}
-                        </button>
-                        <button
-                            onClick={handleReject}
-                            disabled={actionLoading}
-                            className="flex-1 bg-red-500 text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-red-600 active:bg-red-700 transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(239,68,68,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <IoCloseCircleOutline className="text-xl" />
-                            {actionLoading ? "Processing..." : "Reject Booking"}
-                        </button>
-                    </div>
-                </div>
-            )}
 
-            {/* Mark as Visited Button */}
-            {booking.status === "ACCEPTED" && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
-                    <button
-                        onClick={handleMarkAsVisited}
-                        disabled={actionLoading}
-                        className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <IoCheckmarkCircleOutline className="text-xl" />
-                        {actionLoading ? "Processing..." : "Mark as Visited"}
-                    </button>
-                </div>
-            )}
-
-            {/* Upload Report Button */}
-            {booking.status === "VISITED" && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
-                    <button
-                        onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
-                        className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)]"
-                    >
-                        <IoDocumentTextOutline className="text-xl" />
-                        Upload Report
-                    </button>
-                </div>
-            )}
 
             {/* Travel Charges Request Section */}
             {["ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED"].includes(booking.status) && (
