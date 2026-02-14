@@ -31,7 +31,11 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'https://jala-dhar.vercel.app',
+  origin: [
+    "https://jaladhaaraapp.in",
+    "https://www.jaladhaaraapp.in",
+    process.env.FRONTEND_URL || 'https://jala-dhar.vercel.app'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
