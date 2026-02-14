@@ -1,4 +1,6 @@
 const Notification = require('../models/Notification');
+const FCMToken = require('../models/FCMToken');
+const { sendPushNotification } = require('./firebaseAdmin');
 
 /**
  * Create a notification in the database
@@ -23,7 +25,7 @@ const sendNotification = async (notificationData, io = null) => {
     // Create notification in database
     const notification = await createNotification(notificationData);
 
-    // Emit via Socket.io if available
+    // 2. Emit via Socket.io if available
     if (io) {
       try {
         const room = getRoomName(notificationData.recipientModel, notificationData.recipient.toString());
@@ -41,8 +43,40 @@ const sendNotification = async (notificationData, io = null) => {
         });
       } catch (socketError) {
         console.error('Socket.io emission error:', socketError);
-        // Continue even if Socket.io fails - notification is still saved in DB
       }
+    }
+
+    // 3. Send Push Notification via FCM
+    try {
+      const recipientId = notificationData.recipient.toString();
+      const recipientModel = notificationData.recipientModel; // 'User' or 'Vendor'
+
+      // Only Users and Vendors support push notifications currently
+      if (recipientModel === 'User' || recipientModel === 'Vendor') {
+        const fcmTokens = await FCMToken.getTokensForUser(recipientId, recipientModel);
+
+        if (fcmTokens && fcmTokens.length > 0) {
+          const pushResult = await sendPushNotification(fcmTokens, {
+            title: notification.title,
+            body: notification.message,
+            data: {
+              id: notification._id.toString(),
+              type: notification.type,
+              relatedEntityType: notification.relatedEntity?.entityType || '',
+              relatedEntityId: notification.relatedEntity?.entityId?.toString() || '',
+              link: notification.metadata?.link || '/'
+            }
+          });
+
+          // Cleanup invalid tokens if any
+          if (pushResult.invalidTokens && pushResult.invalidTokens.length > 0) {
+            await FCMToken.removeInvalidTokens(pushResult.invalidTokens);
+          }
+        }
+      }
+    } catch (pushError) {
+      console.error('Push notification sending error:', pushError);
+      // Non-critical error, don't fail the whole process
     }
 
     return notification;

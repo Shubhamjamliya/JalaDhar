@@ -4,6 +4,7 @@ import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '../
 import { useAuth } from './AuthContext';
 import { useVendorAuth } from './VendorAuthContext';
 import { useAdminAuth } from './AdminAuthContext';
+import { setupForegroundHandler } from '../services/pushNotificationService';
 
 const NotificationContext = createContext();
 
@@ -131,7 +132,28 @@ export const NotificationProvider = ({ children }) => {
     return () => {
       newSocket.disconnect();
     };
-  }, [isAuthenticated, currentUser, userRole]);
+  }, [isAuthenticated, userRole]); // Re-run if auth state or role changes
+
+  // Initialize FCM Foreground Handler
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const unsubscribe = setupForegroundHandler((payload) => {
+      console.log('[FCM] Foreground message processed in context:', payload);
+
+      // Since Socket.io is also likely to receive this same notification
+      // (if the backend sends both), we should be careful about duplicates in the UI.
+      // However, the backend notificationService sends to Socket.io AND FCM.
+      // FCM foreground usually shows a native/toast notification.
+
+      // If we want to force refresh notifications list when FCM arrives:
+      refreshNotifications();
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [isAuthenticated, refreshNotifications]);
 
   // Load notifications on mount and when user changes
   useEffect(() => {

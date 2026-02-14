@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { vendorLogin, vendorLogout, vendorRegister } from '../services/vendorAuthApi';
+import { registerFCMToken, unregisterFCMToken } from '../services/pushNotificationService';
 
 const VendorAuthContext = createContext(null);
 
@@ -25,6 +26,8 @@ export const VendorAuthProvider = ({ children }) => {
       try {
         setToken(storedToken);
         setVendor(JSON.parse(storedVendor));
+        // Register push token if authenticated
+        registerFCMToken('vendor');
       } catch (error) {
         console.error('Error parsing stored vendor:', error);
         localStorage.removeItem('vendorAccessToken');
@@ -41,7 +44,7 @@ export const VendorAuthProvider = ({ children }) => {
   const register = async (formData) => {
     try {
       const response = await vendorRegister(formData);
-      
+
       if (response.success) {
         // Registration successful - vendor needs admin approval
         return {
@@ -71,19 +74,22 @@ export const VendorAuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await vendorLogin(credentials);
-      
+
       if (response.success && response.data?.tokens) {
         const { tokens, vendor: vendorData } = response.data;
-        
+
         // Store tokens and vendor data
         localStorage.setItem('vendorAccessToken', tokens.accessToken);
         localStorage.setItem('vendorRefreshToken', tokens.refreshToken);
         localStorage.setItem('vendor', JSON.stringify(vendorData));
-        
+
         // Update state
         setToken(tokens.accessToken);
         setVendor(vendorData);
-        
+
+        // Register for push notifications
+        registerFCMToken('vendor');
+
         return {
           success: true,
           message: response.message || 'Login successful',
@@ -113,15 +119,18 @@ export const VendorAuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
+      // Unregister push token before clearing auth
+      await unregisterFCMToken('vendor');
+
       // Clear local storage
       localStorage.removeItem('vendorAccessToken');
       localStorage.removeItem('vendorRefreshToken');
       localStorage.removeItem('vendor');
-      
+
       // Clear state
       setToken(null);
       setVendor(null);
-      
+
       // Redirect to login
       window.location.href = '/vendorlogin';
     }

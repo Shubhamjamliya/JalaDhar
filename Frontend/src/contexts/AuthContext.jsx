@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { userLogin, userLogout, userRegister } from '../services/authApi';
+import { registerFCMToken, unregisterFCMToken } from '../services/pushNotificationService';
 
 const AuthContext = createContext(null);
 
@@ -25,6 +26,8 @@ export const AuthProvider = ({ children }) => {
       try {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
+        // Register push token if authenticated
+        registerFCMToken('user');
       } catch (error) {
         console.error('Error parsing stored user:', error);
         localStorage.removeItem('accessToken');
@@ -84,6 +87,9 @@ export const AuthProvider = ({ children }) => {
         setToken(tokens.accessToken);
         setUser(userData);
 
+        // Register for push notifications
+        registerFCMToken('user');
+
         return {
           success: true,
           message: response.message || 'Login successful',
@@ -113,6 +119,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
+      // Unregister push token before clearing auth
+      await unregisterFCMToken('user');
+
       // Clear local storage
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
