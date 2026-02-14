@@ -163,10 +163,10 @@ app.use('/api/ratings', require('./routes/rating-routes/rating.routes'));
 app.use('/api/settings', require('./routes/settings.routes'));
 
 // Notification routes
-app.use('/api/notifications', require('./routes/notification.routes'));
+// app.use('/api/notifications', require('./routes/notification.routes'));
 
 // FCM Token routes
-app.use('/api/fcm-tokens', require('./routes/fcmToken.routes'));
+// app.use('/api/fcm-tokens', require('./routes/fcmToken.routes'));
 
 // 404 handler
 app.use((req, res) => {
