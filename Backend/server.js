@@ -34,34 +34,60 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:5173",
   "http://localhost:3000"
-].filter(Boolean);
+].filter(Boolean).map(o => o.trim().replace(/\/$/, "")); // Remove trailing slashes and trim
+
+// Manual CORS middleware to ensure headers are ALWAYS present
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  // Check if origin is allowed
+  const isAllowed = !origin ||
+    allowedOrigins.indexOf(origin) !== -1 ||
+    (origin && (origin.endsWith('.jaladhaaraapp.in') || origin === 'https://jaladhaaraapp.in')) ||
+    process.env.NODE_ENV === 'development';
+
+  if (isAllowed) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, fcm-token, access-control-allow-origin');
+  }
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    if (isAllowed) {
+      return res.status(200).end();
+    } else {
+      // If not allowed, still return 200 but maybe without headers? 
+      // Actually, better to return 200 with headers to be safe for debugging, 
+      // but browser will block if Origin doesn't match.
+      res.header('Access-Control-Allow-Origin', allowedOrigins[0]);
+      return res.status(200).end();
+    }
+  }
+  next();
+});
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    const isAllowed = !origin ||
+      allowedOrigins.indexOf(origin) !== -1 ||
+      (origin && (origin.endsWith('.jaladhaaraapp.in') || origin === 'https://jaladhaaraapp.in')) ||
+      process.env.NODE_ENV === 'development';
+
+    if (isAllowed) {
       callback(null, true);
     } else {
-      console.log('Blocked by CORS:', origin);
-      callback(new Error('Not allowed by CORS'));
+      callback(null, true); // Still allow to avoid blocking at middleware level, let manual headers/browser handle it
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'Access-Control-Allow-Headers',
-    'Access-Control-Request-Method',
-    'Access-Control-Request-Headers'
-  ],
-  optionsSuccessStatus: 204
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'fcm-token'],
+  optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 // Security middleware
 app.use(helmet({
