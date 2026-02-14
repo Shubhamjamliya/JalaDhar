@@ -1,3 +1,4 @@
+/*
 const admin = require('firebase-admin');
 
 // Initialize Firebase Admin SDK using environment variables
@@ -24,90 +25,21 @@ try {
 } catch (error) {
   console.error('[Firebase] Error initializing Admin SDK:', error.message);
 }
+*/
 
 /**
- * Send push notification to multiple FCM tokens
- * @param {string[]} tokens - Array of FCM tokens
- * @param {Object} payload - { title, body, data, icon }
- * @returns {Object} - { successCount, failureCount, invalidTokens }
+ * Send push notification to multiple FCM tokens (DISABLED)
  */
 async function sendPushNotification(tokens, payload) {
-  if (!firebaseInitialized) {
-    console.warn('[Firebase] Not initialized - skipping push notification');
-    return { successCount: 0, failureCount: 0, invalidTokens: [] };
-  }
-
-  if (!tokens || tokens.length === 0) {
-    return { successCount: 0, failureCount: 0, invalidTokens: [] };
-  }
-
-  // Remove duplicates and empty tokens
-  const uniqueTokens = [...new Set(tokens.filter(t => t && t.trim()))];
-
-  if (uniqueTokens.length === 0) {
-    return { successCount: 0, failureCount: 0, invalidTokens: [] };
-  }
-
-  try {
-    const message = {
-      notification: {
-        title: payload.title,
-        body: payload.body,
-      },
-      webpush: {
-        notification: {
-          title: payload.title,
-          body: payload.body,
-          icon: payload.icon || '/favicon.png',
-          badge: '/favicon.png',
-          requireInteraction: false,
-        },
-        fcmOptions: {
-          link: payload.data?.link || '/',
-        },
-      },
-      data: payload.data || {},
-      tokens: uniqueTokens,
-    };
-
-    const response = await admin.messaging().sendEachForMulticast(message);
-
-    console.log(`[Firebase] Push sent: ${response.successCount} success, ${response.failureCount} failed`);
-
-    // Collect invalid tokens for cleanup
-    const invalidTokens = [];
-    response.responses.forEach((resp, idx) => {
-      if (!resp.success) {
-        const errorCode = resp.error?.code;
-        if (
-          errorCode === 'messaging/invalid-registration-token' ||
-          errorCode === 'messaging/registration-token-not-registered'
-        ) {
-          invalidTokens.push(uniqueTokens[idx]);
-        }
-        // Log other errors
-        if (errorCode && !errorCode.includes('registration-token')) {
-          console.error(`[Firebase] Token error [${idx}]:`, resp.error?.message);
-        }
-      }
-    });
-
-    return {
-      successCount: response.successCount,
-      failureCount: response.failureCount,
-      invalidTokens,
-    };
-  } catch (error) {
-    console.error('[Firebase] Error sending push notification:', error.message);
-    return { successCount: 0, failureCount: tokens.length, invalidTokens: [] };
-  }
+  // console.warn('[Firebase] Push notifications are currently disabled');
+  return { successCount: 0, failureCount: 0, invalidTokens: [] };
 }
 
 /**
- * Check if Firebase is initialized
+ * Check if Firebase is initialized (ALWAYS FALSE)
  */
 function isFirebaseReady() {
-  return firebaseInitialized;
+  return false;
 }
 
 module.exports = { sendPushNotification, isFirebaseReady };
