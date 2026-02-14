@@ -295,7 +295,7 @@ export default function VendorDashboard() {
 
             {/* Services Overview - Four Circular Icons */}
             <section className="my-6 flex justify-around">
-                {/* Pendings */}
+                {/* New Requests */}
                 <div
                     onClick={() => navigate("/vendor/requests")}
                     className="flex flex-col items-center gap-2 cursor-pointer active:scale-[0.95] transition-transform"
@@ -308,10 +308,10 @@ export default function VendorDashboard() {
                         </span>
                     </div>
                     <span className="text-xs font-bold text-gray-800 text-center">
-                        Pendings
+                        New Requests
                     </span>
                     <p className="text-[10px] text-[#6B7280] -mt-1">
-                        {pendingRequests} pending
+                        {pendingRequests} new
                     </p>
                 </div>
 
