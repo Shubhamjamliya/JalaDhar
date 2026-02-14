@@ -1378,6 +1378,7 @@ const processFinalSettlement = async (req, res) => {
     const { bookingId } = req.params;
     const adminId = req.userId;
     const { incentive = 0, penalty = 0, refundAmount = 0 } = req.body;
+    const io = getIO();
 
     const booking = await Booking.findById(bookingId)
       .populate('vendor', 'name email bankDetails paymentCollection')
@@ -1509,20 +1510,32 @@ const processFinalSettlement = async (req, res) => {
     // Send notifications
     try {
       // Notify Vendor
-      await sendNotification(
-        booking.vendor._id || booking.vendor,
-        'PAYMENT_RECEIVED',
-        `Final Settlement of ₹${vendorSettlementAmount} processed for booking #${booking._id.toString().slice(-6)}`,
-        { bookingId: booking._id, type: 'PAYMENT' }
-      );
+      await sendNotification({
+        recipient: booking.vendor._id || booking.vendor,
+        recipientModel: 'Vendor',
+        type: 'PAYMENT_RECEIVED',
+        title: 'Payment Received',
+        message: `Final Settlement of ₹${vendorSettlementAmount} processed for booking #${booking._id.toString().slice(-6)}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: { bookingId: booking._id, type: 'PAYMENT' }
+      }, io);
 
       // Notify User
-      await sendNotification(
-        booking.user._id || booking.user,
-        'BOOKING_COMPLETED',
-        `Your booking #${booking._id.toString().slice(-6)} is now completed. Thank you for using JalaDhar!`,
-        { bookingId: booking._id }
-      );
+      await sendNotification({
+        recipient: booking.user._id || booking.user,
+        recipientModel: 'User',
+        type: 'BOOKING_COMPLETED',
+        title: 'Booking Completed',
+        message: `Your booking #${booking._id.toString().slice(-6)} is now completed. Thank you for using JalaDhar!`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: { bookingId: booking._id }
+      }, io);
 
       // Send email to vendor
       if (booking.vendor.email) {
@@ -1636,6 +1649,7 @@ const processUserRefund = async (req, res) => {
     const { bookingId } = req.params;
     const adminId = req.userId;
     const { refundAmount } = req.body;
+    const io = getIO();
 
     const booking = await Booking.findById(bookingId)
       .populate('user', 'name email phone')
@@ -1724,12 +1738,18 @@ const processUserRefund = async (req, res) => {
 
     // Notify User
     try {
-      await sendNotification(
-        booking.user._id || booking.user,
-        'REFUND_PROCESSED',
-        `Refund of ₹${finalRefundAmount.toLocaleString('en-IN')} has been credited to your wallet. Booking #${booking._id.toString().slice(-6)} is now completed.`,
-        { bookingId: booking._id, type: 'REFUND' }
-      );
+      await sendNotification({
+        recipient: booking.user._id || booking.user,
+        recipientModel: 'User',
+        type: 'REFUND_PROCESSED',
+        title: 'Refund Processed',
+        message: `Refund of ₹${finalRefundAmount.toLocaleString('en-IN')} has been credited to your wallet. Booking #${booking._id.toString().slice(-6)} is now completed.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: { bookingId: booking._id, type: 'REFUND' }
+      }, io);
     } catch (notifyError) {
       console.error('Failed to send refund notification:', notifyError);
     }

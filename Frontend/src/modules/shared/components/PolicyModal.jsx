@@ -1,12 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoClose, IoInformationCircleOutline, IoShieldCheckmarkOutline, IoRefreshCircleOutline } from "react-icons/io5";
+import { getPublicSettings } from "../../../services/settingsApi";
 
 const PolicyModal = ({ type, onClose }) => {
+  const [loading, setLoading] = useState(true);
+  const [policyData, setPolicyData] = useState(null);
+
+  useEffect(() => {
+    const fetchPolicy = async () => {
+      try {
+        const response = await getPublicSettings('policy');
+        if (response.success && response.data.settings) {
+          const settings = response.data.settings;
+          let key = '';
+          if (type === 'booking') key = 'booking_policy';
+          else if (type === 'refund') key = 'cancellation_policy';
+          else if (type === 'terms') key = 'terms_of_service';
+
+          const policy = settings.find(s => s.key === key);
+          if (policy) {
+            setPolicyData(policy.value);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching policy:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPolicy();
+  }, [type]);
+
   const policies = {
     booking: {
       title: "Booking & Payment Policy",
       icon: <IoInformationCircleOutline className="text-blue-500" />,
-      content: (
+      fallback: (
         <ul className="list-disc pl-5 space-y-3">
           <li><strong>Advance Payment:</strong> A 40% advance payment of the total service fee is required to confirm your booking slot.</li>
           <li><strong>Payment Confirmation:</strong> Your booking is only confirmed once the payment is successfully processed.</li>
@@ -18,7 +48,7 @@ const PolicyModal = ({ type, onClose }) => {
     refund: {
       title: "Cancellation & Refund Policy",
       icon: <IoRefreshCircleOutline className="text-orange-500" />,
-      content: (
+      fallback: (
         <ul className="list-disc pl-5 space-y-3">
           <li><strong>Cancellation Before 24h:</strong> Full refund of the advance payment if cancelled at least 24 hours before the scheduled visit.</li>
           <li><strong>Late Cancellation:</strong> 50% of the advance amount will be forfeited if cancelled between 12-24 hours before the scheduled time.</li>
@@ -30,7 +60,7 @@ const PolicyModal = ({ type, onClose }) => {
     terms: {
       title: "Terms of Service",
       icon: <IoShieldCheckmarkOutline className="text-green-500" />,
-      content: (
+      fallback: (
         <ul className="list-disc pl-5 space-y-3">
           <li>The location provided must be accurate and accessible for the expert and equipment.</li>
           <li>While we use scientific methods, water yield results are estimates based on geographical data and do not guarantee 100% success.</li>
@@ -56,7 +86,17 @@ const PolicyModal = ({ type, onClose }) => {
           </button>
         </div>
         <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 leading-relaxed mb-6 overflow-y-auto max-h-[60vh]">
-          {policy.content}
+          {loading ? (
+            <div className="flex justify-center p-8">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            policyData ? (
+              <div dangerouslySetInnerHTML={{ __html: policyData }} className="policy-content" />
+            ) : (
+              policy.fallback
+            )
+          )}
         </div>
         <button
           onClick={onClose}

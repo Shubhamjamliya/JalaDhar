@@ -1,4 +1,5 @@
 const Booking = require('../../models/Booking');
+const { validationResult } = require('express-validator');
 const { BOOKING_STATUS } = require('../../utils/constants');
 const { uploadToCloudinary } = require('../../services/cloudinaryService');
 const { Readable } = require('stream');
@@ -17,9 +18,16 @@ const getVendorBookings = async (req, res) => {
 
     const query = { vendor: vendorId };
     if (status) {
-      // For COMPLETED status, check both status and vendorStatus
-      // For other statuses, use vendorStatus
-      if (status === 'COMPLETED') {
+      const statusArray = status.split(',');
+      if (statusArray.includes('COMPLETED')) {
+        // If COMPLETED is in the list, we need to check both fields for it
+        query.$or = [
+          { vendorStatus: { $in: statusArray } },
+          { status: 'COMPLETED' }
+        ];
+      } else if (statusArray.length > 1) {
+        query.vendorStatus = { $in: statusArray };
+      } else if (status === 'COMPLETED') {
         query.$or = [
           { status: status },
           { vendorStatus: status }
@@ -177,6 +185,15 @@ const rejectBooking = async (req, res) => {
     const vendorId = req.userId;
 
     console.log(`[rejectBooking] Attempting to reject booking ${bookingId} for vendor ${vendorId}`);
+
+    // Check validation results
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: errors.array()[0].msg
+      });
+    }
 
     if (!rejectionReason || rejectionReason.trim().length < 10) {
       return res.status(400).json({
@@ -378,6 +395,15 @@ const markVisitedAndUploadReport = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const vendorId = req.userId;
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: errors.array()[0].msg
+      });
+    }
+
     const {
       waterFound,
       machineReadings,
@@ -617,6 +643,8 @@ const markAsCompleted = async (req, res) => {
 
     // Update booking status
     booking.status = BOOKING_STATUS.COMPLETED;
+    booking.vendorStatus = BOOKING_STATUS.COMPLETED;
+    booking.userStatus = BOOKING_STATUS.COMPLETED;
     booking.completedAt = new Date();
     await booking.save();
 
@@ -701,6 +729,14 @@ const requestTravelCharges = async (req, res) => {
     const { bookingId } = req.params;
     const vendorId = req.userId;
     const { amount, reason } = req.body;
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: errors.array()[0].msg
+      });
+    }
 
     if (!amount || amount <= 0) {
       return res.status(400).json({

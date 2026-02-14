@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
     IoChevronBackOutline,
@@ -44,6 +44,7 @@ export default function VendorBookingDetails() {
     const [showRejectConfirm, setShowRejectConfirm] = useState(false);
     const [showVisitConfirm, setShowVisitConfirm] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
+    const rejectionReasonRef = useRef("");
     const [showTravelChargesModal, setShowTravelChargesModal] = useState(false);
     const [showCancelInput, setShowCancelInput] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -159,22 +160,27 @@ export default function VendorBookingDetails() {
 
     const handleRejectionReasonSubmit = (reason) => {
         setRejectionReason(reason);
+        rejectionReasonRef.current = reason;
         setShowRejectInput(false);
         setShowRejectConfirm(true);
     };
 
     const handleRejectConfirm = async () => {
+        const currentReason = rejectionReasonRef.current || rejectionReason;
+        if (!currentReason) return;
+
         setShowRejectConfirm(false);
         const loadingToast = toast.showLoading("Rejecting booking...");
         try {
             setActionLoading(true);
 
-            const response = await rejectBooking(bookingId, rejectionReason);
+            const response = await rejectBooking(bookingId, currentReason);
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking rejected successfully.");
                 setRejectionReason("");
+                rejectionReasonRef.current = "";
                 setTimeout(() => {
                     navigate("/vendor/bookings");
                 }, 2000);

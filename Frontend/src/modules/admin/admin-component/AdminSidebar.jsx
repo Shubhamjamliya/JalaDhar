@@ -98,6 +98,13 @@ const navItems = [
         roles: ["SUPER_ADMIN"]
     },
     {
+        id: "policies",
+        label: "Policies",
+        to: "/admin/policies",
+        Icon: IoDocumentTextOutline,
+        roles: ["SUPER_ADMIN", "ADMIN"]
+    },
+    {
         id: "settings",
         label: "Settings",
         to: "/admin/settings",
@@ -127,7 +134,7 @@ export default function AdminSidebar() {
         const currentPath = location.pathname;
 
         // For routes that should match exactly
-        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/settings" || path === "/admin/approvals" || path === "/admin/bookings" || path === "/admin/ratings" || path === "/admin/disputes") {
+        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/settings" || path === "/admin/approvals" || path === "/admin/bookings" || path === "/admin/ratings" || path === "/admin/disputes" || path === "/admin/policies") {
             return currentPath === path || currentPath === path + "/";
         }
 
@@ -348,7 +355,7 @@ export default function AdminSidebar() {
                         const isActive = checkIsActive(item.to);
                         // Use end prop for routes that should match exactly (not sub-routes)
                         // Note: bookings should NOT use end because it has sub-routes (booking details)
-                        const shouldEnd = item.to === "/admin/vendors" || item.to === "/admin/users" || item.to === "/admin/dashboard" || item.to === "/admin/settings" || item.to === "/admin/approvals";
+                        const shouldEnd = item.to === "/admin/vendors" || item.to === "/admin/users" || item.to === "/admin/dashboard" || item.to === "/admin/settings" || item.to === "/admin/approvals" || item.to === "/admin/policies";
 
                         return (
                             <NavLink

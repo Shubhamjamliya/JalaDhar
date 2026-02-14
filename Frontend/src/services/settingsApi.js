@@ -13,3 +13,17 @@ export const getPublicSettings = async (category) => {
     throw error;
   }
 };
+
+/**
+ * Update a setting (Admin only)
+ * @param {string} key - Setting key
+ * @param {any} value - New value
+ */
+export const updateSetting = async (key, value) => {
+  try {
+    const response = await api.put('/settings', { key, value });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

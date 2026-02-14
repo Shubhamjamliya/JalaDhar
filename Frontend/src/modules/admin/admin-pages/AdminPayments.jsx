@@ -174,6 +174,8 @@ export default function AdminPayments({ defaultTab = "overview" }) {
     const [showVendorApproveModal, setShowVendorApproveModal] = useState(false);
     const [showVendorRejectModal, setShowVendorRejectModal] = useState(false);
     const [vendorRejectionReason, setVendorRejectionReason] = useState("");
+    const [vendorWithdrawalSubTab, setVendorWithdrawalSubTab] = useState("pending"); // "pending" or "completed"
+    const [userWithdrawalSubTab, setUserWithdrawalSubTab] = useState("pending"); // "pending" or "completed"
     // Transaction Info Modal states
     const [showTransactionModal, setShowTransactionModal] = useState(false);
     const [transactionModalType, setTransactionModalType] = useState(null); // "vendor" or "user"
@@ -223,7 +225,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
 
     useEffect(() => {
         loadPaymentData();
-    }, [activeTab, userFilters, vendorFilters, adminTransactionsFilters, userTransactionsFilters, vendorTransactionsFilters, userPagination.currentPage, vendorPagination.currentPage, adminTransactionsPagination.currentPage, userTransactionsPagination.currentPage, vendorTransactionsPagination.currentPage, location.pathname, finalSettlementSubTab, finalSettlementPagination.currentPage, finalSettlementHistoryPagination.currentPage, userFinalSettlementSubTab, userFinalSettlementPagination.currentPage, userFinalSettlementHistoryPagination.currentPage]);
+    }, [activeTab, userFilters, vendorFilters, adminTransactionsFilters, userTransactionsFilters, vendorTransactionsFilters, userPagination.currentPage, vendorPagination.currentPage, adminTransactionsPagination.currentPage, userTransactionsPagination.currentPage, vendorTransactionsPagination.currentPage, location.pathname, finalSettlementSubTab, finalSettlementPagination.currentPage, finalSettlementHistoryPagination.currentPage, userFinalSettlementSubTab, userFinalSettlementPagination.currentPage, userFinalSettlementHistoryPagination.currentPage, vendorWithdrawalSubTab, userWithdrawalSubTab]);
 
     // Refetch when page becomes visible (user switches tabs/windows)
     useEffect(() => {
@@ -2294,21 +2296,49 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                 {/* Vendor Withdrawals Tab */}
                 {activeTab === "vendor-withdrawals" && (
                     <div>
+                        <div className="flex gap-4 mb-6 border-b border-gray-200">
+                            <button
+                                onClick={() => setVendorWithdrawalSubTab("pending")}
+                                className={`pb-2 px-4 transition-all ${vendorWithdrawalSubTab === "pending"
+                                    ? "border-b-2 border-teal-500 text-teal-600 font-bold"
+                                    : "text-gray-500 hover:text-gray-700 font-medium"
+                                    }`}
+                            >
+                                Pending Requests
+                            </button>
+                            <button
+                                onClick={() => setVendorWithdrawalSubTab("completed")}
+                                className={`pb-2 px-4 transition-all ${vendorWithdrawalSubTab === "completed"
+                                    ? "border-b-2 border-teal-500 text-teal-600 font-bold"
+                                    : "text-gray-500 hover:text-gray-700 font-medium"
+                                    }`}
+                            >
+                                Completed Requests
+                            </button>
+                        </div>
                         {loading ? (
                             <div className="p-8 text-center">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mx-auto mb-4"></div>
                                 <p className="text-gray-600">Loading vendor withdrawal requests...</p>
                             </div>
-                        ) : vendorWithdrawalRequests.length === 0 ? (
+                        ) : vendorWithdrawalRequests.filter(request =>
+                            vendorWithdrawalSubTab === "pending"
+                                ? (request.status === "PENDING" || request.status === "APPROVED")
+                                : (request.status === "PROCESSED" || request.status === "REJECTED")
+                        ).length === 0 ? (
                             <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-200">
                                 <IoWalletOutline className="text-4xl text-gray-400 mx-auto mb-4" />
-                                <p className="text-gray-600 font-semibold">No vendor withdrawal requests</p>
+                                <p className="text-gray-600 font-semibold">No {vendorWithdrawalSubTab} vendor withdrawal requests</p>
                                 <p className="text-sm text-gray-500 mt-2">No withdrawal requests found</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 {vendorWithdrawalRequests
-                                    .filter(req => req.status === "PENDING" || req.status === "APPROVED")
+                                    .filter(request =>
+                                        vendorWithdrawalSubTab === "pending"
+                                            ? (request.status === "PENDING" || request.status === "APPROVED")
+                                            : (request.status === "PROCESSED" || request.status === "REJECTED")
+                                    )
                                     .map((request) => (
                                         <div
                                             key={request._id}
@@ -2750,21 +2780,49 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                 {/* User Withdrawal Requests Tab */}
                 {activeTab === "user-withdrawals" && (
                     <div>
+                        <div className="flex gap-4 mb-6 border-b border-gray-200">
+                            <button
+                                onClick={() => setUserWithdrawalSubTab("pending")}
+                                className={`pb-2 px-4 transition-all ${userWithdrawalSubTab === "pending"
+                                    ? "border-b-2 border-blue-500 text-blue-600 font-bold"
+                                    : "text-gray-500 hover:text-gray-700 font-medium"
+                                    }`}
+                            >
+                                Pending Requests
+                            </button>
+                            <button
+                                onClick={() => setUserWithdrawalSubTab("completed")}
+                                className={`pb-2 px-4 transition-all ${userWithdrawalSubTab === "completed"
+                                    ? "border-b-2 border-blue-500 text-blue-600 font-bold"
+                                    : "text-gray-500 hover:text-gray-700 font-medium"
+                                    }`}
+                            >
+                                Completed Requests
+                            </button>
+                        </div>
                         {loading ? (
                             <div className="p-8 text-center">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
                                 <p className="text-gray-600">Loading user withdrawal requests...</p>
                             </div>
-                        ) : userWithdrawalRequests.length === 0 ? (
+                        ) : userWithdrawalRequests.filter(request =>
+                            userWithdrawalSubTab === "pending"
+                                ? (request.status === "PENDING" || request.status === "APPROVED")
+                                : (request.status === "PROCESSED" || request.status === "REJECTED")
+                        ).length === 0 ? (
                             <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-200">
                                 <IoWalletOutline className="text-4xl text-gray-400 mx-auto mb-4" />
-                                <p className="text-gray-600 font-semibold">No user withdrawal requests</p>
+                                <p className="text-gray-600 font-semibold">No {userWithdrawalSubTab} user withdrawal requests</p>
                                 <p className="text-sm text-gray-500 mt-2">No withdrawal requests found</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 {userWithdrawalRequests
-                                    .filter(req => req.status === "PENDING" || req.status === "APPROVED" || req.status === "PROCESSED" || req.status === "REJECTED")
+                                    .filter(request =>
+                                        userWithdrawalSubTab === "pending"
+                                            ? (request.status === "PENDING" || request.status === "APPROVED")
+                                            : (request.status === "PROCESSED" || request.status === "REJECTED")
+                                    )
                                     .map((request) => (
                                         <div
                                             key={request._id}
@@ -3839,15 +3897,16 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                         </div>
                     </div>
                 )}
-            </div>
+            </div >
 
             {/* Pay First Installment Confirmation Modal */}
-            <ConfirmModal
+            < ConfirmModal
                 isOpen={showPayFirstInstallConfirm}
                 onClose={() => {
                     setShowPayFirstInstallConfirm(false);
                     setSelectedBookingId(null);
-                }}
+                }
+                }
                 onConfirm={handlePayFirstInstallConfirm}
                 title="Pay First Installment"
                 message="Are you sure you want to pay first installment (50%) to the vendor? This will change vendor status to COMPLETED."
@@ -3857,7 +3916,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
             />
 
             {/* Process Refund Confirmation Modal */}
-            <ConfirmModal
+            < ConfirmModal
                 isOpen={showProcessRefundConfirm}
                 onClose={() => setShowProcessRefundConfirm(false)}
                 onConfirm={handleProcessRefundConfirm}
@@ -3869,7 +3928,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
             />
 
             {/* Pay Second Installment Confirmation Modal */}
-            <ConfirmModal
+            < ConfirmModal
                 isOpen={showPaySecondInstallConfirm}
                 onClose={() => setShowPaySecondInstallConfirm(false)}
                 onConfirm={handlePaySecondInstallConfirm}
@@ -3891,7 +3950,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
             />
 
             {/* Vendor Withdrawal Request Modals */}
-            <ConfirmModal
+            < ConfirmModal
                 isOpen={showVendorApproveModal}
                 onClose={() => {
                     setShowVendorApproveModal(false);
@@ -3992,197 +4051,214 @@ export default function AdminPayments({ defaultTab = "overview" }) {
             />
 
             {/* Final Settlement Modal */}
-            {showFinalSettlementModal && selectedFinalSettlementBooking && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-2xl font-bold text-gray-800">
-                                    {selectedFinalSettlementBooking.borewellResult?.status === "SUCCESS"
-                                        ? "Add Reward"
-                                        : "Add Penalty"}
-                                </h2>
-                                <button
-                                    onClick={() => {
-                                        setShowFinalSettlementModal(false);
-                                        setSelectedFinalSettlementBooking(null);
-                                        setFinalSettlementRewardAmount("");
-                                        setFinalSettlementPenaltyAmount("");
-                                        setFinalSettlementNotes("");
-                                    }}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <IoCloseCircleOutline className="text-2xl" />
-                                </button>
-                            </div>
-
-                            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                                <p className="text-sm text-gray-600 mb-2">Booking Details</p>
-                                <p className="text-sm font-semibold text-gray-800">
-                                    Booking #{selectedFinalSettlementBooking._id.toString().slice(-6)}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                    Vendor: {selectedFinalSettlementBooking.vendor?.name}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                    Borewell Result: <span className={`font-semibold ${selectedFinalSettlementBooking.borewellResult?.status === "SUCCESS"
-                                        ? "text-green-600"
-                                        : "text-red-600"
-                                        }`}>
-                                        {selectedFinalSettlementBooking.borewellResult?.status}
-                                    </span>
-                                </p>
-                            </div>
-
-                            {selectedFinalSettlementBooking.borewellResult?.status === "SUCCESS" ? (
-                                <div className="mb-4">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Reward Amount (₹)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={finalSettlementRewardAmount}
-                                        onChange={(e) => {
-                                            setFinalSettlementRewardAmount(e.target.value);
-                                            setFinalSettlementPenaltyAmount("");
-                                        }}
-                                        placeholder="Enter reward amount"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    />
-                                </div>
-                            ) : (
-                                <div className="mb-4">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Penalty Amount (₹)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={finalSettlementPenaltyAmount}
-                                        onChange={(e) => {
-                                            setFinalSettlementPenaltyAmount(e.target.value);
+            {
+                showFinalSettlementModal && selectedFinalSettlementBooking && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-800">
+                                        {selectedFinalSettlementBooking.borewellResult?.status === "SUCCESS"
+                                            ? "Add Reward"
+                                            : "Add Penalty"}
+                                    </h2>
+                                    <button
+                                        onClick={() => {
+                                            setShowFinalSettlementModal(false);
+                                            setSelectedFinalSettlementBooking(null);
                                             setFinalSettlementRewardAmount("");
+                                            setFinalSettlementPenaltyAmount("");
+                                            setFinalSettlementNotes("");
                                         }}
-                                        placeholder="Enter penalty amount"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    />
+                                        className="text-gray-400 hover:text-gray-600"
+                                    >
+                                        <IoCloseCircleOutline className="text-2xl" />
+                                    </button>
                                 </div>
-                            )}
 
-                            <div className="mb-6">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Notes (Optional)
-                                </label>
-                                <textarea
-                                    value={finalSettlementNotes}
-                                    onChange={(e) => setFinalSettlementNotes(e.target.value)}
-                                    placeholder="Add any notes about this settlement..."
-                                    rows={3}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                />
-                            </div>
-
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => {
-                                        setShowFinalSettlementModal(false);
-                                        setSelectedFinalSettlementBooking(null);
-                                        setFinalSettlementRewardAmount("");
-                                        setFinalSettlementPenaltyAmount("");
-                                        setFinalSettlementNotes("");
-                                    }}
-                                    className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleProcessFinalSettlement}
-                                    disabled={processingFinalSettlement || (
-                                        (finalSettlementRewardAmount === "" || parseFloat(finalSettlementRewardAmount) <= 0) &&
-                                        (finalSettlementPenaltyAmount === "" || parseFloat(finalSettlementPenaltyAmount) <= 0)
-                                    )}
-                                    className={`flex-1 px-4 py-3 rounded-lg transition-colors font-semibold ${selectedFinalSettlementBooking.borewellResult?.status === "SUCCESS"
-                                        ? "bg-green-600 text-white hover:bg-green-700"
-                                        : "bg-red-600 text-white hover:bg-red-700"
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                >
-                                    {processingFinalSettlement ? "Processing..." : "Process Settlement"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* User Final Settlement Modal */}
-            {showUserFinalSettlementModal && selectedUserFinalSettlementBooking && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-2xl font-bold text-gray-800">
-                                    {selectedUserFinalSettlementBooking.borewellResult?.status === "SUCCESS"
-                                        ? "Complete Settlement"
-                                        : "Pay Remittance"}
-                                </h2>
-                                <button
-                                    onClick={() => {
-                                        setShowUserFinalSettlementModal(false);
-                                        setSelectedUserFinalSettlementBooking(null);
-                                        setUserFinalSettlementRemittanceAmount("");
-                                        setUserFinalSettlementNotes("");
-                                    }}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <IoCloseCircleOutline className="text-2xl" />
-                                </button>
-                            </div>
-
-                            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                                <p className="text-sm text-gray-600 mb-2">Booking Details</p>
-                                <p className="text-sm font-semibold text-gray-800">
-                                    Booking #{selectedUserFinalSettlementBooking._id.toString().slice(-6)}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                    User: {selectedUserFinalSettlementBooking.user?.name}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                    Borewell Result: <span className={`font-semibold ${selectedUserFinalSettlementBooking.borewellResult?.status === "SUCCESS"
-                                        ? "text-green-600"
-                                        : "text-red-600"
-                                        }`}>
-                                        {selectedUserFinalSettlementBooking.borewellResult?.status}
-                                    </span>
-                                </p>
-                                {selectedUserFinalSettlementBooking.borewellResult?.status === "FAILED" && (
-                                    <p className="text-sm text-gray-600 mt-2">
-                                        Remaining Amount: <span className="font-semibold">{formatCurrency(selectedUserFinalSettlementBooking.payment?.remainingAmount || 0)}</span>
+                                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                                    <p className="text-sm text-gray-600 mb-2">Booking Details</p>
+                                    <p className="text-sm font-semibold text-gray-800">
+                                        Booking #{selectedFinalSettlementBooking._id.toString().slice(-6)}
                                     </p>
-                                )}
-                            </div>
+                                    <p className="text-sm text-gray-600">
+                                        Vendor: {selectedFinalSettlementBooking.vendor?.name}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                        Borewell Result: <span className={`font-semibold ${selectedFinalSettlementBooking.borewellResult?.status === "SUCCESS"
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                            }`}>
+                                            {selectedFinalSettlementBooking.borewellResult?.status}
+                                        </span>
+                                    </p>
+                                </div>
 
-                            {selectedUserFinalSettlementBooking.borewellResult?.status === "FAILED" ? (
-                                <>
+                                {selectedFinalSettlementBooking.borewellResult?.status === "SUCCESS" ? (
                                     <div className="mb-4">
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Remittance Amount (₹)
+                                            Reward Amount (₹)
                                         </label>
                                         <input
                                             type="number"
                                             min="0"
                                             step="0.01"
-                                            value={userFinalSettlementRemittanceAmount}
-                                            onChange={(e) => setUserFinalSettlementRemittanceAmount(e.target.value)}
-                                            placeholder="Enter remittance amount"
+                                            value={finalSettlementRewardAmount}
+                                            onChange={(e) => {
+                                                setFinalSettlementRewardAmount(e.target.value);
+                                                setFinalSettlementPenaltyAmount("");
+                                            }}
+                                            placeholder="Enter reward amount"
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         />
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Max: {formatCurrency(selectedUserFinalSettlementBooking.payment?.remainingAmount || 0)}
-                                        </p>
                                     </div>
+                                ) : (
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Penalty Amount (₹)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={finalSettlementPenaltyAmount}
+                                            onChange={(e) => {
+                                                setFinalSettlementPenaltyAmount(e.target.value);
+                                                setFinalSettlementRewardAmount("");
+                                            }}
+                                            placeholder="Enter penalty amount"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="mb-6">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Notes (Optional)
+                                    </label>
+                                    <textarea
+                                        value={finalSettlementNotes}
+                                        onChange={(e) => setFinalSettlementNotes(e.target.value)}
+                                        placeholder="Add any notes about this settlement..."
+                                        rows={3}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    />
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setShowFinalSettlementModal(false);
+                                            setSelectedFinalSettlementBooking(null);
+                                            setFinalSettlementRewardAmount("");
+                                            setFinalSettlementPenaltyAmount("");
+                                            setFinalSettlementNotes("");
+                                        }}
+                                        className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleProcessFinalSettlement}
+                                        disabled={processingFinalSettlement || (
+                                            (finalSettlementRewardAmount === "" || parseFloat(finalSettlementRewardAmount) <= 0) &&
+                                            (finalSettlementPenaltyAmount === "" || parseFloat(finalSettlementPenaltyAmount) <= 0)
+                                        )}
+                                        className={`flex-1 px-4 py-3 rounded-lg transition-colors font-semibold ${selectedFinalSettlementBooking.borewellResult?.status === "SUCCESS"
+                                            ? "bg-green-600 text-white hover:bg-green-700"
+                                            : "bg-red-600 text-white hover:bg-red-700"
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    >
+                                        {processingFinalSettlement ? "Processing..." : "Process Settlement"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* User Final Settlement Modal */}
+            {
+                showUserFinalSettlementModal && selectedUserFinalSettlementBooking && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-800">
+                                        {selectedUserFinalSettlementBooking.borewellResult?.status === "SUCCESS"
+                                            ? "Complete Settlement"
+                                            : "Pay Remittance"}
+                                    </h2>
+                                    <button
+                                        onClick={() => {
+                                            setShowUserFinalSettlementModal(false);
+                                            setSelectedUserFinalSettlementBooking(null);
+                                            setUserFinalSettlementRemittanceAmount("");
+                                            setUserFinalSettlementNotes("");
+                                        }}
+                                        className="text-gray-400 hover:text-gray-600"
+                                    >
+                                        <IoCloseCircleOutline className="text-2xl" />
+                                    </button>
+                                </div>
+
+                                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                                    <p className="text-sm text-gray-600 mb-2">Booking Details</p>
+                                    <p className="text-sm font-semibold text-gray-800">
+                                        Booking #{selectedUserFinalSettlementBooking._id.toString().slice(-6)}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                        User: {selectedUserFinalSettlementBooking.user?.name}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                        Borewell Result: <span className={`font-semibold ${selectedUserFinalSettlementBooking.borewellResult?.status === "SUCCESS"
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                            }`}>
+                                            {selectedUserFinalSettlementBooking.borewellResult?.status}
+                                        </span>
+                                    </p>
+                                    {selectedUserFinalSettlementBooking.borewellResult?.status === "FAILED" && (
+                                        <p className="text-sm text-gray-600 mt-2">
+                                            Remaining Amount: <span className="font-semibold">{formatCurrency(selectedUserFinalSettlementBooking.payment?.remainingAmount || 0)}</span>
+                                        </p>
+                                    )}
+                                </div>
+
+                                {selectedUserFinalSettlementBooking.borewellResult?.status === "FAILED" ? (
+                                    <>
+                                        <div className="mb-4">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Remittance Amount (₹)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={userFinalSettlementRemittanceAmount}
+                                                onChange={(e) => setUserFinalSettlementRemittanceAmount(e.target.value)}
+                                                placeholder="Enter remittance amount"
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Max: {formatCurrency(selectedUserFinalSettlementBooking.payment?.remainingAmount || 0)}
+                                            </p>
+                                        </div>
+                                        <div className="mb-6">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Notes (Optional)
+                                            </label>
+                                            <textarea
+                                                value={userFinalSettlementNotes}
+                                                onChange={(e) => setUserFinalSettlementNotes(e.target.value)}
+                                                placeholder="Add any notes about this remittance..."
+                                                rows={3}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                    </>
+                                ) : (
                                     <div className="mb-6">
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                                             Notes (Optional)
@@ -4190,69 +4266,56 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                         <textarea
                                             value={userFinalSettlementNotes}
                                             onChange={(e) => setUserFinalSettlementNotes(e.target.value)}
-                                            placeholder="Add any notes about this remittance..."
+                                            placeholder="Add any notes about this settlement..."
                                             rows={3}
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         />
                                     </div>
-                                </>
-                            ) : (
-                                <div className="mb-6">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Notes (Optional)
-                                    </label>
-                                    <textarea
-                                        value={userFinalSettlementNotes}
-                                        onChange={(e) => setUserFinalSettlementNotes(e.target.value)}
-                                        placeholder="Add any notes about this settlement..."
-                                        rows={3}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    />
-                                </div>
-                            )}
+                                )}
 
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => {
-                                        setShowUserFinalSettlementModal(false);
-                                        setSelectedUserFinalSettlementBooking(null);
-                                        setUserFinalSettlementRemittanceAmount("");
-                                        setUserFinalSettlementNotes("");
-                                    }}
-                                    className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleProcessUserFinalSettlement}
-                                    disabled={
-                                        processingUserFinalSettlement ||
-                                        selectedUserFinalSettlementBooking.finalSettlement?.userSettlementProcessed ||
-                                        (
-                                            selectedUserFinalSettlementBooking.borewellResult?.status === "FAILED" &&
-                                            (userFinalSettlementRemittanceAmount === "" || parseFloat(userFinalSettlementRemittanceAmount) <= 0)
-                                        )
-                                    }
-                                    className={`flex-1 px-4 py-3 rounded-lg transition-colors font-semibold ${selectedUserFinalSettlementBooking.finalSettlement?.userSettlementProcessed
-                                        ? "bg-gray-400 text-white cursor-not-allowed"
-                                        : selectedUserFinalSettlementBooking.borewellResult?.status === "SUCCESS"
-                                            ? "bg-green-600 text-white hover:bg-green-700"
-                                            : "bg-red-600 text-white hover:bg-red-700"
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                >
-                                    {processingUserFinalSettlement
-                                        ? "Processing..."
-                                        : selectedUserFinalSettlementBooking.finalSettlement?.userSettlementProcessed
-                                            ? "Already Completed"
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setShowUserFinalSettlementModal(false);
+                                            setSelectedUserFinalSettlementBooking(null);
+                                            setUserFinalSettlementRemittanceAmount("");
+                                            setUserFinalSettlementNotes("");
+                                        }}
+                                        className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleProcessUserFinalSettlement}
+                                        disabled={
+                                            processingUserFinalSettlement ||
+                                            selectedUserFinalSettlementBooking.finalSettlement?.userSettlementProcessed ||
+                                            (
+                                                selectedUserFinalSettlementBooking.borewellResult?.status === "FAILED" &&
+                                                (userFinalSettlementRemittanceAmount === "" || parseFloat(userFinalSettlementRemittanceAmount) <= 0)
+                                            )
+                                        }
+                                        className={`flex-1 px-4 py-3 rounded-lg transition-colors font-semibold ${selectedUserFinalSettlementBooking.finalSettlement?.userSettlementProcessed
+                                            ? "bg-gray-400 text-white cursor-not-allowed"
                                             : selectedUserFinalSettlementBooking.borewellResult?.status === "SUCCESS"
-                                                ? "Complete Settlement"
-                                                : "Pay Remittance"}
-                                </button>
+                                                ? "bg-green-600 text-white hover:bg-green-700"
+                                                : "bg-red-600 text-white hover:bg-red-700"
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    >
+                                        {processingUserFinalSettlement
+                                            ? "Processing..."
+                                            : selectedUserFinalSettlementBooking.finalSettlement?.userSettlementProcessed
+                                                ? "Already Completed"
+                                                : selectedUserFinalSettlementBooking.borewellResult?.status === "SUCCESS"
+                                                    ? "Complete Settlement"
+                                                    : "Pay Remittance"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </>);
 }
 

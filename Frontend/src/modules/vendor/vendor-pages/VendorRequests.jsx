@@ -13,6 +13,18 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
+import {
+    IoNotificationsOutline,
+    IoTimeOutline,
+    IoCheckmarkCircleOutline,
+    IoStarOutline,
+    IoCloseCircleOutline,
+    IoBriefcaseOutline,
+    IoCalendarOutline,
+    IoLocationOutline,
+    IoChevronForwardOutline,
+    IoEyeOutline
+} from "react-icons/io5";
 
 export default function VendorRequests() {
     const navigate = useNavigate();
@@ -22,6 +34,7 @@ export default function VendorRequests() {
     const [activeTab, setActiveTab] = useState("New");
     const [newRequests, setNewRequests] = useState([]);
     const [confirmedRequests, setConfirmedRequests] = useState([]);
+    const [completedRequests, setCompletedRequests] = useState([]);
     const [historyRequests, setHistoryRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
@@ -31,6 +44,7 @@ export default function VendorRequests() {
     const [showRejectConfirm, setShowRejectConfirm] = useState(false);
     const [selectedBookingId, setSelectedBookingId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState("");
+    const rejectionReasonRef = useRef("");
     const loadAllRequestsRef = useRef(null);
 
     const loadAllRequests = async () => {
@@ -39,36 +53,42 @@ export default function VendorRequests() {
 
             // Load all three types in parallel
             // Fetch both ASSIGNED and PENDING bookings for "New" requests
-            const [assignedResponse, pendingResponse, confirmedResponse, historyResponse] =
+            const [assignedResponse, pendingResponse, confirmedResponse, completedResponse, historyResponse] =
                 await Promise.all([
                     getVendorBookings({ status: "ASSIGNED", limit: 50, sortBy: "createdAt", sortOrder: "desc" }),
-                    getVendorBookings({ status: "PENDING", limit: 50, sortBy: "createdAt", sortOrder: "desc" }),
-                    getVendorBookings({ status: "ACCEPTED", limit: 50 }),
+                    getVendorBookings({ status: "PENDING,AWAITING_ADVANCE", limit: 50, sortBy: "createdAt", sortOrder: "desc" }),
                     getVendorBookings({
-                        status: "COMPLETED",
+                        status: "ACCEPTED,VISITED,REPORT_UPLOADED,AWAITING_PAYMENT,PAYMENT_SUCCESS,PAID_FIRST,BOREWELL_UPLOADED,ADMIN_APPROVED,APPROVED",
                         limit: 50,
-                        sortBy: "completedAt",
+                        sortBy: "createdAt",
+                        sortOrder: "desc"
+                    }),
+                    getVendorBookings({ status: "COMPLETED,FINAL_SETTLEMENT_COMPLETE,SUCCESS,FINAL_SETTLEMENT", limit: 50, sortBy: "createdAt", sortOrder: "desc" }),
+                    getVendorBookings({
+                        status: "CANCELLED,REJECTED,FAILED",
+                        limit: 50,
+                        sortBy: "createdAt",
                         sortOrder: "desc",
                     }),
                 ]);
 
-            // Combine ASSIGNED and PENDING bookings for "New" requests
-            const newBookings = [];
-            if (assignedResponse.success) {
-                newBookings.push(...(assignedResponse.data.bookings || []));
+            if (assignedResponse && assignedResponse.success) {
+                setNewRequests(assignedResponse.data.bookings || []);
             }
-            if (pendingResponse.success) {
-                newBookings.push(...(pendingResponse.data.bookings || []));
+
+            const inProgress = [];
+            if (confirmedResponse && confirmedResponse.success) {
+                inProgress.push(...(confirmedResponse.data.bookings || []));
             }
-            // Sort by creation date (newest first) and remove duplicates
-            const uniqueNewBookings = Array.from(
-                new Map(newBookings.map(booking => [booking._id, booking])).values()
-            ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            setNewRequests(uniqueNewBookings);
-            if (confirmedResponse.success) {
-                setConfirmedRequests(confirmedResponse.data.bookings || []);
+            if (pendingResponse && pendingResponse.success) {
+                inProgress.push(...(pendingResponse.data.bookings || []));
             }
-            if (historyResponse.success) {
+            setConfirmedRequests(inProgress);
+
+            if (completedResponse && completedResponse.success) {
+                setCompletedRequests(completedResponse.data.bookings || []);
+            }
+            if (historyResponse && historyResponse.success) {
                 setHistoryRequests(historyResponse.data.bookings || []);
             }
         } catch (err) {
@@ -186,20 +206,24 @@ export default function VendorRequests() {
 
     const handleRejectionReasonSubmit = (reason) => {
         setRejectionReason(reason);
+        rejectionReasonRef.current = reason;
         setShowRejectInput(false);
         setShowRejectConfirm(true);
     };
 
     const handleRejectConfirm = async () => {
-        if (!selectedBookingId || !rejectionReason) return;
+        const currentReason = rejectionReasonRef.current || rejectionReason;
+        if (!selectedBookingId || !currentReason) return;
+
         const bookingId = selectedBookingId;
         setShowRejectConfirm(false);
+        console.log(`[VendorRequests] Rejecting booking ${bookingId} with reason: ${currentReason}`);
 
         const loadingToast = toast.showLoading("Rejecting booking...");
         try {
             setActionLoading(bookingId);
 
-            const response = await rejectBooking(bookingId, rejectionReason);
+            const response = await rejectBooking(bookingId, currentReason);
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
@@ -224,6 +248,7 @@ export default function VendorRequests() {
             setActionLoading(null);
             setSelectedBookingId(null);
             setRejectionReason("");
+            rejectionReasonRef.current = "";
         }
     };
 
@@ -284,8 +309,10 @@ export default function VendorRequests() {
         switch (activeTab) {
             case "New":
                 return newRequests;
-            case "Confirmed":
+            case "In Progress":
                 return confirmedRequests;
+            case "Completed":
+                return completedRequests;
             case "History":
                 return historyRequests;
             default:
@@ -308,47 +335,46 @@ export default function VendorRequests() {
             <PageContainer>
 
                 {/* Heading */}
-                <h1 className="text-2xl font-bold text-[#3A3A3A] mb-4">
+                <h1 className="text-2xl font-bold text-[#3A3A3A] pt-4 mb-4">
                     Your Booking
                 </h1>
 
-                {/* Tabs */}
-                <div className="flex space-x-2 py-4">
-                    <button
-                        onClick={() => setActiveTab("New")}
-                        className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors ${activeTab === "New"
-                            ? "bg-[#0A84FF] text-white"
-                            : "bg-white text-[#6B7280]"
-                            }`}
-                    >
-                        New ({newRequests.length})
-                    </button>
-                    <button
-                        onClick={() => {
-                            setActiveTab("Confirmed");
-                            // Refresh when switching tabs
-                            setTimeout(() => loadAllRequests(), 100);
-                        }}
-                        className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors ${activeTab === "Confirmed"
-                            ? "bg-[#0A84FF] text-white"
-                            : "bg-white text-[#6B7280]"
-                            }`}
-                    >
-                        Confirmed ({confirmedRequests.length})
-                    </button>
-                    <button
-                        onClick={() => {
-                            setActiveTab("History");
-                            // Refresh when switching tabs
-                            setTimeout(() => loadAllRequests(), 100);
-                        }}
-                        className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors ${activeTab === "History"
-                            ? "bg-[#0A84FF] text-white"
-                            : "bg-white text-[#6B7280]"
-                            }`}
-                    >
-                        History ({historyRequests.length})
-                    </button>
+                <div className="flex bg-white/80 backdrop-blur-md sticky top-20 z-20 -mx-4 px-4 py-3 mb-6 border-b border-gray-100 overflow-x-auto no-scrollbar gap-2">
+                    {[
+                        { id: "New", label: "Requests", count: newRequests.length, icon: <IoNotificationsOutline /> },
+                        { id: "In Progress", label: "In Progress", count: confirmedRequests.length, icon: <IoBriefcaseOutline /> },
+                        { id: "Completed", label: "Completed", count: completedRequests.length, icon: <IoStarOutline /> },
+                        { id: "History", label: "History", count: historyRequests.length, icon: <IoCloseCircleOutline /> }
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => {
+                                setActiveTab(tab.id);
+                                if (["In Progress", "Completed", "History"].includes(tab.id)) {
+                                    setTimeout(() => loadAllRequests(), 100);
+                                }
+                            }}
+                            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-2xl transition-all duration-300 ${activeTab === tab.id
+                                ? "bg-[#0A84FF] text-white shadow-lg shadow-blue-200"
+                                : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                                }`}
+                        >
+                            <span className={`text-lg transition-transform ${activeTab === tab.id ? "rotate-12" : ""}`}>
+                                {tab.icon}
+                            </span>
+                            <span className="text-sm font-bold whitespace-nowrap">
+                                {tab.label}
+                            </span>
+                            {tab.count > 0 && (
+                                <span className={`text-[10px] min-w-[20px] h-[20px] flex items-center justify-center rounded-full font-black ${activeTab === tab.id
+                                    ? "bg-white text-[#0A84FF]"
+                                    : "bg-gray-200 text-gray-600"
+                                    }`}>
+                                    {tab.count}
+                                </span>
+                            )}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Booking Cards */}
@@ -403,10 +429,19 @@ export default function VendorRequests() {
                                             Booking ID:{" "}
                                             {formatBookingId(request._id)}
                                         </p>
-                                        {/* Status Badge for PENDING bookings */}
                                         {(request.vendorStatus || request.status) === "PENDING" && (
                                             <span className="inline-block mt-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
                                                 Waiting for Payment
+                                            </span>
+                                        )}
+                                        {(request.vendorStatus || request.status) === "CANCELLED" && (
+                                            <span className="inline-block mt-1 text-xs font-semibold text-gray-600 bg-gray-50 px-2 py-1 rounded-full">
+                                                Cancelled
+                                            </span>
+                                        )}
+                                        {(request.vendorStatus || request.status) === "REJECTED" && (
+                                            <span className="inline-block mt-1 text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                                                Rejected
                                             </span>
                                         )}
                                     </div>

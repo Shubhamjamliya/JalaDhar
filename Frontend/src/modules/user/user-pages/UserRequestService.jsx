@@ -53,18 +53,52 @@ const PurposeSelection = ({ onSelect }) => {
 };
 
 const TermsAndConditions = ({ purpose, onAccept, onCancel }) => {
+    const [loading, setLoading] = useState(true);
+    const [termsContent, setTermsContent] = useState("");
+
+    useEffect(() => {
+        const fetchTerms = async () => {
+            try {
+                const response = await getPublicSettings('policy');
+                if (response.success && response.data.settings) {
+                    const terms = response.data.settings.find(s => s.key === 'terms_of_service');
+                    if (terms) {
+                        setTermsContent(terms.value);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching terms:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchTerms();
+    }, []);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl animate-in fade-in zoom-in duration-300">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Terms & Conditions</h3>
                 <div className="bg-gray-50 rounded-xl p-4 mb-6 text-sm text-gray-600 space-y-2 max-h-60 overflow-y-auto">
-                    <p>By proceeding with the <strong>{purpose}</strong> service request, you agree to the following:</p>
-                    <ul className="list-disc pl-5 space-y-1">
-                        <li>The service is provided by independent vendors.</li>
-                        <li>Advance payment is required to book the slot.</li>
-                        <li>Cancellation charges may apply as per company policy.</li>
-                        <li>Safe access to the site must be provided by the customer.</li>
-                    </ul>
+                    {loading ? (
+                        <div className="flex justify-center p-4">
+                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                    ) : (
+                        <>
+                            <p>By proceeding with the <strong>{purpose}</strong> service request, you agree to the following:</p>
+                            {termsContent ? (
+                                <div dangerouslySetInnerHTML={{ __html: termsContent }} className="policy-content mt-2" />
+                            ) : (
+                                <ul className="list-disc pl-5 space-y-1">
+                                    <li>The service is provided by independent vendors.</li>
+                                    <li>Advance payment is required to book the slot.</li>
+                                    <li>Cancellation charges may apply as per company policy.</li>
+                                    <li>Safe access to the site must be provided by the customer.</li>
+                                </ul>
+                            )}
+                        </>
+                    )}
                 </div>
                 <div className="flex gap-3">
                     <button
@@ -75,7 +109,8 @@ const TermsAndConditions = ({ purpose, onAccept, onCancel }) => {
                     </button>
                     <button
                         onClick={onAccept}
-                        className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                        disabled={loading}
+                        className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:opacity-50"
                     >
                         I Agree
                     </button>

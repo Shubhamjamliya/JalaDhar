@@ -82,6 +82,7 @@ const AdminBookingDetails = lazy(() => import("./modules/admin/admin-pages/Admin
 const AdminRatings = lazy(() => import("./modules/admin/admin-pages/AdminRatings"));
 const AdminDisputes = lazy(() => import("./modules/admin/admin-pages/AdminDisputes"));
 const AdminTeamManagement = lazy(() => import("./modules/admin/admin-pages/AdminTeamManagement"));
+const AdminPolicies = lazy(() => import("./modules/admin/admin-pages/AdminPolicies"));
 const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavbar"));
 
 function App() {
@@ -720,6 +721,14 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminSettings defaultTab="register" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/policies"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPolicies />
                                                                             </Suspense>
                                                                         }
                                                                     />

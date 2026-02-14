@@ -5,7 +5,20 @@ import { useNotifications } from '../contexts/NotificationContext';
 const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const prevNotificationCountRef = useRef(0);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+
+  // Monitor notifications changes
+  useEffect(() => {
+    if (notifications.length > prevNotificationCountRef.current) {
+      console.log('[NotificationDropdown] New notification detected!', {
+        previous: prevNotificationCountRef.current,
+        current: notifications.length,
+        latest: notifications[0]
+      });
+    }
+    prevNotificationCountRef.current = notifications.length;
+  }, [notifications]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -79,7 +92,7 @@ const NotificationDropdown = () => {
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           ></div>
-          
+
           {/* Dropdown Content */}
           <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-20 max-h-[80vh] flex flex-col">
             {/* Header */}
@@ -106,14 +119,13 @@ const NotificationDropdown = () => {
                   {notifications.map((notification) => {
                     const notificationId = notification.id || notification._id;
                     const isUnread = !notification.isRead;
-                    
+
                     return (
                       <div
                         key={notificationId}
                         onClick={() => handleNotificationClick(notification)}
-                        className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                          isUnread ? 'bg-blue-50' : ''
-                        }`}
+                        className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${isUnread ? 'bg-blue-50' : ''
+                          }`}
                       >
                         <div className="flex items-start gap-3">
                           {/* Icon */}

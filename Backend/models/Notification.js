@@ -23,6 +23,8 @@ const notificationSchema = new mongoose.Schema({
       'BOOKING_VISITED',
       'BOOKING_CANCELLED',
       'BOOKING_COMPLETED',
+      'BOOKING_FAILED',
+      'BOOKING_REASSIGNED',
       // Report & Borewell
       'REPORT_UPLOADED',
       'REPORT_APPROVED',
@@ -34,6 +36,8 @@ const notificationSchema = new mongoose.Schema({
       'PAYMENT_REMAINING_SUCCESS',
       'PAYMENT_FAILED',
       'PAYMENT_REFUNDED',
+      'PAYMENT_RECEIVED',
+      'REFUND_PROCESSED',
       // Settlement
       'FIRST_INSTALLMENT_PAID',
       'SETTLEMENT_APPROVED',

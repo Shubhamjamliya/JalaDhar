@@ -109,10 +109,19 @@ export const NotificationProvider = ({ children }) => {
       // Only add if recipient and model match
       if (notificationRecipientId === currentUserId &&
         notificationRecipientModel === currentUserRole) {
-        setNotifications((prev) => [notification, ...prev]);
-        setUnreadCount((prev) => prev + 1);
+        console.log('[Socket] ✅ Adding notification to state');
+        setNotifications((prev) => {
+          const newNotifications = [notification, ...prev];
+          console.log('[Socket] Updated notifications count:', newNotifications.length);
+          return newNotifications;
+        });
+        setUnreadCount((prev) => {
+          const newCount = prev + 1;
+          console.log('[Socket] Updated unread count:', newCount);
+          return newCount;
+        });
       } else {
-        console.log('[Socket] Notification filtered - not for current user');
+        console.log('[Socket] ❌ Notification filtered - not for current user');
       }
     });
 

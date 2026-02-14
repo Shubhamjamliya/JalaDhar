@@ -8,9 +8,10 @@ import {
     IoKeyOutline,
     IoCheckmarkCircleOutline,
     IoCloseOutline,
-    IoCashOutline,
     IoBusinessOutline,
     IoShieldCheckmarkOutline,
+    IoReaderOutline,
+    IoCashOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { sendAdminRegistrationOTP, registerAdminWithOTP, getAllSettings, updateMultipleSettings } from "../../../services/adminApi";
@@ -264,6 +265,8 @@ export default function AdminSettings({ defaultTab = "general" }) {
         }
     }, [activeTab]);
 
+
+
     // Handle pricing settings update
     const handlePricingSettingsUpdate = async (e) => {
         e.preventDefault();
@@ -319,6 +322,8 @@ export default function AdminSettings({ defaultTab = "general" }) {
             setBillingLoading(false);
         }
     };
+
+
 
     return (
         <div className="min-h-[calc(100vh-5rem)]">
@@ -519,6 +524,8 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                 </form>
                             </div>
                         )}
+
+                        {/* Pricing tab content below */}
                         {activeTab === "pricing" && (
                             <div>
                                 <h2 className="text-xl font-bold text-gray-800 mb-6">Pricing Settings</h2>

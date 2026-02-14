@@ -74,7 +74,7 @@ export default function VendorAllBookingsStatus() {
             const status = booking.vendorStatus || booking.status;
             // Show bookings where user has paid (ASSIGNED = user confirmed by paying)
             // or where booking has progressed beyond user confirmation
-            return !["PENDING", "REJECTED", "CANCELLED"].includes(status);
+            return !["PENDING"].includes(status);
           }
         );
         setBookings(confirmedBookings);
@@ -148,6 +148,8 @@ export default function VendorAllBookingsStatus() {
       COMPLETED: { color: "bg-green-100 text-green-700", label: "Completed" },
       SUCCESS: { color: "bg-green-100 text-green-700", label: "Success" },
       FAILED: { color: "bg-red-100 text-red-700", label: "Failed" },
+      CANCELLED: { color: "bg-gray-100 text-gray-700", label: "Cancelled" },
+      REJECTED: { color: "bg-red-100 text-red-700", label: "Rejected" },
     };
     const config =
       statusConfig[status] || { color: "bg-gray-100 text-gray-700", label: status };
@@ -173,7 +175,7 @@ export default function VendorAllBookingsStatus() {
       <ErrorMessage message={error} />
 
       {/* Heading */}
-      <h1 className="text-2xl font-bold text-[#3A3A3A] mb-4">
+      <h1 className="text-2xl font-bold text-[#3A3A3A] mt-4 pt-4 mb-6">
         All Confirmed Bookings
       </h1>
 
