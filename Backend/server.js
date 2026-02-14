@@ -26,19 +26,47 @@ setTimeout(async () => {
 // Initialize Express app
 const app = express();
 
-// Security middleware
-app.use(helmet());
-
 // CORS configuration
-app.use(cors({
-  origin: [
-    "https://jaladhaaraapp.in",
-    "https://www.jaladhaaraapp.in",
-    process.env.FRONTEND_URL || 'https://jala-dhar.vercel.app'
-  ],
+const allowedOrigins = [
+  "https://jaladhaaraapp.in",
+  "https://www.jaladhaaraapp.in",
+  "https://jala-dhar.vercel.app",
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+  "http://localhost:3000"
+].filter(Boolean);
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      console.log('Blocked by CORS:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Allow-Headers',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
+  optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+// Security middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false // Disable CSP if it causes issues with external APIs/Images
 }));
 
 // Body parser middleware
@@ -110,6 +138,9 @@ app.use('/api/settings', require('./routes/settings.routes'));
 
 // Notification routes
 app.use('/api/notifications', require('./routes/notification.routes'));
+
+// FCM Token routes
+app.use('/api/fcm-tokens', require('./routes/fcmToken.routes'));
 
 // 404 handler
 app.use((req, res) => {
