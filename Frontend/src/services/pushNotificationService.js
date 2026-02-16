@@ -1,5 +1,5 @@
 import { messaging } from "../firebase";
-import { getToken, onMessage } from "firebase/messaging";
+// import { getToken, onMessage } from "firebase/messaging";
 import api from "./api"; // Assuming this is the configured axios instance
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
@@ -8,6 +8,7 @@ const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
  * Register service worker
  */
 async function registerServiceWorker() {
+  /*
   if ("serviceWorker" in navigator) {
     try {
       const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
@@ -20,12 +21,15 @@ async function registerServiceWorker() {
   } else {
     throw new Error("Service Workers are not supported");
   }
+  */
+  return null;
 }
 
 /**
  * Request notification permission
  */
 async function requestNotificationPermission() {
+  /*
   if (!("Notification" in window)) {
     console.warn("This browser does not support notifications.");
     return false;
@@ -39,6 +43,8 @@ async function requestNotificationPermission() {
     console.warn("❌ Notification permission denied");
     return false;
   }
+  */
+  return false;
 }
 
 /**
@@ -46,6 +52,7 @@ async function requestNotificationPermission() {
  * @param {string} userRole - 'user' or 'vendor'
  */
 async function registerFCMToken(userRole = 'user') {
+  /*
   try {
     // 1. Check if notifications are supported
     if (!("Notification" in window)) return;
@@ -91,6 +98,8 @@ async function registerFCMToken(userRole = 'user') {
   } catch (error) {
     console.error("❌ Error registering FCM token:", error);
   }
+  */
+  console.log("[FCM] Push notifications are disabled");
 }
 
 /**
@@ -98,6 +107,8 @@ async function registerFCMToken(userRole = 'user') {
  * @param {Function} onMessageReceived - Custom callback for messages
  */
 function setupForegroundHandler(onMessageReceived) {
+  /*
+  if (!messaging) return () => {};
   return onMessage(messaging, (payload) => {
     console.log("📬 Foreground message received:", payload);
 
@@ -116,12 +127,15 @@ function setupForegroundHandler(onMessageReceived) {
       });
     }
   });
+  */
+  return () => { };
 }
 
 /**
  * Remove FCM token from backend
  */
 async function unregisterFCMToken(userRole = 'user') {
+  /*
   try {
     const storageKey = `fcm_token_registered_${userRole}`;
     const token = localStorage.getItem(storageKey);
@@ -134,6 +148,7 @@ async function unregisterFCMToken(userRole = 'user') {
   } catch (error) {
     console.error("❌ Error unregistering FCM token:", error);
   }
+  */
 }
 
 export {
@@ -142,3 +157,4 @@ export {
   setupForegroundHandler,
   requestNotificationPermission
 };
+

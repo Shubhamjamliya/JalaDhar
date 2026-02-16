@@ -135,6 +135,7 @@ export const NotificationProvider = ({ children }) => {
   }, [isAuthenticated, userRole]); // Re-run if auth state or role changes
 
   // Initialize FCM Foreground Handler
+  /*
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -154,6 +155,8 @@ export const NotificationProvider = ({ children }) => {
       if (unsubscribe) unsubscribe();
     };
   }, [isAuthenticated, refreshNotifications]);
+  */
+
 
   // Load notifications on mount and when user changes
   useEffect(() => {

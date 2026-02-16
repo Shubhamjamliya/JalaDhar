@@ -15,6 +15,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
+/*
 firebase.initializeApp(firebaseConfig);
 
 // Get messaging instance
@@ -34,6 +35,7 @@ messaging.onBackgroundMessage((payload) => {
 
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
+*/
 
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
@@ -57,3 +59,4 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
