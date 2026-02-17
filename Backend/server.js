@@ -139,6 +139,7 @@ app.use('/api/vendors/disputes', require('./routes/vendor-routes/dispute.routes'
 
 // Admin routes
 app.use('/api/admin/auth', require('./routes/admin-routes/adminAuth.routes'));
+app.use('/api/admin/dashboard', require('./routes/admin-routes/dashboard.routes'));
 app.use('/api/admin', require('./routes/admin-routes/vendorApproval.routes'));
 app.use('/api/admin', require('./routes/admin-routes/userManagement.routes'));
 app.use('/api/admin', require('./routes/booking-routes/adminBooking.routes'));

@@ -116,18 +116,8 @@ const navItems = [
 export default function AdminSidebar() {
     const { logout, admin } = useAdminAuth();
     const location = useLocation();
-    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [isPaymentsOpen, setIsPaymentsOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-    const handleLogoutClick = () => {
-        setShowLogoutConfirm(true);
-    };
-
-    const handleLogoutConfirm = async () => {
-        setShowLogoutConfirm(false);
-        await logout();
-    };
 
     // Helper function to check if a route is active
     const checkIsActive = (path) => {
@@ -377,29 +367,6 @@ export default function AdminSidebar() {
                     })}
             </nav>
 
-            {/* Admin Profile Section */}
-            <div className="p-4 border-t border-white/10">
-
-                <button
-                    onClick={handleLogoutClick}
-                    className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 text-red-400 hover:bg-red-500/20 hover:text-red-300"
-                >
-                    <IoLogOutOutline className="text-xl flex-shrink-0" />
-                    <span className="font-medium text-sm">Logout</span>
-                </button>
-            </div>
-
-            {/* Logout Confirmation Modal */}
-            <ConfirmModal
-                isOpen={showLogoutConfirm}
-                onClose={() => setShowLogoutConfirm(false)}
-                onConfirm={handleLogoutConfirm}
-                title="Confirm Logout"
-                message="Are you sure you want to logout?"
-                confirmText="Logout"
-                cancelText="Cancel"
-                confirmColor="danger"
-            />
         </aside>
     );
 }
