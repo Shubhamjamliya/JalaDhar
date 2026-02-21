@@ -80,6 +80,9 @@ const AdminPayments = lazy(() => import("./modules/admin/admin-pages/AdminPaymen
 const AdminBookings = lazy(() => import("./modules/admin/admin-pages/AdminBookings"));
 const AdminWithdrawals = lazy(() => import("./modules/admin/admin-pages/AdminWithdrawals"));
 const AdminUserWithdrawals = lazy(() => import("./modules/admin/admin-pages/AdminUserWithdrawals"));
+const AdminVendorBookings = lazy(() => import("./modules/admin/admin-pages/AdminVendorBookings"));
+const AdminVendorTransactions = lazy(() => import("./modules/admin/admin-pages/AdminVendorTransactions"));
+const AdminVendorAnalytics = lazy(() => import("./modules/admin/admin-pages/AdminVendorAnalytics"));
 const AdminApprovals = lazy(() => import("./modules/admin/admin-pages/AdminApprovals"));
 const AdminBookingDetails = lazy(() => import("./modules/admin/admin-pages/AdminBookingDetails"));
 const AdminRatings = lazy(() => import("./modules/admin/admin-pages/AdminRatings"));
@@ -580,6 +583,38 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminVendorDetails />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/vendors/bookings"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminVendorBookings />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/vendors/transactions"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminVendorTransactions />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/vendors/analytics"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminVendorAnalytics />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/vendors/pending"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPendingVendors />
                                                                             </Suspense>
                                                                         }
                                                                     />

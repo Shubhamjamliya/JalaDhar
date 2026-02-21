@@ -19,6 +19,7 @@ import {
     IoCalendarOutline,
     IoCashOutline,
     IoLockClosedOutline,
+    IoBusinessOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -34,17 +35,10 @@ const navItems = [
     },
     {
         id: "vendors",
-        label: "All Vendors",
+        label: "Vendors",
         to: "/admin/vendors",
-        Icon: IoPeopleOutline,
+        Icon: IoBusinessOutline,
         roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"]
-    },
-    {
-        id: "pending",
-        label: "Pending Vendor Approvals",
-        to: "/admin/vendors/pending",
-        Icon: IoDocumentTextOutline,
-        roles: ["SUPER_ADMIN", "VERIFIER_ADMIN"]
     },
     {
         id: "users",
@@ -111,6 +105,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [isPaymentsOpen, setIsPaymentsOpen] = useState(false);
     const [isUsersOpen, setIsUsersOpen] = useState(false);
+    const [isVendorsOpen, setIsVendorsOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen) closeRef.current?.focus();
@@ -151,6 +146,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
     // Check if payments or users dropdown should be open based on current route
     const isPaymentsRouteActive = location.pathname.startsWith("/admin/payments");
     const isUsersRouteActive = location.pathname.startsWith("/admin/users");
+    const isVendorsRouteActive = location.pathname.startsWith("/admin/vendors");
 
     // Auto-open dropdowns if on their respective routes
     useEffect(() => {
@@ -160,7 +156,10 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
         if (isUsersRouteActive) {
             setIsUsersOpen(true);
         }
-    }, [isPaymentsRouteActive, isUsersRouteActive]);
+        if (isVendorsRouteActive) {
+            setIsVendorsOpen(true);
+        }
+    }, [isPaymentsRouteActive, isUsersRouteActive, isVendorsRouteActive]);
 
     const overlay = `fixed inset-0 bg-black/30 z-40 transition-opacity ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`;
@@ -263,6 +262,91 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                                 >
                                                     <IoPeopleOutline className="text-lg" />
                                                     <span className="text-sm font-medium">Vendor</span>
+                                                </NavLink>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }
+
+                            // Special handling for vendors dropdown
+                            if (item.id === "vendors") {
+                                const isActive = isVendorsRouteActive;
+                                const Icon = item.Icon;
+
+                                return (
+                                    <div key={item.id} className="flex flex-col">
+                                        <button
+                                            onClick={() => setIsVendorsOpen(!isVendorsOpen)}
+                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group w-full ${isActive
+                                                ? "bg-[#60A5FA] text-white shadow-md shadow-[#60A5FA]/30"
+                                                : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                }`}
+                                        >
+                                            <Icon className={`text-xl flex-shrink-0 ${isActive ? "text-white" : "text-white/70 group-hover:text-white"}`} />
+                                            <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
+                                            {isVendorsOpen ? (
+                                                <IoChevronUpOutline className="text-lg flex-shrink-0" />
+                                            ) : (
+                                                <IoChevronDownOutline className="text-lg flex-shrink-0" />
+                                            )}
+                                        </button>
+
+                                        {/* Dropdown Menu */}
+                                        {isVendorsOpen && (
+                                            <div className="ml-4 mt-2 flex flex-col gap-1 border-l border-white/10 pl-2">
+                                                <NavLink
+                                                    to="/admin/vendors"
+                                                    end
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                        }`
+                                                    }
+                                                >
+                                                    <IoPeopleOutline className="text-lg" />
+                                                    <span className="text-sm font-medium">All Vendors</span>
+                                                </NavLink>
+                                                <NavLink
+                                                    to="/admin/vendors/pending"
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                        }`
+                                                    }
+                                                >
+                                                    <IoDocumentTextOutline className="text-lg" />
+                                                    <span className="text-sm font-medium">Pending Approvals</span>
+                                                </NavLink>
+                                                <NavLink
+                                                    to="/admin/vendors/bookings"
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                        }`
+                                                    }
+                                                >
+                                                    <IoCalendarOutline className="text-lg" />
+                                                    <span className="text-sm font-medium">Vendor Bookings</span>
+                                                </NavLink>
+                                                <NavLink
+                                                    to="/admin/vendors/analytics"
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                        }`
+                                                    }
+                                                >
+                                                    <IoBarChartOutline className="text-lg" />
+                                                    <span className="text-sm font-medium">Vendor Analytics</span>
                                                 </NavLink>
                                             </div>
                                         )}
