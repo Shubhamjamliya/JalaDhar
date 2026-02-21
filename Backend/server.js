@@ -97,16 +97,25 @@ app.use(helmet({
 
 // Body parser middleware
 // Capture raw body for webhook signature verification
+// Middleware to normalize Content-Type header and fix "unsupported charset" errors
 app.use((req, res, next) => {
   if (req.headers['content-type']) {
-    // Some clients/proxies may send charset="UTF-8" (with quotes) or with extra spaces, 
-    // which body-parser doesn't like. We normalize it.
+    let contentType = req.headers['content-type'];
 
-    // 1. Remove quotes around any charset
-    req.headers['content-type'] = req.headers['content-type'].replace(/charset\s*=\s*["']([^"']+)["']/i, 'charset=$1');
+    // If the content type contains "utf-8" or "utf8" (with or without quotes/spaces)
+    if (/charset\s*=\s*["']?utf-?8["']?/i.test(contentType)) {
+      // Clean it up to the standard format that body-parser likes: "charset=utf-8"
+      // Or even better, just remove the charset part as UTF-8 is the default for JSON anyway
+      contentType = contentType.replace(/;\s*charset\s*=\s*["']?utf-?8["']?/i, '');
 
-    // 2. Specifically ensure utf-8 is lowercase and no quotes (most common issue)
-    req.headers['content-type'] = req.headers['content-type'].replace(/charset\s*=\s*utf-8/i, 'charset=utf-8');
+      // If we accidentally removed the base type, or it's now just empty, handle that
+      // But usually it's "application/json; charset=utf-8" -> "application/json"
+      req.headers['content-type'] = contentType;
+    }
+    // For other charsets, at least remove quotes which is a common source of failure
+    else if (contentType.includes('charset=')) {
+      req.headers['content-type'] = contentType.replace(/charset\s*=\s*["']([^"']+)["']/i, 'charset=$1');
+    }
   }
   next();
 });
@@ -209,6 +218,17 @@ if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
   const PORT = process.env.PORT || 5000;
   server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  });
+
+  // Handle server errors (like EADDRINUSE)
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`ERROR: Port ${PORT} is already in use.`);
+      console.error(`Please kill the process using this port: fuser -k ${PORT}/tcp`);
+      process.exit(1);
+    } else {
+      console.error('Server error:', err);
+    }
   });
 
   // Initialize Socket.io
