@@ -20,6 +20,8 @@ import {
     IoCashOutline,
     IoLockClosedOutline,
     IoBusinessOutline,
+    IoRocketOutline,
+    IoNotificationsOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -106,6 +108,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
     const [isPaymentsOpen, setIsPaymentsOpen] = useState(false);
     const [isUsersOpen, setIsUsersOpen] = useState(false);
     const [isVendorsOpen, setIsVendorsOpen] = useState(false);
+    const [isBookingsOpen, setIsBookingsOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen) closeRef.current?.focus();
@@ -147,6 +150,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
     const isPaymentsRouteActive = location.pathname.startsWith("/admin/payments");
     const isUsersRouteActive = location.pathname.startsWith("/admin/users");
     const isVendorsRouteActive = location.pathname.startsWith("/admin/vendors");
+    const isBookingsRouteActive = location.pathname.startsWith("/admin/bookings");
 
     // Auto-open dropdowns if on their respective routes
     useEffect(() => {
@@ -159,7 +163,10 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
         if (isVendorsRouteActive) {
             setIsVendorsOpen(true);
         }
-    }, [isPaymentsRouteActive, isUsersRouteActive, isVendorsRouteActive]);
+        if (isBookingsRouteActive) {
+            setIsBookingsOpen(true);
+        }
+    }, [isPaymentsRouteActive, isUsersRouteActive, isVendorsRouteActive, isBookingsRouteActive]);
 
     const overlay = `fixed inset-0 bg-black/30 z-40 transition-opacity ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`;
@@ -270,12 +277,11 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                             }
 
                             // Special handling for vendors dropdown
-                            if (item.id === "vendors") {
+                            if (id === "vendors") {
                                 const isActive = isVendorsRouteActive;
-                                const Icon = item.Icon;
 
                                 return (
-                                    <div key={item.id} className="flex flex-col">
+                                    <div key={id} className="flex flex-col">
                                         <button
                                             onClick={() => setIsVendorsOpen(!isVendorsOpen)}
                                             className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group w-full ${isActive
@@ -284,7 +290,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                                 }`}
                                         >
                                             <Icon className={`text-xl flex-shrink-0 ${isActive ? "text-white" : "text-white/70 group-hover:text-white"}`} />
-                                            <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
+                                            <span className="font-medium text-sm flex-1 text-left">{label}</span>
                                             {isVendorsOpen ? (
                                                 <IoChevronUpOutline className="text-lg flex-shrink-0" />
                                             ) : (
@@ -431,6 +437,90 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                                 >
                                                     <IoBarChartOutline className="text-lg" />
                                                     <span className="text-sm font-medium">User Analytics</span>
+                                                </NavLink>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }
+
+                            // Special handling for bookings dropdown
+                            if (id === "bookings") {
+                                const isActive = isBookingsRouteActive;
+
+                                return (
+                                    <div key={id} className="flex flex-col">
+                                        <button
+                                            onClick={() => setIsBookingsOpen(!isBookingsOpen)}
+                                            className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 w-full ${isActive
+                                                ? "bg-[#60A5FA] text-white shadow-md"
+                                                : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                }`}
+                                        >
+                                            <Icon className="text-xl" />
+                                            <span className="text-sm font-medium flex-1 text-left">{label}</span>
+                                            {isBookingsOpen ? (
+                                                <IoChevronUpOutline className="text-lg" />
+                                            ) : (
+                                                <IoChevronDownOutline className="text-lg" />
+                                            )}
+                                        </button>
+
+                                        {/* Dropdown Menu */}
+                                        {isBookingsOpen && (
+                                            <div className="ml-4 mt-1 flex flex-col gap-1">
+                                                <NavLink
+                                                    to="/admin/bookings"
+                                                    end
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                        }`
+                                                    }
+                                                >
+                                                    <IoCalendarOutline className="text-lg" />
+                                                    <span className="text-sm font-medium">All Bookings</span>
+                                                </NavLink>
+                                                <NavLink
+                                                    to="/admin/bookings/tracking"
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                        }`
+                                                    }
+                                                >
+                                                    <IoRocketOutline className="text-lg" />
+                                                    <span className="text-sm font-medium">Live Tracking</span>
+                                                </NavLink>
+                                                <NavLink
+                                                    to="/admin/bookings/notifications"
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                        }`
+                                                    }
+                                                >
+                                                    <IoNotificationsOutline className="text-lg" />
+                                                    <span className="text-sm font-medium">Booking Alerts</span>
+                                                </NavLink>
+                                                <NavLink
+                                                    to="/admin/bookings/analytics"
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                            ? "bg-[#60A5FA] text-white shadow-md"
+                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                        }`
+                                                    }
+                                                >
+                                                    <IoBarChartOutline className="text-lg" />
+                                                    <span className="text-sm font-medium">Analytics</span>
                                                 </NavLink>
                                             </div>
                                         )}

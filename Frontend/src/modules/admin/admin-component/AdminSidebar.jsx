@@ -21,6 +21,8 @@ import {
     IoCashOutline,
     IoLockClosedOutline,
     IoPersonAddOutline,
+    IoRocketOutline,
+    IoNotificationsOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -113,6 +115,7 @@ export default function AdminSidebar() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isUsersOpen, setIsUsersOpen] = useState(false);
     const [isVendorsOpen, setIsVendorsOpen] = useState(false);
+    const [isBookingsOpen, setIsBookingsOpen] = useState(false);
 
     // Helper function to check if a route is active
     const checkIsActive = (path) => {
@@ -146,6 +149,7 @@ export default function AdminSidebar() {
     const isSettingsRouteActive = location.pathname.startsWith("/admin/settings");
     const isUsersRouteActive = location.pathname.startsWith("/admin/users");
     const isVendorsRouteActive = location.pathname.startsWith("/admin/vendors");
+    const isBookingsRouteActive = location.pathname.startsWith("/admin/bookings");
 
     // Auto-open dropdowns if on their respective routes
     useEffect(() => {
@@ -161,7 +165,10 @@ export default function AdminSidebar() {
         if (isVendorsRouteActive) {
             setIsVendorsOpen(true);
         }
-    }, [isPaymentsRouteActive, isSettingsRouteActive, isUsersRouteActive, isVendorsRouteActive]);
+        if (isBookingsRouteActive) {
+            setIsBookingsOpen(true);
+        }
+    }, [isPaymentsRouteActive, isSettingsRouteActive, isUsersRouteActive, isVendorsRouteActive, isBookingsRouteActive]);
 
     return (
         <aside className="fixed left-0 top-0 h-screen w-64 bg-gradient-to-b from-[#1a1f3a] to-[#2d3561] text-white z-40 shadow-2xl flex flex-col">
@@ -406,6 +413,87 @@ export default function AdminSidebar() {
                                             >
                                                 <IoBarChartOutline className="text-lg flex-shrink-0" />
                                                 <span className="font-medium text-sm">User Analytics</span>
+                                            </NavLink>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+
+                        // Special handling for bookings dropdown
+                        if (item.id === "bookings") {
+                            const isActive = isBookingsRouteActive;
+                            const Icon = item.Icon;
+
+                            return (
+                                <div key={item.id} className="flex flex-col">
+                                    <button
+                                        onClick={() => setIsBookingsOpen(!isBookingsOpen)}
+                                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group w-full ${isActive
+                                            ? "bg-[#60A5FA] text-white shadow-lg shadow-[#60A5FA]/30"
+                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                            }`}
+                                    >
+                                        <Icon className={`text-xl flex-shrink-0 ${isActive ? "text-white" : "text-white/70 group-hover:text-white"}`} />
+                                        <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
+                                        {isBookingsOpen ? (
+                                            <IoChevronUpOutline className="text-lg flex-shrink-0" />
+                                        ) : (
+                                            <IoChevronDownOutline className="text-lg flex-shrink-0" />
+                                        )}
+                                    </button>
+
+                                    {/* Dropdown Menu */}
+                                    {isBookingsOpen && (
+                                        <div className="ml-4 mt-2 flex flex-col gap-1">
+                                            <NavLink
+                                                to="/admin/bookings"
+                                                end
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                <IoCalendarOutline className="text-lg flex-shrink-0" />
+                                                <span className="font-medium text-sm">All Bookings</span>
+                                            </NavLink>
+                                            <NavLink
+                                                to="/admin/bookings/tracking"
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                <IoRocketOutline className="text-lg flex-shrink-0" />
+                                                <span className="font-medium text-sm">Live Tracking</span>
+                                            </NavLink>
+                                            <NavLink
+                                                to="/admin/bookings/notifications"
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                <IoNotificationsOutline className="text-lg flex-shrink-0" />
+                                                <span className="font-medium text-sm">Booking Alerts</span>
+                                            </NavLink>
+                                            <NavLink
+                                                to="/admin/bookings/analytics"
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                <IoBarChartOutline className="text-lg flex-shrink-0" />
+                                                <span className="font-medium text-sm">Analytics</span>
                                             </NavLink>
                                         </div>
                                     )}

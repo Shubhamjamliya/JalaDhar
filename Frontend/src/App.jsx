@@ -83,6 +83,9 @@ const AdminUserWithdrawals = lazy(() => import("./modules/admin/admin-pages/Admi
 const AdminVendorBookings = lazy(() => import("./modules/admin/admin-pages/AdminVendorBookings"));
 const AdminVendorTransactions = lazy(() => import("./modules/admin/admin-pages/AdminVendorTransactions"));
 const AdminVendorAnalytics = lazy(() => import("./modules/admin/admin-pages/AdminVendorAnalytics"));
+const AdminBookingTracking = lazy(() => import("./modules/admin/admin-pages/AdminBookingTracking"));
+const AdminBookingNotifications = lazy(() => import("./modules/admin/admin-pages/AdminBookingNotifications"));
+const AdminBookingAnalytics = lazy(() => import("./modules/admin/admin-pages/AdminBookingAnalytics"));
 const AdminApprovals = lazy(() => import("./modules/admin/admin-pages/AdminApprovals"));
 const AdminBookingDetails = lazy(() => import("./modules/admin/admin-pages/AdminBookingDetails"));
 const AdminRatings = lazy(() => import("./modules/admin/admin-pages/AdminRatings"));
@@ -663,6 +666,30 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminBookings />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/bookings/tracking"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminBookingTracking />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/bookings/notifications"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminBookingNotifications />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/bookings/analytics"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminBookingAnalytics />
                                                                             </Suspense>
                                                                         }
                                                                     />
