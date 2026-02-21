@@ -119,6 +119,17 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Middleware to handle requests without /api prefix (common in production with api. subdomain)
+app.use((req, res, next) => {
+  if (!req.url.startsWith('/api') && req.url !== '/health' && !req.url.startsWith('/socket.io')) {
+    // If request comes as /users/auth/login, rewrite to /api/users/auth/login
+    req.url = '/api' + req.url;
+  }
+  next();
+});
+
+// Body parser middleware
 app.use(express.json({
   verify: (req, res, buf) => {
     req.rawBody = buf;
@@ -251,4 +262,3 @@ if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
 }
 
 module.exports = app;
-
