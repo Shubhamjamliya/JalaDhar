@@ -71,6 +71,9 @@ const AdminVendors = lazy(() => import("./modules/admin/admin-pages/AdminVendors
 const AdminPendingVendors = lazy(() => import("./modules/admin/admin-pages/AdminPendingVendors"));
 const AdminVendorDetails = lazy(() => import("./modules/admin/admin-pages/AdminVendorDetails"));
 const AdminUsers = lazy(() => import("./modules/admin/admin-pages/AdminUsers"));
+const AdminUserBookings = lazy(() => import("./modules/admin/admin-pages/AdminUserBookings"));
+const AdminUserTransactions = lazy(() => import("./modules/admin/admin-pages/AdminUserTransactions"));
+const AdminUserAnalytics = lazy(() => import("./modules/admin/admin-pages/AdminUserAnalytics"));
 const AdminUserDetails = lazy(() => import("./modules/admin/admin-pages/AdminUserDetails"));
 const AdminSettings = lazy(() => import("./modules/admin/admin-pages/AdminSettings"));
 const AdminPayments = lazy(() => import("./modules/admin/admin-pages/AdminPayments"));
@@ -585,6 +588,30 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminUsers />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/users/bookings"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminUserBookings />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/users/transactions"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminUserTransactions />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/users/analytics"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminUserAnalytics />
                                                                             </Suspense>
                                                                         }
                                                                     />

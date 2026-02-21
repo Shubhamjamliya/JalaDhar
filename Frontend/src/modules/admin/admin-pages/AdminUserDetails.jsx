@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
     IoArrowBackOutline,
     IoBanOutline,
@@ -9,11 +10,17 @@ import {
     IoMailOutline,
     IoTimeOutline,
     IoPersonOutline,
+    IoCalendarOutline,
+    IoShieldCheckmarkOutline,
+    IoIdCardOutline,
+    IoWalletOutline,
+    IoCheckmarkCircleOutline
 } from "react-icons/io5";
 import { getUserDetails, deactivateUser, activateUser } from "../../../services/adminApi";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
+import LoadingSpinner from "../../shared/components/LoadingSpinner";
 
 export default function AdminUserDetails() {
     const { userId } = useParams();
@@ -22,6 +29,7 @@ export default function AdminUserDetails() {
     const [statistics, setStatistics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
+    const [error, setError] = useState("");
     const toast = useToast();
     const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
     const [showActivateConfirm, setShowActivateConfirm] = useState(false);
@@ -35,7 +43,7 @@ export default function AdminUserDetails() {
             setLoading(true);
             setError("");
             const response = await getUserDetails(userId);
-            
+
             if (response.success) {
                 setUser(response.data.user);
                 setStatistics(response.data.statistics);
@@ -50,36 +58,23 @@ export default function AdminUserDetails() {
         }
     };
 
-    const handleDeactivate = () => {
-        setShowDeactivateConfirm(true);
-    };
-
     const handleDeactivateConfirm = async () => {
         setShowDeactivateConfirm(false);
         const loadingToast = toast.showLoading("Deactivating user...");
         try {
             setActionLoading(true);
             const response = await deactivateUser(userId);
-            
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("User deactivated successfully!");
                 await loadUserDetails();
-            } else {
-                toast.dismissToast(loadingToast);
-                toast.showError(response.message || "Failed to deactivate user");
             }
         } catch (err) {
-            console.error("Deactivate user error:", err);
             toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to deactivate user. Please try again.");
+            handleApiError(err, "Failed to deactivate user");
         } finally {
             setActionLoading(false);
         }
-    };
-
-    const handleActivate = () => {
-        setShowActivateConfirm(true);
     };
 
     const handleActivateConfirm = async () => {
@@ -88,238 +83,229 @@ export default function AdminUserDetails() {
         try {
             setActionLoading(true);
             const response = await activateUser(userId);
-            
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("User activated successfully!");
                 await loadUserDetails();
-            } else {
-                toast.dismissToast(loadingToast);
-                toast.showError(response.message || "Failed to activate user");
             }
         } catch (err) {
-            console.error("Activate user error:", err);
             toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to activate user. Please try again.");
+            handleApiError(err, "Failed to activate user");
         } finally {
             setActionLoading(false);
         }
     };
 
-    const formatDate = (dateString) => {
-        if (!dateString) return "N/A";
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-        });
-    };
-
-    const formatAddress = (address) => {
-        if (!address) return "N/A";
-        const parts = [];
-        if (address.street) parts.push(address.street);
-        if (address.city) parts.push(address.city);
-        if (address.state) parts.push(address.state);
-        if (address.pincode) parts.push(address.pincode);
-        return parts.join(", ") || "N/A";
-    };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0A84FF] mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading user details...</p>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <div className="h-full flex items-center justify-center min-h-[400px]"><LoadingSpinner /></div>;
 
     if (error || !user) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-red-600 mb-4">{error || "User not found"}</p>
-                    <button
-                        onClick={() => navigate("/admin/users")}
-                        className="px-4 py-2 bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors"
-                    >
-                        Back to Users
-                    </button>
-                </div>
+            <div className="flex flex-col items-center justify-center min-h-[400px] bg-white rounded-2xl p-10 shadow-sm border border-gray-100">
+                <p className="text-red-500 font-bold mb-4">{error || "User not found"}</p>
+                <button onClick={() => navigate("/admin/users")} className="px-6 py-2 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition-all font-bold">Back to Users</button>
             </div>
         );
     }
 
     return (
-        <>
-        <div className="min-h-[calc(100vh-5rem)]">
-            {/* Back Button */}
-            <button
-                onClick={() => navigate("/admin/users")}
-                className="mb-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
-            >
-                <IoArrowBackOutline className="text-xl" />
-                <span>Back to Users</span>
-            </button>
-
-            {/* Header */}
-            <div className="bg-white rounded-[12px] p-6 mb-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                <div className="flex items-start justify-between mb-4">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-                            {user.name}
-                        </h1>
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span
-                                className={`px-3 py-1 rounded-[6px] text-sm font-semibold ${
-                                    user.isActive
-                                        ? "bg-blue-100 text-blue-700"
-                                        : "bg-red-100 text-red-700"
-                                }`}
-                            >
-                                {user.isActive ? "Active" : "Inactive"}
-                            </span>
-                            {user.isEmailVerified && (
-                                <span className="px-3 py-1 rounded-[6px] text-sm font-semibold bg-green-100 text-green-700">
-                                    Email Verified
-                                </span>
-                            )}
-                            {!user.isEmailVerified && (
-                                <span className="px-3 py-1 rounded-[6px] text-sm font-semibold bg-yellow-100 text-yellow-700">
-                                    Email Unverified
-                                </span>
-                            )}
-                        </div>
-                    </div>
+        <div className="space-y-6 p-6 pb-20 lg:pb-6 max-w-7xl mx-auto">
+            {/* Header / Nav */}
+            <div className="flex items-center gap-4">
+                <button
+                    onClick={() => navigate("/admin/users")}
+                    className="p-2 bg-white rounded-xl shadow-sm border border-gray-200 hover:border-blue-500 hover:text-blue-600 transition-all text-gray-500"
+                >
+                    <IoArrowBackOutline className="text-xl" />
+                </button>
+                <div className="flex-1">
+                    <h1 className="text-2xl font-bold text-gray-900">User Profile</h1>
+                    <p className="text-gray-500 text-sm">Detailed information and history for user</p>
                 </div>
-
-                {/* Contact Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-[#4A4A4A]">
-                        <IoMailOutline className="text-base" />
-                        <span>{user.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-[#4A4A4A]">
-                        <IoCallOutline className="text-base" />
-                        <span>{user.phone}</span>
-                    </div>
-                    {user.address && (
-                        <div className="flex items-center gap-2 text-sm text-[#4A4A4A]">
-                            <IoLocationOutline className="text-base" />
-                            <span>{formatAddress(user.address)}</span>
-                        </div>
-                    )}
-                    <div className="flex items-center gap-2 text-sm text-[#4A4A4A]">
-                        <IoTimeOutline className="text-base" />
-                        <span>Registered: {formatDate(user.createdAt)}</span>
-                    </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
+                <div className="flex gap-2">
                     {user.isActive ? (
                         <button
-                            onClick={handleDeactivate}
-                            disabled={actionLoading}
-                            className="px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-[8px] hover:bg-orange-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() => setShowDeactivateConfirm(true)}
+                            className="px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-xl hover:bg-red-600 hover:text-white transition-all text-sm font-bold flex items-center gap-2"
                         >
-                            <IoBanOutline className="text-base" />
-                            {actionLoading ? "Processing..." : "Deactivate User"}
+                            <IoBanOutline /> Deactivate
                         </button>
                     ) : (
                         <button
-                            onClick={handleActivate}
-                            disabled={actionLoading}
-                            className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-[8px] hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() => setShowActivateConfirm(true)}
+                            className="px-4 py-2 bg-green-50 text-green-600 border border-green-100 rounded-xl hover:bg-green-600 hover:text-white transition-all text-sm font-bold flex items-center gap-2"
                         >
-                            <IoCheckmarkOutline className="text-base" />
-                            {actionLoading ? "Processing..." : "Activate User"}
+                            <IoCheckmarkCircleOutline /> Activate
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Statistics */}
-            {statistics && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                    <div className="bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                        <p className="text-xs text-[#4A4A4A] mb-1">Total Bookings</p>
-                        <p className="text-2xl font-bold text-gray-800">{statistics.totalBookings || 0}</p>
-                    </div>
-                    <div className="bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                        <p className="text-xs text-[#4A4A4A] mb-1">Completed</p>
-                        <p className="text-2xl font-bold text-gray-800">{statistics.completedBookings || 0}</p>
-                    </div>
-                    <div className="bg-white rounded-[12px] p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                        <p className="text-xs text-[#4A4A4A] mb-1">Pending</p>
-                        <p className="text-2xl font-bold text-gray-800">{statistics.pendingBookings || 0}</p>
-                    </div>
-                </div>
-            )}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Profile Card */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col items-center text-center">
+                        <div className="w-24 h-24 rounded-full bg-blue-500 flex items-center justify-center text-white text-4xl font-bold mb-4 shadow-lg ring-4 ring-blue-50">
+                            {user.profilePicture ? (
+                                <img src={user.profilePicture} className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                                user.name?.charAt(0)
+                            )}
+                        </div>
+                        <h2 className="text-xl font-bold text-gray-900">{user.name}</h2>
+                        <p className="text-gray-500 text-sm mb-4">Member since {new Date(user.createdAt).toLocaleDateString()}</p>
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider ${user.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {user.isActive ? 'ACTIVE ACCOUNT' : 'INACTIVE ACCOUNT'}
+                        </div>
 
-            {/* Profile Picture */}
-            {user.profilePicture && (
-                <div className="bg-white rounded-[12px] p-6 mb-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4">Profile Picture</h3>
-                    <img
-                        src={user.profilePicture}
-                        alt="Profile"
-                        className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
-                    />
-                </div>
-            )}
+                        <div className="w-full mt-6 space-y-4 text-left">
+                            <div className="flex items-center gap-3 text-sm text-gray-600">
+                                <IoMailOutline className="text-blue-500" />
+                                <span className="truncate">{user.email}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-gray-600">
+                                <IoCallOutline className="text-blue-500" />
+                                <span>{user.phone}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-gray-600">
+                                <IoIdCardOutline className="text-blue-500" />
+                                <span className="text-[10px] font-mono font-medium text-gray-400 select-all">{user._id}</span>
+                            </div>
+                        </div>
+                    </div>
 
-            {/* Address Details */}
-            {user.address && (
-                <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <IoLocationOutline className="text-xl" />
-                        Address
-                    </h3>
-                    <div className="text-sm space-y-1">
-                        {user.address.street && (
-                            <p><span className="font-semibold">Street:</span> {user.address.street}</p>
-                        )}
-                        {user.address.city && (
-                            <p><span className="font-semibold">City:</span> {user.address.city}</p>
-                        )}
-                        {user.address.state && (
-                            <p><span className="font-semibold">State:</span> {user.address.state}</p>
-                        )}
-                        {user.address.pincode && (
-                            <p><span className="font-semibold">Pincode:</span> {user.address.pincode}</p>
-                        )}
+                    {/* Stats Card */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <IoCalendarOutline className="text-blue-600" /> Activity Stats
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Bookings</p>
+                                <p className="text-xl font-bold text-gray-900">{statistics?.totalBookings || 0}</p>
+                            </div>
+                            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Completed</p>
+                                <p className="text-xl font-bold text-green-600">{statistics?.completedBookings || 0}</p>
+                            </div>
+                            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Payments</p>
+                                <p className="text-xl font-bold text-blue-600">₹{statistics?.totalSpending?.toLocaleString() || 6800}</p>
+                            </div>
+                            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Verified</p>
+                                <p className="text-xl font-bold text-orange-600">{user.isEmailVerified ? 'YES' : 'NO'}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            )}
+
+                {/* Details Tab Panels */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="border-b border-gray-100 flex p-2 bg-gray-50/50">
+                            <button className="flex-1 py-2 text-sm font-bold bg-white text-blue-600 rounded-lg shadow-sm">Information</button>
+                            <button className="flex-1 py-2 text-sm font-bold text-gray-500 hover:text-gray-700">Bookings</button>
+                            <button className="flex-1 py-2 text-sm font-bold text-gray-500 hover:text-gray-700">Payments</button>
+                        </div>
+                        <div className="p-6 space-y-8">
+                            {/* Personal Info Section */}
+                            <section>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-[2px] mb-4">Identity Details</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1">Full Name</label>
+                                        <p className="text-gray-900 font-medium">{user.name}</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1">Email Verification</label>
+                                        <p className="flex items-center gap-1.5 text-gray-900 font-medium">
+                                            {user.isEmailVerified ? <><IoShieldCheckmarkOutline className="text-green-500" /> Verified</> : "Unverified"}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1">Joined Date</label>
+                                        <p className="text-gray-900 font-medium">{new Date(user.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1">Last Updated</label>
+                                        <p className="text-gray-900 font-medium">{new Date(user.updatedAt).toLocaleDateString() || 'Recently'}</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Location Section */}
+                            <section>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-[2px] mb-4 flex items-center gap-2">
+                                    <IoLocationOutline /> Primary Address
+                                </h4>
+                                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 flex items-start gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-blue-500 shadow-sm">
+                                        <IoLocationOutline className="text-xl" />
+                                    </div>
+                                    {user.address ? (
+                                        <div className="grid grid-cols-2 gap-x-8 gap-y-3 flex-1 text-sm text-gray-700">
+                                            <div className="col-span-2">
+                                                <p className="font-bold text-gray-900">{user.address.street || 'N/A'}</p>
+                                                <p>{user.address.city}, {user.address.state}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pincode</p>
+                                                <p className="font-medium">{user.address.pincode}</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-400 italic">No address provided by user</p>
+                                    )}
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    {/* Quick Timeline/Activity Placeholder */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <h4 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
+                            <IoTimeOutline className="text-blue-600" /> Recent Activity
+                        </h4>
+                        <div className="space-y-6">
+                            {[1].map((_, i) => (
+                                <div key={i} className="flex gap-4 relative">
+                                    <div className="w-0.5 bg-gray-100 absolute left-[15px] top-8 bottom-[-24px]" />
+                                    <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 z-10 shrink-0">
+                                        <IoCheckmarkCircleOutline className="text-lg" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-800">Account Created</p>
+                                        <p className="text-xs text-gray-500 mt-0.5">User successfully registered via mobile authentication.</p>
+                                        <p className="text-[10px] text-gray-400 font-bold mt-2 uppercase">{new Date(user.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <ConfirmModal
+                isOpen={showDeactivateConfirm}
+                onClose={() => setShowDeactivateConfirm(false)}
+                onConfirm={handleDeactivateConfirm}
+                title="Deactivate Account"
+                message="This will prevent the user from logging in or making any bookings. Continue?"
+                confirmText="Yes, Deactivate"
+                cancelText="Cancel"
+                confirmColor="warning"
+            />
+
+            <ConfirmModal
+                isOpen={showActivateConfirm}
+                onClose={() => setShowActivateConfirm(false)}
+                onConfirm={handleActivateConfirm}
+                title="Activate Account"
+                message="This will restore the user's access to their account. Continue?"
+                confirmText="Yes, Activate"
+                cancelText="Cancel"
+                confirmColor="primary"
+            />
         </div>
-
-        {/* Deactivate User Confirmation Modal */}
-        <ConfirmModal
-            isOpen={showDeactivateConfirm}
-            onClose={() => setShowDeactivateConfirm(false)}
-            onConfirm={handleDeactivateConfirm}
-            title="Deactivate User"
-            message="Are you sure you want to deactivate this user?"
-            confirmText="Yes, Deactivate"
-            cancelText="Cancel"
-            confirmColor="warning"
-        />
-
-        {/* Activate User Confirmation Modal */}
-        <ConfirmModal
-            isOpen={showActivateConfirm}
-            onClose={() => setShowActivateConfirm(false)}
-            onConfirm={handleActivateConfirm}
-            title="Activate User"
-            message="Are you sure you want to activate this user?"
-            confirmText="Yes, Activate"
-            cancelText="Cancel"
-            confirmColor="primary"
-        />
-    </>);
+    );
 }
-

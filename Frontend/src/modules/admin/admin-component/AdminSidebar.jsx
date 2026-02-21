@@ -118,6 +118,7 @@ export default function AdminSidebar() {
     const location = useLocation();
     const [isPaymentsOpen, setIsPaymentsOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isUsersOpen, setIsUsersOpen] = useState(false);
 
     // Helper function to check if a route is active
     const checkIsActive = (path) => {
@@ -149,6 +150,7 @@ export default function AdminSidebar() {
     // Check if payments or settings dropdown should be open based on current route
     const isPaymentsRouteActive = location.pathname.startsWith("/admin/payments");
     const isSettingsRouteActive = location.pathname.startsWith("/admin/settings");
+    const isUsersRouteActive = location.pathname.startsWith("/admin/users");
 
     // Auto-open dropdowns if on their respective routes
     useEffect(() => {
@@ -158,7 +160,10 @@ export default function AdminSidebar() {
         if (isSettingsRouteActive) {
             setIsSettingsOpen(true);
         }
-    }, [isPaymentsRouteActive, isSettingsRouteActive]);
+        if (isUsersRouteActive) {
+            setIsUsersOpen(true);
+        }
+    }, [isPaymentsRouteActive, isSettingsRouteActive, isUsersRouteActive]);
 
     return (
         <aside className="fixed left-0 top-0 h-screen w-64 bg-gradient-to-b from-[#1a1f3a] to-[#2d3561] text-white z-40 shadow-2xl flex flex-col">
@@ -241,6 +246,87 @@ export default function AdminSidebar() {
                                             >
                                                 <IoPeopleOutline className="text-lg flex-shrink-0" />
                                                 <span className="font-medium text-sm">Vendor</span>
+                                            </NavLink>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+
+                        // Special handling for users dropdown
+                        if (item.id === "users") {
+                            const isActive = isUsersRouteActive;
+                            const Icon = item.Icon;
+
+                            return (
+                                <div key={item.id} className="flex flex-col">
+                                    <button
+                                        onClick={() => setIsUsersOpen(!isUsersOpen)}
+                                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group w-full ${isActive
+                                            ? "bg-[#60A5FA] text-white shadow-lg shadow-[#60A5FA]/30"
+                                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                                            }`}
+                                    >
+                                        <Icon className={`text-xl flex-shrink-0 ${isActive ? "text-white" : "text-white/70 group-hover:text-white"}`} />
+                                        <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
+                                        {isUsersOpen ? (
+                                            <IoChevronUpOutline className="text-lg flex-shrink-0" />
+                                        ) : (
+                                            <IoChevronDownOutline className="text-lg flex-shrink-0" />
+                                        )}
+                                    </button>
+
+                                    {/* Dropdown Menu */}
+                                    {isUsersOpen && (
+                                        <div className="ml-4 mt-2 flex flex-col gap-1">
+                                            <NavLink
+                                                to="/admin/users"
+                                                end
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                <IoPeopleOutline className="text-lg flex-shrink-0" />
+                                                <span className="font-medium text-sm">All Users</span>
+                                            </NavLink>
+                                            <NavLink
+                                                to="/admin/users/bookings"
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                <IoCalendarOutline className="text-lg flex-shrink-0" />
+                                                <span className="font-medium text-sm">User Bookings</span>
+                                            </NavLink>
+                                            <NavLink
+                                                to="/admin/users/transactions"
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                <IoCashOutline className="text-lg flex-shrink-0" />
+                                                <span className="font-medium text-sm">Transactions</span>
+                                            </NavLink>
+                                            <NavLink
+                                                to="/admin/users/analytics"
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                                                        ? "bg-[#60A5FA] text-white shadow-md"
+                                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                <IoBarChartOutline className="text-lg flex-shrink-0" />
+                                                <span className="font-medium text-sm">User Analytics</span>
                                             </NavLink>
                                         </div>
                                     )}
