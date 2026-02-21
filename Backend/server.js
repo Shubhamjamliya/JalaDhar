@@ -97,6 +97,19 @@ app.use(helmet({
 
 // Body parser middleware
 // Capture raw body for webhook signature verification
+app.use((req, res, next) => {
+  if (req.headers['content-type']) {
+    // Some clients/proxies may send charset="UTF-8" (with quotes) or with extra spaces, 
+    // which body-parser doesn't like. We normalize it.
+
+    // 1. Remove quotes around any charset
+    req.headers['content-type'] = req.headers['content-type'].replace(/charset\s*=\s*["']([^"']+)["']/i, 'charset=$1');
+
+    // 2. Specifically ensure utf-8 is lowercase and no quotes (most common issue)
+    req.headers['content-type'] = req.headers['content-type'].replace(/charset\s*=\s*utf-8/i, 'charset=utf-8');
+  }
+  next();
+});
 app.use(express.json({
   verify: (req, res, buf) => {
     req.rawBody = buf;
