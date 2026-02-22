@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { IoLocationSharp, IoClose } from 'react-icons/io5';
 
 /**
@@ -9,10 +10,16 @@ import { IoLocationSharp, IoClose } from 'react-icons/io5';
 const LocationPermissionModal = () => {
   const [showModal, setShowModal] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState(null);
+  const { pathname } = useLocation();
 
   useEffect(() => {
+    // Disable location prompt for admin panel
+    if (pathname.startsWith('/admin')) {
+      setShowModal(false);
+      return;
+    }
     checkPermission();
-  }, []);
+  }, [pathname]);
 
   const checkPermission = async () => {
     // Check if we've already dealt with this in this session
