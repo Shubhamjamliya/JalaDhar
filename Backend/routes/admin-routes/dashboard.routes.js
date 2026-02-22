@@ -8,7 +8,8 @@ const {
   getRevenueAnalytics,
   getBookingTrends,
   getUserGrowthMetrics,
-  getPaymentAnalytics
+  getPaymentAnalytics,
+  getGeographicAnalysis
 } = require('../../controllers/adminControllers/adminDashboardController');
 
 // All routes require admin authentication
@@ -19,5 +20,6 @@ router.get('/revenue', getRevenueAnalytics);
 router.get('/bookings/trends', getBookingTrends);
 router.get('/users/growth', getUserGrowthMetrics);
 router.get('/payments/analytics', getPaymentAnalytics);
+router.get('/geographic-analysis', getGeographicAnalysis);
 
 module.exports = router;

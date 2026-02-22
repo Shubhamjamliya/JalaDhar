@@ -98,6 +98,7 @@ const navItems = [
         roles: ["SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN"],
         children: [
             { label: "Overview", to: "/admin/reports", end: true },
+            { label: "Market IQ", to: "/admin/reports/geo" },
             { label: "Revenue", to: "/admin/reports/revenue" },
             { label: "Bookings", to: "/admin/reports/bookings" },
             { label: "Payments", to: "/admin/reports/payments" },

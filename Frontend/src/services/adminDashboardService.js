@@ -62,3 +62,11 @@ export const getPaymentDetailedReport = async (endpoint, params) => {
     throw error;
   }
 };
+export const getGeographicAnalysis = async (type = 'district') => {
+  try {
+    const response = await api.get('/admin/dashboard/geographic-analysis', { params: { type } });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

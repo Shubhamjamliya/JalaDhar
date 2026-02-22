@@ -321,3 +321,93 @@ exports.getPaymentAnalytics = async (req, res) => {
     });
   }
 };
+/**
+ * Get Geographic Analysis for Users, Vendors and Bookings
+ * @route GET /api/admin/dashboard/geographic-analysis
+ */
+exports.getGeographicAnalysis = async (req, res) => {
+  try {
+    const { type = 'district' } = req.query; // type can be village, mandal, district, state
+
+    // 1. Aggregate Bookings by Location
+    const bookingLocationStats = await Booking.aggregate([
+      {
+        $group: {
+          _id: `$${type}`, // Dynamic grouping based on type
+          count: { $sum: 1 },
+          totalRevenue: { $sum: "$payment.totalAmount" }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // 2. Aggregate Users by Location
+    // Since User model doesn't have explicit village/mandal/district fields in address object
+    // We'll use city as district/mandal for now or state
+    let userGroupField = "address.city";
+    if (type === 'state') userGroupField = "address.state";
+
+    const userLocationStats = await User.aggregate([
+      { $match: { role: 'USER' } },
+      {
+        $group: {
+          _id: `$${userGroupField}`,
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // 3. Aggregate Vendors by Location
+    const vendorLocationStats = await Vendor.aggregate([
+      {
+        $group: {
+          _id: `$${userGroupField}`,
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // 4. Merge results for comprehensive view
+    // Create a set of all unique locations across all data sets
+    const allLocations = new Set([
+      ...bookingLocationStats.map(s => s._id),
+      ...userLocationStats.map(s => s._id),
+      ...vendorLocationStats.map(s => s._id)
+    ]);
+
+    const analysis = Array.from(allLocations).map(location => {
+      const bookingStat = bookingLocationStats.find(b => b._id === location);
+      const userStat = userLocationStats.find(u => u._id === location);
+      const vendorStat = vendorLocationStats.find(v => v._id === location);
+
+      const bookingsCount = bookingStat ? bookingStat.count : 0;
+      const vendorsCount = vendorStat ? vendorStat.count : 0;
+
+      return {
+        location: location || 'Unknown',
+        bookings: bookingsCount,
+        revenue: bookingStat ? bookingStat.totalRevenue : 0,
+        users: userStat ? userStat.count : 0,
+        vendors: vendorsCount,
+        // Calculate supply-demand ratio
+        supplyDemandRatio: bookingsCount > 0 ? vendorsCount / bookingsCount : (vendorsCount > 0 ? 999 : 0)
+      };
+    }).sort((a, b) => b.bookings - a.bookings);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        type,
+        analysis
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in getGeographicAnalysis:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch geographic analysis',
+      error: error.message
+    });
+  }
+};

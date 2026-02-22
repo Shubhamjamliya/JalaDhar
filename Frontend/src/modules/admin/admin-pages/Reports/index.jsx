@@ -12,7 +12,8 @@ import {
   IoDownloadOutline,
   IoPieChartOutline,
   IoStatsChartOutline,
-  IoWalletOutline
+  IoWalletOutline,
+  IoMapOutline
 } from "react-icons/io5";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -27,6 +28,7 @@ import BookingReport from "./BookingReport";
 import RevenueReport from "./RevenueReport";
 import VendorReport from "./VendorReport";
 import PaymentReport from "./PaymentReport";
+import GeographicAnalysis from "./GeographicAnalysis";
 
 const ReportsOverview = () => {
   const [loading, setLoading] = useState(true);
@@ -143,6 +145,13 @@ const ReportsOverview = () => {
           icon={<IoWalletOutline />}
           color="orange"
           link="/admin/reports/payments"
+        />
+        <ReportCard
+          title="Market IQ"
+          subtitle="Geographic Analysis"
+          icon={<IoMapOutline />}
+          color="blue"
+          link="/admin/reports/geo"
         />
       </div>
 
@@ -293,6 +302,7 @@ export default function AdminReports() {
         <Route path="bookings" element={<BookingReport />} />
         <Route path="vendors" element={<VendorReport />} />
         <Route path="payments" element={<PaymentReport />} />
+        <Route path="geo" element={<GeographicAnalysis />} />
       </Routes>
     </div>
   );
