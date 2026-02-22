@@ -1,12 +1,12 @@
 import { useRef, useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     IoCloseOutline,
     IoHomeOutline,
     IoPeopleOutline,
     IoDocumentTextOutline,
     IoPersonCircleOutline,
-    IoLogOutOutline,
     IoShieldCheckmarkOutline,
     IoSettingsOutline,
     IoWalletOutline,
@@ -17,15 +17,12 @@ import {
     IoStarOutline,
     IoAlertCircleOutline,
     IoCalendarOutline,
-    IoCashOutline,
     IoLockClosedOutline,
     IoBusinessOutline,
-    IoRocketOutline,
     IoNotificationsOutline,
+    IoChevronDown,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
-import ConfirmModal from "../../shared/components/ConfirmModal";
-import logo from "@/assets/AppLogo.png";
 
 const navItems = [
     {
@@ -40,14 +37,26 @@ const navItems = [
         label: "Vendors",
         to: "/admin/vendors",
         Icon: IoBusinessOutline,
-        roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"]
+        roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"],
+        children: [
+            { label: "All Vendors", to: "/admin/vendors", end: true },
+            { label: "Pending Approvals", to: "/admin/vendors/pending" },
+            { label: "Vendor Bookings", to: "/admin/vendors/bookings" },
+            { label: "Vendor Analytics", to: "/admin/vendors/analytics" }
+        ]
     },
     {
         id: "users",
         label: "Users",
         to: "/admin/users",
         Icon: IoPersonCircleOutline,
-        roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"]
+        roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"],
+        children: [
+            { label: "All Users", to: "/admin/users", end: true },
+            { label: "User Bookings", to: "/admin/users/bookings" },
+            { label: "Transactions", to: "/admin/users/transactions" },
+            { label: "User Analytics", to: "/admin/users/analytics" }
+        ]
     },
     {
         id: "approvals",
@@ -61,14 +70,39 @@ const navItems = [
         label: "Bookings",
         to: "/admin/bookings",
         Icon: IoCalendarOutline,
-        roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"]
+        roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"],
+        children: [
+            { label: "All Bookings", to: "/admin/bookings", end: true },
+            { label: "Live Tracking", to: "/admin/bookings/tracking" },
+            { label: "Booking Alerts", to: "/admin/bookings/notifications" },
+            { label: "Analytics", to: "/admin/bookings/analytics" }
+        ]
     },
     {
         id: "payments",
         label: "Payments",
         to: "/admin/payments",
         Icon: IoWalletOutline,
-        roles: ["SUPER_ADMIN", "FINANCE_ADMIN"]
+        roles: ["SUPER_ADMIN", "FINANCE_ADMIN"],
+        children: [
+            { label: "Admin Payments", to: "/admin/payments/admin" },
+            { label: "User Payments", to: "/admin/payments/user" },
+            { label: "Vendor Payments", to: "/admin/payments/vendor" }
+        ]
+    },
+    {
+        id: "reports",
+        label: "Reports",
+        to: "/admin/reports",
+        Icon: IoBarChartOutline,
+        roles: ["SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN"],
+        children: [
+            { label: "Overview", to: "/admin/reports", end: true },
+            { label: "Revenue", to: "/admin/reports/revenue" },
+            { label: "Bookings", to: "/admin/reports/bookings" },
+            { label: "Payments", to: "/admin/reports/payments" },
+            { label: "Vendors", to: "/admin/reports/vendors" }
+        ]
     },
     {
         id: "ratings",
@@ -91,487 +125,168 @@ const navItems = [
         Icon: IoLockClosedOutline,
         roles: ["SUPER_ADMIN"]
     },
-    {
-        id: "settings",
-        label: "Settings",
-        to: "/admin/settings",
-        Icon: IoSettingsOutline,
-        roles: ["SUPER_ADMIN"]
-    },
 ];
 
 export default function AdminMobileSidebar({ isOpen, onClose }) {
-    const closeRef = useRef(null);
     const { logout, admin } = useAdminAuth();
     const location = useLocation();
-    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-    const [isPaymentsOpen, setIsPaymentsOpen] = useState(false);
-    const [isUsersOpen, setIsUsersOpen] = useState(false);
-    const [isVendorsOpen, setIsVendorsOpen] = useState(false);
-    const [isBookingsOpen, setIsBookingsOpen] = useState(false);
+    const [expandedItems, setExpandedItems] = useState({});
 
+    // Auto-expand based on route
     useEffect(() => {
-        if (isOpen) closeRef.current?.focus();
-    }, [isOpen]);
-
-    const handleLogoutClick = () => {
-        onClose();
-        setShowLogoutConfirm(true);
-    };
-
-    const handleLogoutConfirm = async () => {
-        setShowLogoutConfirm(false);
-        await logout();
-    };
-
-    // Helper function to check if a route is active
-    const checkIsActive = (path) => {
         const currentPath = location.pathname;
-
-        // For routes that should match exactly
-        if (path === "/admin/dashboard" || path === "/admin/vendors" || path === "/admin/users" || path === "/admin/settings" || path === "/admin/approvals") {
-            return currentPath === path || currentPath === path + "/";
+        const activeParent = navItems.find(item =>
+            item.children && item.children.some(child =>
+                child.to === currentPath || currentPath.startsWith(child.to + "/")
+            )
+        );
+        if (activeParent) {
+            setExpandedItems(prev => ({ ...prev, [activeParent.id]: true }));
         }
+    }, [location.pathname]);
 
-        // For pending, match the path and sub-routes
-        if (path === "/admin/vendors/pending") {
-            return currentPath === path || currentPath.startsWith(path + "/");
-        }
-
-        // For payments, check if any payment route is active
-        if (path === "/admin/payments" || path.startsWith("/admin/payments/")) {
-            return currentPath.startsWith("/admin/payments");
-        }
-
-        return false;
-    };
-
-    // Check if payments or users dropdown should be open based on current route
-    const isPaymentsRouteActive = location.pathname.startsWith("/admin/payments");
-    const isUsersRouteActive = location.pathname.startsWith("/admin/users");
-    const isVendorsRouteActive = location.pathname.startsWith("/admin/vendors");
-    const isBookingsRouteActive = location.pathname.startsWith("/admin/bookings");
-
-    // Auto-open dropdowns if on their respective routes
+    // Close on route change
     useEffect(() => {
-        if (isPaymentsRouteActive) {
-            setIsPaymentsOpen(true);
-        }
-        if (isUsersRouteActive) {
-            setIsUsersOpen(true);
-        }
-        if (isVendorsRouteActive) {
-            setIsVendorsOpen(true);
-        }
-        if (isBookingsRouteActive) {
-            setIsBookingsOpen(true);
-        }
-    }, [isPaymentsRouteActive, isUsersRouteActive, isVendorsRouteActive, isBookingsRouteActive]);
+        onClose();
+    }, [location.pathname]);
 
-    const overlay = `fixed inset-0 bg-black/30 z-40 transition-opacity ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`;
-
-    const panel = `fixed left-0 top-0 h-full w-4/5 max-w-xs bg-gradient-to-b from-[#1a1f3a] to-[#2d3561] text-white z-50 shadow-xl p-5 transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? "translate-x-0" : "-translate-x-full"
-        }`;
+    const toggleExpand = (id) => {
+        setExpandedItems(prev => ({ [id]: !prev[id] }));
+    };
 
     return (
         <>
-            <div className={overlay} onClick={onClose} />
-
-            <aside className={panel}>
-                <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[#0A84FF] flex items-center justify-center">
-                            <IoShieldCheckmarkOutline className="text-xl text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold text-white">Jaladhaara</h2>
-                            <p className="text-xs text-white/70 font-medium capitalize">
-                                {admin?.role ? admin.role.replace(/_/g, ' ').toLowerCase() : "Admin Panel"}
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        ref={closeRef}
+            {/* Backdrop */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-gray-300"
-                        aria-label="Close menu"
+                        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99998] lg:hidden"
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Sidebar Drawer */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.aside
+                        initial={{ x: "-100%" }}
+                        animate={{ x: 0 }}
+                        exit={{ x: "-100%" }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className="fixed left-0 top-0 bottom-0 w-[280px] bg-slate-800 text-white z-[99999] lg:hidden shadow-2xl flex flex-col font-outfit"
                     >
-                        <IoCloseOutline className="text-2xl" />
-                    </button>
-                </div>
-
-                {/* Menu Items */}
-                <nav className="flex flex-col gap-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                    {navItems
-                        .filter(item => !item.roles || item.roles.includes(admin?.role))
-                        .map(({ id, label, to, Icon }) => {
-                            // Special handling for payments dropdown
-                            if (id === "payments") {
-                                const isActive = isPaymentsRouteActive;
-
-                                return (
-                                    <div key={id} className="flex flex-col">
-                                        <button
-                                            onClick={() => setIsPaymentsOpen(!isPaymentsOpen)}
-                                            className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 w-full ${isActive
-                                                ? "bg-[#60A5FA] text-white shadow-md"
-                                                : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                }`}
-                                        >
-                                            <Icon className="text-xl" />
-                                            <span className="text-sm font-medium flex-1 text-left">{label}</span>
-                                            {isPaymentsOpen ? (
-                                                <IoChevronUpOutline className="text-lg" />
-                                            ) : (
-                                                <IoChevronDownOutline className="text-lg" />
-                                            )}
-                                        </button>
-
-                                        {/* Dropdown Menu */}
-                                        {isPaymentsOpen && (
-                                            <div className="ml-4 mt-1 flex flex-col gap-1">
-                                                <NavLink
-                                                    to="/admin/payments/admin"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoBarChartOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">Admin</span>
-                                                </NavLink>
-                                                <NavLink
-                                                    to="/admin/payments/user"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoPersonCircleOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">User</span>
-                                                </NavLink>
-                                                <NavLink
-                                                    to="/admin/payments/vendor"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoPeopleOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">Vendor</span>
-                                                </NavLink>
-                                            </div>
-                                        )}
+                        {/* Header Section */}
+                        <div className="px-5 py-6 border-b border-slate-700 bg-slate-900">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center">
+                                        <IoShieldCheckmarkOutline className="text-xl text-white" />
                                     </div>
-                                );
-                            }
-
-                            // Special handling for vendors dropdown
-                            if (id === "vendors") {
-                                const isActive = isVendorsRouteActive;
-
-                                return (
-                                    <div key={id} className="flex flex-col">
-                                        <button
-                                            onClick={() => setIsVendorsOpen(!isVendorsOpen)}
-                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group w-full ${isActive
-                                                ? "bg-[#60A5FA] text-white shadow-md shadow-[#60A5FA]/30"
-                                                : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                }`}
-                                        >
-                                            <Icon className={`text-xl flex-shrink-0 ${isActive ? "text-white" : "text-white/70 group-hover:text-white"}`} />
-                                            <span className="font-medium text-sm flex-1 text-left">{label}</span>
-                                            {isVendorsOpen ? (
-                                                <IoChevronUpOutline className="text-lg flex-shrink-0" />
-                                            ) : (
-                                                <IoChevronDownOutline className="text-lg flex-shrink-0" />
-                                            )}
-                                        </button>
-
-                                        {/* Dropdown Menu */}
-                                        {isVendorsOpen && (
-                                            <div className="ml-4 mt-2 flex flex-col gap-1 border-l border-white/10 pl-2">
-                                                <NavLink
-                                                    to="/admin/vendors"
-                                                    end
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoPeopleOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">All Vendors</span>
-                                                </NavLink>
-                                                <NavLink
-                                                    to="/admin/vendors/pending"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoDocumentTextOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">Pending Approvals</span>
-                                                </NavLink>
-                                                <NavLink
-                                                    to="/admin/vendors/bookings"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoCalendarOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">Vendor Bookings</span>
-                                                </NavLink>
-                                                <NavLink
-                                                    to="/admin/vendors/analytics"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoBarChartOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">Vendor Analytics</span>
-                                                </NavLink>
-                                            </div>
-                                        )}
+                                    <div className="min-w-0">
+                                        <h2 className="text-sm font-black text-white truncate">
+                                            {admin?.name?.split(' ')[0] || "Admin"}
+                                        </h2>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                            {admin?.role?.replace(/_/g, ' ') || "Admin"}
+                                        </p>
                                     </div>
-                                );
-                            }
-
-                            // Special handling for users dropdown
-                            if (id === "users") {
-                                const isActive = isUsersRouteActive;
-
-                                return (
-                                    <div key={id} className="flex flex-col">
-                                        <button
-                                            onClick={() => setIsUsersOpen(!isUsersOpen)}
-                                            className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 w-full ${isActive
-                                                ? "bg-[#60A5FA] text-white shadow-md"
-                                                : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                }`}
-                                        >
-                                            <IoPersonCircleOutline className="text-xl" />
-                                            <span className="text-sm font-medium flex-1 text-left">{label}</span>
-                                            {isUsersOpen ? (
-                                                <IoChevronUpOutline className="text-lg" />
-                                            ) : (
-                                                <IoChevronDownOutline className="text-lg" />
-                                            )}
-                                        </button>
-
-                                        {/* Dropdown Menu */}
-                                        {isUsersOpen && (
-                                            <div className="ml-4 mt-1 flex flex-col gap-1">
-                                                <NavLink
-                                                    to="/admin/users"
-                                                    end
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoPeopleOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">All Users</span>
-                                                </NavLink>
-                                                <NavLink
-                                                    to="/admin/users/bookings"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoCalendarOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">User Bookings</span>
-                                                </NavLink>
-                                                <NavLink
-                                                    to="/admin/users/transactions"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoCashOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">Transactions</span>
-                                                </NavLink>
-                                                <NavLink
-                                                    to="/admin/users/analytics"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoBarChartOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">User Analytics</span>
-                                                </NavLink>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            }
-
-                            // Special handling for bookings dropdown
-                            if (id === "bookings") {
-                                const isActive = isBookingsRouteActive;
-
-                                return (
-                                    <div key={id} className="flex flex-col">
-                                        <button
-                                            onClick={() => setIsBookingsOpen(!isBookingsOpen)}
-                                            className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 w-full ${isActive
-                                                ? "bg-[#60A5FA] text-white shadow-md"
-                                                : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                }`}
-                                        >
-                                            <Icon className="text-xl" />
-                                            <span className="text-sm font-medium flex-1 text-left">{label}</span>
-                                            {isBookingsOpen ? (
-                                                <IoChevronUpOutline className="text-lg" />
-                                            ) : (
-                                                <IoChevronDownOutline className="text-lg" />
-                                            )}
-                                        </button>
-
-                                        {/* Dropdown Menu */}
-                                        {isBookingsOpen && (
-                                            <div className="ml-4 mt-1 flex flex-col gap-1">
-                                                <NavLink
-                                                    to="/admin/bookings"
-                                                    end
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoCalendarOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">All Bookings</span>
-                                                </NavLink>
-                                                <NavLink
-                                                    to="/admin/bookings/tracking"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoRocketOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">Live Tracking</span>
-                                                </NavLink>
-                                                <NavLink
-                                                    to="/admin/bookings/notifications"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoNotificationsOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">Booking Alerts</span>
-                                                </NavLink>
-                                                <NavLink
-                                                    to="/admin/bookings/analytics"
-                                                    onClick={onClose}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${isActive
-                                                            ? "bg-[#60A5FA] text-white shadow-md"
-                                                            : "text-white/70 hover:bg-white/10 hover:text-white"
-                                                        }`
-                                                    }
-                                                >
-                                                    <IoBarChartOutline className="text-lg" />
-                                                    <span className="text-sm font-medium">Analytics</span>
-                                                </NavLink>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            }
-
-                            // Regular nav items
-                            const isActive = checkIsActive(to);
-                            const shouldEnd = to === "/admin/vendors" || to === "/admin/users" || to === "/admin/dashboard" || to === "/admin/settings" || to === "/admin/approvals";
-                            return (
-                                <NavLink
-                                    key={id}
-                                    to={to}
-                                    end={shouldEnd}
+                                </div>
+                                <button
                                     onClick={onClose}
-                                    className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${isActive
-                                        ? "bg-[#60A5FA] text-white shadow-md"
-                                        : "text-white/70 hover:bg-white/10 hover:text-white"
-                                        }`}
+                                    className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
                                 >
-                                    <Icon className="text-xl" />
-                                    <span className="text-sm font-medium">{label}</span>
-                                </NavLink>
-                            );
-                        })}
-                </nav>
+                                    <IoCloseOutline className="text-2xl text-slate-400" />
+                                </button>
+                            </div>
+                        </div>
 
-                {/* Logout Button */}
-                <div className="mt-auto pt-4 border-t border-white/10">
-                    <button
-                        onClick={handleLogoutClick}
-                        className="flex items-center gap-3 w-full p-3 rounded-lg text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors"
-                    >
-                        <IoLogOutOutline className="text-xl" />
-                        <span className="text-sm font-medium">Logout</span>
-                    </button>
-                </div>
-            </aside>
+                        {/* Navigation Menu */}
+                        <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
+                            {navItems
+                                .filter(item => !item.roles || item.roles.includes(admin?.role))
+                                .map((item) => {
+                                    const hasChildren = item.children && item.children.length > 0;
+                                    const isExpanded = expandedItems[item.id];
+                                    const isActive = location.pathname.startsWith(item.to);
+                                    const Icon = item.Icon;
 
-            {/* Logout Confirmation Modal */}
-            <ConfirmModal
-                isOpen={showLogoutConfirm}
-                onClose={() => setShowLogoutConfirm(false)}
-                onConfirm={handleLogoutConfirm}
-                title="Confirm Logout"
-                message="Are you sure you want to logout?"
-                confirmText="Logout"
-                cancelText="Cancel"
-                confirmColor="danger"
-            />
+                                    return (
+                                        <div key={item.id} className="flex flex-col">
+                                            {hasChildren ? (
+                                                <button
+                                                    onClick={() => toggleExpand(item.id)}
+                                                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group w-full ${isActive
+                                                        ? "bg-blue-600/10 text-blue-400 font-bold"
+                                                        : "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
+                                                        }`}
+                                                >
+                                                    <Icon className={`text-lg ${isActive ? "text-blue-500" : "text-slate-500"}`} />
+                                                    <span className="text-sm flex-1 text-left tracking-tight">{item.label}</span>
+                                                    <motion.div
+                                                        animate={{ rotate: isExpanded ? 180 : 0 }}
+                                                        transition={{ duration: 0.2 }}
+                                                    >
+                                                        <IoChevronDown className="text-slate-500 text-xs" />
+                                                    </motion.div>
+                                                </button>
+                                            ) : (
+                                                <NavLink
+                                                    to={item.to}
+                                                    end={item.to === "/admin/dashboard"}
+                                                    onClick={onClose}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
+                                                            ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20 font-bold"
+                                                            : "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
+                                                        }`
+                                                    }
+                                                >
+                                                    <Icon className="text-lg" />
+                                                    <span className="text-sm tracking-tight">{item.label}</span>
+                                                </NavLink>
+                                            )}
+
+                                            <AnimatePresence>
+                                                {hasChildren && isExpanded && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: "auto", opacity: 1 }}
+                                                        exit={{ height: 0, opacity: 0 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        className="overflow-hidden"
+                                                    >
+                                                        <div className="ml-6 mt-1 pl-4 border-l border-slate-700/50 space-y-1">
+                                                            {item.children.map((child, idx) => (
+                                                                <NavLink
+                                                                    key={idx}
+                                                                    to={child.to}
+                                                                    end={child.end}
+                                                                    onClick={onClose}
+                                                                    className={({ isActive }) =>
+                                                                        `block px-4 py-2 text-[13px] rounded-lg transition-colors ${isActive
+                                                                            ? "text-blue-400 font-bold bg-blue-500/5"
+                                                                            : "text-slate-500 hover:text-slate-300"
+                                                                        }`
+                                                                    }
+                                                                >
+                                                                    {child.label}
+                                                                </NavLink>
+                                                            ))}
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                    );
+                                })}
+                        </nav>
+                    </motion.aside>
+                )}
+            </AnimatePresence>
         </>
     );
 }

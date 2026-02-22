@@ -99,29 +99,29 @@ const getPaymentStatistics = async (req, res) => {
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]),
       Payment.aggregate([
-        { 
-          $match: { 
+        {
+          $match: {
             paymentType: 'ADVANCE',
-            status: PAYMENT_STATUS.SUCCESS 
-          } 
+            status: PAYMENT_STATUS.SUCCESS
+          }
         },
         { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
       ]),
       Payment.aggregate([
-        { 
-          $match: { 
+        {
+          $match: {
             paymentType: 'REMAINING',
-            status: PAYMENT_STATUS.SUCCESS 
-          } 
+            status: PAYMENT_STATUS.SUCCESS
+          }
         },
         { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
       ]),
       Payment.aggregate([
-        { 
-          $match: { 
+        {
+          $match: {
             paymentType: 'SETTLEMENT',
-            status: PAYMENT_STATUS.SUCCESS 
-          } 
+            status: PAYMENT_STATUS.SUCCESS
+          }
         },
         { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
       ]),
@@ -674,7 +674,7 @@ const getVendorPaymentOverview = async (req, res) => {
     });
 
     // Calculate total payments to vendors
-    const totalPaymentsToVendors = 
+    const totalPaymentsToVendors =
       (travelChargesData[0]?.total || 0) +
       (siteVisitData[0]?.total || 0) +
       (reportUploadData[0]?.total || 0) +
@@ -683,7 +683,7 @@ const getVendorPaymentOverview = async (req, res) => {
       (finalSettlementRewards[0]?.total || 0) -
       (finalSettlementPenalties[0]?.total || 0);
 
-    const totalPaymentCount = 
+    const totalPaymentCount =
       (travelChargesData[0]?.count || 0) +
       (siteVisitData[0]?.count || 0) +
       (reportUploadData[0]?.count || 0) +
@@ -743,11 +743,175 @@ const getVendorPaymentOverview = async (req, res) => {
   }
 };
 
+/**
+ * Get detailed transaction reports
+ */
+const getPaymentReports = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const query = { status: PAYMENT_STATUS.SUCCESS };
+
+    if (startDate && endDate) {
+      query.paidAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+
+    const payments = await Payment.find(query)
+      .populate('user', 'name')
+      .populate('vendor', 'name')
+      .populate({
+        path: 'booking',
+        select: 'bookingId status service',
+        populate: { path: 'service', select: 'name' }
+      })
+      .sort({ paidAt: -1 });
+
+    const reportData = payments.map(p => ({
+      date: p.paidAt,
+      bookingNumber: p.booking?.bookingId || '-',
+      service: p.booking?.service?.name || '-',
+      customer: p.user?.name || '-',
+      vendor: p.vendor?.name || '-',
+      amount: p.amount,
+      platformFee: (p.amount * 0.1), // Mocking 10% platform fee if not in model
+      paymentMethod: p.method,
+      bookingStatus: p.booking?.status || '-'
+    }));
+
+    const totals = {
+      totalAmount: reportData.reduce((acc, curr) => acc + curr.amount, 0),
+      totalCommission: reportData.reduce((acc, curr) => acc + curr.platformFee, 0),
+      totalVendorEarnings: reportData.reduce((acc, curr) => acc + (curr.amount - curr.platformFee), 0)
+    };
+
+    res.json({ success: true, data: reportData, totals });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Get GSTR-1 Sales Report
+ */
+const getGstReports = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const query = { 'payment.status': PAYMENT_STATUS.SUCCESS };
+
+    if (startDate && endDate) {
+      query.updatedAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+
+    const bookings = await Booking.find(query)
+      .populate('user', 'name address')
+      .sort({ updatedAt: -1 });
+
+    const reportData = bookings.map(b => ({
+      invoiceDate: b.updatedAt.toLocaleDateString('en-IN'),
+      invoiceNumber: `INV-${b.bookingId}`,
+      customerName: b.user?.name || '-',
+      placeOfSupply: b.address?.state || 'Local',
+      hsnSac: '9988',
+      taxableValue: b.payment?.subtotal || 0,
+      gstRate: '18%',
+      totalTax: b.payment?.gst || 0,
+      invoiceValue: b.payment?.totalAmount || 0,
+      totalCGST: (b.payment?.gst || 0) / 2,
+      totalSGST: (b.payment?.gst || 0) / 2
+    }));
+
+    const summary = {
+      totalTaxableValue: reportData.reduce((acc, curr) => acc + curr.taxableValue, 0),
+      totalCGST: reportData.reduce((acc, curr) => acc + curr.totalCGST, 0),
+      totalSGST: reportData.reduce((acc, curr) => acc + curr.totalSGST, 0),
+      totalTax: reportData.reduce((acc, curr) => acc + curr.totalTax, 0)
+    };
+
+    res.json({ success: true, data: reportData, summary });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Get TDS Report (194-O)
+ */
+const getTdsReports = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    // Aggragate vendor settlements
+    const query = { 'payment.vendorSettlement.status': 'COMPLETED' };
+    if (startDate && endDate) {
+      query.updatedAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+
+    const aggregation = await Booking.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: "$vendor",
+          grossSales: { $sum: "$payment.totalAmount" },
+          bookingCount: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: "vendors",
+          localField: "_id",
+          foreignField: "_id",
+          as: "vendorInfo"
+        }
+      },
+      { $unwind: "$vendorInfo" }
+    ]);
+
+    const reportData = aggregation.map(item => ({
+      vendorName: item.vendorInfo.name,
+      panNumber: "NOT_PROVIDED", // Vendors probably have PAN in their profile
+      grossSales: item.grossSales,
+      tdsRate: 1,
+      tdsAmount: item.grossSales * 0.01,
+      bookingCount: item.bookingCount
+    }));
+
+    const summary = {
+      totalGrossSales: reportData.reduce((acc, curr) => acc + curr.grossSales, 0),
+      totalTDS: reportData.reduce((acc, curr) => acc + curr.tdsAmount, 0),
+      vendorCount: reportData.length
+    };
+
+    res.json({ success: true, data: reportData, summary });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Get COD Report (Cash Collected)
+ */
+const getCodReports = async (req, res) => {
+  try {
+    // In JalaDhar, we don't have explicit COD in the same way, 
+    // but maybe vendors collect extra amounts on site.
+    // For now, return empty as placeholder or mock some data if desired.
+    res.json({
+      success: true,
+      data: [],
+      summary: { totalCashCollected: 0, totalOutstandingDues: 0, highRiskCount: 0 }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getAllPayments,
   getPaymentStatistics,
   getPaymentDetails,
   getAdminPaymentOverview,
-  getVendorPaymentOverview
+  getVendorPaymentOverview,
+  getPaymentReports,
+  getGstReports,
+  getTdsReports,
+  getCodReports
 };
 

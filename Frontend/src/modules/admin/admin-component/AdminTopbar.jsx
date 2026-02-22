@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
     IoMenuOutline,
     IoPersonCircleOutline,
-    IoLogOutOutline
+    IoLogOutOutline,
+    IoNotificationsOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import AdminMobileSidebar from "./AdminMobileSidebar";
@@ -28,71 +29,86 @@ export default function AdminTopbar() {
     };
 
     const getPageTitle = (pathname) => {
-        if (pathname.includes('/dashboard')) return 'Dashboard';
-        if (pathname.includes('/vendors')) return 'Vendors';
-        if (pathname.includes('/users')) return 'Users';
-        if (pathname.includes('/bookings')) return 'Bookings';
-        if (pathname.includes('/payments')) return 'Payments';
-        if (pathname.includes('/settings')) return 'Settings';
-        if (pathname.includes('/approvals')) return 'Approvals';
-        if (pathname.includes('/reports')) return 'Reports';
+        if (pathname.includes('/dashboard')) return 'Dashboard Overview';
+        if (pathname.includes('/vendors')) return 'Vendors Management';
+        if (pathname.includes('/users')) return 'Users Directory';
+        if (pathname.includes('/bookings')) return 'Service Bookings';
+        if (pathname.includes('/payments')) return 'Payments & Finance';
+        if (pathname.includes('/settings')) return 'System Settings';
+        if (pathname.includes('/approvals')) return 'Review & Approvals';
+        if (pathname.includes('/reports')) return 'Reports & Analytics';
         if (pathname.includes('/notifications')) return 'Notifications';
-        if (pathname.includes('/disputes')) return 'Disputes';
-        if (pathname.includes('/ratings')) return 'Ratings';
-        if (pathname.includes('/policies')) return 'Policies';
-        if (pathname.includes('/team')) return 'Team Management';
-        return 'Admin Panel';
+        if (pathname.includes('/disputes')) return 'Dispute Resolutions';
+        if (pathname.includes('/ratings')) return 'Ratings & Feedback';
+        if (pathname.includes('/policies')) return 'Policies Management';
+        if (pathname.includes('/team')) return 'Admin Team';
+        return 'Admin Portal';
     };
 
     return (
         <>
-            <header className="fixed top-0 right-0 left-0 md:left-64 h-16 bg-white shadow-sm border-b border-gray-200 z-30 transition-all duration-300">
-                <div className="flex items-center justify-between h-full px-4 md:px-6">
-                    <div className="flex items-center gap-4">
-                        {/* Left Section - Mobile Menu */}
+            <header className="fixed top-0 right-0 left-0 lg:left-[278px] h-20 bg-white/80 backdrop-blur-xl z-30 transition-all duration-300 border-b border-slate-100 font-outfit">
+                <div className="flex items-center justify-between h-full px-6 md:px-8">
+                    <div className="flex items-center gap-6">
+                        {/* Mobile Menu Trigger */}
                         <button
                             onClick={() => setIsMobileSidebarOpen(true)}
-                            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="lg:hidden p-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all active:scale-95"
                             aria-label="Open menu"
                         >
-                            <IoMenuOutline className="text-2xl text-gray-700" />
+                            <IoMenuOutline className="text-2xl" />
                         </button>
 
-                        {/* Page Title */}
-                        <h1 className="text-xl font-bold text-gray-800 hidden sm:block">
-                            {getPageTitle(location.pathname)}
-                        </h1>
+                        {/* Breadcrumbs / Page Title */}
+                        <div className="hidden sm:block">
+                            <h1 className="text-xl font-black text-slate-800 tracking-tight">
+                                {getPageTitle(location.pathname)}
+                            </h1>
+                            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                                JALADHAARA ADMIN PANEL
+                            </p>
+                        </div>
                     </div>
 
                     {/* Right Section */}
                     <div className="flex items-center gap-4 ml-auto">
-                        {/* Notifications */}
-                        <NotificationDropdown />
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 pr-4 border-r border-slate-100">
+                            <NotificationDropdown />
+                        </div>
 
                         {/* Admin Profile */}
-                        <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-                            <div className="text-right hidden md:block">
-                                <p className="text-sm font-semibold text-gray-800">
+                        <div className="flex items-center gap-3 pl-2 pr-4 border-r border-slate-100">
+                            <div className="text-right hidden sm:block">
+                                <p className="text-sm font-black text-slate-800 leading-none">
                                     {admin?.name || "Admin"}
                                 </p>
-                                <p className="text-xs text-gray-500 font-medium">
-                                    {admin?.role ? admin.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : "Administrator"}
+                                <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mt-1">
+                                    {admin?.role?.replace(/_/g, ' ') || "Admin"}
                                 </p>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0A84FF] to-[#005BBB] flex items-center justify-center">
-                                <span className="text-white font-bold text-sm">
-                                    {admin?.name?.charAt(0).toUpperCase() || "A"}
-                                </span>
+                            <div className="relative group cursor-pointer">
+                                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-50 border border-slate-100 flex items-center justify-center group-hover:border-blue-500/30 transition-all overflow-hidden shadow-sm">
+                                    {admin?.avatar ? (
+                                        <img src={admin.avatar} alt="Admin" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-slate-600 font-black text-sm">
+                                            {admin?.name?.charAt(0).toUpperCase() || "A"}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
                             </div>
                         </div>
 
-                        {/* Logout Button */}
+                        {/* Sign Out Button */}
                         <button
                             onClick={handleLogoutClick}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
-                            title="Logout"
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 transition-all active:scale-95 group font-bold text-[13px]"
                         >
-                            <IoLogOutOutline className="text-xl" />
+                            <IoLogOutOutline className="text-lg transition-transform group-hover:translate-x-0.5" />
+                            <span className="hidden md:block">Sign Out</span>
                         </button>
                     </div>
                 </div>

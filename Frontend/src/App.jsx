@@ -92,6 +92,7 @@ const AdminRatings = lazy(() => import("./modules/admin/admin-pages/AdminRatings
 const AdminDisputes = lazy(() => import("./modules/admin/admin-pages/AdminDisputes"));
 const AdminTeamManagement = lazy(() => import("./modules/admin/admin-pages/AdminTeamManagement"));
 const AdminPolicies = lazy(() => import("./modules/admin/admin-pages/AdminPolicies"));
+const AdminReports = lazy(() => import("./modules/admin/admin-pages/Reports"));
 const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavbar"));
 
 function App() {
@@ -544,8 +545,8 @@ function App() {
                                                     <Suspense fallback={<LoadingSpinner />}>
                                                         <AdminNavbar />
                                                     </Suspense>
-                                                    <div className="flex-1 flex flex-col md:ml-64">
-                                                        <main className="flex-1 p-6 mt-16">
+                                                    <div className="flex-1 flex flex-col lg:ml-[278px]">
+                                                        <main className="flex-1 p-8 mt-20">
                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                 <Routes>
                                                                     <Route
@@ -842,6 +843,14 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminBookingDetails />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/reports/*"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminReports />
                                                                             </Suspense>
                                                                         }
                                                                     />

@@ -156,10 +156,67 @@ exports.getRevenueAnalytics = async (req, res) => {
  * @route GET /api/admin/dashboard/bookings/trends
  */
 exports.getBookingTrends = async (req, res) => {
-  // Reusing getRevenueAnalytics logic or dedicated implementation if needed differently
-  // For now, getRevenueAnalytics provides bookings count as well.
-  // If specific trend logic (like status breakdown) is needed, implement here.
-  res.status(200).json({ success: true, message: "Use revenue analytics for booking counts" });
+  try {
+    const { days = 30 } = req.query;
+    const start = new Date();
+    start.setDate(start.getDate() - parseInt(days));
+    start.setHours(0, 0, 0, 0);
+
+    const trends = await Booking.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: start }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          count: { $sum: 1 },
+          completed: {
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    "$status",
+                    [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE]
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          cancelled: {
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    "$status",
+                    [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED]
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: { trends }
+    });
+  } catch (error) {
+    console.error('Error in getBookingTrends:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch booking trends',
+      error: error.message
+    });
+  }
 };
 
 /**
@@ -171,20 +228,96 @@ exports.getUserGrowthMetrics = async (req, res) => {
     const { days = 30 } = req.query;
     const start = new Date();
     start.setDate(start.getDate() - parseInt(days));
+    start.setHours(0, 0, 0, 0);
 
-    const growthData = await User.aggregate([
-      { $match: { createdAt: { $gte: start }, role: 'USER' } },
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { _id: 1 } }
+    const [userGrowth, vendorGrowth] = await Promise.all([
+      User.aggregate([
+        { $match: { createdAt: { $gte: start }, role: 'USER' } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      Vendor.aggregate([
+        { $match: { createdAt: { $gte: start } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ])
     ]);
 
-    res.status(200).json({ success: true, data: growthData });
+    res.status(200).json({
+      success: true,
+      data: {
+        userGrowth,
+        vendorGrowth
+      }
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in getUserGrowthMetrics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch growth metrics',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get Payment Analytics
+ * @route GET /api/admin/dashboard/payments/analytics
+ */
+exports.getPaymentAnalytics = async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const start = new Date();
+    start.setDate(start.getDate() - parseInt(days));
+    start.setHours(0, 0, 0, 0);
+
+    const [statusDistribution, transactionTrend] = await Promise.all([
+      Booking.aggregate([
+        { $match: { createdAt: { $gte: start } } },
+        {
+          $group: {
+            _id: "$payment.status",
+            count: { $sum: 1 },
+            amount: { $sum: "$payment.totalAmount" }
+          }
+        }
+      ]),
+      Booking.aggregate([
+        { $match: { createdAt: { $gte: start } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            totalAmount: { $sum: "$payment.totalAmount" },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ])
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        statusDistribution,
+        transactionTrend
+      }
+    });
+  } catch (error) {
+    console.error('Error in getPaymentAnalytics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payment analytics',
+      error: error.message
+    });
   }
 };
