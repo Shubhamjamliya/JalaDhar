@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  IoBellOutline,
+  IoNotificationsOutline,
   IoCheckmarkDoneOutline,
   IoTrashOutline,
   IoInformationCircleOutline,
@@ -103,7 +103,7 @@ export default function AdminBookingNotifications() {
               animate={{ opacity: 1 }}
               className="py-20 flex flex-col items-center justify-center bg-white rounded-3xl border border-dashed border-gray-100"
             >
-              <IoBellOutline className="text-5xl text-gray-200 mb-4" />
+              <IoNotificationsOutline className="text-5xl text-gray-200 mb-4" />
               <p className="text-gray-400 font-medium">No alerts found in this category</p>
             </motion.div>
           ) : (
@@ -117,7 +117,7 @@ export default function AdminBookingNotifications() {
                 className={`bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-5 transition-all group ${n.unread ? 'ring-1 ring-blue-500 bg-blue-50/10' : ''}`}
               >
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${n.type === 'new' ? 'bg-blue-50 text-blue-600' : n.type === 'payment' ? 'bg-yellow-50 text-yellow-600' : n.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                  {n.type === 'new' ? <IoBellOutline /> : n.type === 'payment' ? <IoInformationCircleOutline /> : n.type === 'success' ? <IoCheckmarkCircleOutline /> : <IoAlertCircleOutline />}
+                  {n.type === 'new' ? <IoNotificationsOutline /> : n.type === 'payment' ? <IoInformationCircleOutline /> : n.type === 'success' ? <IoCheckmarkCircleOutline /> : <IoAlertCircleOutline />}
                 </div>
 
                 <div className="flex-1">
