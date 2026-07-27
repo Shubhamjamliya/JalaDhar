@@ -5,7 +5,7 @@ const vendorBankDetailsSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vendor',
     required: [true, 'Vendor is required'],
-    unique: true // One bank details per vendor
+    unique: true // One bank details per vendor (unique creates the index automatically)
   },
   accountHolderName: {
     type: String,

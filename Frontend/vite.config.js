@@ -15,6 +15,9 @@ const __dirname = path.dirname(__filename);
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
+  server: {
+    port: 5050,
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
