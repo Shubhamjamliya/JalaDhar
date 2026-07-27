@@ -5,8 +5,7 @@ const vendorBankDetailsSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vendor',
     required: [true, 'Vendor is required'],
-    unique: true, // One bank details per vendor
-    index: true
+    unique: true // One bank details per vendor
   },
   accountHolderName: {
     type: String,
@@ -62,9 +61,9 @@ const vendorBankDetailsSchema = new mongoose.Schema({
 });
 
 // Indexes
-vendorBankDetailsSchema.index({ vendor: 1 });
 vendorBankDetailsSchema.index({ isVerified: 1 });
 vendorBankDetailsSchema.index({ isActive: 1 });
 
 module.exports = mongoose.model('VendorBankDetails', vendorBankDetailsSchema);
+
 
