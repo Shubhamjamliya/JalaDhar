@@ -76,26 +76,37 @@ export default function UserAllBookingsStatus() {
   const getFilteredBookings = () => {
     if (!bookings.length) return [];
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const ongoingStatuses = [
+      "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", 
+      "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", 
+      "ADMIN_APPROVED", "FINAL_SETTLEMENT"
+    ];
+    const completedStatuses = ["COMPLETED", "SUCCESS", "FINAL_SETTLEMENT_COMPLETE"];
+    const cancelledStatuses = ["CANCELLED", "REJECTED", "FAILED"];
 
     switch (activeTab) {
       case "upcoming":
         return bookings.filter((booking) => {
           const status = booking.userStatus || booking.status;
-          const scheduledDate = booking.scheduledDate ? new Date(booking.scheduledDate) : null;
-          const isUpcoming = scheduledDate && scheduledDate >= today;
-          return !["COMPLETED", "CANCELLED", "REJECTED", "FAILED"].includes(status) && isUpcoming;
+          return !ongoingStatuses.includes(status) &&
+            !completedStatuses.includes(status) &&
+            !cancelledStatuses.includes(status);
         });
-      case "complete":
+      case "ongoing":
         return bookings.filter((booking) => {
           const status = booking.userStatus || booking.status;
-          return ["COMPLETED", "SUCCESS"].includes(status);
+          return ongoingStatuses.includes(status);
+        });
+      case "complete":
+      case "completed":
+        return bookings.filter((booking) => {
+          const status = booking.userStatus || booking.status;
+          return completedStatuses.includes(status);
         });
       case "cancelled":
         return bookings.filter((booking) => {
           const status = booking.userStatus || booking.status;
-          return ["CANCELLED", "REJECTED", "FAILED"].includes(status);
+          return cancelledStatuses.includes(status);
         });
       default:
         return bookings;
@@ -192,10 +203,10 @@ export default function UserAllBookingsStatus() {
       </h1>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-2 border-b border-gray-200">
+      <div className="mb-6 flex gap-2 border-b border-gray-200 overflow-x-auto pb-1">
         <button
           onClick={() => setActiveTab("upcoming")}
-          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${activeTab === "upcoming"
+          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "upcoming"
             ? "text-[#0A84FF] border-[#0A84FF]"
             : "text-gray-500 border-transparent hover:text-[#0A84FF]"
             }`}
@@ -203,17 +214,26 @@ export default function UserAllBookingsStatus() {
           Upcoming
         </button>
         <button
-          onClick={() => setActiveTab("complete")}
-          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${activeTab === "complete"
+          onClick={() => setActiveTab("ongoing")}
+          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "ongoing"
             ? "text-[#0A84FF] border-[#0A84FF]"
             : "text-gray-500 border-transparent hover:text-[#0A84FF]"
             }`}
         >
-          Complete
+          Ongoing
+        </button>
+        <button
+          onClick={() => setActiveTab("completed")}
+          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "completed" || activeTab === "complete"
+            ? "text-[#0A84FF] border-[#0A84FF]"
+            : "text-gray-500 border-transparent hover:text-[#0A84FF]"
+            }`}
+        >
+          Completed
         </button>
         <button
           onClick={() => setActiveTab("cancelled")}
-          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 ${activeTab === "cancelled"
+          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "cancelled"
             ? "text-[#0A84FF] border-[#0A84FF]"
             : "text-gray-500 border-transparent hover:text-[#0A84FF]"
             }`}
@@ -231,12 +251,14 @@ export default function UserAllBookingsStatus() {
             </div>
             <p className="text-[#3A3A3A] font-semibold mb-2">
               {activeTab === "upcoming" && "No Upcoming Bookings"}
-              {activeTab === "complete" && "No Completed Bookings"}
+              {activeTab === "ongoing" && "No Ongoing Bookings"}
+              {(activeTab === "completed" || activeTab === "complete") && "No Completed Bookings"}
               {activeTab === "cancelled" && "No Cancelled Bookings"}
             </p>
             <p className="text-[#6B7280] text-sm">
               {activeTab === "upcoming" && "You don't have any upcoming bookings."}
-              {activeTab === "complete" && "You don't have any completed bookings yet."}
+              {activeTab === "ongoing" && "You don't have any in-progress bookings."}
+              {(activeTab === "completed" || activeTab === "complete") && "You don't have any completed bookings yet."}
               {activeTab === "cancelled" && "You don't have any cancelled bookings."}
             </p>
           </div>

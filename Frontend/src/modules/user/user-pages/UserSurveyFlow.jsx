@@ -22,6 +22,11 @@ import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
 import { getNearbyVendors, createBooking, calculateBookingCharges, getUserDashboardStats } from "../../../services/bookingApi";
 import { getPublicSettings } from "../../../services/settingsApi";
 import PolicyModal from "../../shared/components/PolicyModal";
+import ExpertProfileCard from "../components/ExpertProfileCard";
+import { parseAcresGuntas } from "../../../utils/landAreaHelper";
+import StateDistrictInput from "../../../components/StateDistrictInput";
+import { getStatesList, getDistrictsList, findStateForDistrict } from "../../../utils/indianStatesDistricts";
+import { formatDateToDDMMYYYY, formatDateToLongString } from "../../../utils/dateFormatter";
 
 // --- Sub-components for each step ---
 
@@ -188,25 +193,41 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
-            <input
+            <StateDistrictInput
               required
-              name="district"
+              label="District"
               value={formData.district}
-              onChange={handleChange}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
-              placeholder="District"
+              onChange={(val) => {
+                handleChange({ target: { name: "district", value: val } });
+                const matchedState = findStateForDistrict(val);
+                if (matchedState && !formData.state) {
+                  handleChange({ target: { name: "state", value: matchedState } });
+                }
+              }}
+              onSelectSuggestion={(selectedDistrict) => {
+                handleChange({ target: { name: "district", value: selectedDistrict } });
+                const matchedState = findStateForDistrict(selectedDistrict);
+                if (matchedState) {
+                  handleChange({ target: { name: "state", value: matchedState } });
+                }
+              }}
+              suggestions={getDistrictsList(formData.state, formData.district)}
+              placeholder="Search or enter district..."
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-            <input
+            <StateDistrictInput
               required
-              name="state"
+              label="State"
               value={formData.state}
-              onChange={handleChange}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
-              placeholder="State"
+              onChange={(val) => {
+                handleChange({ target: { name: "state", value: val } });
+              }}
+              onSelectSuggestion={(selectedState) => {
+                handleChange({ target: { name: "state", value: selectedState } });
+              }}
+              suggestions={getStatesList(formData.state)}
+              placeholder="Search or enter state..."
             />
           </div>
         </div>
@@ -235,21 +256,48 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
         {/* Extent */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {category === "Agriculture" ? "Area Extent (Acres / Bhiga)" :
+            {category === "Agriculture" ? "Area Extent (Acres / Guntas)" :
               (category === "Domestic/Household" || category === "Open plots") ? "Area Extent (Sq Yards / Sq Ft)" :
-                "Area Extent (Acres / Sq Yards)"}
+                "Area Extent (Acres / Guntas)"}
           </label>
           <input
             type="number"
             required
             name="purposeExtent"
             value={formData.purposeExtent}
-            onChange={handleChange}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val && category === "Agriculture") {
+                const parsed = parseAcresGuntas(val);
+                // If guntas >= 40 carried over into acres, update value immediately (e.g., 0.41 -> 1.01, 2.40 -> 3)
+                if (val.includes('.') && parseInt(val.split('.')[1], 10) >= 40) {
+                  handleChange({ target: { name: "purposeExtent", value: String(parsed.decimalValue) } });
+                  return;
+                }
+              }
+              handleChange(e);
+            }}
+            onBlur={(e) => {
+              const val = e.target.value;
+              if (val && category === "Agriculture") {
+                const parsed = parseAcresGuntas(val);
+                if (parsed.decimalValue > 0) {
+                  handleChange({ target: { name: "purposeExtent", value: String(parsed.decimalValue) } });
+                }
+              }
+            }}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
-            placeholder="Enter extent"
+            placeholder={category === "Agriculture" ? "e.g. 3.6 (3 Acres 6 Guntas) or 2.40 (3 Acres)" : "Enter extent"}
             min="0"
             step="0.01"
           />
+          {formData.purposeExtent && parseAcresGuntas(formData.purposeExtent).formatted && (
+            <p className="text-xs text-blue-600 mt-1 font-medium flex items-center gap-1">
+              <span>=</span>
+              <span>{parseAcresGuntas(formData.purposeExtent).formatted}</span>
+              <span className="text-gray-400 text-[10px]">(40 Guntas = 1 Acre)</span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -280,61 +328,86 @@ const LocationPicker = ({ onLocationSelect, onBack }) => {
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      toast.showError("Geolocation not supported");
+      toast.showError("Geolocation is not supported by your browser");
       return;
     }
     setSearching(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        let address = "Current Location";
 
-        // Try to reverse geocode if Google Maps API is available
-        if (window.google?.maps?.Geocoder) {
-          try {
-            const geocoder = new window.google.maps.Geocoder();
-            const result = await new Promise((resolve, reject) => {
-              geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
-                if (status === "OK" && results?.[0]) {
-                  resolve(results[0].formatted_address);
-                } else {
-                  reject(status);
-                }
-              });
+    const handleSuccess = async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      let address = "Current Location";
+
+      // Try to reverse geocode if Google Maps API is available
+      if (window.google?.maps?.Geocoder) {
+        try {
+          const geocoder = new window.google.maps.Geocoder();
+          const result = await new Promise((resolve, reject) => {
+            geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
+              if (status === "OK" && results?.[0]) {
+                resolve(results[0].formatted_address);
+              } else {
+                reject(status);
+              }
             });
-            if (result) address = result;
-          } catch (e) {
-            console.error("Reverse geocoding failed", e);
-          }
+          });
+          if (result) address = result;
+        } catch (e) {
+          console.error("Reverse geocoding failed", e);
         }
+      }
 
-        setSelectedLocation({
-          lat: latitude,
-          lng: longitude,
-          address: address
-        });
-        setSearching(false);
-      },
-      (err) => {
-        console.error(err);
-        toast.showError("Could not get location. Check permissions.");
-        setSearching(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      setSelectedLocation({
+        lat: latitude,
+        lng: longitude,
+        address: address
+      });
+      setSearching(false);
+    };
+
+    const handleError = (err) => {
+      console.warn("High accuracy geolocation failed, retrying with standard accuracy...", err);
+      navigator.geolocation.getCurrentPosition(
+        handleSuccess,
+        (finalErr) => {
+          console.error("Geolocation failed:", finalErr);
+          if (finalErr.code === 1) {
+            toast.showError("Location permission denied. Please allow location access or search your land address below.");
+          } else {
+            toast.showError("Unable to detect GPS. Please search and select your land address below.");
+          }
+          setSearching(false);
+        },
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+      );
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      handleSuccess,
+      handleError,
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 
   const handleConfirmLocation = () => {
-    if (selectedLocation) {
+    if (selectedLocation && selectedLocation.lat !== undefined && selectedLocation.lng !== undefined) {
       onLocationSelect(selectedLocation);
     } else {
-      toast.showError("Please select a location first");
+      toast.showError("Please pin the exact location of your survey land with valid GPS coordinates.");
     }
   };
 
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-gray-800">Pin Location</h2>
+
+      {/* Survey Land Instruction Note */}
+      <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3 text-xs text-amber-900 leading-relaxed shadow-sm">
+        <IoInformationCircleOutline className="text-amber-600 text-lg flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="font-bold text-amber-950 mb-0.5">Important Survey Land Instructions:</p>
+          <p>Pin the exact GPS location of the land where the groundwater survey is required. Do not pin your village, home, office, road junction, or any nearby landmark unless it is the actual survey land.</p>
+        </div>
+      </div>
 
       {/* Current Location Section */}
       <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
@@ -344,7 +417,7 @@ const LocationPicker = ({ onLocationSelect, onBack }) => {
           disabled={searching}
           className="w-full flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-200 py-3 rounded-xl font-medium hover:bg-blue-50 transition-colors shadow-sm"
         >
-          <IoLocationSharp /> {searching ? "Locating..." : "Use Current Location"}
+          <IoLocationSharp /> {searching ? "Locating..." : "Use Current Location of Your Land"}
         </button>
       </div>
 
@@ -432,44 +505,19 @@ const ExpertSelection = ({ location, category, onSelect, onBack }) => {
         <div className="flex-1 overflow-y-auto space-y-4 pr-1 pb-4">
           {experts.map(expert => {
             // Find the relevant service details for pricing
-            // Logic from nearbyVendors controller ensures services are populated
             const surveyService = expert.allServices?.find(s =>
               s.name.toLowerCase().includes('survey') ||
               s.category?.toLowerCase().includes('survey') ||
-              true // Fallback to first if filtering logic on backend is broad
-            ) || expert.allServices?.[0]; // Fallback
-
-            if (!surveyService) return null;
+              true
+            ) || expert.allServices?.[0];
 
             return (
-              <button
+              <ExpertProfileCard
                 key={expert._id}
-                onClick={() => onSelect({ ...expert, selectedService: surveyService })}
-                className="w-full flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-blue-500 transition-all text-left group"
-              >
-                <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center text-xl shrink-0">
-                  {expert.profilePicture ? (
-                    <img src={expert.profilePicture} alt="" className="h-full w-full rounded-full object-cover" />
-                  ) : (
-                    "👨‍🔧"
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-gray-800 truncate">{expert.name}</h3>
-                  <p className="text-xs text-gray-500">
-                    {expert.experience} Yrs Exp • ⭐ {expert.averageRating?.toFixed(1) || "New"}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md font-medium">
-                      {expert.distance ? `${expert.distance.toFixed(1)} km` : 'Pre-verified'}
-                    </span>
-                    <span className="text-sm font-bold text-gray-900 ml-auto">
-                      ₹{surveyService.price}
-                      <span className="text-xs font-normal text-gray-400"> (Base)</span>
-                    </span>
-                  </div>
-                </div>
-              </button>
+                expert={expert}
+                selectedService={surveyService}
+                onSelect={(selectedExp) => onSelect({ ...selectedExp, selectedService: surveyService })}
+              />
             );
           })}
         </div>
@@ -555,10 +603,19 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
         <div className="flex flex-col gap-3">
           <input
             type="date"
-            className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:border-blue-500 outline-none"
+            value={date || ''}
+            className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:border-blue-500 outline-none font-medium text-gray-800"
             min={new Date().toISOString().split("T")[0]}
             onChange={(e) => setDate(e.target.value)}
           />
+          {date && (
+            <div className="bg-blue-50/70 border border-blue-100 rounded-lg p-2.5 flex items-center justify-between text-xs text-blue-900 font-semibold">
+              <span>Selected Visit Date:</span>
+              <span className="bg-white px-2.5 py-1 rounded border border-blue-200 font-bold text-blue-700 shadow-sm">
+                {formatDateToDDMMYYYY(date)} ({formatDateToLongString(date)})
+              </span>
+            </div>
+          )}
           <p className="text-xs text-gray-500 italic">
             * Our expert will contact you to coordinate the exact time.
           </p>
@@ -607,24 +664,40 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
               )}
             </div>
 
+            {/* GST (18% on Base Service Fee) */}
+            <div className="flex justify-between items-center text-xs font-medium pt-2 border-t border-gray-100">
+              <span className="text-gray-500">GST ({charges?.gstPercentage || 18}% on Base Fee)</span>
+              {loading ? (
+                <div className="h-4 w-16 bg-gray-100 animate-pulse rounded"></div>
+              ) : (
+                <span className="text-gray-900 font-bold">₹{charges?.gst?.toFixed(2) || '0.00'}</span>
+              )}
+            </div>
+
+            {/* Subtotal */}
+            <div className="flex justify-between items-center text-sm font-semibold pt-2 border-t border-gray-100">
+              <span className="text-gray-700">Subtotal</span>
+              {loading ? (
+                <div className="h-4 w-16 bg-gray-100 animate-pulse rounded"></div>
+              ) : (
+                <span className="text-gray-900 font-bold">₹{charges?.subtotal?.toFixed(2) || '0.00'}</span>
+              )}
+            </div>
+
             {/* Travel Section */}
             <div className="space-y-2 pt-2 border-t border-gray-100">
-              {/* Travel KM */}
               <div className="flex justify-between items-center text-xs">
                 <span className="text-gray-500">Travel Distance</span>
                 <span className="text-gray-700 font-semibold">{charges?.distance ? `${charges.distance} km` : '0 km'}</span>
               </div>
-              {/* One Way */}
               <div className="flex justify-between items-center text-xs">
                 <span className="text-gray-500">One Way Charge</span>
                 <span className="text-gray-700 font-semibold">₹{(charges?.travelCharges / 2 || 0).toFixed(2)}</span>
               </div>
-              {/* Two Way */}
               <div className="flex justify-between items-center text-xs">
                 <span className="text-gray-500">Round Trip (Two Way)</span>
                 <span className="text-blue-600 font-bold text-[10px] uppercase">Included (X 2)</span>
               </div>
-              {/* Total Travel Charges */}
               <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-100/50">
                 <span className="text-gray-600 font-bold">Total Travel Charges</span>
                 {loading ? (
@@ -635,17 +708,7 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
               </div>
             </div>
 
-            {/* GST */}
-            <div className="flex justify-between items-center text-xs font-medium pt-2 border-t border-gray-200">
-              <span className="text-gray-500">GST (18%)</span>
-              {loading ? (
-                <div className="h-4 w-16 bg-gray-100 animate-pulse rounded"></div>
-              ) : (
-                <span className="text-gray-900 font-bold">₹{charges?.gst?.toFixed(2) || '0.00'}</span>
-              )}
-            </div>
-
-            {/* TOTAL */}
+            {/* TOTAL AMOUNT */}
             <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
               <span className="text-base font-black text-gray-800">TOTAL AMOUNT</span>
               {loading ? (
@@ -656,12 +719,12 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
             </div>
           </div>
 
-          {/* Payment Schedule (8 & 9) */}
+          {/* Payment Schedule */}
           <div className="mt-6 pt-4 space-y-3">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Payment Schedule</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                <p className="text-[10px] text-blue-600 font-bold uppercase mb-1">Advance (40%)</p>
+                <p className="text-[10px] text-blue-600 font-bold uppercase mb-1">Advance ({charges?.advancePercentage || 40}%)</p>
                 {loading ? (
                   <div className="h-5 w-16 bg-blue-100 animate-pulse rounded"></div>
                 ) : (
@@ -669,7 +732,7 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
                 )}
               </div>
               <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl">
-                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Remaining (60%)</p>
+                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Remaining ({charges?.remainingPercentage || 60}%)</p>
                 {loading ? (
                   <div className="h-5 w-16 bg-gray-100 animate-pulse rounded"></div>
                 ) : (
@@ -705,18 +768,18 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
             ,{" "}
             <button
               type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('refund'); }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('cancellation'); }}
               className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 decoration-2"
             >
-              Cancellation & Refund Policy
+              Cancellation Policy
             </button>
             , and{" "}
             <button
               type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('terms'); }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('refund'); }}
               className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 decoration-2"
             >
-              Terms of Service
+              Refund Policy
             </button>
             .
           </p>

@@ -18,19 +18,11 @@ const disputeSchema = new mongoose.Schema({
     ref: 'Booking',
     default: null
   },
-  // Dispute type
+  // Dispute type (dynamic string from settings)
   type: {
     type: String,
     required: true,
-    enum: [
-      'PAYMENT_ISSUE',
-      'SERVICE_QUALITY',
-      'VENDOR_BEHAVIOR',
-      'REPORT_ISSUE',
-      'CANCELLATION',
-      'REFUND',
-      'OTHER'
-    ]
+    trim: true
   },
   // Subject/title
   subject: {
@@ -52,11 +44,10 @@ const disputeSchema = new mongoose.Schema({
     enum: ['PENDING', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'],
     default: 'PENDING'
   },
-  // Priority
+  // Priority (legacy / optional)
   priority: {
     type: String,
-    enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'],
-    default: 'MEDIUM'
+    default: null
   },
   // Admin assigned to handle
   assignedTo: {

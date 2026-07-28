@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useToast } from "../../../hooks/useToast";
+import PolicyModal from "../../shared/components/PolicyModal";
 
 import logo from "@/assets/AppLogo.png";
 
@@ -10,6 +11,7 @@ export default function UserLogin() {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
     const navigate = useNavigate();
     const { login } = useAuth();
     const toast = useToast();
@@ -130,7 +132,17 @@ export default function UserLogin() {
                     </button>
                 </form>
 
-                <div className="mt-8 text-center">
+                <div className="mt-8 text-center space-y-2">
+                    <p className="text-xs text-gray-500">
+                        By logging in, you agree to our{" "}
+                        <button
+                            type="button"
+                            onClick={() => setShowTermsModal(true)}
+                            className="font-semibold text-[#1A80E5] underline hover:text-blue-700"
+                        >
+                            General Terms & Conditions
+                        </button>
+                    </p>
                     <p className="text-sm text-[#6B7280]">
                         Don't have an account?{" "}
                         <Link
@@ -142,6 +154,10 @@ export default function UserLogin() {
                     </p>
                 </div>
             </div>
+
+            {showTermsModal && (
+                <PolicyModal type="general" onClose={() => setShowTermsModal(false)} />
+            )}
         </div>
     );
 }

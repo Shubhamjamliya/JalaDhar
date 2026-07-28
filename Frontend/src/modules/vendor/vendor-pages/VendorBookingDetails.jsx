@@ -21,6 +21,7 @@ import {
     IoWaterOutline,
 } from "react-icons/io5";
 import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, markBookingAsVisited, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
+import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -883,7 +884,7 @@ export default function VendorBookingDetails() {
                         {booking.purposeExtent && (
                             <div>
                                 <p className="text-sm text-gray-500 mb-1">Extent</p>
-                                <p className="text-base font-semibold text-gray-800">{booking.purposeExtent} Acres</p>
+                                <p className="text-base font-semibold text-gray-800">{formatAcresGuntasDisplay(booking.purposeExtent)}</p>
                             </div>
                         )}
                         {booking.notes && (

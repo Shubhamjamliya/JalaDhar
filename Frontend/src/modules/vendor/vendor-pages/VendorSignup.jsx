@@ -913,7 +913,7 @@ export default function VendorSignup() {
                                                     Service Name
                                                 </label>
                                                 <p className="text-lg font-bold text-[#3A3A3A]">
-                                                    Ground Water Detection
+                                                    Groundwater Survey
                                                 </p>
                                             </div>
                                         </div>

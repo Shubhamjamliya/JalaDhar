@@ -21,6 +21,7 @@ import ErrorMessage from "../../shared/components/ErrorMessage";
 import { useToast } from "../../../hooks/useToast";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import SurveyReportPDF from "../components/SurveyReportPDF";
+import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 
 export default function UserSurveyReport() {
   const { bookingId } = useParams();
@@ -125,7 +126,7 @@ export default function UserSurveyReport() {
           <div className="flex flex-col md:flex-row justify-between items-start border-b-4 border-blue-600 pb-6 mb-8 gap-4">
             <div>
               <h1 className="text-2xl md:text-4xl font-black text-blue-800 tracking-tighter mb-1">Jaladhaara</h1>
-              <p className="text-xs md:text-sm font-sans font-bold text-gray-400 uppercase tracking-widest">Ground Water Detection Report</p>
+              <p className="text-xs md:text-sm font-sans font-bold text-gray-400 uppercase tracking-widest">Groundwater Survey Report</p>
             </div>
             <div className="text-left md:text-right w-full md:w-auto">
               <div className="bg-blue-50 px-3 py-1 rounded text-blue-700 font-sans font-bold text-xs mb-2 inline-block">
@@ -175,7 +176,7 @@ export default function UserSurveyReport() {
               </div>
               <div className="detail-item">
                 <label className="text-[10px] text-gray-400 uppercase font-black block">Land Extent</label>
-                <p className="font-bold text-gray-800 break-words">{report.extent || "N/A"}</p>
+                <p className="font-bold text-gray-800 break-words">{formatAcresGuntasDisplay(report.extent)}</p>
               </div>
             </div>
           </section>

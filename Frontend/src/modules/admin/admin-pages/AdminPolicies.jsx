@@ -24,17 +24,51 @@ const formats = [
   'color', 'background',
 ];
 
+const DEFAULT_POLICIES = {
+  general_terms: `<ul>
+  <li>By creating an account or logging in, you agree to abide by Jaladhaara platform guidelines and privacy terms.</li>
+  <li>Users are responsible for maintaining the confidentiality of their credentials and account access.</li>
+  <li>Survey requests must represent genuine land testing requirements with accurate location data.</li>
+</ul>`,
+  booking_policy: `<ul>
+  <li><strong>Slot Booking:</strong> Bookings must be requested with an accurate land location and survey requirements.</li>
+  <li><strong>Confirmation:</strong> Your booking is confirmed once the advance payment is completed.</li>
+  <li><strong>Expert Assignment:</strong> A qualified groundwater survey expert will be assigned to your booking.</li>
+</ul>`,
+  cancellation_policy: `<ul>
+  <li><strong>Cancellation Before 24h:</strong> Full refund of advance payment if cancelled at least 24 hours before the scheduled visit.</li>
+  <li><strong>Late Cancellation:</strong> 50% of the advance amount will be forfeited if cancelled between 12-24 hours before the visit.</li>
+  <li><strong>Same Day Cancellation:</strong> No refund for cancellations made within 12 hours of the visit.</li>
+</ul>`,
+  refund_policy: `<ul>
+  <li><strong>Refund Processing:</strong> Approved refunds will be processed back to the original payment method within 5-7 business days.</li>
+  <li><strong>Failed Survey Visits:</strong> If an expert fails to attend due to platform issues, a 100% refund will be issued.</li>
+  <li><strong>Inquiries:</strong> Contact support for any refund status queries.</li>
+</ul>`,
+  advance_payment_policy: `<ul>
+  <li><strong>Advance Split:</strong> A 40% advance payment of the total estimated amount is required to lock your appointment.</li>
+  <li><strong>Payment Gateways:</strong> Secure online payment via Razorpay, UPI, Cards, or Net Banking.</li>
+  <li><strong>Instant Receipt:</strong> Digital receipt is generated immediately upon successful transaction.</li>
+</ul>`,
+  remaining_payment_policy: `<ul>
+  <li><strong>Remaining Split:</strong> The 60% balance amount is payable after the physical survey visit is completed.</li>
+  <li><strong>Report Release:</strong> Survey findings and PDF report will be unlocked upon receipt of full payment.</li>
+</ul>`,
+  terms_of_service: `<ul>
+  <li>The location provided must be accurate and accessible for the expert and equipment.</li>
+  <li>While we use scientific methods, water yield results are estimates based on geographical data and do not guarantee 100% success.</li>
+  <li>Customers are responsible for obtaining any local permissions required for the survey.</li>
+  <li>All reports are for informational purposes only.</li>
+</ul>`
+};
+
 export default function AdminPolicies() {
   const toast = useToast();
   const [error, setError] = useState("");
   const [policiesLoading, setPoliciesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const [policySettings, setPolicySettings] = useState({
-    booking_policy: "",
-    cancellation_policy: "",
-    terms_of_service: "",
-  });
+  const [policySettings, setPolicySettings] = useState(DEFAULT_POLICIES);
 
   // Load policy settings
   useEffect(() => {
@@ -45,10 +79,12 @@ export default function AdminPolicies() {
         if (response.success && response.data.settings) {
           const settingsObj = {};
           response.data.settings.forEach(setting => {
-            settingsObj[setting.key] = setting.value;
+            if (setting.value && setting.value.trim() !== "") {
+              settingsObj[setting.key] = setting.value;
+            }
           });
           setPolicySettings(prev => ({
-            ...prev,
+            ...DEFAULT_POLICIES,
             ...settingsObj
           }));
         }
@@ -69,8 +105,12 @@ export default function AdminPolicies() {
 
     try {
       const settings = [
+        { key: 'general_terms', value: policySettings.general_terms },
         { key: 'booking_policy', value: policySettings.booking_policy },
         { key: 'cancellation_policy', value: policySettings.cancellation_policy },
+        { key: 'refund_policy', value: policySettings.refund_policy },
+        { key: 'advance_payment_policy', value: policySettings.advance_payment_policy },
+        { key: 'remaining_payment_policy', value: policySettings.remaining_payment_policy },
         { key: 'terms_of_service', value: policySettings.terms_of_service },
       ];
 
@@ -177,9 +217,24 @@ export default function AdminPolicies() {
           <form onSubmit={handlePolicySettingsUpdate} className="space-y-8">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                Booking & Payment Policy
+                General Terms & Conditions (Login / Registration)
               </label>
-              <p className="text-xs text-gray-500 mb-2">Shown during the final step of the booking process.</p>
+              <p className="text-xs text-gray-500 mb-2">Terms accepted by users during login and registration.</p>
+              <ReactQuill
+                theme="snow"
+                value={policySettings.general_terms}
+                onChange={(content) => setPolicySettings(prev => ({ ...prev, general_terms: content }))}
+                modules={modules}
+                formats={formats}
+                placeholder="Write general terms and conditions here..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Booking Policy
+              </label>
+              <p className="text-xs text-gray-500 mb-2">Shown during booking requests and survey scheduling.</p>
               <ReactQuill
                 theme="snow"
                 value={policySettings.booking_policy}
@@ -192,9 +247,9 @@ export default function AdminPolicies() {
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                Cancellation & Refund Policy
+                Cancellation Policy
               </label>
-              <p className="text-xs text-gray-500 mb-2">Terms regarding cancellations and money back.</p>
+              <p className="text-xs text-gray-500 mb-2">Terms regarding booking cancellations.</p>
               <ReactQuill
                 theme="snow"
                 value={policySettings.cancellation_policy}
@@ -202,6 +257,51 @@ export default function AdminPolicies() {
                 modules={modules}
                 formats={formats}
                 placeholder="Write your cancellation policy here..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Refund Policy
+              </label>
+              <p className="text-xs text-gray-500 mb-2">Terms regarding money-back conditions and refund timelines.</p>
+              <ReactQuill
+                theme="snow"
+                value={policySettings.refund_policy}
+                onChange={(content) => setPolicySettings(prev => ({ ...prev, refund_policy: content }))}
+                modules={modules}
+                formats={formats}
+                placeholder="Write your refund policy here..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Advance Payment Policy
+              </label>
+              <p className="text-xs text-gray-500 mb-2">Shown during initial advance payment confirmation.</p>
+              <ReactQuill
+                theme="snow"
+                value={policySettings.advance_payment_policy}
+                onChange={(content) => setPolicySettings(prev => ({ ...prev, advance_payment_policy: content }))}
+                modules={modules}
+                formats={formats}
+                placeholder="Write advance payment terms here..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Remaining Payment Policy
+              </label>
+              <p className="text-xs text-gray-500 mb-2">Shown during final balance payment confirmation.</p>
+              <ReactQuill
+                theme="snow"
+                value={policySettings.remaining_payment_policy}
+                onChange={(content) => setPolicySettings(prev => ({ ...prev, remaining_payment_policy: content }))}
+                modules={modules}
+                formats={formats}
+                placeholder="Write remaining balance payment terms here..."
               />
             </div>
 

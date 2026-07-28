@@ -10,6 +10,8 @@ import { useAuth } from "../../../contexts/AuthContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import LocationSelector from "../../../components/LocationSelector";
+import ExpertProfileCard from "../components/ExpertProfileCard";
+
 
 export default function UserServiceProvider() {
     const navigate = useNavigate();
@@ -129,102 +131,14 @@ export default function UserServiceProvider() {
                         <p className="text-[#4A4A4A] text-sm">No vendors available</p>
                     </div>
                 ) : (
-                    vendors.map((vendor, index) => {
-                        // Generate different colored backgrounds for profile pictures
-                        const colors = ['#B3E5FC', '#FFEB3B', '#C8E6C9', '#FFCCBC', '#E1BEE7'];
-                        const bgColor = colors[index % colors.length];
-
-                        return (
-                            <div
-                                key={vendor._id}
-                                className="relative flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-lg"
-                            >
-                                {/* Distance Badge - Top Right */}
-                                {userLocation.lat && userLocation.lng && vendor.distance !== null && vendor.distance !== undefined && !isNaN(vendor.distance) && (
-                                    <span className="absolute top-2 right-2 text-xs font-semibold text-white bg-orange-400 px-2.5 py-1 rounded-full whitespace-nowrap z-10">
-                                        {typeof vendor.distance === 'number' ? vendor.distance.toFixed(1) : vendor.distance} km away
-                                    </span>
-                                )}
-
-                                {/* Vendor Header - Profile Picture and Name */}
-                                <div className="flex items-start gap-3 overflow-hidden">
-                                    {/* Circular Profile Picture */}
-                                    <div className="relative shrink-0">
-                                        <div
-                                            className="h-20 w-20 rounded-full bg-cover bg-center bg-no-repeat border-4 border-white shadow-md"
-                                            style={{
-                                                backgroundImage: vendor.profilePicture
-                                                    ? `url("${vendor.profilePicture}")`
-                                                    : "none",
-                                                backgroundColor: vendor.profilePicture ? "transparent" : bgColor
-                                            }}
-                                        >
-                                            {!vendor.profilePicture && (
-                                                <div className="w-full h-full flex items-center justify-center rounded-full">
-                                                    <span className="text-3xl">👤</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    {/* Name and Rating */}
-                                    <div className={`flex flex-1 flex-col gap-1 min-w-0 ${userLocation.lat && userLocation.lng && vendor.distance !== null && vendor.distance !== undefined && !isNaN(vendor.distance) ? 'pr-24' : ''}`}>
-                                        <p className="text-gray-800 text-base font-bold leading-tight truncate">
-                                            {vendor.name}
-                                        </p>
-                                        <div className="flex items-center gap-1">
-                                            {renderStars(vendor.averageRating || 0)}
-                                            <span className="text-gray-600 text-xs font-medium ml-1">
-                                                ({vendor.averageRating?.toFixed(1) || "0.0"})
-                                                {vendor.totalRatings > 0 && (
-                                                    <span className="text-gray-500 ml-1">
-                                                        • {vendor.totalRatings} {vendor.totalRatings === 1 ? "rating" : "ratings"}
-                                                    </span>
-                                                )}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Service Tags */}
-                                {vendor.serviceTags && vendor.serviceTags.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        {vendor.serviceTags.map((tag, tagIndex) => (
-                                            <span
-                                                key={tagIndex}
-                                                className="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full"
-                                            >
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Price and Experience */}
-                                <div className="flex flex-col gap-1">
-                                    <p className="text-sm text-gray-600">
-                                        Starts from: <span className="font-bold text-gray-800">
-                                            {formatPrice(vendor.minPrice)}
-                                        </span>
-                                    </p>
-                                    {vendor.experience && (
-                                        <p className="text-xs text-gray-500">
-                                            {vendor.experience} years experience
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* View Profile Button - Moved to Bottom */}
-                                <button
-                                    onClick={() => navigate(`/user/vendor-profile/${vendor._id}`)}
-                                    className="relative flex items-center justify-center bg-gradient-to-b from-[#B3E5FC] via-[#E1F5FE] to-[#81D4FA] text-[#1976D2] px-3 py-2 rounded-xl text-xs font-semibold hover:from-[#90CAF9] hover:via-[#BBDEFB] hover:to-[#64B5F6] transition-all shadow-md hover:shadow-lg active:scale-[0.98] overflow-hidden w-full"
-                                >
-                                    {/* Glossy/Highlight Effect */}
-                                    <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent"></div>
-                                    <span className="relative z-10">View Profile</span>
-                                </button>
-                            </div>
-                        );
-                    })
+                    vendors.map((vendor) => (
+                        <ExpertProfileCard
+                            key={vendor._id}
+                            expert={vendor}
+                            actionLabel="View Profile"
+                            onSelect={() => navigate(`/user/vendor-profile/${vendor._id}`)}
+                        />
+                    ))
                 )}
             </div>
         </div>

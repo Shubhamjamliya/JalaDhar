@@ -11,7 +11,7 @@ const { uploadToCloudinary } = require('../../services/cloudinaryService');
 const createDispute = async (req, res) => {
   try {
     const userId = req.userId;
-    const { subject, description, type, priority, bookingId, attachments } = req.body;
+    const { subject, description, type, bookingId, attachments } = req.body;
 
     // Validation
     if (!subject || !description || !type) {
@@ -68,7 +68,6 @@ const createDispute = async (req, res) => {
       type,
       subject: subject.trim(),
       description: description.trim(),
-      priority: priority || 'MEDIUM',
       status: 'PENDING',
       attachments: uploadedAttachments
     });
@@ -95,8 +94,7 @@ const createDispute = async (req, res) => {
           },
           metadata: {
             disputeId: dispute._id.toString(),
-            type: dispute.type,
-            priority: dispute.priority
+            type: dispute.type
           }
         }, io);
       }

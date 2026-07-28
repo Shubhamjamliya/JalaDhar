@@ -12,7 +12,8 @@ import {
     IoConstructOutline,
     IoCashOutline,
     IoSearchOutline,
-    IoChevronDownOutline
+    IoChevronDownOutline,
+    IoInformationCircleOutline
 } from "react-icons/io5";
 import { createBooking, calculateBookingCharges } from "../../../services/bookingApi";
 import PageContainer from "../../shared/components/PageContainer";
@@ -20,6 +21,10 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
 import PolicyModal from "../../shared/components/PolicyModal";
+import { parseAcresGuntas } from "../../../utils/landAreaHelper";
+import StateDistrictInput from "../../../components/StateDistrictInput";
+import { getStatesList, getDistrictsList, findStateForDistrict } from "../../../utils/indianStatesDistricts";
+import { formatDateToDDMMYYYY, formatDateToLongString } from "../../../utils/dateFormatter";
 
 // --- Sub-components ---
 
@@ -206,23 +211,41 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack }) => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
-                        <input
+                        <StateDistrictInput
                             required
+                            label="District"
                             value={formData.district}
-                            onChange={(e) => handleChange("district", e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
-                            placeholder="District"
+                            onChange={(val) => {
+                                handleChange("district", val);
+                                const matchedState = findStateForDistrict(val);
+                                if (matchedState && !formData.state) {
+                                    handleChange("state", matchedState);
+                                }
+                            }}
+                            onSelectSuggestion={(selectedDistrict) => {
+                                handleChange("district", selectedDistrict);
+                                const matchedState = findStateForDistrict(selectedDistrict);
+                                if (matchedState) {
+                                    handleChange("state", matchedState);
+                                }
+                            }}
+                            suggestions={getDistrictsList(formData.state, formData.district)}
+                            placeholder="Search or enter district..."
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                        <input
+                        <StateDistrictInput
                             required
+                            label="State"
                             value={formData.state}
-                            onChange={(e) => handleChange("state", e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
-                            placeholder="State"
+                            onChange={(val) => {
+                                handleChange("state", val);
+                            }}
+                            onSelectSuggestion={(selectedState) => {
+                                handleChange("state", selectedState);
+                            }}
+                            suggestions={getStatesList(formData.state)}
+                            placeholder="Search or enter state..."
                         />
                     </div>
                 </div>
@@ -230,17 +253,43 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack }) => {
 
             {/* Extent */}
             <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Extent (Acres / Sq Yards)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Extent (Acres / Guntas)</label>
                 <input
                     type="number"
                     required
                     value={formData.purposeExtent}
-                    onChange={(e) => handleChange("purposeExtent", e.target.value)}
+                    onChange={(e) => {
+                        const val = e.target.value;
+                        if (val) {
+                            const parsed = parseAcresGuntas(val);
+                            if (val.includes('.') && parseInt(val.split('.')[1], 10) >= 40) {
+                                handleChange("purposeExtent", String(parsed.decimalValue));
+                                return;
+                            }
+                        }
+                        handleChange("purposeExtent", val);
+                    }}
+                    onBlur={(e) => {
+                        const val = e.target.value;
+                        if (val) {
+                            const parsed = parseAcresGuntas(val);
+                            if (parsed.decimalValue > 0) {
+                                handleChange("purposeExtent", String(parsed.decimalValue));
+                            }
+                        }
+                    }}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none"
-                    placeholder="Enter extent"
+                    placeholder="e.g. 3.6 (3 Acres 6 Guntas) or 2.40 (3 Acres)"
                     min="0"
                     step="0.01"
                 />
+                {formData.purposeExtent && parseAcresGuntas(formData.purposeExtent).formatted && (
+                    <p className="text-xs text-blue-600 mt-1 font-medium flex items-center gap-1">
+                        <span>=</span>
+                        <span>{parseAcresGuntas(formData.purposeExtent).formatted}</span>
+                        <span className="text-gray-400 text-[10px]">(40 Guntas = 1 Acre)</span>
+                    </p>
+                )}
             </div>
 
             {/* Existing Borewell */}
@@ -384,54 +433,79 @@ const LocationPicker = ({ onLocationSelect, onBack, initialLocation }) => {
 
     const getCurrentLocation = () => {
         if (!navigator.geolocation) {
-            toast.showError("Geolocation not supported");
+            toast.showError("Geolocation is not supported by your browser");
             return;
         }
         setSearching(true);
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                const { latitude, longitude } = pos.coords;
-                let address = "Current Location";
 
-                // Keep reverse geocoding simple or implement if API key available
-                if (import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
-                    try {
-                        const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`);
-                        const data = await response.json();
-                        if (data.results && data.results[0]) {
-                            address = data.results[0].formatted_address;
-                        }
-                    } catch (e) {
-                        console.error(e);
+        const handleSuccess = async (pos) => {
+            const { latitude, longitude } = pos.coords;
+            let address = "Current Location";
+
+            if (import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+                try {
+                    const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`);
+                    const data = await response.json();
+                    if (data.results && data.results[0]) {
+                        address = data.results[0].formatted_address;
                     }
+                } catch (e) {
+                    console.error(e);
                 }
+            }
 
-                setSelectedLocation({
-                    lat: latitude,
-                    lng: longitude,
-                    address: address
-                });
-                setSearching(false);
-            },
-            (err) => {
-                toast.showError("Could not get location");
-                setSearching(false);
-            },
-            { enableHighAccuracy: true }
+            setSelectedLocation({
+                lat: latitude,
+                lng: longitude,
+                address: address
+            });
+            setSearching(false);
+        };
+
+        const handleError = (err) => {
+            console.warn("High accuracy geolocation failed, retrying with standard accuracy...", err);
+            navigator.geolocation.getCurrentPosition(
+                handleSuccess,
+                (finalErr) => {
+                    console.error("Geolocation failed:", finalErr);
+                    if (finalErr.code === 1) {
+                        toast.showError("Location permission denied. Please allow location access or search your land address below.");
+                    } else {
+                        toast.showError("Unable to detect GPS. Please search and select your land address below.");
+                    }
+                    setSearching(false);
+                },
+                { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+            );
+        };
+
+        navigator.geolocation.getCurrentPosition(
+            handleSuccess,
+            handleError,
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
     };
 
     const handleConfirm = () => {
-        if (selectedLocation) {
+        if (selectedLocation && selectedLocation.lat !== undefined && selectedLocation.lng !== undefined) {
             onLocationSelect(selectedLocation);
         } else {
-            toast.showError("Please pick a location");
+            toast.showError("Please pin the exact location of your survey land with valid GPS coordinates.");
         }
     };
 
     return (
         <div className="space-y-6">
             <h2 className="text-xl font-bold text-gray-800">Pin Location</h2>
+
+            {/* Survey Land Instruction Note */}
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3 text-xs text-amber-900 leading-relaxed shadow-sm">
+                <IoInformationCircleOutline className="text-amber-600 text-lg flex-shrink-0 mt-0.5" />
+                <div>
+                    <p className="font-bold text-amber-950 mb-0.5">Important Survey Land Instructions:</p>
+                    <p>Pin the exact GPS location of the land where the groundwater survey is required. Do not pin your village, home, office, road junction, or any nearby landmark unless it is the actual survey land.</p>
+                </div>
+            </div>
 
             <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                 <p className="text-sm text-blue-800 mb-3">Get accurate pricing by pinning location.</p>
@@ -440,7 +514,7 @@ const LocationPicker = ({ onLocationSelect, onBack, initialLocation }) => {
                     disabled={searching}
                     className="w-full flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-200 py-3 rounded-xl font-medium hover:bg-blue-50 transition-colors shadow-sm"
                 >
-                    <IoLocationSharp /> {searching ? "Locating..." : "Use Current Location"}
+                    <IoLocationSharp /> {searching ? "Locating..." : "Use Current Location of Your Land"}
                 </button>
             </div>
 
@@ -526,50 +600,71 @@ const ReviewAndBook = ({ surveyData, service, vendor, onConfirm, onBack }) => {
 
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
                 <h3 className="font-semibold text-gray-700 text-sm">Schedule</h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <input
                         type="date"
-                        className="w-full p-2 border rounded-lg text-sm"
+                        value={date || ''}
+                        className="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:border-blue-500 outline-none font-medium text-gray-800"
                         min={new Date().toISOString().split("T")[0]}
                         onChange={(e) => setDate(e.target.value)}
                     />
                     <select
-                        className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:border-blue-500 outline-none bg-white"
+                        className="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:border-blue-500 outline-none bg-white font-medium text-gray-800"
                         onChange={(e) => setTime(e.target.value)}
                     >
                         <option value="">Select Time</option>
                         {Array.from({ length: 24 }, (_, i) => {
                             const hour = i;
                             const ampm = hour >= 12 ? 'PM' : 'AM';
-                            const hour12 = hour % 12 || 12;
-                            const display = `${hour12}:00 ${ampm}`;
-                            const value = `${String(hour).padStart(2, '0')}:00`;
-                            return <option key={value} value={value}>{display}</option>
+                            const displayHour = hour % 12 || 12;
+                            const timeString = `${displayHour.toString().padStart(2, '0')}:00 ${ampm}`;
+                            return (
+                                <option key={i} value={timeString}>
+                                    {timeString}
+                                </option>
+                            );
                         })}
                     </select>
                 </div>
+                {date && (
+                    <div className="bg-blue-50/70 border border-blue-100 rounded-lg p-2.5 flex items-center justify-between text-xs text-blue-900 font-semibold">
+                        <span>Selected Visit Date:</span>
+                        <span className="bg-white px-2.5 py-1 rounded border border-blue-200 font-bold text-blue-700 shadow-sm">
+                            {formatDateToDDMMYYYY(date)} ({formatDateToLongString(date)})
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* Charges */}
             <div className="bg-gray-50 p-5 rounded-xl space-y-3 text-sm">
                 <div className="flex justify-between text-gray-600">
-                    <span>Base Fee</span>
-                    <span>₹{charges?.baseServiceFee || service?.price}</span>
+                    <span>Base Service Fee</span>
+                    <span className="font-semibold text-gray-800">₹{charges?.baseServiceFee || service?.price}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                    <span>Travel ({charges?.distance?.toFixed(1) || '0'} km)</span>
-                    <span>₹{charges?.travelCharges || 0}</span>
+                <div className="flex justify-between text-gray-600 text-xs">
+                    <span>GST ({charges?.gstPercentage || 18}% on Base Fee)</span>
+                    <span className="font-medium text-gray-700">₹{charges?.gst || 0}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                    <span>GST ({charges?.gstPercentage || 18}%)</span>
-                    <span>₹{charges?.gst || 0}</span>
+                <div className="flex justify-between text-gray-700 font-semibold border-t border-gray-200/60 pt-2">
+                    <span>Subtotal</span>
+                    <span>₹{charges?.subtotal?.toFixed(2) || '0.00'}</span>
+                </div>
+                <div className="flex justify-between text-gray-600 text-xs">
+                    <span>Travel Charges ({charges?.distance?.toFixed(1) || '0'} km)</span>
+                    <span className="font-medium text-gray-700">₹{charges?.travelCharges || 0}</span>
                 </div>
                 <div className="border-t border-dashed border-gray-300 pt-3 flex justify-between font-bold text-gray-900 text-base">
                     <span>Total Estimate</span>
-                    <span>₹{charges?.totalAmount?.toFixed(2) || 'Calculating...'}</span>
+                    <span className="text-blue-600">₹{charges?.totalAmount?.toFixed(2) || 'Calculating...'}</span>
                 </div>
-                <div className="bg-blue-100 p-2 rounded text-blue-800 text-xs font-medium text-center">
-                    Advance Payable: ₹{charges?.advanceAmount?.toFixed(2) || '0.00'}
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                    <div className="bg-blue-100/70 p-2 rounded text-blue-900 text-xs font-bold text-center">
+                        Advance ({charges?.advancePercentage || 40}%): ₹{charges?.advanceAmount?.toFixed(2) || '0.00'}
+                    </div>
+                    <div className="bg-gray-200/70 p-2 rounded text-gray-800 text-xs font-semibold text-center">
+                        Remaining ({charges?.remainingPercentage || 60}%): ₹{(charges?.totalAmount - charges?.advanceAmount)?.toFixed(2) || '0.00'}
+                    </div>
                 </div>
             </div>
 
@@ -597,18 +692,18 @@ const ReviewAndBook = ({ surveyData, service, vendor, onConfirm, onBack }) => {
                         ,{" "}
                         <button
                             type="button"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('refund'); }}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('cancellation'); }}
                             className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 decoration-2"
                         >
-                            Cancellation & Refund Policy
+                            Cancellation Policy
                         </button>
                         , and{" "}
                         <button
                             type="button"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('terms'); }}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActivePolicy('refund'); }}
                             className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 decoration-2"
                         >
-                            Terms of Service
+                            Refund Policy
                         </button>
                         .
                     </p>

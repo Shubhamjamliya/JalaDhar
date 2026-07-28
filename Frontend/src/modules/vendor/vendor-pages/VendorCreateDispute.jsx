@@ -7,10 +7,26 @@ import {
 } from "react-icons/io5";
 import { createDispute } from "../../../services/vendorApi";
 import { getVendorBookings } from "../../../services/vendorApi";
+import { getPublicSettings } from "../../../services/settingsApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import CustomDropdown from "../../shared/components/CustomDropdown";
+
+const DEFAULT_DISPUTE_TYPES = [
+    "Expert did not arrive",
+    "Expert arrived late",
+    "Survey not completed",
+    "Incorrect survey location",
+    "Payment issue",
+    "Refund issue",
+    "Travel charges issue",
+    "Survey report issue",
+    "Expert behaviour",
+    "Requested offline payment",
+    "Safety concern",
+    "Other"
+];
 
 export default function VendorCreateDispute() {
     const navigate = useNavigate();
@@ -18,12 +34,12 @@ export default function VendorCreateDispute() {
     const toast = useToast();
     const [loading, setLoading] = useState(false);
     const [bookings, setBookings] = useState([]);
+    const [disputeTypes, setDisputeTypes] = useState(DEFAULT_DISPUTE_TYPES);
     const [loadingBookings, setLoadingBookings] = useState(false);
     const [formData, setFormData] = useState({
         subject: "",
         description: "",
         type: "",
-        priority: "MEDIUM",
         bookingId: location.state?.bookingId || "",
     });
     const [attachments, setAttachments] = useState([]);
@@ -31,7 +47,22 @@ export default function VendorCreateDispute() {
 
     useEffect(() => {
         loadBookings();
+        loadDisputeTypes();
     }, []);
+
+    const loadDisputeTypes = async () => {
+        try {
+            const res = await getPublicSettings({ category: "general" });
+            if (res.success && res.data?.settings) {
+                const setting = res.data.settings.find(s => s.key === "DISPUTE_TYPES");
+                if (setting && Array.isArray(setting.value) && setting.value.length > 0) {
+                    setDisputeTypes(setting.value);
+                }
+            }
+        } catch (err) {
+            console.error("Failed to load dispute types setting:", err);
+        }
+    };
 
     const loadBookings = async () => {
         try {
@@ -161,31 +192,10 @@ export default function VendorCreateDispute() {
                         className={errors.type ? "border-red-500" : "border-gray-300"}
                         options={[
                             { value: "", label: "Select dispute type" },
-                            { value: "PAYMENT_ISSUE", label: "Payment Issue" },
-                            { value: "CLIENT_BEHAVIOR", label: "Client Behavior" },
-                            { value: "CANCELLATION_DISPUTE", label: "Cancellation Dispute" },
-                            { value: "SERVICE_COMPLETION", label: "Service Completion Issue" },
-                            { value: "UNREACHABLE_CLIENT", label: "Unreachable Client" },
-                            { value: "OTHER", label: "Other" }
+                            ...disputeTypes.map(t => ({ value: t, label: t }))
                         ]}
                     />
                     {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
-                </div>
-
-                {/* Priority */}
-                <div>
-                    <CustomDropdown
-                        name="priority"
-                        label="Priority"
-                        value={formData.priority}
-                        onChange={handleInputChange}
-                        options={[
-                            { value: "LOW", label: "Low" },
-                            { value: "MEDIUM", label: "Medium" },
-                            { value: "HIGH", label: "High" },
-                            { value: "URGENT", label: "Urgent" }
-                        ]}
-                    />
                 </div>
 
                 {/* Subject */}

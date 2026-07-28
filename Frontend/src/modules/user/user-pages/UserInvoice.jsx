@@ -222,7 +222,7 @@ export default function UserInvoice() {
                 <div className="flex items-center text-sm">
                   <div className="flex-[3]">
                     <p className="font-bold text-gray-800">{booking.service?.name}</p>
-                    <p className="text-xs text-gray-500 mt-1">Base professional service fee for water detection</p>
+                    <p className="text-xs text-gray-500 mt-1">Base professional service fee for groundwater survey</p>
                   </div>
                   <div className="flex-1 text-right font-bold text-gray-900">{formatAmount(booking.payment?.baseServiceFee)}</div>
                 </div>
@@ -241,12 +241,20 @@ export default function UserInvoice() {
             <div className="flex justify-end pt-6 border-t border-gray-100">
               <div className="w-full sm:w-80 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 font-medium">Subtotal</span>
-                  <span className="text-gray-900 font-bold">{formatAmount((booking.payment?.baseServiceFee || 0) + (booking.payment?.travelCharges || 0))}</span>
+                  <span className="text-gray-500 font-medium">Base Service Fee</span>
+                  <span className="text-gray-900 font-bold">{formatAmount(booking.payment?.baseServiceFee)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 font-medium">GST (18%)</span>
+                  <span className="text-gray-500 font-medium">GST (18% on Base Fee)</span>
                   <span className="text-gray-900 font-bold">{formatAmount(booking.payment?.gst)}</span>
+                </div>
+                <div className="flex justify-between text-sm font-semibold border-t border-gray-100 pt-2">
+                  <span className="text-gray-700">Subtotal</span>
+                  <span className="text-gray-900 font-bold">{formatAmount(booking.payment?.subtotal || ((booking.payment?.baseServiceFee || 0) + (booking.payment?.gst || 0)))}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 font-medium">Travel & Mobilization ({booking.payment?.distance?.toFixed(1) || '0'}km)</span>
+                  <span className="text-gray-900 font-bold">{formatAmount(booking.payment?.travelCharges)}</span>
                 </div>
                 <div className="flex justify-between items-center py-4 border-y-2 border-gray-900 mt-4">
                   <span className="text-lg font-black text-gray-900">TOTAL</span>

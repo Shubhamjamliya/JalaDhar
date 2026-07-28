@@ -14,6 +14,7 @@ import {
     IoCloudUploadOutline
 } from "react-icons/io5";
 import { getBookingDetails, uploadVisitReport } from "../../../services/vendorApi";
+import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import { useToast } from "../../../hooks/useToast";
@@ -83,7 +84,7 @@ export default function VendorUploadReport() {
                 mandal: booking.mandal || prev.mandal,
                 district: booking.district || prev.district,
                 state: booking.state || prev.state,
-                extent: booking.purposeExtent ? `${booking.purposeExtent} Acres` : prev.extent,
+                extent: booking.purposeExtent ? formatAcresGuntasDisplay(booking.purposeExtent) : prev.extent,
             }));
         }
     }, [booking]);
@@ -303,7 +304,7 @@ export default function VendorUploadReport() {
                         <InputGroup label="State" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" />
                         <InputGroup label="Land Location 📍" name="landLocation" value={formData.landLocation} onChange={handleInputChange} placeholder="Landmark or coordinates" />
                         <InputGroup label="Survey No" name="surveyNumber" value={formData.surveyNumber} onChange={handleInputChange} placeholder="Survey number" />
-                        <InputGroup label="Extent (acres/sq.yards)" name="extent" value={formData.extent} onChange={handleInputChange} placeholder="e.g. 2 Acres" />
+                        <InputGroup label="Extent (Acres / Guntas)" name="extent" value={formData.extent} onChange={handleInputChange} placeholder="e.g. 3 Acres 6 Guntas" />
 
                         <div className="md:col-span-2">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Area Type</label>

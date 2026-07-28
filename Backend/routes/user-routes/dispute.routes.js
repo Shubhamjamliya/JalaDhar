@@ -45,12 +45,9 @@ const createDisputeValidation = [
     .isLength({ min: 10, max: 2000 })
     .withMessage('Description must be between 10 and 2000 characters'),
   body('type')
-    .isIn(['PAYMENT_ISSUE', 'SERVICE_QUALITY', 'VENDOR_BEHAVIOR', 'REPORT_ISSUE', 'CANCELLATION', 'REFUND', 'OTHER'])
-    .withMessage('Invalid dispute type'),
-  body('priority')
-    .optional()
-    .isIn(['LOW', 'MEDIUM', 'HIGH', 'URGENT'])
-    .withMessage('Invalid priority level'),
+    .trim()
+    .notEmpty()
+    .withMessage('Dispute type is required'),
   body('bookingId')
     .optional()
     .isMongoId()

@@ -289,7 +289,7 @@ const InvoicePDF = ({ booking, billingInfo }) => {
           <View style={styles.tableRow}>
             <View style={styles.rowDesc}>
               <Text style={styles.rowTitle}>{service?.name}</Text>
-              <Text style={styles.rowSubtitle}>Base professional service fee for water detection</Text>
+              <Text style={styles.rowSubtitle}>Base professional service fee for groundwater survey</Text>
             </View>
             <Text style={styles.rowAmount}>{formatCurrency(payment?.baseServiceFee)}</Text>
           </View>
@@ -308,12 +308,20 @@ const InvoicePDF = ({ booking, billingInfo }) => {
         <View style={styles.summaryContainer}>
           <View style={styles.summaryBox}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal</Text>
-              <Text style={styles.summaryValue}>{formatCurrency((payment?.baseServiceFee || 0) + (payment?.travelCharges || 0))}</Text>
+              <Text style={styles.summaryLabel}>Base Service Fee</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(payment?.baseServiceFee)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>GST (18%)</Text>
+              <Text style={styles.summaryLabel}>GST (18% on Base Fee)</Text>
               <Text style={styles.summaryValue}>{formatCurrency(payment?.gst)}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Subtotal</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(payment?.subtotal || ((payment?.baseServiceFee || 0) + (payment?.gst || 0)))}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Travel & Mobilization</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(payment?.travelCharges)}</Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>TOTAL</Text>

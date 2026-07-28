@@ -524,7 +524,7 @@ const markVisitedAndUploadReport = async (req, res) => {
         name: booking.user.name,
         bookingId: booking._id.toString(),
         status: 'REPORT_UPLOADED',
-        message: 'Your water detection report is ready. Please pay the remaining amount to view it.'
+        message: 'Your groundwater survey report is ready. Please pay the remaining amount to view it.'
       });
 
       // Send real-time notifications
@@ -538,7 +538,7 @@ const markVisitedAndUploadReport = async (req, res) => {
           recipientModel: 'Vendor',
           type: 'REPORT_UPLOADED',
           title: 'Report Uploaded',
-          message: `You have successfully uploaded the water detection report for booking #${booking._id.toString().slice(-6)}. User will be notified to pay remaining amount.`,
+          message: `You have successfully uploaded the groundwater survey report for booking #${booking._id.toString().slice(-6)}. User will be notified to pay remaining amount.`,
           relatedEntity: {
             entityType: 'Booking',
             entityId: booking._id
@@ -555,7 +555,7 @@ const markVisitedAndUploadReport = async (req, res) => {
           recipientModel: 'User',
           type: 'REPORT_UPLOADED',
           title: 'Report Uploaded by Vendor',
-          message: `Vendor has uploaded the water detection report. Please pay remaining ₹${booking.payment.remainingAmount} to view it.`,
+          message: `Vendor has uploaded the groundwater survey report. Please pay remaining ₹${booking.payment.remainingAmount} to view it.`,
           relatedEntity: {
             entityType: 'Booking',
             entityId: booking._id
@@ -575,7 +575,7 @@ const markVisitedAndUploadReport = async (req, res) => {
             recipientModel: 'Admin',
             type: 'REPORT_UPLOADED',
             title: 'New Report Uploaded',
-            message: `New water detection report uploaded for booking #${booking._id.toString().slice(-6)}`,
+            message: `New groundwater survey report uploaded for booking #${booking._id.toString().slice(-6)}`,
             relatedEntity: {
               entityType: 'Booking',
               entityId: booking._id

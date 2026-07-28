@@ -17,6 +17,7 @@ import { loadRazorpay } from "../../../utils/razorpay";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import PageContainer from "../../shared/components/PageContainer";
+import PolicyModal from "../../shared/components/PolicyModal";
 import { useToast } from "../../../hooks/useToast";
 
 export default function UserAdvancePaymentConfirmation() {
@@ -29,11 +30,22 @@ export default function UserAdvancePaymentConfirmation() {
     const [paymentSuccess, setPaymentSuccess] = useState(false);
     const [fetchedPaymentConfig, setFetchedPaymentConfig] = useState(null);
     const [fullBooking, setFullBooking] = useState(null);
+    const [activePolicy, setActivePolicy] = useState(null);
 
-    // Get booking data from location state or try to recover from persisted state
-    // We prioritize location state, but robustly handle _id vs id
+    // Get booking data from location state or recover from URL search params or localStorage
+    const searchParams = new URLSearchParams(location.search);
+    const queryBookingId = searchParams.get('bookingId');
+    const storedBookingId = localStorage.getItem('pending_booking_id');
+
     const stateBooking = location.state?.booking;
-    const bookingId = stateBooking?.id || stateBooking?._id || location.state?.bookingId;
+    const bookingId = stateBooking?.id || stateBooking?._id || location.state?.bookingId || queryBookingId || storedBookingId;
+
+    // Save active bookingId to localStorage for reload recovery
+    useEffect(() => {
+        if (bookingId && bookingId !== "undefined") {
+            localStorage.setItem('pending_booking_id', bookingId);
+        }
+    }, [bookingId]);
 
     // Construct a minimal booking object if we only have ID, to allow fetching
     const booking = stateBooking || (bookingId ? { id: bookingId } : null);
@@ -59,11 +71,13 @@ export default function UserAdvancePaymentConfirmation() {
 
     // Fetch full booking details to get payment breakdown
     useEffect(() => {
+        let isMounted = true;
         const fetchBookingDetails = async () => {
             if (bookingId && bookingId !== "undefined") {
                 try {
+                    setFetchingBooking(true);
                     const response = await getBookingDetails(bookingId);
-                    if (response.success) {
+                    if (response.success && isMounted) {
                         setFullBooking(response.data.booking);
                         if (response.data.paymentConfig) {
                             setFetchedPaymentConfig(response.data.paymentConfig);
@@ -71,19 +85,24 @@ export default function UserAdvancePaymentConfirmation() {
                     }
                 } catch (err) {
                     console.error("Failed to fetch booking details:", err);
-                    toast.showError("Failed to load booking details. Please try again.");
+                    if (isMounted) {
+                        toast.showError("Failed to load booking details. Please try again.");
+                    }
+                } finally {
+                    if (isMounted) setFetchingBooking(false);
                 }
             }
         };
         fetchBookingDetails();
+        return () => { isMounted = false; };
     }, [bookingId]);
 
     useEffect(() => {
-        // Only redirect if absolutely no booking info and NO ID
-        if (!booking && !bookingId) {
+        // Only redirect if absolutely no booking info and NO ID after checking state, query, and storage
+        if (!booking && !bookingId && !fetchingBooking) {
             navigate("/user/dashboard", { replace: true });
         }
-    }, [booking, bookingId, navigate]);
+    }, [booking, bookingId, fetchingBooking, navigate]);
 
     const handlePayment = async () => {
         try {
@@ -144,6 +163,7 @@ export default function UserAdvancePaymentConfirmation() {
 
                         if (verifyResponse.success) {
                             setPaymentSuccess(true);
+                            localStorage.removeItem('pending_booking_id');
                             toast.showSuccess("Booking created successfully! Payment completed.");
                             setLoading(false);
                             // Navigate after a short delay to show success overlay
@@ -429,7 +449,7 @@ export default function UserAdvancePaymentConfirmation() {
     const baseServiceFee = bookingPayment?.baseServiceFee || service.price;
     const travelCharges = bookingPayment?.travelCharges || 0;
     const gst = bookingPayment?.gst || 0;
-    const subtotal = bookingPayment?.subtotal || (baseServiceFee + travelCharges);
+    const subtotal = bookingPayment?.subtotal || (baseServiceFee + gst);
     const gstPercentage = bookingPayment?.gstPercentage || 18;
 
 
@@ -548,6 +568,21 @@ export default function UserAdvancePaymentConfirmation() {
                         <p className="font-bold text-gray-900">{formatAmount(baseServiceFee)}</p>
                     </div>
 
+                    {/* GST */}
+                    <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
+                        <div>
+                            <p className="font-semibold text-gray-800 text-sm">GST</p>
+                            <p className="text-xs text-gray-500">{gstPercentage}% on Base Fee</p>
+                        </div>
+                        <p className="font-bold text-gray-900">{formatAmount(gst)}</p>
+                    </div>
+
+                    {/* Subtotal */}
+                    <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl bg-gray-50/50">
+                        <p className="font-semibold text-gray-800 text-sm">Subtotal (Base + GST)</p>
+                        <p className="font-bold text-gray-900">{formatAmount(subtotal)}</p>
+                    </div>
+
                     {/* Travel Charges */}
                     <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
                         <div>
@@ -566,21 +601,6 @@ export default function UserAdvancePaymentConfirmation() {
                         ) : (
                             <p className="font-bold text-green-600 text-xs">Free (Within Range)</p>
                         )}
-                    </div>
-
-                    {/* Subtotal */}
-                    <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
-                        <p className="font-semibold text-gray-800 text-sm">Subtotal</p>
-                        <p className="font-bold text-gray-900">{formatAmount(subtotal)}</p>
-                    </div>
-
-                    {/* GST */}
-                    <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
-                        <div>
-                            <p className="font-semibold text-gray-800 text-sm">GST</p>
-                            <p className="text-xs text-gray-500">{gstPercentage}% on subtotal</p>
-                        </div>
-                        <p className="font-bold text-gray-900">{formatAmount(gst)}</p>
                     </div>
 
                     {/* Total Amount */}
@@ -644,10 +664,28 @@ export default function UserAdvancePaymentConfirmation() {
                         </>
                     )}
                 </button>
-                <p className="text-xs text-gray-500 text-center mt-3">
-                    By proceeding, you agree to pay the advance amount of 40% to confirm your booking.
-                </p>
+                <div className="mt-4 pt-3 border-t border-gray-100 flex justify-center gap-4 text-xs">
+                    <button
+                        type="button"
+                        onClick={() => setActivePolicy('advance')}
+                        className="font-semibold text-[#0A84FF] underline hover:text-blue-700"
+                    >
+                        Advance Payment Policy
+                    </button>
+                    <span className="text-gray-300">•</span>
+                    <button
+                        type="button"
+                        onClick={() => setActivePolicy('remaining')}
+                        className="font-semibold text-[#0A84FF] underline hover:text-blue-700"
+                    >
+                        Remaining Payment Policy
+                    </button>
+                </div>
             </div>
+
+            {activePolicy && (
+                <PolicyModal type={activePolicy} onClose={() => setActivePolicy(null)} />
+            )}
         </PageContainer >
     );
 }

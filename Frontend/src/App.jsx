@@ -194,6 +194,14 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/my-bookings"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserAllBookingsStatus />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/booking/:bookingId/status"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>

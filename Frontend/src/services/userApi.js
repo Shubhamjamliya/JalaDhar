@@ -57,7 +57,6 @@ export const createDispute = async (disputeData, attachments = []) => {
   formData.append('subject', disputeData.subject);
   formData.append('description', disputeData.description);
   formData.append('type', disputeData.type);
-  if (disputeData.priority) formData.append('priority', disputeData.priority);
   if (disputeData.bookingId) formData.append('bookingId', disputeData.bookingId);
   
   attachments.forEach((file) => {

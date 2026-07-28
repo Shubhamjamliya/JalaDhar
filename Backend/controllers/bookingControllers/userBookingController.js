@@ -11,6 +11,7 @@ const { sendNotification } = require('../../services/notificationService');
 const { getIO } = require('../../sockets');
 const { calculateDistance, calculateTravelCharges, calculateGST } = require('../../utils/distanceCalculator');
 const { getSettings } = require('../../services/settingsService');
+const { normalizeAcresGuntas } = require('../../utils/landAreaHelper');
 
 /**
  * Get available vendors for a service
@@ -174,11 +175,13 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // Get settings for charge calculation
-    const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE']);
+    // Get settings
+    const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'ADVANCE_PAYMENT_PERCENTAGE', 'REMAINING_PAYMENT_PERCENTAGE']);
     const travelChargePerKm = settings.TRAVEL_CHARGE_PER_KM || 10;
     const baseRadius = settings.BASE_RADIUS_KM || 30;
     const gstPercentage = settings.GST_PERCENTAGE || 18;
+    const advancePercentage = settings.ADVANCE_PAYMENT_PERCENTAGE || 40;
+    const remainingPercentage = settings.REMAINING_PAYMENT_PERCENTAGE || 60;
 
     // Get vendor location
     const vendorLat = vendor.address?.coordinates?.lat;
@@ -196,15 +199,20 @@ const createBooking = async (req, res) => {
       travelCharges = calculateTravelCharges(distance, baseRadius, travelChargePerKm);
     }
 
-    // Calculate amounts
+    // Calculate amounts according to correct formula:
+    // 1. Base Service Fee
+    // 2. GST (18% on Base Service Fee)
+    // 3. Subtotal = Base Service Fee + GST
+    // 4. Travel Charges
+    // 5. Total Amount = Subtotal + Travel Charges
     const baseServiceFee = service.price;
-    const subtotal = baseServiceFee + travelCharges;
-    const gst = calculateGST(subtotal, gstPercentage);
-    const totalAmount = subtotal + gst;
+    const gst = calculateGST(baseServiceFee, gstPercentage);
+    const subtotal = baseServiceFee + gst;
+    const totalAmount = subtotal + travelCharges;
 
-    // Calculate advance and remaining (40% and 60% of total)
-    const advanceAmount = totalAmount * 0.4;
-    const remainingAmount = totalAmount * 0.6;
+    // Calculate advance and remaining from configurable percentages
+    const advanceAmount = totalAmount * (advancePercentage / 100);
+    const remainingAmount = totalAmount - advanceAmount;
 
     // Create Razorpay order for advance payment
     let razorpayOrder;
@@ -259,7 +267,7 @@ const createBooking = async (req, res) => {
       district: district || undefined,
       state: state || undefined,
       purpose: purpose || undefined,
-      purposeExtent: purposeExtent ? parseFloat(purposeExtent) : undefined,
+      purposeExtent: purposeExtent ? normalizeAcresGuntas(purposeExtent).decimalValue : undefined,
       payment: {
         baseServiceFee,
         distance: distance || null,
@@ -892,7 +900,7 @@ const getNearbyVendors = async (req, res) => {
 
     // First, get all vendors with services populated (no status filter - show all services)
     const vendors = await Vendor.find(query)
-      .select('name email phone experience rating address location services')
+      .select('name email phone experience rating bookingStats serviceAreas designation address location services servicePrice')
       .populate({
         path: 'services',
         // Removed match filter - show all services regardless of status
@@ -911,15 +919,12 @@ const getNearbyVendors = async (req, res) => {
       });
     }
 
-    // Filter vendors that have at least one service (any status - no approval required)
+    // Ensure vendors array has sanitized services
     let vendorsWithServices = vendors.map(v => {
-      // Filter out null/undefined services
       const allServices = v.services ? v.services.filter(s => s !== null && s !== undefined) : [];
-
-      // Replace services array with filtered one
       v.services = allServices;
       return v;
-    }).filter(v => v.services && v.services.length > 0); // Only keep vendors with services
+    });
 
     // Fetch profile pictures for all vendors at once
     const vendorIds = vendorsWithServices.map(v => v._id);
@@ -960,30 +965,55 @@ const getNearbyVendors = async (req, res) => {
         ? vendor.services[0]
         : null;
 
-      // Get minimum price from all services
-      const prices = vendor.services.map(s => s.price).filter(p => p > 0);
-      const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+      // Get minimum price from all services or vendor's base servicePrice
+      const prices = (vendor.services || []).map(s => s.price).filter(p => p > 0);
+      const minPrice = prices.length > 0 ? Math.min(...prices) : (vendor.servicePrice || 3500);
+
+      const serviceCategory = primaryService?.category || vendor.designation || 'Groundwater Survey';
+
+      // Enhanced Expert Profile Stats calculation
+      const successfulSurveys = vendor.rating?.successCount ?? vendor.bookingStats?.success ?? 0;
+      const failedSurveys = vendor.rating?.failureCount ?? vendor.bookingStats?.failed ?? 0;
+      const totalSurveys = successfulSurveys + failedSurveys;
+      const successRate = vendor.rating?.successRatio ?? (totalSurveys > 0 ? Math.round((successfulSurveys / totalSurveys) * 100) : 0);
+
+      const serviceAreas = (Array.isArray(vendor.serviceAreas) && vendor.serviceAreas.length > 0)
+        ? vendor.serviceAreas
+        : ([vendor.address?.city, vendor.address?.state].filter(Boolean).length > 0
+          ? [vendor.address.city, vendor.address.state].filter(Boolean)
+          : ['Local Region']);
 
       return {
         ...vendor, // Already a plain object due to lean()
         distance,
-        profilePicture: profilePicMap[vendor._id.toString()] || null, // Added this field
+        profilePicture: profilePicMap[vendor._id.toString()] || null,
+        experience: vendor.experience || 0,
         averageRating: vendor.rating?.averageRating || 0,
         totalRatings: vendor.rating?.totalRatings || 0,
-        category: primaryService?.category || 'General',
+        successfulSurveys,
+        failedSurveys,
+        successRate,
+        serviceAreas,
+        category: serviceCategory,
         minPrice,
-        serviceTags: vendor.services
-          .map(s => s.category || s.name)
-          .filter((v, i, a) => a.indexOf(v) === i)
-          .slice(0, 3),
-        allServices: vendor.services.map(s => ({
+        serviceTags: (vendor.services && vendor.services.length > 0)
+          ? vendor.services.map(s => s.category || s.name).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3)
+          : [serviceCategory],
+        allServices: (vendor.services && vendor.services.length > 0) ? vendor.services.map(s => ({
           id: s._id,
           name: s.name,
           category: s.category,
           price: s.price,
           description: s.description,
           images: s.images
-        }))
+        })) : [{
+          id: vendor._id,
+          name: `${serviceCategory} Service`,
+          category: serviceCategory,
+          price: minPrice,
+          description: 'Geoscientific groundwater survey & borewell point detection service.',
+          images: []
+        }]
       };
     });
 
@@ -1071,7 +1101,7 @@ const getVendorProfile = async (req, res) => {
     }
 
     const vendor = await Vendor.findById(vendorId)
-      .select('name email phone experience rating address location services isActive isApproved gender designation educationalQualifications')
+      .select('name email phone experience rating bookingStats serviceAreas address location services isActive isApproved gender designation educationalQualifications')
       .populate({
         path: 'services',
         select: 'name category price description images status isActive machineType'
@@ -1117,17 +1147,34 @@ const getVendorProfile = async (req, res) => {
       distance = R * c;
     }
 
+    // Enhanced Expert Profile Stats calculation
+    const successfulSurveys = vendor.rating?.successCount ?? vendor.bookingStats?.success ?? 0;
+    const failedSurveys = vendor.rating?.failureCount ?? vendor.bookingStats?.failed ?? 0;
+    const totalSurveys = successfulSurveys + failedSurveys;
+    const successRate = vendor.rating?.successRatio ?? (totalSurveys > 0 ? Math.round((successfulSurveys / totalSurveys) * 100) : 0);
+
+    const serviceAreas = (Array.isArray(vendor.serviceAreas) && vendor.serviceAreas.length > 0)
+      ? vendor.serviceAreas
+      : ([vendor.address?.city, vendor.address?.state].filter(Boolean).length > 0
+        ? [vendor.address.city, vendor.address.state].filter(Boolean)
+        : ['Local Region']);
+
     // Format vendor data
     const formattedVendor = {
       ...vendor,
       distance,
       profilePicture: profilePicDoc ? profilePicDoc.url : null,
       education: vendor.educationalQualifications, // Map for frontend compatibility
+      experience: vendor.experience || 0,
       averageRating: vendor.rating?.averageRating || 0,
       totalRatings: vendor.rating?.totalRatings || 0,
-      successCount: vendor.rating?.successCount || 0,
-      failureCount: vendor.rating?.failureCount || 0,
-      successRatio: vendor.rating?.successRatio || 0,
+      successCount: successfulSurveys,
+      failureCount: failedSurveys,
+      successfulSurveys,
+      failedSurveys,
+      successRatio: successRate,
+      successRate,
+      serviceAreas,
       degreeCertificates,
       trainingCertificates,
       services: (vendor.services || []).filter(s => s !== null && s !== undefined).map(s => ({
@@ -1391,10 +1438,12 @@ const calculateBookingCharges = async (req, res) => {
     }
 
     // Get settings
-    const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE']);
+    const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'ADVANCE_PAYMENT_PERCENTAGE', 'REMAINING_PAYMENT_PERCENTAGE']);
     const travelChargePerKm = settings.TRAVEL_CHARGE_PER_KM || 10;
     const baseRadius = settings.BASE_RADIUS_KM || 30;
     const gstPercentage = settings.GST_PERCENTAGE || 18;
+    const advancePercentage = settings.ADVANCE_PAYMENT_PERCENTAGE || 40;
+    const remainingPercentage = settings.REMAINING_PAYMENT_PERCENTAGE || 60;
 
     // Calculate distance
     const vendorLat = vendor.address?.coordinates?.lat;
@@ -1409,11 +1458,11 @@ const calculateBookingCharges = async (req, res) => {
     }
 
     const baseServiceFee = service.price;
-    const subtotal = baseServiceFee + travelCharges;
-    const gst = calculateGST(subtotal, gstPercentage);
-    const totalAmount = subtotal + gst;
-    const advanceAmount = totalAmount * 0.4;
-    const remainingAmount = totalAmount * 0.6;
+    const gst = calculateGST(baseServiceFee, gstPercentage);
+    const subtotal = baseServiceFee + gst;
+    const totalAmount = subtotal + travelCharges;
+    const advanceAmount = totalAmount * (advancePercentage / 100);
+    const remainingAmount = totalAmount - advanceAmount;
 
     res.json({
       success: true,
@@ -1429,7 +1478,9 @@ const calculateBookingCharges = async (req, res) => {
         remainingAmount: parseFloat(remainingAmount.toFixed(2)),
         baseRadius,
         travelChargePerKm,
-        gstPercentage
+        gstPercentage,
+        advancePercentage,
+        remainingPercentage
       }
     });
   } catch (error) {

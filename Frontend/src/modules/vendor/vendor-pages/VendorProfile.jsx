@@ -489,7 +489,7 @@ export default function VendorProfile() {
             }
 
             const formData = new FormData();
-            formData.append("name", "Ground Water Detection"); // Force fixed name
+            formData.append("name", "Groundwater Survey"); // Force fixed name
             formData.append("description", serviceFormData.description || "");
             formData.append("machineType", serviceFormData.machineType);
             formData.append(
@@ -515,7 +515,7 @@ export default function VendorProfile() {
                 toast.showSuccess("Service added successfully!");
                 setIsAddingService(false);
                 setServiceFormData({
-                    name: "Ground Water Detection",
+                    name: "Groundwater Survey",
                     description: "",
                     machineType: "",
                     skills: "",
@@ -552,7 +552,7 @@ export default function VendorProfile() {
         setCustomMachine("");
 
         setServiceFormData({
-            name: "Ground Water Detection", // Force fixed name on edit
+            name: "Groundwater Survey", // Force fixed name on edit
             description: service.description || "",
             machineType: service.machineType || "",
             skills: Array.isArray(service.skills)
@@ -583,7 +583,7 @@ export default function VendorProfile() {
             }
 
             const updateData = {
-                name: "Ground Water Detection", // Force fixed name
+                name: "Groundwater Survey", // Force fixed name
                 description: serviceFormData.description || "",
                 machineType: serviceFormData.machineType,
                 skills: JSON.stringify(
@@ -612,7 +612,7 @@ export default function VendorProfile() {
                 setIsAddingService(false);
                 setEditingServiceId(null);
                 setServiceFormData({
-                    name: "Ground Water Detection",
+                    name: "Groundwater Survey",
                     description: "",
                     machineType: "",
                     skills: "",
@@ -674,7 +674,7 @@ export default function VendorProfile() {
         setIsAddingService(false);
         setEditingServiceId(null);
         setServiceFormData({
-            name: "Ground Water Detection",
+            name: "Groundwater Survey",
             description: "",
             machineType: "",
             skills: "",
@@ -1011,8 +1011,15 @@ export default function VendorProfile() {
                                     {vendor?.instruments && vendor.instruments.length > 0 ? (
                                         <div className="flex flex-wrap gap-2">
                                             {vendor.instruments.map((inst, index) => (
-                                                <span key={index} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100">
-                                                    {inst}
+                                                <span key={index} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100 flex items-center gap-1.5">
+                                                    {typeof inst === 'object' ? (
+                                                        <>
+                                                            <span>{inst.name || inst.category}</span>
+                                                            {inst.model && <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">{inst.model}</span>}
+                                                        </>
+                                                    ) : (
+                                                        inst
+                                                    )}
                                                 </span>
                                             ))}
                                         </div>
@@ -1155,7 +1162,7 @@ export default function VendorProfile() {
                             <button
                                 onClick={() => {
                                     setServiceFormData({
-                                        name: "Ground Water Detection",
+                                        name: "Groundwater Survey",
                                         description: "",
                                         machineType: "",
                                         skills: "",
@@ -1190,7 +1197,7 @@ export default function VendorProfile() {
                                             Service Name
                                         </label>
                                         <p className="text-lg font-bold text-[#3A3A3A]">
-                                            Ground Water Detection
+                                            Groundwater Survey
                                         </p>
                                     </div>
                                 </div>
@@ -1510,7 +1517,7 @@ export default function VendorProfile() {
                             <button
                                 onClick={() => {
                                     setServiceFormData({
-                                        name: "Ground Water Detection",
+                                        name: "Groundwater Survey",
                                         description: "",
                                         machineType: "",
                                         skills: "",

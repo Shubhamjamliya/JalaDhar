@@ -37,16 +37,33 @@ const getSettings = async (keys = []) => {
 /**
  * Set setting value
  */
-const setSetting = async (key, value, label, description, type = 'string', category = 'general', updatedBy = null) => {
+const setSetting = async (key, value, label, description, type = 'string', category = null, updatedBy = null) => {
   try {
+    const existing = await Settings.findOne({ key });
+    
+    // Determine category: explicitly passed > existing category > key-based detection ('policy' for policy keys) > 'general'
+    let finalCategory = category;
+    if (!finalCategory || finalCategory === 'general') {
+      if (existing && existing.category) {
+        finalCategory = existing.category;
+      } else if (key.includes('policy') || key.includes('terms')) {
+        finalCategory = 'policy';
+      } else {
+        finalCategory = 'general';
+      }
+    }
+
+    const finalLabel = label || (existing ? existing.label : key);
+    const finalDescription = description !== undefined ? description : (existing ? existing.description : '');
+
     const setting = await Settings.findOneAndUpdate(
       { key },
       {
         value,
-        label: label || key,
-        description: description || '',
-        type,
-        category,
+        label: finalLabel,
+        description: finalDescription,
+        type: type || (existing ? existing.type : 'string'),
+        category: finalCategory,
         updatedBy
       },
       { upsert: true, new: true }
@@ -83,7 +100,23 @@ const initializeDefaultSettings = async () => {
       key: 'GST_PERCENTAGE',
       value: 18,
       label: 'GST Percentage',
-      description: 'GST percentage applied on total amount',
+      description: 'GST percentage applied on base service fee',
+      type: 'number',
+      category: 'pricing'
+    },
+    {
+      key: 'ADVANCE_PAYMENT_PERCENTAGE',
+      value: 40,
+      label: 'Advance Payment Percentage (%)',
+      description: 'Percentage of total amount required as advance payment',
+      type: 'number',
+      category: 'pricing'
+    },
+    {
+      key: 'REMAINING_PAYMENT_PERCENTAGE',
+      value: 60,
+      label: 'Remaining Payment Percentage (%)',
+      description: 'Percentage of total amount required as remaining payment',
       type: 'number',
       category: 'pricing'
     },
@@ -126,6 +159,27 @@ const initializeDefaultSettings = async () => {
       description: 'Email address shown on invoices',
       type: 'string',
       category: 'billing'
+    },
+    {
+      key: 'DISPUTE_TYPES',
+      value: [
+        'Expert did not arrive',
+        'Expert arrived late',
+        'Survey not completed',
+        'Incorrect survey location',
+        'Payment issue',
+        'Refund issue',
+        'Travel charges issue',
+        'Survey report issue',
+        'Expert behaviour',
+        'Requested offline payment',
+        'Safety concern',
+        'Other'
+      ],
+      label: 'Dispute Types',
+      description: 'Configurable list of dispute category options',
+      type: 'json',
+      category: 'general'
     }
   ];
 

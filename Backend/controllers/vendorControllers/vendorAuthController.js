@@ -544,15 +544,15 @@ const register = async (req, res) => {
     if (machineType) {
       const newService = await Service.create({
         vendor: vendor._id,
-        name: "Ground Water Detection",
-        description: "Expert Ground Water Detection Services using advanced instruments.",
+        name: "Groundwater Survey",
+        description: "Expert Groundwater Survey Services using advanced instruments.",
         machineType: machineType,
-        skills: ["Ground Water Detection"],
+        skills: ["Groundwater Survey"],
         price: servicePrice ? parseFloat(servicePrice) : 0,
         duration: 60,
         status: "PENDING",
         images: documents.serviceImages || [],
-        category: "Ground Water Detection",
+        category: "Groundwater Survey",
         isActive: true
       });
 

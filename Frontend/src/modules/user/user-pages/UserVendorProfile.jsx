@@ -165,34 +165,48 @@ export default function UserVendorProfile() {
 
                     {/* Stats Cards - Success/Fail */}
                     {/* Modern Stats Cards */}
-                    <div className="grid grid-cols-4 gap-2 w-full mb-6">
-                        <div className="bg-blue-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-blue-100">
-                            <span className="text-base font-bold text-blue-700">
-                                {vendorData.experience || 0}<span className="text-[10px] font-normal text-blue-500">+</span>
-                            </span>
-                            <span className="text-[9px] uppercase tracking-tight font-bold text-blue-400 mt-1 text-center">Experience</span>
-                        </div>
-                        <div className="bg-emerald-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-emerald-100">
-                            <span className="text-base font-bold text-emerald-700">
-                                {vendorData.successCount || 0}
-                            </span>
-                            <span className="text-[9px] uppercase tracking-tight font-bold text-emerald-400 mt-1 text-center">Success</span>
-                        </div>
-                        <div className="bg-rose-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-rose-100">
-                            <span className="text-base font-bold text-rose-700">
-                                {vendorData.failureCount || 0}
-                            </span>
-                            <span className="text-[9px] uppercase tracking-tight font-bold text-rose-400 mt-1 text-center">Failed</span>
-                        </div>
-                        <div className="bg-purple-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-purple-100">
-                            <span className="text-base font-bold text-purple-700">
-                                {vendorData.rating?.totalJobsCompleted || 0}
-                            </span>
-                            <span className="text-[9px] uppercase tracking-tight font-bold text-purple-400 mt-1 text-center">Projects</span>
-                        </div>
-                    </div>
+                    {/* Stats Cards - Experience, Success %, Successful, Failed */}
+                    {(() => {
+                        const succ = vendorData.successfulSurveys ?? vendorData.successCount ?? 0;
+                        const fail = vendorData.failedSurveys ?? vendorData.failureCount ?? 0;
+                        const total = succ + fail;
+                        let sRate = vendorData.successRate ?? vendorData.successRatio;
+                        if (sRate === undefined || sRate === null) {
+                            sRate = total > 0 ? Math.round((succ / total) * 100) : null;
+                        }
+                        const rateText = sRate !== null && total > 0 ? `${sRate}%` : "N/A";
 
-                    {/* Contact Information Section */}
+                        return (
+                            <div className="grid grid-cols-4 gap-2 w-full mb-6">
+                                <div className="bg-blue-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-blue-100">
+                                    <span className="text-base font-bold text-blue-700">
+                                        {vendorData.experience || 0}<span className="text-[10px] font-normal text-blue-500">Y</span>
+                                    </span>
+                                    <span className="text-[9px] uppercase tracking-tight font-bold text-blue-400 mt-1 text-center">Experience</span>
+                                </div>
+                                <div className="bg-emerald-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-emerald-100">
+                                    <span className="text-base font-bold text-emerald-700">
+                                        {rateText}
+                                    </span>
+                                    <span className="text-[9px] uppercase tracking-tight font-bold text-emerald-400 mt-1 text-center">Success %</span>
+                                </div>
+                                <div className="bg-green-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-green-100">
+                                    <span className="text-base font-bold text-green-700">
+                                        {succ}
+                                    </span>
+                                    <span className="text-[9px] uppercase tracking-tight font-bold text-green-400 mt-1 text-center">Successful</span>
+                                </div>
+                                <div className="bg-rose-50/50 rounded-xl p-2.5 flex flex-col items-center justify-center border border-rose-100">
+                                    <span className="text-base font-bold text-rose-700">
+                                        {fail}
+                                    </span>
+                                    <span className="text-[9px] uppercase tracking-tight font-bold text-rose-400 mt-1 text-center">Failed</span>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* Contact & Location Information Section */}
                     <div className="w-full space-y-4 pt-4 border-t border-gray-100">
                         {vendorData.phone && (
                             <InfoRow
@@ -230,6 +244,25 @@ export default function UserVendorProfile() {
                             value={formatAddress(vendorData.address)}
                             color="bg-teal-500"
                         />
+                        {/* Service Areas */}
+                        <div className="flex items-start gap-4 text-left pt-2 border-t border-gray-50">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 shrink-0 text-white shadow-sm">
+                                <IoLocationOutline className="text-lg" />
+                            </div>
+                            <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Service Areas</span>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {(Array.isArray(vendorData.serviceAreas) && vendorData.serviceAreas.length > 0
+                                        ? vendorData.serviceAreas
+                                        : [vendorData.address?.city, vendorData.address?.state].filter(Boolean)
+                                    ).map((area, idx) => (
+                                        <span key={idx} className="text-xs font-semibold text-gray-700 bg-gray-100 px-2.5 py-1 rounded-full border border-gray-200">
+                                            {area || "Local Region"}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Certificates Section */}

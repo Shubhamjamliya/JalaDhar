@@ -131,6 +131,12 @@ const vendorSchema = new mongoose.Schema({
       geocodedAt: Date
     }
   },
+  // Service areas / regions served by vendor
+  serviceAreas: [{
+    type: String,
+    trim: true
+  }],
+
 
   // Services offered by vendor (legacy - kept for backward compatibility)
   services: [{

@@ -236,7 +236,7 @@ export default function UserRemainingPayment() {
                 {/* Header */}
                 <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-6">
                     <h1 className="text-2xl font-bold text-gray-800 mb-2">Complete Payment</h1>
-                    <p className="text-gray-600">Pay the remaining 60% to view your full water detection report</p>
+                    <p className="text-gray-600">Pay the remaining 60% to view your full groundwater survey report</p>
                 </div>
 
                 {/* Report Preview */}

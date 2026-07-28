@@ -70,6 +70,24 @@ export default function AdminSettings({ defaultTab = "general" }) {
     });
     const [billingLoading, setBillingLoading] = useState(false);
 
+    // Dispute Types Settings State
+    const [disputeTypesList, setDisputeTypesList] = useState([
+        "Expert did not arrive",
+        "Expert arrived late",
+        "Survey not completed",
+        "Incorrect survey location",
+        "Payment issue",
+        "Refund issue",
+        "Travel charges issue",
+        "Survey report issue",
+        "Expert behaviour",
+        "Requested offline payment",
+        "Safety concern",
+        "Other"
+    ]);
+    const [newDisputeType, setNewDisputeType] = useState("");
+    const [disputeTypesLoading, setDisputeTypesLoading] = useState(false);
+
     // Countdown timer for OTP resend
     useEffect(() => {
         if (otpCountdown > 0) {
@@ -265,6 +283,62 @@ export default function AdminSettings({ defaultTab = "general" }) {
         }
     }, [activeTab]);
 
+    // Load general (dispute types) settings
+    useEffect(() => {
+        const loadGeneralSettings = async () => {
+            try {
+                const response = await getAllSettings('general');
+                if (response.success && response.data.settings) {
+                    const dtSetting = response.data.settings.find(s => s.key === 'DISPUTE_TYPES');
+                    if (dtSetting && Array.isArray(dtSetting.value) && dtSetting.value.length > 0) {
+                        setDisputeTypesList(dtSetting.value);
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading general settings:', err);
+            }
+        };
+        if (activeTab === 'general') {
+            loadGeneralSettings();
+        }
+    }, [activeTab]);
+
+    const handleAddDisputeType = () => {
+        if (!newDisputeType.trim()) return;
+        if (disputeTypesList.includes(newDisputeType.trim())) {
+            toast.showError("This dispute type already exists");
+            return;
+        }
+        setDisputeTypesList([...disputeTypesList, newDisputeType.trim()]);
+        setNewDisputeType("");
+    };
+
+    const handleRemoveDisputeType = (index) => {
+        setDisputeTypesList(disputeTypesList.filter((_, i) => i !== index));
+    };
+
+    const handleSaveDisputeTypes = async (e) => {
+        if (e) e.preventDefault();
+        setError("");
+        setDisputeTypesLoading(true);
+
+        try {
+            const response = await updateMultipleSettings([
+                { key: 'DISPUTE_TYPES', value: disputeTypesList }
+            ]);
+            if (response.success) {
+                toast.showSuccess("Dispute types updated successfully!");
+            } else {
+                setError(response.message || "Failed to update dispute types");
+            }
+        } catch (err) {
+            console.error("Update dispute types error:", err);
+            setError(err.response?.data?.message || "Failed to update dispute types. Please try again.");
+        } finally {
+            setDisputeTypesLoading(false);
+        }
+    };
+
 
 
     // Handle pricing settings update
@@ -401,13 +475,67 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             <option>UTC</option>
                                         </select>
                                     </div>
-                                    <div className="flex justify-end">
-                                        <button className="px-6 py-3 bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors font-semibold">
-                                            Save Changes
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                                    {/* Configurable Dispute Types */}
+                                     <div className="pt-6 border-t border-gray-200">
+                                         <h3 className="text-lg font-bold text-gray-800 mb-2">Configurable Dispute Types</h3>
+                                         <p className="text-xs text-gray-500 mb-4">
+                                             Manage categories available for users and vendors when creating a dispute.
+                                         </p>
+
+                                         <div className="flex gap-2 mb-4">
+                                             <input
+                                                 type="text"
+                                                 value={newDisputeType}
+                                                 onChange={(e) => setNewDisputeType(e.target.value)}
+                                                 onKeyDown={(e) => {
+                                                     if (e.key === "Enter") {
+                                                         e.preventDefault();
+                                                         handleAddDisputeType();
+                                                     }
+                                                 }}
+                                                 placeholder="Enter new dispute type name"
+                                                 className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                             />
+                                             <button
+                                                 type="button"
+                                                 onClick={handleAddDisputeType}
+                                                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm rounded-lg transition-colors"
+                                             >
+                                                 Add
+                                             </button>
+                                         </div>
+
+                                         <div className="space-y-2 max-h-60 overflow-y-auto mb-4 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                             {disputeTypesList.map((dt, index) => (
+                                                 <div
+                                                     key={index}
+                                                     className="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200 text-sm"
+                                                 >
+                                                     <span className="text-gray-800 font-medium">{dt}</span>
+                                                     <button
+                                                         type="button"
+                                                         onClick={() => handleRemoveDisputeType(index)}
+                                                         className="text-red-500 hover:text-red-700 p-1"
+                                                     >
+                                                         <IoCloseOutline className="text-lg" />
+                                                     </button>
+                                                 </div>
+                                             ))}
+                                         </div>
+
+                                         <div className="flex justify-end">
+                                             <button
+                                                 type="button"
+                                                 onClick={handleSaveDisputeTypes}
+                                                 disabled={disputeTypesLoading}
+                                                 className="px-6 py-3 bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors font-semibold disabled:opacity-50"
+                                             >
+                                                 {disputeTypesLoading ? "Saving..." : "Save Dispute Types"}
+                                             </button>
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
                         )}
 
                         {activeTab === "billing" && (

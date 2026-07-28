@@ -26,6 +26,7 @@ import {
     IoLockClosedOutline
 } from "react-icons/io5";
 import { getBookingDetails, downloadInvoice, cancelBooking, submitRating, getBookingRating, uploadBorewellResult } from "../../../services/bookingApi";
+import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
@@ -848,7 +849,7 @@ export default function UserBookingDetails() {
                         {booking.purposeExtent && (
                             <div>
                                 <p className="text-sm text-gray-500 mb-1">Extent</p>
-                                <p className="text-base font-semibold text-gray-800">{booking.purposeExtent} Acres</p>
+                                <p className="text-base font-semibold text-gray-800">{formatAcresGuntasDisplay(booking.purposeExtent)}</p>
                             </div>
                         )}
                         {booking.notes && (

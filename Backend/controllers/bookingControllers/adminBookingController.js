@@ -767,7 +767,7 @@ const approveReport = async (req, res) => {
         recipientModel: 'User',
         type: 'REPORT_APPROVED',
         title: 'Report Approved',
-        message: `Your water detection report has been approved by admin.`,
+        message: `Your groundwater survey report has been approved by admin.`,
         relatedEntity: {
           entityType: 'Booking',
           entityId: booking._id

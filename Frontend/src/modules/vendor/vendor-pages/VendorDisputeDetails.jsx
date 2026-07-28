@@ -143,10 +143,12 @@ export default function VendorDisputeDetails() {
                         <p className="text-sm text-gray-500 mb-1">Type</p>
                         <p className="text-sm font-medium text-gray-900">{getTypeLabel(dispute.type)}</p>
                     </div>
-                    <div>
-                        <p className="text-sm text-gray-500 mb-1">Priority</p>
-                        <p className="text-sm font-medium text-gray-900">{dispute.priority}</p>
-                    </div>
+                    {dispute.priority && (
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Priority</p>
+                            <p className="text-sm font-medium text-gray-900">{dispute.priority}</p>
+                        </div>
+                    )}
                     <div>
                         <p className="text-sm text-gray-500 mb-1">Created</p>
                         <p className="text-sm font-medium text-gray-900">{formatDate(dispute.createdAt)}</p>

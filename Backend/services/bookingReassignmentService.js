@@ -124,12 +124,17 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
     const baseRadius = settings.BASE_RADIUS_KM || 30;
     const gstPercentage = settings.GST_PERCENTAGE || 18;
 
-    // Recalculate amounts
+    // Recalculate amounts according to formula:
+    // 1. Base Service Fee
+    // 2. GST (18% on Base Service Fee)
+    // 3. Subtotal = Base Service Fee + GST
+    // 4. Travel Charges
+    // 5. Total Amount = Subtotal + Travel Charges
     const travelCharges = calculateTravelCharges(newDistance, baseRadius, travelChargePerKm);
     const baseServiceFee = newService.price;
-    const subtotal = baseServiceFee + travelCharges;
-    const gst = calculateGST(subtotal, gstPercentage);
-    const totalAmount = subtotal + gst;
+    const gst = calculateGST(baseServiceFee, gstPercentage);
+    const subtotal = baseServiceFee + gst;
+    const totalAmount = subtotal + travelCharges;
 
     // Update booking with new vendor, new service, and recalculated amounts
     booking.vendor = newVendor._id;

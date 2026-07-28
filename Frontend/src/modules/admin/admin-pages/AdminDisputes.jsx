@@ -14,15 +14,32 @@ import {
     IoArrowForwardOutline,
 } from "react-icons/io5";
 import { getAllDisputes, getDisputeStatistics, getDisputeDetails, updateDisputeStatus, assignDispute, addDisputeComment } from "../../../services/adminApi";
+import { getPublicSettings } from "../../../services/settingsApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
 
+const DEFAULT_DISPUTE_TYPES = [
+    "Expert did not arrive",
+    "Expert arrived late",
+    "Survey not completed",
+    "Incorrect survey location",
+    "Payment issue",
+    "Refund issue",
+    "Travel charges issue",
+    "Survey report issue",
+    "Expert behaviour",
+    "Requested offline payment",
+    "Safety concern",
+    "Other"
+];
+
 export default function AdminDisputes() {
     const navigate = useNavigate();
     const [disputes, setDisputes] = useState([]);
+    const [disputeTypes, setDisputeTypes] = useState(DEFAULT_DISPUTE_TYPES);
     const [statistics, setStatistics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [statsLoading, setStatsLoading] = useState(true);
@@ -31,7 +48,6 @@ export default function AdminDisputes() {
         search: "",
         status: "",
         type: "",
-        priority: "",
         page: 1,
         limit: 20,
     });
@@ -51,7 +67,22 @@ export default function AdminDisputes() {
     useEffect(() => {
         loadDisputes();
         loadStatistics();
-    }, [filters.page, filters.search, filters.status, filters.type, filters.priority]);
+        loadDisputeTypes();
+    }, [filters.page, filters.search, filters.status, filters.type]);
+
+    const loadDisputeTypes = async () => {
+        try {
+            const res = await getPublicSettings({ category: "general" });
+            if (res.success && res.data?.settings) {
+                const setting = res.data.settings.find(s => s.key === "DISPUTE_TYPES");
+                if (setting && Array.isArray(setting.value) && setting.value.length > 0) {
+                    setDisputeTypes(setting.value);
+                }
+            }
+        } catch (err) {
+            console.error("Failed to load dispute types setting:", err);
+        }
+    };
 
     const loadDisputes = async () => {
         try {
@@ -63,7 +94,6 @@ export default function AdminDisputes() {
             if (filters.search) params.search = filters.search;
             if (filters.status) params.status = filters.status;
             if (filters.type) params.type = filters.type;
-            if (filters.priority) params.priority = filters.priority;
 
             const response = await getAllDisputes(params);
             if (response.success) {
@@ -245,7 +275,7 @@ export default function AdminDisputes() {
 
             {/* Filters */}
             <div className="bg-white rounded-lg shadow-sm p-4">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="relative">
                         <IoSearchOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                         <input
@@ -274,27 +304,14 @@ export default function AdminDisputes() {
                         className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
                     >
                         <option value="">All Types</option>
-                        <option value="PAYMENT_ISSUE">Payment Issue</option>
-                        <option value="SERVICE_QUALITY">Service Quality</option>
-                        <option value="VENDOR_BEHAVIOR">Vendor Behavior</option>
-                        <option value="REPORT_ISSUE">Report Issue</option>
-                        <option value="CANCELLATION">Cancellation</option>
-                        <option value="REFUND">Refund</option>
-                        <option value="OTHER">Other</option>
-                    </select>
-                    <select
-                        value={filters.priority}
-                        onChange={(e) => setFilters({ ...filters, priority: e.target.value, page: 1 })}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
-                    >
-                        <option value="">All Priorities</option>
-                        <option value="LOW">Low</option>
-                        <option value="MEDIUM">Medium</option>
-                        <option value="HIGH">High</option>
-                        <option value="URGENT">Urgent</option>
+                        {disputeTypes.map((typeOption, idx) => (
+                            <option key={idx} value={typeOption}>
+                                {typeOption}
+                            </option>
+                        ))}
                     </select>
                     <button
-                        onClick={() => setFilters({ search: "", status: "", type: "", priority: "", page: 1 })}
+                        onClick={() => setFilters({ search: "", status: "", type: "", page: 1 })}
                         className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                     >
                         Clear Filters
@@ -322,7 +339,6 @@ export default function AdminDisputes() {
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[200px]">Subject</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                 </tr>
@@ -348,11 +364,6 @@ export default function AdminDisputes() {
                                         <td className="px-4 py-4">
                                             <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(dispute.status)}`}>
                                                 {dispute.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-4">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getPriorityColor(dispute.priority)}`}>
-                                                {dispute.priority}
                                             </span>
                                         </td>
                                         <td className="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">
@@ -425,12 +436,14 @@ export default function AdminDisputes() {
                                         {selectedDispute.status}
                                     </span>
                                 </div>
-                                <div>
-                                    <h3 className="text-sm font-medium text-gray-500 mb-2">Priority</h3>
-                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(selectedDispute.priority)}`}>
-                                        {selectedDispute.priority}
-                                    </span>
-                                </div>
+                                {selectedDispute.priority && (
+                                    <div>
+                                        <h3 className="text-sm font-medium text-gray-500 mb-2">Priority</h3>
+                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(selectedDispute.priority)}`}>
+                                            {selectedDispute.priority}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <h3 className="text-sm font-medium text-gray-500 mb-2">Subject</h3>

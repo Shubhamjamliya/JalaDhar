@@ -225,7 +225,7 @@ const SurveyReportPDF = ({ booking }) => {
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Jaladhaara</Text>
-            <Text style={styles.subtitle}>Ground Water Detection Report</Text>
+            <Text style={styles.subtitle}>Groundwater Survey Report</Text>
           </View>
           <View style={styles.meta}>
             <Text style={styles.bookingId}>ID: {booking._id.toUpperCase()}</Text>

@@ -13,13 +13,17 @@ const PolicyModal = ({ type, onClose }) => {
         if (response.success && response.data.settings) {
           const settings = response.data.settings;
           let key = '';
-          if (type === 'booking') key = 'booking_policy';
-          else if (type === 'refund') key = 'cancellation_policy';
+          if (type === 'general' || type === 'login') key = 'general_terms';
+          else if (type === 'booking') key = 'booking_policy';
+          else if (type === 'cancellation') key = 'cancellation_policy';
+          else if (type === 'refund') key = 'refund_policy';
+          else if (type === 'advance') key = 'advance_payment_policy';
+          else if (type === 'remaining') key = 'remaining_payment_policy';
           else if (type === 'terms') key = 'terms_of_service';
 
-          const policy = settings.find(s => s.key === key);
-          if (policy) {
-            setPolicyData(policy.value);
+          const policyItem = settings.find(s => s.key === key);
+          if (policyItem) {
+            setPolicyData(policyItem.value);
           }
         }
       } catch (error) {
@@ -33,27 +37,79 @@ const PolicyModal = ({ type, onClose }) => {
   }, [type]);
 
   const policies = {
+    general: {
+      title: "General Terms & Conditions",
+      icon: <IoShieldCheckmarkOutline className="text-blue-500" />,
+      fallback: (
+        <ul className="list-disc pl-5 space-y-3">
+          <li>By creating an account or logging in, you agree to abide by Jaladhaara platform guidelines and privacy terms.</li>
+          <li>Users are responsible for maintaining the confidentiality of their credentials and account access.</li>
+          <li>Survey requests must represent genuine land testing requirements with accurate location data.</li>
+        </ul>
+      )
+    },
+    login: {
+      title: "General Terms & Conditions",
+      icon: <IoShieldCheckmarkOutline className="text-blue-500" />,
+      fallback: (
+        <ul className="list-disc pl-5 space-y-3">
+          <li>By creating an account or logging in, you agree to abide by Jaladhaara platform guidelines and privacy terms.</li>
+          <li>Users are responsible for maintaining the confidentiality of their credentials and account access.</li>
+          <li>Survey requests must represent genuine land testing requirements with accurate location data.</li>
+        </ul>
+      )
+    },
     booking: {
-      title: "Booking & Payment Policy",
+      title: "Booking Policy",
       icon: <IoInformationCircleOutline className="text-blue-500" />,
       fallback: (
         <ul className="list-disc pl-5 space-y-3">
-          <li><strong>Advance Payment:</strong> A 40% advance payment of the total service fee is required to confirm your booking slot.</li>
-          <li><strong>Payment Confirmation:</strong> Your booking is only confirmed once the payment is successfully processed.</li>
-          <li><strong>Balance Payment:</strong> The remaining 60% of the service fee must be paid after the survey visit is completed and before the final report is released.</li>
-          <li><strong>Pricing:</strong> Total amount includes base service fee, travel charges based on distance, and applicable GST (18%).</li>
+          <li><strong>Slot Booking:</strong> Bookings must be requested with an accurate land location and survey requirements.</li>
+          <li><strong>Confirmation:</strong> Your booking is confirmed once the advance payment is completed.</li>
+          <li><strong>Expert Assignment:</strong> A qualified groundwater survey expert will be assigned to your booking.</li>
+        </ul>
+      )
+    },
+    cancellation: {
+      title: "Cancellation Policy",
+      icon: <IoRefreshCircleOutline className="text-orange-500" />,
+      fallback: (
+        <ul className="list-disc pl-5 space-y-3">
+          <li><strong>Cancellation Before 24h:</strong> Full refund of advance payment if cancelled at least 24 hours before the scheduled visit.</li>
+          <li><strong>Late Cancellation:</strong> 50% of the advance amount will be forfeited if cancelled between 12-24 hours before the visit.</li>
+          <li><strong>Same Day Cancellation:</strong> No refund for cancellations made within 12 hours of the visit.</li>
         </ul>
       )
     },
     refund: {
-      title: "Cancellation & Refund Policy",
-      icon: <IoRefreshCircleOutline className="text-orange-500" />,
+      title: "Refund Policy",
+      icon: <IoRefreshCircleOutline className="text-emerald-500" />,
       fallback: (
         <ul className="list-disc pl-5 space-y-3">
-          <li><strong>Cancellation Before 24h:</strong> Full refund of the advance payment if cancelled at least 24 hours before the scheduled visit.</li>
-          <li><strong>Late Cancellation:</strong> 50% of the advance amount will be forfeited if cancelled between 12-24 hours before the scheduled time.</li>
-          <li><strong>No Refund:</strong> No refund will be provided for cancellations made within 12 hours of the scheduled visit or if the expert has already reached the site.</li>
-          <li><strong>Processing Time:</strong> Refunds, if applicable, will be processed back to the original payment method within 5-7 business days.</li>
+          <li><strong>Refund Processing:</strong> Approved refunds will be processed back to the original payment method within 5-7 business days.</li>
+          <li><strong>Failed Survey Visits:</strong> If an expert fails to attend due to platform issues, a 100% refund will be issued.</li>
+          <li><strong>Inquiries:</strong> Contact support for any refund status queries.</li>
+        </ul>
+      )
+    },
+    advance: {
+      title: "Advance Payment Policy",
+      icon: <IoInformationCircleOutline className="text-blue-600" />,
+      fallback: (
+        <ul className="list-disc pl-5 space-y-3">
+          <li><strong>Advance Split:</strong> A 40% advance payment of the total estimated amount is required to lock your appointment.</li>
+          <li><strong>Payment Gateways:</strong> Secure online payment via Razorpay, UPI, Cards, or Net Banking.</li>
+          <li><strong>Instant Receipt:</strong> Digital receipt is generated immediately upon successful transaction.</li>
+        </ul>
+      )
+    },
+    remaining: {
+      title: "Remaining Payment Policy",
+      icon: <IoInformationCircleOutline className="text-indigo-600" />,
+      fallback: (
+        <ul className="list-disc pl-5 space-y-3">
+          <li><strong>Remaining Split:</strong> The 60% balance amount is payable after the physical survey visit is completed.</li>
+          <li><strong>Report Release:</strong> Survey findings and PDF report will be unlocked upon receipt of full payment.</li>
         </ul>
       )
     },

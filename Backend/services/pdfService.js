@@ -28,7 +28,7 @@ const generateInvoice = async (booking) => {
 
       // Header
       doc.fontSize(20).text('JALADHAR', 50, 50, { align: 'center' });
-      doc.fontSize(12).text('Water Detection Service Invoice', 50, 75, { align: 'center' });
+      doc.fontSize(12).text('Groundwater Survey Service Invoice', 50, 75, { align: 'center' });
       doc.moveDown();
 
       // Invoice details

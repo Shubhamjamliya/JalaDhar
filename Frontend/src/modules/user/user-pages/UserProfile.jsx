@@ -13,6 +13,7 @@ import {
     IoCameraOutline,
     IoAlertCircleOutline,
     IoStarOutline,
+    IoCalendarOutline,
 } from "react-icons/io5";
 import { getUserProfile, updateUserProfile, uploadUserProfilePicture } from "../../../services/authApi";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -383,6 +384,11 @@ export default function UserProfile() {
 
                     {/* Action List */}
                     <div className="w-full mt-4 space-y-2">
+                    <ActionRow
+                        icon={IoCalendarOutline}
+                        label="My Bookings"
+                        onClick={() => navigate("/user/my-bookings")}
+                    />
                     <ActionRow
                         icon={IoWalletOutline}
                         label="Wallet"
