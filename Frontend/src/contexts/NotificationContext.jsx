@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '../services/notificationApi';
+import { getNotifications, getUnreadCount, markAsRead, markAllAsRead, deleteNotification as deleteNotifApi, clearAllNotifications as clearAllNotifsApi } from '../services/notificationApi';
 import { useAuth } from './AuthContext';
 import { useVendorAuth } from './VendorAuthContext';
 import { useAdminAuth } from './AdminAuthContext';
@@ -230,6 +230,37 @@ export const NotificationProvider = ({ children }) => {
     }
   }, []);
 
+  // Delete single notification
+  const removeNotification = useCallback(async (notificationId) => {
+    try {
+      const response = await deleteNotifApi(notificationId);
+      if (response.success) {
+        setNotifications((prev) => {
+          const target = prev.find(n => n.id === notificationId || n._id === notificationId);
+          if (target && !target.isRead) {
+            setUnreadCount((count) => Math.max(0, count - 1));
+          }
+          return prev.filter((notif) => notif.id !== notificationId && notif._id !== notificationId);
+        });
+      }
+    } catch (error) {
+      console.error('Delete notification error:', error);
+    }
+  }, []);
+
+  // Clear all notifications
+  const clearAllUserNotifications = useCallback(async () => {
+    try {
+      const response = await clearAllNotifsApi();
+      if (response.success) {
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Clear all notifications error:', error);
+    }
+  }, []);
+
   // Refresh notifications
   const refreshNotifications = useCallback(() => {
     loadNotifications();
@@ -243,6 +274,8 @@ export const NotificationProvider = ({ children }) => {
     socket,
     markAsRead: markNotificationAsRead,
     markAllAsRead: markAllNotificationsAsRead,
+    deleteNotification: removeNotification,
+    clearAllNotifications: clearAllUserNotifications,
     refreshNotifications
   };
 

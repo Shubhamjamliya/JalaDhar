@@ -160,20 +160,27 @@ export default function UserAllBookingsStatus() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      PENDING: { color: "bg-yellow-100 text-yellow-700", label: "Pending" },
-      ASSIGNED: { color: "bg-blue-100 text-blue-700", label: "Assigned" },
-      ACCEPTED: { color: "bg-green-100 text-green-700", label: "Accepted" },
-      VISITED: { color: "bg-purple-100 text-purple-700", label: "Visited" },
-      REPORT_UPLOADED: { color: "bg-indigo-100 text-indigo-700", label: "Report Uploaded" },
-      AWAITING_PAYMENT: { color: "bg-orange-100 text-orange-700", label: "Awaiting Payment" },
-      PAYMENT_SUCCESS: { color: "bg-teal-100 text-teal-700", label: "Payment Success" },
-      BOREWELL_UPLOADED: { color: "bg-cyan-100 text-cyan-700", label: "Borewell Uploaded" },
-      ADMIN_APPROVED: { color: "bg-emerald-100 text-emerald-700", label: "Admin Approved" },
-      FINAL_SETTLEMENT: { color: "bg-amber-100 text-amber-700", label: "Final Settlement" },
-      COMPLETED: { color: "bg-green-100 text-green-700", label: "Completed" },
+      AWAITING_ADVANCE: { color: "bg-amber-100 text-amber-800", label: "Awaiting Advance Payment" },
+      PENDING: { color: "bg-yellow-100 text-yellow-800", label: "Expert Assignment in Progress" },
+      ASSIGNED: { color: "bg-blue-100 text-blue-800", label: "Expert Assigned" },
+      ACCEPTED: { color: "bg-indigo-100 text-indigo-800", label: "Survey Scheduled" },
+      EN_ROUTE: { color: "bg-sky-100 text-sky-800", label: "Expert En Route" },
+      VISITED: { color: "bg-purple-100 text-purple-800", label: "Survey in Progress" },
+      IN_PROGRESS: { color: "bg-purple-100 text-purple-800", label: "Survey in Progress" },
+      REPORT_UPLOADED: { color: "bg-emerald-100 text-emerald-800", label: "Survey Completed" },
+      AWAITING_PAYMENT: { color: "bg-orange-100 text-orange-800", label: "Awaiting Final Payment" },
+      PAYMENT_SUCCESS: { color: "bg-emerald-100 text-emerald-800", label: "Report Ready" },
+      PAID_FIRST: { color: "bg-emerald-100 text-emerald-800", label: "Report Ready" },
+      BOREWELL_UPLOADED: { color: "bg-teal-100 text-teal-800", label: "Report Ready" },
+      ADMIN_APPROVED: { color: "bg-green-100 text-green-800", label: "Booking Completed" },
+      FINAL_SETTLEMENT: { color: "bg-green-100 text-green-800", label: "Booking Completed" },
+      COMPLETED: { color: "bg-green-100 text-green-800", label: "Booking Completed" },
+      CANCELLED: { color: "bg-gray-100 text-gray-700", label: "Booking Cancelled" },
+      REJECTED: { color: "bg-red-100 text-red-800", label: "Booking Rejected" },
+      FAILED: { color: "bg-red-100 text-red-800", label: "Booking Failed" },
     };
     const config =
-      statusConfig[status] || { color: "bg-gray-100 text-gray-700", label: status };
+      statusConfig[status] || { color: "bg-gray-100 text-gray-700", label: status ? status.replace(/_/g, ' ') : status };
     return (
       <span
         className={`px-3 py-1 rounded-full text-xs font-semibold ${config.color}`}

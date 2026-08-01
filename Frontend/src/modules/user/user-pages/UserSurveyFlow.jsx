@@ -1005,6 +1005,7 @@ export default function UserSurveyFlow() {
         district: surveyData.details.district,
         purpose: purposeMap[surveyData.category] || "Open plots",
         purposeExtent: surveyData.details.purposeExtent,
+        surveyNumber: surveyData.details.surveyNumber || surveyData.details.plotNumber || "",
         notes: `Category: ${surveyData.category}. ${surveyData.details.surveyNumber ? `Survey No: ${surveyData.details.surveyNumber}. ` : ''
           }${surveyData.details.plotNumber ? `Plot No: ${surveyData.details.plotNumber}. ` : ''
           }${surveyData.details.notes ? surveyData.details.notes : ''}`

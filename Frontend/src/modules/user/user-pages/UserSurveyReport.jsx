@@ -246,7 +246,7 @@ export default function UserSurveyReport() {
           {/* 5. Site Signatures */}
           <div className="mt-8 md:mt-16 pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-end font-sans gap-8">
             <div className="w-full md:w-auto">
-              <p className="text-[10px] text-gray-400 uppercase font-black">Reported by (Vendor)</p>
+              <p className="text-[10px] text-gray-400 uppercase font-black">Reported by (Expert)</p>
               <p className="text-lg md:text-xl font-black italic text-gray-800 underline decoration-blue-200">{vendor.name}</p>
               <p className="text-xs text-gray-500">{vendor.experience} Years Experience • Expert ID: {vendor._id?.slice(-8).toUpperCase()}</p>
             </div>

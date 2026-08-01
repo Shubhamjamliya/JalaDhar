@@ -490,12 +490,12 @@ export default function UserAdvancePaymentConfirmation() {
                         </div>
                     </div>
 
-                    {/* Vendor Info */}
+                    {/* Expert Info */}
                     <div className="bg-[#F6F7F9] rounded-[10px] p-4">
                         <div className="flex items-center gap-3">
                             <IoPersonOutline className="text-xl text-[#0A84FF]" />
                             <div className="flex-1">
-                                <p className="text-sm text-gray-600">Vendor</p>
+                                <p className="text-sm text-gray-600">Expert</p>
                                 <p className="text-base font-bold text-gray-800">{vendor.name}</p>
                             </div>
                         </div>

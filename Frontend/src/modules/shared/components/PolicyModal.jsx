@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { IoClose, IoInformationCircleOutline, IoShieldCheckmarkOutline, IoRefreshCircleOutline } from "react-icons/io5";
+import { 
+  IoClose, 
+  IoInformationCircleOutline, 
+  IoShieldCheckmarkOutline, 
+  IoRefreshCircleOutline,
+  IoCheckmarkCircle,
+  IoDocumentTextOutline
+} from "react-icons/io5";
 import { getPublicSettings } from "../../../services/settingsApi";
 
 const PolicyModal = ({ type, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [policyData, setPolicyData] = useState(null);
+
+  // Lock body scroll when modal is active
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   useEffect(() => {
     const fetchPolicy = async () => {
@@ -23,7 +38,7 @@ const PolicyModal = ({ type, onClose }) => {
           else if (type === 'privacy') key = 'privacy_policy';
 
           const policyItem = settings.find(s => s.key === key);
-          if (policyItem) {
+          if (policyItem && policyItem.value && policyItem.value.trim().length > 30) {
             setPolicyData(policyItem.value);
           }
         }
@@ -38,149 +53,223 @@ const PolicyModal = ({ type, onClose }) => {
   }, [type]);
 
   const policies = {
-    general: {
-      title: "General Terms & Conditions",
-      icon: <IoShieldCheckmarkOutline className="text-blue-500" />,
-      fallback: (
-        <ul className="list-disc pl-5 space-y-3">
-          <li>By creating an account or logging in, you agree to abide by Jaladhaara platform guidelines and privacy terms.</li>
-          <li>Users are responsible for maintaining the confidentiality of their credentials and account access.</li>
-          <li>Survey requests must represent genuine land testing requirements with accurate location data.</li>
-        </ul>
-      )
-    },
-    login: {
-      title: "General Terms & Conditions",
-      icon: <IoShieldCheckmarkOutline className="text-blue-500" />,
-      fallback: (
-        <ul className="list-disc pl-5 space-y-3">
-          <li>By creating an account or logging in, you agree to abide by Jaladhaara platform guidelines and privacy terms.</li>
-          <li>Users are responsible for maintaining the confidentiality of their credentials and account access.</li>
-          <li>Survey requests must represent genuine land testing requirements with accurate location data.</li>
-        </ul>
-      )
-    },
-    booking: {
-      title: "Booking Policy",
-      icon: <IoInformationCircleOutline className="text-blue-500" />,
-      fallback: (
-        <ul className="list-disc pl-5 space-y-3">
-          <li><strong>Slot Booking:</strong> Bookings must be requested with an accurate land location and survey requirements.</li>
-          <li><strong>Confirmation:</strong> Your booking is confirmed once the advance payment is completed.</li>
-          <li><strong>Expert Assignment:</strong> A qualified groundwater survey expert will be assigned to your booking.</li>
-        </ul>
-      )
-    },
-    cancellation: {
-      title: "Cancellation Policy",
-      icon: <IoRefreshCircleOutline className="text-orange-500" />,
-      fallback: (
-        <ul className="list-disc pl-5 space-y-3">
-          <li><strong>Cancellation Before 24h:</strong> Full refund of advance payment if cancelled at least 24 hours before the scheduled visit.</li>
-          <li><strong>Late Cancellation:</strong> 50% of the advance amount will be forfeited if cancelled between 12-24 hours before the visit.</li>
-          <li><strong>Same Day Cancellation:</strong> No refund for cancellations made within 12 hours of the visit.</li>
-        </ul>
-      )
-    },
-    refund: {
-      title: "Refund Policy",
-      icon: <IoRefreshCircleOutline className="text-emerald-500" />,
-      fallback: (
-        <ul className="list-disc pl-5 space-y-3">
-          <li><strong>Refund Processing:</strong> Approved refunds will be processed back to the original payment method within 5-7 business days.</li>
-          <li><strong>Failed Survey Visits:</strong> If an expert fails to attend due to platform issues, a 100% refund will be issued.</li>
-          <li><strong>Inquiries:</strong> Contact support for any refund status queries.</li>
-        </ul>
-      )
-    },
-    advance: {
-      title: "Advance Payment Policy",
-      icon: <IoInformationCircleOutline className="text-blue-600" />,
-      fallback: (
-        <ul className="list-disc pl-5 space-y-3">
-          <li><strong>Advance Split:</strong> A 40% advance payment of the total estimated amount is required to lock your appointment.</li>
-          <li><strong>Payment Gateways:</strong> Secure online payment via Razorpay, UPI, Cards, or Net Banking.</li>
-          <li><strong>Instant Receipt:</strong> Digital receipt is generated immediately upon successful transaction.</li>
-        </ul>
-      )
-    },
-    remaining: {
-      title: "Remaining Payment Policy",
-      icon: <IoInformationCircleOutline className="text-indigo-600" />,
-      fallback: (
-        <ul className="list-disc pl-5 space-y-3">
-          <li><strong>Remaining Split:</strong> The 60% balance amount is payable after the physical survey visit is completed.</li>
-          <li><strong>Report Release:</strong> Survey findings and PDF report will be unlocked upon receipt of full payment.</li>
-        </ul>
-      )
-    },
     terms: {
       title: "Terms of Service",
-      icon: <IoShieldCheckmarkOutline className="text-green-500" />,
-      fallback: (
-        <ol className="list-decimal pl-5 space-y-2">
-          <li>Jaladhaara is a technology platform that connects customers with independent groundwater survey experts.</li>
-          <li>Survey services are provided solely by the selected expert. Jaladhaara is not the survey service provider.</li>
-          <li>Groundwater occurrence is governed by natural geological conditions. Jaladhaara doesn't guarantee drilling success or water yield.</li>
-          <li>The survey report is a professional opinion based on scientific observations.</li>
-          <li>Customers are responsible for providing correct survey location and site access.</li>
-          <li>Jaladhaara is not liable for borewell failure, dry borewells, or consequential damages.</li>
-          <li>Booking and cancellation are governed by applicable policies.</li>
-          <li>By proceeding, you confirm agreement to these Terms & Conditions.</li>
-        </ol>
-      )
+      icon: <IoShieldCheckmarkOutline className="text-emerald-500 text-2xl" />,
+      sections: [
+        {
+          heading: "1. Platform Nature & Scope",
+          points: [
+            "Jaladhaara is a technology platform connecting customers with independent certified groundwater survey experts.",
+            "Survey services are executed solely by the assigned hydrogeological expert. Jaladhaara acts as the facilitator and technology platform."
+          ]
+        },
+        {
+          heading: "2. Geological & Drilling Disclaimer",
+          points: [
+            "Groundwater occurrence depends on complex natural hydrogeological conditions.",
+            "Survey reports represent scientific opinions based on surface observations and equipment readings.",
+            "Jaladhaara does not guarantee drilling success, borewell depth, water yield, or water quality."
+          ]
+        },
+        {
+          heading: "3. Customer Responsibilities",
+          points: [
+            "Provide accurate survey location coordinates, land boundaries, and landmark details.",
+            "Ensure safe physical site access for the survey expert and testing equipment.",
+            "Obtain any necessary local permissions required for land inspection."
+          ]
+        },
+        {
+          heading: "4. Limitation of Liability",
+          points: [
+            "Jaladhaara is not liable for borewell drilling failure, dry borewells, financial losses, or drilling costs.",
+            "Booking, cancellation, and refund requests are strictly governed by standard platform policies."
+          ]
+        }
+      ]
     },
     privacy: {
       title: "Privacy Policy",
-      icon: <IoShieldCheckmarkOutline className="text-blue-500" />,
-      fallback: (
-        <ol className="list-decimal pl-5 space-y-2">
-          <li>We collect information required to provide our survey services.</li>
-          <li>Your location is used only to facilitate groundwater survey bookings.</li>
-          <li>Personal details are shared only with authorized experts and partners.</li>
-          <li>We use reasonable security measures to protect your data.</li>
-          <li>We do not sell or rent your personal information.</li>
-        </ol>
-      )
+      icon: <IoShieldCheckmarkOutline className="text-blue-500 text-2xl" />,
+      sections: [
+        {
+          heading: "1. Information Collection",
+          points: [
+            "We collect essential details including your name, contact phone number, email address, and survey location.",
+            "Payment details are securely processed via certified payment gateways (Razorpay)."
+          ]
+        },
+        {
+          heading: "2. Purpose & Data Usage",
+          points: [
+            "Your location coordinates are used exclusively to enable assigned experts to navigate to your survey site.",
+            "Contact details are utilized for booking notifications, OTP verifications, and report delivery."
+          ]
+        },
+        {
+          heading: "3. Information Sharing",
+          points: [
+            "Personal information is shared strictly with your assigned hydrogeological expert and authorized payment partners.",
+            "We do not sell, rent, or trade your personal information to third-party advertisers."
+          ]
+        },
+        {
+          heading: "4. Security & User Rights",
+          points: [
+            "Industry-standard encryption and security protocols protect your data against unauthorized access.",
+            "You retain full rights to update your personal details or request account data deletion at any time."
+          ]
+        }
+      ]
+    },
+    general: {
+      title: "General Terms & Conditions",
+      icon: <IoShieldCheckmarkOutline className="text-blue-500 text-2xl" />,
+      sections: [
+        {
+          heading: "1. General Guidelines",
+          points: [
+            "By logging in or creating an account, you agree to comply with Jaladhaara platform policies.",
+            "Users must maintain account security and confidentiality of login credentials.",
+            "Survey requests must represent genuine land testing requirements."
+          ]
+        }
+      ]
+    },
+    booking: {
+      title: "Booking Policy",
+      icon: <IoInformationCircleOutline className="text-blue-500 text-2xl" />,
+      sections: [
+        {
+          heading: "1. Appointment & Assignment",
+          points: [
+            "Bookings must be placed with valid site address and land details.",
+            "Bookings are confirmed upon successful payment of advance fee.",
+            "A qualified groundwater expert will be assigned based on locality and availability."
+          ]
+        }
+      ]
+    },
+    cancellation: {
+      title: "Cancellation Policy",
+      icon: <IoRefreshCircleOutline className="text-amber-500 text-2xl" />,
+      sections: [
+        {
+          heading: "1. Cancellation Terms",
+          points: [
+            "Full refund if cancelled at least 24 hours prior to scheduled visit.",
+            "50% deduction if cancelled between 12-24 hours prior to visit.",
+            "Non-refundable for cancellations made within 12 hours of appointment."
+          ]
+        }
+      ]
+    },
+    refund: {
+      title: "Refund Policy",
+      icon: <IoRefreshCircleOutline className="text-emerald-500 text-2xl" />,
+      sections: [
+        {
+          heading: "1. Refund Execution",
+          points: [
+            "Approved refunds are credited to the original payment source within 5-7 business days.",
+            "100% refund provided if an expert fails to attend a confirmed appointment."
+          ]
+        }
+      ]
+    },
+    advance: {
+      title: "Advance Payment Policy",
+      icon: <IoInformationCircleOutline className="text-blue-600 text-2xl" />,
+      sections: [
+        {
+          heading: "1. Advance Structure",
+          points: [
+            "A 40% advance payment is required to lock your appointment slot.",
+            "Instant digital payment receipts are issued upon payment completion."
+          ]
+        }
+      ]
+    },
+    remaining: {
+      title: "Remaining Payment Policy",
+      icon: <IoInformationCircleOutline className="text-indigo-600 text-2xl" />,
+      sections: [
+        {
+          heading: "1. Final Balance Settlement",
+          points: [
+            "The 60% balance is payable after site visit completion.",
+            "Survey PDF report is unlocked immediately upon balance settlement."
+          ]
+        }
+      ]
     }
   };
 
-  const policy = policies[type] || policies.terms;
+  const activePolicy = policies[type] || policies.terms;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 relative">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{policy.icon}</span>
-            <h3 className="text-xl font-bold text-gray-900">{policy.title}</h3>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
+      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[85vh] transition-all transform scale-100">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50/70 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-white rounded-2xl shadow-sm border border-gray-100">
+              {activePolicy.icon}
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-gray-900 leading-tight">
+                {activePolicy.title}
+              </h3>
+              <p className="text-[11px] font-semibold text-gray-400 mt-0.5">
+                Official Jaladhaara Document • Updated 2026
+              </p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <IoClose className="text-xl text-gray-400" />
-          </button>
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 leading-relaxed mb-6 overflow-y-auto max-h-[60vh]">
+
+        {/* Policy Content Area */}
+        <div className="p-6 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
           {loading ? (
-            <div className="flex justify-center p-8">
-              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-3">
+              <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-xs font-semibold">Loading document...</span>
             </div>
           ) : (
-            policyData ? (
-              <div dangerouslySetInnerHTML={{ __html: policyData }} className="policy-content" />
-            ) : (
-              policy.fallback
-            )
+            /* Professional Point-by-Point Sections */
+            activePolicy.sections.map((section, idx) => (
+              <div key={idx} className="bg-gray-50/80 rounded-2xl p-4 border border-gray-100 space-y-2.5">
+                <h4 className="text-xs font-bold text-gray-900 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                  {section.heading}
+                </h4>
+                <ul className="space-y-2.5 pl-1">
+                  {section.points.map((pt, pIdx) => (
+                    <li key={pIdx} className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed">
+                      <IoCheckmarkCircle className="text-blue-500 text-sm shrink-0 mt-0.5" />
+                      <span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
           )}
         </div>
-        <button
-          onClick={onClose}
-          className="w-full py-4 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-lg active:scale-[0.98] transition-all"
-        >
-          Close
-        </button>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
+          <button
+            onClick={onClose}
+            className="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.99]"
+          >
+            I Understand & Agree
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 export default PolicyModal;
+

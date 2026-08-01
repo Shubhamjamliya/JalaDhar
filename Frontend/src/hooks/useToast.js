@@ -20,9 +20,10 @@ export const useToast = () => {
    * @param {Object} options - Additional toast options
    */
   const showSuccess = (message, options = {}) => {
+    toast.dismiss();
     return toast.success(message, {
       icon: '✓',
-      duration: options.duration || 3000,
+      duration: options.duration || 2500,
       ...options,
     });
   };
@@ -33,8 +34,9 @@ export const useToast = () => {
    * @param {Object} options - Additional toast options
    */
   const showError = (message, options = {}) => {
+    toast.dismiss();
     return toast.error(message, {
-      duration: options.duration || 4000,
+      duration: options.duration || 3000,
       ...options,
     });
   };
@@ -45,9 +47,10 @@ export const useToast = () => {
    * @param {Object} options - Additional toast options
    */
   const showInfo = (message, options = {}) => {
+    toast.dismiss();
     return toast(message, {
       icon: 'ℹ️',
-      duration: options.duration || 3000,
+      duration: options.duration || 2500,
       ...options,
     });
   };
@@ -58,9 +61,10 @@ export const useToast = () => {
    * @param {Object} options - Additional toast options
    */
   const showWarning = (message, options = {}) => {
+    toast.dismiss();
     return toast(message, {
       icon: '⚠️',
-      duration: options.duration || 3500,
+      duration: options.duration || 3000,
       style: {
         border: '1px solid #F59E0B',
         background: '#ffffff',
@@ -82,6 +86,7 @@ export const useToast = () => {
    * @returns {string} Toast ID
    */
   const showLoading = (message = 'Loading...', options = {}) => {
+    toast.dismiss();
     return toast.loading(message, {
       duration: Infinity, // Loading toasts don't auto-dismiss
       ...options,

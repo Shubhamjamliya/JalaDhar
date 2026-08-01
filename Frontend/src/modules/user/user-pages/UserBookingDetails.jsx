@@ -337,25 +337,28 @@ export default function UserBookingDetails() {
 
     const getStatusBadge = (status) => {
         const statusConfig = {
-            PENDING: { color: "bg-yellow-100 text-yellow-700", label: "Requested" },
-            ASSIGNED: { color: "bg-orange-100 text-orange-700", label: "Assigned" },
-            ACCEPTED: { color: "bg-blue-100 text-blue-700", label: "Accepted" },
-            VISITED: { color: "bg-purple-100 text-purple-700", label: "Visited" },
-            REPORT_UPLOADED: { color: "bg-indigo-100 text-indigo-700", label: "Report Ready" },
-            AWAITING_PAYMENT: { color: "bg-orange-100 text-orange-700", label: "Awaiting Payment" },
-            PAYMENT_SUCCESS: { color: "bg-emerald-100 text-emerald-700", label: "Payment Success" },
-            PAID_FIRST: { color: "bg-emerald-100 text-emerald-700", label: "Payment Success" },
-            BOREWELL_UPLOADED: { color: "bg-teal-100 text-teal-700", label: "Borewell Uploaded" },
-            ADMIN_APPROVED: { color: "bg-green-100 text-green-700", label: "Completed" },
-            FINAL_SETTLEMENT: { color: "bg-green-100 text-green-700", label: "Completed" },
-            COMPLETED: { color: "bg-green-100 text-green-700", label: "Completed" },
-            CANCELLED: { color: "bg-gray-100 text-gray-700", label: "Cancelled" },
-            REJECTED: { color: "bg-red-100 text-red-700", label: "Rejected" },
-            FAILED: { color: "bg-red-100 text-red-700", label: "Failed" },
+            AWAITING_ADVANCE: { color: "bg-amber-100 text-amber-800", label: "Awaiting Advance Payment" },
+            PENDING: { color: "bg-yellow-100 text-yellow-800", label: "Expert Assignment in Progress" },
+            ASSIGNED: { color: "bg-blue-100 text-blue-800", label: "Expert Assigned" },
+            ACCEPTED: { color: "bg-indigo-100 text-indigo-800", label: "Survey Scheduled" },
+            EN_ROUTE: { color: "bg-sky-100 text-sky-800", label: "Expert En Route" },
+            VISITED: { color: "bg-purple-100 text-purple-800", label: "Survey in Progress" },
+            IN_PROGRESS: { color: "bg-purple-100 text-purple-800", label: "Survey in Progress" },
+            REPORT_UPLOADED: { color: "bg-emerald-100 text-emerald-800", label: "Survey Completed" },
+            AWAITING_PAYMENT: { color: "bg-orange-100 text-orange-800", label: "Awaiting Final Payment" },
+            PAYMENT_SUCCESS: { color: "bg-emerald-100 text-emerald-800", label: "Report Ready" },
+            PAID_FIRST: { color: "bg-emerald-100 text-emerald-800", label: "Report Ready" },
+            BOREWELL_UPLOADED: { color: "bg-teal-100 text-teal-800", label: "Report Ready" },
+            ADMIN_APPROVED: { color: "bg-green-100 text-green-800", label: "Booking Completed" },
+            FINAL_SETTLEMENT: { color: "bg-green-100 text-green-800", label: "Booking Completed" },
+            COMPLETED: { color: "bg-green-100 text-green-800", label: "Booking Completed" },
+            CANCELLED: { color: "bg-gray-100 text-gray-700", label: "Booking Cancelled" },
+            REJECTED: { color: "bg-red-100 text-red-800", label: "Booking Rejected" },
+            FAILED: { color: "bg-red-100 text-red-800", label: "Booking Failed" },
         };
-        const config = statusConfig[status] || { color: "bg-gray-100 text-gray-700", label: status };
+        const config = statusConfig[status] || { color: "bg-gray-100 text-gray-700", label: status ? status.replace(/_/g, ' ') : status };
         return (
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${config.color}`}>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${config.color}`}>
                 {config.label}
             </span>
         );
@@ -363,21 +366,24 @@ export default function UserBookingDetails() {
 
     const getStatusDescription = (status) => {
         const descriptions = {
-            PENDING: "Finding the best expert for you... Our team is broadcasting your request to top-rated vendors nearby.",
-            ASSIGNED: "Expert matched! A specialized vendor is currently reviewing your request's specific requirements.",
-            ACCEPTED: "Visit Confirmed! Your expert has accepted the task and will arrive at your location as scheduled.",
-            VISITED: "Inspection Complete! Your site visit is done. Our expert is now preparing your detailed detection report.",
-            REPORT_UPLOADED: "Report Ready! Your detailed survey report has been uploaded and is waiting for your review.",
-            AWAITING_PAYMENT: "Unlock Your Report: Please complete the final payment to access your survey results.",
-            PAYMENT_SUCCESS: "Payment Confirmed! Your report is now available for download and view.",
-            PAID_FIRST: "Payment Confirmed! You can now access your survey results.",
-            BOREWELL_UPLOADED: "Result Submitted: Thank you for updating your borewell outcome. We're processing it now.",
-            ADMIN_APPROVED: "Approved: Your borewell result has been verified. Final settlement is in progress.",
-            FINAL_SETTLEMENT: "Settling: We are finalizing the accounts for this booking.",
-            COMPLETED: "Service Complete: Thank you for choosing JalaDhar. We hope you found your expert helpful!",
-            CANCELLED: "Booking Cancelled: This request has been successfully cancelled.",
-            REJECTED: "No Expert Available: Unfortunately, our vendors couldn't fulfill this specific request at this time.",
-            FAILED: "Process Error: Something went wrong. Our support team has been notified.",
+            AWAITING_ADVANCE: "Please complete advance payment to confirm your groundwater survey request.",
+            PENDING: "Finding the best expert for you... Our team is broadcasting your request to top-rated experts nearby.",
+            ASSIGNED: "Expert matched! A specialized hydrogeologist is currently reviewing your site location.",
+            ACCEPTED: "Survey Scheduled! Your assigned expert will arrive at your site location as scheduled.",
+            EN_ROUTE: "Expert En Route! Your assigned survey expert is traveling to your property.",
+            VISITED: "Survey in Progress! Site inspection and hydrogeological scanning are currently underway.",
+            IN_PROGRESS: "Survey in Progress! Site inspection and hydrogeological scanning are currently underway.",
+            REPORT_UPLOADED: "Survey Completed! The expert has compiled your detection data into a scientific report.",
+            AWAITING_PAYMENT: "Awaiting Final Payment: Please complete the remaining payment to unlock your report.",
+            PAYMENT_SUCCESS: "Report Ready! Your detailed groundwater report is available for download.",
+            PAID_FIRST: "Report Ready! You can now view and download your groundwater report.",
+            BOREWELL_UPLOADED: "Report Ready! Your groundwater survey report is available.",
+            ADMIN_APPROVED: "Booking Completed: Your survey request has been fully completed and verified.",
+            FINAL_SETTLEMENT: "Booking Completed: Your survey request has been fully completed.",
+            COMPLETED: "Booking Completed: Thank you for choosing Jaladhaara!",
+            CANCELLED: "Booking Cancelled: This survey request has been cancelled.",
+            REJECTED: "Booking Rejected: Unfortunately, vendors could not fulfill this request at this time.",
+            FAILED: "Booking Failed: Process error encountered. Our support team is investigating.",
         };
         return descriptions[status] || "Track your real-time booking progress here.";
     };
@@ -413,6 +419,48 @@ export default function UserBookingDetails() {
         if (address.state) parts.push(address.state);
         if (address.pincode) parts.push(address.pincode);
         return parts.join(", ") || "Not provided";
+    };
+
+    const parseSurveySiteInfo = (booking) => {
+        if (!booking) return {};
+        
+        let category = booking.purpose || '';
+        let extent = formatAcresGuntasDisplay(booking.purposeExtent) || booking.extent || '';
+        let surveyNo = booking.surveyNumber || booking.address?.surveyNumber || '';
+        let landmark = booking.address?.landmark || booking.landmark || '';
+        let remarks = '';
+
+        let notes = booking.notes || '';
+
+        if (notes) {
+            const catMatch = notes.match(/Category:\s*([^.]+)/i);
+            const surMatch = notes.match(/(?:Survey No|Plot No):\s*([^.]+)/i);
+            const landMatch = notes.match(/Landmark:\s*([^.]+)/i);
+
+            if (catMatch && !category) category = catMatch[1].trim();
+            if (surMatch && !surveyNo) surveyNo = surMatch[1].trim();
+            if (landMatch && !landmark) landmark = landMatch[1].trim();
+
+            if (catMatch || surMatch || landMatch) {
+                let cleaned = notes
+                    .replace(/Category:[^.]*\.?/gi, '')
+                    .replace(/(?:Survey No|Plot No):[^.]*\.?/gi, '')
+                    .replace(/Landmark:[^.]*\.?/gi, '')
+                    .replace(/Remarks:\s*/gi, '')
+                    .trim();
+                remarks = cleaned;
+            } else {
+                remarks = notes;
+            }
+        }
+
+        return {
+            category,
+            extent,
+            surveyNo,
+            landmark,
+            remarks
+        };
     };
 
     if (loading) {
@@ -478,13 +526,13 @@ export default function UserBookingDetails() {
                 {(() => {
                     const status = booking.status;
                     const timelineSteps = [
-                        { id: "requested", label: "Request Sent", icon: <IoDocumentTextOutline />, statuses: ["PENDING"], date: booking.createdAt },
-                        { id: "assigned", label: "Expert Match", icon: <IoPersonOutline />, statuses: ["ASSIGNED"], date: booking.assignedAt },
-                        { id: "accepted", label: "Visit Scheduled", icon: <IoCheckmarkCircleOutline />, statuses: ["ACCEPTED"], date: booking.acceptedAt },
-                        { id: "visited", label: "Site Visit", icon: <IoConstructOutline />, statuses: ["VISITED"], date: booking.visitedAt },
-                        { id: "report", label: "Report Ready", icon: <IoDocumentTextOutline />, statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt },
-                        { id: "payment", label: "Payment Paid", icon: <IoCashOutline />, statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"], date: booking.payment?.remainingPaidAt || booking.payment?.updatedAt },
-                        { id: "completed", label: "Service Finished", icon: <IoCheckmarkCircleOutline />, statuses: ["COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt },
+                        { id: "requested", label: "Booking Confirmed", icon: <IoDocumentTextOutline />, statuses: ["PENDING"], date: booking.createdAt },
+                        { id: "assigned", label: "Expert Assigned", icon: <IoPersonOutline />, statuses: ["ASSIGNED"], date: booking.assignedAt },
+                        { id: "accepted", label: "Survey Scheduled", icon: <IoCheckmarkCircleOutline />, statuses: ["ACCEPTED"], date: booking.acceptedAt },
+                        { id: "visited", label: "Survey in Progress", icon: <IoConstructOutline />, statuses: ["VISITED"], date: booking.visitedAt },
+                        { id: "report", label: "Survey Completed", icon: <IoDocumentTextOutline />, statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt },
+                        { id: "payment", label: "Final Payment", icon: <IoCashOutline />, statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"], date: booking.payment?.remainingPaidAt || booking.payment?.updatedAt },
+                        { id: "completed", label: "Report Unlocked", icon: <IoCheckmarkCircleOutline />, statuses: ["COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt },
                     ];
 
                     const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
@@ -664,9 +712,9 @@ export default function UserBookingDetails() {
                 </div>
             </div>
 
-            {/* Vendor Information Card */}
+            {/* Expert Information Card */}
             <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Vendor Information</h2>
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Expert Information</h2>
                 {booking.vendor ? (
                     <div className="space-y-4">
                         <div className="flex items-center gap-4">
@@ -785,31 +833,51 @@ export default function UserBookingDetails() {
                                             )}
                                         </div>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${booking.report && typeof booking.report.waterFound === 'boolean'
-                                        ? "bg-indigo-100 text-indigo-700"
-                                        : ["VISITED", "REPORT_UPLOADED"].includes(booking.status)
-                                            ? "bg-orange-50 text-orange-600 animate-pulse"
-                                            : "bg-gray-100 text-gray-500"
-                                        }`}>
-                                        {booking.report && typeof booking.report.waterFound === 'boolean' ? "Available" : ["VISITED", "REPORT_UPLOADED"].includes(booking.status) ? "Processing" : "Pending"}
-                                    </span>
+                                    {(() => {
+                                        const hasReport = !!booking.report || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(booking.status);
+                                        const isUnlocked = booking.payment?.remainingPaid;
+
+                                        let badgeClass = "bg-gray-100 text-gray-500";
+                                        let badgeText = "Pending";
+
+                                        if (isUnlocked) {
+                                            badgeClass = "bg-indigo-100 text-indigo-700";
+                                            badgeText = "Available";
+                                        } else if (hasReport) {
+                                            badgeClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
+                                            badgeText = "Report Ready";
+                                        } else if (["VISITED", "IN_PROGRESS"].includes(booking.status)) {
+                                            badgeClass = "bg-amber-50 text-amber-600 animate-pulse";
+                                            badgeText = "In Progress";
+                                        }
+
+                                        return (
+                                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${badgeClass}`}>
+                                                {badgeText}
+                                            </span>
+                                        );
+                                    })()}
                                 </div>
 
-                                {/* Borewell Report Status */}
-                                <div className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden relative">
+                                {/* Borewell Result Status */}
+                                <div 
+                                    onClick={() => setShowBorewellModal(true)}
+                                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden relative cursor-pointer hover:border-teal-200 hover:bg-teal-50/30 transition-all"
+                                >
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${booking.borewellResult && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED') ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-400'}`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${booking.borewellResult && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED') ? 'bg-teal-100 text-teal-600' : 'bg-blue-100 text-blue-600'}`}>
                                             <IoImageOutline />
                                         </div>
-                                        <span className="text-sm font-semibold text-gray-700">Borewell Result</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-semibold text-gray-700">Borewell Result</span>
+                                            <span className="text-[10px] text-gray-400">Click to {booking.borewellResult ? "view or update" : "upload outcome"}</span>
+                                        </div>
                                     </div>
                                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${booking.borewellResult && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED')
                                         ? "bg-teal-100 text-teal-700"
-                                        : booking.status === 'COMPLETED'
-                                            ? "bg-orange-50 text-orange-600 animate-pulse"
-                                            : "bg-gray-100 text-gray-500"
+                                        : "bg-blue-50 text-blue-600"
                                         }`}>
-                                        {booking.borewellResult && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED') ? "Uploaded" : booking.status === 'COMPLETED' ? "Awaiting Input" : "Locked"}
+                                        {booking.borewellResult && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED') ? "Uploaded" : "Upload Result"}
                                     </span>
                                 </div>
                             </div>
@@ -846,31 +914,49 @@ export default function UserBookingDetails() {
             </div>
 
             {/* Survey Site Info */}
-            {(booking.purpose || booking.purposeExtent || booking.notes) && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Survey Site Info</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {booking.purpose && (
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Purpose</p>
-                                <p className="text-base font-semibold text-gray-800">{booking.purpose}</p>
-                            </div>
-                        )}
-                        {booking.purposeExtent && (
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Extent</p>
-                                <p className="text-base font-semibold text-gray-800">{formatAcresGuntasDisplay(booking.purposeExtent)}</p>
-                            </div>
-                        )}
-                        {booking.notes && (
-                            <div className="col-span-1 md:col-span-2">
-                                <p className="text-sm text-gray-500 mb-1">Additional Notes</p>
-                                <p className="text-sm text-gray-600 leading-relaxed">{booking.notes}</p>
-                            </div>
-                        )}
+            {(() => {
+                const siteInfo = parseSurveySiteInfo(booking);
+                const hasInfo = siteInfo.category || siteInfo.extent || siteInfo.surveyNo || siteInfo.landmark || siteInfo.remarks;
+                if (!hasInfo) return null;
+
+                return (
+                    <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                        <h2 className="text-xl font-bold text-gray-800 mb-4">Survey Site Info</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {siteInfo.category && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">Property Category</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.category}</p>
+                                </div>
+                            )}
+                            {siteInfo.extent && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">Land / Plot Area</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.extent}</p>
+                                </div>
+                            )}
+                            {siteInfo.surveyNo && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">Survey No.</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.surveyNo}</p>
+                                </div>
+                            )}
+                            {siteInfo.landmark && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">Landmark</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.landmark}</p>
+                                </div>
+                            )}
+                            {siteInfo.remarks && (
+                                <div className="col-span-1 md:col-span-2">
+                                    <p className="text-sm text-gray-500 mb-1">Remarks</p>
+                                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100">{siteInfo.remarks}</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Payment Information Card */}
             {booking.payment && (
@@ -968,17 +1054,21 @@ export default function UserBookingDetails() {
                     <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 overflow-hidden">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-gray-800">Survey Report</h2>
-                            {(!booking.report || !["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status)) && (
-                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded-full uppercase tracking-wider">
+                            {(!booking.report && !["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status)) ? (
+                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-full uppercase tracking-wider">
                                     <IoHourglassOutline className="animate-spin" />
-                                    Processing
+                                    In Progress
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-wider border border-emerald-200">
+                                    <IoCheckmarkCircleOutline className="text-emerald-600" />
+                                    {booking.payment?.remainingPaid ? "Available" : "Report Ready"}
                                 </span>
                             )}
                         </div>
 
                         {booking.report &&
-                            ["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status) &&
-                            typeof booking.report.waterFound === 'boolean' ? (
+                            (["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status) || !!booking.report) ? (
                             <>
                                 {/* Status Banner */}
                                 <div className={`flex items-center gap-4 p-4 rounded-[12px] mb-6 ${booking.report.waterFound
@@ -1064,9 +1154,9 @@ export default function UserBookingDetails() {
                                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                                     <IoDocumentTextOutline className="text-3xl text-gray-300" />
                                 </div>
-                                <h3 className="text-gray-800 font-bold mb-1">Awaiting Survey Report</h3>
-                                <p className="text-sm text-gray-500 max-w-[260px] mx-auto">
-                                    Our expert will upload the detailed survey findings here once the visit and initial analysis are complete.
+                                <h3 className="text-gray-800 font-bold mb-1">Survey report is being prepared</h3>
+                                <p className="text-sm text-gray-500 max-w-[280px] mx-auto">
+                                    Your assigned expert will upload the detailed report after completing the survey and analysis.
                                 </p>
                             </div>
                         )}
@@ -1334,23 +1424,23 @@ function PaymentPromptModal({ isOpen, onClose, onPay, amount }) {
                         <IoLockClosedOutline className="text-4xl text-orange-500" />
                     </div>
 
-                    <h2 className="text-2xl font-black text-gray-900 mb-2">Report Locked</h2>
-                    <p className="text-gray-500 mb-8 leading-relaxed">
-                        To access your detailed survey report and findings, please complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString()}</span>.
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">Survey Report Locked</h2>
+                    <p className="text-gray-500 mb-8 leading-relaxed text-sm">
+                        Your survey report is ready. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock and view your detailed groundwater survey report.
                     </p>
 
                     <div className="space-y-3">
                         <button
                             onClick={onPay}
-                            className="w-full bg-[#0A84FF] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-[0.98] transition-all"
+                            className="w-full bg-[#0A84FF] text-white py-4 rounded-xl font-bold text-base shadow-lg shadow-blue-200 active:scale-[0.98] transition-all"
                         >
-                            Pay & Unlock Now
+                            Pay and unlock report
                         </button>
                         <button
                             onClick={onClose}
-                            className="w-full bg-gray-50 text-gray-500 py-4 rounded-xl font-bold hover:bg-gray-100 transition-all"
+                            className="w-full bg-gray-50 text-gray-500 py-4 rounded-xl font-bold hover:bg-gray-100 transition-all text-sm"
                         >
-                            Dismiss
+                            Not now
                         </button>
                     </div>
                 </div>

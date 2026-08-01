@@ -201,7 +201,7 @@ export default function UserInvoice() {
               <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4">Assigned Expert</p>
               <h4 className="text-xl font-bold text-gray-900 mb-2">{booking.vendor?.name || 'Assigned Expert'}</h4>
               <div className="space-y-1 text-sm text-gray-600 font-medium">
-                <p>Vendor ID: V-{booking.vendor?._id?.slice(-6).toUpperCase() || 'REF-N/A'}</p>
+                <p>Expert ID: EXP-{booking.vendor?._id?.slice(-6).toUpperCase() || 'REF-N/A'}</p>
                 <p>Service: {booking.service?.name}</p>
                 <p className="mt-4 pt-4 border-t border-gray-50">
                   Visit Date: {new Date(booking.scheduledDate).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}

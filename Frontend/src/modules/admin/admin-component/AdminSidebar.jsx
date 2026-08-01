@@ -31,15 +31,15 @@ const navItems = [
     },
     {
         id: "vendors",
-        label: "Vendors",
+        label: "Experts",
         to: "/admin/vendors",
         Icon: IoBusinessOutline,
         roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"],
         children: [
-            { label: "All Vendors", to: "/admin/vendors", end: true },
+            { label: "All Experts", to: "/admin/vendors", end: true },
             { label: "Pending Approvals", to: "/admin/vendors/pending" },
-            { label: "Vendor Bookings", to: "/admin/vendors/bookings" },
-            { label: "Vendor Analytics", to: "/admin/vendors/analytics" }
+            { label: "Expert Bookings", to: "/admin/vendors/bookings" },
+            { label: "Expert Analytics", to: "/admin/vendors/analytics" }
         ]
     },
     {
@@ -84,7 +84,7 @@ const navItems = [
         children: [
             { label: "Admin Payments", to: "/admin/payments/admin" },
             { label: "User Payments", to: "/admin/payments/user" },
-            { label: "Vendor Payments", to: "/admin/payments/vendor" }
+            { label: "Expert Payments", to: "/admin/payments/vendor" }
         ]
     },
     {
@@ -99,7 +99,7 @@ const navItems = [
             { label: "Revenue", to: "/admin/reports/revenue" },
             { label: "Bookings", to: "/admin/reports/bookings" },
             { label: "Payments", to: "/admin/reports/payments" },
-            { label: "Vendors", to: "/admin/reports/vendors" }
+            { label: "Experts", to: "/admin/reports/vendors" }
         ]
     },
     {

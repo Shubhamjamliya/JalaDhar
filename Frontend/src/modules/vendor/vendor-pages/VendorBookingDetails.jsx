@@ -203,6 +203,48 @@ export default function VendorBookingDetails() {
         }
     };
 
+    const parseSurveySiteInfo = (booking) => {
+        if (!booking) return {};
+        
+        let category = booking.purpose || '';
+        let extent = formatAcresGuntasDisplay(booking.purposeExtent) || booking.extent || '';
+        let surveyNo = booking.surveyNumber || booking.address?.surveyNumber || '';
+        let landmark = booking.address?.landmark || booking.landmark || '';
+        let remarks = '';
+
+        let notes = booking.notes || '';
+
+        if (notes) {
+            const catMatch = notes.match(/Category:\s*([^.]+)/i);
+            const surMatch = notes.match(/(?:Survey No|Plot No):\s*([^.]+)/i);
+            const landMatch = notes.match(/Landmark:\s*([^.]+)/i);
+
+            if (catMatch && !category) category = catMatch[1].trim();
+            if (surMatch && !surveyNo) surveyNo = surMatch[1].trim();
+            if (landMatch && !landmark) landmark = landMatch[1].trim();
+
+            if (catMatch || surMatch || landMatch) {
+                let cleaned = notes
+                    .replace(/Category:[^.]*\.?/gi, '')
+                    .replace(/(?:Survey No|Plot No):[^.]*\.?/gi, '')
+                    .replace(/Landmark:[^.]*\.?/gi, '')
+                    .replace(/Remarks:\s*/gi, '')
+                    .trim();
+                remarks = cleaned;
+            } else {
+                remarks = notes;
+            }
+        }
+
+        return {
+            category,
+            extent,
+            surveyNo,
+            landmark,
+            remarks
+        };
+    };
+
     const handleMarkAsVisited = () => {
         setShowVisitConfirm(true);
     };
@@ -871,31 +913,50 @@ export default function VendorBookingDetails() {
             )}
 
 
-            {(booking.notes || booking.purpose || booking.purposeExtent) && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Survey Site Info</h2>
-                    <div className="space-y-4">
-                        {booking.purpose && (
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Purpose</p>
-                                <p className="text-base font-semibold text-gray-800">{booking.purpose}</p>
-                            </div>
-                        )}
-                        {booking.purposeExtent && (
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Extent</p>
-                                <p className="text-base font-semibold text-gray-800">{formatAcresGuntasDisplay(booking.purposeExtent)}</p>
-                            </div>
-                        )}
-                        {booking.notes && (
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Additional Notes</p>
-                                <p className="text-sm text-gray-600 leading-relaxed">{booking.notes}</p>
-                            </div>
-                        )}
+            {/* Survey Site Info */}
+            {(() => {
+                const siteInfo = parseSurveySiteInfo(booking);
+                const hasInfo = siteInfo.category || siteInfo.extent || siteInfo.surveyNo || siteInfo.landmark || siteInfo.remarks;
+                if (!hasInfo) return null;
+
+                return (
+                    <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                        <h2 className="text-xl font-bold text-gray-800 mb-4">Survey Site Info</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {siteInfo.category && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">Property Category</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.category}</p>
+                                </div>
+                            )}
+                            {siteInfo.extent && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">Land / Plot Area</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.extent}</p>
+                                </div>
+                            )}
+                            {siteInfo.surveyNo && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">Survey No.</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.surveyNo}</p>
+                                </div>
+                            )}
+                            {siteInfo.landmark && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">Landmark</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.landmark}</p>
+                                </div>
+                            )}
+                            {siteInfo.remarks && (
+                                <div className="col-span-1 md:col-span-2">
+                                    <p className="text-sm text-gray-500 mb-1">Remarks</p>
+                                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100">{siteInfo.remarks}</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Report Card (if uploaded) - Only show if status is REPORT_UPLOADED or later */}
             {booking.report && ["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status) && (

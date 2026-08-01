@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { IoNotificationsOutline, IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
+import { IoNotificationsOutline, IoCheckmarkOutline, IoCloseOutline, IoTrashOutline } from 'react-icons/io5';
 import { useNotifications } from '../contexts/NotificationContext';
 
 const NotificationDropdown = ({ to }) => {
@@ -9,7 +9,7 @@ const NotificationDropdown = ({ to }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const prevNotificationCountRef = useRef(0);
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
 
   // Monitor notifications changes
   useEffect(() => {
@@ -59,6 +59,11 @@ const NotificationDropdown = ({ to }) => {
 
   const handleMarkAllAsRead = async () => {
     await markAllAsRead();
+  };
+
+  const handleDeleteItem = async (e, notificationId) => {
+    e.stopPropagation();
+    await deleteNotification(notificationId);
   };
 
   const getNotificationIcon = (type) => {
@@ -152,9 +157,19 @@ const NotificationDropdown = ({ to }) => {
                               <h4 className="text-sm font-semibold text-gray-800 line-clamp-1">
                                 {notification.title}
                               </h4>
-                              {isUnread && (
-                                <span className="flex-shrink-0 w-2 h-2 bg-[#0A84FF] rounded-full mt-1"></span>
-                              )}
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {isUnread && (
+                                  <span className="w-2 h-2 bg-[#0A84FF] rounded-full"></span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteItem(e, notificationId)}
+                                  title="Delete notification"
+                                  className="p-1 text-gray-400 hover:text-red-500 rounded-md hover:bg-gray-100 transition-colors"
+                                >
+                                  <IoTrashOutline className="text-sm" />
+                                </button>
+                              </div>
                             </div>
                             <p className="text-xs text-gray-600 mt-1 line-clamp-2">
                               {notification.message}

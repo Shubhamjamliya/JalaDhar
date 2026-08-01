@@ -8,7 +8,7 @@ import {
     IoInformationCircleOutline,
     IoTrashOutline
 } from "react-icons/io5";
-import { getNotifications, markAsRead, markAllAsRead } from "../../../services/notificationApi";
+import { getNotifications, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications } from "../../../services/notificationApi";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
@@ -72,6 +72,35 @@ export default function UserNotificationsPage() {
         }
     };
 
+    const handleDeleteNotification = async (id, e) => {
+        e.stopPropagation();
+        try {
+            const response = await deleteNotification(id);
+            if (response.success) {
+                toast.showSuccess("Notification deleted");
+                setNotifications(prev => prev.filter(n => n._id !== id));
+            }
+        } catch (err) {
+            toast.showError("Failed to delete notification");
+        }
+    };
+
+    const handleClearAll = async () => {
+        if (!window.confirm("Are you sure you want to clear all notifications?")) return;
+        try {
+            setActionLoading(true);
+            const response = await clearAllNotifications();
+            if (response.success) {
+                toast.showSuccess("All notifications cleared");
+                setNotifications([]);
+            }
+        } catch (err) {
+            toast.showError("Failed to clear notifications");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const filteredNotifications = notifications.filter(n => {
         if (filter === "unread") return !n.isRead;
         return true;
@@ -108,7 +137,7 @@ export default function UserNotificationsPage() {
                     )}
                 </div>
 
-                {/* Filter Tabs */}
+                {/* Filter & Action Toolbar */}
                 <div className="flex items-center justify-between gap-4 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
                     <div className="flex gap-2">
                         <button
@@ -132,6 +161,17 @@ export default function UserNotificationsPage() {
                             Unread ({unreadCount})
                         </button>
                     </div>
+
+                    {notifications.length > 0 && (
+                        <button
+                            onClick={handleClearAll}
+                            disabled={actionLoading}
+                            className="px-3 py-1.5 text-red-600 hover:bg-red-50 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5"
+                        >
+                            <IoTrashOutline className="text-sm" />
+                            <span>Clear All</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Notifications List */}
@@ -165,7 +205,7 @@ export default function UserNotificationsPage() {
                                 <div
                                     key={notification._id}
                                     onClick={() => !notification.isRead && handleMarkAsRead(notification._id)}
-                                    className={`p-4 rounded-2xl border transition-all flex items-start gap-4 cursor-pointer ${
+                                    className={`p-4 rounded-2xl border transition-all flex items-start gap-4 cursor-pointer group ${
                                         notification.isRead
                                             ? "bg-white border-gray-100 shadow-2xs"
                                             : "bg-amber-50/50 border-amber-200 shadow-sm"
@@ -191,9 +231,19 @@ export default function UserNotificationsPage() {
                                         </p>
                                     </div>
 
-                                    {!notification.isRead && (
-                                        <div className="w-2.5 h-2.5 bg-amber-500 rounded-full shrink-0 self-center"></div>
-                                    )}
+                                    <div className="flex items-center gap-2 shrink-0 self-center">
+                                        {!notification.isRead && (
+                                            <div className="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleDeleteNotification(notification._id, e)}
+                                            title="Delete notification"
+                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all opacity-80 group-hover:opacity-100"
+                                        >
+                                            <IoTrashOutline className="text-lg" />
+                                        </button>
+                                    </div>
                                 </div>
                             );
                         })}

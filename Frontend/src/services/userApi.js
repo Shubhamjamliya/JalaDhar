@@ -115,3 +115,23 @@ export const getMyRatings = async (params = {}) => {
   const response = await api.get('/ratings/user/my-ratings', { params });
   return response.data;
 };
+
+/**
+ * Change authenticated user password
+ * @param {Object} data - { currentPassword, newPassword }
+ * @returns {Promise}
+ */
+export const changeUserPassword = async (data) => {
+  const response = await api.put('/users/profile/change-password', data);
+  return response.data;
+};
+
+/**
+ * Update user notification preferences
+ * @param {Object} preferences - { emailAlerts, smsAlerts }
+ * @returns {Promise}
+ */
+export const updateUserNotificationPreferences = async (preferences) => {
+  const response = await api.put('/users/profile/notification-preferences', preferences);
+  return response.data;
+};

@@ -38,3 +38,22 @@ export const getUnreadCount = async () => {
   return response.data;
 };
 
+/**
+ * Delete a single notification
+ * @param {string} notificationId - Notification ID
+ * @returns {Promise}
+ */
+export const deleteNotification = async (notificationId) => {
+  const response = await api.delete(`/notifications/${notificationId}`);
+  return response.data;
+};
+
+/**
+ * Clear all notifications for user
+ * @returns {Promise}
+ */
+export const clearAllNotifications = async () => {
+  const response = await api.delete('/notifications/clear-all');
+  return response.data;
+};
+

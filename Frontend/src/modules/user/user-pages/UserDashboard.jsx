@@ -172,20 +172,19 @@ export default function UserDashboard() {
 
         const handleNewNotification = (notification) => {
             // Refresh for status updates
-            if (
-                notification.type === "BOOKING_STATUS_UPDATED" ||
-                notification.type === "BOOKING_ACCEPTED" ||
-                notification.type === "BOOKING_VISITED" ||
-                notification.type === "REPORT_UPLOADED" ||
-                notification.type === "ADMIN_APPROVED" ||
-                notification.type === "PAYMENT_RELEASE"
-            ) {
-                loadDashboardData();
-            }
+            loadDashboardData();
+        };
+
+        const handleBookingUpdate = () => {
+            loadDashboardData();
         };
 
         socket.on("new_notification", handleNewNotification);
-        return () => socket.off("new_notification", handleNewNotification);
+        socket.on("booking_updated", handleBookingUpdate);
+        return () => {
+            socket.off("new_notification", handleNewNotification);
+            socket.off("booking_updated", handleBookingUpdate);
+        };
     }, [socket]);
 
     // Auto-fetch location on mount if not already saved
@@ -246,7 +245,7 @@ export default function UserDashboard() {
                     payment: booking.payment,
                     description: `Booking for ${booking.service?.name || "service"}`,
                     bookingData: booking, // Keep full booking data reference
-                    hasReport: !!booking.report && (booking.report.uploadedAt || booking.report.waterFound !== null || booking.status === 'REPORT_UPLOADED' || booking.userStatus === 'REPORT_UPLOADED'),
+                    hasReport: !!booking.report || ['REPORT_UPLOADED', 'AWAITING_PAYMENT', 'COMPLETED', 'PAYMENT_SUCCESS', 'PAID_FIRST', 'BOREWELL_UPLOADED'].includes(booking.status) || ['REPORT_UPLOADED', 'AWAITING_PAYMENT', 'COMPLETED'].includes(booking.userStatus),
                     waterFound: booking.report?.waterFound === true || booking.report?.waterFound === "true",
                     hasBorewellResult: !!booking.borewellResult?.uploadedAt
                 }));
@@ -582,8 +581,8 @@ export default function UserDashboard() {
                 className="mx-2 mt-4 mb-2 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all"
             >
                 <div className="text-white">
-                    <h3 className="text-lg font-bold">Book a Survey</h3>
-                    <p className="text-sm opacity-90">Get expert borewell survey services</p>
+                    <h3 className="text-lg font-bold">Book a Groundwater Survey</h3>
+                    <p className="text-sm opacity-90">Find the right borewell location with trusted experts.</p>
                 </div>
                 <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm">
                     <IoLeafOutline className="text-2xl text-white" />
@@ -592,8 +591,8 @@ export default function UserDashboard() {
 
             {/* Survey Categories */}
             <div className="px-4 pt-6 pb-2">
-                <h2 className="text-xl font-bold text-gray-800 tracking-tight">Select Survey Type</h2>
-                <p className="text-sm text-gray-500 mt-1">Choose the service that fits your needs</p>
+                <h2 className="text-xl font-bold text-gray-800 tracking-tight">Survey Purpose</h2>
+                <p className="text-sm text-gray-500 mt-1">Choose where you need a groundwater survey.</p>
             </div>
             <div className="mx-4 mt-2 mb-8 grid grid-cols-2 gap-4">
                 {[
@@ -619,9 +618,9 @@ export default function UserDashboard() {
                 ))}
             </div>
 
-            {/* Services Overview */}
+            {/* Services Overview / Quick Access */}
             <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
-                Your Services Overview
+                Quick Access
             </h2>
             <div className="grid grid-cols-5 gap-1 mb-6 px-1">
                 {/* Request Status */}
@@ -723,7 +722,7 @@ export default function UserDashboard() {
                     return (
                         <>
                             <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
-                                Current Actions
+                                Booking in Progress
                             </h2>
                             <div className="mx-2 mb-6 bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                 <div className="flex items-center justify-between mb-4">
@@ -806,9 +805,9 @@ export default function UserDashboard() {
                 })()
             }
 
-            {/* Top Vendors Near You */}
+            {/* Top Verified Experts Near You */}
             <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
-                Top Vendors Near You
+                Top Verified Experts Near You
             </h2>
 
             {/* Location Selector */}
@@ -1100,23 +1099,23 @@ function PaymentPromptModal({ isOpen, onClose, onPay, amount }) {
                         <IoLockClosedOutline className="text-4xl text-orange-500" />
                     </div>
 
-                    <h2 className="text-2xl font-black text-gray-900 mb-2">Report Locked</h2>
-                    <p className="text-gray-500 mb-8 leading-relaxed">
-                        To access your detailed survey report and findings, please complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString()}</span>.
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">Survey Report Locked</h2>
+                    <p className="text-gray-500 mb-8 leading-relaxed text-sm">
+                        Your survey report is ready. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock and view your detailed groundwater survey report.
                     </p>
 
                     <div className="space-y-3">
                         <button
                             onClick={onPay}
-                            className="w-full bg-[#0A84FF] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-[0.98] transition-all"
+                            className="w-full bg-[#0A84FF] text-white py-4 rounded-xl font-bold text-base shadow-lg shadow-blue-200 active:scale-[0.98] transition-all"
                         >
-                            Pay & Unlock Now
+                            Pay and unlock report
                         </button>
                         <button
                             onClick={onClose}
-                            className="w-full bg-gray-50 text-gray-500 py-4 rounded-xl font-bold hover:bg-gray-100 transition-all"
+                            className="w-full bg-gray-50 text-gray-500 py-4 rounded-xl font-bold hover:bg-gray-100 transition-all text-sm"
                         >
-                            Dismiss
+                            Not now
                         </button>
                     </div>
                 </div>
