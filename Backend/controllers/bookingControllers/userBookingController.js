@@ -106,7 +106,8 @@ const createBooking = async (req, res) => {
       district,
       state,
       purpose,
-      purposeExtent
+      purposeExtent,
+      surveyNumber
     } = req.body;
 
     // Validate required fields
@@ -268,6 +269,7 @@ const createBooking = async (req, res) => {
       state: state || undefined,
       purpose: purpose || undefined,
       purposeExtent: purposeExtent ? normalizeAcresGuntas(purposeExtent).decimalValue : undefined,
+      surveyNumber: surveyNumber || undefined,
       payment: {
         baseServiceFee,
         distance: distance || null,

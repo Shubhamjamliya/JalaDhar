@@ -122,7 +122,7 @@ const initializeDefaultSettings = async () => {
     },
     {
       key: 'BILLING_COMPANY_NAME',
-      value: 'JalaDhar Tech Pvt Ltd',
+      value: 'Jaladhaara Hydrogeological Services Pvt. Ltd.',
       label: 'Company Name',
       description: 'Business name shown on invoices',
       type: 'string',
@@ -130,7 +130,7 @@ const initializeDefaultSettings = async () => {
     },
     {
       key: 'BILLING_ADDRESS',
-      value: '123, Water Tower Complex,\nNear Borewell Circle, Civil Lines,\nRaipur, Chhattisgarh - 492001',
+      value: '123, Water Tower Complex, Near Borewell Circle, Civil Lines, Raipur, Chhattisgarh - 492001',
       label: 'Billing Address',
       description: 'Physical address shown on invoices',
       type: 'string',
@@ -141,6 +141,14 @@ const initializeDefaultSettings = async () => {
       value: '22AAAAA0000A1Z5',
       label: 'GSTIN',
       description: 'Goods and Services Tax Identification Number',
+      type: 'string',
+      category: 'billing'
+    },
+    {
+      key: 'BILLING_PAN',
+      value: 'AAACJ1234F',
+      label: 'PAN Number',
+      description: 'Permanent Account Number shown on invoices',
       type: 'string',
       category: 'billing'
     },
@@ -157,6 +165,38 @@ const initializeDefaultSettings = async () => {
       value: 'billing@jaladhar.com',
       label: 'Billing Email',
       description: 'Email address shown on invoices',
+      type: 'string',
+      category: 'billing'
+    },
+    {
+      key: 'BILLING_WEBSITE',
+      value: 'https://jaladhaaraapp.in',
+      label: 'Billing Website',
+      description: 'Website URL shown on invoices',
+      type: 'string',
+      category: 'billing'
+    },
+    {
+      key: 'BILLING_SAC_CODE',
+      value: '998341',
+      label: 'SAC Code',
+      description: 'Service Accounting Code for Groundwater Hydrogeological Survey (998341)',
+      type: 'string',
+      category: 'billing'
+    },
+    {
+      key: 'BILLING_PLACE_OF_SUPPLY',
+      value: 'Chhattisgarh (State Code: 22)',
+      label: 'Place of Supply',
+      description: 'Place of supply state and code for GST tax compliance',
+      type: 'string',
+      category: 'billing'
+    },
+    {
+      key: 'BILLING_DECLARATION',
+      value: 'This is a computer-generated Tax Invoice and does not require a physical signature.',
+      label: 'Invoice Declaration',
+      description: 'Legal disclaimer shown on footer of invoices',
       type: 'string',
       category: 'billing'
     },

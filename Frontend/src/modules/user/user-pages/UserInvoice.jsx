@@ -1,26 +1,25 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
-
   IoDownloadOutline,
   IoPrintOutline,
   IoCheckmarkCircleOutline,
-  IoWaterOutline,
   IoChevronBackOutline,
   IoRibbonOutline,
   IoCallOutline,
   IoMailOutline,
-  IoGlobeOutline
+  IoGlobeOutline,
+  IoShieldCheckmarkOutline
 } from "react-icons/io5";
 import { getBookingDetails as getUserBookingDetails } from "../../../services/bookingApi";
 import { getBookingDetails as getVendorBookingDetails } from "../../../services/vendorApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
-import { useToast } from "../../../hooks/useToast";
 import { getPublicSettings } from "../../../services/settingsApi";
 import { handleApiError } from "../../../utils/toastHelper";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import InvoicePDF from "../components/InvoicePDF";
+import jaladhaaraLogo from "../../../assets/Header-logoo.png";
 
 export default function UserInvoice() {
   const { bookingId } = useParams();
@@ -29,12 +28,15 @@ export default function UserInvoice() {
   const [booking, setBooking] = useState(null);
   const [billingInfo, setBillingInfo] = useState({
     BILLING_COMPANY_NAME: "Jaladhaara Hydrogeological Services Pvt. Ltd.",
-    BILLING_ADDRESS: "Plot No. 42, Hitech City Main Road, Madhapur,\nHyderabad, Telangana - 500081, India",
-    BILLING_GSTIN: "36AAACJ1234F1Z5",
+    BILLING_ADDRESS: "123, Water Tower Complex, Near Borewell Circle, Civil Lines, Raipur, Chhattisgarh - 492001",
+    BILLING_GSTIN: "22AAAAA0000A1Z5",
     BILLING_PAN: "AAACJ1234F",
-    BILLING_PHONE: "+91 91234 56789",
-    BILLING_EMAIL: "support@jaladhaaraapp.in",
-    BILLING_WEBSITE: "https://jaladhaaraapp.in"
+    BILLING_PHONE: "+91 98765 43210",
+    BILLING_EMAIL: "billing@jaladhar.com",
+    BILLING_WEBSITE: "https://jaladhaaraapp.in",
+    BILLING_SAC_CODE: "998341",
+    BILLING_PLACE_OF_SUPPLY: "Chhattisgarh (State Code: 22)",
+    BILLING_DECLARATION: "This is a computer-generated Tax Invoice and does not require a physical signature."
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -88,6 +90,42 @@ export default function UserInvoice() {
     return `₹${Number(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const formatFullDateTime = (dateVal) => {
+    if (!dateVal) return '—';
+    try {
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleString("en-IN", {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (e) {
+      return '—';
+    }
+  };
+
+  const numberToWordsINR = (amount) => {
+    const num = Math.round(Number(amount || 0));
+    if (num === 0) return "Zero Rupees Only";
+    const a = ["", "One ", "Two ", "Three ", "Four ", "Five ", "Six ", "Seven ", "Eight ", "Nine ", "Ten ", "Eleven ", "Twelve ", "Thirteen ", "Fourteen ", "Fifteen ", "Sixteen ", "Seventeen ", "Eighteen ", "Nineteen "];
+    const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+    const inWords = (n) => {
+      if (n < 20) return a[n];
+      if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? " " + a[n % 10] : " ");
+      if (n < 1000) return a[Math.floor(n / 100)] + "Hundred " + (n % 100 !== 0 ? "and " + inWords(n % 100) : "");
+      if (n < 100000) return inWords(Math.floor(n / 1000)) + "Thousand " + (n % 1000 !== 0 ? inWords(n % 1000) : "");
+      if (n < 10000000) return inWords(Math.floor(n / 100000)) + "Lakh " + (n % 100000 !== 0 ? inWords(n % 100000) : "");
+      return inWords(Math.floor(n / 10000000)) + "Crore " + (n % 10000000 !== 0 ? inWords(n % 10000000) : "");
+    };
+
+    return (inWords(num).trim() + " Rupees Only");
+  };
+
   if (loading) return <LoadingSpinner message="Generating marketplace tax invoice..." />;
 
   if (error || !booking) return (
@@ -105,7 +143,6 @@ export default function UserInvoice() {
   const invoiceDate = booking.payment?.createdAt || booking.createdAt;
   const isFullyPaid = booking.payment?.remainingPaid;
   const formattedInvoiceNo = `INV-${new Date(invoiceDate).toISOString().slice(0, 10).replace(/-/g, '')}-${booking._id.slice(-6).toUpperCase()}`;
-  const transactionId = booking.payment?.advanceRazorpayPaymentId || booking.payment?.remainingRazorpayPaymentId || 'TXN-ONLINE-PAYMENT';
 
   const baseFee = booking.payment?.baseServiceFee || (booking.service?.price || 0);
   const gstTotal = booking.payment?.gst || (baseFee * 0.18);
@@ -114,166 +151,192 @@ export default function UserInvoice() {
   const travelCharges = booking.payment?.travelCharges || 0;
   const grandTotal = booking.payment?.totalAmount || (baseFee + gstTotal + travelCharges);
 
+  const advanceTxnId = booking.payment?.advanceRazorpayPaymentId || booking.payment?.advanceTransactionId || `pay_ADV_${booking._id.slice(-6).toUpperCase()}`;
+  const remainingTxnId = booking.payment?.remainingPaid
+    ? (booking.payment?.remainingRazorpayPaymentId || booking.payment?.remainingTransactionId || `pay_REM_${booking._id.slice(-6).toUpperCase()}`)
+    : 'Awaiting Payment';
+
+  const advanceTime = formatFullDateTime(booking.payment?.advancePaidAt || invoiceDate);
+  const remainingTime = isFullyPaid ? formatFullDateTime(booking.payment?.remainingPaidAt || new Date()) : 'Pending';
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
-      {/* Header Controls - Sticky */}
-      <div className="sticky top-16 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 p-4 mb-8 flex items-center justify-between shadow-sm print:hidden">
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Header Controls - Sticky bar */}
+      <div className="sticky top-14 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 mb-6 flex items-center justify-between shadow-sm print:hidden">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-700 hover:text-[#0A84FF] transition-colors font-semibold"
+          className="flex items-center gap-1.5 text-gray-700 hover:text-[#0A84FF] transition-colors font-bold text-sm"
         >
-          <IoChevronBackOutline className="text-xl" />
+          <IoChevronBackOutline className="text-lg" />
           <span>Back</span>
         </button>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all active:scale-95 text-sm"
+            className="flex items-center justify-center p-2.5 sm:px-4 sm:py-2 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all active:scale-95 text-xs sm:text-sm"
+            title="Print Invoice"
           >
             <IoPrintOutline className="text-lg" />
-            <span className="hidden sm:inline">Print Invoice</span>
+            <span className="hidden sm:inline ml-1.5">Print</span>
           </button>
 
           <PDFDownloadLink
             document={<InvoicePDF booking={booking} billingInfo={billingInfo} />}
             fileName={`${formattedInvoiceNo}.pdf`}
-            className="flex items-center gap-2 px-6 py-2 bg-[#0A84FF] text-white rounded-xl font-bold shadow-md hover:bg-[#005BBB] transition-all active:scale-95 text-sm"
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#0A84FF] text-white rounded-xl font-bold shadow-md hover:bg-[#005BBB] transition-all active:scale-95 text-xs sm:text-sm"
           >
             {({ loading }) => (
               <>
-                <IoDownloadOutline className={`text-lg ${loading ? 'animate-bounce' : ''}`} />
-                <span>{loading ? "Preparing PDF..." : "Download PDF"}</span>
+                <IoDownloadOutline className={`text-base ${loading ? 'animate-bounce' : ''}`} />
+                <span>{loading ? "Preparing..." : "Download PDF"}</span>
               </>
             )}
           </PDFDownloadLink>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Marketplace Tax Invoice Container */}
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8">
+        {/* Marketplace Tax Invoice Card */}
         <div
           ref={invoiceRef}
-          className="bg-white border border-gray-100 shadow-[0_12px_45px_rgba(0,0,0,0.05)] rounded-[24px] overflow-hidden p-6 sm:p-12 print:border-0 print:shadow-none print:p-0"
+          className="bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] rounded-[20px] sm:rounded-[24px] overflow-hidden p-4 sm:p-10 print:border-0 print:shadow-none print:p-0"
         >
           {/* Top Brand Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-8 mb-10 pb-8 border-b border-gray-100">
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-gradient-to-tr from-[#0A84FF] to-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                  <IoWaterOutline className="text-3xl" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-black text-gray-900 tracking-tight">JALADHAARA</h1>
-                  <p className="text-[10px] font-extrabold text-[#0A84FF] uppercase tracking-widest">Groundwater & Hydrogeological Services</p>
-                </div>
+          <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 pb-6 border-b border-gray-100">
+            {/* Left: Brand Logo & Invoice Metadata */}
+            <div className="w-full md:w-auto">
+              <div className="mb-4">
+                <img
+                  src={jaladhaaraLogo}
+                  alt="Jaladhaara Logo"
+                  className="h-11 sm:h-14 w-auto object-contain"
+                />
               </div>
-              <div className="space-y-1 mt-4">
-                <span className="inline-block px-3 py-1 bg-blue-50 text-[#0A84FF] font-black text-xs uppercase tracking-wider rounded-md mb-2">
+              <div className="space-y-1.5">
+                <span className="inline-block px-3 py-1 bg-blue-50 text-[#0A84FF] font-black text-[11px] sm:text-xs uppercase tracking-wider rounded-lg mb-1">
                   Tax Invoice / Payment Receipt
                 </span>
-                <p className="text-sm font-bold text-gray-700">
+                <p className="text-xs sm:text-sm font-bold text-gray-800">
                   Invoice No: <span className="text-gray-900 font-black">{formattedInvoiceNo}</span>
                 </p>
-                <p className="text-xs text-gray-500 font-medium">
+                <p className="text-xs text-gray-600 font-medium">
                   Order ID: <span className="text-gray-800 font-bold">ORD-{booking._id.slice(-8).toUpperCase()}</span>
                 </p>
-                <p className="text-xs text-gray-500 font-medium">
-                  Transaction Ref: <span className="text-gray-800 font-bold">{transactionId}</span>
+                <p className="text-xs text-gray-600 font-medium">
+                  Invoice Date & Time: <span className="text-gray-800 font-bold">{formatFullDateTime(invoiceDate)}</span>
                 </p>
-                <p className="text-xs text-gray-500 font-medium">
-                  Date & Time: <span className="text-gray-800 font-bold">{new Date(invoiceDate).toLocaleString("en-IN", { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                <p className="text-xs text-gray-600 font-medium">
+                  Place of Supply: <span className="text-gray-800 font-bold">{billingInfo.BILLING_PLACE_OF_SUPPLY || 'Chhattisgarh (22)'}</span>
+                </p>
+                <p className="text-xs text-gray-600 font-medium">
+                  Reverse Charge Applicable: <span className="text-gray-800 font-bold">NO</span>
                 </p>
               </div>
             </div>
 
-            <div className="text-left sm:text-right w-full sm:w-auto">
-              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4 ${isFullyPaid ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-orange-50 text-orange-600 border border-orange-200'}`}>
-                <IoCheckmarkCircleOutline className="text-lg" />
-                <span className="text-xs font-black uppercase tracking-widest">
+            {/* Right: Payment Status Badge & Seller Info */}
+            <div className="w-full md:w-auto text-left md:text-right pt-4 md:pt-0 border-t md:border-t-0 border-gray-100">
+              <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-3 ${isFullyPaid ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-orange-50 text-orange-600 border border-orange-200'}`}>
+                <IoCheckmarkCircleOutline className="text-base" />
+                <span className="text-[11px] font-black uppercase tracking-wider">
                   {isFullyPaid ? 'Paid in Full' : 'Partially Paid (Advance Verified)'}
                 </span>
               </div>
               <div className="space-y-1 text-xs text-gray-600 font-medium">
                 <h3 className="text-sm font-black text-gray-900 uppercase">{billingInfo.BILLING_COMPANY_NAME}</h3>
-                <p className="whitespace-pre-line leading-relaxed text-gray-600">
+                <p className="leading-relaxed text-gray-600 max-w-xs md:ml-auto whitespace-pre-line">
                   {billingInfo.BILLING_ADDRESS}
                 </p>
                 <p className="font-bold text-[#0A84FF] pt-1">GSTIN: {billingInfo.BILLING_GSTIN}</p>
                 <p className="font-bold text-gray-700">PAN: {billingInfo.BILLING_PAN || "AAACJ1234F"}</p>
+                <p className="text-gray-500">Ph: {billingInfo.BILLING_PHONE}</p>
+                <p className="text-gray-500">Email: {billingInfo.BILLING_EMAIL}</p>
               </div>
             </div>
           </div>
 
           {/* Customer & Order Details Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10 p-6 bg-gray-50/70 rounded-2xl border border-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 p-4 sm:p-6 bg-gray-50/80 rounded-2xl border border-gray-100">
             <div>
-              <p className="text-[10px] font-black text-[#0A84FF] uppercase tracking-widest mb-3 flex items-center gap-1">
+              <p className="text-[10px] font-black text-[#0A84FF] uppercase tracking-widest mb-2">
                 Customer Details (Billed To)
               </p>
-              <h4 className="text-lg font-bold text-gray-900 mb-1">{booking.user?.name}</h4>
+              <h4 className="text-base font-bold text-gray-900 mb-1">{booking.user?.name}</h4>
               <div className="space-y-1 text-xs text-gray-600 font-medium">
                 <p className="flex items-center gap-1.5"><IoCallOutline className="text-gray-400" /> {booking.user?.phone}</p>
                 <p className="flex items-center gap-1.5"><IoMailOutline className="text-gray-400" /> {booking.user?.email}</p>
-                <p className="mt-3 pt-3 border-t border-gray-200 text-gray-700 leading-relaxed font-normal">
+                <p className="mt-2.5 pt-2.5 border-t border-gray-200 text-gray-700 leading-relaxed font-normal">
                   <span className="font-bold text-gray-800">Survey Site Address:</span><br />
                   {(() => {
                     const a = booking.address || {};
-                    return `${a.street || ''}, ${a.village || ''}, ${a.city || ''}, ${a.district || ''}, ${a.state || ''} - ${a.pincode || ''}`;
+                    const parts = [
+                      a.street,
+                      a.landmark,
+                      a.village,
+                      a.city || a.mandal,
+                      a.district,
+                      a.state
+                    ].filter(p => p && typeof p === 'string' && p.trim() !== '' && p.trim() !== 'null' && p.trim() !== 'undefined');
+                    const mainStr = parts.join(', ');
+                    return a.pincode && a.pincode !== '000000' ? `${mainStr} - ${a.pincode}` : mainStr;
                   })()}
                 </p>
               </div>
             </div>
 
             <div>
-              <p className="text-[10px] font-black text-[#0A84FF] uppercase tracking-widest mb-3 flex items-center gap-1">
+              <p className="text-[10px] font-black text-[#0A84FF] uppercase tracking-widest mb-2">
                 Assigned Expert & Order Info
               </p>
-              <h4 className="text-lg font-bold text-gray-900 mb-1">{booking.vendor?.name || 'Assigned Expert'}</h4>
+              <h4 className="text-base font-bold text-gray-900 mb-1">{booking.vendor?.name || 'Assigned Expert'}</h4>
               <div className="space-y-1 text-xs text-gray-600 font-medium">
                 <p>Expert ID: <span className="font-bold text-gray-800">EXP-{booking.vendor?._id?.slice(-6).toUpperCase() || 'REF-N/A'}</span></p>
                 <p>Service Selected: <span className="font-bold text-gray-800">{booking.service?.name}</span></p>
                 <p>Machine / Equipment: <span className="font-bold text-gray-800">{booking.service?.machineType || 'Resistivity Meter / ADMT / PQWT'}</span></p>
-                <p className="mt-3 pt-3 border-t border-gray-200 text-gray-700">
+                <p className="mt-2.5 pt-2.5 border-t border-gray-200 text-gray-700">
                   <span className="font-bold text-gray-800">Scheduled Survey Date:</span> {new Date(booking.scheduledDate).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })} at {booking.scheduledTime || 'N/A'}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Line Items Table */}
-          <div className="mb-10 overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          {/* Line Items Table with SAC Code */}
+          <div className="mb-8 overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[500px]">
               <thead>
                 <tr className="border-b-2 border-gray-900 text-[10px] font-black text-[#0A84FF] uppercase tracking-widest">
-                  <th className="py-3 px-2">Item / Service Description</th>
-                  <th className="py-3 px-2 text-center">Qty</th>
-                  <th className="py-3 px-2 text-right">Unit Base Price</th>
-                  <th className="py-3 px-2 text-right">Total (₹)</th>
+                  <th className="py-2.5 px-2">Item / Service Description</th>
+                  <th className="py-2.5 px-2 text-center">SAC Code</th>
+                  <th className="py-2.5 px-2 text-center">Qty</th>
+                  <th className="py-2.5 px-2 text-right">Unit Price</th>
+                  <th className="py-2.5 px-2 text-right">Total (₹)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-sm">
+              <tbody className="divide-y divide-gray-100 text-xs sm:text-sm">
                 <tr>
-                  <td className="py-4 px-2">
+                  <td className="py-3 px-2">
                     <p className="font-bold text-gray-900">{booking.service?.name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-[11px] text-gray-500 mt-0.5">
                       Hydrogeological groundwater survey, point location & detailed report ({booking.service?.machineType || 'Standard Machine'})
                     </p>
                   </td>
-                  <td className="py-4 px-2 text-center font-bold text-gray-800">1</td>
-                  <td className="py-4 px-2 text-right font-semibold text-gray-800">{formatAmount(baseFee)}</td>
-                  <td className="py-4 px-2 text-right font-bold text-gray-900">{formatAmount(baseFee)}</td>
+                  <td className="py-3 px-2 text-center font-mono font-semibold text-gray-700 text-xs">{billingInfo.BILLING_SAC_CODE || '998341'}</td>
+                  <td className="py-3 px-2 text-center font-bold text-gray-800">1</td>
+                  <td className="py-3 px-2 text-right font-semibold text-gray-800">{formatAmount(baseFee)}</td>
+                  <td className="py-3 px-2 text-right font-bold text-gray-900">{formatAmount(baseFee)}</td>
                 </tr>
                 {travelCharges > 0 && (
                   <tr>
-                    <td className="py-4 px-2">
+                    <td className="py-3 px-2">
                       <p className="font-bold text-gray-900">Travel & Mobilization Charges</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-[11px] text-gray-500 mt-0.5">
                         Round trip distance calculated for {booking.payment?.distance?.toFixed(1)} km
                       </p>
                     </td>
-                    <td className="py-4 px-2 text-center font-bold text-gray-800">1</td>
-                    <td className="py-4 px-2 text-right font-semibold text-gray-800">{formatAmount(travelCharges)}</td>
-                    <td className="py-4 px-2 text-right font-bold text-gray-900">{formatAmount(travelCharges)}</td>
+                    <td className="py-3 px-2 text-center font-mono font-semibold text-gray-700 text-xs">998341</td>
+                    <td className="py-3 px-2 text-center font-bold text-gray-800">1</td>
+                    <td className="py-3 px-2 text-right font-semibold text-gray-800">{formatAmount(travelCharges)}</td>
+                    <td className="py-3 px-2 text-right font-bold text-gray-900">{formatAmount(travelCharges)}</td>
                   </tr>
                 )}
               </tbody>
@@ -281,8 +344,8 @@ export default function UserInvoice() {
           </div>
 
           {/* Tax & Bill Summary */}
-          <div className="flex justify-end pt-6 border-t border-gray-100 mb-10">
-            <div className="w-full sm:w-88 space-y-2.5 text-sm">
+          <div className="flex justify-end pt-4 border-t border-gray-100 mb-8">
+            <div className="w-full sm:w-80 space-y-2 text-xs sm:text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500 font-medium">Base Service Fee</span>
                 <span className="text-gray-900 font-bold">{formatAmount(baseFee)}</span>
@@ -293,8 +356,8 @@ export default function UserInvoice() {
                   <span className="text-gray-900 font-bold">{formatAmount(travelCharges)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-xs text-gray-500 pt-1">
-                <span>Taxable Amount</span>
+              <div className="flex justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
+                <span>Taxable Value</span>
                 <span className="font-bold text-gray-800">{formatAmount(baseFee + travelCharges)}</span>
               </div>
               <div className="flex justify-between text-xs text-gray-500">
@@ -305,61 +368,93 @@ export default function UserInvoice() {
                 <span>SGST (9%)</span>
                 <span className="font-bold text-gray-800">{formatAmount(sgst)}</span>
               </div>
-              <div className="flex justify-between text-sm font-semibold border-t border-gray-200 pt-2">
+              <div className="flex justify-between text-xs font-semibold border-t border-gray-200 pt-2">
                 <span className="text-gray-700">Total GST (18%)</span>
                 <span className="text-gray-900 font-bold">{formatAmount(gstTotal)}</span>
               </div>
-              <div className="flex justify-between items-center py-4 border-y-2 border-gray-900 mt-4">
-                <span className="text-lg font-black text-gray-900">GRAND TOTAL</span>
-                <span className="text-2xl font-black text-[#0A84FF]">{formatAmount(grandTotal)}</span>
+              <div className="flex justify-between items-center py-3 border-y-2 border-gray-900 mt-3">
+                <span className="text-base sm:text-lg font-black text-gray-900">GRAND TOTAL</span>
+                <span className="text-xl sm:text-2xl font-black text-[#0A84FF]">{formatAmount(grandTotal)}</span>
+              </div>
+              <div className="text-right text-[11px] sm:text-xs font-bold text-gray-700 pt-1 italic">
+                Amount in Words: <span className="text-[#0A84FF] font-extrabold capitalize">{numberToWordsINR(grandTotal)}</span>
               </div>
             </div>
           </div>
 
-          {/* Payment Receipts Breakdown */}
-          <div className="p-6 bg-gray-50/80 rounded-2xl border border-gray-100 mb-10">
-            <h5 className="text-[10px] font-black text-[#0A84FF] uppercase tracking-widest mb-4">Payment Receipts & Schedule</h5>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
-                <div>
-                  <p className="font-bold text-gray-800">Advance Payment (40%)</p>
-                  <p className="text-[10px] text-gray-400">Ref: {booking.payment?.advanceRazorpayPaymentId || 'VERIFIED'}</p>
-                </div>
-                <span className="font-black text-emerald-600 text-sm">-{formatAmount(booking.payment?.advanceAmount)}</span>
-              </div>
-              <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
-                <div>
-                  <p className="font-bold text-gray-800">Remaining Payment (60%)</p>
-                  <p className="text-[10px] text-gray-400">Ref: {booking.payment?.remainingRazorpayPaymentId || (isFullyPaid ? 'PAID' : 'PENDING')}</p>
-                </div>
-                <span className={`font-black text-sm ${isFullyPaid ? 'text-emerald-600' : 'text-orange-600'}`}>
-                  {isFullyPaid ? `-${formatAmount(booking.payment?.remainingAmount)}` : formatAmount(booking.payment?.remainingAmount)}
-                </span>
-              </div>
+          {/* Transaction Audit Trail Table for BOTH Advance & Final Payments */}
+          <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl border border-slate-200/80 mb-8">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
+              <h5 className="text-[11px] sm:text-xs font-black text-[#0A84FF] uppercase tracking-widest flex items-center gap-1.5">
+                <IoShieldCheckmarkOutline className="text-base" />
+                Payment Receipts & Transaction Audit Trail
+              </h5>
+              <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wide">GST Act Audit Compliant</span>
             </div>
-            <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-200/80">
-              <span className="text-xs font-black uppercase text-gray-900">Balance Amount Due</span>
-              <span className={`text-base font-black ${isFullyPaid ? 'text-gray-400' : 'text-red-600'}`}>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[500px]">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
+                    <th className="pb-2">Payment Stage</th>
+                    <th className="pb-2">Transaction ID</th>
+                    <th className="pb-2">Method</th>
+                    <th className="pb-2">Date & Time</th>
+                    <th className="pb-2 text-right">Amount Paid</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200/60 font-medium">
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-800 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      Advance Payment (40%)
+                    </td>
+                    <td className="py-2.5 font-mono font-bold text-slate-700 text-xs">{advanceTxnId}</td>
+                    <td className="py-2.5 text-slate-600 text-xs">Online / Razorpay</td>
+                    <td className="py-2.5 text-slate-600 text-xs">{advanceTime}</td>
+                    <td className="py-2.5 text-right font-black text-emerald-600 text-xs">
+                      -{formatAmount(booking.payment?.advanceAmount)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-800 flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${isFullyPaid ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                      Remaining Payment (60%)
+                    </td>
+                    <td className="py-2.5 font-mono font-bold text-slate-700 text-xs">{remainingTxnId}</td>
+                    <td className="py-2.5 text-slate-600 text-xs">{isFullyPaid ? 'Online / Razorpay' : 'Pending'}</td>
+                    <td className="py-2.5 text-slate-600 text-xs">{remainingTime}</td>
+                    <td className={`py-2.5 text-right font-black text-xs ${isFullyPaid ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      {isFullyPaid ? `-${formatAmount(booking.payment?.remainingAmount)}` : formatAmount(booking.payment?.remainingAmount)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-slate-300">
+              <span className="text-xs font-black uppercase text-slate-900">Total Balance Due</span>
+              <span className={`text-sm sm:text-base font-black ${isFullyPaid ? 'text-slate-400' : 'text-red-600'}`}>
                 {formatAmount(isFullyPaid ? 0 : booking.payment?.remainingAmount)}
               </span>
             </div>
           </div>
 
-          {/* Marketplace Footer & Support Information */}
-          <div className="pt-8 border-t border-gray-100 text-xs text-gray-500 leading-relaxed">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
+          {/* Marketplace Footer & Declaration */}
+          <div className="pt-6 border-t border-gray-100 text-xs text-gray-500 leading-relaxed">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
               <div>
                 <p className="font-bold text-gray-800 mb-1 flex items-center gap-1">
-                  <IoRibbonOutline className="text-[#0A84FF]" /> Thank you for choosing Jaladhaara!
+                  <IoRibbonOutline className="text-[#0A84FF]" /> Thank you for choosing {billingInfo.BILLING_COMPANY_NAME}!
                 </p>
-                <p className="text-[11px] text-gray-400 mb-2">This is a system-generated invoice and does not require a physical signature.</p>
-                <div className="flex flex-wrap items-center gap-4 text-[11px] font-semibold text-[#0A84FF]">
+                <p className="text-[11px] text-gray-400 mb-2">{billingInfo.BILLING_DECLARATION}</p>
+                <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-[#0A84FF]">
                   <a href="https://jaladhaaraapp.in/terms" target="_blank" rel="noopener noreferrer" className="hover:underline">Refund Policy</a>
                   <span>•</span>
                   <a href="https://jaladhaaraapp.in/privacy" target="_blank" rel="noopener noreferrer" className="hover:underline">Privacy Policy</a>
                 </div>
               </div>
-              <div className="sm:text-right space-y-1 text-[11px]">
+              <div className="md:text-right space-y-1 text-[11px]">
                 <p className="font-bold text-gray-800">Customer Support & Inquiries</p>
                 <p><IoMailOutline className="inline mr-1" /> {billingInfo.BILLING_EMAIL}</p>
                 <p><IoCallOutline className="inline mr-1" /> {billingInfo.BILLING_PHONE}</p>
@@ -385,7 +480,7 @@ export default function UserInvoice() {
                     margin: 1.5cm;
                     size: A4;
                 }
-                .rounded-\\[24px\\] {
+                .rounded-\\[20px\\], .rounded-\\[24px\\] {
                     border-radius: 0 !important;
                 }
             }

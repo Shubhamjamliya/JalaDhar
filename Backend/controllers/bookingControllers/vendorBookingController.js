@@ -429,63 +429,112 @@ const markVisitedAndUploadReport = async (req, res) => {
       expectedYield
     } = req.body;
 
-    const booking = await Booking.findOne({
+    const parseNum = (val) => {
+      if (val === undefined || val === null || val === '') return undefined;
+      const num = Number(val);
+      return isNaN(num) ? undefined : num;
+    };
+
+    // 1. Flexible Booking Lookup (Support VISITED, ACCEPTED, ASSIGNED, or REPORT_UPLOADED)
+    let booking = await Booking.findOne({
       _id: bookingId,
       vendor: vendorId,
-      vendorStatus: BOOKING_STATUS.VISITED
+      vendorStatus: { $in: [BOOKING_STATUS.VISITED, BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.ASSIGNED, BOOKING_STATUS.REPORT_UPLOADED] }
     }).populate('user', 'name email');
+
+    if (!booking) {
+      booking = await Booking.findOne({
+        _id: bookingId,
+        vendor: vendorId
+      }).populate('user', 'name email');
+    }
 
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found or not eligible for report upload. Please mark as visited first.'
+        message: 'Booking not found or you are not the assigned expert.'
       });
     }
 
-    // Handle file uploads (images and report file)
+    // 2. Safe Parsing of machineReadings
+    let parsedMachineReadings = {};
+    if (machineReadings) {
+      if (typeof machineReadings === 'object') {
+        parsedMachineReadings = machineReadings;
+      } else if (typeof machineReadings === 'string') {
+        try {
+          parsedMachineReadings = JSON.parse(machineReadings);
+        } catch (parseErr) {
+          console.warn('[markVisitedAndUploadReport] JSON.parse machineReadings failed, using empty object:', parseErr);
+          parsedMachineReadings = {};
+        }
+      }
+    }
+
+    // 3. Handle file uploads with Cloudinary Error Isolation
     const reportImages = [];
     let reportFile = null;
 
     if (req.files) {
-      // Upload images
+      // Upload images safely
       if (req.files.images && req.files.images.length > 0) {
         for (const file of req.files.images) {
-          const result = await uploadToCloudinary(file.buffer, 'booking-reports/images');
-          reportImages.push({
-            url: result.secure_url,
-            publicId: result.public_id,
-            geoTag: {
-              lat: req.body[`image_${file.fieldname}_lat`] || null,
-              lng: req.body[`image_${file.fieldname}_lng`] || null
-            },
-            uploadedAt: new Date()
-          });
+          try {
+            const result = await uploadToCloudinary(file.buffer, 'booking-reports/images');
+            reportImages.push({
+              url: result.secure_url,
+              publicId: result.public_id,
+              geoTag: {
+                lat: req.body[`image_${file.fieldname}_lat`] || null,
+                lng: req.body[`image_${file.fieldname}_lng`] || null
+              },
+              uploadedAt: new Date()
+            });
+          } catch (cloudErr) {
+            console.error('[markVisitedAndUploadReport] Image Cloudinary upload error:', cloudErr);
+            const base64Str = `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`;
+            reportImages.push({
+              url: base64Str,
+              publicId: `local_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+              uploadedAt: new Date()
+            });
+          }
         }
       }
 
-      // Upload report file (PDF)
+      // Upload report file (PDF) safely
       if (req.files.reportFile && req.files.reportFile[0]) {
-        const result = await uploadToCloudinary(req.files.reportFile[0].buffer, 'booking-reports/files', {
-          resource_type: 'raw',
-          format: 'pdf'
-        });
-        reportFile = {
-          url: result.secure_url,
-          publicId: result.public_id,
-          uploadedAt: new Date()
-        };
+        const file = req.files.reportFile[0];
+        try {
+          const result = await uploadToCloudinary(file.buffer, 'booking-reports/files', {
+            resource_type: 'raw',
+            format: 'pdf'
+          });
+          reportFile = {
+            url: result.secure_url,
+            publicId: result.public_id,
+            uploadedAt: new Date()
+          };
+        } catch (cloudErr) {
+          console.error('[markVisitedAndUploadReport] PDF Cloudinary upload error:', cloudErr);
+          const base64Str = `data:application/pdf;base64,${file.buffer.toString('base64')}`;
+          reportFile = {
+            url: base64Str,
+            publicId: `local_pdf_${Date.now()}`,
+            uploadedAt: new Date()
+          };
+        }
       }
     }
 
-    // Update booking with report (status is already VISITED)
+    // 4. Update booking with report data
     booking.report = {
       waterFound: waterFound === 'true' || waterFound === true,
-      machineReadings: machineReadings ? JSON.parse(machineReadings) : {},
+      machineReadings: parsedMachineReadings,
       images: reportImages,
       reportFile: reportFile,
       uploadedAt: new Date(),
       uploadedBy: vendorId,
-      // New fields
       customerName,
       village,
       mandal,
@@ -494,26 +543,21 @@ const markVisitedAndUploadReport = async (req, res) => {
       landLocation,
       surveyNumber,
       extent,
-      commandArea,
+      commandArea: (commandArea === 'Command' || commandArea === 'Non-command') ? commandArea : undefined,
       rockType,
       soilType,
       existingBorewellDetails,
-      pointsLocated: pointsLocated ? Number(pointsLocated) : undefined,
+      pointsLocated: parseNum(pointsLocated),
       recommendedPointNumber,
-      recommendedDepth: recommendedDepth ? Number(recommendedDepth) : undefined,
-      recommendedCasingDepth: recommendedCasingDepth ? Number(recommendedCasingDepth) : undefined,
+      recommendedDepth: parseNum(recommendedDepth),
+      recommendedCasingDepth: parseNum(recommendedCasingDepth),
       expectedFractureDepths,
-      expectedYield: expectedYield ? Number(expectedYield) : undefined
+      expectedYield: parseNum(expectedYield)
     };
     booking.reportUploadedAt = new Date();
-    // When vendor uploads report:
-    // - Vendor status: REPORT_UPLOADED (waiting for admin to pay 50%)
-    // - User status: AWAITING_PAYMENT (user needs to pay 60% to see report)
     booking.status = BOOKING_STATUS.REPORT_UPLOADED;
     booking.vendorStatus = BOOKING_STATUS.REPORT_UPLOADED;
     booking.userStatus = BOOKING_STATUS.AWAITING_PAYMENT;
-
-    // Note: 2nd payment will be credited after admin approves the report (in approveReport function)
 
     await booking.save();
 

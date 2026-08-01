@@ -7,17 +7,46 @@ import {
     IoCheckmarkCircleOutline,
     IoCloseCircleOutline,
     IoWaterOutline,
-    IoLocationOutline,
     IoConstructOutline,
     IoPersonOutline,
     IoMapOutline,
-    IoCloudUploadOutline
+    IoCloudUploadOutline,
+    IoSparklesOutline,
+    IoAddOutline
 } from "react-icons/io5";
 import { getBookingDetails, uploadVisitReport } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import { useToast } from "../../../hooks/useToast";
+
+const ROCK_SUGGESTIONS = [
+    "Granite",
+    "Basalt",
+    "Peninsular Gneiss",
+    "Sandstone",
+    "Limestone",
+    "Schist",
+    "Quartzite",
+    "Laterite",
+    "Alluvium"
+];
+
+const SOIL_SUGGESTIONS = [
+    "Red Sandy Soil",
+    "Black Cotton Soil",
+    "Red Clay Soil",
+    "Alluvial Soil",
+    "Lateritic Soil",
+    "Gravelly Loam"
+];
+
+const BOREWELL_TEMPLATES = [
+    "Active nearby borewell at 280-320 ft with ~1.5 inch yield.",
+    "Nearby borewells failed dry at 400 ft due to hard non-fractured rock.",
+    "High yield seasonal borewell located 100m East (300 ft depth).",
+    "No existing borewells found within 500m radius."
+];
 
 export default function VendorUploadReport() {
     const navigate = useNavigate();
@@ -75,16 +104,19 @@ export default function VendorUploadReport() {
         loadBookingDetails();
     }, [bookingId]);
 
+    // Automatically pre-fill all Customer, Village, Mandal, District, State, Survey No, Land Location, and Extent details filled during booking
     useEffect(() => {
         if (booking) {
             setFormData(prev => ({
                 ...prev,
-                customerName: booking.user?.name || prev.customerName,
-                village: booking.village || prev.village,
-                mandal: booking.mandal || prev.mandal,
-                district: booking.district || prev.district,
-                state: booking.state || prev.state,
-                extent: booking.purposeExtent ? formatAcresGuntasDisplay(booking.purposeExtent) : prev.extent,
+                customerName: booking.user?.name || booking.customerName || prev.customerName,
+                village: booking.village || booking.address?.village || booking.address?.city || prev.village,
+                mandal: booking.mandal || booking.address?.mandal || booking.district || prev.mandal,
+                district: booking.district || booking.address?.district || prev.district,
+                state: booking.state || booking.address?.state || prev.state,
+                landLocation: booking.address?.landmark || booking.address?.street || booking.landmark || prev.landLocation,
+                surveyNumber: booking.surveyNumber || booking.surveyNo || booking.address?.surveyNumber || prev.surveyNumber,
+                extent: booking.purposeExtent ? formatAcresGuntasDisplay(booking.purposeExtent) : (booking.extent || prev.extent),
             }));
         }
     }, [booking]);
@@ -130,6 +162,20 @@ export default function VendorUploadReport() {
         }
     };
 
+    // 🪨 Geological Suggestions Handlers
+    const handleAddChipSuggestion = (field, suggestion) => {
+        setFormData(prev => {
+            const current = prev[field] ? prev[field].trim() : "";
+            if (!current) {
+                return { ...prev, [field]: suggestion };
+            }
+            if (current.includes(suggestion)) {
+                return prev;
+            }
+            return { ...prev, [field]: `${current}, ${suggestion}` };
+        });
+    };
+
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
         setFormData((prev) => ({
@@ -169,23 +215,11 @@ export default function VendorUploadReport() {
             return;
         }
 
-        // Required fields validation
-        const requiredFields = ['customerName', 'village', 'pointsLocated', 'recommendedDepth'];
-        const missingFields = requiredFields.filter(field => !formData[field]);
-        if (missingFields.length > 0) {
-            // toast.showWarning(`Please fill in key fields: ${missingFields.join(', ')}`);
-            // Proceeding gently, but maybe strict validation is better? 
-            // Let's enforce it lightly or just warn. User asked for specific fields, so likely mandatory.
-            // For now, I'll rely on HTML required attributes for critical ones or just let them submit what they have.
-        }
-
         try {
             setSubmitting(true);
 
-            // Create FormData
             const reportFormData = new FormData();
 
-            // Append all root level fields
             Object.keys(formData).forEach(key => {
                 if (key !== 'machineReadings' && key !== 'images' && key !== 'reportFile') {
                     reportFormData.append(key, formData[key]);
@@ -194,12 +228,10 @@ export default function VendorUploadReport() {
 
             reportFormData.append("machineReadings", JSON.stringify(formData.machineReadings));
 
-            // Append images
-            formData.images.forEach((image, index) => {
+            formData.images.forEach((image) => {
                 reportFormData.append("images", image);
             });
 
-            // Append report file if exists
             if (formData.reportFile) {
                 reportFormData.append("reportFile", formData.reportFile);
             }
@@ -231,10 +263,10 @@ export default function VendorUploadReport() {
                 <ErrorMessage message={error} />
                 <button
                     onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
-                    className="mt-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
+                    className="mt-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors font-semibold"
                 >
                     <IoChevronBackOutline className="text-xl" />
-                    <span className="font-semibold">Back to Booking Details</span>
+                    <span>Back to Booking Details</span>
                 </button>
             </div>
         );
@@ -243,8 +275,6 @@ export default function VendorUploadReport() {
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
             <ErrorMessage message={error} />
-
-            {/* Removed Back Button from here as it's now in VendorNavbar */}
 
             {/* Header */}
             <div className="mb-6">
@@ -290,57 +320,125 @@ export default function VendorUploadReport() {
                     </div>
                 </div>
 
-                {/* 2. Customer & Location Details */}
+                {/* 2. Customer & Location Details (Auto-filled from Customer Booking) */}
                 <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                     <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2 pb-2 border-b border-gray-100">
                         <IoPersonOutline className="text-[#0A84FF]" />
                         Customer & Location Details
                     </h2>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InputGroup label="Customer Name" name="customerName" value={formData.customerName} onChange={handleInputChange} placeholder="Enter customer name" />
                         <InputGroup label="Village" name="village" value={formData.village} onChange={handleInputChange} placeholder="Village name" />
                         <InputGroup label="Mandal" name="mandal" value={formData.mandal} onChange={handleInputChange} placeholder="Mandal" />
                         <InputGroup label="District" name="district" value={formData.district} onChange={handleInputChange} placeholder="District" />
                         <InputGroup label="State" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" />
-                        <InputGroup label="Land Location 📍" name="landLocation" value={formData.landLocation} onChange={handleInputChange} placeholder="Landmark or coordinates" />
+                        <InputGroup label="Land Location 📍" name="landLocation" value={formData.landLocation} onChange={handleInputChange} placeholder="Landmark or location" />
                         <InputGroup label="Survey No" name="surveyNumber" value={formData.surveyNumber} onChange={handleInputChange} placeholder="Survey number" />
                         <InputGroup label="Extent (Acres / Guntas)" name="extent" value={formData.extent} onChange={handleInputChange} placeholder="e.g. 3 Acres 6 Guntas" />
 
                         <div className="md:col-span-2">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Area Type</label>
                             <div className="flex gap-4">
-                                <label className="inline-flex items-center">
+                                <label className="inline-flex items-center cursor-pointer">
                                     <input type="radio" name="commandArea" value="Command" checked={formData.commandArea === "Command"} onChange={handleInputChange} className="form-radio text-[#0A84FF]" />
-                                    <span className="ml-2 text-gray-700">Command Area</span>
+                                    <span className="ml-2 text-gray-700 font-medium">Command Area</span>
                                 </label>
-                                <label className="inline-flex items-center">
+                                <label className="inline-flex items-center cursor-pointer">
                                     <input type="radio" name="commandArea" value="Non-command" checked={formData.commandArea === "Non-command"} onChange={handleInputChange} className="form-radio text-[#0A84FF]" />
-                                    <span className="ml-2 text-gray-700">Non-command Area</span>
+                                    <span className="ml-2 text-gray-700 font-medium">Non-command Area</span>
                                 </label>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* 3. Geological & Borewell Info */}
+                {/* 3. Geological Information with Smart Suggestions */}
                 <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                    <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2 pb-2 border-b border-gray-100">
-                        <IoMapOutline className="text-[#0A84FF]" />
-                        Geological Information
+                    <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center justify-between pb-2 border-b border-gray-100">
+                        <span className="flex items-center gap-2">
+                            <IoMapOutline className="text-[#0A84FF]" />
+                            Geological Information
+                        </span>
+                        <span className="text-xs font-semibold text-[#0A84FF] bg-blue-50 px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <IoSparklesOutline /> Click chips for quick suggestions
+                        </span>
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <InputGroup label="Rock Type" name="rockType" value={formData.rockType} onChange={handleInputChange} placeholder="e.g. Granite, Basalt" />
-                        <InputGroup label="Soil Type" name="soilType" value={formData.soilType} onChange={handleInputChange} placeholder="e.g. Red soil, Black cotton" />
-                        <div className="md:col-span-2">
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* Rock Type with Chips */}
+                        <div>
+                            <InputGroup label="Rock Type" name="rockType" value={formData.rockType} onChange={handleInputChange} placeholder="e.g. Granite, Basalt" />
+                            <div className="mt-2.5">
+                                <p className="text-[11px] font-bold text-gray-500 mb-1.5 flex items-center gap-1">
+                                    <span>Common Rock Suggestions:</span>
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {ROCK_SUGGESTIONS.map((rock) => (
+                                        <button
+                                            key={rock}
+                                            type="button"
+                                            onClick={() => handleAddChipSuggestion("rockType", rock)}
+                                            className="text-xs bg-gray-100 hover:bg-blue-50 hover:text-[#0A84FF] hover:border-blue-200 border border-gray-200 text-gray-700 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 font-medium"
+                                        >
+                                            <IoAddOutline className="text-xs" />
+                                            {rock}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Soil Type with Chips */}
+                        <div>
+                            <InputGroup label="Soil Type" name="soilType" value={formData.soilType} onChange={handleInputChange} placeholder="e.g. Red soil, Black cotton" />
+                            <div className="mt-2.5">
+                                <p className="text-[11px] font-bold text-gray-500 mb-1.5 flex items-center gap-1">
+                                    <span>Common Soil Suggestions:</span>
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {SOIL_SUGGESTIONS.map((soil) => (
+                                        <button
+                                            key={soil}
+                                            type="button"
+                                            onClick={() => handleAddChipSuggestion("soilType", soil)}
+                                            className="text-xs bg-gray-100 hover:bg-blue-50 hover:text-[#0A84FF] hover:border-blue-200 border border-gray-200 text-gray-700 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 font-medium"
+                                        >
+                                            <IoAddOutline className="text-xs" />
+                                            {soil}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Existing Borewell Details with Quick Templates */}
+                        <div className="md:col-span-2 mt-2">
                             <label className="block text-sm font-semibold text-gray-700 mb-1">Existing Borewell Details</label>
                             <textarea
                                 name="existingBorewellDetails"
                                 value={formData.existingBorewellDetails}
                                 onChange={handleInputChange}
                                 placeholder="Details of any nearby borewells..."
-                                rows="2"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+                                rows="3"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] text-gray-800"
                             />
+                            <div className="mt-2">
+                                <p className="text-[11px] font-bold text-gray-500 mb-1.5">Quick Observation Templates:</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {BOREWELL_TEMPLATES.map((tmpl, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => handleAddChipSuggestion("existingBorewellDetails", tmpl)}
+                                            className="text-left text-xs bg-gray-50 hover:bg-blue-50 hover:text-[#0A84FF] hover:border-blue-200 border border-gray-200 text-gray-600 px-3 py-2 rounded-xl transition-all font-medium flex items-start gap-1.5"
+                                        >
+                                            <span className="text-[#0A84FF] font-bold">+</span>
+                                            <span className="line-clamp-2">{tmpl}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -368,37 +466,36 @@ export default function VendorUploadReport() {
                         Evidence & Uploads
                     </h2>
 
-                    {/* Images */}
+                    {/* Image Upload */}
                     <div className="mb-6">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Site Photos</label>
-                        <div className="flex items-center justify-center w-full">
-                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <IoImageOutline className="w-8 h-8 mb-2 text-gray-500" />
-                                    <p className="text-sm text-gray-500"><span className="font-semibold">Click to upload photos</span></p>
-                                </div>
-                                <input type="file" accept="image/*" multiple onChange={handleImageChange} className="hidden" />
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Site / Machine Photos</label>
+                        <div className="flex flex-wrap gap-4 items-center">
+                            <label className="flex flex-col items-center justify-center w-24 h-24 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 cursor-pointer hover:border-[#0A84FF] hover:bg-blue-50/50 transition-all">
+                                <IoImageOutline className="text-2xl text-gray-400" />
+                                <span className="text-xs text-gray-500 mt-1 font-medium">Add Photo</span>
+                                <input type="file" multiple accept="image/*" onChange={handleImageChange} className="hidden" />
                             </label>
+
+                            {formData.images.map((img, idx) => (
+                                <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border border-gray-200 group">
+                                    <img src={URL.createObjectURL(img)} alt="preview" className="w-full h-full object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveImage(idx)}
+                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                                    >
+                                        <IoCloseCircleOutline className="text-base" />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
-                        {formData.images.length > 0 && (
-                            <div className="mt-4 grid grid-cols-3 md:grid-cols-5 gap-3">
-                                {formData.images.map((image, index) => (
-                                    <div key={index} className="relative aspect-square">
-                                        <img src={URL.createObjectURL(image)} alt="Preview" className="w-full h-full object-cover rounded-lg" />
-                                        <button type="button" onClick={() => handleRemoveImage(index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600">
-                                            <IoCloseCircleOutline className="text-lg" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
                     </div>
 
-                    {/* PDF Report */}
+                    {/* PDF Report Upload */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Upload PDF Report (Optional)</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Detailed Report (PDF Optional)</label>
                         <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg cursor-pointer hover:bg-gray-200 border border-gray-300 transition-colors">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg cursor-pointer hover:bg-gray-200 border border-gray-300 transition-colors font-medium text-sm">
                                 <IoDocumentTextOutline />
                                 <span>Choose PDF</span>
                                 <input type="file" accept="application/pdf" onChange={handleReportFileChange} className="hidden" />
@@ -419,7 +516,7 @@ export default function VendorUploadReport() {
                         onChange={handleInputChange}
                         placeholder="Any other observations..."
                         rows="3"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] text-gray-800"
                     />
                 </div>
 
@@ -428,14 +525,14 @@ export default function VendorUploadReport() {
                     <button
                         type="button"
                         onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
-                        className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 px-6 rounded-[12px] hover:bg-gray-200 transition-colors"
+                        className="flex-1 bg-gray-100 text-gray-700 font-bold py-3.5 px-6 rounded-[12px] hover:bg-gray-200 transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="flex-[2] bg-[#0A84FF] text-white font-bold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
+                        className="flex-[2] bg-[#0A84FF] text-white font-bold py-3.5 px-6 rounded-[12px] hover:bg-[#005BBB] disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
                     >
                         {submitting ? (
                             <>
@@ -465,7 +562,7 @@ function InputGroup({ label, name, value, onChange, type = "text", placeholder }
                 value={value}
                 onChange={onChange}
                 placeholder={placeholder}
-                className="w-full px-4 py-2 border border-gray-300 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] transition-shadow"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] transition-shadow text-gray-800"
             />
         </div>
     );
