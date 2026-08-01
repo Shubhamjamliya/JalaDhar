@@ -20,12 +20,14 @@ import { handleApiError } from "../../../utils/toastHelper";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import InvoicePDF from "../components/InvoicePDF";
 import jaladhaaraLogo from "../../../assets/Header-logoo.png";
+import QRCode from "qrcode";
 
 export default function UserInvoice() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [booking, setBooking] = useState(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [billingInfo, setBillingInfo] = useState({
     BILLING_COMPANY_NAME: "Jaladhaara Hydrogeological Services Pvt. Ltd.",
     BILLING_ADDRESS: "123, Water Tower Complex, Near Borewell Circle, Civil Lines, Raipur, Chhattisgarh - 492001",
@@ -36,7 +38,16 @@ export default function UserInvoice() {
     BILLING_WEBSITE: "https://jaladhaaraapp.in",
     BILLING_SAC_CODE: "998341",
     BILLING_PLACE_OF_SUPPLY: "Chhattisgarh (State Code: 22)",
-    BILLING_DECLARATION: "This is a computer-generated Tax Invoice and does not require a physical signature."
+    BILLING_DECLARATION: "This is a computer-generated Tax Invoice and does not require a physical signature.",
+    BILLING_TERMS_AND_CONDITIONS: JSON.stringify([
+      "Terms & Conditions issued for groundwater survey services booked through Jaladhaara.",
+      "Groundwater availability and borewell success depend on site-specific geological conditions & geophysical investigations and cannot be guaranteed.",
+      "Please retain this invoice for future reference.",
+      "Booking is confirmed upon receipt of the advance payment.",
+      "Final payment is required to unlock the survey report.",
+      "Travel charges are non-refundable once the expert begins the journey.",
+      "Disputes must be raised within 10 days of the survey report submission."
+    ])
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -81,6 +92,23 @@ export default function UserInvoice() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (booking) {
+      const invDate = booking.payment?.createdAt || booking.createdAt;
+      const invNo = `INV-${new Date(invDate).toISOString().slice(0, 10).replace(/-/g, '')}-${booking._id.slice(-6).toUpperCase()}`;
+      const baseF = booking.payment?.baseServiceFee || (booking.service?.price || 0);
+      const trav = booking.payment?.travelCharges || 0;
+      const gstT = booking.payment?.gst || (baseF * 0.18);
+      const total = booking.payment?.totalAmount || (baseF + gstT + trav);
+
+      const qrPayload = `JALADHAARA TAX INVOICE\nInvoice: ${invNo}\nOrder ID: ORD-${booking._id.slice(-8).toUpperCase()}\nGSTIN: ${billingInfo.BILLING_GSTIN}\nAmount: ₹${total.toFixed(2)}\nStatus: ${booking.payment?.remainingPaid ? 'PAID IN FULL' : 'PARTIALLY PAID'}`;
+
+      QRCode.toDataURL(qrPayload, { margin: 1, width: 220 })
+        .then(url => setQrCodeUrl(url))
+        .catch(err => console.error("Failed to generate QR Code", err));
+    }
+  }, [booking, billingInfo]);
 
   const handlePrint = () => {
     window.print();
@@ -181,7 +209,7 @@ export default function UserInvoice() {
           </button>
 
           <PDFDownloadLink
-            document={<InvoicePDF booking={booking} billingInfo={billingInfo} />}
+            document={<InvoicePDF booking={booking} billingInfo={billingInfo} qrCodeUrl={qrCodeUrl} />}
             fileName={`${formattedInvoiceNo}.pdf`}
             className="flex items-center gap-1.5 px-4 py-2 bg-[#0A84FF] text-white rounded-xl font-bold shadow-md hover:bg-[#005BBB] transition-all active:scale-95 text-xs sm:text-sm"
           >
@@ -195,11 +223,11 @@ export default function UserInvoice() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto px-0 sm:px-6 lg:px-8">
         {/* Marketplace Tax Invoice Card */}
         <div
           ref={invoiceRef}
-          className="bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] rounded-[20px] sm:rounded-[24px] overflow-hidden p-4 sm:p-10 print:border-0 print:shadow-none print:p-0"
+          className="bg-white border-y sm:border border-gray-100/80 shadow-none sm:shadow-[0_8px_30px_rgba(0,0,0,0.06)] rounded-none sm:rounded-[24px] overflow-hidden px-3 py-5 sm:p-10 print:border-0 print:shadow-none print:p-0"
         >
           {/* Top Brand Header */}
           <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 pb-6 border-b border-gray-100">
@@ -256,7 +284,7 @@ export default function UserInvoice() {
           </div>
 
           {/* Customer & Order Details Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 p-4 sm:p-6 bg-gray-50/80 rounded-2xl border border-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 p-3.5 sm:p-6 bg-gray-50/80 rounded-2xl border border-gray-100">
             <div>
               <p className="text-[10px] font-black text-[#0A84FF] uppercase tracking-widest mb-2">
                 Customer Details (Billed To)
@@ -383,7 +411,7 @@ export default function UserInvoice() {
           </div>
 
           {/* Transaction Audit Trail Table for BOTH Advance & Final Payments */}
-          <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl border border-slate-200/80 mb-8">
+          <div className="p-3.5 sm:p-6 bg-slate-50 rounded-2xl border border-slate-200/80 mb-8">
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
               <h5 className="text-[11px] sm:text-xs font-black text-[#0A84FF] uppercase tracking-widest flex items-center gap-1.5">
                 <IoShieldCheckmarkOutline className="text-base" />
@@ -439,6 +467,61 @@ export default function UserInvoice() {
               </span>
             </div>
           </div>
+
+          {/* Terms & Conditions Section */}
+          <div className="p-3.5 sm:p-6 bg-gray-50 rounded-2xl border border-gray-200/80 mb-8">
+            <h5 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-3 flex items-center gap-1.5 pb-2 border-b border-gray-200">
+              <IoRibbonOutline className="text-[#0A84FF] text-base" />
+              Terms & Conditions
+            </h5>
+            <ol className="list-decimal list-inside space-y-1.5 text-xs text-gray-600 font-medium leading-relaxed">
+              {(() => {
+                const defaultTerms = [
+                  "Terms & Conditions issued for groundwater survey services booked through Jaladhaara.",
+                  "Groundwater availability and borewell success depend on site-specific geological conditions & geophysical investigations and cannot be guaranteed.",
+                  "Please retain this invoice for future reference.",
+                  "Booking is confirmed upon receipt of the advance payment.",
+                  "Final payment is required to unlock the survey report.",
+                  "Travel charges are non-refundable once the expert begins the journey.",
+                  "Disputes must be raised within 10 days of the survey report submission."
+                ];
+                let termsList = defaultTerms;
+                if (billingInfo.BILLING_TERMS_AND_CONDITIONS) {
+                  try {
+                    const parsed = typeof billingInfo.BILLING_TERMS_AND_CONDITIONS === 'string'
+                      ? JSON.parse(billingInfo.BILLING_TERMS_AND_CONDITIONS)
+                      : billingInfo.BILLING_TERMS_AND_CONDITIONS;
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                      termsList = parsed;
+                    }
+                  } catch (e) {
+                    console.error("Error parsing billing terms", e);
+                  }
+                }
+                return termsList.map((term, i) => (
+                  <li key={i} className="pl-1">
+                    <span className="text-gray-700">{term}</span>
+                  </li>
+                ));
+              })()}
+            </ol>
+          </div>
+
+          {/* Dynamic GST Audit Verification QR Code Card */}
+          {qrCodeUrl && (
+            <div className="flex flex-col sm:flex-row items-center gap-4 p-3.5 sm:p-4 bg-slate-50 border border-slate-200/80 rounded-2xl mb-8">
+              <img src={qrCodeUrl} alt="Tax Audit Verification QR Code" className="w-20 h-20 rounded-xl border border-slate-200 shadow-sm bg-white p-1" />
+              <div className="text-center sm:text-left space-y-1">
+                <span className="inline-block px-2.5 py-0.5 bg-blue-100 text-[#0A84FF] text-[10px] font-black uppercase tracking-wider rounded-md">
+                  Tax Audit Verification Code
+                </span>
+                <h6 className="text-xs font-black text-slate-800">Scannable GST & Razorpay Audit Signature</h6>
+                <p className="text-[11px] text-slate-500 max-w-lg leading-relaxed">
+                  Scan this QR code with any smartphone camera or Lens app to instantly verify invoice authenticity, order ID ({booking._id}), and Razorpay payment status.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Marketplace Footer & Declaration */}
           <div className="pt-6 border-t border-gray-100 text-xs text-gray-500 leading-relaxed">

@@ -223,6 +223,28 @@ const generateInvoice = async (booking) => {
       doc.fillColor(textColor).fontSize(8).font('Helvetica-Bold');
       doc.text(`TOTAL BALANCE DUE: ₹ ${isPaid ? '0.00' : remainingAmt.toFixed(2)}`, 350, currentY + 43, { align: 'right' });
 
+      // Terms & Conditions Box
+      currentY += 65;
+      const termsList = [
+        "Terms & Conditions issued for groundwater survey services booked through Jaladhaara.",
+        "Groundwater availability and borewell success depend on site-specific geological conditions & geophysical investigations and cannot be guaranteed.",
+        "Please retain this invoice for future reference.",
+        "Booking is confirmed upon receipt of the advance payment.",
+        "Final payment is required to unlock the survey report.",
+        "Travel charges are non-refundable once the expert begins the journey.",
+        "Disputes must be raised within 10 days of the survey report submission."
+      ];
+
+      doc.rect(40, currentY, 515, 85).fillAndStroke('#F8FAFC', '#E2E8F0');
+      doc.fillColor(primaryColor).fontSize(7.5).font('Helvetica-Bold').text('TERMS & CONDITIONS', 50, currentY + 5);
+
+      let termY = currentY + 16;
+      termsList.forEach((term, idx) => {
+        doc.fillColor(grayColor).fontSize(6.8).font('Helvetica-Bold').text(`${idx + 1}.`, 50, termY);
+        doc.fillColor(textColor).font('Helvetica').text(term, 62, termY, { width: 485 });
+        termY += 9.5;
+      });
+
       // Footer
       const pageHeight = doc.page.height;
       doc.fillColor(textColor).fontSize(8).font('Helvetica-Bold').text(`Thank you for choosing ${companyName}!`, 40, pageHeight - 48, { align: 'center' });

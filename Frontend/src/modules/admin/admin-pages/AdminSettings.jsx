@@ -62,11 +62,25 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
     // Billing Settings State
     const [billingSettings, setBillingSettings] = useState({
-        BILLING_COMPANY_NAME: "",
-        BILLING_ADDRESS: "",
-        BILLING_GSTIN: "",
-        BILLING_PHONE: "",
-        BILLING_EMAIL: "",
+        BILLING_COMPANY_NAME: "Jaladhaara Hydrogeological Services Pvt. Ltd.",
+        BILLING_ADDRESS: "123, Water Tower Complex, Near Borewell Circle, Civil Lines, Raipur, Chhattisgarh - 492001",
+        BILLING_GSTIN: "22AAAAA0000A1Z5",
+        BILLING_PAN: "AAACJ1234F",
+        BILLING_PHONE: "+91 98765 43210",
+        BILLING_EMAIL: "billing@jaladhar.com",
+        BILLING_WEBSITE: "https://jaladhaaraapp.in",
+        BILLING_SAC_CODE: "998341",
+        BILLING_PLACE_OF_SUPPLY: "Chhattisgarh (State Code: 22)",
+        BILLING_DECLARATION: "This is a computer-generated Tax Invoice and does not require a physical signature.",
+        BILLING_TERMS_AND_CONDITIONS: [
+          "Terms & Conditions issued for groundwater survey services booked through Jaladhaara.",
+          "Groundwater availability and borewell success depend on site-specific geological conditions & geophysical investigations and cannot be guaranteed.",
+          "Please retain this invoice for future reference.",
+          "Booking is confirmed upon receipt of the advance payment.",
+          "Final payment is required to unlock the survey report.",
+          "Travel charges are non-refundable once the expert begins the journey.",
+          "Disputes must be raised within 10 days of the survey report submission."
+        ].join('\n')
     });
     const [billingLoading, setBillingLoading] = useState(false);
 
@@ -267,7 +281,20 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 if (response.success && response.data.settings) {
                     const settingsObj = {};
                     response.data.settings.forEach(setting => {
-                        settingsObj[setting.key] = setting.value;
+                        if (setting.key === 'BILLING_TERMS_AND_CONDITIONS') {
+                            try {
+                                const parsed = typeof setting.value === 'string' ? JSON.parse(setting.value) : setting.value;
+                                if (Array.isArray(parsed)) {
+                                    settingsObj[setting.key] = parsed.join('\n');
+                                } else {
+                                    settingsObj[setting.key] = setting.value;
+                                }
+                            } catch (e) {
+                                settingsObj[setting.key] = setting.value;
+                            }
+                        } else {
+                            settingsObj[setting.key] = setting.value;
+                        }
                     });
                     setBillingSettings(prev => ({
                         ...prev,
@@ -349,9 +376,9 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
         try {
             const settings = [
-                { key: 'TRAVEL_CHARGE_PER_KM', value: parseFloat(pricingSettings.TRAVEL_CHARGE_PER_KM) },
-                { key: 'BASE_RADIUS_KM', value: parseFloat(pricingSettings.BASE_RADIUS_KM) },
-                { key: 'GST_PERCENTAGE', value: parseFloat(pricingSettings.GST_PERCENTAGE) },
+                { key: 'TRAVEL_CHARGE_PER_KM', value: Number(pricingSettings.TRAVEL_CHARGE_PER_KM) },
+                { key: 'BASE_RADIUS_KM', value: Number(pricingSettings.BASE_RADIUS_KM) },
+                { key: 'GST_PERCENTAGE', value: Number(pricingSettings.GST_PERCENTAGE) },
             ];
 
             const response = await updateMultipleSettings(settings);
@@ -375,17 +402,29 @@ export default function AdminSettings({ defaultTab = "general" }) {
         setBillingLoading(true);
 
         try {
+            let termsValue = billingSettings.BILLING_TERMS_AND_CONDITIONS;
+            if (typeof termsValue === 'string') {
+                const termsArray = termsValue.split('\n').map(t => t.trim()).filter(Boolean);
+                termsValue = JSON.stringify(termsArray);
+            }
+
             const settings = [
-                { key: 'BILLING_COMPANY_NAME', value: billingSettings.BILLING_COMPANY_NAME },
-                { key: 'BILLING_ADDRESS', value: billingSettings.BILLING_ADDRESS },
-                { key: 'BILLING_GSTIN', value: billingSettings.BILLING_GSTIN },
-                { key: 'BILLING_PHONE', value: billingSettings.BILLING_PHONE },
-                { key: 'BILLING_EMAIL', value: billingSettings.BILLING_EMAIL },
+                { key: 'BILLING_COMPANY_NAME', value: billingSettings.BILLING_COMPANY_NAME, category: 'billing' },
+                { key: 'BILLING_ADDRESS', value: billingSettings.BILLING_ADDRESS, category: 'billing' },
+                { key: 'BILLING_GSTIN', value: billingSettings.BILLING_GSTIN, category: 'billing' },
+                { key: 'BILLING_PAN', value: billingSettings.BILLING_PAN, category: 'billing' },
+                { key: 'BILLING_PHONE', value: billingSettings.BILLING_PHONE, category: 'billing' },
+                { key: 'BILLING_EMAIL', value: billingSettings.BILLING_EMAIL, category: 'billing' },
+                { key: 'BILLING_WEBSITE', value: billingSettings.BILLING_WEBSITE, category: 'billing' },
+                { key: 'BILLING_SAC_CODE', value: billingSettings.BILLING_SAC_CODE, category: 'billing' },
+                { key: 'BILLING_PLACE_OF_SUPPLY', value: billingSettings.BILLING_PLACE_OF_SUPPLY, category: 'billing' },
+                { key: 'BILLING_DECLARATION', value: billingSettings.BILLING_DECLARATION, category: 'billing' },
+                { key: 'BILLING_TERMS_AND_CONDITIONS', value: termsValue, category: 'billing' },
             ];
 
             const response = await updateMultipleSettings(settings);
             if (response.success) {
-                toast.showSuccess("Billing information updated successfully!");
+                toast.showSuccess("Billing information & invoice settings updated successfully!");
             } else {
                 setError(response.message || "Failed to update billing information");
             }
@@ -602,11 +641,29 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                PAN Number
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={billingSettings.BILLING_PAN || ""}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_PAN: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono"
+                                                placeholder="Permanent Account Number (PAN)"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
                                                 Contact Phone
                                             </label>
                                             <input
                                                 type="text"
-                                                value={billingSettings.BILLING_PHONE}
+                                                value={billingSettings.BILLING_PHONE || ""}
                                                 onChange={(e) =>
                                                     setBillingSettings({
                                                         ...billingSettings,
@@ -624,7 +681,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             </label>
                                             <input
                                                 type="email"
-                                                value={billingSettings.BILLING_EMAIL}
+                                                value={billingSettings.BILLING_EMAIL || ""}
                                                 onChange={(e) =>
                                                     setBillingSettings({
                                                         ...billingSettings,
@@ -634,6 +691,92 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 required
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
                                                 placeholder="Billing Support Email"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Website URL
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={billingSettings.BILLING_WEBSITE || ""}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_WEBSITE: e.target.value,
+                                                    })
+                                                }
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                placeholder="https://jaladhaaraapp.in"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                SAC Code
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={billingSettings.BILLING_SAC_CODE || ""}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_SAC_CODE: e.target.value,
+                                                    })
+                                                }
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono"
+                                                placeholder="998341"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Place of Supply
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={billingSettings.BILLING_PLACE_OF_SUPPLY || ""}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_PLACE_OF_SUPPLY: e.target.value,
+                                                    })
+                                                }
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                placeholder="Chhattisgarh (State Code: 22)"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Invoice Declaration / Footnote
+                                            </label>
+                                            <textarea
+                                                value={billingSettings.BILLING_DECLARATION || ""}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_DECLARATION: e.target.value,
+                                                    })
+                                                }
+                                                rows={2}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                placeholder="This is a computer-generated Tax Invoice..."
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center justify-between">
+                                                <span>Terms & Conditions Policy Clauses</span>
+                                                <span className="text-xs text-gray-400 font-normal">(Enter 1 term per line)</span>
+                                            </label>
+                                            <textarea
+                                                value={billingSettings.BILLING_TERMS_AND_CONDITIONS || ""}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_TERMS_AND_CONDITIONS: e.target.value,
+                                                    })
+                                                }
+                                                rows={6}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono text-xs leading-relaxed"
+                                                placeholder="Enter each terms clause on a new line..."
                                             />
                                         </div>
                                     </div>

@@ -41,12 +41,14 @@ const setSetting = async (key, value, label, description, type = 'string', categ
   try {
     const existing = await Settings.findOne({ key });
     
-    // Determine category: explicitly passed > existing category > key-based detection ('policy' for policy keys) > 'general'
+    // Determine category: explicitly passed > existing category > key prefix > general
     let finalCategory = category;
     if (!finalCategory || finalCategory === 'general') {
-      if (existing && existing.category) {
+      if (key.startsWith('BILLING_')) {
+        finalCategory = 'billing';
+      } else if (existing && existing.category) {
         finalCategory = existing.category;
-      } else if (key.includes('policy') || key.includes('terms')) {
+      } else if (key.includes('policy')) {
         finalCategory = 'policy';
       } else {
         finalCategory = 'general';
@@ -201,6 +203,22 @@ const initializeDefaultSettings = async () => {
       category: 'billing'
     },
     {
+      key: 'BILLING_TERMS_AND_CONDITIONS',
+      value: JSON.stringify([
+        "Terms & Conditions issued for groundwater survey services booked through Jaladhaara.",
+        "Groundwater availability and borewell success depend on site-specific geological conditions & geophysical investigations and cannot be guaranteed.",
+        "Please retain this invoice for future reference.",
+        "Booking is confirmed upon receipt of the advance payment.",
+        "Final payment is required to unlock the survey report.",
+        "Travel charges are non-refundable once the expert begins the journey.",
+        "Disputes must be raised within 10 days of the survey report submission."
+      ]),
+      label: 'Terms & Conditions',
+      description: 'JSON stringified array of terms and conditions shown on invoices',
+      type: 'json',
+      category: 'billing'
+    },
+    {
       key: 'DISPUTE_TYPES',
       value: [
         'Expert did not arrive',
@@ -228,8 +246,18 @@ const initializeDefaultSettings = async () => {
     if (!exists) {
       await Settings.create(setting);
       console.log(`Initialized default setting: ${setting.key}`);
+    } else if (setting.key.startsWith('BILLING_') && exists.category !== 'billing') {
+      exists.category = 'billing';
+      await exists.save();
+      console.log(`Updated category to 'billing' for: ${setting.key}`);
     }
   }
+
+  // Ensure all BILLING_ keys are categorized under billing
+  await Settings.updateMany(
+    { key: { $regex: /^BILLING_/ } },
+    { $set: { category: 'billing' } }
+  );
 };
 
 module.exports = {
