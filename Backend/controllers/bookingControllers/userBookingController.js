@@ -985,6 +985,7 @@ const getNearbyVendors = async (req, res) => {
 
       return {
         ...vendor, // Already a plain object due to lean()
+        expertId: vendor.expertId || `EXP-${vendor._id.toString().slice(-6).toUpperCase()}`,
         distance,
         profilePicture: profilePicMap[vendor._id.toString()] || null,
         experience: vendor.experience || 0,
@@ -1162,6 +1163,7 @@ const getVendorProfile = async (req, res) => {
     // Format vendor data
     const formattedVendor = {
       ...vendor,
+      expertId: vendor.expertId || `EXP-${vendor._id.toString().slice(-6).toUpperCase()}`,
       distance,
       profilePicture: profilePicDoc ? profilePicDoc.url : null,
       education: vendor.educationalQualifications, // Map for frontend compatibility

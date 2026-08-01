@@ -54,12 +54,28 @@ const DEFAULT_POLICIES = {
   <li><strong>Remaining Split:</strong> The 60% balance amount is payable after the physical survey visit is completed.</li>
   <li><strong>Report Release:</strong> Survey findings and PDF report will be unlocked upon receipt of full payment.</li>
 </ul>`,
-  terms_of_service: `<ul>
-  <li>The location provided must be accurate and accessible for the expert and equipment.</li>
-  <li>While we use scientific methods, water yield results are estimates based on geographical data and do not guarantee 100% success.</li>
-  <li>Customers are responsible for obtaining any local permissions required for the survey.</li>
-  <li>All reports are for informational purposes only.</li>
-</ul>`
+  terms_of_service: `<ol>
+  <li>Jaladhaara is a technology platform that connects customers with independent groundwater survey experts.</li>
+  <li>Survey services are provided solely by the selected expert. Jaladhaara is not the survey service provider.</li>
+  <li>Groundwater occurrence is governed by natural geological conditions. Jaladhaara doesn't guarantee the successful borewell drilling, groundwater availability, water quantity, or water quality.</li>
+  <li>The survey report is a professional opinion based on scientific observations and available data and should not be considered a guarantee of drilling success.</li>
+  <li>Customers are responsible for providing the correct survey location, site access, and obtaining any required permissions.</li>
+  <li>Jaladhaara is not liable for borewell failure, dry borewells, low yield, drilling costs, financial losses, crop loss, or any indirect or consequential damages.</li>
+  <li>Booking, cancellation, refund, and rescheduling are governed by the applicable policies available in the app.</li>
+  <li>By proceeding with the booking, you confirm that you have read, understood, and agreed to these Terms & Conditions.</li>
+</ol>`,
+  privacy_policy: `<p>Jaladhaara Groundwater Survey Pvt. Ltd. ("Jaladhaara") respects your privacy and is committed to protecting your personal information.</p>
+<ol>
+  <li>We collect information such as your name, mobile number, email address, survey location, payment details, and other information required to provide our services.</li>
+  <li>Your location is used only to facilitate groundwater survey bookings and enable experts to reach the correct survey land.</li>
+  <li>Your personal information is shared only with authorised experts, payment service providers, and service partners as necessary to deliver the requested services or comply with applicable laws.</li>
+  <li>We use reasonable security measures to protect your personal information from unauthorised access, loss, or misuse.</li>
+  <li>We do not sell or rent your personal information to third parties.</li>
+  <li>You are responsible for providing accurate information and keeping your account details up to date.</li>
+  <li>By using the Jaladhaara app, you consent to the collection, use, storage, and processing of your information in accordance with this Privacy Policy.</li>
+  <li>Jaladhaara may update this Privacy Policy from time to time. The latest version will always be available within the app and on our website.</li>
+</ol>
+<p>For more information, please refer to the full Privacy Policy available in the app or contact Jaladhaara Customer Support.</p>`
 };
 
 export default function AdminPolicies() {
@@ -112,6 +128,7 @@ export default function AdminPolicies() {
         { key: 'advance_payment_policy', value: policySettings.advance_payment_policy },
         { key: 'remaining_payment_policy', value: policySettings.remaining_payment_policy },
         { key: 'terms_of_service', value: policySettings.terms_of_service },
+        { key: 'privacy_policy', value: policySettings.privacy_policy },
       ];
 
       const response = await updateMultipleSettings(settings);
@@ -309,7 +326,7 @@ export default function AdminPolicies() {
               <label className="block text-sm font-bold text-gray-700 mb-2">
                 Terms of Service
               </label>
-              <p className="text-xs text-gray-500 mb-2">General legal terms for using JalaDhar.</p>
+              <p className="text-xs text-gray-500 mb-2">General legal terms for using JalaDhar (shown during survey flow and booking confirmation).</p>
               <ReactQuill
                 theme="snow"
                 value={policySettings.terms_of_service}
@@ -317,6 +334,21 @@ export default function AdminPolicies() {
                 modules={modules}
                 formats={formats}
                 placeholder="Write your terms of service here..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Privacy Policy
+              </label>
+              <p className="text-xs text-gray-500 mb-2">Privacy policy details regarding user data collection and protection.</p>
+              <ReactQuill
+                theme="snow"
+                value={policySettings.privacy_policy}
+                onChange={(content) => setPolicySettings(prev => ({ ...prev, privacy_policy: content }))}
+                modules={modules}
+                formats={formats}
+                placeholder="Write your privacy policy here..."
               />
             </div>
 

@@ -20,6 +20,7 @@ const PolicyModal = ({ type, onClose }) => {
           else if (type === 'advance') key = 'advance_payment_policy';
           else if (type === 'remaining') key = 'remaining_payment_policy';
           else if (type === 'terms') key = 'terms_of_service';
+          else if (type === 'privacy') key = 'privacy_policy';
 
           const policyItem = settings.find(s => s.key === key);
           if (policyItem) {
@@ -117,12 +118,29 @@ const PolicyModal = ({ type, onClose }) => {
       title: "Terms of Service",
       icon: <IoShieldCheckmarkOutline className="text-green-500" />,
       fallback: (
-        <ul className="list-disc pl-5 space-y-3">
-          <li>The location provided must be accurate and accessible for the expert and equipment.</li>
-          <li>While we use scientific methods, water yield results are estimates based on geographical data and do not guarantee 100% success.</li>
-          <li>Customers are responsible for obtaining any local permissions required for the survey.</li>
-          <li>All reports are for informational purposes only.</li>
-        </ul>
+        <ol className="list-decimal pl-5 space-y-2">
+          <li>Jaladhaara is a technology platform that connects customers with independent groundwater survey experts.</li>
+          <li>Survey services are provided solely by the selected expert. Jaladhaara is not the survey service provider.</li>
+          <li>Groundwater occurrence is governed by natural geological conditions. Jaladhaara doesn't guarantee drilling success or water yield.</li>
+          <li>The survey report is a professional opinion based on scientific observations.</li>
+          <li>Customers are responsible for providing correct survey location and site access.</li>
+          <li>Jaladhaara is not liable for borewell failure, dry borewells, or consequential damages.</li>
+          <li>Booking and cancellation are governed by applicable policies.</li>
+          <li>By proceeding, you confirm agreement to these Terms & Conditions.</li>
+        </ol>
+      )
+    },
+    privacy: {
+      title: "Privacy Policy",
+      icon: <IoShieldCheckmarkOutline className="text-blue-500" />,
+      fallback: (
+        <ol className="list-decimal pl-5 space-y-2">
+          <li>We collect information required to provide our survey services.</li>
+          <li>Your location is used only to facilitate groundwater survey bookings.</li>
+          <li>Personal details are shared only with authorized experts and partners.</li>
+          <li>We use reasonable security measures to protect your data.</li>
+          <li>We do not sell or rent your personal information.</li>
+        </ol>
       )
     }
   };

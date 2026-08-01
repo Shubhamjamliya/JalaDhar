@@ -13,7 +13,6 @@ export default function UserWallet() {
     const [loading, setLoading] = useState(true);
     const [walletBalance, setWalletBalance] = useState(0);
     const [totalCredited, setTotalCredited] = useState(0);
-    const [thisMonthEarnings, setThisMonthEarnings] = useState(0);
     const [transactions, setTransactions] = useState([]);
     const [withdrawalRequests, setWithdrawalRequests] = useState([]);
     const toast = useToast();
@@ -34,7 +33,6 @@ export default function UserWallet() {
             if (balanceResponse.success) {
                 setWalletBalance(balanceResponse.data.walletBalance || 0);
                 setTotalCredited(balanceResponse.data.totalCredited || 0);
-                setThisMonthEarnings(balanceResponse.data.thisMonthEarnings || 0);
                 setWithdrawalRequests(balanceResponse.data.withdrawalRequests || []);
             }
 
@@ -170,19 +168,12 @@ export default function UserWallet() {
             </section>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-2 gap-3 mb-6">
                 <div className="rounded-lg bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                     <span className="material-symbols-outlined text-[#00C2A8] !text-2xl">payments</span>
                     <p className="mt-2 text-xs text-[#6B7280]">Total Refunded</p>
                     <p className="mt-0.5 text-sm font-bold text-[#3A3A3A]">
                         ₹{formatAmount(totalCredited)}
-                    </p>
-                </div>
-                <div className="rounded-lg bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                    <span className="material-symbols-outlined text-[#00C2A8] !text-2xl">calendar_month</span>
-                    <p className="mt-2 text-xs text-[#6B7280]">This Month</p>
-                    <p className="mt-0.5 text-sm font-bold text-[#3A3A3A]">
-                        ₹{formatAmount(thisMonthEarnings)}
                     </p>
                 </div>
                 <div className="rounded-lg bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">

@@ -258,6 +258,14 @@ export default function AdminVendorDetails() {
                                 {vendor.name}
                             </h1>
                             <div className="flex items-center gap-2 flex-wrap">
+                                {(() => {
+                                    const expertId = vendor.expertId || (vendor._id ? `EXP-${vendor._id.toString().slice(-6).toUpperCase()}` : null);
+                                    return expertId ? (
+                                        <span className="px-3 py-1 rounded-[6px] text-sm font-bold bg-indigo-100 text-indigo-800">
+                                            Expert ID: {expertId}
+                                        </span>
+                                    ) : null;
+                                })()}
                                 <span
                                     className={`px-3 py-1 rounded-[6px] text-sm font-semibold ${vendor.isApproved
                                         ? "bg-green-100 text-green-700"

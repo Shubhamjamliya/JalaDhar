@@ -49,6 +49,11 @@ const UserRatings = lazy(() => import("./modules/user/user-pages/UserRatings"));
 const UserSurveyFlow = lazy(() => import("./modules/user/user-pages/UserSurveyFlow"));
 const UserSurveyReport = lazy(() => import("./modules/user/user-pages/UserSurveyReport"));
 const UserInvoice = lazy(() => import("./modules/user/user-pages/UserInvoice"));
+const UserReports = lazy(() => import("./modules/user/user-pages/UserReports"));
+const UserPaymentsInvoices = lazy(() => import("./modules/user/user-pages/UserPaymentsInvoices"));
+const UserNotificationsPage = lazy(() => import("./modules/user/user-pages/UserNotificationsPage"));
+const UserHelpSupport = lazy(() => import("./modules/user/user-pages/UserHelpSupport"));
+const UserSettingsPage = lazy(() => import("./modules/user/user-pages/UserSettingsPage"));
 const VendorDashboard = lazy(() => import("./modules/vendor/vendor-pages/VendorDashboard"));
 const VendorDisputes = lazy(() => import("./modules/vendor/vendor-pages/VendorDisputes"));
 const VendorCreateDispute = lazy(() => import("./modules/vendor/vendor-pages/VendorCreateDispute"));
@@ -318,6 +323,46 @@ function App() {
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <UserSurveyFlow />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/survey-reports"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserReports />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/payments-invoices"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserPaymentsInvoices />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/notifications"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserNotificationsPage />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/help-support"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserHelpSupport />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/settings"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserSettingsPage />
                                                                     </Suspense>
                                                                 }
                                                             />

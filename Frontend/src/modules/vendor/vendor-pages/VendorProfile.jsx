@@ -765,7 +765,15 @@ export default function VendorProfile() {
                             )}
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-2">
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-2">
+                            {(() => {
+                                const expertIdStr = vendor?.expertId || (vendor?._id ? `EXP-${vendor._id.toString().slice(-6).toUpperCase()}` : null);
+                                return expertIdStr ? (
+                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/20 font-bold">
+                                        <span className="text-sm">Expert ID: {expertIdStr}</span>
+                                    </div>
+                                ) : null;
+                            })()}
                             <div className="flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/10">
                                 <IoBriefcaseOutline className="text-sm" />
                                 <span className="text-sm font-medium">{profileData.designation || "Ground Water Professional"}</span>

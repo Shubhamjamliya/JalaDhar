@@ -688,9 +688,19 @@ export default function UserBookingDetails() {
                                 );
                             })()}
                             <div>
-                                <h3 className="text-lg font-bold text-gray-800">
-                                    {booking.vendor.name}
-                                </h3>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-lg font-bold text-gray-800">
+                                        {booking.vendor.name}
+                                    </h3>
+                                    {(() => {
+                                        const expertId = booking.vendor.expertId || (booking.vendor._id ? `EXP-${booking.vendor._id.toString().slice(-6).toUpperCase()}` : null);
+                                        return expertId ? (
+                                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                                ID: {expertId}
+                                            </span>
+                                        ) : null;
+                                    })()}
+                                </div>
                                 <div className="flex items-center gap-1 text-sm text-yellow-500 mt-1">
                                     <IoStar />
                                     <span className="font-semibold text-gray-700">{booking.vendor?.rating?.averageRating?.toFixed(1) || "New"}</span>

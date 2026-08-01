@@ -151,6 +151,14 @@ export default function UserVendorProfile() {
                     <h1 className="text-2xl font-bold text-gray-900 mb-1">
                         {vendorData.name}
                     </h1>
+                    {(() => {
+                        const expertId = vendorData.expertId || (vendorData._id ? `EXP-${vendorData._id.toString().slice(-6).toUpperCase()}` : null);
+                        return expertId ? (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-3 bg-blue-50 text-blue-700 font-bold text-xs rounded-full border border-blue-200/80 shadow-2xs">
+                                <span>Expert ID: {expertId}</span>
+                            </div>
+                        ) : null;
+                    })()}
                     <div className="flex items-center gap-2 mb-6">
                         <div className="flex items-center gap-1 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100 shadow-sm">
                             <IoStar className="text-yellow-500 text-sm" />

@@ -86,29 +86,15 @@ export default function UserNavbar() {
     return (
         <>
             {/* Top Navbar - Mobile & Desktop */}
-            <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-[#F6F7F9] px-4 py-3 md:px-6 md:py-4">
-                {/* Left Section: Back Button + Logo */}
-                <div className="flex items-center gap-3">
-                    {/* Back Button - Only for sub-pages */}
-                    {!navItems.some(item => item.to === location.pathname) && (
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="flex items-center justify-center w-8 h-8 rounded-full bg-white text-gray-700 hover:text-[#0A84FF] shadow-sm border border-gray-100 transition-all active:scale-95"
-                            aria-label="Go Back"
-                        >
-                            <IoChevronBackOutline className="text-lg" />
-                        </button>
-                    )}
-
-                    {/* Logo */}
-                    <div className="flex items-center">
-                        <img
-                            src={logo}
-                            alt="Jaladhaara Logo"
-                            className="h-12 md:h-14 w-40 md:w-48 object-contain ml-4 md:ml-6"
-                        />
-                    </div>
-                </div>
+            <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-white/95 backdrop-blur-md px-4 py-2.5 shadow-sm border-b border-gray-100 md:px-6 md:py-3">
+                {/* Left Section: Logo */}
+                <NavLink to="/user/dashboard" className="flex items-center">
+                    <img
+                        src={logo}
+                        alt="Jaladhaara Logo"
+                        className="h-10 md:h-12 w-auto object-contain"
+                    />
+                </NavLink>
 
                 {/* Desktop Navigation Links - Hidden on Mobile */}
                 <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
@@ -131,10 +117,10 @@ export default function UserNavbar() {
                 </nav>
 
                 {/* Right Icons */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     {/* User Name - Desktop Only */}
                     {user && (
-                        <span className="hidden md:block text-sm font-medium text-gray-700">
+                        <span className="hidden md:block text-sm font-semibold text-gray-800">
                             {user.name}
                         </span>
                     )}
@@ -154,9 +140,10 @@ export default function UserNavbar() {
                     {/* Mobile Menu Button - Hidden on Desktop */}
                     <button
                         onClick={() => setIsSidebarOpen(true)}
-                        className="md:hidden"
+                        className="md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-gray-50 hover:bg-blue-50 text-[#0A84FF] border border-gray-200/80 transition-all active:scale-95 shrink-0"
+                        aria-label="Open Menu"
                     >
-                        <IoMenuOutline className="text-3xl text-[#0A84FF]" />
+                        <IoMenuOutline className="text-2xl" />
                     </button>
                 </div>
             </header>
@@ -166,7 +153,6 @@ export default function UserNavbar() {
                 <UserSidebar
                     isOpen={isSidebarOpen}
                     onClose={() => setIsSidebarOpen(false)}
-                    navItems={navItems}
                 />
             </div>
 

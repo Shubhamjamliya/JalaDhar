@@ -411,7 +411,10 @@ const register = async (req, res) => {
     }
 
     // Create vendor with email verified (without bankDetails and documents)
+    const vendorId = new mongoose.Types.ObjectId();
     const vendorData = {
+      _id: vendorId,
+      expertId: `EXP-${vendorId.toString().slice(-6).toUpperCase()}`,
       name,
       email,
       phone,

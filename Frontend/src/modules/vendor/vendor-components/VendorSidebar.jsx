@@ -23,11 +23,11 @@ export default function VendorSidebar({ isOpen, onClose, navItems }) {
         await logout();
     };
 
-    const overlay = `fixed inset-0 bg-black/30 z-40 transition-opacity ${
+    const overlay = `fixed inset-0 bg-black/40 backdrop-blur-sm md:backdrop-blur-md z-[90] transition-all duration-300 ${
         isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
     }`;
 
-    const panel = `fixed right-0 top-0 h-full w-4/5 max-w-xs bg-white z-50 shadow-xl p-5 transform transition-transform ${
+    const panel = `fixed right-0 top-0 h-full w-4/5 max-w-xs bg-white z-[100] shadow-xl p-5 transform transition-transform duration-300 ${
         isOpen ? "translate-x-0" : "translate-x-full"
     }`;
 

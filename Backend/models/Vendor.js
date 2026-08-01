@@ -46,6 +46,12 @@ const vendorSchema = new mongoose.Schema({
     enum: ['VENDOR'],
     default: 'VENDOR'
   },
+  expertId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true
+  },
   // Bank Details - Now in separate VendorBankDetails collection
   // bankDetails field removed - use VendorBankDetails model instead
   // Educational Qualifications
@@ -298,6 +304,9 @@ const vendorSchema = new mongoose.Schema({
 
 // Hash password before saving
 vendorSchema.pre('save', async function (next) {
+  if (!this.expertId && this._id) {
+    this.expertId = `EXP-${this._id.toString().slice(-6).toUpperCase()}`;
+  }
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();

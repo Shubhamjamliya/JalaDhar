@@ -121,6 +121,8 @@ const getProfile = async (req, res) => {
       vendor.instruments = Array.from(instrumentsSet);
     }
 
+    vendor.expertId = vendor.expertId || (vendor._id ? `EXP-${vendor._id.toString().slice(-6).toUpperCase()}` : null);
+
     res.json({
       success: true,
       message: 'Profile retrieved successfully',

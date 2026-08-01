@@ -61,6 +61,7 @@ const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "S
     : (expert.address?.city ? [expert.address.city, expert.address.state].filter(Boolean) : ["Local Region"]);
 
   const price = selectedService?.price || expert.minPrice || expert.servicePrice;
+  const expertId = expert.expertId || (expert._id ? `EXP-${expert._id.toString().slice(-6).toUpperCase()}` : null);
 
   return (
     <div
@@ -89,9 +90,16 @@ const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "S
         {/* Name, Designation & Rating */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-base font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
-              {expert.name || "Expert Hydrogeologist"}
-            </h3>
+            <div className="flex items-center gap-2 truncate">
+              <h3 className="text-base font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                {expert.name || "Expert Hydrogeologist"}
+              </h3>
+              {expertId && (
+                <span className="shrink-0 text-[10px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200/80">
+                  ID: {expertId}
+                </span>
+              )}
+            </div>
             {expert.distance !== null && expert.distance !== undefined && !isNaN(expert.distance) && (
               <span className="shrink-0 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
                 {expert.distance.toFixed(1)} km away

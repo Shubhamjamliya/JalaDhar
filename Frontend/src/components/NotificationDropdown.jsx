@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { IoNotificationsOutline, IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { useNotifications } from '../contexts/NotificationContext';
 
-const NotificationDropdown = () => {
+const NotificationDropdown = ({ to }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const prevNotificationCountRef = useRef(0);
@@ -36,6 +39,16 @@ const NotificationDropdown = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
+
+  const handleBellClick = () => {
+    const targetPath = to || (location.pathname.startsWith('/user') ? '/user/notifications' : null);
+    if (targetPath) {
+      setIsOpen(false);
+      navigate(targetPath);
+    } else {
+      setIsOpen(!isOpen);
+    }
+  };
 
   const handleNotificationClick = async (notification) => {
     if (!notification.isRead) {
@@ -72,7 +85,7 @@ const NotificationDropdown = () => {
     <div className="relative" ref={dropdownRef}>
       {/* Bell Icon Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleBellClick}
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
         aria-label="Notifications"
       >
