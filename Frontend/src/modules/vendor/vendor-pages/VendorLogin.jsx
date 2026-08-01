@@ -75,7 +75,7 @@ export default function VendorLogin() {
                 <form className="space-y-6 " onSubmit={handleVendorLogin}>
                     <div className="flex justify-center mb-4">
                         <h2 className="button-white text-sm font-bold text-gradient px-3 py-1 rounded-full border-2 border-[#1A80E5]">
-                            Vendor Login
+                            Expert Login
                         </h2>
                     </div>
                     <div className="relative">

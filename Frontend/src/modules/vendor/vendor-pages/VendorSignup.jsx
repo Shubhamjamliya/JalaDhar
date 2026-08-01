@@ -592,7 +592,7 @@ export default function VendorSignup() {
                         className="h-32 object-contain mb-4"
                     />
                     <p className="mt-1 text-sm text-[#6B7280] text-center">
-                        Create your vendor account to get started.
+                        Create your Expert account to get started.
                     </p>
                 </div>
 
