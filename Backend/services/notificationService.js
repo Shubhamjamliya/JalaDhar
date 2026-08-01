@@ -210,6 +210,39 @@ const getUnreadCount = async (recipientId, recipientModel) => {
   }
 };
 
+/**
+ * Delete a single notification for a user
+ */
+const deleteNotification = async (notificationId, recipientId, recipientModel) => {
+  try {
+    const deleted = await Notification.findOneAndDelete({
+      _id: notificationId,
+      recipient: recipientId,
+      recipientModel: recipientModel
+    });
+    return deleted;
+  } catch (error) {
+    console.error('Delete notification error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Clear/Delete all notifications for a user
+ */
+const clearAllNotifications = async (recipientId, recipientModel) => {
+  try {
+    const result = await Notification.deleteMany({
+      recipient: recipientId,
+      recipientModel: recipientModel
+    });
+    return result;
+  } catch (error) {
+    console.error('Clear all notifications error:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   createNotification,
   sendNotification,
@@ -217,6 +250,8 @@ module.exports = {
   markAsRead,
   markAllAsRead,
   getUnreadCount,
+  deleteNotification,
+  clearAllNotifications,
   getRoomName
 };
 

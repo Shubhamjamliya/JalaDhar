@@ -543,8 +543,8 @@ export default function UserBookingDetails() {
                     }
 
                     return (
-                        <div className="relative pt-4 pb-2">
-                            <div className="flex items-center justify-between">
+                        <div className="relative pt-3 pb-2 overflow-x-auto no-scrollbar -mx-2 px-2">
+                            <div className="flex items-start justify-between min-w-[640px] sm:min-w-full relative">
                                 {timelineSteps.map((step, index) => {
                                     const stepPrimaryStatusIndex = statusOrder.indexOf(step.statuses[0]);
                                     const isCompleted = currentIndex >= 0 && currentIndex > stepPrimaryStatusIndex;
@@ -552,10 +552,10 @@ export default function UserBookingDetails() {
                                     const isPast = index < timelineSteps.findIndex(s => s.statuses.includes(status)) || (timelineSteps.findIndex(s => s.statuses.includes(status)) === -1 && currentIndex > stepPrimaryStatusIndex);
 
                                     return (
-                                        <div key={step.id} className="flex flex-col items-center relative flex-1">
+                                        <div key={step.id} className="flex flex-col items-center relative flex-1 min-w-[80px]">
                                             {/* Connector Line */}
                                             {index < timelineSteps.length - 1 && (
-                                                <div className="absolute left-[50%] right-[-50%] top-4 h-[2px] bg-gray-100 z-0">
+                                                <div className="absolute left-[50%] right-[-50%] top-[18px] h-[2px] bg-gray-100 z-0">
                                                     <div
                                                         className={`h-full transition-all duration-500 ${isCompleted || isPast ? "bg-emerald-400 w-full" : "w-0"}`}
                                                     />
@@ -565,31 +565,29 @@ export default function UserBookingDetails() {
                                             {/* Step Circle */}
                                             <div
                                                 className={`w-9 h-9 rounded-full flex items-center justify-center relative z-10 transition-all duration-300 ${isCompleted || isPast
-                                                    ? "bg-emerald-500 text-white"
+                                                    ? "bg-emerald-500 text-white shadow-sm"
                                                     : isActive
-                                                        ? "bg-[#0A84FF] text-white ring-4 ring-blue-50"
+                                                        ? "bg-[#0A84FF] text-white ring-4 ring-blue-50 shadow-md"
                                                         : "bg-white border-2 border-gray-200 text-gray-400"
                                                     }`}
                                             >
                                                 {isCompleted || isPast ? (
-                                                    <IoCheckmarkCircleOutline className="text-lg" />
+                                                    <IoCheckmarkCircleOutline className="text-xl" />
                                                 ) : (
                                                     <span className="text-base">{step.icon}</span>
                                                 )}
                                             </div>
 
                                             {/* Label & Date */}
-                                            <div className="mt-2 text-center flex flex-col items-center">
+                                            <div className="mt-2.5 text-center flex flex-col items-center px-0.5">
                                                 <span
-                                                    className={`text-[8px] font-bold uppercase leading-tight tracking-tight block max-w-[55px] ${isCompleted || isPast ? "text-emerald-600" : isActive ? "text-[#0A84FF]" : "text-gray-400"
+                                                    className={`text-[9px] sm:text-[10px] font-bold uppercase leading-[1.15] tracking-tight block text-center max-w-[76px] ${isCompleted || isPast ? "text-emerald-600" : isActive ? "text-[#0A84FF]" : "text-gray-400"
                                                         }`}
                                                 >
-                                                    {step.label.split(' ').map((word, i) => (
-                                                        <span key={i} className="block">{word}</span>
-                                                    ))}
+                                                    {step.label}
                                                 </span>
                                                 {step.date && (isCompleted || isPast || isActive) && (
-                                                    <span className="text-[7px] text-gray-400 mt-1 font-medium">
+                                                    <span className="text-[9px] text-gray-400 mt-1 font-semibold block whitespace-nowrap">
                                                         {new Date(step.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                                                     </span>
                                                 )}
@@ -608,15 +606,15 @@ export default function UserBookingDetails() {
                 })()}
 
                 {/* Big View Timeline Button at the bottom of Status Section */}
-                <div className="mt-8">
+                <div className="mt-6">
                     <button
                         onClick={() => navigate(`/user/booking/${bookingId}/status`)}
-                        className="w-full bg-[#0A84FF] text-white py-4 rounded-[16px] font-bold text-lg shadow-[0_4px_12px_rgba(10,132,255,0.3)] hover:bg-[#005BBB] transition-all hover:shadow-[0_6px_20px_rgba(10,132,255,0.4)] active:scale-[0.98] flex items-center justify-center gap-3"
+                        className="w-full bg-[#0A84FF] text-white py-4 rounded-[16px] font-bold text-base shadow-[0_4px_12px_rgba(10,132,255,0.25)] hover:bg-[#005BBB] transition-all hover:shadow-[0_6px_20px_rgba(10,132,255,0.35)] active:scale-[0.98] flex items-center justify-center gap-3"
                     >
                         <IoTimeOutline className="text-2xl" />
                         View Detailed Timeline
                     </button>
-                    <p className="text-center text-xs text-gray-400 mt-3 flex items-center justify-center gap-1">
+                    <p className="text-center text-xs text-gray-400 mt-2.5 flex items-center justify-center gap-1">
                         <IoInformationCircleOutline />
                         Track real-time progress of your service request
                     </p>
@@ -833,30 +831,14 @@ export default function UserBookingDetails() {
                                             )}
                                         </div>
                                     </div>
-                                    {(() => {
-                                        const hasReport = !!booking.report || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(booking.status);
-                                        const isUnlocked = booking.payment?.remainingPaid;
-
-                                        let badgeClass = "bg-gray-100 text-gray-500";
-                                        let badgeText = "Pending";
-
-                                        if (isUnlocked) {
-                                            badgeClass = "bg-indigo-100 text-indigo-700";
-                                            badgeText = "Available";
-                                        } else if (hasReport) {
-                                            badgeClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
-                                            badgeText = "Report Ready";
-                                        } else if (["VISITED", "IN_PROGRESS"].includes(booking.status)) {
-                                            badgeClass = "bg-amber-50 text-amber-600 animate-pulse";
-                                            badgeText = "In Progress";
-                                        }
-
-                                        return (
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${badgeClass}`}>
-                                                {badgeText}
-                                            </span>
-                                        );
-                                    })()}
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${booking.report && typeof booking.report.waterFound === 'boolean'
+                                        ? "bg-indigo-100 text-indigo-700"
+                                        : ["VISITED", "REPORT_UPLOADED"].includes(booking.status)
+                                            ? "bg-orange-50 text-orange-600 animate-pulse"
+                                            : "bg-gray-100 text-gray-500"
+                                        }`}>
+                                        {booking.report && typeof booking.report.waterFound === 'boolean' ? "Available" : ["VISITED", "REPORT_UPLOADED"].includes(booking.status) ? "In Progress" : "Pending"}
+                                    </span>
                                 </div>
 
                                 {/* Borewell Result Status */}
@@ -1054,21 +1036,17 @@ export default function UserBookingDetails() {
                     <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 overflow-hidden">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-gray-800">Survey Report</h2>
-                            {(!booking.report && !["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status)) ? (
-                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-full uppercase tracking-wider">
+                            {(!booking.report || !["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status)) && (
+                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase tracking-wider">
                                     <IoHourglassOutline className="animate-spin" />
                                     In Progress
-                                </span>
-                            ) : (
-                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-wider border border-emerald-200">
-                                    <IoCheckmarkCircleOutline className="text-emerald-600" />
-                                    {booking.payment?.remainingPaid ? "Available" : "Report Ready"}
                                 </span>
                             )}
                         </div>
 
                         {booking.report &&
-                            (["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status) || !!booking.report) ? (
+                            ["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status) &&
+                            typeof booking.report.waterFound === 'boolean' ? (
                             <>
                                 {/* Status Banner */}
                                 <div className={`flex items-center gap-4 p-4 rounded-[12px] mb-6 ${booking.report.waterFound
@@ -1405,6 +1383,11 @@ export default function UserBookingDetails() {
                     navigate(`/user/booking/${bookingId}/payment`);
                 }}
                 amount={booking?.payment?.remainingAmount}
+                isReportReady={Boolean(
+                    booking?.report &&
+                    ["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking?.status) &&
+                    typeof booking?.report?.waterFound === 'boolean'
+                )}
             />
         </div >
     );
@@ -1413,7 +1396,7 @@ export default function UserBookingDetails() {
 /* ---------------------------
    REUSABLE COMPONENTS
 ---------------------------- */
-function PaymentPromptModal({ isOpen, onClose, onPay, amount }) {
+function PaymentPromptModal({ isOpen, onClose, onPay, amount, isReportReady }) {
     if (!isOpen) return null;
 
     return (
@@ -1424,9 +1407,19 @@ function PaymentPromptModal({ isOpen, onClose, onPay, amount }) {
                         <IoLockClosedOutline className="text-4xl text-orange-500" />
                     </div>
 
-                    <h2 className="text-2xl font-black text-gray-900 mb-2">Survey Report Locked</h2>
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">
+                        {isReportReady ? "Survey Report Locked" : "Survey Report in Progress"}
+                    </h2>
                     <p className="text-gray-500 mb-8 leading-relaxed text-sm">
-                        Your survey report is ready. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock and view your detailed groundwater survey report.
+                        {isReportReady ? (
+                            <>
+                                Your survey report is ready. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock and view your detailed groundwater survey report.
+                            </>
+                        ) : (
+                            <>
+                                Your assigned expert is currently preparing your groundwater survey report. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock it immediately once uploaded.
+                            </>
+                        )}
                     </p>
 
                     <div className="space-y-3">
@@ -1434,7 +1427,7 @@ function PaymentPromptModal({ isOpen, onClose, onPay, amount }) {
                             onClick={onPay}
                             className="w-full bg-[#0A84FF] text-white py-4 rounded-xl font-bold text-base shadow-lg shadow-blue-200 active:scale-[0.98] transition-all"
                         >
-                            Pay and unlock report
+                            {isReportReady ? "Pay and unlock report" : "Pay remaining payment"}
                         </button>
                         <button
                             onClick={onClose}

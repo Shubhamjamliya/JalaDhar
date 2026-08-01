@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 
 // Standard fonts with explicit weights and styles
 Font.register({
@@ -13,194 +13,220 @@ Font.register({
 
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    padding: 35,
     fontFamily: 'Open Sans',
-    fontSize: 10,
-    color: '#333',
+    fontSize: 9,
+    color: '#1f2937',
+    backgroundColor: '#ffffff',
   },
   header: {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottom: '1pt solid #e5e7eb',
   },
   logoSection: {
     display: 'flex',
     flexDirection: 'column',
   },
   companyName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 700,
     color: '#0A84FF',
+    letterSpacing: 0.5,
   },
   companyTagline: {
-    fontSize: 8,
-    color: '#666',
+    fontSize: 7,
+    color: '#4b5563',
     textTransform: 'uppercase',
     letterSpacing: 1,
+    marginTop: 2,
   },
-  invoiceTitle: {
-    fontSize: 28,
+  taxTitle: {
+    fontSize: 10,
     fontWeight: 700,
-    marginTop: 15,
-    color: '#111',
+    color: '#0A84FF',
+    textTransform: 'uppercase',
+    marginTop: 10,
+    backgroundColor: '#eff6ff',
+    padding: '3 6',
+    borderRadius: 3,
+    alignSelf: 'flex-start',
   },
   invoiceMeta: {
-    marginTop: 5,
-    fontSize: 9,
-    color: '#666',
+    marginTop: 8,
+    fontSize: 8,
+    color: '#4b5563',
+    lineHeight: 1.4,
   },
   statusBadge: {
-    padding: '4 8',
-    borderRadius: 20,
+    padding: '4 10',
+    borderRadius: 12,
     fontSize: 8,
     fontWeight: 700,
     textTransform: 'uppercase',
     alignSelf: 'flex-end',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   statusPaid: {
     backgroundColor: '#ecfdf5',
     color: '#059669',
-    border: '1pt solid #d1fae5',
+    border: '1pt solid #a7f3d0',
   },
   statusPartial: {
     backgroundColor: '#fff7ed',
     color: '#d97706',
-    border: '1pt solid #ffedd5',
+    border: '1pt solid #fed7aa',
   },
   sellerInfo: {
     textAlign: 'right',
     fontSize: 8,
-    color: '#666',
+    color: '#4b5563',
     lineHeight: 1.4,
   },
   billingSection: {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 20,
-    borderTop: '1pt solid #eee',
-    borderBottom: '1pt solid #eee',
-    marginBottom: 30,
+    padding: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    border: '1pt solid #f3f4f6',
+    marginBottom: 20,
   },
   billingColumn: {
-    width: '45%',
+    width: '48%',
   },
   columnTitle: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: 700,
     color: '#0A84FF',
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: 6,
     letterSpacing: 0.5,
   },
   partyName: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
-    color: '#111',
-    marginBottom: 4,
+    color: '#111827',
+    marginBottom: 3,
   },
   partyDetails: {
-    fontSize: 9,
-    color: '#666',
+    fontSize: 8,
+    color: '#4b5563',
     lineHeight: 1.4,
   },
   table: {
     width: '100%',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   tableHeader: {
     flexDirection: 'row',
-    borderBottom: '2pt solid #111',
-    paddingBottom: 5,
-    marginBottom: 10,
+    borderBottom: '1.5pt solid #111827',
+    paddingBottom: 6,
+    marginBottom: 8,
   },
-  headerDesc: { width: '75%', fontSize: 8, fontWeight: 700, color: '#0A84FF', textTransform: 'uppercase' },
-  headerAmount: { width: '25%', textAlign: 'right', fontSize: 8, fontWeight: 700, color: '#0A84FF', textTransform: 'uppercase' },
+  headerDesc: { width: '50%', fontSize: 8, fontWeight: 700, color: '#0A84FF', textTransform: 'uppercase' },
+  headerQty: { width: '10%', textCenter: 'center', fontSize: 8, fontWeight: 700, color: '#0A84FF', textTransform: 'uppercase', textAlign: 'center' },
+  headerUnitPrice: { width: '20%', textAlign: 'right', fontSize: 8, fontWeight: 700, color: '#0A84FF', textTransform: 'uppercase' },
+  headerAmount: { width: '20%', textAlign: 'right', fontSize: 8, fontWeight: 700, color: '#0A84FF', textTransform: 'uppercase' },
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 10,
-    borderBottom: '1pt solid #eee',
+    paddingVertical: 8,
+    borderBottom: '1pt solid #f3f4f6',
+    alignItems: 'center',
   },
-  rowDesc: { width: '75%' },
-  rowTitle: { fontSize: 10, fontWeight: 700, color: '#111' },
-  rowSubtitle: { fontSize: 8, color: '#999', marginTop: 2 },
-  rowAmount: { width: '25%', textAlign: 'right', fontSize: 10, fontWeight: 700, color: '#111' },
+  rowDesc: { width: '50%' },
+  rowQty: { width: '10%', textAlign: 'center', fontSize: 9, fontWeight: 700, color: '#111827' },
+  rowUnitPrice: { width: '20%', textAlign: 'right', fontSize: 9, color: '#374151' },
+  rowTitle: { fontSize: 9, fontWeight: 700, color: '#111827' },
+  rowSubtitle: { fontSize: 7.5, color: '#6b7280', marginTop: 2 },
+  rowAmount: { width: '20%', textAlign: 'right', fontSize: 9, fontWeight: 700, color: '#111827' },
   summaryContainer: {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginTop: 10,
+    marginBottom: 20,
   },
   summaryBox: {
-    width: '40%',
+    width: '45%',
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
-  summaryLabel: { color: '#666', fontSize: 9 },
-  summaryValue: { fontWeight: 700, color: '#111', fontSize: 9 },
+  summaryLabel: { color: '#6b7280', fontSize: 8 },
+  summaryValue: { fontWeight: 700, color: '#111827', fontSize: 8 },
   totalRow: {
-    borderTop: '2pt solid #111',
-    borderBottom: '2pt solid #111',
-    marginVertical: 10,
-    paddingVertical: 10,
+    borderTop: '1.5pt solid #111827',
+    borderBottom: '1.5pt solid #111827',
+    marginVertical: 6,
+    paddingVertical: 6,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  totalLabel: { fontSize: 12, fontWeight: 700, color: '#111' },
-  totalAmount: { fontSize: 18, fontWeight: 700, color: '#0A84FF' },
+  totalLabel: { fontSize: 10, fontWeight: 700, color: '#111827' },
+  totalAmount: { fontSize: 14, fontWeight: 700, color: '#0A84FF' },
   paymentHistory: {
-    marginTop: 30,
-    padding: 15,
+    padding: 12,
     backgroundColor: '#f9fafb',
     borderRadius: 8,
+    border: '1pt solid #f3f4f6',
+    marginBottom: 25,
   },
   historyTitle: {
-    fontSize: 8,
+    fontSize: 7.5,
     fontWeight: 700,
-    color: '#999',
+    color: '#0A84FF',
     textTransform: 'uppercase',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   historyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 5,
+    marginBottom: 4,
   },
-  historyLabel: { fontSize: 9, color: '#666' },
-  historyValue: { fontSize: 9, fontWeight: 700, color: '#059669' },
+  historyLabel: { fontSize: 8, color: '#4b5563' },
+  historyValue: { fontSize: 8, fontWeight: 700, color: '#059669' },
   balanceRow: {
-    marginTop: 10,
-    paddingTop: 10,
-    borderTop: '1pt solid #eee',
+    marginTop: 6,
+    paddingTop: 6,
+    borderTop: '1pt solid #e5e7eb',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  balanceLabel: { fontSize: 9, fontWeight: 700, color: '#111' },
-  balanceValue: { fontSize: 9, fontWeight: 700, color: '#d97706' },
+  balanceLabel: { fontSize: 8, fontWeight: 700, color: '#111827' },
+  balanceValue: { fontSize: 8, fontWeight: 700, color: '#dc2626' },
   footer: {
-    marginTop: 50,
+    paddingTop: 15,
+    borderTop: '1pt solid #f3f4f6',
     textAlign: 'center',
   },
   thanks: {
-    fontSize: 10,
-    fontStyle: 'italic',
-    color: '#444',
-    marginBottom: 5,
+    fontSize: 9,
+    fontWeight: 700,
+    color: '#374151',
+    marginBottom: 3,
   },
   disclaimer: {
     fontSize: 7,
-    color: '#999',
+    color: '#9ca3af',
+    marginBottom: 2,
+  },
+  supportText: {
+    fontSize: 7.5,
+    color: '#0A84FF',
+    marginTop: 4,
   }
 });
 
 const formatCurrency = (amount) => {
-  return `Rs. ${Number(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+  return `Rs. ${Number(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const InvoicePDF = ({ booking, billingInfo }) => {
@@ -210,14 +236,23 @@ const InvoicePDF = ({ booking, billingInfo }) => {
   const invoiceDate = payment?.createdAt || createdAt;
   const isFullyPaid = payment?.remainingPaid;
 
-  // Destructure billingInfo with fallbacks
   const {
-    BILLING_COMPANY_NAME = "JalaDhar Tech Pvt Ltd",
-    BILLING_ADDRESS = "123, Water Tower Complex,\nNear Borewell Circle, Civil Lines,\nRaipur, Chhattisgarh - 492001",
-    BILLING_GSTIN = "22AAAAA0000A1Z5",
-    BILLING_PHONE = "+91 98765 43210",
-    BILLING_EMAIL = "billing@jaladhar.com"
+    BILLING_COMPANY_NAME = "Jaladhaara Hydrogeological Services Pvt. Ltd.",
+    BILLING_ADDRESS = "Plot No. 42, Hitech City Main Road, Madhapur,\nHyderabad, Telangana - 500081, India",
+    BILLING_GSTIN = "36AAACJ1234F1Z5",
+    BILLING_PAN = "AAACJ1234F",
+    BILLING_PHONE = "+91 91234 56789",
+    BILLING_EMAIL = "support@jaladhaaraapp.in",
+    BILLING_WEBSITE = "https://jaladhaaraapp.in"
   } = billingInfo || {};
+
+  const invoiceNo = `INV-${new Date(invoiceDate).toISOString().slice(0,10).replace(/-/g,'')}-${booking._id.slice(-6).toUpperCase()}`;
+  const baseFee = payment?.baseServiceFee || service?.price || 0;
+  const travelCharges = payment?.travelCharges || 0;
+  const gstTotal = payment?.gst || (baseFee * 0.18);
+  const cgst = gstTotal / 2;
+  const sgst = gstTotal / 2;
+  const grandTotal = payment?.totalAmount || (baseFee + gstTotal + travelCharges);
 
   return (
     <Document>
@@ -225,25 +260,27 @@ const InvoicePDF = ({ booking, billingInfo }) => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoSection}>
-            <Text style={styles.companyName}>JalaDhar</Text>
-            <Text style={styles.companyTagline}>Expert Water Solutions</Text>
-            <Text style={styles.invoiceTitle}>INVOICE</Text>
+            <Text style={styles.companyName}>JALADHAARA</Text>
+            <Text style={styles.companyTagline}>Groundwater & Hydrogeological Services</Text>
+            <Text style={styles.taxTitle}>TAX INVOICE / PAYMENT RECEIPT</Text>
             <View style={styles.invoiceMeta}>
-              <Text>ID: JD-{booking._id.slice(-8).toUpperCase()}</Text>
-              <Text>Date: {new Date(invoiceDate).toLocaleDateString("en-IN", { day: 'numeric', month: 'long', year: 'numeric' })}</Text>
+              <Text>Invoice No: {invoiceNo}</Text>
+              <Text>Order ID: ORD-{booking._id.slice(-8).toUpperCase()}</Text>
+              <Text>Date: {new Date(invoiceDate).toLocaleString("en-IN", { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
             </View>
           </View>
           <View>
             <View style={[styles.statusBadge, isFullyPaid ? styles.statusPaid : styles.statusPartial]}>
-              <Text>{isFullyPaid ? 'Fully Paid' : 'Partially Paid'}</Text>
+              <Text>{isFullyPaid ? 'Paid in Full' : 'Partially Paid (Advance Verified)'}</Text>
             </View>
             <View style={styles.sellerInfo}>
-              <Text style={{ fontWeight: 700, color: '#111', marginBottom: 2 }}>{BILLING_COMPANY_NAME}</Text>
+              <Text style={{ fontWeight: 700, color: '#111827', marginBottom: 2 }}>{BILLING_COMPANY_NAME}</Text>
               {BILLING_ADDRESS.split('\n').map((line, i) => (
                 <Text key={i}>{line}</Text>
               ))}
               <Text style={{ marginTop: 4, color: '#0A84FF', fontWeight: 700 }}>GSTIN: {BILLING_GSTIN}</Text>
-              <Text style={{ marginTop: 2 }}>Ph: {BILLING_PHONE}</Text>
+              <Text style={{ marginTop: 1, fontWeight: 700 }}>PAN: {BILLING_PAN}</Text>
+              <Text style={{ marginTop: 1 }}>Ph: {BILLING_PHONE}</Text>
               <Text>Email: {BILLING_EMAIL}</Text>
             </View>
           </View>
@@ -252,100 +289,121 @@ const InvoicePDF = ({ booking, billingInfo }) => {
         {/* Billing Info */}
         <View style={styles.billingSection}>
           <View style={styles.billingColumn}>
-            <Text style={styles.columnTitle}>Billed To</Text>
+            <Text style={styles.columnTitle}>Customer Details (Billed To)</Text>
             <Text style={styles.partyName}>{user?.name}</Text>
             <View style={styles.partyDetails}>
-              <Text>{user?.phone}</Text>
-              <Text>{user?.email}</Text>
-              <Text style={{ marginTop: 5 }}>
+              <Text>Ph: {user?.phone}</Text>
+              <Text>Email: {user?.email}</Text>
+              <Text style={{ marginTop: 4 }}>
+                <Text style={{ fontWeight: 700 }}>Survey Address: </Text>
                 {(() => {
-                  const a = booking.address;
+                  const a = booking.address || {};
                   return `${a.street || ''}, ${a.village || ''}, ${a.city || ''}, ${a.district || ''}, ${a.state || ''} - ${a.pincode || ''}`;
                 })()}
               </Text>
             </View>
           </View>
-          <View style={[styles.billingColumn, { textAlign: 'right' }]}>
-            <Text style={styles.columnTitle}>Assigned Expert</Text>
+
+          <View style={styles.billingColumn}>
+            <Text style={styles.columnTitle}>Assigned Expert & Service Info</Text>
             <Text style={styles.partyName}>{vendor?.name || 'Assigned Expert'}</Text>
             <View style={styles.partyDetails}>
-              <Text>Vendor ID: V-{vendor?._id?.slice(-6).toUpperCase() || 'REF-N/A'}</Text>
+              <Text>Expert ID: EXP-{vendor?._id?.slice(-6).toUpperCase() || 'REF-N/A'}</Text>
               <Text>Service: {service?.name}</Text>
-              <Text style={{ marginTop: 5 }}>
-                Visit Date: {new Date(booking.scheduledDate).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}
+              <Text>Equipment: {service?.machineType || 'Resistivity / ADMT / PQWT'}</Text>
+              <Text style={{ marginTop: 4 }}>
+                Survey Date: {new Date(booking.scheduledDate).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })} at {booking.scheduledTime || 'N/A'}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Table */}
+        {/* Line Items Table */}
         <View style={styles.table}>
           <View style={styles.tableHeader}>
-            <Text style={styles.headerDesc}>Description</Text>
-            <Text style={styles.headerAmount}>Amount</Text>
+            <Text style={styles.headerDesc}>Item / Service Description</Text>
+            <Text style={styles.headerQty}>Qty</Text>
+            <Text style={styles.headerUnitPrice}>Unit Price</Text>
+            <Text style={styles.headerAmount}>Total (Rs.)</Text>
           </View>
 
           {/* Service Fee */}
           <View style={styles.tableRow}>
             <View style={styles.rowDesc}>
               <Text style={styles.rowTitle}>{service?.name}</Text>
-              <Text style={styles.rowSubtitle}>Base professional service fee for groundwater survey</Text>
+              <Text style={styles.rowSubtitle}>Hydrogeological groundwater survey & report ({service?.machineType || 'Standard Machine'})</Text>
             </View>
-            <Text style={styles.rowAmount}>{formatCurrency(payment?.baseServiceFee)}</Text>
+            <Text style={styles.rowQty}>1</Text>
+            <Text style={styles.rowUnitPrice}>{formatCurrency(baseFee)}</Text>
+            <Text style={styles.rowAmount}>{formatCurrency(baseFee)}</Text>
           </View>
 
           {/* Travel Charges */}
-          <View style={styles.tableRow}>
-            <View style={styles.rowDesc}>
-              <Text style={styles.rowTitle}>Travel & Mobilization</Text>
-              <Text style={styles.rowSubtitle}>Calculated for {payment?.distance?.toFixed(1)}km round trip</Text>
+          {travelCharges > 0 && (
+            <View style={styles.tableRow}>
+              <View style={styles.rowDesc}>
+                <Text style={styles.rowTitle}>Travel & Mobilization Charges</Text>
+                <Text style={styles.rowSubtitle}>Calculated for {payment?.distance?.toFixed(1)} km round trip</Text>
+              </View>
+              <Text style={styles.rowQty}>1</Text>
+              <Text style={styles.rowUnitPrice}>{formatCurrency(travelCharges)}</Text>
+              <Text style={styles.rowAmount}>{formatCurrency(travelCharges)}</Text>
             </View>
-            <Text style={styles.rowAmount}>{formatCurrency(payment?.travelCharges)}</Text>
-          </View>
+          )}
         </View>
 
-        {/* Summary */}
+        {/* Tax & Bill Summary */}
         <View style={styles.summaryContainer}>
           <View style={styles.summaryBox}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Base Service Fee</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(payment?.baseServiceFee)}</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(baseFee)}</Text>
+            </View>
+            {travelCharges > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Travel Charges</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(travelCharges)}</Text>
+              </View>
+            )}
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Taxable Amount</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(baseFee + travelCharges)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>GST (18% on Base Fee)</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(payment?.gst)}</Text>
+              <Text style={styles.summaryLabel}>CGST (9%)</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(cgst)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(payment?.subtotal || ((payment?.baseServiceFee || 0) + (payment?.gst || 0)))}</Text>
+              <Text style={styles.summaryLabel}>SGST (9%)</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(sgst)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Travel & Mobilization</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(payment?.travelCharges)}</Text>
+              <Text style={styles.summaryLabel}>Total GST (18%)</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(gstTotal)}</Text>
             </View>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>TOTAL</Text>
-              <Text style={styles.totalAmount}>{formatCurrency(payment?.totalAmount)}</Text>
+              <Text style={styles.totalLabel}>GRAND TOTAL</Text>
+              <Text style={styles.totalAmount}>{formatCurrency(grandTotal)}</Text>
             </View>
           </View>
         </View>
 
-        {/* Payment History */}
+        {/* Payment Receipts & History */}
         <View style={styles.paymentHistory}>
-          <Text style={styles.historyTitle}>Payment History</Text>
+          <Text style={styles.historyTitle}>Payment Receipts & History</Text>
           <View style={styles.historyRow}>
             <Text style={styles.historyLabel}>Advance Payment (40%)</Text>
             <Text style={styles.historyValue}>-{formatCurrency(payment?.advanceAmount)}</Text>
           </View>
-          {isFullyPaid && (
-            <View style={styles.historyRow}>
-              <Text style={styles.historyLabel}>Remaining Payment (60%)</Text>
-              <Text style={styles.historyValue}>-{formatCurrency(payment?.remainingAmount)}</Text>
-            </View>
-          )}
+          <View style={styles.historyRow}>
+            <Text style={styles.historyLabel}>Remaining Payment (60%)</Text>
+            <Text style={[styles.historyValue, !isFullyPaid && { color: '#d97706' }]}>
+              {isFullyPaid ? `-${formatCurrency(payment?.remainingAmount)}` : formatCurrency(payment?.remainingAmount)}
+            </Text>
+          </View>
           <View style={styles.balanceRow}>
             <Text style={styles.balanceLabel}>BALANCE DUE</Text>
-            <Text style={[styles.balanceValue, isFullyPaid && { color: '#999' }]}>
+            <Text style={[styles.balanceValue, isFullyPaid && { color: '#9ca3af' }]}>
               {formatCurrency(isFullyPaid ? 0 : payment?.remainingAmount)}
             </Text>
           </View>
@@ -353,9 +411,9 @@ const InvoicePDF = ({ booking, billingInfo }) => {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.thanks}>Thank you for your business!</Text>
-          <Text style={styles.disclaimer}>This is a computer generated invoice and does not require a physical signature.</Text>
-          <Text style={[styles.disclaimer, { marginTop: 2 }]}>© {new Date().getFullYear()} {BILLING_COMPANY_NAME}. All rights reserved.</Text>
+          <Text style={styles.thanks}>Thank you for choosing Jaladhaara!</Text>
+          <Text style={styles.disclaimer}>This is a system-generated invoice and does not require a physical signature.</Text>
+          <Text style={styles.supportText}>Customer Support: {BILLING_EMAIL} | Ph: {BILLING_PHONE} | Website: {BILLING_WEBSITE}</Text>
         </View>
       </Page>
     </Document>

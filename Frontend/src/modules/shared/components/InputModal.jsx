@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { IoCloseOutline, IoAlertCircleOutline } from "react-icons/io5";
+import { IoAlertCircleOutline } from "react-icons/io5";
 
 /**
  * Reusable Input Modal Component
@@ -48,14 +48,20 @@ export default function InputModal({
     const currentValue = value !== undefined ? value : inputValue;
     const handleValueChange = onChange || ((e) => setInputValue(e.target.value));
 
-    // Reset input when modal opens/closes
+    // Reset input and lock body scroll when modal opens/closes
     useEffect(() => {
         if (isOpen) {
+            document.body.style.overflow = "hidden";
             if (value === undefined) {
                 setInputValue(initialValue);
             }
             setError("");
+        } else {
+            document.body.style.overflow = "unset";
         }
+        return () => {
+            document.body.style.overflow = "unset";
+        };
     }, [isOpen, initialValue, value]);
 
     const handleSubmit = () => {
@@ -110,27 +116,23 @@ export default function InputModal({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200"
             onClick={handleBackdropClick}
         >
-            <div className="bg-white rounded-[16px] shadow-xl max-w-md w-full mx-4 transform transition-all">
+            <div className="bg-white rounded-[20px] shadow-2xl max-w-md w-full mx-4 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between p-6 border-b border-gray-100">
                     <div className="flex items-center gap-3">
-                        <IoAlertCircleOutline className="text-2xl text-[#0A84FF]" />
+                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#0A84FF]">
+                            <IoAlertCircleOutline className="text-2xl" />
+                        </div>
                         <h3 className="text-xl font-bold text-gray-800">{title}</h3>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors p-1"
-                    >
-                        <IoCloseOutline className="text-2xl" />
-                    </button>
                 </div>
 
                 {/* Body */}
                 <div className="p-6">
-                    {message && <p className="text-gray-700 text-base mb-4 leading-relaxed">{message}</p>}
+                    {message && <p className="text-gray-600 text-sm mb-4 leading-relaxed font-medium">{message}</p>}
                     {label && <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>}
                     
                     {isTextarea || type === "textarea" ? (
@@ -144,7 +146,7 @@ export default function InputModal({
                             placeholder={placeholder}
                             rows={textareaRows}
                             maxLength={maxLength}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent resize-none text-gray-800 placeholder-gray-400"
+                            className="w-full px-4 py-3 border border-blue-500 rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent resize-none text-gray-800 placeholder-gray-400 font-normal shadow-sm"
                             autoFocus
                         />
                     ) : (
@@ -158,13 +160,13 @@ export default function InputModal({
                             onKeyPress={handleKeyPress}
                             placeholder={placeholder}
                             maxLength={maxLength}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent text-gray-800 placeholder-gray-400"
+                            className="w-full px-4 py-3 border border-blue-500 rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent text-gray-800 placeholder-gray-400 font-normal shadow-sm"
                             autoFocus
                         />
                     )}
 
                     {error && (
-                        <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                        <p className="mt-2 text-sm text-red-500 flex items-center gap-1 font-medium">
                             <IoAlertCircleOutline className="text-base" />
                             {error}
                         </p>
@@ -178,21 +180,21 @@ export default function InputModal({
                 </div>
 
                 {/* Footer */}
-                <div className="flex gap-3 p-6 border-t border-gray-200">
+                <div className="flex gap-3 p-6 border-t border-gray-100 bg-gray-50/50">
                     <button
                         onClick={onClose}
-                        className="flex-1 px-4 py-3 rounded-[10px] font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                        className="flex-1 px-4 py-3 rounded-[12px] font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all text-sm active:scale-[0.98]"
                     >
                         {cancelText}
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className={`flex-1 px-4 py-3 rounded-[10px] font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        className={`flex-1 px-4 py-3 rounded-[12px] font-bold text-white transition-all text-sm shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
                             confirmColor === "danger" 
-                                ? "bg-red-600 hover:bg-red-700" 
+                                ? "bg-red-600 hover:bg-red-700 shadow-red-200" 
                                 : confirmColor === "success"
-                                ? "bg-green-600 hover:bg-green-700"
-                                : "bg-[#0A84FF] hover:bg-[#005BBB]"
+                                ? "bg-green-600 hover:bg-green-700 shadow-green-200"
+                                : "bg-[#0A84FF] hover:bg-[#0070DF] shadow-blue-200"
                         }`}
                         disabled={!currentValue.trim() || isLoading}
                     >
@@ -203,4 +205,3 @@ export default function InputModal({
         </div>
     );
 }
-

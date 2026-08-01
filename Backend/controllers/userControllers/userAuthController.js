@@ -4,6 +4,7 @@ const Token = require('../../models/Token');
 const { generateTokenPair } = require('../../utils/tokenService');
 const { createOTPToken, verifyOTPToken, markTokenAsUsed } = require('../../services/otpService');
 const { sendOTPEmail, sendWelcomeEmail } = require('../../services/emailService');
+const { dispatchOTP } = require('../../services/multiChannelNotificationService');
 const { TOKEN_TYPES } = require('../../utils/constants');
 const { validationResult } = require('express-validator');
 const { generateOTP, generateToken } = require('../../utils/generateOTP');
@@ -56,7 +57,15 @@ const sendRegistrationOTP = async (req, res) => {
       expiresAt
     });
 
-    // Send OTP email
+    // Send OTP across Multi-Channel Notification Service (Email, SMS Text, WhatsApp)
+    dispatchOTP({
+      email,
+      phone,
+      name,
+      otp,
+      type: 'verification'
+    }).catch(err => console.error('Multi-channel OTP dispatch error:', err));
+
     const emailResult = await sendOTPEmail({
       email,
       name,

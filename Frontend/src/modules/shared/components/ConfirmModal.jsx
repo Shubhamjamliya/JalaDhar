@@ -1,4 +1,5 @@
-import { IoCloseOutline, IoWarningOutline } from "react-icons/io5";
+import { useEffect } from "react";
+import { IoWarningOutline } from "react-icons/io5";
 
 /**
  * Reusable Confirmation Modal Component
@@ -25,6 +26,18 @@ export default function ConfirmModal({
     confirmColor = "danger", // "danger" (red) or "primary" (blue)
     isLoading = false,
 }) {
+    // Body scroll locking
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "unset";
+        }
+        return () => {
+            document.body.style.overflow = "unset";
+        };
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     const handleConfirm = () => {
@@ -38,48 +51,43 @@ export default function ConfirmModal({
     };
 
     const confirmButtonClass = confirmColor === "danger"
-        ? "bg-red-500 hover:bg-red-600 text-white"
-        : "bg-[#0A84FF] hover:bg-[#005BBB] text-white";
+        ? "bg-red-600 hover:bg-red-700 text-white shadow-red-200"
+        : "bg-[#0A84FF] hover:bg-[#0070DF] text-white shadow-blue-200";
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200"
             onClick={handleBackdropClick}
         >
-            <div className="bg-white rounded-[16px] shadow-xl max-w-md w-full mx-4 transform transition-all">
+            <div className="bg-white rounded-[20px] shadow-2xl max-w-md w-full mx-4 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between p-6 border-b border-gray-100">
                     <div className="flex items-center gap-3">
-                        <IoWarningOutline className="text-2xl text-amber-500" />
+                        <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
+                            <IoWarningOutline className="text-2xl" />
+                        </div>
                         <h3 className="text-xl font-bold text-gray-800">{title}</h3>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors p-1"
-                        disabled={isLoading}
-                    >
-                        <IoCloseOutline className="text-2xl" />
-                    </button>
                 </div>
 
                 {/* Body */}
                 <div className="p-6">
-                    <p className="text-gray-700 text-base leading-relaxed">{message}</p>
+                    <p className="text-gray-700 text-base leading-relaxed font-medium">{message}</p>
                 </div>
 
                 {/* Footer */}
-                <div className="flex gap-3 p-6 border-t border-gray-200">
+                <div className="flex gap-3 p-6 border-t border-gray-100 bg-gray-50/50">
                     <button
                         onClick={onClose}
                         disabled={isLoading}
-                        className="flex-1 px-4 py-3 rounded-[10px] font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 px-4 py-3 rounded-[12px] font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all text-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {cancelText}
                     </button>
                     <button
                         onClick={handleConfirm}
                         disabled={isLoading}
-                        className={`flex-1 px-4 py-3 rounded-[10px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${confirmButtonClass}`}
+                        className={`flex-1 px-4 py-3 rounded-[12px] font-bold transition-all text-sm shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${confirmButtonClass}`}
                     >
                         {isLoading ? "Processing..." : confirmText}
                     </button>
@@ -88,4 +96,3 @@ export default function ConfirmModal({
         </div>
     );
 }
-

@@ -146,9 +146,110 @@ const uploadProfilePicture = async (req, res) => {
   }
 };
 
+/**
+ * Change password (authenticated user)
+ */
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.userId;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long'
+      });
+    }
+
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify current password
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incorrect current password'
+      });
+    }
+
+    // Set new password
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update notification preferences
+ */
+const updateNotificationPreferences = async (req, res) => {
+  try {
+    const { emailAlerts, smsAlerts } = req.body;
+    const userId = req.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (!user.notificationPreferences) {
+      user.notificationPreferences = { emailAlerts: true, smsAlerts: true };
+    }
+
+    if (typeof emailAlerts === 'boolean') user.notificationPreferences.emailAlerts = emailAlerts;
+    if (typeof smsAlerts === 'boolean') user.notificationPreferences.smsAlerts = smsAlerts;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Notification preferences updated successfully',
+      data: {
+        notificationPreferences: user.notificationPreferences
+      }
+    });
+  } catch (error) {
+    console.error('Update notification preferences error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update notification preferences',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
-  uploadProfilePicture
+  uploadProfilePicture,
+  changePassword,
+  updateNotificationPreferences
 };
 

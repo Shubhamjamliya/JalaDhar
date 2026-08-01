@@ -641,9 +641,9 @@ export default function UserStatus() {
                                                     <div className="relative">
                                                         <img
                                                             className="h-12 w-12 rounded-full object-cover border-2 border-white shadow-sm"
-                                                            src={vendor.profilePicture || "https://premium-profile-placeholder.com"}
+                                                            src={vendor.profilePicture?.url || (typeof vendor.profilePicture === 'string' && vendor.profilePicture.startsWith('http') ? vendor.profilePicture : `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name || 'Expert')}&background=0A84FF&color=fff`)}
                                                             onError={(e) => {
-                                                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name)}&background=0A84FF&color=fff`;
+                                                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name || 'Expert')}&background=0A84FF&color=fff`;
                                                             }}
                                                             alt={vendor.name}
                                                         />

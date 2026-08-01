@@ -5,7 +5,9 @@ const multer = require('multer');
 const {
   getProfile,
   updateProfile,
-  uploadProfilePicture
+  uploadProfilePicture,
+  changePassword,
+  updateNotificationPreferences
 } = require('../../controllers/userControllers/userProfileController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isUser } = require('../../middleware/roleMiddleware');
@@ -47,6 +49,12 @@ router.put('/profile', authenticate, isUser, updateProfileValidation, updateProf
 
 // Upload profile picture
 router.post('/profile/picture', authenticate, isUser, upload.single('image'), uploadProfilePicture);
+
+// Change password
+router.put('/profile/change-password', authenticate, isUser, changePassword);
+
+// Update notification preferences
+router.put('/profile/notification-preferences', authenticate, isUser, updateNotificationPreferences);
 
 module.exports = router;
 

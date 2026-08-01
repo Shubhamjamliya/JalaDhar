@@ -245,7 +245,7 @@ export default function UserDashboard() {
                     payment: booking.payment,
                     description: `Booking for ${booking.service?.name || "service"}`,
                     bookingData: booking, // Keep full booking data reference
-                    hasReport: !!booking.report || ['REPORT_UPLOADED', 'AWAITING_PAYMENT', 'COMPLETED', 'PAYMENT_SUCCESS', 'PAID_FIRST', 'BOREWELL_UPLOADED'].includes(booking.status) || ['REPORT_UPLOADED', 'AWAITING_PAYMENT', 'COMPLETED'].includes(booking.userStatus),
+                    hasReport: !!booking.report && (booking.report.uploadedAt || booking.report.waterFound !== null || booking.status === 'REPORT_UPLOADED' || booking.userStatus === 'REPORT_UPLOADED'),
                     waterFound: booking.report?.waterFound === true || booking.report?.waterFound === "true",
                     hasBorewellResult: !!booking.borewellResult?.uploadedAt
                 }));
@@ -1080,6 +1080,11 @@ export default function UserDashboard() {
                     navigate(`/user/booking/${bookingToUnlock?.id}/payment`);
                 }}
                 amount={bookingToUnlock?.payment?.remainingAmount}
+                isReportReady={Boolean(
+                    bookingToUnlock?.hasReport || 
+                    bookingToUnlock?.bookingData?.report ||
+                    ["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(bookingToUnlock?.rawStatus)
+                )}
             />
         </div >
     );
@@ -1088,7 +1093,7 @@ export default function UserDashboard() {
 /* ---------------------------
    REUSABLE COMPONENTS
 ---------------------------- */
-function PaymentPromptModal({ isOpen, onClose, onPay, amount }) {
+function PaymentPromptModal({ isOpen, onClose, onPay, amount, isReportReady }) {
     if (!isOpen) return null;
 
     return (
@@ -1099,9 +1104,19 @@ function PaymentPromptModal({ isOpen, onClose, onPay, amount }) {
                         <IoLockClosedOutline className="text-4xl text-orange-500" />
                     </div>
 
-                    <h2 className="text-2xl font-black text-gray-900 mb-2">Survey Report Locked</h2>
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">
+                        {isReportReady ? "Survey Report Locked" : "Survey Report in Progress"}
+                    </h2>
                     <p className="text-gray-500 mb-8 leading-relaxed text-sm">
-                        Your survey report is ready. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock and view your detailed groundwater survey report.
+                        {isReportReady ? (
+                            <>
+                                Your survey report is ready. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock and view your detailed groundwater survey report.
+                            </>
+                        ) : (
+                            <>
+                                Your assigned expert is currently preparing your groundwater survey report. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock it immediately once uploaded.
+                            </>
+                        )}
                     </p>
 
                     <div className="space-y-3">
@@ -1109,7 +1124,7 @@ function PaymentPromptModal({ isOpen, onClose, onPay, amount }) {
                             onClick={onPay}
                             className="w-full bg-[#0A84FF] text-white py-4 rounded-xl font-bold text-base shadow-lg shadow-blue-200 active:scale-[0.98] transition-all"
                         >
-                            Pay and unlock report
+                            {isReportReady ? "Pay and unlock report" : "Pay remaining payment"}
                         </button>
                         <button
                             onClick={onClose}

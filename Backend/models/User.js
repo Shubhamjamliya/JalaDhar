@@ -57,6 +57,16 @@ const userSchema = new mongoose.Schema({
     state: String,
     pincode: String
   },
+  notificationPreferences: {
+    emailAlerts: {
+      type: Boolean,
+      default: true
+    },
+    smsAlerts: {
+      type: Boolean,
+      default: true
+    }
+  },
   // Wallet system for refunds and withdrawals
   wallet: {
     walletBalance: {

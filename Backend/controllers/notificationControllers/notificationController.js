@@ -1,4 +1,4 @@
-const { sendNotification, getUserNotifications, markAsRead, markAllAsRead, getUnreadCount } = require('../../services/notificationService');
+const { sendNotification, getUserNotifications, markAsRead, markAllAsRead, getUnreadCount, deleteNotification, clearAllNotifications } = require('../../services/notificationService');
 
 /**
  * Get notifications for authenticated user
@@ -121,10 +121,70 @@ const getUnreadNotificationCount = async (req, res) => {
   }
 };
 
+/**
+ * Delete a single notification
+ */
+const deleteNotificationController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+    const userRole = req.userRole;
+    const recipientModel = userRole === 'USER' ? 'User' : userRole === 'VENDOR' ? 'Vendor' : 'Admin';
+
+    const deleted = await deleteNotification(id, userId, recipientModel);
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notification not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Notification deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete notification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete notification',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Clear all notifications for user
+ */
+const clearAllNotificationsController = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const userRole = req.userRole;
+    const recipientModel = userRole === 'USER' ? 'User' : userRole === 'VENDOR' ? 'Vendor' : 'Admin';
+
+    const result = await clearAllNotifications(userId, recipientModel);
+
+    res.json({
+      success: true,
+      message: 'All notifications cleared successfully',
+      data: { deletedCount: result.deletedCount }
+    });
+  } catch (error) {
+    console.error('Clear all notifications error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear notifications',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  getUnreadNotificationCount
+  getUnreadNotificationCount,
+  deleteNotification: deleteNotificationController,
+  clearAllNotifications: clearAllNotificationsController
 };
 
