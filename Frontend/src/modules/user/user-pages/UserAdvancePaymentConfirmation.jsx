@@ -26,6 +26,7 @@ export default function UserAdvancePaymentConfirmation() {
     const { user } = useAuth();
     const toast = useToast();
     const [loading, setLoading] = useState(false);
+    const [fetchingBooking, setFetchingBooking] = useState(false);
     const [error, setError] = useState("");
     const [paymentSuccess, setPaymentSuccess] = useState(false);
     const [fetchedPaymentConfig, setFetchedPaymentConfig] = useState(null);
