@@ -219,6 +219,20 @@ const initializeDefaultSettings = async () => {
       category: 'billing'
     },
     {
+      key: 'BILLING_EXPERT_TERMS',
+      value: JSON.stringify([
+        "This invoice is issued by the Platform for facilitation services provided to the Expert.",
+        "Platform fees and applicable statutory deductions are calculated as per applicable laws.",
+        "Net payout is subject to successful settlement and platform policies.",
+        "Any refund, dispute, or chargeback may be adjusted against future payouts.",
+        "This is a computer-generated invoice and does not require a signature."
+      ]),
+      label: 'Expert Invoice Terms & Declarations',
+      description: 'JSON stringified array of terms and declarations shown on Expert invoices',
+      type: 'json',
+      category: 'billing'
+    },
+    {
       key: 'DISPUTE_TYPES',
       value: [
         'Expert did not arrive',

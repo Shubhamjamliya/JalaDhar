@@ -80,6 +80,13 @@ export default function AdminSettings({ defaultTab = "general" }) {
           "Final payment is required to unlock the survey report.",
           "Travel charges are non-refundable once the expert begins the journey.",
           "Disputes must be raised within 10 days of the survey report submission."
+        ].join('\n'),
+        BILLING_EXPERT_TERMS: [
+          "This invoice is issued by the Platform for facilitation services provided to the Expert.",
+          "Platform fees and applicable statutory deductions are calculated as per applicable laws.",
+          "Net payout is subject to successful settlement and platform policies.",
+          "Any refund, dispute, or chargeback may be adjusted against future payouts.",
+          "This is a computer-generated invoice and does not require a signature."
         ].join('\n')
     });
     const [billingLoading, setBillingLoading] = useState(false);
@@ -281,7 +288,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 if (response.success && response.data.settings) {
                     const settingsObj = {};
                     response.data.settings.forEach(setting => {
-                        if (setting.key === 'BILLING_TERMS_AND_CONDITIONS') {
+                        if (setting.key === 'BILLING_TERMS_AND_CONDITIONS' || setting.key === 'BILLING_EXPERT_TERMS') {
                             try {
                                 const parsed = typeof setting.value === 'string' ? JSON.parse(setting.value) : setting.value;
                                 if (Array.isArray(parsed)) {
@@ -408,6 +415,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 termsValue = JSON.stringify(termsArray);
             }
 
+            let expertTermsValue = billingSettings.BILLING_EXPERT_TERMS;
+            if (typeof expertTermsValue === 'string') {
+                const expertArray = expertTermsValue.split('\n').map(t => t.trim()).filter(Boolean);
+                expertTermsValue = JSON.stringify(expertArray);
+            }
+
             const settings = [
                 { key: 'BILLING_COMPANY_NAME', value: billingSettings.BILLING_COMPANY_NAME, category: 'billing' },
                 { key: 'BILLING_ADDRESS', value: billingSettings.BILLING_ADDRESS, category: 'billing' },
@@ -420,6 +433,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 { key: 'BILLING_PLACE_OF_SUPPLY', value: billingSettings.BILLING_PLACE_OF_SUPPLY, category: 'billing' },
                 { key: 'BILLING_DECLARATION', value: billingSettings.BILLING_DECLARATION, category: 'billing' },
                 { key: 'BILLING_TERMS_AND_CONDITIONS', value: termsValue, category: 'billing' },
+                { key: 'BILLING_EXPERT_TERMS', value: expertTermsValue, category: 'billing' },
             ];
 
             const response = await updateMultipleSettings(settings);
@@ -763,8 +777,8 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                         </div>
                                         <div className="md:col-span-2">
                                             <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center justify-between">
-                                                <span>Terms & Conditions Policy Clauses</span>
-                                                <span className="text-xs text-gray-400 font-normal">(Enter 1 term per line)</span>
+                                                <span>User Customer Invoice Terms & Conditions</span>
+                                                <span className="text-xs text-gray-400 font-normal">(Enter 1 clause per line)</span>
                                             </label>
                                             <textarea
                                                 value={billingSettings.BILLING_TERMS_AND_CONDITIONS || ""}
@@ -774,9 +788,27 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         BILLING_TERMS_AND_CONDITIONS: e.target.value,
                                                     })
                                                 }
-                                                rows={6}
+                                                rows={5}
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono text-xs leading-relaxed"
                                                 placeholder="Enter each terms clause on a new line..."
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center justify-between">
+                                                <span>Expert Facilitation Invoice Terms & Declarations</span>
+                                                <span className="text-xs text-gray-400 font-normal">(Enter 1 clause per line)</span>
+                                            </label>
+                                            <textarea
+                                                value={billingSettings.BILLING_EXPERT_TERMS || ""}
+                                                onChange={(e) =>
+                                                    setBillingSettings({
+                                                        ...billingSettings,
+                                                        BILLING_EXPERT_TERMS: e.target.value,
+                                                    })
+                                                }
+                                                rows={5}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono text-xs leading-relaxed"
+                                                placeholder="Enter each expert invoice term on a new line..."
                                             />
                                         </div>
                                     </div>

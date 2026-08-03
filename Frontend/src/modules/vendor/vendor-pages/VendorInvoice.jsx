@@ -500,6 +500,37 @@ export default function VendorInvoice() {
             </div>
           )}
 
+          {/* Platform Terms & Legal Declaration */}
+          <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200/80 mb-8 text-xs text-gray-600 space-y-1.5 leading-relaxed">
+            <h6 className="font-bold text-gray-800 uppercase text-[11px] tracking-wider mb-2 pb-1 border-b border-gray-200">
+              Platform Terms & Legal Declarations
+            </h6>
+            {(() => {
+              const defaultTerms = [
+                "This invoice is issued by the Platform for facilitation services provided to the Expert.",
+                "Platform fees and applicable statutory deductions are calculated as per applicable laws.",
+                "Net payout is subject to successful settlement and platform policies.",
+                "Any refund, dispute, or chargeback may be adjusted against future payouts.",
+                "This is a computer-generated invoice and does not require a signature."
+              ];
+              let list = defaultTerms;
+              if (billingInfo.BILLING_EXPERT_TERMS) {
+                try {
+                  const parsed = typeof billingInfo.BILLING_EXPERT_TERMS === 'string' ? JSON.parse(billingInfo.BILLING_EXPERT_TERMS) : billingInfo.BILLING_EXPERT_TERMS;
+                  if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
+                  else if (typeof billingInfo.BILLING_EXPERT_TERMS === 'string') list = billingInfo.BILLING_EXPERT_TERMS.split('\n').filter(Boolean);
+                } catch (e) {
+                  if (typeof billingInfo.BILLING_EXPERT_TERMS === 'string') list = billingInfo.BILLING_EXPERT_TERMS.split('\n').filter(Boolean);
+                }
+              }
+              return list.map((item, idx) => (
+                <p key={idx} className={idx === list.length - 1 ? "font-semibold text-gray-700 italic" : ""}>
+                  {idx + 1}. {item}
+                </p>
+              ));
+            })()}
+          </div>
+
           {/* Footer */}
           <div className="pt-6 border-t border-gray-100 text-xs text-gray-500 leading-relaxed">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">

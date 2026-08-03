@@ -519,6 +519,36 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
           </Text>
         </View>
 
+        {/* Platform Facilitation & Legal Terms Box */}
+        <View style={styles.boxContainer}>
+          <Text style={styles.boxTitle}>Platform Terms & Declarations</Text>
+          {(() => {
+            const defaultTerms = [
+              "This invoice is issued by the Platform for facilitation services provided to the Expert.",
+              "Platform fees and applicable statutory deductions are calculated as per applicable laws.",
+              "Net payout is subject to successful settlement and platform policies.",
+              "Any refund, dispute, or chargeback may be adjusted against future payouts.",
+              "This is a computer-generated invoice and does not require a signature."
+            ];
+            let list = defaultTerms;
+            const raw = billingInfo?.BILLING_EXPERT_TERMS;
+            if (raw) {
+              try {
+                const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
+                else if (typeof raw === 'string') list = raw.split('\n').filter(Boolean);
+              } catch (e) {
+                if (typeof raw === 'string') list = raw.split('\n').filter(Boolean);
+              }
+            }
+            return list.map((item, idx) => (
+              <Text key={idx} style={{ fontSize: 7.2, color: idx === list.length - 1 ? '#1e293b' : '#334155', fontWeight: idx === list.length - 1 ? 700 : 400, lineHeight: 1.35, marginBottom: 2 }}>
+                • {item}
+              </Text>
+            ));
+          })()}
+        </View>
+
         {/* Net Amount in Words */}
         <View style={styles.boxContainer}>
           <View style={styles.rowFlexBetween}>
