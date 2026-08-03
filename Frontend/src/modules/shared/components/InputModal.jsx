@@ -94,9 +94,12 @@ export default function InputModal({
 
         setError("");
         onSubmit(trimmedValue);
-        if (!isLoading) {
-            onClose();
-        }
+        // NOTE: Do NOT call onClose() here.
+        // The caller's onSubmit handler is responsible for closing this modal
+        // (e.g., by setting showRejectInput(false) in handleRejectionReasonSubmit).
+        // Calling onClose() here creates a race condition: the caller's onClose
+        // handler fires AFTER onSubmit's state updates, wiping shared state
+        // (like selectedBookingId) before downstream handlers can use it.
     };
 
     const handleBackdropClick = (e) => {

@@ -263,18 +263,20 @@ export default function UserStatus() {
                 id: "assigned",
                 label: "Vendor Assigned",
                 icon: IoPersonOutline,
+                // Completed only when vendor has actually accepted (moved PAST assigned)
                 active: status === "ASSIGNED",
-                completed: effectiveIndex > 1 || remainingPaid || borewellUploaded || !!currentBooking.acceptedAt,
+                completed: effectiveIndex > 2 || !!currentBooking.acceptedAt,
                 description: "A vendor has been assigned to your booking.",
                 date: currentBooking.assignedAt,
             },
             {
                 id: "accepted",
-                label: "Accepted",
+                label: "Expert Accepted",
                 icon: IoCheckmarkCircleOutline,
+                // Only active/completed when vendor has actually accepted
                 active: status === "ACCEPTED",
-                completed: effectiveIndex > 2 || remainingPaid || borewellUploaded || !!currentBooking.visitedAt,
-                description: "Vendor has accepted your booking and will visit soon.",
+                completed: effectiveIndex > 3 || !!currentBooking.visitedAt,
+                description: "Expert has accepted your booking and will visit soon.",
                 date: currentBooking.acceptedAt,
             },
             {

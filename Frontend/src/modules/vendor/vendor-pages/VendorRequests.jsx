@@ -594,7 +594,10 @@ export default function VendorRequests() {
                 isOpen={showRejectInput}
                 onClose={() => {
                     setShowRejectInput(false);
-                    setSelectedBookingId(null);
+                    // NOTE: Do NOT clear selectedBookingId here.
+                    // The InputModal calls onClose() after onSubmit(), so clearing
+                    // selectedBookingId here would race with handleRejectConfirm.
+                    // selectedBookingId is cleared in handleRejectConfirm's finally block.
                     setRejectionReason("");
                 }}
                 onSubmit={handleRejectionReasonSubmit}

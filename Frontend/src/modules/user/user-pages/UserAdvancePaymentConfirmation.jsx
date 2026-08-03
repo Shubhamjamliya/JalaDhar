@@ -79,9 +79,22 @@ export default function UserAdvancePaymentConfirmation() {
                     setFetchingBooking(true);
                     const response = await getBookingDetails(bookingId);
                     if (response.success && isMounted) {
-                        setFullBooking(response.data.booking);
+                        const fetchedBooking = response.data.booking;
+                        setFullBooking(fetchedBooking);
                         if (response.data.paymentConfig) {
                             setFetchedPaymentConfig(response.data.paymentConfig);
+                        }
+
+                        // ─── GUARD: If advance is already paid, redirect to booking details ───
+                        // This prevents double-payment via browser back button navigation
+                        const alreadyPaid = fetchedBooking?.payment?.advancePaid;
+                        const postPaymentStatuses = ['ASSIGNED', 'ACCEPTED', 'EN_ROUTE', 'VISITED', 'REPORT_UPLOADED', 'AWAITING_PAYMENT', 'PAYMENT_SUCCESS', 'PAID_FIRST', 'BOREWELL_UPLOADED', 'ADMIN_APPROVED', 'FINAL_SETTLEMENT', 'COMPLETED'];
+                        const isPostPayment = postPaymentStatuses.includes(fetchedBooking?.status);
+                        if (alreadyPaid || isPostPayment) {
+                            localStorage.removeItem('pending_booking_id');
+                            toast.showInfo("Advance payment has already been completed for this booking.");
+                            navigate(`/user/booking/${bookingId}`, { replace: true });
+                            return;
                         }
                     }
                 } catch (err) {

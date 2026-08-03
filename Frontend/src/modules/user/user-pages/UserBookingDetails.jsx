@@ -524,15 +524,16 @@ export default function UserBookingDetails() {
 
                 {/* Visual Step Timeline */}
                 {(() => {
-                    const status = booking.status;
+                    // ─── Use userStatus so the user sees their own view, not the vendor's ───
+                    const status = booking.userStatus || booking.status;
                     const timelineSteps = [
-                        { id: "requested", label: "Booking Confirmed", icon: <IoDocumentTextOutline />, statuses: ["PENDING"], date: booking.createdAt },
-                        { id: "assigned", label: "Expert Assigned", icon: <IoPersonOutline />, statuses: ["ASSIGNED"], date: booking.assignedAt },
-                        { id: "accepted", label: "Survey Scheduled", icon: <IoCheckmarkCircleOutline />, statuses: ["ACCEPTED"], date: booking.acceptedAt },
-                        { id: "visited", label: "Survey in Progress", icon: <IoConstructOutline />, statuses: ["VISITED"], date: booking.visitedAt },
-                        { id: "report", label: "Survey Completed", icon: <IoDocumentTextOutline />, statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt },
-                        { id: "payment", label: "Final Payment", icon: <IoCashOutline />, statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"], date: booking.payment?.remainingPaidAt || booking.payment?.updatedAt },
-                        { id: "completed", label: "Report Unlocked", icon: <IoCheckmarkCircleOutline />, statuses: ["COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt },
+                        { id: "requested", label: "Booking Confirmed", icon: <IoDocumentTextOutline />, statuses: ["PENDING"], date: booking.createdAt, alwaysComplete: true },
+                        { id: "assigned",  label: "Expert Assigned",   icon: <IoPersonOutline />,         statuses: ["ASSIGNED"],  date: booking.assignedAt,       proofKey: "assignedAt" },
+                        { id: "accepted",  label: "Expert Accepted",   icon: <IoCheckmarkCircleOutline />, statuses: ["ACCEPTED"],  date: booking.acceptedAt,       proofKey: "acceptedAt" },
+                        { id: "visited",   label: "Survey Done",       icon: <IoConstructOutline />,       statuses: ["VISITED"],   date: booking.visitedAt,        proofKey: "visitedAt" },
+                        { id: "report",    label: "Report Ready",      icon: <IoDocumentTextOutline />,    statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt, proofKey: "reportUploadedAt" },
+                        { id: "payment",   label: "Final Payment",     icon: <IoCashOutline />,            statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"], date: booking.payment?.remainingPaidAt },
+                        { id: "completed", label: "Report Unlocked",   icon: <IoCheckmarkCircleOutline />, statuses: ["COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt },
                     ];
 
                     const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
@@ -547,9 +548,21 @@ export default function UserBookingDetails() {
                             <div className="flex items-start justify-between min-w-[640px] sm:min-w-full relative">
                                 {timelineSteps.map((step, index) => {
                                     const stepPrimaryStatusIndex = statusOrder.indexOf(step.statuses[0]);
-                                    const isCompleted = currentIndex >= 0 && currentIndex > stepPrimaryStatusIndex;
                                     const isActive = currentIndex >= 0 && step.statuses.includes(status);
-                                    const isPast = index < timelineSteps.findIndex(s => s.statuses.includes(status)) || (timelineSteps.findIndex(s => s.statuses.includes(status)) === -1 && currentIndex > stepPrimaryStatusIndex);
+
+                                    // ─── TIMESTAMP PROOF GATE ────────────────────────────────────────
+                                    // A step is only marked "completed" / "isPast" when:
+                                    //   • It's the first step (booking creation always happened), OR
+                                    //   • Its actual event timestamp exists in the database (acceptedAt, visitedAt, etc.)
+                                    //   • For steps without a specific proofKey (payment, completed), fall back to status ordering
+                                    const hasTimestampProof = step.alwaysComplete
+                                        ? true
+                                        : step.proofKey
+                                            ? !!booking[step.proofKey]   // require real timestamp
+                                            : currentIndex > stepPrimaryStatusIndex; // fallback for payment/completed steps
+
+                                    const isCompleted = !isActive && currentIndex >= 0 && currentIndex > stepPrimaryStatusIndex && hasTimestampProof;
+                                    const isPast = !isActive && index < timelineSteps.findIndex(s => s.statuses.includes(status)) && hasTimestampProof;
 
                                     return (
                                         <div key={step.id} className="flex flex-col items-center relative flex-1 min-w-[80px]">
@@ -625,6 +638,19 @@ export default function UserBookingDetails() {
             <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Actions</h2>
                 <div className="space-y-3">
+                    {/* Expert Acceptance Pending Banner */}
+                    {booking.status === "ASSIGNED" && (
+                        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-[12px] p-4">
+                            <IoHourglassOutline className="text-2xl text-amber-500 flex-shrink-0 mt-0.5 animate-pulse" />
+                            <div>
+                                <p className="font-bold text-amber-800 text-sm">Awaiting Expert Acceptance</p>
+                                <p className="text-amber-700 text-xs mt-1 leading-relaxed">
+                                    Your assigned expert is reviewing this booking. Online payment will be available only after the expert formally accepts the booking.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Main Action Buttons */}
                     {(booking.status === "AWAITING_PAYMENT" || booking.status === "REPORT_UPLOADED") && !booking.payment?.remainingPaid && (
                         <button
