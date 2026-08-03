@@ -142,44 +142,49 @@ export default function UserWallet() {
     return (
         <>
         <PageContainer>
-            {/* Total Balance Card */}
-            <section className="relative my-4 overflow-hidden rounded-xl bg-gradient-to-br from-[#1A80E5] to-[#26D7C4] p-6 text-white shadow-md">
-                <div className="absolute inset-0 z-0 opacity-10">
-                    <img 
-                        className="h-full w-full object-cover"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSWOEOG7ry6z14TFWGAz7PjaKTwn697LggEX4Vf1U2F-18-Yl362M1a0XmrCPrnxjq3HLvvisiIPbnCcLWbicHHyQVehSZEC56qo5fvTVnSjPmEPPFLj9dncg63DYDUscFj51kK5mnPvn7hznGuHDuYjMiSWsX7r6Nlpe1ss-SQVtV_G_yADjJFZVcqSA8EGeUz4tjBJlabT7hxamjtW25RfdT9g0K2O82ATNS4J1em3nBru9nIKr4YnD72XMjXgETg4PCKTSCxEva"
-                        alt="Background"
-                    />
+            {/* Hydro Aqua Ocean Balance Card */}
+            <section className="relative my-3 overflow-hidden rounded-3xl bg-gradient-to-br from-[#0F52BA] via-[#0A84FF] to-[#00C49F] p-6 text-white shadow-xl shadow-cyan-500/15 border border-cyan-400/30">
+                {/* Hydro Ripple Background Waves */}
+                <div className="absolute inset-0 z-0 opacity-25">
+                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
+                        <path fill="#E0F7FA" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                    </svg>
+                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ transform: 'translateY(15px)' }}>
+                        <path fill="#00E5FF" d="M0,128L48,138.7C96,149,192,171,288,181.3C384,192,480,192,576,186.7C672,181,768,171,864,165.3C960,160,1056,160,1152,154.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                    </svg>
                 </div>
                 <div className="relative z-10 flex flex-col items-center text-center">
-                    <p className="text-sm font-medium opacity-80">Wallet Balance</p>
-                    <p className="mt-1 text-5xl font-extrabold tracking-tighter">
+                    <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-cyan-100 border border-white/25 mb-2 shadow-2xs">
+                        <span>💧 Jaladhaara Hydro-Wallet</span>
+                    </div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-cyan-100 opacity-90">Available Refund & Credit Balance</p>
+                    <p className="mt-1 text-4xl sm:text-5xl font-black font-mono tracking-tight text-white drop-shadow-md">
                         ₹{formatAmount(walletBalance)}
                     </p>
                     {walletBalance >= 1000 && (
                         <button
                             onClick={handleWithdrawClick}
-                            className="mt-4 w-full max-w-xs rounded-full bg-white/20 px-8 py-3 font-bold text-white backdrop-blur-sm hover:bg-white/30 transition-colors"
+                            className="mt-4 w-full max-w-xs rounded-2xl bg-white/20 px-8 py-3 font-extrabold text-white backdrop-blur-md border border-white/30 shadow-lg shadow-cyan-500/20 hover:bg-white/30 active:scale-95 transition-all"
                         >
-                            Request Withdrawal
+                            Request Withdrawal 💸
                         </button>
                     )}
                 </div>
             </section>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="rounded-lg bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                    <span className="material-symbols-outlined text-[#00C2A8] !text-2xl">payments</span>
-                    <p className="mt-2 text-xs text-[#6B7280]">Total Refunded</p>
-                    <p className="mt-0.5 text-sm font-bold text-[#3A3A3A]">
+            {/* Hydro Summary Cards */}
+            <div className="grid grid-cols-2 gap-3.5 mb-6">
+                <div className="rounded-2xl bg-white p-4 shadow-xs border border-gray-100/90 hover:border-emerald-300 transition-all">
+                    <span className="material-symbols-outlined text-emerald-500 !text-2xl font-bold">payments</span>
+                    <p className="mt-1.5 text-xs font-bold text-gray-500">Total Refunded</p>
+                    <p className="mt-0.5 text-lg font-extrabold text-emerald-600">
                         ₹{formatAmount(totalCredited)}
                     </p>
                 </div>
-                <div className="rounded-lg bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                    <span className="material-symbols-outlined text-[#00C2A8] !text-2xl">account_balance_wallet</span>
-                    <p className="mt-2 text-xs text-[#6B7280]">Available Balance</p>
-                    <p className="mt-0.5 text-sm font-bold text-[#3A3A3A]">
+                <div className="rounded-2xl bg-white p-4 shadow-xs border border-gray-100/90 hover:border-teal-300 transition-all">
+                    <span className="material-symbols-outlined text-teal-600 !text-2xl font-bold">account_balance_wallet</span>
+                    <p className="mt-1.5 text-xs font-bold text-gray-500">Available Balance</p>
+                    <p className="mt-0.5 text-lg font-extrabold text-teal-700">
                         ₹{formatAmount(walletBalance)}
                     </p>
                 </div>
@@ -188,47 +193,43 @@ export default function UserWallet() {
             {/* Withdrawal Requests */}
             {withdrawalRequests.length > 0 && (
                 <>
-                    <h2 className="px-2 pt-4 pb-3 text-lg font-bold text-[#3A3A3A]">Withdrawal Requests</h2>
+                    <h2 className="px-1 pt-2 pb-3 text-lg font-black text-gray-900 tracking-tight">Withdrawal Requests</h2>
                     <div className="flex flex-col gap-3 mb-6">
                         {withdrawalRequests.slice().reverse().map((request) => (
                             <div
                                 key={request._id}
-                                className="flex items-center gap-4 rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                                className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-xs border border-gray-100"
                             >
-                                <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                                    request.status === 'PROCESSED' ? 'bg-green-100' :
-                                    request.status === 'APPROVED' ? 'bg-blue-100' :
-                                    request.status === 'REJECTED' ? 'bg-red-100' : 'bg-yellow-100'
+                                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl shrink-0 ${
+                                    request.status === 'PROCESSED' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                    request.status === 'APPROVED' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                                    request.status === 'REJECTED' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
                                 }`}>
-                                    <span className={`material-symbols-outlined ${
-                                        request.status === 'PROCESSED' ? 'text-[#34C759]' :
-                                        request.status === 'APPROVED' ? 'text-blue-500' :
-                                        request.status === 'REJECTED' ? 'text-red-500' : 'text-[#FF9F0A]'
-                                    }`}>
+                                    <span className="material-symbols-outlined font-bold text-xl">
                                         {request.status === 'PROCESSED' ? 'check_circle' :
                                          request.status === 'REJECTED' ? 'cancel' : 'pending'}
                                     </span>
                                 </div>
-                                <div className="flex-1">
-                                    <p className="font-semibold text-[#3A3A3A]">
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-extrabold text-gray-900 text-sm">
                                         Withdrawal Request
                                     </p>
-                                    <p className="text-xs text-[#6B7280]">
+                                    <p className="text-xs text-gray-500 font-medium">
                                         {formatDateTime(request.requestedAt)}
                                     </p>
                                     {request.rejectionReason && (
-                                        <p className="text-xs text-red-500 mt-1">
+                                        <p className="text-xs text-rose-500 mt-0.5 font-semibold">
                                             Reason: {request.rejectionReason}
                                         </p>
                                     )}
                                 </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-[#3A3A3A]">
+                                <div className="text-right shrink-0">
+                                    <p className="font-extrabold text-gray-900 text-sm">
                                         ₹{formatAmount(request.amount)}
                                     </p>
-                                    <p className={`text-xs font-medium ${getStatusColor(request.status)}`}>
+                                    <span className={`inline-block text-[11px] font-extrabold px-2 py-0.5 rounded-full ${getStatusColor(request.status)}`}>
                                         {request.status}
-                                    </p>
+                                    </span>
                                 </div>
                             </div>
                         ))}
@@ -237,11 +238,11 @@ export default function UserWallet() {
             )}
 
             {/* Transaction History */}
-            <h2 className="px-2 pt-4 pb-3 text-lg font-bold text-[#3A3A3A]">Transaction History</h2>
+            <h2 className="px-1 pt-2 pb-3 text-lg font-black text-gray-900 tracking-tight">Transaction History</h2>
             <div className="flex flex-col gap-3">
                 {transactions.length === 0 ? (
-                    <div className="rounded-lg bg-white p-8 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                        <p className="text-[#6B7280] text-sm">No transactions yet</p>
+                    <div className="rounded-2xl bg-white p-8 text-center shadow-xs border border-gray-100">
+                        <p className="text-gray-500 text-sm font-semibold">No transactions recorded yet</p>
                     </div>
                 ) : (
                     transactions.map((transaction) => {
@@ -249,62 +250,48 @@ export default function UserWallet() {
                         const isWithdrawal = ['WITHDRAWAL_REQUEST', 'WITHDRAWAL_PROCESSED', 'WITHDRAWAL_REJECTED'].includes(transaction.type);
                         const isSuccess = transaction.status === 'SUCCESS';
                         const isPending = transaction.status === 'PENDING';
-                        const isFailed = transaction.status === 'FAILED';
                         
                         return (
                             <div
                                 key={transaction._id}
-                                className="flex items-center gap-4 rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                                className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-xs border border-gray-100 hover:border-blue-300 transition-all"
                             >
-                                <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                                    isSuccess ? (isCredit ? "bg-green-100" : isWithdrawal ? "bg-blue-100" : "bg-gray-100") : 
-                                    isPending ? "bg-yellow-100" : "bg-red-100"
+                                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl shrink-0 ${
+                                    isSuccess ? (isCredit ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : isWithdrawal ? "bg-blue-50 text-[#0A84FF] border border-blue-100" : "bg-gray-50 text-gray-500") : 
+                                    isPending ? "bg-amber-50 text-amber-600 border border-amber-100" : "bg-rose-50 text-rose-600 border border-rose-100"
                                 }`}>
-                                    <span className={`material-symbols-outlined ${
-                                        isSuccess ? (isCredit ? "text-[#34C759]" : isWithdrawal ? "text-blue-500" : "text-gray-500") : 
-                                        isPending ? "text-[#FF9F0A]" : "text-red-500"
-                                    }`}>
+                                    <span className="material-symbols-outlined font-bold text-xl">
                                         {isCredit ? "arrow_downward_alt" : isWithdrawal ? "account_balance_wallet" : "info"}
                                     </span>
                                 </div>
-                                <div className="flex-1">
-                                    <p className="font-semibold text-[#3A3A3A]">
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-extrabold text-gray-900 text-sm truncate">
                                         {getTransactionTypeLabel(transaction.type)}
                                     </p>
-                                    <p className="text-xs text-[#6B7280]">
+                                    <p className="text-xs text-gray-500 font-medium">
                                         {formatDateTime(transaction.createdAt)}
                                     </p>
                                     {transaction.booking && (
-                                        <p className="text-xs text-[#6B7280] mt-0.5">
+                                        <p className="text-xs text-blue-600 font-bold mt-0.5">
                                             Booking #{transaction.booking._id?.toString().slice(-8).toUpperCase()}
                                         </p>
                                     )}
                                     {transaction.description && (
-                                        <p className="text-xs text-[#6B7280] mt-0.5 italic">
+                                        <p className="text-xs text-gray-500 mt-0.5 italic">
                                             {transaction.description}
                                         </p>
                                     )}
-                                    {transaction.errorMessage && (
-                                        <p className="text-xs text-red-500 mt-0.5">
-                                            Error: {transaction.errorMessage}
-                                        </p>
-                                    )}
                                 </div>
-                                <div className="text-right">
-                                    <p className={`font-bold ${
-                                        isSuccess ? (isCredit ? "text-[#34C759]" : isWithdrawal ? "text-blue-500" : "text-gray-500") : 
-                                        isPending ? "text-[#FF9F0A]" : "text-red-500"
+                                <div className="text-right shrink-0">
+                                    <p className={`font-extrabold text-sm ${
+                                        isSuccess ? (isCredit ? "text-emerald-600" : isWithdrawal ? "text-[#0A84FF]" : "text-gray-700") : 
+                                        isPending ? "text-amber-600" : "text-rose-600"
                                     }`}>
                                         {isCredit ? "+" : isWithdrawal ? "-" : ""} ₹{formatAmount(Math.abs(transaction.amount))}
                                     </p>
-                                    <p className={`text-xs font-medium ${getStatusColor(transaction.status)}`}>
+                                    <span className={`inline-block text-[11px] font-extrabold px-2 py-0.5 rounded-full mt-0.5 ${getStatusColor(transaction.status)}`}>
                                         {transaction.status}
-                                    </p>
-                                    {transaction.balanceAfter !== undefined && (
-                                        <p className="text-xs text-[#6B7280] mt-0.5">
-                                            Balance: ₹{formatAmount(transaction.balanceAfter)}
-                                        </p>
-                                    )}
+                                    </span>
                                 </div>
                             </div>
                         );

@@ -13,7 +13,10 @@ import {
     IoCashOutline,
     IoSearchOutline,
     IoChevronDownOutline,
-    IoInformationCircleOutline
+    IoInformationCircleOutline,
+    IoShieldCheckmarkOutline,
+    IoCheckmarkCircleOutline,
+    IoCloseOutline
 } from "react-icons/io5";
 import { createBooking, calculateBookingCharges } from "../../../services/bookingApi";
 import PageContainer from "../../shared/components/PageContainer";
@@ -21,7 +24,7 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
 import PolicyModal from "../../shared/components/PolicyModal";
-import { parseAcresGuntas } from "../../../utils/landAreaHelper";
+import { parseAcresGuntas, isAgriCategory } from "../../../utils/landAreaHelper";
 import StateDistrictInput from "../../../components/StateDistrictInput";
 import { getStatesList, getDistrictsList, findStateForDistrict } from "../../../utils/indianStatesDistricts";
 import { formatDateToDDMMYYYY, formatDateToLongString } from "../../../utils/dateFormatter";
@@ -81,51 +84,92 @@ const TermsAndConditions = ({ purpose, onAccept, onCancel }) => {
     }, []);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl animate-in fade-in zoom-in duration-300">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Terms & Conditions</h3>
-                <div className="bg-gray-50 rounded-xl p-4 mb-6 text-sm text-gray-600 space-y-2 max-h-60 overflow-y-auto">
-                    {loading ? (
-                        <div className="flex justify-center p-4">
-                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150" onClick={onCancel}>
+            <div className="bg-white rounded-[22px] shadow-2xl max-w-md w-full p-5 sm:p-6 border border-gray-100 space-y-4 transform transition-all animate-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+                
+                {/* Header — Tight & Aligned */}
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0A84FF] flex items-center justify-center shrink-0">
+                            <IoShieldCheckmarkOutline className="text-2xl" />
                         </div>
-                    ) : (
-                        <>
-                            <p>By proceeding with the <strong>{purpose}</strong> service request, you agree to the following:</p>
-                            {termsContent ? (
-                                <div dangerouslySetInnerHTML={{ __html: termsContent }} className="policy-content mt-2" />
-                            ) : (
-                                <ul className="list-disc pl-5 space-y-1">
-                                    <li>The service is provided by independent vendors.</li>
-                                    <li>Advance payment is required to book the slot.</li>
-                                    <li>Cancellation charges may apply as per company policy.</li>
-                                    <li>Safe access to the site must be provided by the customer.</li>
-                                </ul>
-                            )}
-                        </>
-                    )}
-                </div>
-                <div className="flex gap-3">
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900 leading-none">Terms & Conditions</h3>
+                            <span className="text-[11px] font-semibold text-[#0A84FF] inline-block mt-1">
+                                {purpose || "Survey"} Category
+                            </span>
+                        </div>
+                    </div>
                     <button
                         onClick={onCancel}
-                        className="flex-1 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors"
+                        className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-600 flex items-center justify-center transition-colors active:scale-95"
+                    >
+                        <IoCloseOutline className="text-xl" />
+                    </button>
+                </div>
+
+                {/* Content Body — Zero Scroll, Perfectly Aligned */}
+                {loading ? (
+                    <div className="py-8 flex flex-col items-center justify-center gap-2">
+                        <div className="w-6 h-6 border-2 border-[#0A84FF] border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-xs font-semibold text-gray-400">Loading terms...</span>
+                    </div>
+                ) : (
+                    <div className="space-y-2.5 text-xs text-gray-700 font-medium">
+                        <div className="p-3 rounded-xl bg-gray-50/80 border border-gray-100/90 flex items-start gap-2.5">
+                            <span className="w-5 h-5 rounded-md bg-blue-100/80 text-[#0A84FF] flex items-center justify-center text-xs shrink-0 mt-0.5">1</span>
+                            <p className="leading-snug text-gray-700">
+                                <strong className="text-gray-900 font-bold">Scientific Assessment:</strong> Reports use geophysical methods; groundwater occurrence is natural and yield is not 100% guaranteed.
+                            </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-gray-50/80 border border-gray-100/90 flex items-start gap-2.5">
+                            <span className="w-5 h-5 rounded-md bg-blue-100/80 text-[#0A84FF] flex items-center justify-center text-xs shrink-0 mt-0.5">2</span>
+                            <p className="leading-snug text-gray-700">
+                                <strong className="text-gray-900 font-bold">Advance Payment:</strong> 40% advance payment is required to confirm expert assignment and lock your slot.
+                            </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-gray-50/80 border border-gray-100/90 flex items-start gap-2.5">
+                            <span className="w-5 h-5 rounded-md bg-blue-100/80 text-[#0A84FF] flex items-center justify-center text-xs shrink-0 mt-0.5">3</span>
+                            <p className="leading-snug text-gray-700">
+                                <strong className="text-gray-900 font-bold">Site Access:</strong> Customer presence inside the survey land and safe site access are mandatory during the visit.
+                            </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-gray-50/80 border border-gray-100/90 flex items-start gap-2.5">
+                            <span className="w-5 h-5 rounded-md bg-blue-100/80 text-[#0A84FF] flex items-center justify-center text-xs shrink-0 mt-0.5">4</span>
+                            <p className="leading-snug text-gray-700">
+                                <strong className="text-gray-900 font-bold">Platform Policy:</strong> Cancellations, refunds, and rescheduling are governed by standard Jaladhaara policies.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Action Buttons — Aligned Footer */}
+                <div className="flex items-center gap-2.5 pt-2 border-t border-gray-100">
+                    <button
+                        onClick={onCancel}
+                        className="w-1/3 py-2.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all text-xs active:scale-98"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={onAccept}
                         disabled={loading}
-                        className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:opacity-50"
+                        className="w-2/3 py-2.5 rounded-xl font-bold text-white bg-[#0A84FF] hover:bg-[#0070DF] shadow-sm active:scale-98 transition-all text-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                     >
-                        I Agree
+                        <IoCheckmarkCircleOutline className="text-base" />
+                        <span>I Agree & Continue</span>
                     </button>
                 </div>
+
             </div>
         </div>
     );
 };
 
-const ProjectDetailsForm = ({ data, onSubmit, onBack }) => {
+const ProjectDetailsForm = ({ data, onSubmit, onBack, category }) => {
     // Initialize with data or defaults
     const [formData, setFormData] = useState(data || {
         village: "",
@@ -196,6 +240,10 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack }) => {
                             required
                             value={formData.village}
                             onChange={(e) => handleChange("village", e.target.value)}
+                            autoComplete="off"
+                            autoCorrect="off"
+                            autoCapitalize="words"
+                            spellCheck={false}
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
                             placeholder="Village Name"
                         />
@@ -206,6 +254,10 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack }) => {
                             required
                             value={formData.mandal}
                             onChange={(e) => handleChange("mandal", e.target.value)}
+                            autoComplete="off"
+                            autoCorrect="off"
+                            autoCapitalize="words"
+                            spellCheck={false}
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
                             placeholder="Mandal"
                         />
@@ -251,44 +303,91 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack }) => {
                 </div>
             </div>
 
-            {/* Extent */}
-            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Extent (Acres / Guntas)</label>
-                <input
-                    type="number"
-                    required
-                    value={formData.purposeExtent}
-                    onChange={(e) => {
-                        const val = e.target.value;
-                        if (val) {
-                            const parsed = parseAcresGuntas(val);
-                            if (val.includes('.') && parseInt(val.split('.')[1], 10) >= 40) {
-                                handleChange("purposeExtent", String(parsed.decimalValue));
-                                return;
+            {/* Extent Input Block — Senior UI Redesign */}
+            <div className="bg-white p-4.5 rounded-2xl border border-gray-200/80 shadow-sm space-y-2.5">
+                <div className="flex items-center justify-between">
+                    <label className="text-sm font-bold text-gray-800 flex items-center gap-1">
+                        <span>Area Extent</span>
+                        <span className="text-red-500">*</span>
+                    </label>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0A84FF] border border-blue-100/80">
+                        {isAgriCategory(category) ? "🌾 Acres & Guntas" : "📐 Square Feet (Sq. Ft.)"}
+                    </span>
+                </div>
+
+                <div className="relative flex items-center">
+                    <input
+                        type="number"
+                        required
+                        value={formData.purposeExtent}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            if (val && isAgriCategory(category)) {
+                                const parsed = parseAcresGuntas(val);
+                                if (val.includes('.') && parseInt(val.split('.')[1], 10) >= 40) {
+                                    handleChange("purposeExtent", String(parsed.decimalValue));
+                                    return;
+                                }
                             }
-                        }
-                        handleChange("purposeExtent", val);
-                    }}
-                    onBlur={(e) => {
-                        const val = e.target.value;
-                        if (val) {
-                            const parsed = parseAcresGuntas(val);
-                            if (parsed.decimalValue > 0) {
-                                handleChange("purposeExtent", String(parsed.decimalValue));
+                            handleChange("purposeExtent", val);
+                        }}
+                        onBlur={(e) => {
+                            const val = e.target.value;
+                            if (val && isAgriCategory(category)) {
+                                const parsed = parseAcresGuntas(val);
+                                if (parsed.decimalValue > 0) {
+                                    handleChange("purposeExtent", String(parsed.decimalValue));
+                                }
                             }
-                        }
-                    }}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none"
-                    placeholder="e.g. 3.6 (3 Acres 6 Guntas) or 2.40 (3 Acres)"
-                    min="0"
-                    step="0.01"
-                />
-                {formData.purposeExtent && parseAcresGuntas(formData.purposeExtent).formatted && (
-                    <p className="text-xs text-blue-600 mt-1 font-medium flex items-center gap-1">
-                        <span>=</span>
-                        <span>{parseAcresGuntas(formData.purposeExtent).formatted}</span>
-                        <span className="text-gray-400 text-[10px]">(40 Guntas = 1 Acre)</span>
-                    </p>
+                        }}
+                        className="w-full pl-4 pr-24 py-3 rounded-xl border border-gray-200 focus:border-[#0A84FF] focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium text-gray-900 placeholder-gray-400 transition-all"
+                        placeholder={isAgriCategory(category) ? "e.g. 2.20 (2 Acres 20 Guntas)" : "e.g. 1800"}
+                        min="0"
+                        step="any"
+                    />
+                    <div className="absolute right-2.5 px-3 py-1 bg-gray-100/90 text-gray-600 text-xs font-bold rounded-lg pointer-events-none select-none border border-gray-200/60">
+                        {isAgriCategory(category) ? "Acres" : "Sq. Ft."}
+                    </div>
+                </div>
+
+                {/* Live Conversion & Formatted Summary Card */}
+                {formData.purposeExtent && !isNaN(parseFloat(formData.purposeExtent)) && parseFloat(formData.purposeExtent) > 0 && (
+                    <div className="mt-2.5 p-3 rounded-xl bg-gradient-to-r from-blue-50/70 to-indigo-50/50 border border-blue-100/80 flex items-center justify-between text-xs transition-all animate-in fade-in duration-200">
+                        {isAgriCategory(category) ? (() => {
+                            const parsed = parseAcresGuntas(formData.purposeExtent);
+                            return (
+                                <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-sm">🌾</span>
+                                        <span className="font-bold text-gray-900 text-xs">
+                                            {parsed.formatted}
+                                        </span>
+                                    </div>
+                                    <span className="text-[11px] font-medium text-[#0A84FF] bg-white/90 px-2 py-0.5 rounded-md border border-gray-200/60 shadow-2xs">
+                                        40 Guntas = 1 Acre
+                                    </span>
+                                </div>
+                            );
+                        })() : (() => {
+                            const num = parseFloat(formData.purposeExtent);
+                            const sqFtFormatted = num % 1 === 0 ? num.toLocaleString('en-IN') : num.toFixed(2);
+                            const sqYardsCalc = num / 9;
+                            const sqYardsFormatted = sqYardsCalc % 1 === 0 ? sqYardsCalc.toLocaleString('en-IN') : sqYardsCalc.toFixed(2);
+                            return (
+                                <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#0A84FF] flex items-center justify-center font-bold text-xs">📐</span>
+                                        <span className="font-bold text-gray-900 text-xs">
+                                            {sqFtFormatted} Sq. Feet
+                                        </span>
+                                    </div>
+                                    <span className="text-[11px] font-bold text-[#0A84FF] bg-white/90 px-2.5 py-0.5 rounded-md border border-blue-100 shadow-2xs">
+                                        ≈ {sqYardsFormatted} Sq. Yards (Gaj)
+                                    </span>
+                                </div>
+                            );
+                        })()}
+                    </div>
                 )}
             </div>
 
@@ -498,12 +597,32 @@ const LocationPicker = ({ onLocationSelect, onBack, initialLocation }) => {
         <div className="space-y-6">
             <h2 className="text-xl font-bold text-gray-800">Pin Location</h2>
 
-            {/* Survey Land Instruction Note */}
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3 text-xs text-amber-900 leading-relaxed shadow-sm">
-                <IoInformationCircleOutline className="text-amber-600 text-lg flex-shrink-0 mt-0.5" />
-                <div>
-                    <p className="font-bold text-amber-950 mb-0.5">Important Survey Land Instructions:</p>
-                    <p>Pin the exact GPS location of the land where the groundwater survey is required. Do not pin your village, home, office, road junction, or any nearby landmark unless it is the actual survey land.</p>
+            {/* ─── SURVEY LAND LOCATION WARNING BANNER ─── */}
+            <div className="rounded-2xl overflow-hidden border-2 border-red-200 shadow-md">
+                {/* Header */}
+                <div className="bg-red-600 px-4 py-3 flex items-center gap-2">
+                    <span className="text-xl">📍</span>
+                    <p className="text-white font-extrabold text-sm tracking-wide uppercase">Important — Pin the Correct Location</p>
+                </div>
+                {/* Body */}
+                <div className="bg-red-50 px-4 py-3 space-y-3">
+                    <div className="flex items-start gap-2">
+                        <span className="text-green-600 font-black text-base mt-0.5">✅</span>
+                        <p className="text-sm font-semibold text-gray-800">
+                            <span className="text-green-700 font-extrabold">DO: </span>
+                            Stand inside the actual survey land and pin your exact GPS location.
+                        </p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                        <span className="text-red-600 font-black text-base mt-0.5">❌</span>
+                        <p className="text-sm font-semibold text-gray-800">
+                            <span className="text-red-700 font-extrabold">DON'T: </span>
+                            Pin your village, home, office, road junction, or any nearby landmark unless it is the actual survey land.
+                        </p>
+                    </div>
+                    <p className="text-[11px] text-red-700 font-bold border-t border-red-200 pt-2">
+                        ⚠️ Incorrect location pinning may result in expert dispatch to the wrong site and non-refundable charges.
+                    </p>
                 </div>
             </div>
 
@@ -847,7 +966,7 @@ export default function UserRequestService() {
 
             <div className="max-w-md mx-auto min-h-[60vh] flex flex-col">
                 {step === 1 && <PurposeSelection onSelect={handlePurposeSelect} />}
-                {step === 2 && <ProjectDetailsForm data={formState.details} onSubmit={handleDetailsSubmit} onBack={() => setStep(1)} />}
+                {step === 2 && <ProjectDetailsForm data={formState.details} category={formState.category} onSubmit={handleDetailsSubmit} onBack={() => setStep(1)} />}
                 {step === 3 && <LocationPicker initialLocation={formState.location} onLocationSelect={handleLocationSelect} onBack={() => setStep(2)} />}
                 {step === 4 && <ReviewAndBook surveyData={formState} service={service} vendor={vendor} onConfirm={handleFinalBooking} onBack={() => setStep(3)} />}
             </div>

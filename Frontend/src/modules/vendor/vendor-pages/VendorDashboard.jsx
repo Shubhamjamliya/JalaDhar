@@ -219,23 +219,27 @@ export default function VendorDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 px-4 pt-24 pb-20 md:-mx-6 md:-mt-28 md:pt-28 md:pb-12 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
 
-            {/* Profile Header with Light Blue Gradient */}
-            <section className="relative my-4 overflow-hidden rounded-[12px] bg-gradient-to-b from-[#E3F2FD] via-[#BBDEFB] to-[#90CAF9] p-6 shadow-lg">
-                {/* Subtle Wave Pattern Overlay */}
-                <div className="absolute inset-0 z-0 opacity-20">
-                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
-                        <path fill="#64B5F6" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                    </svg>
-                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ transform: 'translateY(20px)' }}>
-                        <path fill="#90CAF9" d="M0,128L48,138.7C96,149,192,171,288,181.3C384,192,480,192,576,186.7C672,181,768,171,864,165.3C960,160,1056,160,1152,154.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                    </svg>
-                </div>
-                <div className="relative z-10 flex items-center gap-4">
+            {/* Profile Header — Senior SDE Vendor Glassmorphism Banner */}
+            <section className="relative my-3 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 p-6 shadow-xl text-white border border-slate-800/80">
+                <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div className="relative z-10 flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold mb-2 border border-emerald-500/30">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>On-Duty & Ready for Dispatch</span>
+                        </div>
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white truncate">
+                            Welcome, {vendorProfileData?.name || vendor?.name || "Hydrogeologist Expert"} 👨‍🔧
+                        </h1>
+                        <p className="text-xs sm:text-sm text-slate-300 font-medium mt-0.5">
+                            Certified Groundwater Hydrogeology Specialist
+                        </p>
+                    </div>
                     {/* White Circular Profile Picture */}
                     <div
-                        className="h-16 w-16 rounded-full bg-white bg-cover bg-center flex-shrink-0 shadow-lg border-4 border-white"
+                        className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-white bg-cover bg-center flex-shrink-0 shadow-lg border-2 border-white/90"
                         style={{
                             backgroundImage: vendorProfileImage
                                 ? `url("${vendorProfileImage}")`
@@ -243,52 +247,45 @@ export default function VendorDashboard() {
                         }}
                     >
                         {!vendorProfileImage && (
-                            <div className="w-full h-full rounded-full bg-gradient-to-br from-[#BBDEFB] to-[#90CAF9] flex items-center justify-center">
-                                <span className="text-2xl text-white">👤</span>
+                            <div className="w-full h-full rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
+                                <span className="text-2xl text-white">👨‍🔧</span>
                             </div>
                         )}
-                    </div>
-                    <div>
-                        <p className="text-[22px] font-bold tracking-tight text-gray-800">
-                            Welcome, {vendorProfileData?.name ||
-                                vendor?.name ||
-                                "Vendor"}
-                        </p>
                     </div>
                 </div>
             </section>
 
-            {/* Two Prominent Cards */}
-            <section className="my-6 grid grid-cols-2 gap-4">
-                {/* Total Bookings Card (Replaces Pending Requests) */}
-                <div className="flex items-center gap-3 rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                    <div className="flex w-10 h-10 items-center justify-center rounded-full bg-blue-100 shrink-0">
-                        <span className="material-symbols-outlined text-blue-500 text-xl">
+            {/* Two Prominent KPI Stat Cards */}
+            <section className="my-4 grid grid-cols-2 gap-3.5">
+                {/* Total Bookings Card */}
+                <div className="flex items-center gap-3.5 rounded-2xl bg-white p-4 shadow-xs border border-gray-100/90 hover:border-blue-300 transition-all">
+                    <div className="flex w-11 h-11 items-center justify-center rounded-2xl bg-blue-50 text-[#0A84FF] shrink-0 border border-blue-100">
+                        <span className="material-symbols-outlined text-2xl font-bold">
                             assignment
                         </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-lg font-bold text-[#3A3A3A]">
+                        <p className="text-xl font-black text-gray-900 leading-none mb-1">
                             {stats.totalBookings || 0}
                         </p>
-                        <p className="text-xs text-[#6B7280]">
+                        <p className="text-xs font-bold text-gray-500 tracking-tight">
                             Total Bookings
                         </p>
                     </div>
                 </div>
 
                 {/* Today Bookings Card */}
-                <div className="flex items-center gap-3 rounded-lg bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                    <div className="flex w-10 h-10 items-center justify-center rounded-full bg-indigo-100 shrink-0">
-                        <span className="material-symbols-outlined text-indigo-500 text-xl">
+                <div className="flex items-center gap-3.5 rounded-2xl bg-white p-4 shadow-xs border border-gray-100/90 hover:border-indigo-300 transition-all">
+                    <div className="flex w-11 h-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 shrink-0 border border-indigo-100">
+                        <span className="material-symbols-outlined text-2xl font-bold">
                             today
                         </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-lg font-bold text-[#3A3A3A]">
+                        <p className="text-xl font-black text-gray-900 leading-none mb-1">
                             {stats.todayBookings || 0}
                         </p>
-                        <p className="text-xs text-[#6B7280]">Today Bookings</p>
+                        <p className="text-xs font-bold text-gray-500 tracking-tight">Today's Jobs</p>
                     </div>
                 </div>
             </section>

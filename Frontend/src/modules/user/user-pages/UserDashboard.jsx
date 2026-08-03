@@ -41,6 +41,7 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
+import ExpertProfileCard from "../components/ExpertProfileCard";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
@@ -544,76 +545,60 @@ export default function UserDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 px-4 pt-24 pb-20 md:-mx-6 md:-mt-28 md:pt-28 md:pb-12 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
 
-            {/* Profile Header with Light Blue Gradient */}
-            <section className="relative my-4 overflow-hidden rounded-[12px] bg-gradient-to-b from-[#E3F2FD] via-[#BBDEFB] to-[#90CAF9] p-6 shadow-lg">
-                {/* Subtle Wave Pattern Overlay */}
-                <div className="absolute inset-0 z-0 opacity-20">
-                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
-                        <path fill="#64B5F6" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                    </svg>
-                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ transform: 'translateY(20px)' }}>
-                        <path fill="#90CAF9" d="M0,128L48,138.7C96,149,192,171,288,181.3C384,192,480,192,576,186.7C672,181,768,171,864,165.3C960,160,1056,160,1152,154.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                    </svg>
-                </div>
-                <div className="relative z-10 flex items-center gap-4">
+            {/* Profile Header — Senior SDE Glassmorphic Banner */}
+            <section className="relative my-3 overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-[#0A84FF] to-indigo-600 p-6 shadow-xl shadow-blue-500/10 text-white">
+                <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div className="relative z-10 flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[11px] sm:text-xs font-extrabold text-white mb-2 border border-white/25 shadow-2xs">
+                            <span>🇮🇳 India's 1st Groundwater Survey Booking Platform</span>
+                        </div>
+                        <h1 className="text-lg sm:text-2xl font-black tracking-tight text-white leading-tight">
+                            Welcome back, {userName} 👋
+                        </h1>
+                        <p className="text-xs sm:text-sm text-blue-100 font-medium mt-1 leading-normal">
+                            Find verified groundwater survey experts and book your survey.
+                        </p>
+                    </div>
                     {/* White Circular Profile Picture */}
                     <div
-                        className="h-16 w-16 rounded-full bg-white bg-cover bg-center flex-shrink-0 shadow-lg border-4 border-white"
+                        className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-white bg-cover bg-center flex-shrink-0 shadow-lg border-2 border-white/90"
                         style={{
                             backgroundImage: userAvatar
                                 ? `url("${userAvatar}")`
                                 : `url("${avatarImageUrl}")`,
                         }}
                     ></div>
-                    <div>
-                        <p className="text-[22px] font-bold tracking-tight text-gray-800">
-                            Welcome, {userName}
-                        </p>
-                    </div>
                 </div>
             </section>
 
-            {/* Survey Booking CTA */}
-            <div
-                onClick={() => navigate("/user/survey")}
-                className="mx-2 mt-4 mb-2 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all"
-            >
-                <div className="text-white">
-                    <h3 className="text-lg font-bold">Book a Groundwater Survey</h3>
-                    <p className="text-sm opacity-90">Find the right borewell location with trusted experts.</p>
-                </div>
-                <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm">
-                    <IoLeafOutline className="text-2xl text-white" />
+            {/* Survey Categories Header */}
+            <div className="px-1 pt-4 pb-2 flex items-center justify-between">
+                <div>
+                    <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">Survey Purpose</h2>
+                    <p className="text-xs text-gray-500 font-semibold mt-0.5">Select your site category to begin survey booking.</p>
                 </div>
             </div>
 
-            {/* Survey Categories */}
-            <div className="px-4 pt-6 pb-2">
-                <h2 className="text-xl font-bold text-gray-800 tracking-tight">Survey Purpose</h2>
-                <p className="text-sm text-gray-500 mt-1">Choose where you need a groundwater survey.</p>
-            </div>
-            <div className="mx-4 mt-2 mb-8 grid grid-cols-2 gap-4">
+            {/* Category Cards — 4 Grid Items matching Survey Flow */}
+            <div className="mt-2 mb-6 grid grid-cols-2 gap-3.5">
                 {[
-                    { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "from-emerald-50 to-emerald-100", iconColor: "text-emerald-600", border: "border-emerald-200" },
-                    { id: "Domestic/Household", label: "Household", icon: HiOutlineHome, color: "from-blue-50 to-blue-100", iconColor: "text-blue-600", border: "border-blue-200" },
-                    { id: "Commercial", label: "Commercial", icon: HiOutlineBuildingOffice2, color: "from-indigo-50 to-indigo-100", iconColor: "text-indigo-600", border: "border-indigo-200" },
-                    { id: "Industrial", label: "Industrial", icon: HiOutlineWrenchScrewdriver, color: "from-amber-50 to-amber-100", iconColor: "text-amber-600", border: "border-amber-200" }
+                    { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "from-emerald-50 to-teal-50", iconColor: "text-emerald-600 bg-emerald-100/80", border: "border-emerald-200/60" },
+                    { id: "Domestic/Household", label: "Household", icon: HiOutlineHome, color: "from-blue-50 to-indigo-50", iconColor: "text-[#0A84FF] bg-blue-100/80", border: "border-blue-200/60" },
+                    { id: "Industrial/Commercial", label: "Commercial", icon: HiOutlineBuildingOffice2, color: "from-indigo-50 to-purple-50", iconColor: "text-indigo-600 bg-indigo-100/80", border: "border-indigo-200/60" },
+                    { id: "Open plots", label: "Open Plots", icon: HiOutlineWrenchScrewdriver, color: "from-amber-50 to-orange-50", iconColor: "text-amber-600 bg-amber-100/80", border: "border-amber-200/60" }
                 ].map((cat) => (
                     <button
                         key={cat.id}
                         onClick={() => navigate("/user/survey", { state: { category: cat.id } })}
-                        className={`group relative flex flex-col items-center justify-center p-6 bg-gradient-to-br ${cat.color} rounded-3xl border ${cat.border} shadow-sm hover:shadow-md active:scale-[0.96] transition-all duration-300`}
+                        className={`group relative flex flex-col items-center justify-center p-5 bg-gradient-to-br ${cat.color} rounded-2xl border ${cat.border} shadow-xs hover:shadow-md active:scale-[0.97] transition-all duration-200 text-center`}
                     >
-                        {/* Decorative background element */}
-                        <div className="absolute top-0 right-0 -mr-2 -mt-2 w-12 h-12 bg-white/40 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-
-                        <div className={`relative p-4 rounded-2xl bg-white shadow-sm mb-4 transition-transform duration-300 group-hover:-translate-y-1`}>
-                            <cat.icon className={`text-3xl ${cat.iconColor}`} />
+                        <div className={`p-3.5 rounded-2xl ${cat.iconColor} mb-2.5 transition-transform duration-200 group-hover:scale-110 shadow-2xs`}>
+                            <cat.icon className="text-2xl" />
                         </div>
-                        <span className="font-bold text-gray-800 text-sm tracking-wide">{cat.label}</span>
-                        <div className="mt-1 h-1 w-0 bg-gray-400/20 rounded-full group-hover:w-12 transition-all duration-300"></div>
+                        <span className="font-extrabold text-gray-900 text-sm tracking-tight">{cat.label}</span>
                     </button>
                 ))}
             </div>
@@ -806,104 +791,78 @@ export default function UserDashboard() {
             }
 
             {/* Top Verified Experts Near You */}
-            <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
-                Top Verified Experts Near You
-            </h2>
+            <div className="px-1 pt-6 pb-2 flex items-center justify-between">
+                <div>
+                    <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
+                        Top Hydrogeology Experts Near You 👨‍🔧
+                    </h2>
+                    <p className="text-xs text-gray-500 font-semibold mt-0.5">Certified groundwater survey specialists available for dispatch.</p>
+                </div>
+            </div>
 
             {/* Location Selector */}
-            <div className="px-2 mb-4 flex gap-3">
+            <div className="px-1 mb-4 flex gap-2.5">
                 {/* Address Input with Autocomplete */}
                 <div className="relative flex-1">
                     <IoSearchOutline className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg z-10" />
                     <PlaceAutocompleteInput
                         onPlaceSelect={handlePlaceSelect}
-                        placeholder="Search for an address..."
+                        placeholder="Search address to filter nearby experts..."
                         value={searchAddress}
                         onChange={(e) => setSearchAddress(e.target.value)}
                         disabled={false}
-                        className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:shadow-md transition-all"
+                        className="w-full rounded-2xl border border-gray-200/80 bg-white py-3 pl-10 pr-4 text-sm text-gray-800 shadow-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:shadow-md transition-all"
                         countryRestriction="in"
                         types={["geocode"]}
                     />
                 </div>
 
-                {/* Use Current Location Button - Icon Only */}
+                {/* Use Current Location Button */}
                 <button
                     type="button"
                     onClick={getCurrentLocation}
                     disabled={gettingLocation}
-                    className="flex items-center justify-center bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
+                    className="flex items-center justify-center bg-[#0A84FF] text-white p-3 rounded-2xl hover:bg-[#0070DF] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-blue-200 active:scale-95 shrink-0"
                     title={gettingLocation ? "Getting location..." : "Use Current Location"}
                 >
                     <IoLocationOutline className="text-xl text-white" />
                 </button>
             </div>
 
-            <div className="flex flex-col gap-4 mb-6 px-2">
+            <div className="flex flex-col gap-3.5 mb-8 px-1">
                 {vendors.length === 0 ? (
-                    <div className="bg-white rounded-2xl p-8 text-center shadow-lg">
-                        <p className="text-gray-600 text-sm">No vendors available nearby</p>
+                    <div className="bg-white rounded-2xl p-8 text-center shadow-xs border border-gray-100">
+                        <p className="text-gray-500 text-sm font-semibold">No hydrogeology experts available nearby</p>
                     </div>
                 ) : (
-                    vendors.map((vendor, index) => {
-                        // Generate different colored backgrounds for profile pictures
-                        const colors = ['#B3E5FC', '#FFEB3B', '#C8E6C9', '#FFCCBC', '#E1BEE7'];
-                        const bgColor = colors[index % colors.length];
-
-                        return (
-                            <div
-                                key={vendor._id}
-                                onClick={() => navigate(`/user/vendor-profile/${vendor._id}`)}
-                                className="relative flex items-center gap-4 rounded-2xl bg-white p-4 shadow-lg cursor-pointer hover:shadow-xl transition-all active:scale-[0.98]"
-                            >
-                                {/* Distance Badge - Top Right */}
-                                {userLocation.lat && userLocation.lng && vendor.distance !== null && vendor.distance !== undefined && !isNaN(vendor.distance) && (
-                                    <span className="absolute top-2 right-2 text-xs font-semibold text-white bg-orange-400 px-2.5 py-1 rounded-full whitespace-nowrap z-10">
-                                        {typeof vendor.distance === 'number' ? vendor.distance.toFixed(1) : vendor.distance} km away
-                                    </span>
-                                )}
-
-                                {/* Vendor Image - Circular with colored background */}
-                                <div className="relative shrink-0">
-                                    <div
-                                        className="h-20 w-20 rounded-full bg-cover bg-center bg-no-repeat border-4 border-white shadow-md"
-                                        style={{
-                                            backgroundImage: vendor.profilePicture
-                                                ? `url("${vendor.profilePicture}")`
-                                                : "none",
-                                            backgroundColor: vendor.profilePicture ? "transparent" : bgColor
-                                        }}
-                                    >
-                                        {!vendor.profilePicture && (
-                                            <div className="w-full h-full flex items-center justify-center rounded-full">
-                                                <span className="text-3xl">👤</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Vendor Details - Middle Section */}
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="font-bold text-gray-800 text-base mb-1">
-                                        {vendor.name}
-                                    </h4>
-                                    <p className="text-sm text-gray-500 mb-1.5">
-                                        {vendor.experience ? `${vendor.experience} years Experience` : (vendor.category || vendor.serviceTags?.[0] || "General")}
-                                    </p>
-                                    <div className="flex items-center gap-1 text-sm">
-                                        <IoStarOutline className="text-base text-yellow-500" />
-                                        <span className="font-bold text-gray-800">
-                                            {vendor.averageRating?.toFixed(1) || "0.0"}
-                                        </span>
-                                        <span className="text-gray-500">
-                                            ({vendor.totalRatings || 0})
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })
+                    vendors.slice(0, 5).map((vendor) => (
+                        <ExpertProfileCard
+                            key={vendor._id}
+                            expert={vendor}
+                            actionLabel="View Profile"
+                            onSelect={() => navigate(`/user/vendor-profile/${vendor._id}`)}
+                        />
+                    ))
                 )}
+            </div>
+
+            {/* Scientific Assessment Guarantee Banner */}
+            <div className="mx-1 mb-2 p-5 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-3xl text-white shadow-xl relative overflow-hidden border border-slate-700/50">
+                <div className="absolute top-0 right-0 -mr-6 -mt-6 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
+                <div className="relative z-10 flex items-start gap-3.5">
+                    <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/15 text-2xl shrink-0">
+                        🔬
+                    </div>
+                    <div>
+                        <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                            <span>100% Scientific Assessment Guarantee</span>
+                            <span className="text-[10px] font-bold bg-blue-500/30 text-blue-300 px-2 py-0.5 rounded-full border border-blue-400/30">Verified</span>
+                        </h3>
+                        <p className="text-xs text-slate-300 mt-1 leading-relaxed font-medium">
+                            Our certified hydrogeologists use Electrical Resistivity Imaging (ESI) and VLF geophysics to locate high-yield groundwater points before drilling.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Request Status Modal */}

@@ -194,14 +194,16 @@ export default function UserNotificationsPage() {
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-2 mb-1">
-                                            <h4 className={`text-sm font-bold ${notification.isRead ? "text-gray-800" : "text-gray-900"}`}>
+                                        {/* Title row — full width, wraps cleanly */}
+                                        <div className="flex items-start justify-between gap-2 mb-0.5">
+                                            <h4 className={`text-sm font-bold leading-snug min-w-0 ${notification.isRead ? "text-gray-800" : "text-gray-900"}`}>
                                                 {notification.title || "Alert"}
                                             </h4>
-                                            <span className="text-[11px] text-gray-400 font-medium shrink-0">
-                                                {dateStr}
-                                            </span>
                                         </div>
+                                        {/* Timestamp — always on its own line, never overlaps title */}
+                                        <span className="text-[11px] text-gray-400 font-medium block mb-1">
+                                            {dateStr}
+                                        </span>
                                         <p className="text-xs text-gray-600 leading-relaxed">
                                             {notification.message}
                                         </p>

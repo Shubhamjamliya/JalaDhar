@@ -66,3 +66,12 @@ export const formatAcresGuntasDisplay = (input) => {
   const parsed = parseAcresGuntas(input);
   return parsed.formatted || `${input} Acres`;
 };
+
+/**
+ * Robust helper to check if category is Agriculture
+ */
+export const isAgriCategory = (category) => {
+  if (!category) return false;
+  const cat = String(category).toLowerCase().trim();
+  return cat.includes('agri');
+};

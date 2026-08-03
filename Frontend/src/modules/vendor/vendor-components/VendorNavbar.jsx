@@ -1,10 +1,17 @@
 import { useState, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
+    IoHome,
     IoHomeOutline,
-    IoCalendarOutline,
+    IoDocumentText,
+    IoDocumentTextOutline,
+    IoTime,
     IoTimeOutline,
+    IoWallet,
     IoWalletOutline,
+    IoPersonCircle,
+    IoPersonCircleOutline,
+    IoCalendarOutline,
     IoPersonOutline,
     IoMenuOutline,
     IoLogOutOutline,
@@ -24,36 +31,35 @@ const navItems = [
         label: "Home",
         to: "/vendor/dashboard",
         Icon: IoHomeOutline,
+        ActiveIcon: IoHome,
     },
     {
         id: "bookings",
-        label: "Bookings",
+        label: "Jobs",
         to: "/vendor/bookings",
-        Icon: IoCalendarOutline,
+        Icon: IoDocumentTextOutline,
+        ActiveIcon: IoDocumentText,
     },
     {
         id: "status",
         label: "Status",
         to: "/vendor/status",
         Icon: IoTimeOutline,
+        ActiveIcon: IoTime,
     },
     {
         id: "wallet",
         label: "Wallet",
         to: "/vendor/wallet",
         Icon: IoWalletOutline,
+        ActiveIcon: IoWallet,
     },
     {
         id: "profile",
         label: "Profile",
         to: "/vendor/profile",
-        Icon: IoPersonOutline,
-    },
-    {
-        id: "reviews",
-        label: "Reviews",
-        to: "/vendor/reviews",
-        Icon: IoStarOutline,
+        Icon: IoPersonCircleOutline,
+        ActiveIcon: IoPersonCircle,
     },
 ];
 
@@ -167,28 +173,46 @@ export default function VendorNavbar() {
                 />
             </div>
 
-            {/* Bottom Navigation - Mobile Only */}
-            <nav className="fixed bottom-0 inset-x-0 z-50 flex items-center justify-around gap-1 bg-white px-3 py-2 shadow-lg md:hidden">
-                {navItems.filter(item => item.id !== "reviews").map(({ id, label, to, Icon }) => (
-                    <NavLink
-                        key={id}
-                        to={to}
-                        className={({ isActive }) =>
-                            `flex items-center justify-center flex-1 py-2 transition-all duration-200 ${isActive ? "text-[#0A84FF]" : "text-gray-500"
-                            }`
-                        }
-                        end={id === "dashboard"}
-                    >
-                        {({ isActive }) => (
-                            <Icon
-                                className={`text-3xl ${isActive
-                                    ? "text-[#0A84FF]"
-                                    : "text-gray-500"
-                                    }`}
-                            />
-                        )}
-                    </NavLink>
-                ))}
+            {/* Bottom Navigation — Mobile Only (Redesigned Senior UI) */}
+            <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden">
+                <div className="flex items-center justify-around gap-1 max-w-md mx-auto">
+                    {navItems.map(({ id, label, to, Icon, ActiveIcon }) => (
+                        <NavLink
+                            key={id}
+                            to={to}
+                            className={({ isActive }) =>
+                                `flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition-all duration-200 group active:scale-95 ${
+                                    isActive
+                                        ? "text-[#0A84FF]"
+                                        : "text-gray-400 hover:text-gray-600"
+                                }`
+                            }
+                            end={id === "dashboard"}
+                        >
+                            {({ isActive }) => {
+                                const TargetIcon = isActive ? ActiveIcon : Icon;
+                                return (
+                                    <>
+                                        <div className={`relative flex items-center justify-center px-3.5 py-1 rounded-full transition-all duration-200 ${
+                                            isActive
+                                                ? "bg-blue-50 text-[#0A84FF] scale-105"
+                                                : "bg-transparent text-gray-500 group-hover:bg-gray-50"
+                                        }`}>
+                                            <TargetIcon className={`text-xl transition-transform duration-200 ${
+                                                isActive ? "text-[#0A84FF]" : "text-gray-500"
+                                            }`} />
+                                        </div>
+                                        <span className={`text-[10px] leading-none mt-1 tracking-tight transition-colors duration-200 ${
+                                            isActive ? "font-bold text-[#0A84FF]" : "font-semibold text-gray-500"
+                                        }`}>
+                                            {label}
+                                        </span>
+                                    </>
+                                );
+                            }}
+                        </NavLink>
+                    ))}
+                </div>
             </nav>
 
             {/* Logout Confirmation Modal */}

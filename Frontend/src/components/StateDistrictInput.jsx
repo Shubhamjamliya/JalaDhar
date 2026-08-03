@@ -51,6 +51,10 @@ export default function StateDistrictInput({
           }}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm pr-10"
         />
         <IoChevronDownOutline

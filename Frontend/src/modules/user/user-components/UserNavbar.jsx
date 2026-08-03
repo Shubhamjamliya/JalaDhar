@@ -1,14 +1,21 @@
 import { useState, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
+    IoHome,
     IoHomeOutline,
+    IoPeople,
+    IoPeopleOutline,
+    IoTime,
     IoTimeOutline,
+    IoWallet,
+    IoWalletOutline,
+    IoPersonCircle,
+    IoPersonCircleOutline,
+    IoAdd,
     IoChevronBackOutline,
     IoCalendarOutline,
-    IoPersonCircleOutline,
     IoMenuOutline,
     IoLogOutOutline,
-    IoWalletOutline,
     IoChevronUpOutline,
     IoBarChartOutline,
     IoStarOutline,
@@ -18,7 +25,6 @@ import {
     IoCashOutline,
     IoLockClosedOutline,
     IoPersonAddOutline,
-    IoPeopleOutline,
 } from "react-icons/io5";
 import { useAuth } from "../../../contexts/AuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -30,33 +36,39 @@ import UserSidebar from "./UserSidebar";
 const navItems = [
     {
         id: "dashboard",
-        label: "Dashboard",
+        label: "Home",
         to: "/user/dashboard",
         Icon: IoHomeOutline,
-    },
-    {
-        id: "service",
-        label: "Service Provider",
-        to: "/user/serviceprovider",
-        Icon: IoPeopleOutline,
+        ActiveIcon: IoHome,
     },
     {
         id: "status",
-        label: "Status",
+        label: "Bookings",
         to: "/user/status",
         Icon: IoTimeOutline,
+        ActiveIcon: IoTime,
+    },
+    {
+        id: "survey",
+        label: "Book",
+        to: "/user/survey",
+        Icon: IoAdd,
+        ActiveIcon: IoAdd,
+        isFab: true,
     },
     {
         id: "wallet",
         label: "Wallet",
         to: "/user/wallet",
         Icon: IoWalletOutline,
+        ActiveIcon: IoWallet,
     },
     {
         id: "profile",
         label: "Profile",
         to: "/user/profile",
         Icon: IoPersonCircleOutline,
+        ActiveIcon: IoPersonCircle,
     },
 ];
 
@@ -156,28 +168,58 @@ export default function UserNavbar() {
                 />
             </div>
 
-            {/* Bottom Navigation - Mobile Only */}
-            <nav className="fixed bottom-0 inset-x-0 z-50 flex items-center justify-around gap-1 bg-white px-3 py-2 shadow-lg md:hidden">
-                {navItems.map(({ id, label, to, Icon }) => (
-                    <NavLink
-                        key={id}
-                        to={to}
-                        className={({ isActive }) =>
-                            `flex items-center justify-center flex-1 py-2 transition-all duration-200 ${isActive ? "text-[#0A84FF]" : "text-gray-500"
-                            }`
-                        }
-                        end={id === "dashboard"}
-                    >
-                        {({ isActive }) => (
-                            <Icon
-                                className={`text-3xl ${isActive
-                                    ? "text-[#0A84FF]"
-                                    : "text-gray-500"
-                                    }`}
-                            />
-                        )}
-                    </NavLink>
-                ))}
+            {/* Bottom Navigation — Mobile Only (Redesigned Senior UI with Floating FAB) */}
+            <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden">
+                <div className="flex items-center justify-around gap-1 max-w-md mx-auto">
+                    {navItems.map(({ id, label, to, Icon, ActiveIcon, isFab }) => (
+                        <NavLink
+                            key={id}
+                            to={to}
+                            className={({ isActive }) =>
+                                `flex flex-col items-center justify-center flex-1 py-1 px-1 transition-all duration-200 group active:scale-95 ${
+                                    isActive
+                                        ? "text-[#0A84FF]"
+                                        : "text-gray-400 hover:text-gray-600"
+                                }`
+                            }
+                            end={id === "dashboard"}
+                        >
+                            {({ isActive }) => {
+                                if (isFab) {
+                                    return (
+                                        <div className="flex flex-col items-center justify-center -mt-6">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 via-[#0A84FF] to-indigo-500 text-white shadow-lg shadow-blue-500/35 border-4 border-white flex items-center justify-center transition-all duration-200 group-active:scale-90 group-hover:scale-105">
+                                                <IoAdd className="text-2xl font-black text-white" />
+                                            </div>
+                                            <span className="text-[10px] leading-none mt-1 font-bold text-[#0A84FF] tracking-tight">
+                                                {label}
+                                            </span>
+                                        </div>
+                                    );
+                                }
+                                const TargetIcon = isActive ? ActiveIcon : Icon;
+                                return (
+                                    <>
+                                        <div className={`relative flex items-center justify-center px-3.5 py-1 rounded-full transition-all duration-200 ${
+                                            isActive
+                                                ? "bg-blue-50 text-[#0A84FF] scale-105"
+                                                : "bg-transparent text-gray-500 group-hover:bg-gray-50"
+                                        }`}>
+                                            <TargetIcon className={`text-xl transition-transform duration-200 ${
+                                                isActive ? "text-[#0A84FF]" : "text-gray-500"
+                                            }`} />
+                                        </div>
+                                        <span className={`text-[10px] leading-none mt-1 tracking-tight transition-colors duration-200 ${
+                                            isActive ? "font-bold text-[#0A84FF]" : "font-semibold text-gray-500"
+                                        }`}>
+                                            {label}
+                                        </span>
+                                    </>
+                                );
+                            }}
+                        </NavLink>
+                    ))}
+                </div>
             </nav>
 
             {/* Logout Confirmation Modal */}
