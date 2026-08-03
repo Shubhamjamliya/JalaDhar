@@ -12,12 +12,12 @@ export default function NotificationsRedirect() {
   const { isAuthenticated: isAdminAuth } = useAdminAuth();
 
   useEffect(() => {
-    if (isVendorAuth) {
-      navigate('/vendor/notifications', { replace: true });
-    } else if (isAdminAuth) {
+    if (isAdminAuth) {
       navigate('/admin/notifications', { replace: true });
     } else if (isUserAuth) {
       navigate('/user/notifications', { replace: true });
+    } else if (isVendorAuth) {
+      navigate('/vendor/notifications', { replace: true });
     } else {
       navigate('/userlogin', { replace: true });
     }

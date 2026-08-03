@@ -28,10 +28,34 @@ export const NotificationProvider = ({ children }) => {
   const { vendor, isAuthenticated: isVendorAuthenticated } = useVendorAuth();
   const { admin, isAuthenticated: isAdminAuthenticated } = useAdminAuth();
 
-  // Determine current user and role
-  const currentUser = user || vendor || admin;
-  const isAuthenticated = isUserAuthenticated || isVendorAuthenticated || isAdminAuthenticated;
-  const userRole = user ? 'User' : vendor ? 'Vendor' : admin ? 'Admin' : null;
+  // Determine current user and role dynamically based on route context and auth state
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  let userRole = null;
+  let currentUser = null;
+
+  if (pathname.startsWith('/admin') && isAdminAuthenticated) {
+    userRole = 'Admin';
+    currentUser = admin;
+  } else if (pathname.startsWith('/vendor') && isVendorAuthenticated) {
+    userRole = 'Vendor';
+    currentUser = vendor;
+  } else if (pathname.startsWith('/user') && isUserAuthenticated) {
+    userRole = 'User';
+    currentUser = user;
+  } else {
+    if (isAdminAuthenticated) {
+      userRole = 'Admin';
+      currentUser = admin;
+    } else if (isUserAuthenticated) {
+      userRole = 'User';
+      currentUser = user;
+    } else if (isVendorAuthenticated) {
+      userRole = 'Vendor';
+      currentUser = vendor;
+    }
+  }
+
+  const isAuthenticated = !!currentUser;
 
   // Use refs to store latest values for socket listener (avoid stale closure)
   const currentUserRef = useRef(currentUser);
@@ -316,6 +340,8 @@ export const NotificationProvider = ({ children }) => {
     unreadCount,
     loading,
     socket,
+    userRole,
+    currentUser,
     markAsRead: markNotificationAsRead,
     markAllAsRead: markAllNotificationsAsRead,
     deleteNotification: removeNotification,
