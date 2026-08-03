@@ -286,18 +286,23 @@ const createBooking = async (req, res) => {
         // Calculate vendor payment breakdown
         vendorWalletPayments: (() => {
           const { calculateVendorPayment } = require('../../services/walletService');
+          // Pass baseServiceFee + travelCharges so commission/TDS apply to base only
+          // (matching Payout Summary: commission=10% of base, TDS=1% of base)
           const vendorPayment = calculateVendorPayment(baseServiceFee, travelCharges);
           return {
             base: vendorPayment.base,
-            gst: vendorPayment.gst,
-            platformFee: vendorPayment.platformFee,
+            customerGST: vendorPayment.customerGST,
+            gross: vendorPayment.gross,
+            platformCommission: vendorPayment.platformCommission,
+            gstOnCommission: vendorPayment.gstOnCommission,
+            tds: vendorPayment.tds,
             totalVendorPayment: vendorPayment.totalVendorPayment,
             siteVisitPayment: {
-              amount: vendorPayment.totalVendorPayment * 0.5,
+              amount: parseFloat((vendorPayment.totalVendorPayment * 0.5).toFixed(2)),
               credited: false
             },
             reportUploadPayment: {
-              amount: vendorPayment.totalVendorPayment * 0.5,
+              amount: parseFloat((vendorPayment.totalVendorPayment * 0.5).toFixed(2)),
               credited: false
             },
             totalCredited: 0

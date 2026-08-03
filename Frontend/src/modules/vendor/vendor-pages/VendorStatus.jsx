@@ -294,23 +294,52 @@ export default function VendorStatus() {
     const getStatusSteps = () => {
         if (!booking) return [];
 
-        // Use vendorStatus for vendor view
-        const status = booking.vendorStatus || booking.status;
+        // Derive robust effectiveStatus checking milestone fields first
+        // so the timeline always reflects actual progress, not just the raw status string
+        // Pick the MORE ADVANCED of vendorStatus vs booking.status to avoid divergence
+        const _progressOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
+        const _vIdx = _progressOrder.indexOf(booking.vendorStatus);
+        const _sIdx = _progressOrder.indexOf(booking.status);
+        const rawStatus = (_vIdx >= _sIdx ? (booking.vendorStatus || booking.status) : booking.status) || booking.status;
+
+        // Build effectiveStatus from actual milestone data
+        const hasBorell = booking.borewellResult && booking.borewellResult.uploadedAt && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED');
+        const hasFullPayment = booking.payment?.remainingPaid
+            || booking.payment?.status === "SUCCESS"
+            || rawStatus === "PAYMENT_SUCCESS"
+            || rawStatus === "PAID_FIRST";
+        const hasReport = !!(booking.reportUploadedAt || booking.report);
+        const hasVisited = !!(booking.visitedAt || ["VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"].includes(rawStatus));
+        const hasAccepted = !!(booking.acceptedAt || rawStatus !== "ASSIGNED");
+
+        // Map to statusOrder-compatible string
+        // IMPORTANT: always prefer rawStatus when it's already at a later stage
+        // to avoid locking the timeline at BOREWELL_UPLOADED when it has already progressed
+        const lateStatuses = ["APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED", "SUCCESS", "FAILED"];
+        const status = lateStatuses.includes(rawStatus) ? rawStatus
+            : hasBorell ? "BOREWELL_UPLOADED"
+            : hasFullPayment ? "PAYMENT_SUCCESS"
+            : hasReport ? "REPORT_UPLOADED"
+            : rawStatus;
 
         // Define status progression for completed check
-        const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "BOREWELL_UPLOADED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
+        const statusOrder = [
+            "ASSIGNED", "ACCEPTED", "VISITED",
+            "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST",
+            "BOREWELL_UPLOADED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"
+        ];
         const currentStatusIndex = statusOrder.indexOf(status);
-        const effectiveIndex = currentStatusIndex === -1 ?
-            (status === "SUCCESS" || status === "FAILED" ? 8 : 0) :
-            currentStatusIndex;
+        const effectiveIndex = currentStatusIndex === -1
+            ? (rawStatus === "SUCCESS" || rawStatus === "FAILED" ? 11 : 0)
+            : currentStatusIndex;
 
         const steps = [
             {
                 id: "assigned",
                 label: "Booking Assigned",
                 icon: IoPersonOutline,
-                active: status === "ASSIGNED",
-                completed: effectiveIndex > 0 || !!booking.acceptedAt || !!booking.visitedAt || !!booking.reportUploadedAt,
+                active: rawStatus === "ASSIGNED",
+                completed: hasAccepted && rawStatus !== "ASSIGNED",
                 description: "Booking has been assigned to you. Please accept or reject.",
                 date: booking.assignedAt,
             },
@@ -318,8 +347,8 @@ export default function VendorStatus() {
                 id: "accepted",
                 label: "Booking Accepted",
                 icon: IoCheckmarkCircleOutline,
-                active: status === "ACCEPTED",
-                completed: effectiveIndex > 1 || !!booking.visitedAt || !!booking.reportUploadedAt,
+                active: rawStatus === "ACCEPTED",
+                completed: hasVisited,
                 description: "You have accepted the booking. You can mark as visited.",
                 date: booking.acceptedAt,
             },
@@ -327,8 +356,8 @@ export default function VendorStatus() {
                 id: "visited",
                 label: "Site Visited",
                 icon: IoConstructOutline,
-                active: status === "VISITED",
-                completed: effectiveIndex > 2 || !!booking.reportUploadedAt,
+                active: rawStatus === "VISITED" && !hasReport,
+                completed: hasReport || effectiveIndex > 2,
                 description: "You have visited the customer site.",
                 date: booking.visitedAt,
             },
@@ -336,8 +365,8 @@ export default function VendorStatus() {
                 id: "first-payment",
                 label: "1st Payment Release",
                 icon: IoWalletOutline,
-                active: status === "VISITED" && !booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited,
-                completed: booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited || effectiveIndex > 2,
+                active: hasVisited && !booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited && !hasReport,
+                completed: booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited || hasReport,
                 description: booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited
                     ? "1st payment (50%) has been credited to your wallet."
                     : "1st payment (50%) is pending release from admin.",
@@ -347,52 +376,69 @@ export default function VendorStatus() {
                 id: "upload-report",
                 label: "Upload Report",
                 icon: IoDocumentTextOutline,
-                active: status === "VISITED" && !booking.reportUploadedAt,
-                completed: !!booking.reportUploadedAt || effectiveIndex > 3,
+                active: hasVisited && !hasReport,
+                completed: hasReport,
                 description: "Please upload the service report after receiving 1st payment.",
-                date: null,
+                date: booking.reportUploadedAt || booking.report?.uploadedAt || null,
             },
             {
                 id: "report-approved",
                 label: "Report Approved",
                 icon: IoCheckmarkCircleOutline,
-                active: status === "REPORT_UPLOADED" && !booking.report?.approvedAt,
-                completed: !!booking.report?.approvedAt || effectiveIndex > 4,
+                active: hasReport && !booking.report?.approvedAt && !hasFullPayment,
+                completed: !!booking.report?.approvedAt || hasFullPayment,
                 description: booking.report?.approvedAt
                     ? "Your report has been approved by admin."
-                    : "Waiting for admin to approve your report.",
+                    : hasReport
+                        ? "Waiting for admin to approve your report."
+                        : "Report not yet uploaded.",
                 date: booking.report?.approvedAt,
             },
             {
-                id: "second-payment",
-                label: "2nd Payment Release",
+                id: "customer-payment",
+                label: "Customer Final Payment",
                 icon: IoWalletOutline,
-                active: status === "REPORT_UPLOADED" && booking.report?.approvedAt && !booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited,
-                completed: booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited || (effectiveIndex > 4 && booking.report?.approvedAt),
-                description: booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited
-                    ? "2nd payment (50%) has been credited to your wallet."
+                active: hasReport && !hasFullPayment,
+                completed: hasFullPayment,
+                description: hasFullPayment
+                    ? "Customer has completed the 60% final payment. ✅"
                     : booking.report?.approvedAt
-                        ? "2nd payment (50%) is pending release from admin."
-                        : "Waiting for report approval before 2nd payment release.",
+                        ? "Awaiting customer's 60% final payment."
+                        : "Waiting for report approval before customer can pay.",
+                date: booking.payment?.remainingPaidAt,
+            },
+            {
+                id: "second-payment",
+                label: "2nd Platform Payout",
+                icon: IoWalletOutline,
+                active: hasFullPayment && !booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited,
+                completed: booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited || hasBorell,
+                description: booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited
+                    ? "2nd payout (50%) has been credited to your wallet."
+                    : hasFullPayment
+                        ? "Your 2nd payout is pending release from admin after customer payment."
+                        : "Waiting for customer payment before payout release.",
                 date: booking.payment?.vendorWalletPayments?.reportUploadPayment?.creditedAt,
             },
             {
                 id: "borewell",
                 label: "Borewell Result Uploaded",
                 icon: IoImageOutline,
-                active: status === "BOREWELL_UPLOADED" && !!booking.borewellResult?.uploadedAt,
-                completed: effectiveIndex > 6 || status === "APPROVED" || status === "FINAL_SETTLEMENT_COMPLETE",
-                description: booking.borewellResult?.uploadedAt
-                    ? `User has uploaded borewell result. Waiting for admin to approve and process final settlement.`
-                    : "Waiting for user to upload borewell result.",
+                active: hasFullPayment && !hasBorell,
+                completed: hasBorell && (effectiveIndex > statusOrder.indexOf("BOREWELL_UPLOADED")),
+                description: hasBorell
+                    ? "Customer has uploaded borewell result. Waiting for admin to approve and process final settlement."
+                    : hasFullPayment
+                        ? "Customer will now drill borewell at your report location points and upload result."
+                        : "Waiting for customer to complete payment before borewell phase.",
                 date: booking.borewellResult?.uploadedAt,
             },
             {
                 id: "approved",
                 label: "Admin Approved",
                 icon: IoCheckmarkCircleOutline,
-                active: status === "APPROVED",
-                completed: effectiveIndex > 7 || status === "FINAL_SETTLEMENT_COMPLETE" || status === "COMPLETED",
+                active: rawStatus === "APPROVED",
+                completed: effectiveIndex > statusOrder.indexOf("APPROVED") || rawStatus === "FINAL_SETTLEMENT_COMPLETE" || rawStatus === "COMPLETED",
                 description: "Admin has approved the borewell result. Waiting for final settlement processing.",
                 date: booking.borewellResult?.approvedAt,
             },
@@ -400,14 +446,9 @@ export default function VendorStatus() {
                 id: "settlement",
                 label: "Final Settlement Complete",
                 icon: IoWalletOutline,
-                active: status === "FINAL_SETTLEMENT_COMPLETE",
-                // Vendor settlement is complete if:
-                // 1. vendorStatus is FINAL_SETTLEMENT_COMPLETE, OR
-                // 2. finalSettlement has rewardAmount or penaltyAmount (vendor settlement processed), OR
-                // 3. finalSettlement.status is PROCESSED, OR
-                // 4. old vendorSettlement.status is COMPLETED
-                completed: status === "FINAL_SETTLEMENT_COMPLETE" ||
-                    status === "COMPLETED" ||
+                active: rawStatus === "FINAL_SETTLEMENT_COMPLETE",
+                completed: rawStatus === "FINAL_SETTLEMENT_COMPLETE" ||
+                    rawStatus === "COMPLETED" ||
                     booking.finalSettlement?.status === "PROCESSED" ||
                     booking.finalSettlement?.rewardAmount > 0 ||
                     booking.finalSettlement?.penaltyAmount > 0 ||
@@ -416,9 +457,7 @@ export default function VendorStatus() {
                     booking.finalSettlement?.status === "PROCESSED" ||
                     booking.vendorStatus === "FINAL_SETTLEMENT_COMPLETE" ||
                     booking.payment?.vendorSettlement?.status === "COMPLETED"
-                    ? booking.finalSettlement?.status === "PROCESSED" || booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0 || booking.vendorStatus === "FINAL_SETTLEMENT_COMPLETE"
-                        ? `Admin has processed your final settlement. ${booking.finalSettlement?.rewardAmount > 0 ? `Reward of ₹${booking.finalSettlement.rewardAmount.toLocaleString('en-IN')} credited.` : booking.finalSettlement?.penaltyAmount > 0 ? `Penalty of ₹${booking.finalSettlement.penaltyAmount.toLocaleString('en-IN')} deducted.` : 'All payments completed.'}`
-                        : "Admin has processed your final settlement. All payments completed."
+                    ? `Admin has processed your final settlement. ${booking.finalSettlement?.rewardAmount > 0 ? `Reward of ₹${booking.finalSettlement.rewardAmount.toLocaleString('en-IN')} credited.` : booking.finalSettlement?.penaltyAmount > 0 ? `Penalty of ₹${booking.finalSettlement.penaltyAmount.toLocaleString('en-IN')} deducted.` : 'All payments completed.'}`
                     : "Waiting for admin to process final settlement.",
                 date: booking.finalSettlement?.processedAt || booking.payment?.vendorSettlement?.settledAt,
             },
@@ -426,8 +465,8 @@ export default function VendorStatus() {
                 id: "completed",
                 label: "Completed",
                 icon: IoCheckmarkCircleOutline,
-                active: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"].includes(status),
-                completed: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"].includes(status),
+                active: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"].includes(rawStatus),
+                completed: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"].includes(rawStatus),
                 description: "Booking process completed successfully. All settlements are done.",
                 date: booking.completedAt || booking.finalSettlement?.processedAt || booking.payment?.vendorSettlement?.settledAt,
             },
@@ -459,7 +498,19 @@ export default function VendorStatus() {
     const steps = getStatusSteps();
     const user = booking?.user;
     // Use vendorStatus for vendor view
-    const status = booking?.vendorStatus || booking?.status;
+    // Pick the MORE ADVANCED of vendorStatus vs booking.status to avoid divergence
+    const _progressOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
+    const _vIdx2 = _progressOrder.indexOf(booking?.vendorStatus);
+    const _sIdx2 = _progressOrder.indexOf(booking?.status);
+    const rawStatus = (_vIdx2 >= _sIdx2 ? (booking?.vendorStatus || booking?.status) : booking?.status) || booking?.status;
+
+    // Derive milestone flags at component level for use in JSX
+    const hasBorell = booking?.borewellResult && booking.borewellResult.uploadedAt && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED');
+    const hasFullPayment = booking?.payment?.remainingPaid
+        || booking?.payment?.status === "SUCCESS"
+        || rawStatus === "PAYMENT_SUCCESS"
+        || rawStatus === "PAID_FIRST";
+    const hasReport = !!(booking?.reportUploadedAt || booking?.report);
 
     return (
         <div
@@ -637,7 +688,7 @@ export default function VendorStatus() {
             )}
 
             {/* Active Actions Section - Below Booking Status */}
-            {status && !["CANCELLED", "REJECTED", "COMPLETED"].includes(status) && (
+            {rawStatus && !["CANCELLED", "REJECTED", "COMPLETED"].includes(rawStatus) && (
                 <div className="mt-12 mb-8 animate-slide-up">
                     <div className="bg-white rounded-[24px] p-6 shadow-[0px_20px_40px_rgba(0,0,0,0.08)] border border-blue-50/50 relative overflow-hidden">
                         {/* Decorative background element */}
@@ -646,11 +697,11 @@ export default function VendorStatus() {
                         <div className="relative z-10">
                             <h2 className="text-lg font-black text-gray-800 mb-5 flex items-center gap-2">
                                 <span className="w-1.5 h-6 bg-[#0A84FF] rounded-full"></span>
-                                Required Action
+                                {hasFullPayment && !hasBorell ? "What Happens Next?" : "Required Action"}
                             </h2>
 
                             {/* ASSIGNED ACTIONS */}
-                            {status === "ASSIGNED" && (
+                            {rawStatus === "ASSIGNED" && (
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <button
                                         onClick={handleReject}
@@ -670,7 +721,7 @@ export default function VendorStatus() {
                             )}
 
                             {/* ACCEPTED ACTIONS */}
-                            {status === "ACCEPTED" && (
+                            {rawStatus === "ACCEPTED" && (
                                 <div className="flex flex-col gap-3">
                                     <button
                                         onClick={handleMarkVisited}
@@ -690,8 +741,8 @@ export default function VendorStatus() {
                                 </div>
                             )}
 
-                            {/* VISITED ACTIONS */}
-                            {status === "VISITED" && !booking.reportUploadedAt && (
+                            {/* VISITED ACTIONS — upload report */}
+                            {rawStatus === "VISITED" && !hasReport && (
                                 <button
                                     onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
                                     className="w-full h-14 bg-[#0A84FF] text-white text-base font-black rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100"
@@ -701,16 +752,32 @@ export default function VendorStatus() {
                                 </button>
                             )}
 
-                            {/* REPORT UPLOADED / AWAITING PAYMENTS */}
-                            {(status === "REPORT_UPLOADED" || status === "AWAITING_PAYMENT") && (
+                            {/* REPORT UPLOADED / AWAITING CUSTOMER PAYMENT */}
+                            {hasReport && !hasFullPayment && (
                                 <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex items-center gap-4">
                                     <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center text-white shrink-0">
                                         <IoTimeOutline className="text-2xl" />
                                     </div>
                                     <div>
-                                        <p className="font-bold text-orange-800 text-sm">Waiting for Customer Payment</p>
-                                        <p className="text-xs text-orange-600 mt-0.5">Payment release will be triggered automatically.</p>
+                                        <p className="font-bold text-orange-800 text-sm">Waiting for Customer's Final 60% Payment</p>
+                                        <p className="text-xs text-orange-600 mt-0.5">Customer is reviewing your report and will complete payment soon. Your 2nd payout will be released automatically.</p>
                                     </div>
+                                </div>
+                            )}
+
+                            {/* CUSTOMER PAID — waiting for borewell */}
+                            {hasFullPayment && !hasBorell && (
+                                <div className="space-y-3">
+                                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white shrink-0">
+                                            <IoCheckmarkCircleOutline className="text-2xl" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-emerald-800 text-sm">Customer Has Paid 100% — Job Done! ✅</p>
+                                            <p className="text-xs text-emerald-700 mt-0.5">Customer is now proceeding to drill borewell at your recommended GPS location points.</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 text-center font-medium">Your 2nd payout will be processed by admin after report approval. No action needed from you at this stage.</p>
                                 </div>
                             )}
                         </div>

@@ -8,14 +8,19 @@ import {
     IoInformationCircleOutline,
     IoTrashOutline
 } from "react-icons/io5";
+import { useNavigate } from "react-router-dom";
 import { getNotifications, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications } from "../../../services/notificationApi";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import { useToast } from "../../../hooks/useToast";
+import { useNotifications } from "../../../contexts/NotificationContext";
+import { getNotificationUrl } from "../../../utils/notificationUtils";
 
 export default function UserNotificationsPage() {
     const toast = useToast();
+    const navigate = useNavigate();
+    const { userRole } = useNotifications();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [notifications, setNotifications] = useState([]);
@@ -200,15 +205,25 @@ export default function UserNotificationsPage() {
                                     timeStyle: "short"
                                 })
                                 : "";
+                            const url = getNotificationUrl(notification, userRole);
+
+                            const handleClick = async () => {
+                              if (!notification.isRead) {
+                                await handleMarkAsRead(notification._id);
+                              }
+                              if (url) {
+                                navigate(url);
+                              }
+                            };
 
                             return (
                                 <div
                                     key={notification._id}
-                                    onClick={() => !notification.isRead && handleMarkAsRead(notification._id)}
-                                    className={`p-4 rounded-2xl border transition-all flex items-start gap-4 cursor-pointer group ${
+                                    onClick={handleClick}
+                                    className={`p-4 rounded-2xl border transition-all flex items-start gap-4 cursor-pointer group hover:shadow-md ${
                                         notification.isRead
-                                            ? "bg-white border-gray-100 shadow-2xs"
-                                            : "bg-amber-50/50 border-amber-200 shadow-sm"
+                                            ? "bg-white border-gray-100 shadow-2xs hover:bg-gray-50/80"
+                                            : "bg-amber-50/50 border-amber-200 shadow-sm hover:bg-amber-100/50"
                                     }`}
                                 >
                                     <div className={`p-2.5 rounded-xl shrink-0 ${
@@ -228,6 +243,9 @@ export default function UserNotificationsPage() {
                                         </div>
                                         <p className="text-xs text-gray-600 leading-relaxed">
                                             {notification.message}
+                                        </p>
+                                        <p className="text-[11px] text-amber-600 font-bold mt-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                            View details →
                                         </p>
                                     </div>
 

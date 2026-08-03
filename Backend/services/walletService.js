@@ -4,20 +4,48 @@ const VendorWithdrawalRequest = require('../models/VendorWithdrawalRequest');
 
 /**
  * Calculate vendor payment breakdown
- * Formula: base = service + travel, GST = 18% of base, Platform fee = 15% of base
- * Total vendor payment = (base - platform fee) + GST
+ *
+ * Formula (matches Platform Payout Summary invoice exactly):
+ *
+ *   baseServiceFee        = service price (excl. GST)
+ *   customerGST           = 18% of baseServiceFee  (collected from customer by platform)
+ *   grossCustomerPayment  = baseServiceFee + customerGST + travelCharges
+ *
+ *   platformCommission    = 10% of baseServiceFee   ← on base only, NOT on gross
+ *   gstOnCommission       = 18% of platformCommission
+ *   tds                   = 1%  of baseServiceFee   ← Sec 194O, on base only
+ *
+ *   totalVendorPayment    = grossCustomerPayment - platformCommission - gstOnCommission - tds
+ *
+ * Example (₹3,500 base, no travel):
+ *   gross          = ₹4,130
+ *   commission     = ₹350   (10% × 3,500)
+ *   gstOnCommission= ₹63    (18% × 350)
+ *   tds            = ₹35    (1%  × 3,500)
+ *   net            = ₹4,130 - ₹350 - ₹63 - ₹35 = ₹3,682
  */
-const calculateVendorPayment = (baseServiceFee, travelCharges) => {
-  const base = baseServiceFee + travelCharges;
-  const gst = base * 0.18; // 18% of base
-  const platformFee = base * 0.15; // 15% of base
-  const totalVendorPayment = (base - platformFee) + gst;
+const calculateVendorPayment = (baseServiceFee, travelCharges = 0) => {
+  const COMMISSION_RATE    = 0.10;  // 10% platform commission on base fee
+  const GST_ON_COMMISSION  = 0.18;  // 18% GST on platform commission
+  const TDS_RATE           = 0.01;  // 1% TDS under Sec 194O on base fee
+  const CUSTOMER_GST_RATE  = 0.18;  // 18% GST charged to customer
+
+  const customerGST        = parseFloat((baseServiceFee * CUSTOMER_GST_RATE).toFixed(2));
+  const gross              = parseFloat((baseServiceFee + customerGST + travelCharges).toFixed(2));
+
+  const platformCommission = parseFloat((baseServiceFee * COMMISSION_RATE).toFixed(2));
+  const gstOnCommission    = parseFloat((platformCommission * GST_ON_COMMISSION).toFixed(2));
+  const tds                = parseFloat((baseServiceFee * TDS_RATE).toFixed(2));
+  const totalVendorPayment = parseFloat((gross - platformCommission - gstOnCommission - tds).toFixed(2));
 
   return {
-    base: parseFloat(base.toFixed(2)),
-    gst: parseFloat(gst.toFixed(2)),
-    platformFee: parseFloat(platformFee.toFixed(2)),
-    totalVendorPayment: parseFloat(totalVendorPayment.toFixed(2))
+    base: baseServiceFee,
+    customerGST,
+    gross,
+    platformCommission,
+    gstOnCommission,
+    tds,
+    totalVendorPayment
   };
 };
 

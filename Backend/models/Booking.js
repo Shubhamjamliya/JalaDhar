@@ -377,7 +377,7 @@ const bookingSchema = new mongoose.Schema({
     status: {
       type: String,
       enum: ['PENDING', 'SUCCESS', 'FAILED'],
-      default: 'PENDING'
+      default: null    // null by default — only set when user actually uploads a result
     },
     images: [{
       url: String,

@@ -59,6 +59,7 @@ export default function VendorRequests() {
                     getVendorBookings({ status: "PENDING,AWAITING_ADVANCE", limit: 50, sortBy: "createdAt", sortOrder: "desc" }),
                     getVendorBookings({
                         status: "ACCEPTED,VISITED,REPORT_UPLOADED,AWAITING_PAYMENT,PAYMENT_SUCCESS,PAID_FIRST,BOREWELL_UPLOADED,ADMIN_APPROVED,APPROVED",
+                        excludeStatus: "COMPLETED,FINAL_SETTLEMENT_COMPLETE",
                         limit: 50,
                         sortBy: "createdAt",
                         sortOrder: "desc"

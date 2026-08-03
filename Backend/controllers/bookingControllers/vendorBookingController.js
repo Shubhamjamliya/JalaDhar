@@ -14,7 +14,7 @@ const { creditToVendorWallet, retryFailedCredit } = require('../../services/wall
 const getVendorBookings = async (req, res) => {
   try {
     const vendorId = req.userId;
-    const { status, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+    const { status, excludeStatus, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
 
     const query = { vendor: vendorId };
     if (status) {
@@ -36,6 +36,15 @@ const getVendorBookings = async (req, res) => {
         query.vendorStatus = status;
       }
     }
+
+    // Exclude bookings where the global booking.status is in excludeStatus list
+    // This handles the case where vendorStatus is still e.g. "APPROVED" but booking.status
+    // has already moved to "COMPLETED" via processVendorSettlement
+    if (excludeStatus) {
+      const excludeArray = excludeStatus.split(',');
+      query.status = { $nin: excludeArray };
+    }
+
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -739,6 +748,7 @@ const getBookingDetails = async (req, res) => {
       vendor: vendorId
     })
       .populate('user', 'name email phone address profilePicture documents.profilePicture')
+      .populate('vendor', 'name email phone vendorId address gstin pan bankDetails profilePicture')
       .populate('service', 'name price machineType description');
 
     if (!booking) {

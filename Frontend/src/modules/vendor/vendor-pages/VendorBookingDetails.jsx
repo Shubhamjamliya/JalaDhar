@@ -19,6 +19,7 @@ import {
     IoMap,
     IoLogoGoogle,
     IoWaterOutline,
+    IoLogoWhatsapp
 } from "react-icons/io5";
 import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, markBookingAsVisited, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
@@ -59,6 +60,9 @@ export default function VendorBookingDetails() {
 
     // Load data on mount and when location/bookingId changes
     useEffect(() => {
+        // Reset stale booking data immediately so previous booking's
+        // borewellResult images / data never show while new data loads
+        setBooking(null);
         loadBookingDetails();
     }, [bookingId, location.pathname]);
 
@@ -486,7 +490,26 @@ export default function VendorBookingDetails() {
                 <div className="relative">
                     <div className="flex items-start justify-between gap-2 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2">
                         {(() => {
-                            const status = booking.vendorStatus || booking.status;
+                            // Derive robust effectiveStatus across payment, report, and borewell milestones
+                            // IMPORTANT: lateStatuses always win — prevents borewell check from capping
+                            // the timeline at BOREWELL_UPLOADED when the booking has already progressed past it
+                            const _statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
+                            // Pick the MORE ADVANCED of vendorStatus vs booking.status
+                            // (they can diverge; badge reads booking.status, timeline used vendorStatus — now we unify)
+                            const _vIdx = _statusOrder.indexOf(booking.vendorStatus);
+                            const _sIdx = _statusOrder.indexOf(booking.status);
+                            const rawStatus = (_vIdx >= _sIdx ? (booking.vendorStatus || booking.status) : booking.status) || booking.status;
+                            const lateStatuses = ["APPROVED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED", "SUCCESS", "FAILED"];
+                            const hasBorell = booking.borewellResult && booking.borewellResult.uploadedAt && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED');
+                            const hasFullPayment = booking.payment?.remainingPaid || booking.payment?.status === "SUCCESS" || rawStatus === "PAYMENT_SUCCESS" || rawStatus === "PAID_FIRST";
+                            const hasReport = !!(booking.reportUploadedAt || booking.report);
+
+                            const status = lateStatuses.includes(rawStatus) ? rawStatus
+                                : hasBorell ? "BOREWELL_UPLOADED"
+                                : hasFullPayment ? "PAYMENT_SUCCESS"
+                                : hasReport ? "REPORT_UPLOADED"
+                                : rawStatus;
+
                             const timelineSteps = [
                                 { id: "assigned", label: "Assigned", icon: "📋", statuses: ["ASSIGNED"] },
                                 { id: "accepted", label: "Accepted", icon: "✅", statuses: ["ACCEPTED"] },
@@ -496,8 +519,9 @@ export default function VendorBookingDetails() {
                                 { id: "borewell", label: "Borewell", icon: "🚰", statuses: ["BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED"] },
                                 { id: "completed", label: "Completed", icon: "🎉", statuses: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"] },
                             ];
-                            const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
+                            const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
                             const currentIndex = statusOrder.indexOf(status);
+
 
                             return timelineSteps.map((step, index) => {
                                 const stepStatuses = step.id === "completed"
@@ -549,42 +573,60 @@ export default function VendorBookingDetails() {
                     <div className="absolute right-0 top-0 bottom-6 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none opacity-50 sm:hidden"></div>
                 </div>
 
-                {/* Detailed dates */}
-                <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
+                {/* Detailed dates & transaction timestamps */}
+                <div className="mt-4 pt-4 border-t border-gray-100 space-y-2.5 text-xs sm:text-sm">
                     {booking.createdAt && (
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Created:</span>
-                            <span className="text-gray-800 font-medium">{formatDate(booking.createdAt)}</span>
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Booking Created:</span>
+                            <span className="text-gray-800 font-bold">{formatDate(booking.createdAt)}</span>
                         </div>
                     )}
                     {booking.assignedAt && (
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Assigned:</span>
-                            <span className="text-gray-800 font-medium">{formatDate(booking.assignedAt)}</span>
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Expert Assigned:</span>
+                            <span className="text-gray-800 font-bold">{formatDate(booking.assignedAt)}</span>
                         </div>
                     )}
                     {booking.acceptedAt && (
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Accepted:</span>
-                            <span className="text-gray-800 font-medium">{formatDate(booking.acceptedAt)}</span>
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Expert Accepted:</span>
+                            <span className="text-gray-800 font-bold">{formatDate(booking.acceptedAt)}</span>
                         </div>
                     )}
                     {booking.visitedAt && (
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Visited:</span>
-                            <span className="text-gray-800 font-medium">{formatDate(booking.visitedAt)}</span>
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Site Visited:</span>
+                            <span className="text-gray-800 font-bold">{formatDate(booking.visitedAt)}</span>
                         </div>
                     )}
-                    {booking.completedAt && (
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Completed:</span>
-                            <span className="text-gray-800 font-medium">{formatDate(booking.completedAt)}</span>
+                    {(booking.reportUploadedAt || booking.report?.uploadedAt) && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Report Uploaded:</span>
+                            <span className="text-gray-800 font-bold">{formatDate(booking.reportUploadedAt || booking.report?.uploadedAt)}</span>
+                        </div>
+                    )}
+                    {booking.payment?.advancePaidAt && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-emerald-600 font-semibold">Advance Payment (40%) Paid:</span>
+                            <span className="text-gray-800 font-bold">{formatDate(booking.payment.advancePaidAt)}</span>
+                        </div>
+                    )}
+                    {booking.payment?.remainingPaidAt && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-emerald-600 font-semibold">Final Settlement (60%) Paid:</span>
+                            <span className="text-gray-800 font-bold">{formatDate(booking.payment.remainingPaidAt)}</span>
                         </div>
                     )}
                     {booking.borewellResult?.uploadedAt && (
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Borewell Result:</span>
-                            <span className="text-gray-800 font-medium">{formatDate(booking.borewellResult.uploadedAt)}</span>
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Borewell Result Uploaded:</span>
+                            <span className="text-gray-800 font-bold">{formatDate(booking.borewellResult.uploadedAt)}</span>
+                        </div>
+                    )}
+                    {booking.completedAt && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Completed:</span>
+                            <span className="text-gray-800 font-bold">{formatDate(booking.completedAt)}</span>
                         </div>
                     )}
                 </div>
@@ -654,7 +696,7 @@ export default function VendorBookingDetails() {
                 </div>
             )}
 
-            {booking.status === "VISITED" && !booking.reportUploadedAt && (
+            {booking.status === "VISITED" && (!booking.reportUploadedAt && !booking.report) && (
                 <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(10,132,255,0.08)] mb-6 border-2 border-blue-50 ring-4 ring-blue-50/30">
                     <h2 className="text-lg font-black text-gray-800 mb-4 flex items-center gap-2">
                         <span className="w-1.5 h-6 bg-[#0A84FF] rounded-full"></span>
@@ -670,43 +712,142 @@ export default function VendorBookingDetails() {
                 </div>
             )}
 
-            {/* User Information Card */}
+            {/* Stage Action Guide Card: Report Uploaded & Awaiting Final Payment */}
+            {(booking.reportUploadedAt || booking.report) && !booking.payment?.remainingPaid && booking.status !== "PAYMENT_SUCCESS" && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(10,132,255,0.08)] mb-6 border-2 border-blue-50 ring-4 ring-blue-50/30">
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-lg font-black text-gray-800 flex items-center gap-2">
+                            <span className="w-1.5 h-6 bg-[#0A84FF] rounded-full"></span>
+                            Current Stage: Report Uploaded
+                        </h2>
+                        <span className="px-3 py-1 bg-blue-50 text-[#0A84FF] font-bold text-xs rounded-full border border-blue-100">
+                            Awaiting Customer Payment
+                        </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed font-medium">
+                        Your Hydrogeological Survey Report has been uploaded successfully. <br />
+                        <strong className="text-gray-800">Next Step:</strong> Customer is reviewing the report preview and making the final 60% settlement.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                            onClick={() => navigate(`/vendor/booking/${booking._id || booking.id}/report`)}
+                            className="flex-1 bg-[#0A84FF] text-white font-bold py-3.5 px-4 rounded-xl hover:bg-[#005BBB] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-100 text-xs sm:text-sm"
+                        >
+                            <IoDocumentTextOutline className="text-lg" />
+                            <span>View Digital Survey Report</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Stage Action Guide Card: Full Payment Received (PAYMENT_SUCCESS) */}
+            {(booking.payment?.remainingPaid || booking.payment?.status === "SUCCESS" || booking.status === "PAYMENT_SUCCESS") && (!booking.borewellResult || !booking.borewellResult?.uploadedAt) && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(16,185,129,0.08)] mb-6 border-2 border-emerald-100 ring-4 ring-emerald-50/50">
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-lg font-black text-gray-800 flex items-center gap-2">
+                            <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+                            Current Stage: Full Payment Received
+                        </h2>
+                        <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-full border border-emerald-200">
+                            100% Settled
+                        </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed font-medium">
+                        Customer has successfully completed the 60% final payment. <br />
+                        <strong className="text-gray-800">Next Step:</strong> Customer will perform borewell drilling based on your survey report location points and upload the outcome.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-gray-100">
+                        <button
+                            onClick={() => navigate(`/vendor/booking/${booking._id || booking.id}/report`)}
+                            className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-50 text-[#0A84FF] font-bold text-xs sm:text-sm rounded-xl hover:bg-blue-100 transition-all border border-blue-100"
+                        >
+                            <IoDocumentTextOutline className="text-lg" />
+                            <span>View Survey Report</span>
+                        </button>
+                        <button
+                            onClick={() => navigate(`/vendor/booking/${booking._id || booking.id}/invoice`)}
+                            className="flex items-center justify-center gap-2 py-3 px-4 bg-emerald-50 text-emerald-700 font-bold text-xs sm:text-sm rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100"
+                        >
+                            <IoDownloadOutline className="text-lg" />
+                            <span>Platform Tax Invoice</span>
+                        </button>
+                        {booking.user?.phone && (
+                            <a
+                                href={`https://wa.me/91${booking.user.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${booking.user.name}, I noticed your 60% settlement is complete for Hydrogeology Survey ORD-${booking._id?.slice(-8).toUpperCase()}. Let me know if you need assistance with borewell drilling points!`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 text-white font-bold text-xs sm:text-sm rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100"
+                            >
+                                <IoLogoWhatsapp className="text-lg" />
+                                <span>Chat on WhatsApp</span>
+                            </a>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Customer Information Card */}
             <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Customer Information</h2>
                 <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        {booking.user?.profilePicture ? (
-                            <img
-                                src={booking.user.profilePicture}
-                                alt={booking.user.name}
-                                className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
-                            />
-                        ) : (
-                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] flex items-center justify-center text-white text-2xl font-bold shadow-sm border-2 border-white">
-                                {booking.user?.name?.charAt(0).toUpperCase() || "U"}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            {booking.user?.profilePicture ? (
+                                <img
+                                    src={booking.user.profilePicture}
+                                    alt={booking.user.name}
+                                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
+                                />
+                            ) : (
+                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#0A84FF] to-[#00C2A8] flex items-center justify-center text-white text-2xl font-bold shadow-sm border-2 border-white">
+                                    {booking.user?.name?.charAt(0).toUpperCase() || "U"}
+                                </div>
+                            )}
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-800">
+                                    {booking.user?.name || "Customer"}
+                                </h3>
+                                {booking.user?.email && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                                        <IoMailOutline className="text-base text-gray-400" />
+                                        <a href={`mailto:${booking.user.email}`} className="hover:text-[#0A84FF] font-medium">
+                                            {booking.user.email}
+                                        </a>
+                                    </div>
+                                )}
+                                {booking.user?.phone && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                                        <IoCallOutline className="text-base text-gray-400" />
+                                        <a href={`tel:${booking.user.phone}`} className="hover:text-[#0A84FF] font-bold">
+                                            {booking.user.phone}
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Quick 1-Tap Call & WhatsApp Action Buttons */}
+                        {booking.user?.phone && (
+                            <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                                <a
+                                    href={`tel:${booking.user.phone}`}
+                                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-50 text-[#0A84FF] font-bold text-xs rounded-xl hover:bg-blue-100 transition-all border border-blue-100"
+                                >
+                                    <IoCallOutline className="text-base" />
+                                    <span>Call</span>
+                                </a>
+                                <a
+                                    href={`https://wa.me/91${booking.user.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${booking.user.name}, I am your Hydrogeologist Expert from Jaladhaara regarding Booking ORD-${booking._id?.slice(-8).toUpperCase()}`)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-xs rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100"
+                                >
+                                    <IoLogoWhatsapp className="text-base text-emerald-500" />
+                                    <span>WhatsApp</span>
+                                </a>
                             </div>
                         )}
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-800">
-                                {booking.user?.name || "User"}
-                            </h3>
-                            {booking.user?.email && (
-                                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                                    <IoMailOutline className="text-base" />
-                                    <a href={`mailto:${booking.user.email}`} className="hover:text-[#0A84FF]">
-                                        {booking.user.email}
-                                    </a>
-                                </div>
-                            )}
-                            {booking.user?.phone && (
-                                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                                    <IoCallOutline className="text-base" />
-                                    <a href={`tel:${booking.user.phone}`} className="hover:text-[#0A84FF]">
-                                        {booking.user.phone}
-                                    </a>
-                                </div>
-                            )}
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1013,7 +1154,7 @@ export default function VendorBookingDetails() {
             )}
 
             {/* Borewell Outcome Card (Uploaded by User) */}
-            {booking.borewellResult && (booking.borewellResult.status || booking.borewellResult.images?.length > 0) && (
+            {booking.borewellResult && booking.borewellResult.uploadedAt && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED') && (
                 <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6 border-l-4 border-[#0A84FF]">
                     <div className="flex items-center gap-3 mb-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${booking.borewellResult.status === 'SUCCESS' ? 'bg-green-500' : 'bg-red-500'}`}>
@@ -1283,20 +1424,29 @@ export default function VendorBookingDetails() {
                 confirmColor="primary"
             />
 
-            {/* Download Invoice - Available when final settlement is done */}
-            {booking && ["FINAL_SETTLEMENT", "COMPLETED", "SUCCESS"].includes(booking.status) && (
+            {/* Download Invoices Center - Dual Marketplace Invoices */}
+            {booking && (
                 <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Invoice</h2>
-                    <p className="text-sm text-gray-600 mb-4">
-                        Download your invoice with all payment information and settlement details.
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">Tax Invoices Center</h2>
+                    <p className="text-sm text-gray-500 mb-4">
+                        View and download tax invoices for platform commission settlement and customer booking receipts.
                     </p>
-                    <button
-                        onClick={handleDownloadInvoice}
-                        className="w-full bg-[#0A84FF] text-white font-semibold py-3 px-6 rounded-[12px] hover:bg-[#005BBB] active:bg-[#004A9A] transition-colors flex items-center justify-center gap-2 shadow-[0px_4px_10px_rgba(10,132,255,0.2)]"
-                    >
-                        <IoDownloadOutline className="text-xl" />
-                        Download Invoice
-                    </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                            onClick={() => navigate(`/vendor/booking/${booking._id || booking.id}/invoice`)}
+                            className="bg-[#0A84FF] text-white font-bold py-3 px-4 rounded-xl hover:bg-[#005BBB] transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-100 text-xs sm:text-sm"
+                        >
+                            <IoDownloadOutline className="text-lg" />
+                            <span>Platform Commission Invoice</span>
+                        </button>
+                        <button
+                            onClick={() => navigate(`/user/booking/${booking._id || booking.id}/invoice`)}
+                            className="bg-gray-100 text-gray-800 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm border border-gray-200"
+                        >
+                            <IoDocumentTextOutline className="text-lg text-gray-600" />
+                            <span>Customer Service Invoice</span>
+                        </button>
+                    </div>
                 </div>
             )}
 

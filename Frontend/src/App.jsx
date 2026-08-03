@@ -58,6 +58,7 @@ const VendorDashboard = lazy(() => import("./modules/vendor/vendor-pages/VendorD
 const VendorDisputes = lazy(() => import("./modules/vendor/vendor-pages/VendorDisputes"));
 const VendorCreateDispute = lazy(() => import("./modules/vendor/vendor-pages/VendorCreateDispute"));
 const VendorDisputeDetails = lazy(() => import("./modules/vendor/vendor-pages/VendorDisputeDetails"));
+const VendorInvoice = lazy(() => import("./modules/vendor/vendor-pages/VendorInvoice"));
 const VendorBookings = lazy(() => import("./modules/vendor/vendor-pages/VendorBookings"));
 const VendorStatus = lazy(() => import("./modules/vendor/vendor-pages/VendorStatus"));
 const VendorAllBookingsStatus = lazy(() => import("./modules/vendor/vendor-pages/VendorAllBookingsStatus"));
@@ -100,6 +101,8 @@ const AdminPolicies = lazy(() => import("./modules/admin/admin-pages/AdminPolici
 const AdminReports = lazy(() => import("./modules/admin/admin-pages/Reports"));
 const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavbar"));
 
+import NotificationsRedirect from "./components/NotificationsRedirect";
+
 function App() {
     return (
         <ThemeProvider>
@@ -107,10 +110,12 @@ function App() {
             <AuthProvider>
                 <VendorAuthProvider>
                     <AdminAuthProvider>
-                        <NotificationProvider>
-                            <Router>
+                        <Router>
+                            <NotificationProvider>
                                 <LocationPermissionModal />
                                 <Routes>
+                                    <Route path="/notifications" element={<NotificationsRedirect />} />
+                                    <Route path="/notification" element={<NotificationsRedirect />} />
                                     {/* ---------- USER AUTH ---------- */}
                                     <Route
                                         path="/userlogin"
@@ -528,7 +533,7 @@ function App() {
                                                                 path="/booking/:bookingId/invoice"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
-                                                                        <UserInvoice />
+                                                                        <VendorInvoice />
                                                                     </Suspense>
                                                                 }
                                                             />
@@ -616,6 +621,30 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminDashboard />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/bookings/notifications"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <UserNotificationsPage />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/notifications"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <UserNotificationsPage />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/notification"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <UserNotificationsPage />
                                                                             </Suspense>
                                                                         }
                                                                     />
@@ -940,8 +969,8 @@ function App() {
                                         }
                                     />
                                 </Routes>
-                            </Router>
-                        </NotificationProvider>
+                            </NotificationProvider>
+                        </Router>
                     </AdminAuthProvider>
                 </VendorAuthProvider>
             </AuthProvider>

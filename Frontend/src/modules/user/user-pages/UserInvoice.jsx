@@ -167,25 +167,40 @@ export default function UserInvoice() {
       </button>
     </div>
   );
+  // Safely derive all computed values — a bad booking shape can throw here
+  let invoiceDate, isFullyPaid, formattedInvoiceNo, baseFee, gstTotal, cgst, sgst, travelCharges, grandTotal,
+      advanceTxnId, remainingTxnId, advanceTime, remainingTime;
+  try {
+    invoiceDate = booking.payment?.createdAt || booking.createdAt;
+    isFullyPaid = booking.payment?.remainingPaid;
+    formattedInvoiceNo = `INV-${new Date(invoiceDate).toISOString().slice(0, 10).replace(/-/g, '')}-${booking._id.slice(-6).toUpperCase()}`;
 
-  const invoiceDate = booking.payment?.createdAt || booking.createdAt;
-  const isFullyPaid = booking.payment?.remainingPaid;
-  const formattedInvoiceNo = `INV-${new Date(invoiceDate).toISOString().slice(0, 10).replace(/-/g, '')}-${booking._id.slice(-6).toUpperCase()}`;
+    baseFee = booking.payment?.baseServiceFee || (booking.service?.price || 0);
+    gstTotal = booking.payment?.gst || (baseFee * 0.18);
+    cgst = gstTotal / 2;
+    sgst = gstTotal / 2;
+    travelCharges = booking.payment?.travelCharges || 0;
+    grandTotal = booking.payment?.totalAmount || (baseFee + gstTotal + travelCharges);
 
-  const baseFee = booking.payment?.baseServiceFee || (booking.service?.price || 0);
-  const gstTotal = booking.payment?.gst || (baseFee * 0.18);
-  const cgst = gstTotal / 2;
-  const sgst = gstTotal / 2;
-  const travelCharges = booking.payment?.travelCharges || 0;
-  const grandTotal = booking.payment?.totalAmount || (baseFee + gstTotal + travelCharges);
+    advanceTxnId = booking.payment?.advanceRazorpayPaymentId || booking.payment?.advanceTransactionId || `pay_ADV_${booking._id.slice(-6).toUpperCase()}`;
+    remainingTxnId = booking.payment?.remainingPaid
+      ? (booking.payment?.remainingRazorpayPaymentId || booking.payment?.remainingTransactionId || `pay_REM_${booking._id.slice(-6).toUpperCase()}`)
+      : 'Awaiting Payment';
 
-  const advanceTxnId = booking.payment?.advanceRazorpayPaymentId || booking.payment?.advanceTransactionId || `pay_ADV_${booking._id.slice(-6).toUpperCase()}`;
-  const remainingTxnId = booking.payment?.remainingPaid
-    ? (booking.payment?.remainingRazorpayPaymentId || booking.payment?.remainingTransactionId || `pay_REM_${booking._id.slice(-6).toUpperCase()}`)
-    : 'Awaiting Payment';
+    advanceTime = formatFullDateTime(booking.payment?.advancePaidAt || invoiceDate);
+    remainingTime = isFullyPaid ? formatFullDateTime(booking.payment?.remainingPaidAt || new Date()) : 'Pending';
+  } catch (calcErr) {
+    console.error('[UserInvoice] Failed to compute invoice values:', calcErr);
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <ErrorMessage message="Invoice data is incomplete. Please try again or contact support." />
+        <button onClick={() => navigate(-1)} className="mt-4 flex items-center gap-2 text-blue-600 font-bold hover:underline">
+          <IoChevronBackOutline /> Go Back
+        </button>
+      </div>
+    );
+  }
 
-  const advanceTime = formatFullDateTime(booking.payment?.advancePaidAt || invoiceDate);
-  const remainingTime = isFullyPaid ? formatFullDateTime(booking.payment?.remainingPaidAt || new Date()) : 'Pending';
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">

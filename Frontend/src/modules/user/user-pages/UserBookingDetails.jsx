@@ -169,7 +169,7 @@ export default function UserBookingDetails() {
     };
 
     const handleDownloadBill = () => {
-        navigate(`/booking/${bookingId}/invoice`);
+        navigate(`/user/booking/${bookingId}/invoice`);
     };
 
     const handleReportClick = () => {

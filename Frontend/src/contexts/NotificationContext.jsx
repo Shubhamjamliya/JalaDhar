@@ -1,10 +1,12 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
+import toast from 'react-hot-toast';
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead, deleteNotification as deleteNotifApi, clearAllNotifications as clearAllNotifsApi } from '../services/notificationApi';
 import { useAuth } from './AuthContext';
 import { useVendorAuth } from './VendorAuthContext';
 import { useAdminAuth } from './AdminAuthContext';
 import { setupForegroundHandler } from '../services/pushNotificationService';
+import { getNotificationUrl } from '../utils/notificationUtils';
 
 const NotificationContext = createContext();
 
@@ -95,7 +97,9 @@ export const NotificationProvider = ({ children }) => {
 
       // Use refs to get latest values (not stale closure values)
       const currentUserId = currentUserRef.current?._id?.toString() || currentUserRef.current?.id?.toString();
-      const notificationRecipientId = notification.recipient?.toString();
+      const notificationRecipientId = typeof notification.recipient === 'object'
+        ? (notification.recipient?._id?.toString() || notification.recipient?.id?.toString())
+        : notification.recipient?.toString();
       const notificationRecipientModel = notification.recipientModel;
       const currentUserRole = userRoleRef.current;
 
@@ -103,24 +107,64 @@ export const NotificationProvider = ({ children }) => {
         notificationRecipientId,
         currentUserId,
         notificationRecipientModel,
-        currentUserRole,
-        match: notificationRecipientId === currentUserId && notificationRecipientModel === currentUserRole
+        currentUserRole
       });
 
-      // Only add if recipient and model match
-      if (notificationRecipientId === currentUserId &&
-        notificationRecipientModel === currentUserRole) {
-        console.log('[Socket] ✅ Adding notification to state');
-        setNotifications((prev) => {
-          const newNotifications = [notification, ...prev];
-          console.log('[Socket] Updated notifications count:', newNotifications.length);
-          return newNotifications;
-        });
-        setUnreadCount((prev) => {
-          const newCount = prev + 1;
-          console.log('[Socket] Updated unread count:', newCount);
-          return newCount;
-        });
+      // Match if recipient ID matches current user (and model matches if present)
+      const isRecipientMatch = notificationRecipientId === currentUserId &&
+        (!notificationRecipientModel || notificationRecipientModel.toLowerCase() === currentUserRole?.toLowerCase());
+
+      if (isRecipientMatch) {
+        console.log('[Socket] ✅ Adding notification to state & showing popup');
+        setNotifications((prev) => [notification, ...prev]);
+        setUnreadCount((prev) => prev + 1);
+
+        // 1. Show interactive real-time Popup Toast
+        const notifUrl = getNotificationUrl(notification, currentUserRole);
+        const notifId = notification.id || notification._id;
+
+        toast.custom((t) => (
+          <div
+            onClick={() => {
+              toast.dismiss(t.id);
+              if (notifId) markAsRead(notifId).catch(console.error);
+              if (notifUrl) window.location.href = notifUrl;
+            }}
+            className={`${
+              t.visible ? 'animate-enter' : 'animate-leave'
+            } max-w-sm w-full bg-white shadow-2xl rounded-2xl border-2 border-[#0A84FF]/20 p-4 cursor-pointer hover:border-[#0A84FF] transition-all flex items-start gap-3.5 z-[99999] pointer-events-auto group`}
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#0A84FF] text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-md shadow-blue-200">
+              🔔
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-xs font-black text-[#0A84FF] uppercase tracking-wider line-clamp-1">
+                  {notification.title || "New Notification"}
+                </p>
+                <span className="text-[10px] text-gray-400 font-bold shrink-0">Just now</span>
+              </div>
+              <p className="text-xs font-semibold text-gray-800 mt-0.5 line-clamp-2 leading-relaxed">
+                {notification.message}
+              </p>
+              <p className="text-[10px] text-[#0A84FF] font-bold mt-1.5 group-hover:underline flex items-center gap-1">
+                Tap to view details →
+              </p>
+            </div>
+          </div>
+        ), { duration: 6000 });
+
+        // 2. Also trigger Native Desktop Notification if permitted
+        if ("Notification" in window && Notification.permission === "granted") {
+          try {
+            new Notification(notification.title || "Jaladhaara Alert", {
+              body: notification.message,
+              icon: "/favicon.png"
+            });
+          } catch (e) {
+            console.error("Native notification error:", e);
+          }
+        }
       } else {
         console.log('[Socket] ❌ Notification filtered - not for current user');
       }
