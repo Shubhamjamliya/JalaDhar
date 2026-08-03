@@ -125,7 +125,7 @@ export default function UserNavbar() {
                         </span>
                     )}
 
-                    <NotificationDropdown />
+                    <NotificationDropdown disablePopup={true} />
 
                     {/* Logout Button - Desktop Only */}
                     <button

@@ -20,56 +20,24 @@ import { getNotificationUrl } from "../../../utils/notificationUtils";
 export default function UserNotificationsPage() {
     const toast = useToast();
     const navigate = useNavigate();
-    const { userRole } = useNotifications();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [notifications, setNotifications] = useState([]);
+    const {
+        notifications,
+        loading,
+        userRole,
+        markAsRead,
+        markAllAsRead,
+        deleteNotification,
+        clearAllNotifications
+    } = useNotifications();
+
     const [filter, setFilter] = useState("all"); // 'all' | 'unread'
     const [actionLoading, setActionLoading] = useState(false);
-
-    useEffect(() => {
-        loadNotifications();
-    }, []);
-
-    const loadNotifications = async () => {
-        try {
-            setLoading(true);
-            setError("");
-            const response = await getNotifications({ limit: 50 });
-            if (response.success) {
-                setNotifications(response.data.notifications || []);
-            } else {
-                setError(response.message || "Failed to load notifications");
-            }
-        } catch (err) {
-            console.error("Load notifications error:", err);
-            setError("Failed to load notifications");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleMarkAsRead = async (id) => {
-        try {
-            const response = await markAsRead(id);
-            if (response.success) {
-                setNotifications(prev =>
-                    prev.map(n => (n._id === id ? { ...n, isRead: true } : n))
-                );
-            }
-        } catch (err) {
-            console.error("Mark read error:", err);
-        }
-    };
 
     const handleMarkAllRead = async () => {
         try {
             setActionLoading(true);
-            const response = await markAllAsRead();
-            if (response.success) {
-                toast.showSuccess("All notifications marked as read");
-                setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-            }
+            await markAllAsRead();
+            toast.showSuccess("All notifications marked as read");
         } catch (err) {
             toast.showError("Failed to mark all as read");
         } finally {
@@ -80,11 +48,8 @@ export default function UserNotificationsPage() {
     const handleDeleteNotification = async (id, e) => {
         e.stopPropagation();
         try {
-            const response = await deleteNotification(id);
-            if (response.success) {
-                toast.showSuccess("Notification deleted");
-                setNotifications(prev => prev.filter(n => n._id !== id));
-            }
+            await deleteNotification(id);
+            toast.showSuccess("Notification deleted");
         } catch (err) {
             toast.showError("Failed to delete notification");
         }
@@ -94,11 +59,8 @@ export default function UserNotificationsPage() {
         if (!window.confirm("Are you sure you want to clear all notifications?")) return;
         try {
             setActionLoading(true);
-            const response = await clearAllNotifications();
-            if (response.success) {
-                toast.showSuccess("All notifications cleared");
-                setNotifications([]);
-            }
+            await clearAllNotifications();
+            toast.showSuccess("All notifications cleared");
         } catch (err) {
             toast.showError("Failed to clear notifications");
         } finally {
@@ -117,7 +79,7 @@ export default function UserNotificationsPage() {
         <PageContainer title="Notifications">
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header Banner */}
-                <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl">
@@ -125,8 +87,8 @@ export default function UserNotificationsPage() {
                             </div>
                             <h1 className="text-2xl font-bold">Notification Center</h1>
                         </div>
-                        <p className="text-amber-100 text-sm">
-                            Stay updated on your booking status, assigned hydrogeologists, report releases, and payments.
+                        <p className="text-blue-100 text-sm">
+                            Stay updated on your booking status, report releases, disputes, and payments in real-time.
                         </p>
                     </div>
 
@@ -134,7 +96,7 @@ export default function UserNotificationsPage() {
                         <button
                             onClick={handleMarkAllRead}
                             disabled={actionLoading}
-                            className="px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 self-start md:self-auto shrink-0"
+                            className="px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 self-start md:self-auto shrink-0 cursor-pointer active:scale-95"
                         >
                             <IoCheckmarkDoneOutline className="text-base" />
                             <span>Mark All Read ({unreadCount})</span>
@@ -149,7 +111,7 @@ export default function UserNotificationsPage() {
                             onClick={() => setFilter("all")}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                                 filter === "all"
-                                    ? "bg-amber-500 text-white shadow-sm"
+                                    ? "bg-[#0A84FF] text-white shadow-sm"
                                     : "text-gray-600 hover:bg-gray-100"
                             }`}
                         >
@@ -159,7 +121,7 @@ export default function UserNotificationsPage() {
                             onClick={() => setFilter("unread")}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                                 filter === "unread"
-                                    ? "bg-amber-500 text-white shadow-sm"
+                                    ? "bg-[#0A84FF] text-white shadow-sm"
                                     : "text-gray-600 hover:bg-gray-100"
                             }`}
                         >
@@ -171,7 +133,7 @@ export default function UserNotificationsPage() {
                         <button
                             onClick={handleClearAll}
                             disabled={actionLoading}
-                            className="px-3 py-1.5 text-red-600 hover:bg-red-50 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5"
+                            className="px-3 py-1.5 text-red-600 hover:bg-red-50 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                         >
                             <IoTrashOutline className="text-sm" />
                             <span>Clear All</span>
@@ -184,11 +146,9 @@ export default function UserNotificationsPage() {
                     <div className="py-20 flex justify-center">
                         <LoadingSpinner message="Loading notifications..." />
                     </div>
-                ) : error ? (
-                    <ErrorMessage message={error} />
                 ) : filteredNotifications.length === 0 ? (
                     <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
-                        <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500 text-2xl">
+                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#0A84FF] text-2xl">
                             <IoNotificationsOutline />
                         </div>
                         <h3 className="text-lg font-bold text-gray-800 mb-1">No Notifications</h3>
@@ -199,6 +159,7 @@ export default function UserNotificationsPage() {
                 ) : (
                     <div className="space-y-3">
                         {filteredNotifications.map((notification) => {
+                            const nId = notification.id || notification._id;
                             const dateStr = notification.createdAt
                                 ? new Date(notification.createdAt).toLocaleString("en-IN", {
                                     dateStyle: "medium",
@@ -208,8 +169,8 @@ export default function UserNotificationsPage() {
                             const url = getNotificationUrl(notification, userRole);
 
                             const handleClick = async () => {
-                              if (!notification.isRead) {
-                                await handleMarkAsRead(notification._id);
+                              if (!notification.isRead && nId) {
+                                await markAsRead(nId);
                               }
                               if (url) {
                                 navigate(url);
@@ -218,16 +179,16 @@ export default function UserNotificationsPage() {
 
                             return (
                                 <div
-                                    key={notification._id}
+                                    key={nId}
                                     onClick={handleClick}
                                     className={`p-4 rounded-2xl border transition-all flex items-start gap-4 cursor-pointer group hover:shadow-md ${
                                         notification.isRead
                                             ? "bg-white border-gray-100 shadow-2xs hover:bg-gray-50/80"
-                                            : "bg-amber-50/50 border-amber-200 shadow-sm hover:bg-amber-100/50"
+                                            : "bg-blue-50/40 border-blue-200 shadow-sm hover:bg-blue-50/70"
                                     }`}
                                 >
                                     <div className={`p-2.5 rounded-xl shrink-0 ${
-                                        notification.isRead ? "bg-gray-100 text-gray-500" : "bg-amber-500 text-white"
+                                        notification.isRead ? "bg-gray-100 text-gray-500" : "bg-[#0A84FF] text-white"
                                     }`}>
                                         <IoInformationCircleOutline className="text-xl" />
                                     </div>
@@ -235,7 +196,7 @@ export default function UserNotificationsPage() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-2 mb-1">
                                             <h4 className={`text-sm font-bold ${notification.isRead ? "text-gray-800" : "text-gray-900"}`}>
-                                                {notification.title || "Booking Alert"}
+                                                {notification.title || "Alert"}
                                             </h4>
                                             <span className="text-[11px] text-gray-400 font-medium shrink-0">
                                                 {dateStr}
@@ -244,18 +205,18 @@ export default function UserNotificationsPage() {
                                         <p className="text-xs text-gray-600 leading-relaxed">
                                             {notification.message}
                                         </p>
-                                        <p className="text-[11px] text-amber-600 font-bold mt-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                        <p className="text-[11px] text-[#0A84FF] font-bold mt-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                                             View details →
                                         </p>
                                     </div>
 
                                     <div className="flex items-center gap-2 shrink-0 self-center">
                                         {!notification.isRead && (
-                                            <div className="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
+                                            <div className="w-2.5 h-2.5 bg-[#0A84FF] rounded-full"></div>
                                         )}
                                         <button
                                             type="button"
-                                            onClick={(e) => handleDeleteNotification(notification._id, e)}
+                                            onClick={(e) => handleDeleteNotification(nId, e)}
                                             title="Delete notification"
                                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all opacity-80 group-hover:opacity-100"
                                         >

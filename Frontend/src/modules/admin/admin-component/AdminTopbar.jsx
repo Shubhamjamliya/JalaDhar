@@ -75,7 +75,7 @@ export default function AdminTopbar() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-2 pr-4 border-r border-slate-100">
-                            <NotificationDropdown />
+                            <NotificationDropdown disablePopup={true} />
                         </div>
 
                         {/* Admin Profile */}

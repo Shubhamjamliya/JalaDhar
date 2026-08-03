@@ -356,6 +356,14 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/notification"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserNotificationsPage />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/help-support"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
@@ -558,6 +566,22 @@ function App() {
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <VendorDisputeDetails />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/notifications"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserNotificationsPage />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/notification"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserNotificationsPage />
                                                                     </Suspense>
                                                                 }
                                                             />

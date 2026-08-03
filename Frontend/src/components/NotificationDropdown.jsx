@@ -48,7 +48,7 @@ const TYPE_META = {
   REFUND_PROCESSED:           { icon: IoCashOutline,            color: 'text-blue-600 bg-blue-50' },
 };
 
-const NotificationDropdown = () => {
+const NotificationDropdown = ({ disablePopup = false }) => {
   const navigate  = useNavigate();
   const location  = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -61,12 +61,13 @@ const NotificationDropdown = () => {
     '/user/notifications';
 
   useEffect(() => {
+    if (disablePopup) return;
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setIsOpen(false);
     };
     if (isOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+  }, [isOpen, disablePopup]);
 
   const handleNotificationClick = async (notification) => {
     const notificationId = notification.id || notification._id;
@@ -76,6 +77,14 @@ const NotificationDropdown = () => {
   };
 
   const handleViewAll = () => { setIsOpen(false); navigate(notificationsPageUrl); };
+
+  const handleBellClick = () => {
+    if (disablePopup) {
+      navigate('/notification');
+    } else {
+      setIsOpen((o) => !o);
+    }
+  };
 
   const handleMarkAllAsRead = async (e) => {
     e.stopPropagation();
@@ -106,7 +115,7 @@ const NotificationDropdown = () => {
     <div className="relative" ref={dropdownRef}>
       {/* Bell */}
       <button
-        onClick={() => setIsOpen((o) => !o)}
+        onClick={handleBellClick}
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
         aria-label="Notifications"
       >
@@ -119,7 +128,7 @@ const NotificationDropdown = () => {
       </button>
 
       {/* Dropdown panel */}
-      {isOpen && (
+      {!disablePopup && isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
           <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-20 flex flex-col overflow-hidden">

@@ -136,7 +136,7 @@ export default function VendorNavbar() {
                         </span>
                     )}
 
-                    <NotificationDropdown />
+                    <NotificationDropdown disablePopup={true} />
 
                     {/* Logout Button - Desktop Only */}
                     <button
