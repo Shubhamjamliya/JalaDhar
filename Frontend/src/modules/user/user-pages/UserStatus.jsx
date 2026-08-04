@@ -15,6 +15,7 @@ import {
     IoCloseCircleOutline,
     IoWalletOutline,
     IoRefreshOutline,
+    IoCarOutline,
 
 } from "react-icons/io5";
 import { getUserBookings, uploadBorewellResult, getBookingDetails } from "../../../services/bookingApi";
@@ -251,104 +252,114 @@ export default function UserStatus() {
 
         const steps = [
             {
-                id: "pending",
-                label: "Pending",
-                icon: IoHourglassOutline,
-                active: ["PENDING", "ASSIGNED"].includes(status),
-                completed: effectiveIndex > 0 || remainingPaid || borewellUploaded || !!currentBooking.assignedAt,
-                description: "Your service request has been received and is waiting for a vendor to be assigned.",
+                id: "booking-requested",
+                label: "Booking Requested",
+                icon: IoDocumentTextOutline,
+                active: ["AWAITING_ADVANCE", "PENDING"].includes(status) && !currentBooking.payment?.advancePaid,
+                completed: true, // Always completed when booking is created
+                description: "Booking request submitted successfully.",
                 date: currentBooking.createdAt,
             },
             {
-                id: "assigned",
-                label: "Vendor Assigned",
-                icon: IoPersonOutline,
-                // Completed only when vendor has actually accepted (moved PAST assigned)
-                active: status === "ASSIGNED",
-                completed: effectiveIndex > 2 || !!currentBooking.acceptedAt,
-                description: "A vendor has been assigned to your booking.",
-                date: currentBooking.assignedAt,
+                id: "advance-payment-received",
+                label: "Advance Payment Received",
+                icon: IoWalletOutline,
+                active: status === "PENDING" && currentBooking.payment?.advancePaid && !currentBooking.acceptedAt,
+                completed: currentBooking.payment?.advancePaid || !["AWAITING_ADVANCE"].includes(status),
+                description: "40% survey fee and applicable travel charges paid.",
+                date: currentBooking.payment?.advancePaidAt || currentBooking.createdAt,
             },
             {
-                id: "accepted",
-                label: "Expert Accepted",
+                id: "booking-confirmed",
+                label: "Booking Confirmed",
                 icon: IoCheckmarkCircleOutline,
-                // Only active/completed when vendor has actually accepted
-                active: status === "ACCEPTED",
-                completed: effectiveIndex > 3 || !!currentBooking.visitedAt,
-                description: "Expert has accepted your booking and will visit soon.",
-                date: currentBooking.acceptedAt,
+                active: ["ASSIGNED", "ACCEPTED"].includes(status) && !["EN_ROUTE", "ARRIVED", "IN_PROGRESS", "VISITED"].includes(status),
+                completed: ["ACCEPTED", "EN_ROUTE", "ARRIVED", "IN_PROGRESS", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status) || !!currentBooking.acceptedAt,
+                description: "Expert assigned and survey scheduled.",
+                date: currentBooking.acceptedAt || currentBooking.assignedAt,
             },
             {
-                id: "visited",
-                label: "Visited",
+                id: "expert-en-route",
+                label: "Expert En Route",
+                icon: IoCarOutline,
+                active: status === "EN_ROUTE",
+                completed: ["ARRIVED", "IN_PROGRESS", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status) || !!currentBooking.visitedAt || !!currentBooking.reportUploadedAt,
+                description: "Expert is travelling to the survey location.",
+                date: currentBooking.enRouteAt,
+            },
+            {
+                id: "expert-arrived",
+                label: "Expert Arrived",
+                icon: IoLocationOutline,
+                active: status === "ARRIVED",
+                completed: ["IN_PROGRESS", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status) || !!currentBooking.visitedAt || !!currentBooking.reportUploadedAt,
+                description: "Expert has reached the survey land.",
+                date: currentBooking.arrivedAt,
+            },
+            {
+                id: "survey-started",
+                label: "Survey Started",
                 icon: IoConstructOutline,
-                active: status === "VISITED",
-                completed: effectiveIndex > 3 || remainingPaid || borewellUploaded || !!currentBooking.reportUploadedAt,
-                description: "Vendor has visited your location and completed the service.",
+                active: ["IN_PROGRESS", "VISITED"].includes(status) && !currentBooking.reportUploadedAt,
+                completed: ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status) || !!currentBooking.reportUploadedAt,
+                description: "Groundwater survey is in progress.",
                 date: currentBooking.visitedAt,
             },
             {
-                id: "report",
-                label: "Report Ready",
+                id: "survey-completed",
+                label: "Survey Completed",
                 icon: IoDocumentTextOutline,
-                active: status === "REPORT_UPLOADED",
-                completed: effectiveIndex > 4 || remainingPaid || borewellUploaded,
-                description: "Service report has been uploaded. Please pay remaining amount to view.",
+                active: status === "REPORT_UPLOADED" && !currentBooking.payment?.remainingPaid,
+                completed: ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status) || !!currentBooking.reportUploadedAt,
+                bullets: [
+                    "Survey completed successfully.",
+                    "Survey report securely uploaded by the expert.",
+                    "Report is locked until final payment is completed."
+                ],
                 date: currentBooking.reportUploadedAt,
             },
             {
-                id: "payment",
-                label: "Payment Due",
-                icon: IoTimeOutline,
-                active: ["AWAITING_PAYMENT", "REPORT_UPLOADED"].includes(status) && !remainingPaid,
-                completed: remainingPaid || effectiveIndex > 5 || borewellUploaded,
-                description: "Please pay the remaining 60% to view the report and complete the booking.",
-                date: currentBooking.paymentDueAt || currentBooking.reportUploadedAt,
+                id: "final-payment-pending",
+                label: "Final Payment Pending",
+                icon: IoHourglassOutline,
+                active: ["REPORT_UPLOADED", "AWAITING_PAYMENT"].includes(status) && !currentBooking.payment?.remainingPaid,
+                completed: currentBooking.payment?.remainingPaid || ["PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status),
+                description: "Please pay the remaining 60% of the survey fee to unlock your survey report.",
+                date: currentBooking.reportUploadedAt,
             },
             {
-                id: "view-report",
-                label: "Report Viewed",
-                icon: IoDocumentTextOutline,
-                active: status === "PAYMENT_SUCCESS" && remainingPaid && !borewellUploaded,
-                completed: remainingPaid && (borewellUploaded || effectiveIndex > 6),
-                description: "Your service report is ready. Click to view the complete report.",
+                id: "final-payment-successful",
+                label: "Final Payment Successful",
+                icon: IoCheckmarkCircleOutline,
+                active: currentBooking.payment?.remainingPaid && status === "PAYMENT_SUCCESS" && !borewellUploaded,
+                completed: currentBooking.payment?.remainingPaid || ["PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status),
+                bullets: [
+                    "Remaining payment received successfully.",
+                    "Payment receipt generated."
+                ],
                 date: currentBooking.payment?.remainingPaidAt,
             },
             {
-                id: "borewell-report",
-                label: "Add Borewell Drilling Status",
-                icon: IoImageOutline,
-                active: status === "PAYMENT_SUCCESS" && remainingPaid && !borewellUploaded,
-                completed: borewellUploaded || effectiveIndex > 7,
-                description: "After digging the borewell, upload photos and mark the result as Success or Failed.",
-                date: currentBooking.borewellResult?.uploadedAt,
+                id: "survey-report-unlocked",
+                label: "Survey Report Unlocked",
+                icon: IoDocumentTextOutline,
+                active: currentBooking.payment?.remainingPaid && ["PAYMENT_SUCCESS", "BOREWELL_UPLOADED"].includes(status),
+                completed: currentBooking.payment?.remainingPaid && ["PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status),
+                description: "Survey report is now available to view and download.",
+                date: currentBooking.payment?.remainingPaidAt,
             },
             {
-                id: "admin-approved",
-                label: "Admin Approved",
-                icon: IoCheckmarkCircleOutline,
-                active: status === "ADMIN_APPROVED",
-                completed: ["FINAL_SETTLEMENT", "COMPLETED"].includes(status) || effectiveIndex > 8,
-                description: "Admin has approved your borewell result. Final settlement is being processed.",
-                date: currentBooking.borewellResult?.approvedAt,
-            },
-            {
-                id: "final-settlement",
-                label: "Final Settlement",
-                icon: IoWalletOutline,
-                active: status === "FINAL_SETTLEMENT",
-                completed: status === "COMPLETED" || effectiveIndex > 9,
-                description: "Admin is processing final settlement. You may receive a refund if the borewell failed.",
-                date: currentBooking.payment?.vendorSettlement?.settledAt,
-            },
-            {
-                id: "completed",
-                label: "Completed",
+                id: "booking-completed",
+                label: "Booking Completed",
                 icon: IoCheckmarkCircleOutline,
                 active: status === "COMPLETED",
                 completed: status === "COMPLETED",
-                description: "Booking process completed successfully. Thank you for using our service.",
+                bullets: [
+                    "Service completed successfully.",
+                    "Rate & Review the expert.",
+                    "Download invoice.",
+                    "Raise a dispute (within the applicable dispute period)."
+                ],
                 date: currentBooking.completedAt || currentBooking.payment?.vendorSettlement?.settledAt,
             },
         ];
@@ -528,17 +539,38 @@ export default function UserStatus() {
 
             {/* Back button removed - handled by UserNavbar */}
 
-            {/* Booking Info Card */}
+            {/* Booking Info Header Card (Light Professional Theme) */}
             {currentBooking && (
-                <div className="mb-6 rounded-[12px] bg-white p-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] border-2 border-[#81D4FA]">
-                    <h2 className="text-lg font-bold text-gray-800 mb-2">
-                        {currentBooking.service?.name || "Service"}
-                    </h2>
-                    <div className="flex flex-col gap-2 text-sm text-gray-600">
+                <div className="mb-5 rounded-2xl bg-white p-4.5 shadow-xs border border-[#E1F5FE] relative overflow-hidden">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="inline-block px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold bg-blue-50 text-[#0A84FF] border border-blue-100">
+                                    #{currentBooking.id ? currentBooking.id.slice(-8) : (currentBooking._id ? currentBooking._id.toString().slice(-8) : 'N/A')}
+                                </span>
+                                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                                    Verified
+                                </span>
+                            </div>
+                            <h1 className="text-base md:text-lg font-extrabold tracking-tight text-slate-900">
+                                {currentBooking.service?.name || "Hydrogeological Groundwater Survey"}
+                            </h1>
+                        </div>
+                        {currentBooking.payment?.totalAmount && (
+                            <div className="text-right flex-shrink-0">
+                                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Total Fee</span>
+                                <span className="text-lg font-extrabold text-emerald-600 font-mono">
+                                    ₹{currentBooking.payment.totalAmount.toLocaleString('en-IN')}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2.5 border-t border-slate-100 text-xs font-medium text-slate-600">
                         {currentBooking.scheduledDate && (
-                            <div className="flex items-center gap-2">
-                                <IoTimeOutline className="text-base" />
-                                <span>
+                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
+                                <IoTimeOutline className="text-sm text-[#0A84FF] flex-shrink-0" />
+                                <span className="truncate">
                                     {new Date(currentBooking.scheduledDate).toLocaleDateString("en-IN", {
                                         day: "numeric",
                                         month: "short",
@@ -549,10 +581,10 @@ export default function UserStatus() {
                             </div>
                         )}
                         {currentBooking.address && (
-                            <div className="flex items-center gap-2">
-                                <IoLocationOutline className="text-base" />
-                                <span>
-                                    {currentBooking.address.street}, {currentBooking.address.city}
+                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
+                                <IoLocationOutline className="text-sm text-[#0A84FF] flex-shrink-0" />
+                                <span className="truncate">
+                                    {currentBooking.address.street}, {currentBooking.address.city}, {currentBooking.address.state} {currentBooking.address.pincode}
                                 </span>
                             </div>
                         )}
@@ -560,15 +592,33 @@ export default function UserStatus() {
                 </div>
             )}
 
+            {/* Timeline Section Title */}
+            <div className="flex items-center justify-between mb-4 px-1">
+                <h2 className="text-sm font-extrabold text-slate-800 tracking-tight flex items-center gap-1.5 uppercase">
+                    <span>Booking Status Timeline</span>
+                </h2>
+                <button
+                    onClick={() => {
+                        if (loadCurrentBookingRef.current) loadCurrentBookingRef.current();
+                        toast.showSuccess("Timeline refreshed");
+                    }}
+                    className="p-1.5 px-2.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-[#0A84FF] shadow-2xs transition-all cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                    title="Refresh Status"
+                >
+                    <IoRefreshOutline className={`text-sm ${loading ? 'animate-spin text-[#0A84FF]' : ''}`} />
+                    <span>Refresh</span>
+                </button>
+            </div>
+
             {/* Status Timeline */}
             {steps.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <p className="text-gray-500 font-medium">No status information available</p>
+                <div className="text-center py-10 bg-white rounded-xl border border-slate-200">
+                    <p className="text-slate-500 text-xs font-medium">No status information available</p>
                 </div>
             ) : (
-                <div className="relative pl-4">
-                    {/* Vertical Connector Main Line */}
-                    <div className="absolute left-[33px] top-8 bottom-8 w-0.5 bg-gray-200" />
+                <div className="relative pl-1">
+                    {/* Compact Connector Line */}
+                    <div className="absolute left-[19px] top-6 bottom-6 w-0.5 bg-slate-200" />
 
                     {steps.map((step, index) => {
                         const StepIcon = step.icon;
@@ -578,136 +628,139 @@ export default function UserStatus() {
                         const isUpcoming = !isActive && !isCompleted;
 
                         return (
-                            <div key={step.id} className="relative mb-8 last:mb-0">
-                                <div className="flex gap-6">
-                                    {/* Timeline Marker */}
+                            <div key={step.id} className="relative mb-4 last:mb-0">
+                                <div className="flex gap-3.5">
+                                    {/* Timeline Marker (Compact 32px Node) */}
                                     <div className="relative z-10 flex flex-col items-center">
                                         <div
-                                            className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-500 ${isCompleted
-                                                ? "bg-emerald-500 text-white shadow-[0_0_0_4px_rgba(16,185,129,0.15)]"
+                                            className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${isCompleted
+                                                ? "bg-emerald-500 text-white shadow-2xs"
                                                 : isActive
-                                                    ? "bg-[#0A84FF] text-white shadow-[0_0_0_4px_rgba(10,132,255,0.2)] animate-pulse"
-                                                    : "bg-white border-2 border-gray-200 text-gray-400"
+                                                    ? "bg-[#0A84FF] text-white shadow-sm ring-4 ring-blue-100"
+                                                    : "bg-white border border-slate-300 text-slate-400"
                                                 }`}
                                         >
                                             {isCompleted ? (
-                                                <IoCheckmarkCircleOutline className="text-xl" />
+                                                <IoCheckmarkCircleOutline className="text-lg" />
                                             ) : (
-                                                <StepIcon className="text-xl" />
+                                                <StepIcon className="text-base" />
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Content Card */}
+                                    {/* Compact Content Card */}
                                     <div className="flex-1">
                                         <div
-                                            className={`rounded-2xl p-5 transition-all duration-300 ${isActive
-                                                ? "bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] border-l-4 border-[#0A84FF]"
+                                            className={`rounded-xl p-4 transition-all duration-200 ${isActive
+                                                ? "bg-white border-l-4 border-l-[#0A84FF] border border-slate-200 shadow-sm"
                                                 : isCompleted
-                                                    ? "bg-white/60 border border-gray-100"
-                                                    : "bg-gray-50/50 border border-gray-100 opacity-70"
+                                                    ? "bg-white border border-slate-200/80 shadow-2xs"
+                                                    : "bg-slate-50/70 border border-slate-200/60 opacity-60"
                                                 }`}
                                         >
-                                            <div className="flex justify-between items-start mb-1">
-                                                <h3 className={`font-bold text-base ${isActive ? "text-[#0A84FF]" : isCompleted ? "text-gray-800" : "text-gray-500"
-                                                    }`}>
+                                            <div className="flex justify-between items-start mb-1 gap-2">
+                                                <h3 className={`font-bold text-sm ${isActive ? "text-[#0A84FF]" : isCompleted ? "text-slate-900" : "text-slate-500"}`}>
                                                     {step.label}
                                                 </h3>
                                                 {isCompleted && (
-                                                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded uppercase">
                                                         Done
                                                     </span>
                                                 )}
                                                 {isActive && (
-                                                    <span className="text-[10px] font-bold text-[#0A84FF] bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                    <span className="text-[10px] font-bold text-[#0A84FF] bg-blue-50 border border-blue-100 px-2 py-0.5 rounded uppercase">
                                                         Active
                                                     </span>
                                                 )}
                                             </div>
 
                                             {step.date && (
-                                                <p className="text-[11px] text-gray-400 font-medium mb-3 flex items-center gap-1">
-                                                    <IoTimeOutline className="text-sm" />
+                                                <p className="text-[11px] text-slate-400 font-medium mb-2 flex items-center gap-1">
+                                                    <IoTimeOutline className="text-xs text-slate-400" />
                                                     {formatDate(step.date)}
                                                 </p>
                                             )}
 
-                                            <p className={`text-sm leading-relaxed ${isActive ? "text-gray-700" : "text-gray-500"
-                                                }`}>
-                                                {step.description}
-                                            </p>
+                                            {step.description && (
+                                                <p className={`text-xs leading-relaxed ${isActive ? "text-slate-700 font-medium" : "text-slate-500"}`}>
+                                                    {step.description}
+                                                </p>
+                                            )}
 
-                                            {/* Specialized Content for Steps */}
-                                            {step.id === "assigned" && vendor && (
-                                                <div className="mt-4 flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                                                    <div className="relative">
-                                                        <img
-                                                            className="h-12 w-12 rounded-full object-cover border-2 border-white shadow-sm"
-                                                            src={vendor.profilePicture?.url || (typeof vendor.profilePicture === 'string' && vendor.profilePicture.startsWith('http') ? vendor.profilePicture : `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name || 'Expert')}&background=0A84FF&color=fff`)}
-                                                            onError={(e) => {
-                                                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name || 'Expert')}&background=0A84FF&color=fff`;
-                                                            }}
-                                                            alt={vendor.name}
-                                                        />
-                                                        <div className="absolute -bottom-1 -right-1 bg-emerald-500 border-2 border-white w-4 h-4 rounded-full" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-gray-900">{vendor.name}</p>
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="text-yellow-400 text-xs">★</span>
-                                                            <span className="text-xs font-semibold text-gray-600">
-                                                                {vendor.rating?.averageRating?.toFixed(1) || "New"}
-                                                            </span>
-                                                            <span className="text-[10px] text-gray-400 ml-1">Verified Expert</span>
+                                            {step.bullets && step.bullets.length > 0 && (
+                                                <div className="space-y-1 mt-1.5">
+                                                    {step.bullets.map((bullet, idx) => (
+                                                        <div key={idx} className="flex items-start gap-2 text-xs font-medium leading-relaxed">
+                                                            <span className={`flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1.5 ${isActive ? 'bg-[#0A84FF]' : 'bg-slate-400'}`} />
+                                                            <span className={isActive ? "text-slate-800" : "text-slate-500"}>{bullet}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Expert Card for Confirmed/Assigned step */}
+                                            {["booking-confirmed", "expert-en-route", "expert-arrived", "survey-started"].includes(step.id) && vendor && (
+                                                <div className="mt-3 flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
+                                                    <img
+                                                        className="h-10 w-10 rounded-full object-cover border border-slate-200"
+                                                        src={vendor.profilePicture?.url || (typeof vendor.profilePicture === 'string' && vendor.profilePicture.startsWith('http') ? vendor.profilePicture : `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name || 'Expert')}&background=0A84FF&color=fff`)}
+                                                        onError={(e) => {
+                                                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name || 'Expert')}&background=0A84FF&color=fff`;
+                                                        }}
+                                                        alt={vendor.name}
+                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-xs font-bold text-slate-900 truncate">{vendor.name}</p>
+                                                            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">Expert</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 mt-0.5">
+                                                            <span className="text-amber-500 text-[11px] font-bold">★ {vendor.rating?.averageRating?.toFixed(1) || "4.9"}</span>
+                                                            <span className="text-[11px] text-slate-500">• Hydrogeologist</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {/* Action Buttons */}
-                                            <div className="mt-4">
+                                            {/* Step Specific Action CTA Buttons */}
+                                            {step.id === "final-payment-pending" && isActive && (
+                                                <button
+                                                    onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/payment`)}
+                                                    className="w-full mt-3 py-2.5 bg-[#0A84FF] hover:bg-[#0070E0] text-white text-xs font-bold rounded-lg shadow-2xs transition-all active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer"
+                                                >
+                                                    <IoWalletOutline className="text-base" />
+                                                    Pay Remaining 60% ({formatAmount(currentBooking.payment?.remainingAmount || 0)})
+                                                </button>
+                                            )}
 
+                                            {step.id === "survey-report-unlocked" && (isActive || isCompleted) && (
+                                                <button
+                                                    onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/report`)}
+                                                    className="w-full mt-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-all active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer"
+                                                >
+                                                    <IoDocumentTextOutline className="text-base" />
+                                                    View & Download Survey Report
+                                                </button>
+                                            )}
 
-                                                {step.id === "payment" && isActive && (
-                                                    <button
-                                                        onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/payment`)}
-                                                        className="w-full py-3 bg-[#0A84FF] text-white text-sm font-bold rounded-xl hover:bg-[#0070E0] transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm"
-                                                    >
-                                                        <IoWalletOutline className="text-xl" />
-                                                        Complete Payment ({formatAmount(currentBooking.payment?.remainingAmount || 0)})
-                                                    </button>
-                                                )}
-
-                                                {step.id === "view-report" && isActive && (
+                                            {step.id === "booking-completed" && isCompleted && (
+                                                <div className="mt-3 grid grid-cols-2 gap-2">
                                                     <button
                                                         onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/report`)}
-                                                        className="w-full py-3 bg-[#E7F0FB] text-[#0A84FF] text-sm font-bold rounded-xl hover:bg-[#D0E1F7] transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+                                                        className="py-2 bg-blue-50 text-[#0A84FF] border border-blue-100 hover:bg-blue-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
                                                     >
-                                                        <IoDocumentTextOutline className="text-xl" />
-                                                        View Full Report
+                                                        <IoDocumentTextOutline className="text-sm" />
+                                                        Report
                                                     </button>
-                                                )}
-
-                                                {step.id === "borewell-report" && isActive && (
-                                                    <button
-                                                        onClick={() => setShowBorewellModal(true)}
-                                                        className="w-full py-3 bg-white text-[#0A84FF] border-2 border-[#0A84FF] text-sm font-bold rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
-                                                    >
-                                                        <IoImageOutline className="text-xl" />
-                                                        Upload Result Now
-                                                    </button>
-                                                )}
-
-                                                {["view-report", "borewell-report", "admin-approved", "final-settlement", "completed"].includes(step.id) && (isCompleted || isActive) && (
                                                     <button
                                                         onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/invoice`)}
-                                                        className="w-full mt-2 py-3 bg-indigo-50 text-indigo-600 text-sm font-bold rounded-xl hover:bg-indigo-100 transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+                                                        className="py-2 bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
                                                     >
-                                                        <IoDownloadOutline className="text-xl" />
-                                                        Download Invoice
+                                                        <IoDownloadOutline className="text-sm" />
+                                                        Invoice
                                                     </button>
-                                                )}
-                                            </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
