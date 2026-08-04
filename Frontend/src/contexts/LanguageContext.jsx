@@ -366,7 +366,7 @@ const translations = {
     }
 };
 
-const IS_LANGUAGE_ENABLED_ENV = import.meta.env.VITE_ENABLE_LANGUAGE !== "false" && import.meta.env.VITE_ENABLE_LANGUAGE !== "0";
+const IS_LANGUAGE_ENABLED_ENV = import.meta.env.VITE_ENABLE_LANGUAGE === "true" || import.meta.env.VITE_ENABLE_LANGUAGE === "1";
 
 const LanguageContext = createContext();
 
