@@ -16,19 +16,32 @@ import PolicyModal from "../../shared/components/PolicyModal";
 
 import logo from "@/assets/AppLogo.png";
 
+const DRAFT_USER_STORAGE_KEY = "jaladhar_user_signup_draft";
+
+const getSavedUserDraft = () => {
+    try {
+        const saved = sessionStorage.getItem(DRAFT_USER_STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+    } catch (e) {
+        console.error("Error reading user signup draft:", e);
+    }
+    return null;
+};
+
 export default function UserSignup() {
     const location = useLocation();
     const { language, setLanguage, t, supportedLanguages, isLanguageEnabled } = useLanguage();
-    const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const savedDraft = getSavedUserDraft();
+    const [agreedToTerms, setAgreedToTerms] = useState(() => !!savedDraft?.agreedToTerms);
     const [showTermsModal, setShowTermsModal] = useState(false);
     const [policyType, setPolicyType] = useState("general");
     
-    const [formData, setFormData] = useState({
-        name: location.state?.name || "",
-        phone: location.state?.phone || "",
-        email: location.state?.email || "",
-        preferredLanguage: location.state?.preferredLanguage || language || "en"
-    });
+    const [formData, setFormData] = useState(() => ({
+        name: location.state?.name || savedDraft?.name || "",
+        phone: location.state?.phone || savedDraft?.phone || "",
+        email: location.state?.email || savedDraft?.email || "",
+        preferredLanguage: location.state?.preferredLanguage || savedDraft?.preferredLanguage || language || "en"
+    }));
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const toast = useToast();
@@ -36,6 +49,18 @@ export default function UserSignup() {
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
+
+    // Auto-save draft on input change
+    useEffect(() => {
+        try {
+            sessionStorage.setItem(DRAFT_USER_STORAGE_KEY, JSON.stringify({
+                ...formData,
+                agreedToTerms
+            }));
+        } catch (e) {
+            console.error("Draft save failed:", e);
+        }
+    }, [formData, agreedToTerms]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;

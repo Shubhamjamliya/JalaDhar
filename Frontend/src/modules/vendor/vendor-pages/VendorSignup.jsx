@@ -27,7 +27,8 @@ import {
     IoArrowBackOutline,
     IoCashOutline,
     IoSearchOutline,
-    IoCameraOutline
+    IoCameraOutline,
+    IoConstructOutline
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { sendVendorRegistrationOTP } from "../../../services/vendorAuthApi";
@@ -47,6 +48,18 @@ const MACHINE_OPTIONS = [
     'ADMT',
     'Resistivity Meter'
 ];
+
+const DRAFT_STORAGE_KEY = "jaladhar_vendor_signup_draft";
+
+const getSavedDraft = () => {
+    try {
+        const saved = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+    } catch (e) {
+        console.error("Error reading vendor signup draft:", e);
+    }
+    return null;
+};
 
 export default function VendorSignup() {
     // Custom snappy animation styles
@@ -73,6 +86,7 @@ export default function VendorSignup() {
 
     // Extract initial registration data if coming back from OTP verification to edit
     const initialData = location.state?.registrationData || location.state?.initialData || location.state;
+    const savedDraft = getSavedDraft();
 
     // Helper to determine initial education values
     const STANDARD_EDUCATION_OPTIONS = ["MSc in Geophysics", "MSc in Geology", "MSc in Earth Sciences"];
@@ -88,13 +102,15 @@ export default function VendorSignup() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [registrationStep, setRegistrationStep] = useState(1); // 1: form, 2: OTP
-    const [activeTab, setActiveTab] = useState("basic"); // basic, qualification, training, kyc, address
+    const [activeTab, setActiveTab] = useState(() => {
+        return savedDraft?.activeTab || "basic";
+    });
     const [verificationToken, setVerificationToken] = useState("");
     const [otpCountdown, setOtpCountdown] = useState(0);
     const [loading, setLoading] = useState(false);
     const [mapsLoaded, setMapsLoaded] = useState(false);
     const [fullAddress, setFullAddress] = useState(() => {
-        return initialData?.selectedPlace?.formattedAddress || initialData?.address?.geoLocation?.formattedAddress || "";
+        return savedDraft?.fullAddress || initialData?.selectedPlace?.formattedAddress || initialData?.address?.geoLocation?.formattedAddress || "";
     });
     const [gettingLocation, setGettingLocation] = useState(false);
 
@@ -102,6 +118,9 @@ export default function VendorSignup() {
     const machineDropdownRef = useRef(null);
     const [isMachineDropdownOpen, setIsMachineDropdownOpen] = useState(false);
     const [selectedMachines, setSelectedMachines] = useState(() => {
+        if (savedDraft?.selectedMachines && Array.isArray(savedDraft.selectedMachines)) {
+            return savedDraft.selectedMachines;
+        }
         if (initialData?.machineType) {
             return initialData.machineType.split(', ').map(m => m.trim()).filter(Boolean);
         }
@@ -200,52 +219,95 @@ export default function VendorSignup() {
     }, [otpCountdown]);
 
     // Form state
-    const [formData, setFormData] = useState({
-        // Basic Details
-        name: initialData?.name || "",
-        email: initialData?.email || "",
-        phone: initialData?.phone || "",
-        bloodGroup: initialData?.bloodGroup || "",
-        gender: initialData?.gender || "",
-        designation: initialData?.designation || "",
-        password: initialData?.password || "",
-        confirmPassword: initialData?.password || "",
-        profilePicture: initialData?.profilePicture || null,
+    const [formData, setFormData] = useState(() => {
+        const d = savedDraft?.formData || {};
+        return {
+            // Basic Details
+            name: initialData?.name || d.name || "",
+            email: initialData?.email || d.email || "",
+            phone: initialData?.phone || d.phone || "",
+            bloodGroup: initialData?.bloodGroup || d.bloodGroup || "",
+            gender: initialData?.gender || d.gender || "",
+            designation: initialData?.designation || d.designation || "",
+            password: initialData?.password || d.password || "",
+            confirmPassword: initialData?.password || d.confirmPassword || "",
+            profilePicture: initialData?.profilePicture || null,
 
-        // KYC Details
-        aadhaarNo: initialData?.aadhaarNo || "",
-        panNo: initialData?.panNo || "",
-        aadharCard: initialData?.aadharCard || null,
-        panCard: initialData?.panCard || null,
+            // KYC Details
+            aadhaarNo: initialData?.aadhaarNo || d.aadhaarNo || "",
+            panNo: initialData?.panNo || d.panNo || "",
+            aadharCard: initialData?.aadharCard || null,
+            panCard: initialData?.panCard || null,
 
-        // Education & Experience
-        education: getInitialEducation(),
-        customEducation: getInitialCustomEducation(),
-        institution: initialData?.institution || "",
-        // Experience & Registration
-        experience: initialData?.experience !== undefined ? initialData.experience : "",
-        experienceDetails: initialData?.experienceDetails || "",
-        groundwaterRegDetails: initialData?.groundwaterRegDetails || null,
-        trainingCertificates: initialData?.trainingCertificates || [],
-        certificates: initialData?.certificates || [],
+            // Education & Experience
+            education: initialData?.education ? getInitialEducation() : (d.education || ""),
+            customEducation: initialData?.customEducation ? getInitialCustomEducation() : (d.customEducation || ""),
+            institution: initialData?.institution || d.institution || "",
+            // Experience & Registration
+            experience: initialData?.experience !== undefined ? initialData.experience : (d.experience !== undefined ? d.experience : ""),
+            experienceDetails: initialData?.experienceDetails || d.experienceDetails || "",
+            groundwaterRegDetails: initialData?.groundwaterRegDetails || null,
+            trainingCertificates: initialData?.trainingCertificates || [],
+            certificates: initialData?.certificates || [],
 
-        // Service Details
-        machineType: initialData?.machineType || "",
-        serviceImages: initialData?.serviceImages || [],
-        servicePrice: initialData?.servicePrice || "",
+            // Service Details
+            machineType: initialData?.machineType || d.machineType || "",
+            serviceImages: initialData?.serviceImages || [],
+            servicePrice: initialData?.servicePrice || d.servicePrice || "",
 
-        // Bank Details
-        bankName: initialData?.bankName || "",
-        accountHolderName: initialData?.accountHolderName || "",
-        accountNumber: initialData?.accountNumber || "",
-        ifscCode: initialData?.ifscCode || "",
-        branchName: initialData?.branchName || "",
-        cancelledCheque: initialData?.cancelledCheque || null,
+            // Bank Details
+            bankName: initialData?.bankName || d.bankName || "",
+            accountHolderName: initialData?.accountHolderName || d.accountHolderName || "",
+            accountNumber: initialData?.accountNumber || d.accountNumber || "",
+            ifscCode: initialData?.ifscCode || d.ifscCode || "",
+            branchName: initialData?.branchName || d.branchName || "",
+            cancelledCheque: initialData?.cancelledCheque || null,
 
-        // Address - only geoLocation
-        address: initialData?.address || {},
-        selectedPlace: initialData?.selectedPlace || null
+            // Address - only geoLocation
+            address: initialData?.address || d.address || {},
+            selectedPlace: initialData?.selectedPlace || d.selectedPlace || null
+        };
     });
+
+    // Auto-save form progress to sessionStorage so details survive page refresh
+    useEffect(() => {
+        try {
+            const textFields = {
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+                bloodGroup: formData.bloodGroup,
+                gender: formData.gender,
+                designation: formData.designation,
+                password: formData.password,
+                confirmPassword: formData.confirmPassword,
+                aadhaarNo: formData.aadhaarNo,
+                panNo: formData.panNo,
+                education: formData.education,
+                customEducation: formData.customEducation,
+                institution: formData.institution,
+                experience: formData.experience,
+                experienceDetails: formData.experienceDetails,
+                machineType: formData.machineType,
+                servicePrice: formData.servicePrice,
+                bankName: formData.bankName,
+                accountHolderName: formData.accountHolderName,
+                accountNumber: formData.accountNumber,
+                ifscCode: formData.ifscCode,
+                branchName: formData.branchName,
+                address: formData.address,
+                selectedPlace: formData.selectedPlace
+            };
+            sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+                formData: textFields,
+                activeTab,
+                selectedMachines,
+                fullAddress
+            }));
+        } catch (e) {
+            console.error("Draft auto-save error:", e);
+        }
+    }, [formData, activeTab, selectedMachines, fullAddress]);
 
     // Sync machine selection to form data
     useEffect(() => {
@@ -581,6 +643,11 @@ export default function VendorSignup() {
             });
 
             if (response.success) {
+                try {
+                    sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+                } catch (e) {
+                    console.error("Failed to clear draft:", e);
+                }
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("OTP sent successfully! Please check your email/phone.");
                 // Navigate to OTP verification page with registration data
