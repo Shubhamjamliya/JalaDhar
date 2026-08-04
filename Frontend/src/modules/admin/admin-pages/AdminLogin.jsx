@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+    IoMailOutline,
+    IoLockClosedOutline
+} from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useToast } from "../../../hooks/useToast";
 
@@ -13,6 +17,10 @@ export default function AdminLogin() {
     const navigate = useNavigate();
     const { login } = useAdminAuth();
     const toast = useToast();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     const handleAdminLogin = async (e) => {
         e?.preventDefault();
@@ -50,95 +58,108 @@ export default function AdminLogin() {
     };
 
     return (
-        <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5">
-            {/* Whole content */}
-            <div className="w-full max-w-sm">
-                {/* Logo */}
-                <div className="text-center mb-10 mt-4">
-                    <img
-                        src={logo}
-                        alt="Jaladhaara Logo"
-                        className="h-32 w-auto mx-auto mb-2 object-contain"
-                    />
-                </div>
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 px-4 py-8 overflow-y-auto">
+            {/* Ambient Blurred Background Accents */}
+            <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute bottom-10 right-10 w-80 h-80 bg-teal-400/10 rounded-full blur-3xl" />
 
-                {/* Welcome Text */}
-                <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
-                    Admin Login
-                </h2>
-
-                {/* Email Input */}
-                <div className="mb-4">
-                    <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                        <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
-                            Email
-                        </p>
-                        <input
-                            type="email"
-                            placeholder="Enter your email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full text-[14px] text-gray-600 focus:outline-none"
-                            disabled={loading}
-                            onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                    handleAdminLogin(e);
-                                }
-                            }}
-                        />
-                    </div>
-                </div>
-
-                {/* Password Input */}
-                <div className="mb-4">
-                    <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                        <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
-                            Password
-                        </p>
-                        <div className="flex items-center">
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                placeholder="Enter your password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-[90%] text-[14px] text-gray-600 focus:outline-none"
-                                disabled={loading}
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleAdminLogin(e);
-                                    }
-                                }}
+            <div className="relative z-10 w-full max-w-md">
+                {/* Main Card Container */}
+                <div className="w-full rounded-3xl bg-white/95 backdrop-blur-md p-6 sm:p-8 shadow-xl shadow-slate-200/60 border border-slate-200/80">
+                    {/* Header / Logo */}
+                    <div className="mb-6 flex flex-col items-center text-center">
+                        <div className="relative mb-3 flex items-center justify-center p-3 rounded-2xl bg-slate-50 border border-slate-100 shadow-2xs">
+                            <img
+                                src={logo}
+                                alt="Jaladhaara Logo"
+                                className="h-20 sm:h-24 object-contain"
                             />
-                            <span
-                                className="text-gray-500 text-sm cursor-pointer ml-2"
-                                onClick={() => setShowPassword(!showPassword)}
-                            >
-                                {showPassword ? "Hide" : "Show"}
-                            </span>
                         </div>
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
+                            Admin Login
+                        </h2>
                     </div>
-                </div>
 
-                {/* Forgot Password */}
-                <div className="text-right mb-5">
-                    <Link
-                        to="/admin/forgot-password"
-                        className="text-[#0A84FF] text-sm underline"
-                    >
-                        Forgot Password?
-                    </Link>
-                </div>
+                    <form className="space-y-4" onSubmit={handleAdminLogin}>
+                        {/* Email Input */}
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
+                                Email
+                            </label>
+                            <div className="relative">
+                                <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
+                                <input
+                                    type="email"
+                                    placeholder="Enter your email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
+                                    disabled={loading}
+                                    required
+                                    autoFocus
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleAdminLogin(e);
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
 
-                {/* Login Button */}
-                <button
-                    onClick={handleAdminLogin}
-                    disabled={loading || !email || !password}
-                    className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {loading ? "Logging in..." : "Login"}
-                </button>
+                        {/* Password Input */}
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
+                                Password
+                            </label>
+                            <div className="relative">
+                                <IoLockClosedOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Enter your password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-16 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
+                                    disabled={loading}
+                                    required
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleAdminLogin(e);
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    className="absolute top-1/2 right-3.5 -translate-y-1/2 text-xs font-extrabold text-[#0A84FF] hover:text-blue-700 px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100/80 transition-colors cursor-pointer select-none"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    disabled={loading}
+                                >
+                                    {showPassword ? "Hide" : "Show"}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Forgot Password Link */}
+                        <div className="text-right pt-0.5">
+                            <Link
+                                to="/admin/forgot-password"
+                                className="text-xs font-extrabold text-[#0A84FF] hover:text-blue-700 underline transition-colors"
+                            >
+                                Forgot Password?
+                            </Link>
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                            type="submit"
+                            onClick={handleAdminLogin}
+                            disabled={loading || !email || !password}
+                            className="w-full rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 mt-2"
+                        >
+                            <span>{loading ? "Logging in..." : "Login"}</span>
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     );
 }
-
