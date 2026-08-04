@@ -48,8 +48,24 @@ export const handleApiError = (error, defaultMessage = 'Something went wrong. Pl
  * @param {number} duration - Toast duration in milliseconds
  * @returns {string} The toast ID
  */
-export const handleApiSuccess = (message = 'Operation completed successfully!', duration = 3000) => {
-  return toast.success(message, {
+export const handleApiSuccess = (messageOrResponse = 'Operation completed successfully!', fallbackMessageOrDuration = 3000) => {
+  let messageText = 'Operation completed successfully!';
+  let duration = 3000;
+
+  if (typeof messageOrResponse === 'string') {
+    messageText = messageOrResponse;
+    if (typeof fallbackMessageOrDuration === 'number') {
+      duration = fallbackMessageOrDuration;
+    }
+  } else if (typeof messageOrResponse === 'object' && messageOrResponse !== null) {
+    if (typeof fallbackMessageOrDuration === 'string') {
+      messageText = fallbackMessageOrDuration;
+    } else {
+      messageText = messageOrResponse.message || messageOrResponse.data?.message || 'Operation completed successfully!';
+    }
+  }
+
+  return toast.success(messageText, {
     icon: '✓',
     duration,
   });

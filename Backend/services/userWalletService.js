@@ -72,6 +72,52 @@ const getUserWalletBalance = async (userId) => {
       throw new Error('User not found');
     }
 
+    // Auto-sync & credit any cancelled bookings that had paid advance but haven't been credited to user wallet yet
+    try {
+      const Booking = require('../models/Booking');
+      const Payment = require('../models/Payment');
+      
+      const cancelledBookings = await Booking.find({
+        user: userId,
+        status: 'CANCELLED'
+      });
+
+      for (const cancelledBooking of cancelledBookings) {
+        const isAdvancePaid = cancelledBooking.payment?.advancePaid || false;
+        const advanceAmount = cancelledBooking.payment?.advanceAmount || 0;
+        
+        const completedAdvancePayment = await Payment.findOne({
+          booking: cancelledBooking._id,
+          paymentType: 'ADVANCE',
+          status: 'COMPLETED'
+        });
+
+        const refundEligibleAmount = (isAdvancePaid && advanceAmount > 0) 
+          ? advanceAmount 
+          : (completedAdvancePayment ? completedAdvancePayment.amount : 0);
+
+        if (refundEligibleAmount > 0) {
+          const existingRefundTx = await UserWalletTransaction.findOne({
+            user: userId,
+            booking: cancelledBooking._id,
+            type: 'REFUND',
+            status: 'SUCCESS'
+          });
+
+          if (!existingRefundTx) {
+            await creditToUserWallet(
+              userId,
+              refundEligibleAmount,
+              cancelledBooking._id,
+              `Refund for cancelled booking #${cancelledBooking._id.toString().slice(-6).toUpperCase()}`
+            );
+          }
+        }
+      }
+    } catch (syncErr) {
+      console.error('Error auto-syncing cancelled booking refunds for wallet:', syncErr);
+    }
+
     // Calculate total credited from all refund transactions
     const totalCreditedResult = await UserWalletTransaction.aggregate([
       { 

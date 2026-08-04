@@ -1352,6 +1352,45 @@ const cancelBooking = async (req, res) => {
     booking.cancellationReason = cancellationReason || 'Cancelled by user';
     await booking.save();
 
+    // Check if advance payment was made and credit refund to user wallet
+    try {
+      const Payment = require('../../models/Payment');
+      const { creditToUserWallet } = require('../../services/userWalletService');
+      
+      const isAdvancePaidOnBooking = booking.payment?.advancePaid && (booking.payment?.advanceAmount > 0);
+      const completedAdvancePayment = await Payment.findOne({
+        booking: booking._id,
+        paymentType: 'ADVANCE',
+        status: 'COMPLETED'
+      });
+
+      const refundAmount = isAdvancePaidOnBooking 
+        ? booking.payment.advanceAmount 
+        : (completedAdvancePayment ? completedAdvancePayment.amount : 0);
+
+      if (refundAmount > 0) {
+        await creditToUserWallet(
+          userId,
+          refundAmount,
+          booking._id,
+          `Refund for cancelled booking #${booking._id.toString().slice(-6).toUpperCase()}`
+        );
+
+        await Payment.create({
+          booking: booking._id,
+          user: userId,
+          vendor: booking.vendor?._id || booking.vendor,
+          paymentType: 'REFUND',
+          amount: refundAmount,
+          status: 'COMPLETED',
+          description: `Refund credited to user wallet for cancelled booking #${booking._id.toString().slice(-6).toUpperCase()}`,
+          completedAt: new Date()
+        });
+      }
+    } catch (refundErr) {
+      console.error('Error auto-refunding to user wallet on cancelBooking:', refundErr);
+    }
+
     // Send notification email to vendor
     try {
       await sendBookingStatusUpdateEmail({

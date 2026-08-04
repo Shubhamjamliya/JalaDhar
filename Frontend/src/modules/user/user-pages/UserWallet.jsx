@@ -79,7 +79,7 @@ export default function UserWallet() {
             setProcessingWithdraw(true);
             const response = await createUserWithdrawalRequest(amount);
             if (response.success) {
-                handleApiSuccess(response, "Withdrawal request submitted successfully!");
+                handleApiSuccess("Withdrawal request submitted successfully!");
                 setShowWithdrawModal(false);
                 setWithdrawAmount("");
                 loadWalletData(); // Reload data
