@@ -207,44 +207,56 @@ export default function UserAllBookingsStatus() {
       <ErrorMessage message={error} />
 
       {/* Heading */}
-      <h1 className="text-2xl font-bold text-[#3A3A3A] mb-4">
-        My Bookings
-      </h1>
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            My Bookings
+          </h1>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Track and manage your groundwater survey requests
+          </p>
+        </div>
+        {filteredBookings.length > 0 && (
+          <span className="px-2.5 py-1 bg-blue-50 text-[#0A84FF] border border-blue-100 text-[11px] font-extrabold rounded-full font-mono whitespace-nowrap flex-shrink-0 self-start mt-0.5">
+            {filteredBookings.length} {filteredBookings.length === 1 ? 'Booking' : 'Bookings'}
+          </span>
+        )}
+      </div>
 
-      {/* Tabs */}
-      <div className="mb-6 flex gap-2 border-b border-gray-200 overflow-x-auto pb-1">
+      {/* Responsive Horizontal Scrollable Tabs */}
+      <div className="mb-4 flex gap-1 border-b border-slate-200 overflow-x-auto no-scrollbar pb-0.5">
         <button
           onClick={() => setActiveTab("upcoming")}
-          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "upcoming"
+          className={`px-3.5 py-2 font-bold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap cursor-pointer ${activeTab === "upcoming"
             ? "text-[#0A84FF] border-[#0A84FF]"
-            : "text-gray-500 border-transparent hover:text-[#0A84FF]"
+            : "text-slate-500 border-transparent hover:text-slate-800"
             }`}
         >
           Upcoming
         </button>
         <button
           onClick={() => setActiveTab("ongoing")}
-          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "ongoing"
+          className={`px-3.5 py-2 font-bold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap cursor-pointer ${activeTab === "ongoing"
             ? "text-[#0A84FF] border-[#0A84FF]"
-            : "text-gray-500 border-transparent hover:text-[#0A84FF]"
+            : "text-slate-500 border-transparent hover:text-slate-800"
             }`}
         >
           Ongoing
         </button>
         <button
           onClick={() => setActiveTab("completed")}
-          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "completed" || activeTab === "complete"
+          className={`px-3.5 py-2 font-bold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap cursor-pointer ${activeTab === "completed" || activeTab === "complete"
             ? "text-[#0A84FF] border-[#0A84FF]"
-            : "text-gray-500 border-transparent hover:text-[#0A84FF]"
+            : "text-slate-500 border-transparent hover:text-slate-800"
             }`}
         >
           Completed
         </button>
         <button
           onClick={() => setActiveTab("cancelled")}
-          className={`px-4 py-2 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === "cancelled"
+          className={`px-3.5 py-2 font-bold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap cursor-pointer ${activeTab === "cancelled"
             ? "text-[#0A84FF] border-[#0A84FF]"
-            : "text-gray-500 border-transparent hover:text-[#0A84FF]"
+            : "text-slate-500 border-transparent hover:text-slate-800"
             }`}
         >
           Cancelled
@@ -252,19 +264,19 @@ export default function UserAllBookingsStatus() {
       </div>
 
       {/* Bookings List */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {filteredBookings.length === 0 ? (
-          <div className="rounded-xl bg-white p-8 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-            <div className="mb-4 w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center mx-auto">
-              <IoCalendarOutline className="text-3xl text-blue-500" />
+          <div className="rounded-2xl bg-white p-8 text-center border border-slate-200/80 shadow-2xs">
+            <div className="mb-3 w-12 h-12 rounded-full bg-blue-50 text-[#0A84FF] border border-blue-100 flex items-center justify-center mx-auto">
+              <IoCalendarOutline className="text-2xl" />
             </div>
-            <p className="text-[#3A3A3A] font-semibold mb-2">
+            <p className="text-slate-900 font-bold text-sm mb-1">
               {activeTab === "upcoming" && "No Upcoming Bookings"}
               {activeTab === "ongoing" && "No Ongoing Bookings"}
               {(activeTab === "completed" || activeTab === "complete") && "No Completed Bookings"}
               {activeTab === "cancelled" && "No Cancelled Bookings"}
             </p>
-            <p className="text-[#6B7280] text-sm">
+            <p className="text-slate-500 text-xs">
               {activeTab === "upcoming" && "You don't have any upcoming bookings."}
               {activeTab === "ongoing" && "You don't have any in-progress bookings."}
               {(activeTab === "completed" || activeTab === "complete") && "You don't have any completed bookings yet."}
@@ -276,92 +288,79 @@ export default function UserAllBookingsStatus() {
             <div
               key={booking._id}
               onClick={() => navigate(`/user/booking/${booking._id}`)}
-              className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] transition-all"
+              className="rounded-2xl bg-white p-3.5 sm:p-4 shadow-2xs border border-slate-200/80 cursor-pointer hover:border-blue-200 transition-all space-y-3"
             >
-              {/* Vendor Info Header */}
-              <div className="mb-4">
-                <div className="flex items-start gap-4 mb-3">
-                  {/* Profile Picture */}
+              {/* Header Info */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   {booking.vendor?.profilePicture ? (
                     <img
                       src={booking.vendor.profilePicture}
                       alt="Vendor Avatar"
-                      className="h-14 w-14 rounded-full border-2 border-[#0A84FF] object-cover flex-shrink-0"
+                      className="h-10 w-10 rounded-full border border-slate-200 object-cover flex-shrink-0"
                     />
                   ) : (
-                    <div className="h-14 w-14 rounded-full border-2 border-[#0A84FF] bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
+                    <div className="h-10 w-10 rounded-full border border-blue-100 bg-blue-50 flex items-center justify-center flex-shrink-0 text-xs font-bold text-[#0A84FF]">
                       {booking.vendor?.name ? (
-                        <span className="text-lg font-bold text-[#0A84FF]">
-                          {booking.vendor.name.charAt(0).toUpperCase()}
-                        </span>
+                        booking.vendor.name.charAt(0).toUpperCase()
                       ) : (
-                        <span className="text-xl">👤</span>
+                        "E"
                       )}
                     </div>
                   )}
 
-                  {/* Vendor Details */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-[#3A3A3A] mb-1 truncate">
-                      {booking.service?.name || "Service"}
+                  <div className="min-w-0">
+                    <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
+                      {booking.service?.name || "Hydrogeological Groundwater Survey"}
                     </h3>
-                    <p className="text-xs text-[#6B7280] mb-2">
-                      Booking ID: {formatBookingId(booking._id)}
-                    </p>
-                    {/* Status Badge - Separate line */}
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(booking.userStatus || booking.status)}
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                        {formatBookingId(booking._id)}
+                      </span>
                     </div>
                   </div>
+                </div>
 
-                  {/* Payment Amount */}
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-lg font-bold text-[#00C2A8]">
-                      {formatAmount(
-                        booking.payment?.totalAmount ||
-                        booking.payment?.amount ||
-                        0
-                      )}
-                    </p>
-                  </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-sm sm:text-base font-extrabold text-emerald-600 font-mono">
+                    {formatAmount(
+                      booking.payment?.totalAmount ||
+                      booking.payment?.amount ||
+                      0
+                    )}
+                  </p>
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="my-4 h-px bg-gray-200"></div>
+              {/* Status Badge Line */}
+              <div className="flex items-center">
+                {getStatusBadge(booking.userStatus || booking.status)}
+              </div>
 
-              {/* Service Details */}
-              <div className="mb-4">
-                <h4 className="mb-2 font-semibold text-[#3A3A3A]">
-                  Service Details
-                </h4>
-                <div className="space-y-2 text-sm">
-                  {/* Vendor Name */}
-                  {booking.vendor?.name && (
-                    <div className="flex items-center gap-2 text-[#6B7280]">
-                      <IoPersonOutline className="text-[#00C2A8] text-xl" />
-                      <span className="text-[#3A3A3A]">Vendor: {booking.vendor.name}</span>
-                    </div>
-                  )}
-
-                  {/* Date and Time */}
-                  <div className="flex items-center gap-2">
-                    <IoTimeOutline className="text-[#00C2A8] text-xl" />
-                    <span className="text-[#3A3A3A]">
-                      {formatDate(
-                        booking.scheduledDate,
-                        booking.scheduledTime
-                      )}
-                    </span>
+              {/* Service Details Box */}
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs space-y-1.5">
+                {booking.vendor?.name && (
+                  <div className="flex items-center gap-2 text-slate-600 text-[11px] font-medium">
+                    <IoPersonOutline className="text-[#0A84FF] text-sm flex-shrink-0" />
+                    <span className="truncate"><strong className="text-slate-900">Vendor:</strong> {booking.vendor.name}</span>
                   </div>
+                )}
 
-                  {/* Address */}
-                  <div className="flex items-start gap-2">
-                    <IoLocationOutline className="text-[#00C2A8] text-xl mt-0.5" />
-                    <span className="text-[#3A3A3A]">
-                      {formatAddress(booking.address)}
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2 text-slate-600 text-[11px] font-medium">
+                  <IoTimeOutline className="text-[#0A84FF] text-sm flex-shrink-0" />
+                  <span>
+                    {formatDate(
+                      booking.scheduledDate,
+                      booking.scheduledTime
+                    )}
+                  </span>
+                </div>
+
+                <div className="flex items-start gap-2 text-slate-600 text-[11px] leading-relaxed">
+                  <IoLocationOutline className="text-[#0A84FF] text-sm flex-shrink-0 mt-0.5" />
+                  <span className="line-clamp-2">
+                    {formatAddress(booking.address)}
+                  </span>
                 </div>
               </div>
 
@@ -371,10 +370,10 @@ export default function UserAllBookingsStatus() {
                   e.stopPropagation();
                   navigate(`/user/booking/${booking._id}/status`);
                 }}
-                className="w-full rounded-lg bg-[#0A84FF] py-3 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#005BBB] flex items-center justify-center gap-2"
+                className="w-full py-2 px-3 bg-[#0A84FF] hover:bg-[#0070E0] text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <IoDocumentTextOutline className="text-xl" />
-                View Status Timeline
+                <IoDocumentTextOutline className="text-sm" />
+                <span>View Status Timeline</span>
               </button>
             </div>
           ))

@@ -35,26 +35,36 @@ import { formatDateToDDMMYYYY, formatDateToLongString } from "../../../utils/dat
 
 const CategorySelection = ({ onSelect }) => {
   const categories = [
-    { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "bg-green-100 text-green-600" },
-    { id: "Domestic/Household", label: "Domestic/Household", icon: IoHomeOutline, color: "bg-blue-100 text-blue-600" },
-    { id: "Industrial/Commercial", label: "Industrial/Commercial", icon: IoBusinessOutline, color: "bg-purple-100 text-purple-600" },
-    { id: "Industrial", label: "Industrial", icon: IoConstructOutline, color: "bg-orange-100 text-orange-600" }
+    { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "bg-emerald-50 text-emerald-600 border border-emerald-100" },
+    { id: "Domestic/Household", label: "Domestic / Household", icon: IoHomeOutline, color: "bg-blue-50 text-[#0A84FF] border border-blue-100" },
+    { id: "Industrial/Commercial", label: "Industrial / Commercial", icon: IoBusinessOutline, color: "bg-purple-50 text-purple-600 border border-purple-100" },
+    { id: "Industrial", label: "Industrial Projects", icon: IoConstructOutline, color: "bg-amber-50 text-amber-600 border border-amber-100" }
   ];
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">Select Survey Category</h2>
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <div className="text-center mb-5">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight mb-1">
+          Select Survey Category
+        </h2>
+        <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+          Choose the purpose of your groundwater survey to view specialized packages.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {categories.map((cat) => (
           <button
             key={cat.id}
             onClick={() => onSelect(cat.id)}
-            className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-blue-500 hover:shadow-md transition-all aspect-square"
+            className="flex flex-col items-center justify-center p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:border-[#0A84FF] hover:shadow-md transition-all cursor-pointer min-h-[135px] sm:min-h-[145px] group active:scale-98"
           >
-            <div className={`p-4 rounded-full ${cat.color} mb-3 text-3xl`}>
+            <div className={`p-3 rounded-2xl ${cat.color} mb-2.5 text-2xl group-hover:scale-105 transition-transform`}>
               <cat.icon />
             </div>
-            <span className="font-semibold text-gray-700 text-sm text-center">{cat.label}</span>
+            <span className="font-extrabold text-slate-800 text-xs sm:text-sm text-center leading-tight">
+              {cat.label}
+            </span>
           </button>
         ))}
       </div>
@@ -1162,24 +1172,42 @@ export default function UserSurveyFlow() {
   return (
     <PageContainer>
       {/* Header / Progress */}
-      <div className="mb-6 flex items-center justify-between">
-        {step > 1 && (
-          <button onClick={() => {
-            // Back navigation logic
-            if (step === 5 && isVendorPreSelected) setStep(3); // Jump back from Slot to Location if pre-selected
-            else setStep(step - 1);
-          }} className="p-2 -ml-2 text-gray-600">
-            <IoArrowBack className="text-xl" />
-          </button>
-        )}
-        <div className="flex gap-1.5">
-          {/* Progress dots - adjust count based on mode? Or keep standard 5 */}
+      <div className="mb-5 max-w-md mx-auto">
+        <div className="flex items-center justify-between gap-3 mb-2">
+          {step > 1 ? (
+            <button
+              onClick={() => {
+                if (step === 5 && isVendorPreSelected) setStep(3);
+                else setStep(step - 1);
+              }}
+              className="p-1.5 -ml-1 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+            >
+              <IoArrowBack className="text-base" />
+              <span>Back</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
+          <span className="text-[11px] font-extrabold text-[#0A84FF] font-mono uppercase bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+            Step {step} of {isVendorPreSelected ? 4 : 5}
+          </span>
+        </div>
+
+        {/* Progress Bar Segments */}
+        <div className="flex gap-1.5 w-full">
           {[1, 2, 3, 4, 5].map(i => {
-            // Hide step 4 dot if pre-selected? Or just visually skip it
             if (isVendorPreSelected && i === 4) return null;
             return (
-              <div key={i} className={`h-1.5 w-8 rounded-full transition-colors ${i <= step ? 'bg-blue-600' : 'bg-gray-200'}`} />
-            )
+              <div
+                key={i}
+                className={`h-2 flex-1 rounded-full transition-all duration-300 ${
+                  i <= step
+                    ? 'bg-[#0A84FF] shadow-2xs'
+                    : 'bg-slate-200/80'
+                }`}
+              />
+            );
           })}
         </div>
       </div>

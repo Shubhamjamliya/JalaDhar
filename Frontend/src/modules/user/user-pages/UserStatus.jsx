@@ -399,12 +399,7 @@ export default function UserStatus() {
     };
 
     const handleContactSupport = () => {
-        const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (isMobile) {
-            window.location.href = "tel:+919876543210";
-        } else {
-            setShowSupportModal(true);
-        }
+        navigate("/user/help-support");
     };
 
     const handleCallExpert = (phone) => {
@@ -589,6 +584,9 @@ export default function UserStatus() {
     // Use userStatus for user view
     const status = currentBooking?.userStatus || currentBooking?.status;
 
+    const completedStepsCount = steps.filter(s => s.completed).length;
+    const progressPercent = steps.length ? Math.min(100, Math.round(((completedStepsCount + (steps.some(s => s.active) ? 0.5 : 0)) / steps.length) * 100)) : 0;
+
 
     return (
         <div
@@ -630,37 +628,39 @@ export default function UserStatus() {
 
             {/* Back button removed - handled by UserNavbar */}
 
+            {/* Inner Compact Container */}
+            <div className="max-w-2xl mx-auto space-y-3">
             {/* Booking Info Header Card (Light Professional Theme) */}
             {currentBooking && (
-                <div className="mb-5 rounded-2xl bg-white p-4.5 shadow-xs border border-[#E1F5FE] relative overflow-hidden">
-                    <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="rounded-2xl bg-white p-3.5 sm:p-4 shadow-2xs border border-[#E1F5FE] relative overflow-hidden">
+                    <div className="flex items-start justify-between gap-2.5 mb-2.5">
                         <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="inline-block px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold bg-blue-50 text-[#0A84FF] border border-blue-100">
+                            <div className="flex items-center gap-1.5 mb-1">
+                                <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-[#0A84FF] border border-blue-100">
                                     #{currentBooking.id ? currentBooking.id.slice(-8) : (currentBooking._id ? currentBooking._id.toString().slice(-8) : 'N/A')}
                                 </span>
-                                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">
                                     Verified
                                 </span>
                             </div>
-                            <h1 className="text-base md:text-lg font-extrabold tracking-tight text-slate-900">
+                            <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 leading-snug">
                                 {currentBooking.service?.name || "Hydrogeological Groundwater Survey"}
                             </h1>
                         </div>
                         {currentBooking.payment?.totalAmount && (
                             <div className="text-right flex-shrink-0">
-                                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Total Fee</span>
-                                <span className="text-lg font-extrabold text-emerald-600 font-mono">
+                                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Total Fee</span>
+                                <span className="text-base sm:text-lg font-extrabold text-emerald-600 font-mono">
                                     ₹{currentBooking.payment.totalAmount.toLocaleString('en-IN')}
                                 </span>
                             </div>
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2.5 border-t border-slate-100 text-xs font-medium text-slate-600">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-2 border-t border-slate-100 text-[11px] font-medium text-slate-600">
                         {currentBooking.scheduledDate && (
-                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
-                                <IoTimeOutline className="text-sm text-[#0A84FF] flex-shrink-0" />
+                            <div className="flex items-center gap-1.5 bg-slate-50/80 px-2.5 py-1.5 rounded-lg border border-slate-100">
+                                <IoTimeOutline className="text-xs text-[#0A84FF] flex-shrink-0" />
                                 <span className="truncate">
                                     {new Date(currentBooking.scheduledDate).toLocaleDateString("en-IN", {
                                         day: "numeric",
@@ -672,8 +672,8 @@ export default function UserStatus() {
                             </div>
                         )}
                         {currentBooking.address && (
-                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
-                                <IoLocationOutline className="text-sm text-[#0A84FF] flex-shrink-0" />
+                            <div className="flex items-center gap-1.5 bg-slate-50/80 px-2.5 py-1.5 rounded-lg border border-slate-100">
+                                <IoLocationOutline className="text-xs text-[#0A84FF] flex-shrink-0" />
                                 <span className="truncate">
                                     {currentBooking.address.street}, {currentBooking.address.city}, {currentBooking.address.state} {currentBooking.address.pincode}
                                 </span>
@@ -685,45 +685,81 @@ export default function UserStatus() {
 
             {/* Actions Card (Matching UX specification) */}
             {currentBooking && !["CANCELLED", "COMPLETED", "REJECTED"].includes(status) && (
-                <div className="mb-5 rounded-2xl bg-white p-4 shadow-xs border border-slate-200/80">
-                    <h2 className="text-base font-extrabold text-slate-900 mb-3 tracking-tight">Actions</h2>
+                <div className="rounded-2xl bg-white p-3.5 sm:p-4 shadow-2xs border border-slate-200/80">
+                    <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-2.5">Actions</h2>
 
                     {/* Notice Box */}
                     {["PENDING", "ASSIGNED"].includes(status) && (
-                        <div className="mb-3 p-3.5 rounded-xl bg-amber-50/80 border border-amber-200/70 flex items-start gap-2.5">
-                            <span className="text-lg leading-none">⏳</span>
+                        <div className="mb-2.5 p-2.5 sm:p-3 rounded-xl bg-amber-50/80 border border-amber-200/70 flex items-start gap-2">
+                            <span className="text-base leading-none">⏳</span>
                             <div>
-                                <h3 className="text-xs font-bold text-amber-900">Awaiting Expert Acceptance</h3>
-                                <p className="text-[11px] text-amber-800 leading-relaxed mt-0.5">
+                                <h3 className="text-[11px] font-bold text-amber-900">Awaiting Expert Acceptance</h3>
+                                <p className="text-[10px] sm:text-[11px] text-amber-800 leading-relaxed mt-0.5">
                                     Your assigned expert is reviewing this booking. Online payment will be available only after the expert formally accepts the booking.
                                 </p>
                             </div>
                         </div>
                     )}
 
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {/* Unlock Survey Report Button */}
                         <button
                             disabled={!currentBooking.payment?.remainingPaid}
                             onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/report`)}
-                            className={`w-full py-2.5 px-4 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all ${
+                            className={`w-full py-2 px-3 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all ${
                                 currentBooking.payment?.remainingPaid
                                     ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer"
                                     : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-75"
                             }`}
                         >
-                            <IoDocumentTextOutline className="text-base" />
+                            <IoDocumentTextOutline className="text-sm" />
                             <span>Unlock Survey Report</span>
                         </button>
 
                         {/* Cancel Booking Button */}
                         <button
                             onClick={handleCancelBooking}
-                            className="w-full py-2.5 px-4 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
+                            className="w-full py-2 px-3 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                         >
-                            <IoCloseCircleOutline className="text-base text-rose-600" />
+                            <IoCloseCircleOutline className="text-sm text-rose-600" />
                             <span>Cancel Booking</span>
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Expert Information Card with Direct Call Button */}
+            {vendor && (
+                <div className="rounded-2xl bg-white p-3.5 sm:p-4 shadow-2xs border border-slate-200/80">
+                    <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-2.5">Expert Information</h2>
+                    <div className="flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <img
+                                className="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-2xs flex-shrink-0"
+                                src={vendor.profilePicture?.url || (typeof vendor.profilePicture === 'string' && vendor.profilePicture.startsWith('http') ? vendor.profilePicture : `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name || 'Expert')}&background=0A84FF&color=fff`)}
+                                onError={(e) => {
+                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name || 'Expert')}&background=0A84FF&color=fff`;
+                                }}
+                                alt={vendor.name}
+                            />
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-1">
+                                    <p className="text-xs font-bold text-slate-900 truncate">{vendor.name}</p>
+                                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded">Verified</span>
+                                </div>
+                                <div className="flex items-center gap-1 mt-0.5">
+                                    <span className="text-amber-500 text-[11px] font-bold">★ {vendor.rating?.averageRating?.toFixed(1) || "4.9"}</span>
+                                    <span className="text-[11px] text-slate-500">• Hydrogeological Expert</span>
+                                </div>
+                            </div>
+                        </div>
+                        <a
+                            href={`tel:${vendor.phone || vendor.mobile || '+919876543210'}`}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center gap-1 cursor-pointer flex-shrink-0"
+                        >
+                            <IoCallOutline className="text-sm" />
+                            <span>Call Expert</span>
+                        </a>
                     </div>
                 </div>
             )}
@@ -783,6 +819,25 @@ export default function UserStatus() {
                         <IoHelpCircleOutline className="text-sm" />
                         View Dispute Status
                     </button>
+                </div>
+            )}
+
+            {/* Survey Overall Progress Meter Bar */}
+            {steps.length > 0 && (
+                <div className="rounded-2xl bg-white p-3 sm:p-3.5 shadow-2xs border border-slate-200/80">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-1.5">
+                        <span className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-[#0A84FF] animate-pulse" />
+                            <span>Survey Overall Progress</span>
+                        </span>
+                        <span className="text-[#0A84FF] font-mono font-extrabold">{progressPercent}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden p-0.5 border border-slate-100">
+                        <div
+                            className="bg-gradient-to-r from-[#0A84FF] via-blue-500 to-emerald-500 h-full transition-all duration-500 rounded-full"
+                            style={{ width: `${progressPercent}%` }}
+                        />
+                    </div>
                 </div>
             )}
 
@@ -896,7 +951,7 @@ export default function UserStatus() {
                                             {["booking-confirmed", "expert-en-route", "expert-arrived", "survey-started"].includes(step.id) && vendor && (
                                                 <div className="mt-3 flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
                                                     <img
-                                                        className="h-10 w-10 rounded-full object-cover border border-slate-200"
+                                                        className="h-10 w-10 rounded-full object-cover border border-slate-200 flex-shrink-0"
                                                         src={vendor.profilePicture?.url || (typeof vendor.profilePicture === 'string' && vendor.profilePicture.startsWith('http') ? vendor.profilePicture : `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name || 'Expert')}&background=0A84FF&color=fff`)}
                                                         onError={(e) => {
                                                             e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.name || 'Expert')}&background=0A84FF&color=fff`;
@@ -1055,6 +1110,7 @@ export default function UserStatus() {
                     })}
                 </div>
             )}
+            </div>
 
             {/* Borewell Result Upload Modal */}
             {showBorewellModal && (
