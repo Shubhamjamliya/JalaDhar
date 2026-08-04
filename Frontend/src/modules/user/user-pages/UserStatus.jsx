@@ -965,7 +965,7 @@ export default function UserStatus() {
                                                         </div>
                                                         <div className="flex items-center gap-1 mt-0.5">
                                                             <span className="text-amber-500 text-[11px] font-bold">★ {vendor.rating?.averageRating?.toFixed(1) || "4.9"}</span>
-                                                            <span className="text-[11px] text-slate-500">• Hydrogeologist</span>
+                                                            <span className="text-[11px] text-slate-500">• {vendor.designation || currentBooking?.service?.category || currentBooking?.service?.name || "Groundwater Professional"}</span>
                                                         </div>
                                                     </div>
                                                 </div>

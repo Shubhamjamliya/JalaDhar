@@ -838,7 +838,7 @@ export default function VendorBookingDetails() {
                                     <span>Call</span>
                                 </a>
                                 <a
-                                    href={`https://wa.me/91${booking.user.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${booking.user.name}, I am your Hydrogeologist Expert from Jaladhaara regarding Booking ORD-${booking._id?.slice(-8).toUpperCase()}`)}`}
+                                    href={`https://wa.me/91${booking.user.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${booking.user.name}, I am your ${booking.vendor?.designation || 'Groundwater Professional'} from Jaladhaara regarding Booking ORD-${booking._id?.slice(-8).toUpperCase()}`)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-xs rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100"

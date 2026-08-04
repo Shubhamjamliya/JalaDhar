@@ -326,7 +326,7 @@ const createBooking = async (req, res) => {
 
     // Populate booking for response
     await booking.populate('user', 'name email phone');
-    await booking.populate('vendor', 'name email phone');
+    await booking.populate('vendor', 'name email phone designation');
     await booking.populate('service', 'name price');
 
     // Send notifications (asynchronously)
@@ -664,7 +664,7 @@ const uploadBorewellResult = async (req, res) => {
       _id: bookingId,
       user: userId,
       userStatus: BOOKING_STATUS.PAYMENT_SUCCESS
-    }).populate('vendor', 'name email');
+    }).populate('vendor', 'name email designation');
 
     if (!booking) {
       return res.status(404).json({
@@ -796,7 +796,7 @@ const downloadInvoice = async (req, res) => {
       }
     })
       .populate('user', 'name email phone address')
-      .populate('vendor', 'name email phone')
+      .populate('vendor', 'name email phone designation')
       .populate('service', 'name price machineType');
 
     if (!booking) {
@@ -851,7 +851,7 @@ const getAllServices = async (req, res) => {
 
     const [services, total] = await Promise.all([
       Service.find(query)
-        .populate('vendor', 'name rating')
+        .populate('vendor', 'name rating designation')
         .select('name description price duration machineType category images vendor')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -1239,7 +1239,7 @@ const getDashboardStats = async (req, res) => {
 
     // Get recent bookings (last 5)
     let recentBookings = await Booking.find({ user: userId })
-      .populate('vendor', 'name rating')
+      .populate('vendor', 'name rating designation')
       .populate('service', 'name price')
       .sort({ createdAt: -1 })
       .limit(5)
@@ -1320,7 +1320,7 @@ const cancelBooking = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       user: userId
-    }).populate('vendor', 'name email');
+    }).populate('vendor', 'name email designation');
 
     if (!booking) {
       return res.status(404).json({

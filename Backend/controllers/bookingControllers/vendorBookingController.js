@@ -141,18 +141,20 @@ const acceptBooking = async (req, res) => {
       try {
         const { getIO } = require('../../sockets');
         const io = getIO();
+        const expertCategory = booking.vendor?.designation || 'Groundwater Professional';
         await sendNotification({
           recipient: booking.user._id,
           recipientModel: 'User',
           type: 'BOOKING_ACCEPTED',
           title: 'Booking Accepted',
-          message: `Your booking has been accepted by ${booking.vendor?.name || 'vendor'}`,
+          message: `Your booking has been accepted by ${booking.vendor?.name ? `${booking.vendor.name} (${expertCategory})` : `a specialized ${expertCategory.toLowerCase()}`}`,
           relatedEntity: {
             entityType: 'Booking',
             entityId: booking._id
           },
           metadata: {
             vendorName: booking.vendor?.name,
+            expertCategory: expertCategory,
             bookingId: booking._id.toString()
           }
         }, io);

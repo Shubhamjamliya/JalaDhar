@@ -366,7 +366,7 @@ export default function UserBookingDetails() {
 
     const getStatusDescription = (status) => {
         const expertName = booking?.vendor?.name;
-        const rawDesignation = booking?.vendor?.designation || booking?.service?.name || "Hydrogeologist";
+        const rawDesignation = booking?.vendor?.designation || booking?.service?.category || booking?.service?.name || "Groundwater Professional";
         
         let expertDisplay = `a specialized ${rawDesignation.toLowerCase()}`;
         if (expertName) {
