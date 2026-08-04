@@ -21,7 +21,8 @@ export default function UserOTPVerification() {
 
     // Get registration data from location state
     const registrationData = location.state?.registrationData;
-    const verificationToken = location.state?.verificationToken;
+    const initialVerificationToken = location.state?.verificationToken;
+    const [currentVerificationToken, setCurrentVerificationToken] = useState(() => initialVerificationToken);
     const phone = location.state?.phone;
     const email = location.state?.email;
 
@@ -34,11 +35,11 @@ export default function UserOTPVerification() {
     useEffect(() => {
         window.scrollTo(0, 0);
         // Redirect if no registration data or token
-        if (!registrationData || !verificationToken) {
+        if (!registrationData || !currentVerificationToken) {
             navigate("/usersignup");
             return;
         }
-    }, [navigate, registrationData, verificationToken]);
+    }, [navigate, registrationData, currentVerificationToken]);
 
     useEffect(() => {
         let timer;
@@ -64,6 +65,9 @@ export default function UserOTPVerification() {
                 setOtpCountdown(60);
                 if (response.data?.otp) {
                     setOtp(response.data.otp);
+                }
+                if (response.data?.token) {
+                    setCurrentVerificationToken(response.data.token);
                 }
                 // Update location state with new token
                 window.history.replaceState(
@@ -100,7 +104,7 @@ export default function UserOTPVerification() {
                 email: registrationData.email,
                 preferredLanguage: registrationData.preferredLanguage,
                 otp: otp,
-                token: verificationToken
+                token: currentVerificationToken
             });
 
             if (result.success) {
