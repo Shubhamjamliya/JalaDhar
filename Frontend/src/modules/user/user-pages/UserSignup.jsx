@@ -5,7 +5,8 @@ import {
     IoMailOutline,
     IoCallOutline,
     IoGlobeOutline,
-    IoCheckmark
+    IoCheckmark,
+    IoPersonAddOutline
 } from "react-icons/io5";
 import { sendUserRegistrationOTP } from "../../../services/authApi";
 import { useToast } from "../../../hooks/useToast";
@@ -122,26 +123,33 @@ export default function UserSignup() {
     };
 
     return (
-        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] px-4 py-8 overflow-y-auto">
-            <div className="w-full max-w-md flex flex-col items-center">
-                {/* Logo & Subtitle */}
-                <div className="mb-6 flex flex-col items-center text-center">
-                    <img
-                        src={logo}
-                        alt="Jaladhaara Logo"
-                        className="h-28 sm:h-32 object-contain mb-2 drop-shadow-xs"
-                    />
-                    <p className="text-sm font-semibold text-gray-500 mt-1">
-                        {t('createAccountHeader', 'Create your account to book professional groundwater surveys.')}
-                    </p>
-                </div>
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 px-4 py-8 overflow-y-auto">
+            {/* Ambient Blurred Background Accents */}
+            <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute bottom-10 right-10 w-80 h-80 bg-teal-400/10 rounded-full blur-3xl" />
 
-                {/* Main Form Card */}
-                <main className="w-full rounded-3xl bg-white p-6 sm:p-8 shadow-xl border border-gray-100/80">
+            <div className="relative z-10 w-full max-w-md flex flex-col items-center">
+                {/* Main Card Container */}
+                <main className="w-full rounded-3xl bg-white/95 backdrop-blur-md p-6 sm:p-8 shadow-xl shadow-slate-200/60 border border-slate-200/80">
+                    {/* Logo & Subtitle */}
+                    <div className="mb-6 flex flex-col items-center text-center">
+                        <div className="relative mb-3 flex items-center justify-center p-3 rounded-2xl bg-slate-50 border border-slate-100 shadow-2xs">
+                            <img
+                                src={logo}
+                                alt="Jaladhaara Logo"
+                                className="h-20 sm:h-24 object-contain"
+                            />
+                        </div>
+                        <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500">
+                            {t('createAccountHeader', 'Create your account to book professional groundwater surveys.')}
+                        </p>
+                    </div>
+
                     <form className="space-y-4" onSubmit={handleSendOTP}>
                         {/* Pill Tag */}
                         <div className="flex justify-center mb-2">
-                            <span className="text-xs font-bold text-[#0A84FF] bg-blue-50 px-4 py-1.5 rounded-full border border-blue-200/80 shadow-2xs">
+                            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-50 text-[#0A84FF] text-xs font-extrabold border border-blue-200/80 tracking-wide shadow-2xs">
+                                <IoPersonAddOutline className="text-sm" />
                                 {t('createAccount', 'Create Account')}
                             </span>
                         </div>
@@ -150,7 +158,7 @@ export default function UserSignup() {
                         {isLanguageEnabled && (
                             <div className="p-3 bg-slate-50/90 rounded-2xl border border-slate-200/80 mb-2">
                                 <div className="flex items-center justify-between mb-2 px-0.5">
-                                    <span className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                                         <IoGlobeOutline className="text-[#0A84FF] text-base" />
                                         <span>{t("selectLanguage", "Select Language")}</span>
                                     </span>
@@ -169,10 +177,10 @@ export default function UserSignup() {
                                                 className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                                                     isSelected
                                                         ? "bg-[#0A84FF] text-white border-[#0A84FF] shadow-sm scale-[1.02]"
-                                                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-100/80"
+                                                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100/80"
                                                 }`}
                                             >
-                                                <span className={`text-[10px] font-mono font-bold ${isSelected ? "text-blue-100" : "text-gray-400"}`}>
+                                                <span className={`text-[10px] font-mono font-bold ${isSelected ? "text-blue-100" : "text-slate-400"}`}>
                                                     {lang.badge}
                                                 </span>
                                                 <span className="truncate max-w-full text-[11px] mt-0.5">{lang.nativeName}</span>
@@ -185,9 +193,9 @@ export default function UserSignup() {
 
                         {/* Full Name */}
                         <div className="relative">
-                            <IoPersonOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg" />
+                            <IoPersonOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
                             <input
-                                className="w-full rounded-full border border-gray-200 bg-white py-3 pl-11 pr-4 text-gray-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-2 focus:ring-blue-100 transition-all outline-none"
+                                className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                                 placeholder={t('fullName', 'Full Name')}
                                 type="text"
                                 name="name"
@@ -200,9 +208,9 @@ export default function UserSignup() {
 
                         {/* Mobile Number * */}
                         <div className="relative">
-                            <IoCallOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg" />
+                            <IoCallOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
                             <input
-                                className="w-full rounded-full border border-gray-200 bg-white py-3 pl-11 pr-4 text-gray-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-2 focus:ring-blue-100 transition-all outline-none"
+                                className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                                 placeholder={`${t('mobileNumber', 'Mobile Number')} *`}
                                 type="tel"
                                 name="phone"
@@ -215,9 +223,9 @@ export default function UserSignup() {
 
                         {/* Email Address (Optional) */}
                         <div className="relative">
-                            <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg" />
+                            <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
                             <input
-                                className="w-full rounded-full border border-gray-200 bg-white py-3 pl-11 pr-4 text-gray-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-2 focus:ring-blue-100 transition-all outline-none"
+                                className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                                 placeholder={t('emailOptional', 'Email Address (Optional)')}
                                 type="email"
                                 name="email"
@@ -235,12 +243,12 @@ export default function UserSignup() {
                                     className={`mt-0.5 w-5 h-5 rounded-md border transition-all flex items-center justify-center shrink-0 ${
                                         agreedToTerms
                                             ? "bg-[#0A84FF] border-[#0A84FF] text-white shadow-2xs"
-                                            : "bg-white border-gray-300 group-hover:border-blue-400"
+                                            : "bg-white border-slate-300 group-hover:border-blue-400"
                                     }`}
                                 >
                                     {agreedToTerms && <IoCheckmark className="text-sm stroke-[3]" />}
                                 </div>
-                                <span className="text-xs text-gray-600 leading-tight">
+                                <span className="text-xs text-slate-600 leading-tight">
                                     {t('agreeTerms', 'I agree to the Terms & Conditions and Privacy Policy')}
                                 </span>
                             </label>
@@ -248,7 +256,7 @@ export default function UserSignup() {
 
                         {/* Continue Button */}
                         <button
-                            className="w-full rounded-full bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2 flex items-center justify-center gap-2"
+                            className="w-full rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2 flex items-center justify-center gap-2"
                             type="submit"
                             disabled={loading || !agreedToTerms}
                         >
@@ -256,20 +264,20 @@ export default function UserSignup() {
                             {!loading && <span className="text-base font-bold">→</span>}
                         </button>
                     </form>
-                </main>
 
-                {/* Footer Link */}
-                <div className="mt-6 text-center">
-                    <p className="text-sm font-medium text-gray-500">
-                        {t('alreadyHaveAccount', 'Already have an account?')}{" "}
-                        <Link
-                            to="/userlogin"
-                            className="font-bold text-[#0A84FF] hover:text-blue-700 hover:underline transition-all"
-                        >
-                            {t('login', 'Log In')}
-                        </Link>
-                    </p>
-                </div>
+                    {/* Footer Link */}
+                    <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+                        <p className="text-xs sm:text-sm font-medium text-slate-500">
+                            {t('alreadyHaveAccount', 'Already have an account?')}{" "}
+                            <Link
+                                to="/userlogin"
+                                className="font-extrabold text-[#0A84FF] hover:text-blue-700 hover:underline transition-colors"
+                            >
+                                {t('login', 'Log In')}
+                            </Link>
+                        </p>
+                    </div>
+                </main>
             </div>
 
             {showTermsModal && (

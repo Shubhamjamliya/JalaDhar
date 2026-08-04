@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+    IoMailOutline,
+    IoLockClosedOutline,
+    IoEyeOutline,
+    IoEyeOffOutline,
+    IoShieldCheckmarkOutline
+} from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useToast } from "../../../hooks/useToast";
 import PolicyModal from "../../shared/components/PolicyModal";
@@ -16,12 +23,8 @@ export default function VendorLogin() {
     const { login } = useVendorAuth();
     const toast = useToast();
 
-    // Disable scrolling on this page
     useEffect(() => {
-        document.body.style.overflow = "hidden";
-        return () => {
-            document.body.style.overflow = "unset";
-        };
+        window.scrollTo(0, 0);
     }, []);
 
     const handleVendorLogin = async (e) => {
@@ -59,106 +62,123 @@ export default function VendorLogin() {
     };
 
     return (
-        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-6 overflow-hidden">
-            <div className="w-full max-w-sm">
-                <div className="mb-8 flex flex-col items-center">
-                    <img
-                        src={logo}
-                        alt="Jaladhaara Logo"
-                        className="h-32 object-contain mb-4"
-                    />
-                    <p className="mt-4 text-[#6B7280] text-center">
-                        Welcome back! Please login to your account.
-                    </p>
-                </div>
+        <div className="relative flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 px-4 py-8 overflow-y-auto">
+            {/* Ambient Blurred Background Accents */}
+            <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute bottom-10 right-10 w-80 h-80 bg-teal-400/10 rounded-full blur-3xl" />
 
-                <form className="space-y-6 " onSubmit={handleVendorLogin}>
-                    <div className="flex justify-center mb-4">
-                        <h2 className="button-white text-sm font-bold text-gradient px-3 py-1 rounded-full border-2 border-[#1A80E5]">
-                            Expert Login
-                        </h2>
-                    </div>
-                    <div className="relative">
-                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400">
-                            mail
-                        </span>
-                        <input
-                            className="w-full rounded-full border-gray-200 bg-white py-3 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5]"
-                            placeholder="Email or Phone"
-                            type="text"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={loading}
-                        />
+            <div className="relative z-10 w-full max-w-md">
+                {/* Main Card Container */}
+                <div className="w-full rounded-3xl bg-white/95 backdrop-blur-md p-6 sm:p-8 shadow-xl shadow-slate-200/60 border border-slate-200/80">
+                    {/* Header / Logo */}
+                    <div className="mb-6 flex flex-col items-center text-center">
+                        <div className="relative mb-3 flex items-center justify-center p-3 rounded-2xl bg-slate-50 border border-slate-100 shadow-2xs">
+                            <img
+                                src={logo}
+                                alt="Jaladhaara Logo"
+                                className="h-20 sm:h-24 object-contain"
+                            />
+                        </div>
+                        <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500">
+                            Welcome back! Please login to your account.
+                        </p>
                     </div>
 
-                    <div className="relative">
-                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400">
-                            lock
-                        </span>
-                        <input
-                            className="w-full rounded-full border-gray-200 bg-white py-3 pl-12 pr-12 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5]"
-                            placeholder="Password"
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled={loading}
-                            onKeyPress={(e) => {
-                                if (e.key === "Enter") {
-                                    handleVendorLogin(e);
-                                }
-                            }}
-                        />
-                        <button
-                            type="button"
-                            className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                            onClick={() => setShowPassword(!showPassword)}
-                            disabled={loading}
-                        >
-                            <span className="material-symbols-outlined text-xl">
-                                {showPassword ? "visibility_off" : "visibility"}
+                    {/* Form */}
+                    <form className="space-y-4" onSubmit={handleVendorLogin}>
+                        {/* Badge Pill */}
+                        <div className="flex justify-center mb-2">
+                            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-50 text-[#0A84FF] text-xs font-extrabold border border-blue-200/80 tracking-wide shadow-2xs">
+                                <IoShieldCheckmarkOutline className="text-sm" />
+                                Expert Login
                             </span>
-                        </button>
-                    </div>
+                        </div>
 
-                    <div className="text-right">
-                        <Link
-                            to="/vendor/forgot-password"
-                            className="text-sm font-medium text-[#1A80E5] hover:text-blue-700"
-                        >
-                            Forgot Password?
-                        </Link>
-                    </div>
+                        {/* Email / Phone Input */}
+                        <div className="relative">
+                            <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
+                            <input
+                                className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
+                                placeholder="Email or Phone"
+                                type="text"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={loading}
+                                required
+                                autoFocus
+                            />
+                        </div>
 
-                    <button
-                        className="button-gradient w-full rounded-full py-3.5 text-base font-bold text-white shadow-[0_6px_15px_rgba(26,128,229,0.25)] transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                        type="submit"
-                        disabled={loading}
-                    >
-                        {loading ? "Logging in..." : "Login"}
-                    </button>
-                </form>
+                        {/* Password Input */}
+                        <div className="relative">
+                            <IoLockClosedOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
+                            <input
+                                className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-11 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
+                                placeholder="Password"
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                disabled={loading}
+                                required
+                                onKeyPress={(e) => {
+                                    if (e.key === "Enter") {
+                                        handleVendorLogin(e);
+                                    }
+                                }}
+                            />
+                            <button
+                                type="button"
+                                className="absolute top-1/2 right-3.5 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 transition-colors cursor-pointer"
+                                onClick={() => setShowPassword(!showPassword)}
+                                disabled={loading}
+                                title={showPassword ? "Hide Password" : "Show Password"}
+                            >
+                                {showPassword ? <IoEyeOffOutline className="text-lg" /> : <IoEyeOutline className="text-lg" />}
+                            </button>
+                        </div>
 
-                <div className="mt-8 text-center space-y-2">
-                    <p className="text-xs text-gray-500">
-                        By logging in, you agree to our{" "}
+                        {/* Forgot Password Link */}
+                        <div className="text-right pt-0.5">
+                            <Link
+                                to="/vendor/forgot-password"
+                                className="text-xs font-extrabold text-[#0A84FF] hover:text-blue-700 transition-colors"
+                            >
+                                Forgot Password?
+                            </Link>
+                        </div>
+
+                        {/* Submit Button */}
                         <button
-                            type="button"
-                            onClick={() => setShowTermsModal(true)}
-                            className="font-semibold text-[#1A80E5] underline hover:text-blue-700"
+                            className="w-full rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 mt-2"
+                            type="submit"
+                            disabled={loading}
                         >
-                            General Terms & Conditions
+                            <span>{loading ? "Logging in..." : "Login"}</span>
                         </button>
-                    </p>
-                    <p className="text-sm text-[#6B7280]">
-                        Don't have an account?{" "}
-                        <Link
-                            to="/vendorsignup"
-                            className="font-semibold text-[#1A80E5] hover:text-blue-700"
-                        >
-                            Sign Up
-                        </Link>
-                    </p>
+                    </form>
+
+                    {/* Footer Links */}
+                    <div className="mt-6 pt-4 border-t border-slate-100 text-center space-y-2">
+                        <p className="text-xs text-slate-500 font-medium">
+                            By logging in, you agree to our{" "}
+                            <button
+                                type="button"
+                                onClick={() => setShowTermsModal(true)}
+                                className="font-bold text-[#0A84FF] underline hover:text-blue-700 transition-colors cursor-pointer"
+                            >
+                                General Terms & Conditions
+                            </button>
+                        </p>
+                        <p className="text-xs sm:text-sm font-medium text-slate-500">
+                            Don't have an account?{" "}
+                            <Link
+                                to="/vendorsignup"
+                                className="font-extrabold text-[#0A84FF] hover:text-blue-700 hover:underline transition-colors"
+                            >
+                                Sign Up
+                            </Link>
+                        </p>
+                    </div>
                 </div>
             </div>
 
