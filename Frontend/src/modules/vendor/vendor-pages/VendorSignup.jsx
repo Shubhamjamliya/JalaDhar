@@ -1,6 +1,34 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { IoLocationOutline, IoCloseOutline, IoCheckmarkOutline, IoTrashOutline, IoImageOutline } from "react-icons/io5";
+import {
+    IoLocationOutline,
+    IoCloseOutline,
+    IoCheckmarkOutline,
+    IoTrashOutline,
+    IoImageOutline,
+    IoPersonOutline,
+    IoMailOutline,
+    IoCallOutline,
+    IoLockClosedOutline,
+    IoEyeOutline,
+    IoEyeOffOutline,
+    IoSchoolOutline,
+    IoBriefcaseOutline,
+    IoCardOutline,
+    IoCalendarOutline,
+    IoDocumentTextOutline,
+    IoWaterOutline,
+    IoChevronDownOutline,
+    IoCheckmarkCircleOutline,
+    IoCloudUploadOutline,
+    IoCreateOutline,
+    IoBusinessOutline,
+    IoArrowForwardOutline,
+    IoArrowBackOutline,
+    IoCashOutline,
+    IoSearchOutline,
+    IoCameraOutline
+} from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { sendVendorRegistrationOTP } from "../../../services/vendorAuthApi";
 import { useToast } from "../../../hooks/useToast";
@@ -613,21 +641,27 @@ export default function VendorSignup() {
 
 
     return (
-        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-4 py-6 overflow-y-auto">
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 p-4 py-8 overflow-y-auto">
             {animationStyles}
-            <div className="w-full max-w-2xl">
-                <div className="mt-4 mb-6 flex flex-col items-center">
-                    <img
-                        src={logo}
-                        alt="Jaladhaara Logo"
-                        className="h-32 object-contain mb-4"
-                    />
-                    <p className="mt-1 text-sm text-[#6B7280] text-center">
+            {/* Ambient Blurred Background Accents */}
+            <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-400/10 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute bottom-10 right-10 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl" />
+
+            <div className="relative z-10 w-full max-w-2xl">
+                <div className="mt-2 mb-6 flex flex-col items-center text-center">
+                    <div className="relative mb-3 flex items-center justify-center p-3 rounded-2xl bg-white/80 border border-slate-100 shadow-2xs backdrop-blur-md">
+                        <img
+                            src={logo}
+                            alt="Jaladhaara Logo"
+                            className="h-20 sm:h-24 object-contain"
+                        />
+                    </div>
+                    <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500">
                         Create your Expert account to get started.
                     </p>
                 </div>
 
-                <main className="w-full rounded-2xl bg-white p-0 shadow-xl overflow-hidden border border-gray-100">
+                <main className="w-full rounded-3xl bg-white/95 backdrop-blur-md shadow-xl shadow-slate-200/60 border border-slate-200/80 overflow-hidden">
                     {/* Progress Bar */}
                     <div className="w-full h-1.5 bg-gray-100 overflow-hidden">
                         <div
@@ -640,30 +674,40 @@ export default function VendorSignup() {
                         {/* Modern Step Indicator */}
                         <div className="flex justify-between items-center mb-8 px-2 relative">
                             {/* Connector Line behind steps */}
-                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-100 -translate-y-1/2 z-0"></div>
+                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 z-0"></div>
 
                             {TABS.map((tab, index) => {
                                 const isCompleted = TABS.findIndex(t => t.id === activeTab) > index;
                                 const isActive = activeTab === tab.id;
+
+                                const renderTabIcon = (tabId, completed) => {
+                                    if (completed) return <IoCheckmarkOutline className="text-xl stroke-[3]" />;
+                                    switch (tabId) {
+                                        case "basic": return <IoPersonOutline className="text-xl" />;
+                                        case "qualification": return <IoSchoolOutline className="text-xl" />;
+                                        case "training": return <IoBriefcaseOutline className="text-xl" />;
+                                        case "kyc": return <IoCardOutline className="text-xl" />;
+                                        case "address": return <IoLocationOutline className="text-xl" />;
+                                        default: return <IoPersonOutline className="text-xl" />;
+                                    }
+                                };
 
                                 return (
                                     <button
                                         key={tab.id}
                                         type="button"
                                         onClick={() => setActiveTab(tab.id)}
-                                        className="relative z-10 flex flex-col items-center group"
+                                        className="relative z-10 flex flex-col items-center group cursor-pointer"
                                     >
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isActive
-                                            ? "bg-[#1A80E5] text-white shadow-lg scale-110 shadow-blue-200"
+                                            ? "bg-[#0A84FF] text-white shadow-md shadow-blue-500/30 scale-110"
                                             : isCompleted
-                                                ? "bg-emerald-500 text-white"
-                                                : "bg-white border-2 border-gray-200 text-gray-400 group-hover:border-blue-300 group-hover:text-blue-400"
+                                                ? "bg-emerald-500 text-white shadow-2xs"
+                                                : "bg-white border-2 border-slate-200 text-slate-400 group-hover:border-blue-300 group-hover:text-blue-500"
                                             }`}>
-                                            <span className="material-symbols-outlined !text-xl font-bold">
-                                                {isCompleted ? "check" : tab.icon}
-                                            </span>
+                                            {renderTabIcon(tab.id, isCompleted)}
                                         </div>
-                                        <span className={`absolute -bottom-6 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors duration-300 hidden sm:block ${isActive ? "text-[#1A80E5]" : "text-gray-400"
+                                        <span className={`absolute -bottom-6 text-[10px] font-extrabold uppercase tracking-wider whitespace-nowrap transition-colors duration-300 hidden sm:block ${isActive ? "text-[#0A84FF]" : "text-slate-400"
                                             }`}>
                                             {tab.label}
                                         </span>
@@ -678,8 +722,8 @@ export default function VendorSignup() {
                             {/* Step 1: Basic Info */}
                             {activeTab === "basic" && (
                                 <div className="tab-snappy space-y-4">
-                                    <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-blue-500">contact_page</span>
+                                    <h3 className="text-base font-extrabold text-slate-800 mb-3 flex items-center gap-2">
+                                        <IoPersonOutline className="text-[#0A84FF] text-xl" />
                                         Basic Information
                                     </h3>
                                     <ProfileImageUpload
@@ -725,7 +769,6 @@ export default function VendorSignup() {
                                         value={formData.gender}
                                         onChange={handleInputChange}
                                         disabled={loading}
-                                        icon="person"
                                     />
                                     <SelectBox
                                         label="Blood Group *"
@@ -744,7 +787,6 @@ export default function VendorSignup() {
                                         value={formData.bloodGroup}
                                         onChange={handleInputChange}
                                         disabled={loading}
-                                        icon="bloodtype"
                                     />
                                     <SelectBox
                                         label="Designation *"
@@ -760,7 +802,6 @@ export default function VendorSignup() {
                                         value={formData.designation}
                                         onChange={handleInputChange}
                                         disabled={loading}
-                                        icon="badge"
                                     />
                                     <PasswordBox
                                         label="Password *"
@@ -786,10 +827,10 @@ export default function VendorSignup() {
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab("qualification")}
-                                            className="w-full bg-[#1A80E5] text-white py-3 rounded-full font-bold shadow-md hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                                            className="w-full rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                                         >
                                             Next: Qualification & Experience
-                                            <span className="material-symbols-outlined">arrow_forward</span>
+                                            <IoArrowForwardOutline className="text-base" />
                                         </button>
                                     </div>
                                 </div>
@@ -798,8 +839,8 @@ export default function VendorSignup() {
                             {/* Step 2: Qualification & Experience */}
                             {activeTab === "qualification" && (
                                 <div className="tab-snappy space-y-4">
-                                    <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-blue-500">school</span>
+                                    <h3 className="text-base font-extrabold text-slate-800 mb-3 flex items-center gap-2">
+                                        <IoSchoolOutline className="text-[#0A84FF] text-xl" />
                                         Qualification & Experience
                                     </h3>
 
@@ -840,15 +881,13 @@ export default function VendorSignup() {
                                         disabled={loading}
                                     />
 
-                                    <div className="mb-3">
-                                        <label className="block text-xs font-medium text-[#6B7280] mb-1">
+                                    <div className="mb-3.5">
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
                                             Experience (Years) *
                                         </label>
                                         <div className="flex gap-2">
                                             <div className="relative w-24 shrink-0">
-                                                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg">
-                                                    calendar_today
-                                                </span>
+                                                <IoCalendarOutline className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400 text-lg" />
                                                 <input
                                                     type="number"
                                                     name="experience"
@@ -856,21 +895,19 @@ export default function VendorSignup() {
                                                     value={formData.experience}
                                                     onChange={handleInputChange}
                                                     min="0"
-                                                    className="w-full rounded-2xl border-gray-200 bg-white py-2.5 pl-10 pr-3 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                                                    className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-10 pr-3 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                                                     disabled={loading}
                                                 />
                                             </div>
                                             <div className="relative flex-1">
-                                                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
-                                                    description
-                                                </span>
+                                                <IoDocumentTextOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
                                                 <input
                                                     type="text"
                                                     name="experienceDetails"
                                                     placeholder="Recent project or specialization (optional)"
                                                     value={formData.experienceDetails}
                                                     onChange={handleInputChange}
-                                                    className="w-full rounded-2xl border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                                                    className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                                                     disabled={loading}
                                                 />
                                             </div>
@@ -889,18 +926,18 @@ export default function VendorSignup() {
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab("basic")}
-                                            className="bg-gray-100 text-gray-600 py-3 rounded-full font-bold hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+                                            className="bg-slate-100 text-slate-700 py-3.5 rounded-2xl font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                                         >
-                                            <span className="material-symbols-outlined">arrow_back</span>
+                                            <IoArrowBackOutline className="text-base" />
                                             Back
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab("training")}
-                                            className="bg-[#1A80E5] text-white py-3 rounded-full font-bold shadow-md hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                                            className="rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                                         >
                                             Next: Training
-                                            <span className="material-symbols-outlined">arrow_forward</span>
+                                            <IoArrowForwardOutline className="text-base" />
                                         </button>
                                     </div>
                                 </div>
@@ -909,8 +946,8 @@ export default function VendorSignup() {
                             {/* Step 3: Training & Registration */}
                             {activeTab === "training" && (
                                 <div className="tab-snappy space-y-4">
-                                    <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-blue-500">workspace_premium</span>
+                                    <h3 className="text-base font-extrabold text-slate-800 mb-3 flex items-center gap-2">
+                                        <IoBriefcaseOutline className="text-[#0A84FF] text-xl" />
                                         Training & Registration
                                     </h3>
 
@@ -930,20 +967,20 @@ export default function VendorSignup() {
                                     />
 
                                     {/* Setup Your Service Section */}
-                                    <div className="mt-6 pt-5 border-t border-gray-100">
-                                        <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-blue-500">settings_account_box</span>
+                                    <div className="mt-6 pt-5 border-t border-slate-100">
+                                        <h3 className="text-base font-extrabold text-slate-800 mb-3 flex items-center gap-2">
+                                            <IoConstructOutline className="text-[#0A84FF] text-xl" />
                                             Setup Your Service
                                         </h3>
 
                                         {/* Service Name - Fixed Display */}
-                                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-center gap-3 mb-6">
-                                            <span className="material-symbols-outlined text-[#0A84FF]">water_drop</span>
+                                        <div className="bg-blue-50/80 p-4 rounded-2xl border border-blue-100/80 flex items-center gap-3 mb-6">
+                                            <IoWaterOutline className="text-[#0A84FF] text-2xl" />
                                             <div>
-                                                <label className="block text-xs font-bold text-blue-600 uppercase tracking-wider">
+                                                <label className="block text-xs font-extrabold text-blue-600 uppercase tracking-wider">
                                                     Service Name
                                                 </label>
-                                                <p className="text-lg font-bold text-[#3A3A3A]">
+                                                <p className="text-base font-bold text-slate-800">
                                                     Groundwater Survey
                                                 </p>
                                             </div>
@@ -952,22 +989,22 @@ export default function VendorSignup() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                             {/* Machine Type Multi-Select */}
                                             <div className="relative" ref={machineDropdownRef}>
-                                                <label className="mb-2 block text-sm font-medium text-[#6B7280]">
+                                                <label className="mb-1.5 block text-xs font-bold text-slate-700 uppercase tracking-wider ml-1">
                                                     Machine Type *
                                                 </label>
 
                                                 {/* Dropdown Trigger */}
                                                 <div
                                                     onClick={() => !loading && setIsMachineDropdownOpen(!isMachineDropdownOpen)}
-                                                    className={`w-full min-h-[46px] rounded-xl border-gray-200 bg-[#F3F7FA] p-2 text-sm font-medium text-[#3A3A3A] transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] flex items-center justify-between cursor-pointer border hover:border-gray-300 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    className={`w-full min-h-[46px] rounded-2xl border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-800 transition focus:border-[#0A84FF] focus:outline-none focus:ring-4 focus:ring-blue-100 flex items-center justify-between cursor-pointer border hover:border-slate-300 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                 >
                                                     <div className="flex flex-wrap gap-2">
                                                         {selectedMachines.length > 0 ? (
                                                             selectedMachines.map(machine => (
-                                                                <span key={machine} className="bg-white border border-gray-200 text-[#0A84FF] px-2 py-1 rounded-md text-xs flex items-center gap-1">
+                                                                <span key={machine} className="bg-blue-50 border border-blue-200/80 text-[#0A84FF] px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1">
                                                                     {machine}
                                                                     <IoCloseOutline
-                                                                        className="cursor-pointer hover:text-red-500"
+                                                                        className="cursor-pointer hover:text-rose-500 text-sm"
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             if (!loading) handleMachineToggle(machine);
@@ -976,25 +1013,25 @@ export default function VendorSignup() {
                                                                 </span>
                                                             ))
                                                         ) : (
-                                                            <span className="text-gray-400 px-1">Select Machines</span>
+                                                            <span className="text-slate-400 px-1 text-xs">Select Machines</span>
                                                         )}
                                                     </div>
-                                                    <span className="material-symbols-outlined text-xl text-gray-500 px-1">expand_more</span>
+                                                    <IoChevronDownOutline className="text-slate-400 text-lg px-1" />
                                                 </div>
 
                                                 {/* Dropdown Menu */}
                                                 {isMachineDropdownOpen && (
-                                                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto p-2">
+                                                    <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto p-2">
                                                         {MACHINE_OPTIONS.map((option) => (
                                                             <div
                                                                 key={option}
                                                                 onClick={() => handleMachineToggle(option)}
-                                                                className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                                                                className="flex items-center gap-3 p-2.5 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors"
                                                             >
-                                                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedMachines.includes(option) ? 'bg-[#0A84FF] border-[#0A84FF]' : 'border-gray-300'}`}>
+                                                                <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${selectedMachines.includes(option) ? 'bg-[#0A84FF] border-[#0A84FF]' : 'border-slate-300'}`}>
                                                                     {selectedMachines.includes(option) && <IoCheckmarkOutline className="text-white text-sm" />}
                                                                 </div>
-                                                                <span className="text-sm text-[#3A3A3A] font-medium">{option}</span>
+                                                                <span className="text-xs font-bold text-slate-800">{option}</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -1014,13 +1051,13 @@ export default function VendorSignup() {
                                                             }
                                                         }}
                                                         disabled={loading}
-                                                        className="flex-1 rounded-xl border-gray-200 bg-[#F3F7FA] p-3 text-sm font-medium text-[#3A3A3A] transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
+                                                        className="flex-1 rounded-2xl border border-slate-200 bg-white p-3 text-xs sm:text-sm font-medium text-slate-800 transition focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 outline-none"
                                                     />
                                                     <button
                                                         type="button"
                                                         onClick={handleAddCustomMachine}
                                                         disabled={loading || !customMachine.trim()}
-                                                        className="bg-[#0A84FF] text-white px-4 py-2 rounded-xl font-medium hover:bg-[#005BBB] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                        className="bg-[#0A84FF] text-white px-4 py-2.5 rounded-2xl text-xs font-extrabold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                                     >
                                                         Add
                                                     </button>
@@ -1029,11 +1066,11 @@ export default function VendorSignup() {
 
                                             {/* Service Charge */}
                                             <div>
-                                                <label className="mb-2 block text-sm font-medium text-[#6B7280]">
+                                                <label className="mb-1.5 block text-xs font-bold text-slate-700 uppercase tracking-wider ml-1">
                                                     Service Charge (₹) *
                                                 </label>
                                                 <div className="relative">
-                                                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-500 font-bold">₹</span>
+                                                    <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-500 font-extrabold text-sm">₹</span>
                                                     <input
                                                         type="number"
                                                         name="servicePrice"
@@ -1043,7 +1080,7 @@ export default function VendorSignup() {
                                                         min="0"
                                                         step="0.01"
                                                         disabled={loading}
-                                                        className="w-full rounded-xl border-gray-200 bg-[#F3F7FA] p-3 pl-8 text-sm font-bold text-[#3A3A3A] transition focus:border-[#0A84FF] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)]"
+                                                        className="w-full rounded-2xl border border-slate-200 bg-white p-3.5 pl-8 text-sm font-extrabold text-slate-800 focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                                                     />
                                                 </div>
                                             </div>
@@ -1051,13 +1088,13 @@ export default function VendorSignup() {
 
                                         {/* Service Images */}
                                         <div className="mb-4">
-                                            <label className="text-sm font-semibold text-[#4A4A4A] mb-3 block">
+                                            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5 block ml-1">
                                                 Service Images
                                             </label>
 
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                                 {serviceImagePreviews.map((item, index) => (
-                                                    <div key={index} className="relative group rounded-xl overflow-hidden aspect-square shadow-sm border border-gray-100">
+                                                    <div key={index} className="relative group rounded-2xl overflow-hidden aspect-square shadow-2xs border border-slate-200">
                                                         <img
                                                             src={item.preview}
                                                             alt={`Preview ${index + 1}`}
@@ -1067,7 +1104,7 @@ export default function VendorSignup() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => removeServiceImage(index)}
-                                                                className="bg-white/20 hover:bg-red-500 text-white p-2 rounded-full backdrop-blur-sm transition-colors"
+                                                                className="bg-white/20 hover:bg-rose-500 text-white p-2 rounded-full backdrop-blur-sm transition-colors cursor-pointer"
                                                             >
                                                                 <IoTrashOutline className="text-lg" />
                                                             </button>
@@ -1075,11 +1112,11 @@ export default function VendorSignup() {
                                                     </div>
                                                 ))}
 
-                                                <label className={`flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-[#D9DDE4] rounded-xl cursor-pointer hover:border-[#0A84FF] hover:bg-blue-50/50 transition-all group ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mb-2 group-hover:bg-[#0A84FF] transition-colors">
+                                                <label className={`flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-[#0A84FF] hover:bg-blue-50/50 transition-all group ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                    <div className="h-10 w-10 rounded-2xl bg-blue-50 flex items-center justify-center mb-2 group-hover:bg-[#0A84FF] transition-colors">
                                                         <IoImageOutline className="text-lg text-[#0A84FF] group-hover:text-white transition-colors" />
                                                     </div>
-                                                    <p className="text-xs font-medium text-gray-500 group-hover:text-[#0A84FF]">Add Image</p>
+                                                    <p className="text-xs font-bold text-slate-500 group-hover:text-[#0A84FF]">Add Image</p>
                                                     <input
                                                         type="file"
                                                         className="hidden"
@@ -1093,24 +1130,22 @@ export default function VendorSignup() {
                                         </div>
                                     </div>
 
-
-
                                     <div className="grid grid-cols-2 gap-3 pt-4">
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab("qualification")}
-                                            className="bg-gray-100 text-gray-600 py-3 rounded-full font-bold hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+                                            className="bg-slate-100 text-slate-700 py-3.5 rounded-2xl font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                                         >
-                                            <span className="material-symbols-outlined">arrow_back</span>
+                                            <IoArrowBackOutline className="text-base" />
                                             Back
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab("kyc")}
-                                            className="bg-[#1A80E5] text-white py-3 rounded-full font-bold shadow-md hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                                            className="rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                                         >
                                             Next: KYC
-                                            <span className="material-symbols-outlined">arrow_forward</span>
+                                            <IoArrowForwardOutline className="text-base" />
                                         </button>
                                     </div>
                                 </div>
@@ -1119,8 +1154,8 @@ export default function VendorSignup() {
                             {/* Step 4: KYC & Bank */}
                             {activeTab === "kyc" && (
                                 <div className="tab-snappy space-y-4">
-                                    <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-blue-500">badge</span>
+                                    <h3 className="text-base font-extrabold text-slate-800 mb-3 flex items-center gap-2">
+                                        <IoCardOutline className="text-[#0A84FF] text-xl" />
                                         KYC & Bank Details
                                     </h3>
 
@@ -1139,8 +1174,8 @@ export default function VendorSignup() {
                                         />
                                     </div>
 
-                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-2">Bank Account Information</p>
+                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
+                                        <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-4 px-1">Bank Account Information</p>
                                         <InputBox
                                             label="Account Holder Name *"
                                             name="accountHolderName"
@@ -1191,18 +1226,18 @@ export default function VendorSignup() {
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab("training")}
-                                            className="bg-gray-100 text-gray-600 py-3 rounded-full font-bold hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+                                            className="bg-slate-100 text-slate-700 py-3.5 rounded-2xl font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                                         >
-                                            <span className="material-symbols-outlined">arrow_back</span>
+                                            <IoArrowBackOutline className="text-base" />
                                             Back
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab("address")}
-                                            className="bg-[#1A80E5] text-white py-3 rounded-full font-bold shadow-md hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                                            className="rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                                         >
                                             Next: Address
-                                            <span className="material-symbols-outlined">arrow_forward</span>
+                                            <IoArrowForwardOutline className="text-base" />
                                         </button>
                                     </div>
                                 </div>
@@ -1211,27 +1246,25 @@ export default function VendorSignup() {
                             {/* Step 5: Address */}
                             {activeTab === "address" && (
                                 <div className="tab-snappy space-y-4">
-                                    <h3 className="text-base font-bold text-[#3A3A3A] mb-3 flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-blue-500">location_on</span>
+                                    <h3 className="text-base font-extrabold text-slate-800 mb-3 flex items-center gap-2">
+                                        <IoLocationOutline className="text-[#0A84FF] text-xl" />
                                         Service Area Address
                                     </h3>
 
-                                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-                                        <label className="block text-xs font-bold text-blue-700 mb-2 px-1">
+                                    <div className="p-4 bg-blue-50/80 border border-blue-100/80 rounded-2xl">
+                                        <label className="block text-xs font-extrabold text-blue-700 mb-2 px-1">
                                             Search Service Center Location *
                                         </label>
                                         <div className="flex flex-col gap-2">
                                             <div className="relative">
-                                                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-blue-400 text-lg z-10">
-                                                    search
-                                                </span>
+                                                <IoSearchOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-blue-400 text-lg z-10" />
                                                 <PlaceAutocompleteInput
                                                     onPlaceSelect={handleFullAddressSelect}
                                                     placeholder="Enter colony, street or landmark..."
                                                     value={fullAddress}
                                                     onChange={(e) => setFullAddress(e.target.value)}
                                                     disabled={loading || gettingLocation}
-                                                    className="w-full rounded-2xl border-blue-100 bg-white py-3 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                                                    className="w-full rounded-2xl border-blue-100 bg-white py-3.5 pl-11 pr-4 text-slate-800 shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 text-sm outline-none"
                                                     countryRestriction="in"
                                                 />
                                             </div>
@@ -1239,9 +1272,9 @@ export default function VendorSignup() {
                                                 type="button"
                                                 onClick={getCurrentLocation}
                                                 disabled={loading || gettingLocation}
-                                                className="flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-200 px-4 py-3 rounded-2xl text-sm font-bold hover:bg-blue-50 transition-all shadow-sm"
+                                                className="flex items-center justify-center gap-2 bg-white text-[#0A84FF] border border-blue-200 px-4 py-3 rounded-2xl text-xs sm:text-sm font-extrabold hover:bg-blue-50 transition-all shadow-2xs cursor-pointer"
                                             >
-                                                <IoLocationOutline className="text-xl" />
+                                                <IoLocationOutline className="text-lg" />
                                                 {gettingLocation ? "Locating..." : "Pin to My Current GPS"}
                                             </button>
                                         </div>
@@ -1249,10 +1282,10 @@ export default function VendorSignup() {
 
                                     {formData.address?.geoLocation?.formattedAddress && (
                                         <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3">
-                                            <span className="material-symbols-outlined text-emerald-500 text-lg mt-0.5">check_circle</span>
+                                            <IoCheckmarkCircleOutline className="text-emerald-500 text-xl mt-0.5" />
                                             <div className="flex-1">
-                                                <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-tighter">Verified Address</p>
-                                                <p className="text-sm text-emerald-800 font-medium">{formData.address.geoLocation.formattedAddress}</p>
+                                                <p className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-tight">Verified Address</p>
+                                                <p className="text-xs sm:text-sm text-emerald-800 font-bold">{formData.address.geoLocation.formattedAddress}</p>
                                             </div>
                                         </div>
                                     )}
@@ -1261,14 +1294,14 @@ export default function VendorSignup() {
                                         <button
                                             type="submit"
                                             disabled={loading}
-                                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-full text-base font-bold shadow-xl shadow-blue-200 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-4 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {loading ? "Registering Account..." : "Complete Registration"}
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab("kyc")}
-                                            className="w-full text-gray-400 py-2 text-sm font-medium hover:text-gray-600"
+                                            className="w-full text-slate-400 py-2 text-xs sm:text-sm font-bold hover:text-slate-600 transition-colors cursor-pointer"
                                         >
                                             Back to KYC
                                         </button>
@@ -1280,13 +1313,13 @@ export default function VendorSignup() {
                 </main>
 
                 <div className="mt-6 mb-4 text-center">
-                    <p className="text-sm text-[#6B7280]">
+                    <p className="text-xs sm:text-sm font-medium text-slate-500">
                         Already Registered?{" "}
                         <Link
                             to="/vendorlogin"
-                            className="font-semibold text-[#1A80E5] hover:text-blue-700"
+                            className="font-extrabold text-[#0A84FF] hover:text-blue-700 hover:underline transition-colors"
                         >
-                            Login
+                            Log In
                         </Link>
                     </p>
                 </div>
@@ -1315,7 +1348,7 @@ function ProfileImageUpload({ file, onChange }) {
     return (
         <div className="mb-6 flex justify-center">
             <div className="relative">
-                <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-md overflow-hidden">
+                <div className="w-24 h-24 rounded-full bg-slate-100 border-4 border-white shadow-md overflow-hidden flex items-center justify-center">
                     {imagePreview || (file && URL.createObjectURL(file)) ? (
                         <img
                             src={imagePreview || URL.createObjectURL(file)}
@@ -1323,64 +1356,49 @@ function ProfileImageUpload({ file, onChange }) {
                             className="w-full h-full object-cover"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-3xl text-gray-400">👤</span>
-                        </div>
+                        <IoPersonOutline className="text-4xl text-slate-400" />
                     )}
                 </div>
-                <label className="absolute bottom-0 right-0 bg-[#0A84FF] text-white p-2 rounded-full cursor-pointer shadow-md hover:bg-[#005BBB] transition-colors">
+                <label className="absolute bottom-0 right-0 bg-[#0A84FF] text-white p-2 rounded-full cursor-pointer shadow-md hover:bg-[#005BBB] transition-all hover:scale-105 active:scale-95">
                     <input
                         type="file"
                         className="hidden"
                         accept="image/*"
                         onChange={handleImageChange}
                     />
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 4v16m8-8H4"
-                        />
-                    </svg>
+                    <IoCameraOutline className="text-base text-white" />
                 </label>
             </div>
         </div>
     );
 }
 
-function InputBox({ label, name, type, placeholder, value, onChange, disabled, icon }) {
-    const getIcon = () => {
-        if (icon) return icon;
-        if (name === "name") return "person";
-        if (name === "email") return "mail";
-        if (name === "phone") return "phone";
-        if (name.includes("address")) return "home";
-        if (name.includes("bank") || name.includes("account") || name.includes("ifsc")) return "account_balance";
-        return "edit";
+function InputBox({ label, name, type, placeholder, value, onChange, disabled }) {
+    const renderIcon = () => {
+        if (name === "name" || name.includes("Holder")) return <IoPersonOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
+        if (name === "email") return <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
+        if (name === "phone") return <IoCallOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
+        if (name.includes("bank") || name.includes("account") || name.includes("ifsc") || name.includes("branch")) return <IoBusinessOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
+        if (name.includes("pan") || name.includes("aadhaar") || name.includes("No")) return <IoCardOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
+        if (name.includes("price") || name.includes("Price")) return <IoCashOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
+        if (name.includes("experience") || name.includes("institution")) return <IoBriefcaseOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
+        return <IoCreateOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
     };
 
     return (
-        <div className="mb-3">
-            <label className="block text-xs font-medium text-[#6B7280] mb-1">
+        <div className="mb-3.5">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
                 {label}
             </label>
             <div className="relative">
-                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
-                    {getIcon()}
-                </span>
+                {renderIcon()}
                 <input
                     type={type}
                     name={name}
                     placeholder={placeholder}
                     value={value}
                     onChange={onChange}
-                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                    className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                     disabled={disabled}
                 />
             </div>
@@ -1390,32 +1408,29 @@ function InputBox({ label, name, type, placeholder, value, onChange, disabled, i
 
 function PasswordBox({ label, name, placeholder, value, onChange, show, toggle, disabled }) {
     return (
-        <div className="mb-3">
-            <label className="block text-xs font-medium text-[#6B7280] mb-1">
+        <div className="mb-3.5">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
                 {label}
             </label>
             <div className="relative">
-                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
-                    lock
-                </span>
+                <IoLockClosedOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
                 <input
                     type={show ? "text" : "password"}
                     name={name}
                     placeholder={placeholder}
                     value={value}
                     onChange={onChange}
-                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-12 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                    className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-16 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                     disabled={disabled}
                 />
                 <button
                     type="button"
-                    className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    className="absolute top-1/2 right-3.5 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 transition-colors cursor-pointer"
                     onClick={toggle}
                     disabled={disabled}
+                    title={show ? "Hide Password" : "Show Password"}
                 >
-                    <span className="material-symbols-outlined text-xl">
-                        {show ? "visibility_off" : "visibility"}
-                    </span>
+                    {show ? <IoEyeOffOutline className="text-lg" /> : <IoEyeOutline className="text-lg" />}
                 </button>
             </div>
         </div>
@@ -1424,24 +1439,22 @@ function PasswordBox({ label, name, placeholder, value, onChange, show, toggle, 
 
 function FileBox({ label, onChange, file, disabled }) {
     return (
-        <div className="mb-3">
-            <label className="block text-xs font-medium text-[#6B7280] mb-1">
+        <div className="mb-3.5">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
                 {label}
             </label>
             <div className="relative">
-                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
-                    upload_file
-                </span>
+                <IoCloudUploadOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
                 {file && (
-                    <p className="text-xs text-green-600 mb-2 pl-12">
-                        ✓ {file.name}
+                    <p className="text-xs font-bold text-emerald-600 mb-1.5 pl-11 flex items-center gap-1">
+                        <IoCheckmarkCircleOutline className="text-sm" /> {file.name}
                     </p>
                 )}
                 <input
                     type="file"
                     accept="image/*,.pdf"
                     onChange={onChange}
-                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                    className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-slate-800 text-xs sm:text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-[#0A84FF]"
                     disabled={disabled}
                 />
             </div>
@@ -1449,9 +1462,9 @@ function FileBox({ label, onChange, file, disabled }) {
     );
 }
 
-function SelectBox({ label, name, options, value, onChange, disabled, icon }) {
+function SelectBox({ label, name, options, value, onChange, disabled }) {
     return (
-        <div className="mb-3">
+        <div className="mb-3.5">
             <CustomDropdown
                 label={label}
                 name={name}
@@ -1467,23 +1480,21 @@ function SelectBox({ label, name, options, value, onChange, disabled, icon }) {
 
 function MultiFileBox({ label, files, onChange, onRemove, disabled }) {
     return (
-        <div className="mb-3">
-            <label className="block text-xs font-medium text-[#6B7280] mb-1">
+        <div className="mb-3.5">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
                 {label}
             </label>
             <div className="relative">
-                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg">
-                    upload_file
-                </span>
+                <IoCloudUploadOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
                 {files && files.length > 0 && (
-                    <div className="mb-2 space-y-1 pl-12">
+                    <div className="mb-2.5 space-y-1.5 pl-11">
                         {files.map((file, index) => (
-                            <div key={index} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
-                                <span className="text-gray-600">{file.name}</span>
+                            <div key={index} className="flex items-center justify-between text-xs bg-slate-50 border border-slate-200/80 p-2 rounded-xl">
+                                <span className="text-slate-700 font-semibold truncate">{file.name}</span>
                                 <button
                                     type="button"
                                     onClick={() => onRemove(index)}
-                                    className="text-red-600 hover:text-red-800"
+                                    className="text-rose-600 hover:text-rose-800 font-bold ml-2 cursor-pointer"
                                     disabled={disabled}
                                 >
                                     Remove
@@ -1497,10 +1508,10 @@ function MultiFileBox({ label, files, onChange, onRemove, disabled }) {
                     accept="image/*,.pdf"
                     multiple
                     onChange={onChange}
-                    className="w-full rounded-full border-gray-200 bg-white py-2.5 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5] text-sm"
+                    className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-slate-800 text-xs sm:text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-[#0A84FF]"
                     disabled={disabled}
                 />
-                <p className="text-xs text-gray-500 mt-1 pl-12">
+                <p className="text-[11px] text-slate-400 font-semibold mt-1 pl-1">
                     You can select multiple files
                 </p>
             </div>
@@ -1511,20 +1522,18 @@ function MultiFileBox({ label, files, onChange, onRemove, disabled }) {
 function TextAreaBox({ label, name, placeholder, value, onChange, disabled }) {
     return (
         <div className="mb-4">
-            <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
-                    {label}
-                </p>
-                <textarea
-                    name={name}
-                    placeholder={placeholder}
-                    value={value}
-                    onChange={onChange}
-                    className="w-full text-[14px] text-gray-600 focus:outline-none"
-                    rows="3"
-                    disabled={disabled}
-                ></textarea>
-            </div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
+                {label}
+            </label>
+            <textarea
+                name={name}
+                placeholder={placeholder}
+                value={value}
+                onChange={onChange}
+                className="w-full rounded-2xl border border-slate-200 bg-white p-3.5 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
+                rows="3"
+                disabled={disabled}
+            />
         </div>
     );
 }
