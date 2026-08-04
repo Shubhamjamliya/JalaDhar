@@ -262,21 +262,43 @@ export default function UserSignup() {
 
                         {/* Terms & Conditions Checkbox */}
                         <div className="pt-2 pb-1">
-                            <label className="flex items-start gap-3 cursor-pointer group select-none">
-                                <div
+                            <div className="flex items-start gap-3 select-none">
+                                <button
+                                    type="button"
                                     onClick={() => setAgreedToTerms(!agreedToTerms)}
-                                    className={`mt-0.5 w-5 h-5 rounded-md border transition-all flex items-center justify-center shrink-0 ${
+                                    className={`mt-0.5 w-5 h-5 rounded-md border transition-all flex items-center justify-center shrink-0 cursor-pointer ${
                                         agreedToTerms
                                             ? "bg-[#0A84FF] border-[#0A84FF] text-white shadow-2xs"
-                                            : "bg-white border-slate-300 group-hover:border-blue-400"
+                                            : "bg-white border-slate-300 hover:border-blue-400"
                                     }`}
                                 >
                                     {agreedToTerms && <IoCheckmark className="text-sm stroke-[3]" />}
-                                </div>
+                                </button>
                                 <span className="text-xs text-slate-600 leading-tight">
-                                    {t('agreeTerms', 'I agree to the Terms & Conditions and Privacy Policy')}
+                                    I agree to the{" "}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openPolicy("general");
+                                        }}
+                                        className="font-bold text-[#0A84FF] underline hover:text-blue-700 transition-colors cursor-pointer"
+                                    >
+                                        Terms & Conditions
+                                    </button>{" "}
+                                    and{" "}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openPolicy("privacy");
+                                        }}
+                                        className="font-bold text-[#0A84FF] underline hover:text-blue-700 transition-colors cursor-pointer"
+                                    >
+                                        Privacy Policy
+                                    </button>
                                 </span>
-                            </label>
+                            </div>
                         </div>
 
                         {/* Continue Button */}
