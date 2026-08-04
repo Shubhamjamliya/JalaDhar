@@ -418,7 +418,7 @@ const getUserBookings = async (req, res) => {
 
     const [bookings, total] = await Promise.all([
       Booking.find(query)
-        .populate('vendor', 'name email phone rating')
+        .populate('vendor', 'name email phone rating designation')
         .populate('service', 'name price machineType')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -488,7 +488,7 @@ const getBookingDetails = async (req, res) => {
       user: userId
     })
       .populate('user', 'name email phone')
-      .populate('vendor', 'name email phone rating address')
+      .populate('vendor', 'name email phone rating address designation')
       .populate('service', 'name price machineType description');
 
     if (!booking) {

@@ -32,7 +32,7 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
-import InputModal from "../../shared/components/InputModal";
+import InputModal, { CANCELLATION_REASONS } from "../../shared/components/InputModal";
 import RatingModal from "../../shared/components/RatingModal";
 
 export default function UserBookingDetails() {
@@ -365,12 +365,26 @@ export default function UserBookingDetails() {
     };
 
     const getStatusDescription = (status) => {
+        const expertName = booking?.vendor?.name;
+        const rawDesignation = booking?.vendor?.designation || booking?.service?.name || "Hydrogeologist";
+        
+        let expertDisplay = `a specialized ${rawDesignation.toLowerCase()}`;
+        if (expertName) {
+            const nameLower = expertName.toLowerCase();
+            const desigLower = rawDesignation.toLowerCase();
+            if (nameLower.includes(desigLower) || desigLower.includes(nameLower)) {
+                expertDisplay = expertName;
+            } else {
+                expertDisplay = `${expertName} (${rawDesignation})`;
+            }
+        }
+
         const descriptions = {
             AWAITING_ADVANCE: "Please complete advance payment to confirm your groundwater survey request.",
             PENDING: "Finding the best expert for you... Our team is broadcasting your request to top-rated experts nearby.",
-            ASSIGNED: "Expert matched! A specialized hydrogeologist is currently reviewing your site location.",
-            ACCEPTED: "Survey Scheduled! Your assigned expert will arrive at your site location as scheduled.",
-            EN_ROUTE: "Expert En Route! Your assigned survey expert is traveling to your property.",
+            ASSIGNED: `Expert matched! ${expertDisplay} is currently reviewing your site location.`,
+            ACCEPTED: `Survey Scheduled! ${expertName ? expertName : 'Your assigned expert'} will arrive at your site location as scheduled.`,
+            EN_ROUTE: `Expert En Route! ${expertName ? expertName : 'Your assigned survey expert'} is traveling to your property.`,
             VISITED: "Survey in Progress! Site inspection and hydrogeological scanning are currently underway.",
             IN_PROGRESS: "Survey in Progress! Site inspection and hydrogeological scanning are currently underway.",
             REPORT_UPLOADED: "Survey Completed! The expert has compiled your detection data into a scientific report.",
@@ -1382,11 +1396,10 @@ export default function UserBookingDetails() {
                 onClose={() => setShowCancellationInput(false)}
                 onSubmit={handleCancellationReasonSubmit}
                 title="Cancel Booking"
-                message="Please tell us why you are cancelling:"
-                placeholder="Reason for cancellation..."
+                message="Please select the reason for cancelling your booking:"
+                options={CANCELLATION_REASONS}
                 submitText="Continue"
                 cancelText="Keep Booking"
-                isTextarea={true}
             />
 
             <ConfirmModal

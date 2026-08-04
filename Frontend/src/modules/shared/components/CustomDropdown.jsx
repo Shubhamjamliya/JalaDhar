@@ -11,7 +11,8 @@ export default function CustomDropdown({
   disabled = false,
   className = "",
   activeColor = "blue", // "blue" | "teal" | "green"
-  size = "md" // "sm" | "md"
+  size = "md", // "sm" | "md"
+  isInline = false // If true, menu expands in-flow inside parent containers/modals instead of absolute floating
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -39,10 +40,10 @@ export default function CustomDropdown({
   }[activeColor] || "border-[#0A84FF] ring-4 ring-blue-50";
 
   const selectedItemStyles = {
-    blue: "bg-blue-50/90 text-blue-700 font-bold",
-    teal: "bg-teal-50/90 text-teal-700 font-bold",
-    green: "bg-green-50/90 text-green-700 font-bold",
-  }[activeColor] || "bg-blue-50/90 text-blue-700 font-bold";
+    blue: "bg-blue-50 text-blue-700 font-bold",
+    teal: "bg-teal-50 text-teal-700 font-bold",
+    green: "bg-green-50 text-green-700 font-bold",
+  }[activeColor] || "bg-blue-50 text-blue-700 font-bold";
 
   const checkmarkStyles = {
     blue: "text-blue-600",
@@ -51,6 +52,10 @@ export default function CustomDropdown({
   }[activeColor] || "text-blue-600";
 
   const heightStyle = size === "sm" ? "h-10 text-xs px-3 rounded-xl" : "h-12 text-sm px-4 rounded-2xl";
+
+  const menuContainerStyle = isInline
+    ? "relative z-10 w-full mt-2 bg-slate-50/70 border border-slate-200/80 rounded-2xl max-h-56 overflow-y-auto overflow-x-hidden custom-scrollbar animate-in fade-in slide-in-from-top-1 duration-150"
+    : "absolute z-[120] w-full mt-1.5 bg-white border border-slate-100 rounded-2xl shadow-2xl max-h-52 overflow-y-auto overflow-x-hidden custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150";
 
   return (
     <div className={`relative min-w-0 ${className}`} ref={dropdownRef}>
@@ -78,7 +83,7 @@ export default function CustomDropdown({
       </button>
 
       {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-1.5 bg-white border border-slate-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto overflow-x-hidden custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className={menuContainerStyle}>
           <div className="p-1.5 space-y-0.5">
             {options.map((option) => {
               const isSelected = value === option.value;

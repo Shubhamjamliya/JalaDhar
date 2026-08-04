@@ -35,7 +35,7 @@ import { getUserProfile } from "../../../services/authApi";
 import { getUserDashboardStats, getNearbyVendors, cancelBooking, getUserBookings } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useLanguage } from "../../../contexts/LanguageContext";
-import InputModal from "../../shared/components/InputModal";
+import InputModal, { CANCELLATION_REASONS } from "../../shared/components/InputModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -1018,11 +1018,10 @@ export default function UserDashboard() {
                 onClose={() => setShowCancellationInput(false)}
                 onSubmit={handleCancellationReasonSubmit}
                 title="Cancel Booking"
-                message="Please tell us why you are cancelling:"
-                placeholder="Reason for cancellation..."
+                message="Please select the reason for cancelling your booking:"
+                options={CANCELLATION_REASONS}
                 submitText="Continue"
                 cancelText="Keep Booking"
-                isTextarea={true}
             />
 
             <ConfirmModal
