@@ -25,7 +25,8 @@ import {
     IoArrowDownOutline,
     IoLockClosedOutline,
     IoChevronForwardOutline,
-    IoHelpCircleOutline
+    IoHelpCircleOutline,
+    IoArrowBackOutline
 } from "react-icons/io5";
 import { getBookingDetails, downloadInvoice, cancelBooking, submitRating, getBookingRating, uploadBorewellResult } from "../../../services/bookingApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
@@ -352,7 +353,8 @@ export default function UserBookingDetails() {
         };
         const config = statusConfig[status] || { color: "bg-slate-100 text-slate-600 border-slate-200", label: status ? status.replace(/_/g, ' ') : status };
         return (
-            <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide border shadow-2xs ${config.color}`}>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold tracking-wide border shadow-2xs ${config.color}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse flex-shrink-0" />
                 {config.label}
             </span>
         );
@@ -496,11 +498,23 @@ export default function UserBookingDetails() {
 
             {/* Header */}
             <div className="mb-5 max-w-4xl mx-auto">
-                <div className="flex items-center justify-between">
-                    <p className="text-slate-500 text-xs font-bold tracking-tight">
-                        Booking ID: <span className="font-mono text-slate-800">{booking._id || booking.id || bookingId}</span>
-                    </p>
-                    {getStatusBadge(booking.status)}
+                <div className="bg-white rounded-2xl p-3 sm:p-3.5 shadow-2xs border border-slate-200/80 flex items-center justify-between gap-2.5">
+                    {/* Left: Back Button & Booking ID */}
+                    <div className="flex items-center gap-2 min-w-0">
+                        <button
+                            onClick={() => navigate("/user/status")}
+                            className="p-2 rounded-xl bg-slate-100/90 hover:bg-slate-200/80 text-slate-700 transition-colors cursor-pointer flex items-center justify-center flex-shrink-0"
+                            title="Back to Bookings"
+                        >
+                            <IoArrowBackOutline className="text-base" />
+                        </button>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-slate-500 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider flex-shrink-0">Booking ID:</span>
+                            <span className="font-mono font-extrabold text-[11px] sm:text-xs text-slate-900 bg-slate-100/90 border border-slate-200/80 px-2 py-0.5 rounded-lg select-all truncate">
+                                {booking._id || booking.id || bookingId}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
