@@ -165,7 +165,7 @@ export default function VendorCreateDispute() {
                 <div className="relative z-10 flex items-start justify-between">
                     <div>
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-200 text-xs font-semibold uppercase tracking-wider mb-3">
-                            <IoHelpCircleOutline className="text-sm" /> Vendor Resolution Center
+                            <IoHelpCircleOutline className="text-sm" /> Expert Resolution Center
                         </span>
                         <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Raise a Dispute</h1>
                         <p className="text-sm text-teal-200/80 mt-1 font-medium max-w-md">

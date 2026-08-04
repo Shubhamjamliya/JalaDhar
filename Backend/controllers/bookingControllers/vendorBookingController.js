@@ -349,7 +349,7 @@ const markAsVisited = async (req, res) => {
         name: booking.user.name,
         bookingId: booking._id.toString(),
         status: 'VISITED',
-        message: 'Vendor has visited your location'
+        message: 'Expert has visited your location'
       });
 
       // Send real-time notification
@@ -360,8 +360,8 @@ const markAsVisited = async (req, res) => {
           recipient: booking.user._id,
           recipientModel: 'User',
           type: 'BOOKING_VISITED',
-          title: 'Vendor Visited',
-          message: `Vendor has visited your location`,
+          title: 'Expert Visited',
+          message: `Expert has visited your location`,
           relatedEntity: {
             entityType: 'Booking',
             entityId: booking._id
@@ -609,8 +609,8 @@ const markVisitedAndUploadReport = async (req, res) => {
           recipient: booking.user._id,
           recipientModel: 'User',
           type: 'REPORT_UPLOADED',
-          title: 'Report Uploaded by Vendor',
-          message: `Vendor has uploaded the groundwater survey report. Please pay remaining ₹${booking.payment.remainingAmount} to view it.`,
+          title: 'Report Uploaded by Expert',
+          message: `Expert has uploaded the groundwater survey report. Please pay remaining ₹${booking.payment.remainingAmount} to view it.`,
           relatedEntity: {
             entityType: 'Booking',
             entityId: booking._id

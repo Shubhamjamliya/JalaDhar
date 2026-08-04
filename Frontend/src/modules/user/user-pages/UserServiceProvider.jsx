@@ -100,7 +100,7 @@ export default function UserServiceProvider() {
     };
 
     if (loading && vendors.length === 0) {
-        return <LoadingSpinner message="Loading vendors..." />;
+        return <LoadingSpinner message="Loading experts..." />;
     }
 
     return (
@@ -110,7 +110,7 @@ export default function UserServiceProvider() {
             {/* Top Navigation Bar */}
             <div className="sticky top-16 z-10 flex items-center bg-[#F3F7FA]/80 backdrop-blur-sm p-4 pb-3 -mx-4 md:-mx-6 justify-center mb-4">
                 {/* Back button removed - handled by UserNavbar */}
-                <h1 className="text-[#3A3A3A] text-lg font-bold leading-tight">Find a Vendor</h1>
+                <h1 className="text-[#3A3A3A] text-lg font-bold leading-tight">Find an Expert</h1>
             </div>
 
             {/* Location Selector */}
@@ -128,7 +128,7 @@ export default function UserServiceProvider() {
             <div className="flex flex-col gap-4 px-4">
                 {vendors.length === 0 ? (
                     <div className="bg-white rounded-lg p-8 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                        <p className="text-[#4A4A4A] text-sm">No vendors available</p>
+                        <p className="text-[#4A4A4A] text-sm">No experts available</p>
                     </div>
                 ) : (
                     vendors.map((vendor) => (

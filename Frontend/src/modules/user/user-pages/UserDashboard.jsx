@@ -796,7 +796,7 @@ export default function UserDashboard() {
             <div className="px-1 pt-6 pb-2 flex items-center justify-between">
                 <div>
                     <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
-                        Top Groundwater Experts Near You 👨‍🔧
+                        Top &quot;Verified&quot; Groundwater Experts Near You 👨‍🔧
                     </h2>
                     <p className="text-xs text-gray-500 font-semibold mt-0.5">Certified groundwater survey specialists available for dispatch.</p>
                 </div>

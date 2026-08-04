@@ -604,7 +604,7 @@ export default function UserAdvancePaymentConfirmation() {
                         <div>
                             <p className="font-semibold text-gray-800 text-sm">Travel Charges (Two-way)</p>
                             <p className="text-xs text-gray-500">
-                                {bookingPayment?.distance ? `${Number(bookingPayment.distance).toFixed(2)} km` : 'Standard'} from vendor
+                                {bookingPayment?.distance ? `${Number(bookingPayment.distance).toFixed(2)} km` : 'Standard'} from expert
                             </p>
                             {travelCharges > 0 && (
                                 <p className="text-xs font-bold text-gray-500">
