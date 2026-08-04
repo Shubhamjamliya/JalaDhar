@@ -16,9 +16,16 @@ import {
     IoWalletOutline,
     IoRefreshOutline,
     IoCarOutline,
+    IoCallOutline,
+    IoChatbubbleEllipsesOutline,
+    IoHelpCircleOutline,
+    IoNavigateOutline,
+    IoStarOutline,
+    IoReloadOutline,
+    IoDownloadOutline,
 
 } from "react-icons/io5";
-import { getUserBookings, uploadBorewellResult, getBookingDetails } from "../../../services/bookingApi";
+import { getUserBookings, uploadBorewellResult, getBookingDetails, cancelBooking } from "../../../services/bookingApi";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { usePullToRefresh } from "../../../hooks/usePullToRefresh";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -39,6 +46,11 @@ export default function UserStatus() {
         images: []
     });
     const [uploadingBorewell, setUploadingBorewell] = useState(false);
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showSupportModal, setShowSupportModal] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
+    const [selectedCancelReason, setSelectedCancelReason] = useState("");
+    const [customCancelReason, setCustomCancelReason] = useState("");
     const loadCurrentBookingRef = useRef(null);
     const lastActionTimeRef = useRef(0); // Track when user performed an action
     const ACTION_COOLDOWN = 2000; // 2 seconds - ignore socket updates right after user action
@@ -386,6 +398,85 @@ export default function UserStatus() {
         }).format(amount);
     };
 
+    const handleContactSupport = () => {
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isMobile) {
+            window.location.href = "tel:+919876543210";
+        } else {
+            setShowSupportModal(true);
+        }
+    };
+
+    const handleCallExpert = (phone) => {
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (phone && isMobile) {
+            window.location.href = `tel:${phone}`;
+        } else {
+            setShowSupportModal(true);
+        }
+    };
+
+    const handleChat = () => {
+        toast.showInfo("Opening expert live chat...");
+    };
+
+    const handleTrackExpert = () => {
+        toast.showInfo("Expert is currently travelling to your survey location.");
+    };
+
+    const handleReschedule = () => {
+        toast.showInfo("To reschedule your survey appointment, please contact support.");
+    };
+
+    const handleCancelBooking = () => {
+        setSelectedCancelReason("");
+        setCustomCancelReason("");
+        setShowCancelModal(true);
+    };
+
+    const handleConfirmCancellation = async () => {
+        const reason = selectedCancelReason === "Other" ? customCancelReason : selectedCancelReason;
+        if (selectedCancelReason === "Other" && !customCancelReason.trim()) {
+            toast.showError("Please enter your cancellation reason.");
+            return;
+        }
+
+        try {
+            setCancelling(true);
+            const bookingId = currentBooking.id || currentBooking._id;
+            const res = await cancelBooking(bookingId, reason || "Cancelled by user");
+            if (res.success) {
+                toast.showSuccess("Booking cancelled successfully. Refund initiated.");
+                setShowCancelModal(false);
+                if (loadCurrentBookingRef.current) {
+                    await loadCurrentBookingRef.current();
+                }
+            } else {
+                toast.showError(res.message || "Failed to cancel booking");
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to cancel booking. Please try again.");
+        } finally {
+            setCancelling(false);
+        }
+    };
+
+    const handleRebook = () => {
+        navigate("/user/booking");
+    };
+
+    const handleRateReview = () => {
+        navigate("/user/ratings");
+    };
+
+    const handleViewRefundStatus = () => {
+        navigate("/user/wallet");
+    };
+
+    const handleViewDisputeStatus = () => {
+        navigate("/user/disputes");
+    };
+
     const handleBorewellImageUpload = (e) => {
         const files = Array.from(e.target.files);
         const newImages = files.map((file) => ({
@@ -592,6 +683,109 @@ export default function UserStatus() {
                 </div>
             )}
 
+            {/* Actions Card (Matching UX specification) */}
+            {currentBooking && !["CANCELLED", "COMPLETED", "REJECTED"].includes(status) && (
+                <div className="mb-5 rounded-2xl bg-white p-4 shadow-xs border border-slate-200/80">
+                    <h2 className="text-base font-extrabold text-slate-900 mb-3 tracking-tight">Actions</h2>
+
+                    {/* Notice Box */}
+                    {["PENDING", "ASSIGNED"].includes(status) && (
+                        <div className="mb-3 p-3.5 rounded-xl bg-amber-50/80 border border-amber-200/70 flex items-start gap-2.5">
+                            <span className="text-lg leading-none">⏳</span>
+                            <div>
+                                <h3 className="text-xs font-bold text-amber-900">Awaiting Expert Acceptance</h3>
+                                <p className="text-[11px] text-amber-800 leading-relaxed mt-0.5">
+                                    Your assigned expert is reviewing this booking. Online payment will be available only after the expert formally accepts the booking.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        {/* Unlock Survey Report Button */}
+                        <button
+                            disabled={!currentBooking.payment?.remainingPaid}
+                            onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/report`)}
+                            className={`w-full py-2.5 px-4 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all ${
+                                currentBooking.payment?.remainingPaid
+                                    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer"
+                                    : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-75"
+                            }`}
+                        >
+                            <IoDocumentTextOutline className="text-base" />
+                            <span>Unlock Survey Report</span>
+                        </button>
+
+                        {/* Cancel Booking Button */}
+                        <button
+                            onClick={handleCancelBooking}
+                            className="w-full py-2.5 px-4 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
+                        >
+                            <IoCloseCircleOutline className="text-base text-rose-600" />
+                            <span>Cancel Booking</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Special Banners & Action Buttons for Cancelled / Refund / Dispute Statuses */}
+            {status === "CANCELLED" && (
+                <div className="mb-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                        <p className="text-xs font-bold text-rose-900">Booking Cancelled</p>
+                        <p className="text-[11px] text-rose-700">Check refund status or rebook a new groundwater survey</p>
+                    </div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <button
+                            onClick={handleViewRefundStatus}
+                            className="flex-1 sm:flex-initial px-3 py-1.5 bg-white text-rose-700 border border-rose-300 hover:bg-rose-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                            <IoWalletOutline className="text-sm" />
+                            View Refund Status
+                        </button>
+                        <button
+                            onClick={handleRebook}
+                            className="flex-1 sm:flex-initial px-3 py-1.5 bg-rose-600 text-white hover:bg-rose-700 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                            <IoReloadOutline className="text-sm" />
+                            Rebook
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {(status === "REFUND_INITIATED" || currentBooking?.payment?.refundStatus === "PROCESSING") && (
+                <div className="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                        <p className="text-xs font-bold text-amber-900">Refund Initiated</p>
+                        <p className="text-[11px] text-amber-700">Your refund is being processed by our finance team</p>
+                    </div>
+                    <button
+                        onClick={handleViewRefundStatus}
+                        className="w-full sm:w-auto px-3.5 py-1.5 bg-amber-600 text-white hover:bg-amber-700 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                        <IoWalletOutline className="text-sm" />
+                        Track Refund
+                    </button>
+                </div>
+            )}
+
+            {(status === "DISPUTE_RAISED" || currentBooking?.dispute) && (
+                <div className="mb-4 p-3.5 rounded-xl bg-indigo-50 border border-indigo-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                        <p className="text-xs font-bold text-indigo-900">Dispute Raised</p>
+                        <p className="text-[11px] text-indigo-700">Support team is currently investigating your dispute request</p>
+                    </div>
+                    <button
+                        onClick={handleViewDisputeStatus}
+                        className="w-full sm:w-auto px-3.5 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                        <IoHelpCircleOutline className="text-sm" />
+                        View Dispute Status
+                    </button>
+                </div>
+            )}
+
             {/* Timeline Section Title */}
             <div className="flex items-center justify-between mb-4 px-1">
                 <h2 className="text-sm font-extrabold text-slate-800 tracking-tight flex items-center gap-1.5 uppercase">
@@ -722,15 +916,93 @@ export default function UserStatus() {
                                                 </div>
                                             )}
 
-                                            {/* Step Specific Action CTA Buttons */}
-                                            {step.id === "final-payment-pending" && isActive && (
-                                                <button
-                                                    onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/payment`)}
-                                                    className="w-full mt-3 py-2.5 bg-[#0A84FF] hover:bg-[#0070E0] text-white text-xs font-bold rounded-lg shadow-2xs transition-all active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer"
-                                                >
-                                                    <IoWalletOutline className="text-base" />
-                                                    Pay Remaining 60% ({formatAmount(currentBooking.payment?.remainingAmount || 0)})
-                                                </button>
+                                            {/* Action Buttons Based on Status Table Specification */}
+                                            {step.id === "booking-requested" && isActive && (
+                                                <div className="mt-3">
+                                                    <button
+                                                        onClick={handleCancelBooking}
+                                                        className="w-full py-2 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                                    >
+                                                        <IoCloseCircleOutline className="text-base" />
+                                                        Cancel Booking
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {step.id === "booking-confirmed" && isActive && (
+                                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                                    <button
+                                                        onClick={handleCancelBooking}
+                                                        className="py-2 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <IoCloseCircleOutline className="text-sm" />
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={handleContactSupport}
+                                                        className="py-2 bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <IoHelpCircleOutline className="text-sm" />
+                                                        Support
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {step.id === "expert-en-route" && isActive && (
+                                                <div className="mt-3 grid grid-cols-3 gap-1.5">
+                                                    <button
+                                                        onClick={handleTrackExpert}
+                                                        className="py-2 bg-blue-50 text-[#0A84FF] border border-blue-100 hover:bg-blue-100 text-[11px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <IoNavigateOutline className="text-sm" />
+                                                        Track Expert
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleCallExpert(vendor?.phone)}
+                                                        className="py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-[11px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <IoCallOutline className="text-sm" />
+                                                        Call Expert
+                                                    </button>
+                                                    <button
+                                                        onClick={handleChat}
+                                                        className="py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-[11px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <IoChatbubbleEllipsesOutline className="text-sm" />
+                                                        Chat
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {step.id === "survey-started" && isActive && (
+                                                <div className="mt-3">
+                                                    <button
+                                                        onClick={handleContactSupport}
+                                                        className="w-full py-2 bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                                    >
+                                                        <IoHelpCircleOutline className="text-base" />
+                                                        Contact Support
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {(step.id === "survey-completed" || step.id === "final-payment-pending") && isActive && (
+                                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                                    <button
+                                                        onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/payment`)}
+                                                        className="py-2.5 bg-[#0A84FF] hover:bg-[#0070E0] text-white text-xs font-bold rounded-lg shadow-2xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <IoWalletOutline className="text-base" />
+                                                        Make Final Payment
+                                                    </button>
+                                                    <button
+                                                        onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/report`)}
+                                                        className="py-2.5 bg-blue-50 text-[#0A84FF] border border-blue-100 hover:bg-blue-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <IoDocumentTextOutline className="text-base" />
+                                                        View Report
+                                                    </button>
+                                                </div>
                                             )}
 
                                             {step.id === "survey-report-unlocked" && (isActive || isCompleted) && (
@@ -743,21 +1015,35 @@ export default function UserStatus() {
                                                 </button>
                                             )}
 
-                                            {step.id === "booking-completed" && isCompleted && (
+                                            {step.id === "booking-completed" && (isCompleted || isActive) && (
                                                 <div className="mt-3 grid grid-cols-2 gap-2">
-                                                    <button
-                                                        onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/report`)}
-                                                        className="py-2 bg-blue-50 text-[#0A84FF] border border-blue-100 hover:bg-blue-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
-                                                    >
-                                                        <IoDocumentTextOutline className="text-sm" />
-                                                        Report
-                                                    </button>
                                                     <button
                                                         onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/invoice`)}
                                                         className="py-2 bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
                                                     >
                                                         <IoDownloadOutline className="text-sm" />
-                                                        Invoice
+                                                        Download Invoice
+                                                    </button>
+                                                    <button
+                                                        onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/report`)}
+                                                        className="py-2 bg-blue-50 text-[#0A84FF] border border-blue-100 hover:bg-blue-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <IoDocumentTextOutline className="text-sm" />
+                                                        Download Report
+                                                    </button>
+                                                    <button
+                                                        onClick={handleRateReview}
+                                                        className="py-2 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <IoStarOutline className="text-sm" />
+                                                        Rate & Review
+                                                    </button>
+                                                    <button
+                                                        onClick={handleRebook}
+                                                        className="py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <IoReloadOutline className="text-sm" />
+                                                        Rebook
                                                     </button>
                                                 </div>
                                             )}
@@ -892,6 +1178,162 @@ export default function UserStatus() {
                                 ) : (
                                     "Upload Result"
                                 )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Cancel Booking Reason Modal */}
+            {showCancelModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={() => !cancelling && setShowCancelModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-rose-50/60">
+                            <div className="flex items-center gap-2 text-rose-700 font-extrabold text-sm">
+                                <IoCloseCircleOutline className="text-xl" />
+                                <span>Cancel Booking Request</span>
+                            </div>
+                            <button
+                                onClick={() => !cancelling && setShowCancelModal(false)}
+                                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+                            >
+                                <IoCloseOutline className="text-xl" />
+                            </button>
+                        </div>
+
+                        <div className="p-5 space-y-4">
+                            <p className="text-xs text-slate-600 font-medium">
+                                Please select a reason for cancelling this booking:
+                            </p>
+
+                            <div className="space-y-2">
+                                {[
+                                    "Found another expert / local solution",
+                                    "Scheduled date/time is not suitable",
+                                    "Price is higher than expected",
+                                    "Booked by mistake",
+                                    "Other"
+                                ].map((reason) => (
+                                    <label
+                                        key={reason}
+                                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                            selectedCancelReason === reason
+                                                ? "bg-rose-50/60 border-rose-300 ring-1 ring-rose-200"
+                                                : "bg-slate-50/50 border-slate-200/80 hover:bg-slate-50"
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="cancelReason"
+                                            value={reason}
+                                            checked={selectedCancelReason === reason}
+                                            onChange={() => setSelectedCancelReason(reason)}
+                                            className="text-rose-600 focus:ring-rose-500 h-4 w-4"
+                                        />
+                                        <span className="text-xs font-semibold text-slate-800">{reason}</span>
+                                    </label>
+                                ))}
+                            </div>
+
+                            {selectedCancelReason === "Other" && (
+                                <textarea
+                                    rows="3"
+                                    placeholder="Please specify your reason..."
+                                    value={customCancelReason}
+                                    onChange={(e) => setCustomCancelReason(e.target.value)}
+                                    className="w-full p-3 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                                />
+                            )}
+
+                            {/* Refund Notice Policy Box */}
+                            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-900 leading-relaxed">
+                                <span className="font-bold">Refund Policy: </span>
+                                Any advance payment made will be 100% refunded to your original payment method within 2-3 business days.
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-2.5">
+                            <button
+                                disabled={cancelling}
+                                onClick={() => setShowCancelModal(false)}
+                                className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-100 transition-all cursor-pointer"
+                            >
+                                Keep Booking
+                            </button>
+                            <button
+                                disabled={cancelling || !selectedCancelReason}
+                                onClick={handleConfirmCancellation}
+                                className="flex-1 py-2.5 bg-rose-600 text-white font-bold text-xs rounded-xl hover:bg-rose-700 transition-all shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                            >
+                                {cancelling ? (
+                                    <>
+                                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <span>Cancelling...</span>
+                                    </>
+                                ) : (
+                                    <span>Confirm Cancellation</span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Support Modal (For Desktop / Web) */}
+            {showSupportModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={() => setShowSupportModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 p-5 space-y-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <div className="flex items-center gap-2 text-slate-900 font-extrabold text-sm">
+                                <IoHelpCircleOutline className="text-xl text-[#0A84FF]" />
+                                <span>Customer Support</span>
+                            </div>
+                            <button
+                                onClick={() => setShowSupportModal(false)}
+                                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+                            >
+                                <IoCloseOutline className="text-xl" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="p-3.5 bg-blue-50/70 border border-blue-100 rounded-xl">
+                                <span className="text-[10px] font-bold text-blue-900 uppercase block mb-1">Helpline Phone Number</span>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-black text-slate-900 font-mono">+91 98765 43210</span>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText("+919876543210");
+                                            toast.showSuccess("Phone number copied!");
+                                        }}
+                                        className="text-xs font-bold text-[#0A84FF] hover:underline cursor-pointer"
+                                    >
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    setShowSupportModal(false);
+                                    navigate("/user/help-support");
+                                }}
+                                className="w-full py-2.5 bg-[#0A84FF] hover:bg-[#0070E0] text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <IoHelpCircleOutline className="text-base" />
+                                Open Help & Support Center
                             </button>
                         </div>
                     </div>
