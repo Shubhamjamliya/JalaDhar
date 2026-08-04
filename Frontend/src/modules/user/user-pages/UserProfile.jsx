@@ -551,7 +551,7 @@ function AboutJaladhaaraModal({ isOpen, onClose }) {
                         </div>
                         <div className="flex items-center gap-2.5 text-gray-700 font-semibold">
                             <span className="text-base">👨‍🔧</span>
-                            <span>Certified Hydrogeology Experts</span>
+                            <span>Certified Groundwater Experts</span>
                         </div>
                         <div className="flex items-center gap-2.5 text-gray-700 font-semibold">
                             <span className="text-base">📊</span>

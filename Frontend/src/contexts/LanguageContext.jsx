@@ -61,7 +61,7 @@ const translations = {
         pendingPayments: "Pending Payments",
         surveyReports: "Survey Reports",
         updateProfile: "Update Profile",
-        topExpertsNearYou: "Top Hydrogeology Experts Near You",
+        topExpertsNearYou: "Top Groundwater Experts Near You",
         certifiedSpecialists: "Certified groundwater survey specialists available for dispatch."
     },
     hi: {
