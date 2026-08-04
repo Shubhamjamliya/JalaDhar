@@ -28,8 +28,8 @@ export const getUserWalletTransactions = async (params = {}) => {
  * @param {number} amount - Withdrawal amount
  * @returns {Promise}
  */
-export const createUserWithdrawalRequest = async (amount) => {
-  const response = await api.post('/user/wallet/withdraw-request', { amount });
+export const createUserWithdrawalRequest = async (amount, payoutData = {}) => {
+  const response = await api.post('/user/wallet/withdraw-request', { amount, ...payoutData });
   return response.data;
 };
 

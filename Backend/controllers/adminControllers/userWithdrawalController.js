@@ -44,6 +44,9 @@ const getAllWithdrawalRequests = async (req, res) => {
       transactionId: request.transactionId,
       paymentMethod: request.paymentMethod,
       paymentDate: request.paymentDate,
+      payoutType: request.payoutType || 'UPI',
+      upiId: request.upiId || (request.user?.phone ? `${request.user.phone}@upi` : null),
+      accountDetails: request.accountDetails || null,
       notes: request.notes,
       rejectionReason: request.rejectionReason
     }));

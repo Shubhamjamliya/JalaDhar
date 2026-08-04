@@ -18,6 +18,22 @@ const userWithdrawalRequestSchema = new mongoose.Schema({
     default: 'PENDING',
     index: true
   },
+  payoutType: {
+    type: String,
+    enum: ['UPI', 'BANK_TRANSFER'],
+    default: 'UPI'
+  },
+  upiId: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  accountDetails: {
+    accountHolderName: { type: String, trim: true, default: null },
+    accountNumber: { type: String, trim: true, default: null },
+    ifscCode: { type: String, trim: true, default: null },
+    bankName: { type: String, trim: true, default: null }
+  },
   requestedAt: {
     type: Date,
     default: Date.now,

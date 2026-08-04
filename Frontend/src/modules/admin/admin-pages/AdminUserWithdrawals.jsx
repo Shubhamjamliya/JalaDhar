@@ -17,6 +17,7 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError, handleApiSuccess } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
+import TransactionInfoModal from "../../shared/components/TransactionInfoModal";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 
 export default function AdminUserWithdrawals() {
@@ -164,28 +165,50 @@ export default function AdminUserWithdrawals() {
         setShowProcessModal(true);
     };
 
-    const handleProcessConfirm = async () => {
-        if (!selectedRequest || !razorpayPayoutId.trim()) {
-            toast.showError("Please enter Razorpay Payout ID");
+    const handleProcessConfirm = async (transactionData) => {
+        if (!selectedRequest) return;
+
+        const transactionId = typeof transactionData === 'string' ? transactionData : transactionData?.transactionId;
+        const paymentMethod = typeof transactionData === 'object' ? transactionData?.paymentMethod : 'UPI';
+        const notes = typeof transactionData === 'object' ? transactionData?.notes : '';
+
+        if (!transactionId || !transactionId.trim()) {
+            toast.showError("Please enter Transaction ID or Payout Reference");
             return;
         }
 
         try {
             setProcessing(true);
+
+            // If request is pending, approve first automatically
+            if (selectedRequest.status === 'PENDING') {
+                await approveUserWithdrawalRequest(
+                    selectedRequest.userId,
+                    selectedRequest._id,
+                    {}
+                );
+            }
+
             const response = await processUserWithdrawalRequest(
                 selectedRequest.userId,
                 selectedRequest._id,
-                { razorpayPayoutId: razorpayPayoutId.trim() }
+                { 
+                    transactionId: transactionId.trim(),
+                    paymentMethod,
+                    notes,
+                    razorpayPayoutId: transactionId.trim()
+                }
             );
+
             if (response.success) {
-                handleApiSuccess(response, "Withdrawal request processed successfully!");
+                handleApiSuccess("Withdrawal approved & payout processed successfully!");
                 setShowProcessModal(false);
                 setSelectedRequest(null);
                 setRazorpayPayoutId("");
                 loadWithdrawalRequests();
             }
         } catch (err) {
-            handleApiError(err, "Failed to process withdrawal request");
+            handleApiError(err, "Failed to process withdrawal payout");
         } finally {
             setProcessing(false);
         }
@@ -315,58 +338,82 @@ export default function AdminUserWithdrawals() {
                                                 <span className="font-medium text-red-600">Rejection Reason:</span> {request.rejectionReason}
                                             </div>
                                         )}
+
+                                        {/* Payout Details (UPI / Bank Account) */}
+                                        <div className="md:col-span-2 mt-2 p-3 bg-blue-50/80 border border-blue-100 rounded-xl">
+                                            <p className="text-xs font-extrabold uppercase tracking-wider text-blue-900 mb-1.5 flex items-center gap-1.5">
+                                                💳 Payout Target: <span className="text-blue-600 font-bold">{request.payoutType === 'BANK_TRANSFER' ? 'Bank Account' : 'UPI ID'}</span>
+                                            </p>
+                                            {request.payoutType === 'BANK_TRANSFER' && request.accountDetails ? (
+                                                <div className="text-xs text-slate-700 space-y-1 font-mono">
+                                                    <p><span className="font-sans text-slate-500 font-medium">A/C Name:</span> <strong className="font-sans text-slate-900">{request.accountDetails.accountHolderName || request.userName || 'N/A'}</strong></p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p><span className="font-sans text-slate-500 font-medium">A/C Number:</span> <strong className="text-blue-700 font-bold">{request.accountDetails.accountNumber}</strong></p>
+                                                        <button 
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(request.accountDetails.accountNumber);
+                                                                toast.showSuccess("Copied Account Number!");
+                                                            }}
+                                                            className="text-[10px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans font-bold px-2 py-0.5 rounded-md cursor-pointer transition-colors"
+                                                        >
+                                                            Copy A/C
+                                                        </button>
+                                                    </div>
+                                                    <p><span className="font-sans text-slate-500 font-medium">IFSC:</span> <strong className="text-slate-900">{request.accountDetails.ifscCode}</strong> {request.accountDetails.bankName ? `(${request.accountDetails.bankName})` : ''}</p>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-extrabold font-mono text-slate-900 bg-white px-3 py-1 rounded-lg border border-slate-200 inline-block shadow-2xs">
+                                                        ⚡ {request.upiId || (request.userPhone ? `${request.userPhone}@upi` : 'N/A')}
+                                                    </p>
+                                                    <button 
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(request.upiId || (request.userPhone ? `${request.userPhone}@upi` : ''));
+                                                            toast.showSuccess("Copied UPI ID!");
+                                                        }}
+                                                        className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded-lg cursor-pointer transition-colors shadow-2xs"
+                                                    >
+                                                        Copy UPI
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-2 md:flex-row">
-                                    {request.status === 'PENDING' && (
-                                        <>
-                                            <button
-                                                onClick={() => handleApprove(request)}
-                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <IoCheckmarkCircleOutline className="text-lg" />
-                                                Approve
-                                            </button>
-                                            <button
-                                                onClick={() => handleReject(request)}
-                                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <IoCloseCircleOutline className="text-lg" />
-                                                Reject
-                                            </button>
-                                        </>
-                                    )}
-                                    {request.status === 'APPROVED' && (
-                                        <button
-                                            onClick={() => handleProcess(request)}
-                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                                        >
-                                            <IoWalletOutline className="text-lg" />
-                                            Process Payment
-                                        </button>
-                                    )}
-                                </div>
+                                     {request.status === 'PENDING' && (
+                                         <>
+                                             <button
+                                                 onClick={() => handleProcess(request)}
+                                                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 font-bold text-white rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                                             >
+                                                 <IoCheckmarkCircleOutline className="text-lg" />
+                                                 Approve & Pay
+                                             </button>
+                                             <button
+                                                 onClick={() => handleReject(request)}
+                                                 className="px-4 py-2 bg-rose-600 hover:bg-rose-700 font-bold text-white rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                                             >
+                                                 <IoCloseCircleOutline className="text-lg" />
+                                                 Reject
+                                             </button>
+                                         </>
+                                     )}
+                                     {request.status === 'APPROVED' && (
+                                         <button
+                                             onClick={() => handleProcess(request)}
+                                             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                                         >
+                                             <IoWalletOutline className="text-lg" />
+                                             Process Payment
+                                         </button>
+                                     )}
+                                 </div>
                             </div>
                         </div>
                     ))
                 )}
             </div>
-
-            {/* Approve Modal */}
-            <ConfirmModal
-                isOpen={showApproveModal}
-                onClose={() => {
-                    setShowApproveModal(false);
-                    setSelectedRequest(null);
-                }}
-                onConfirm={handleApproveConfirm}
-                title="Approve Withdrawal Request"
-                message={`Are you sure you want to approve withdrawal request of ₹${selectedRequest ? formatAmount(selectedRequest.amount) : '0'} from ${selectedRequest?.userName || 'user'}?`}
-                confirmText="Approve"
-                cancelText="Cancel"
-                confirmColor="primary"
-                isLoading={processing}
-            />
 
             {/* Reject Modal */}
             <InputModal
@@ -395,33 +442,19 @@ export default function AdminUserWithdrawals() {
                 }}
             />
 
-            {/* Process Modal */}
-            <InputModal
+            {/* Process / Approve & Pay Modal */}
+            <TransactionInfoModal
                 isOpen={showProcessModal}
                 onClose={() => {
                     setShowProcessModal(false);
                     setSelectedRequest(null);
-                    setRazorpayPayoutId("");
                 }}
                 onSubmit={handleProcessConfirm}
-                title="Process Withdrawal Payment"
-                label="Razorpay Payout ID"
-                type="text"
-                value={razorpayPayoutId}
-                onChange={(e) => setRazorpayPayoutId(e.target.value)}
-                placeholder="Enter Razorpay Payout ID..."
-                submitText="Process"
-                cancelText="Cancel"
-                confirmColor="primary"
+                title="Approve & Process Payout"
+                amount={selectedRequest?.amount}
+                recipientName={selectedRequest?.userName}
                 isLoading={processing}
-                validation={(value) => {
-                    if (!value || !value.trim()) {
-                        return "Razorpay Payout ID is required";
-                    }
-                    return null;
-                }}
             />
         </div>
     );
 }
-

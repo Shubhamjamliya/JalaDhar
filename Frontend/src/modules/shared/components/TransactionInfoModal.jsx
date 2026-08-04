@@ -68,10 +68,6 @@ export default function TransactionInfoModal({
             newErrors.paymentMethod = "Payment method is required";
         }
 
-        if (!formData.paymentDate) {
-            newErrors.paymentDate = "Payment date is required";
-        }
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -84,7 +80,7 @@ export default function TransactionInfoModal({
         onSubmit({
             transactionId: formData.transactionId.trim(),
             paymentMethod: formData.paymentMethod,
-            paymentDate: formData.paymentDate,
+            paymentDate: new Date().toISOString(), // Automatically assigned system timestamp
             notes: formData.notes.trim(),
         });
     };
@@ -149,7 +145,7 @@ export default function TransactionInfoModal({
                     {/* Transaction ID */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Transaction ID <span className="text-red-500">*</span>
+                            Transaction ID / Payout Ref <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
@@ -193,27 +189,6 @@ export default function TransactionInfoModal({
                         )}
                     </div>
 
-                    {/* Payment Date */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Payment Date <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="date"
-                            value={formData.paymentDate}
-                            onChange={(e) => handleChange("paymentDate", e.target.value)}
-                            max={new Date().toISOString().split('T')[0]} // Cannot select future dates
-                            className="w-full px-4 py-3 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent text-gray-800"
-                            disabled={isLoading}
-                        />
-                        {errors.paymentDate && (
-                            <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                                <IoAlertCircleOutline className="text-base" />
-                                {errors.paymentDate}
-                            </p>
-                        )}
-                    </div>
-
                     {/* Notes */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -242,7 +217,7 @@ export default function TransactionInfoModal({
                     <button
                         onClick={handleSubmit}
                         className="flex-1 px-4 py-3 rounded-[10px] font-semibold text-white bg-[#0A84FF] hover:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading || !formData.transactionId.trim() || !formData.paymentMethod || !formData.paymentDate}
+                        disabled={isLoading || !formData.transactionId.trim() || !formData.paymentMethod}
                     >
                         {isLoading ? "Processing..." : "Process Payment"}
                     </button>

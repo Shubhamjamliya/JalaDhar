@@ -180,7 +180,7 @@ const getUserWalletBalance = async (userId) => {
  * @param {Number} amount - Withdrawal amount
  * @returns {Object} - Request result
  */
-const createWithdrawalRequest = async (userId, amount) => {
+const createWithdrawalRequest = async (userId, amount, payoutData = {}) => {
   try {
     const user = await User.findById(userId);
     if (!user) {
@@ -196,10 +196,25 @@ const createWithdrawalRequest = async (userId, amount) => {
       throw new Error('Minimum withdrawal amount is ₹1,000');
     }
 
+    // Extract payout details
+    const { payoutType = 'UPI', upiId = null, accountDetails = null } = payoutData;
+
+    // Validate payout details
+    if (payoutType === 'UPI' && !upiId) {
+      throw new Error('Please provide a valid UPI ID for withdrawal payout');
+    }
+
+    if (payoutType === 'BANK_TRANSFER' && (!accountDetails || !accountDetails.accountNumber || !accountDetails.ifscCode)) {
+      throw new Error('Please provide Account Number and IFSC Code for bank transfer payout');
+    }
+
     // Create withdrawal request in separate collection
     const withdrawalRequest = await UserWithdrawalRequest.create({
       user: userId,
       amount,
+      payoutType,
+      upiId,
+      accountDetails,
       status: 'PENDING',
       requestedAt: new Date()
     });

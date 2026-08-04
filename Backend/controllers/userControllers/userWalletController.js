@@ -90,7 +90,7 @@ const getWalletTransactions = async (req, res) => {
 const createWithdrawRequest = async (req, res) => {
   try {
     const userId = req.userId;
-    const { amount } = req.body;
+    const { amount, payoutType, upiId, accountDetails } = req.body;
 
     if (!amount || amount <= 0) {
       return res.status(400).json({
@@ -99,7 +99,7 @@ const createWithdrawRequest = async (req, res) => {
       });
     }
 
-    const result = await createWithdrawalRequest(userId, amount);
+    const result = await createWithdrawalRequest(userId, amount, { payoutType, upiId, accountDetails });
 
     res.json({
       success: true,

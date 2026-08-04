@@ -764,16 +764,24 @@ export default function AdminPayments({ defaultTab = "overview" }) {
         const loadingToast = toast.showLoading("Processing withdrawal payment...");
 
         try {
+            // Auto approve if still in PENDING state
+            if (selectedUserWithdrawalRequest.status === "PENDING") {
+                await approveUserWithdrawalRequest(
+                    selectedUserWithdrawalRequest.userId,
+                    selectedUserWithdrawalRequest._id
+                );
+            }
+
             const response = await processUserWithdrawalRequest(selectedUserWithdrawalRequest._id, {
                 transactionId: transactionData.transactionId,
                 paymentMethod: transactionData.paymentMethod,
-                paymentDate: transactionData.paymentDate,
+                paymentDate: transactionData.paymentDate || new Date().toISOString(),
                 notes: transactionData.notes || "",
             });
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("User withdrawal payment processed successfully!");
+                toast.showSuccess("User withdrawal approved & payout processed successfully!");
                 setShowTransactionModal(false);
                 setSelectedUserWithdrawalRequest(null);
                 setTransactionModalType(null);
@@ -2375,22 +2383,47 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                                                 {formatDate(request.requestedAt)}
                                                             </p>
                                                         </div>
-                                                        {request.bankDetails && (
-                                                            <>
-                                                                <div>
-                                                                    <p className="text-xs text-gray-500 mb-1">Bank Account</p>
-                                                                    <p className="text-sm font-semibold text-gray-700">
-                                                                        {request.bankDetails.accountNumber?.slice(-4) ? `****${request.bankDetails.accountNumber.slice(-4)}` : "N/A"}
-                                                                    </p>
+                                                        {/* Payout Details (UPI / Bank Account) */}
+                                                        <div className="md:col-span-2 mt-2 p-3 bg-blue-50/80 border border-blue-100 rounded-xl">
+                                                            <p className="text-xs font-extrabold uppercase tracking-wider text-blue-900 mb-1 flex items-center gap-1.5">
+                                                                💳 Payout Target: <span className="text-blue-600 font-bold">{request.payoutType === 'BANK_TRANSFER' ? 'Bank Account' : 'UPI ID'}</span>
+                                                            </p>
+                                                            {request.payoutType === 'BANK_TRANSFER' && request.accountDetails ? (
+                                                                <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                                                                    <p><span className="font-sans text-slate-500 font-medium">A/C Name:</span> <strong>{request.accountDetails.accountHolderName || request.vendorName || 'N/A'}</strong></p>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p><span className="font-sans text-slate-500 font-medium">A/C No:</span> <strong className="text-blue-700">{request.accountDetails.accountNumber}</strong></p>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                navigator.clipboard.writeText(request.accountDetails.accountNumber);
+                                                                                toast.showSuccess("Copied Account Number!");
+                                                                            }}
+                                                                            className="text-[10px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans font-bold px-2 py-0.5 rounded-md cursor-pointer"
+                                                                        >
+                                                                            Copy A/C
+                                                                        </button>
+                                                                    </div>
+                                                                    <p><span className="font-sans text-slate-500 font-medium">IFSC:</span> <strong>{request.accountDetails.ifscCode}</strong> {request.accountDetails.bankName ? `(${request.accountDetails.bankName})` : ''}</p>
                                                                 </div>
-                                                                <div>
-                                                                    <p className="text-xs text-gray-500 mb-1">IFSC Code</p>
-                                                                    <p className="text-sm font-semibold text-gray-700">
-                                                                        {request.bankDetails.ifscCode || "N/A"}
+                                                            ) : (
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <p className="text-xs font-extrabold font-mono text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                                                                        ⚡ {request.upiId || (request.vendorPhone ? `${request.vendorPhone}@upi` : 'N/A')}
                                                                     </p>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            navigator.clipboard.writeText(request.upiId || (request.vendorPhone ? `${request.vendorPhone}@upi` : ''));
+                                                                            toast.showSuccess("Copied UPI ID!");
+                                                                        }}
+                                                                        className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1 rounded-lg cursor-pointer shadow-2xs"
+                                                                    >
+                                                                        Copy UPI
+                                                                    </button>
                                                                 </div>
-                                                            </>
-                                                        )}
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col gap-2">
@@ -2399,11 +2432,13 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                                             <button
                                                                 onClick={() => {
                                                                     setSelectedWithdrawalRequest(request);
-                                                                    setShowVendorApproveModal(true);
+                                                                    setTransactionModalType("vendor");
+                                                                    setShowTransactionModal(true);
                                                                 }}
-                                                                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold text-sm whitespace-nowrap shadow-md"
+                                                                className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-extrabold text-sm whitespace-nowrap shadow-md cursor-pointer flex items-center justify-center gap-1.5"
                                                             >
-                                                                Approve
+                                                                <IoCheckmarkCircleOutline className="text-lg" />
+                                                                Approve & Pay
                                                             </button>
                                                             <button
                                                                 onClick={() => {
@@ -2411,8 +2446,9 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                                                     setVendorRejectionReason("");
                                                                     setShowVendorRejectModal(true);
                                                                 }}
-                                                                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold text-sm whitespace-nowrap shadow-md"
+                                                                className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-bold text-sm whitespace-nowrap shadow-md cursor-pointer flex items-center justify-center gap-1.5"
                                                             >
+                                                                <IoCloseCircleOutline className="text-lg" />
                                                                 Reject
                                                             </button>
                                                         </>
@@ -2421,8 +2457,9 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                                         <button
                                                             onClick={() => handlePayVendorWithdrawal(request)}
                                                             disabled={processingWithdrawal}
-                                                            className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold text-sm whitespace-nowrap shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            className="px-6 py-3 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors font-extrabold text-sm whitespace-nowrap shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-1.5"
                                                         >
+                                                            <IoCashOutline className="text-lg" />
                                                             {processingWithdrawal ? "Processing..." : "Pay"}
                                                         </button>
                                                     )}
@@ -2867,23 +2904,48 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                                             <p className="text-sm font-semibold text-gray-700">
                                                                 {formatDate(request.requestedAt)}
                                                             </p>
+                                                            {/* Payout Details (UPI / Bank Account) */}
+                                                            <div className="md:col-span-2 mt-2 p-3 bg-blue-50/80 border border-blue-100 rounded-xl">
+                                                                <p className="text-xs font-extrabold uppercase tracking-wider text-blue-900 mb-1 flex items-center gap-1.5">
+                                                                    💳 Payout Target: <span className="text-blue-600 font-bold">{request.payoutType === 'BANK_TRANSFER' ? 'Bank Account' : 'UPI ID'}</span>
+                                                                </p>
+                                                                {request.payoutType === 'BANK_TRANSFER' && request.accountDetails ? (
+                                                                    <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                                                                        <p><span className="font-sans text-slate-500 font-medium">A/C Name:</span> <strong>{request.accountDetails.accountHolderName || request.userName || 'N/A'}</strong></p>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <p><span className="font-sans text-slate-500 font-medium">A/C No:</span> <strong className="text-blue-700">{request.accountDetails.accountNumber}</strong></p>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    navigator.clipboard.writeText(request.accountDetails.accountNumber);
+                                                                                    toast.showSuccess("Copied Account Number!");
+                                                                                }}
+                                                                                className="text-[10px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans font-bold px-2 py-0.5 rounded-md cursor-pointer"
+                                                                            >
+                                                                                Copy A/C
+                                                                            </button>
+                                                                        </div>
+                                                                        <p><span className="font-sans text-slate-500 font-medium">IFSC:</span> <strong>{request.accountDetails.ifscCode}</strong> {request.accountDetails.bankName ? `(${request.accountDetails.bankName})` : ''}</p>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        <p className="text-xs font-extrabold font-mono text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                                                                            ⚡ {request.upiId || (request.userPhone ? `${request.userPhone}@upi` : 'N/A')}
+                                                                        </p>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                navigator.clipboard.writeText(request.upiId || (request.userPhone ? `${request.userPhone}@upi` : ''));
+                                                                                toast.showSuccess("Copied UPI ID!");
+                                                                            }}
+                                                                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1 rounded-lg cursor-pointer shadow-2xs"
+                                                                        >
+                                                                            Copy UPI
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        {request.bankDetails && (
-                                                            <>
-                                                                <div>
-                                                                    <p className="text-xs text-gray-500 mb-1">Bank Account</p>
-                                                                    <p className="text-sm font-semibold text-gray-700">
-                                                                        {request.bankDetails.accountNumber?.slice(-4) ? `****${request.bankDetails.accountNumber.slice(-4)}` : "N/A"}
-                                                                    </p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-xs text-gray-500 mb-1">IFSC Code</p>
-                                                                    <p className="text-sm font-semibold text-gray-700">
-                                                                        {request.bankDetails.ifscCode || "N/A"}
-                                                                    </p>
-                                                                </div>
-                                                            </>
-                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col gap-2">
@@ -2892,11 +2954,13 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                                             <button
                                                                 onClick={() => {
                                                                     setSelectedUserWithdrawalRequest(request);
-                                                                    setShowUserApproveModal(true);
+                                                                    setTransactionModalType("user");
+                                                                    setShowTransactionModal(true);
                                                                 }}
-                                                                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold text-sm whitespace-nowrap shadow-md"
+                                                                className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-extrabold text-sm whitespace-nowrap shadow-md cursor-pointer flex items-center justify-center gap-1.5"
                                                             >
-                                                                Approve
+                                                                <IoCheckmarkCircleOutline className="text-lg" />
+                                                                Approve & Pay
                                                             </button>
                                                             <button
                                                                 onClick={() => {
@@ -2904,8 +2968,9 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                                                     setUserRejectionReason("");
                                                                     setShowUserRejectModal(true);
                                                                 }}
-                                                                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold text-sm whitespace-nowrap shadow-md"
+                                                                className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-bold text-sm whitespace-nowrap shadow-md cursor-pointer flex items-center justify-center gap-1.5"
                                                             >
+                                                                <IoCloseCircleOutline className="text-lg" />
                                                                 Reject
                                                             </button>
                                                         </>
@@ -2917,9 +2982,10 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                                                 handleProcessUserWithdrawal();
                                                             }}
                                                             disabled={processingWithdrawal}
-                                                            className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold text-sm whitespace-nowrap shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            className="px-6 py-3 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors font-extrabold text-sm whitespace-nowrap shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-1.5"
                                                         >
-                                                            {processingWithdrawal ? "Processing..." : "Pay"}
+                                                            <IoCashOutline className="text-lg" />
+                                                            Pay
                                                         </button>
                                                     )}
                                                     {request.status === "PROCESSED" && (

@@ -362,11 +362,11 @@ export default function AdminWithdrawals() {
                                                 <div className="flex gap-2">
                                                     {request.status === "PENDING" && (
                                                         <>
-                                                            <button
-                                                                onClick={() => handleApprove(request)}
-                                                                className="px-3 py-1 bg-blue-500 text-white rounded text-xs font-medium hover:bg-blue-600"
+                                                             <button
+                                                                onClick={() => handleProcess(request)}
+                                                                className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-2xs transition-colors cursor-pointer"
                                                             >
-                                                                Approve
+                                                                Approve & Pay
                                                             </button>
                                                             <button
                                                                 onClick={() => handleReject(request)}
