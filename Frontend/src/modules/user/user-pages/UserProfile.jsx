@@ -9,11 +9,14 @@ import {
     IoChevronForwardOutline,
     IoPencilOutline,
     IoCheckmarkCircleOutline,
-    IoLeafOutline,
     IoCameraOutline,
-    IoAlertCircleOutline,
-    IoStarOutline,
     IoCalendarOutline,
+    IoNewspaperOutline,
+    IoHelpCircleOutline,
+    IoInformationCircleOutline,
+    IoCloseOutline,
+    IoShieldCheckmarkOutline,
+    IoMailOutline,
 } from "react-icons/io5";
 import { getUserProfile, updateUserProfile, uploadUserProfilePicture } from "../../../services/authApi";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -28,7 +31,10 @@ export default function UserProfile() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [showAboutModal, setShowAboutModal] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const toast = useToast();
+
     const [profileData, setProfileData] = useState({
         name: "",
         email: "",
@@ -44,6 +50,7 @@ export default function UserProfile() {
     });
 
     useEffect(() => {
+        window.scrollTo(0, 0);
         loadProfile();
     }, []);
 
@@ -76,8 +83,6 @@ export default function UserProfile() {
         }
     };
 
-    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
     const handleLogoutClick = () => {
         setShowLogoutConfirm(true);
     };
@@ -107,7 +112,6 @@ export default function UserProfile() {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Profile updated successfully!");
                 setIsEditing(false);
-                // Reload profile to get updated data
                 await loadProfile();
             } else {
                 toast.dismissToast(loadingToast);
@@ -146,54 +150,47 @@ export default function UserProfile() {
         }
     };
 
-    const handleWallet = () => {
-        navigate("/user/wallet");
-    };
-
-    const handleDisputes = () => {
-        navigate("/user/disputes");
-    };
-
     if (loading) {
         return <LoadingSpinner message="Loading profile..." />;
     }
 
+    const formattedAddress = profileData.address?.street
+        ? `${profileData.address.street}, ${profileData.address.city || ""}, ${profileData.address.state || ""} ${profileData.address.pincode || ""}`.trim().replace(/^,\s*|,\s*$/g, "")
+        : "Not provided";
+
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-            <div className="px-4 py-4">
-                {/* Profile Header Card with Light Blue Gradient */}
-                <section
-                    className="relative my-4 overflow-hidden rounded-xl p-8 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6"
-                    style={{
-                        background: "linear-gradient(to bottom, #E3F2FD 0%, #BBDEFB 50%, #90CAF9 100%)",
-                    }}
-                >
-                    <div className="absolute -top-1/4 -right-1/4 z-0 h-48 w-48 rounded-full bg-white/10"></div>
-                    <div className="absolute -bottom-1/4 -left-1/4 z-0 h-40 w-40 rounded-full bg-white/5"></div>
+            <div className="max-w-2xl mx-auto space-y-5 px-1 py-3">
 
-                    {/* Profile Picture, Name and Email */}
-                    <div className="relative z-10 flex flex-col items-center gap-5 pt-4">
-                        {/* Profile Image */}
-                        <div className="relative">
-                            <label htmlFor="profileImage" className="cursor-pointer">
+                {/* Profile Header Banner — Premium Glassmorphic Gradient */}
+                <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0A84FF] via-blue-600 to-indigo-700 p-6 md:p-8 shadow-xl shadow-blue-500/10 text-white">
+                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-36 h-36 bg-teal-400/20 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <div className="relative z-10 flex flex-col items-center text-center">
+                        {/* Profile Picture Container */}
+                        <div className="relative mb-3">
+                            <label htmlFor="profileImage" className="cursor-pointer group block">
                                 <div className="relative">
-                                <div
-                                        className="h-28 w-28 rounded-full bg-gradient-to-br from-[#BBDEFB] to-[#90CAF9] bg-cover bg-center bg-no-repeat shadow-xl border-4 border-white flex items-center justify-center overflow-hidden"
-                                    style={{
-                                        backgroundImage: profileData.profilePicture
-                                            ? `url('${profileData.profilePicture}')`
-                                            : "none",
-                                    }}
-                                >
-                                    {!profileData.profilePicture && (
-                                            <span className="text-5xl">👤</span>
+                                    <div
+                                        className="h-28 w-28 rounded-full bg-gradient-to-br from-blue-100 to-teal-100 bg-cover bg-center bg-no-repeat shadow-2xl border-4 border-white/90 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105"
+                                        style={{
+                                            backgroundImage: profileData.profilePicture
+                                                ? `url('${profileData.profilePicture}')`
+                                                : "none",
+                                        }}
+                                    >
+                                        {!profileData.profilePicture && (
+                                            <span className="text-5xl select-none">👤</span>
                                         )}
-                                        </div>
-                                    {/* Camera Icon Overlay - Outside circle to overlap */}
-                                    <div className="absolute -bottom-1 -right-1 h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg border-4 border-white hover:bg-blue-700 transition-colors z-10">
-                                        <IoCameraOutline className="text-white text-lg" />
+                                    </div>
+
+                                    {/* Camera Button Badge */}
+                                    <div className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full bg-[#0A84FF] text-white flex items-center justify-center shadow-lg border-2 border-white hover:bg-blue-700 transition-colors z-10">
+                                        <IoCameraOutline className="text-base" />
                                     </div>
                                 </div>
+
                                 <input
                                     type="file"
                                     id="profileImage"
@@ -206,40 +203,46 @@ export default function UserProfile() {
                         </div>
 
                         {/* Name */}
-                        <p className="text-2xl font-bold text-gray-800">
-                            {profileData.name || "User"}
+                        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+                            <span>{profileData.name || "User"}</span>
+                            <IoShieldCheckmarkOutline className="text-teal-300 text-xl shrink-0" title="Verified Account" />
+                        </h1>
+
+                        {/* Phone */}
+                        <p className="text-xs sm:text-sm text-blue-100 font-medium mt-1 flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full border border-white/15 backdrop-blur-md">
+                            <IoCallOutline className="text-blue-200 text-sm" />
+                            <span>{profileData.phone}</span>
                         </p>
-                        
-                        {/* Email */}
-                        <p className="text-sm text-gray-700 mt-1">
-                            {profileData.email}
-                        </p>
-                                            </div>
+                    </div>
                 </section>
 
-                {/* User Information Card */}
-                <div className="w-full mt-6 rounded-xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-bold text-[#3A3A3A]">
-                            Personal Information
-                        </h3>
-                                {/* Edit Profile Button - Top Right */}
-                                {!isEditing && (
-                                    <button
-                                        onClick={handleEdit}
-                                className="flex h-8 items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#0A84FF] to-[#00C2A8] text-white text-xs font-semibold px-3 shadow-md hover:shadow-lg transition-all hover:scale-[1.02] shrink-0"
-                                    >
+                {/* Personal Information Card */}
+                <div className="w-full rounded-3xl bg-white p-6 shadow-xs border border-gray-100/90 overflow-hidden">
+                    <div className="flex items-center justify-between mb-5">
+                        <div>
+                            <h2 className="text-lg font-black text-gray-900 tracking-tight">
+                                Personal Information
+                            </h2>
+                            <p className="text-xs text-gray-500 font-medium mt-0.5">Manage your contact and primary survey location.</p>
+                        </div>
+
+                        {!isEditing && (
+                            <button
+                                onClick={handleEdit}
+                                className="flex items-center gap-1.5 rounded-xl bg-blue-50 text-[#0A84FF] hover:bg-blue-100 text-xs font-bold px-3.5 py-2 border border-blue-100 transition-all active:scale-95 shrink-0"
+                            >
                                 <IoPencilOutline className="text-sm" />
                                 <span>Edit Profile</span>
-                                    </button>
-                                )}
+                            </button>
+                        )}
                     </div>
-                    {/* User Information Section */}
-                    <div className="flex flex-col space-y-6 w-full">
+
+                    <div className="flex flex-col space-y-3.5 w-full">
                         {/* Name */}
                         <InfoRow
                             icon={IoPersonOutline}
-                            label="Name"
+                            iconBg="bg-blue-50 text-blue-600 border border-blue-100"
+                            label="Full Name"
                             value={profileData.name}
                             isEditing={isEditing}
                             onChange={(e) =>
@@ -254,6 +257,7 @@ export default function UserProfile() {
                         {/* Phone */}
                         <InfoRow
                             icon={IoCallOutline}
+                            iconBg="bg-emerald-50 text-emerald-600 border border-emerald-100"
                             label="Phone Number"
                             value={profileData.phone}
                             isEditing={isEditing}
@@ -266,146 +270,150 @@ export default function UserProfile() {
                             disabled={saving}
                         />
 
-                        {/* Address */}
+                        {/* Primary Address */}
                         {isEditing ? (
-                            <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-[#F3F7FA] transition-colors">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
-                                    <IoHomeOutline className="text-xl text-white" />
+                            <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3">
+                                <div className="flex items-center gap-2 text-xs font-extrabold text-gray-700 uppercase tracking-wide">
+                                    <IoHomeOutline className="text-blue-600 text-base" />
+                                    <span>Primary Address Details</span>
                                 </div>
-                                <div className="flex flex-col flex-1 min-w-0 gap-2 w-full overflow-hidden">
-                                    <span className="text-xs text-[#6B7280] mb-2 font-semibold uppercase tracking-wide">
-                                        Primary Address
-                                    </span>
+                                <input
+                                    type="text"
+                                    placeholder="Street Address / House No."
+                                    value={profileData.address.street || ""}
+                                    onChange={(e) =>
+                                        setProfileData({
+                                            ...profileData,
+                                            address: {
+                                                ...profileData.address,
+                                                street: e.target.value,
+                                            },
+                                        })
+                                    }
+                                    className="w-full text-sm font-semibold text-gray-800 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                                    disabled={saving}
+                                />
+                                <div className="grid grid-cols-2 gap-2.5">
                                     <input
                                         type="text"
-                                        placeholder="Street"
-                                        value={profileData.address.street || ""}
+                                        placeholder="City"
+                                        value={profileData.address.city || ""}
                                         onChange={(e) =>
                                             setProfileData({
                                                 ...profileData,
                                                 address: {
                                                     ...profileData.address,
-                                                    street: e.target.value,
+                                                    city: e.target.value,
                                                 },
                                             })
                                         }
-                                        className="text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
+                                        className="text-sm font-semibold text-gray-800 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                                         disabled={saving}
                                     />
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="City"
-                                            value={profileData.address.city || ""}
-                                            onChange={(e) =>
-                                                setProfileData({
-                                                    ...profileData,
-                                                    address: {
-                                                        ...profileData.address,
-                                                        city: e.target.value,
-                                                    },
-                                                })
-                                            }
-                                            className="text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
-                                            disabled={saving}
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="State"
-                                            value={profileData.address.state || ""}
-                                            onChange={(e) =>
-                                                setProfileData({
-                                                    ...profileData,
-                                                    address: {
-                                                        ...profileData.address,
-                                                        state: e.target.value,
-                                                    },
-                                                })
-                                            }
-                                            className="text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
-                                            disabled={saving}
-                                        />
-                                    </div>
                                     <input
                                         type="text"
-                                        placeholder="Pincode"
-                                        value={profileData.address.pincode || ""}
+                                        placeholder="State"
+                                        value={profileData.address.state || ""}
                                         onChange={(e) =>
                                             setProfileData({
                                                 ...profileData,
                                                 address: {
                                                     ...profileData.address,
-                                                    pincode: e.target.value,
+                                                    state: e.target.value,
                                                 },
                                             })
                                         }
-                                        className="text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] transition-all"
+                                        className="text-sm font-semibold text-gray-800 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                                         disabled={saving}
                                     />
                                 </div>
+                                <input
+                                    type="text"
+                                    placeholder="Pincode"
+                                    value={profileData.address.pincode || ""}
+                                    onChange={(e) =>
+                                        setProfileData({
+                                            ...profileData,
+                                            address: {
+                                                ...profileData.address,
+                                                pincode: e.target.value,
+                                            },
+                                        })
+                                    }
+                                    className="w-full text-sm font-semibold text-gray-800 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                                    disabled={saving}
+                                />
                             </div>
                         ) : (
                             <InfoRow
                                 icon={IoHomeOutline}
+                                iconBg="bg-purple-50 text-purple-600 border border-purple-100"
                                 label="Primary Address"
-                                value={
-                                    profileData.address?.street
-                                        ? `${profileData.address.street}, ${profileData.address.city}, ${profileData.address.state} ${profileData.address.pincode}`
-                                        : "Not provided"
-                                }
+                                value={formattedAddress}
                                 isEditing={false}
                             />
                         )}
                     </div>
-                </div>
 
-                    {/* Save/Cancel Buttons - When Editing */}
+                    {/* Save/Cancel Buttons when Editing */}
                     {isEditing && (
                         <div className="mt-5 flex gap-3">
                             <button
                                 onClick={handleSave}
                                 disabled={saving}
-                                className="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-[#0A84FF] text-white font-bold shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 bg-[#0A84FF] text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-blue-600 active:scale-95 transition-all disabled:opacity-50"
                             >
                                 {saving ? "Saving..." : "Save Changes"}
                             </button>
                             <button
                                 onClick={() => {
                                     setIsEditing(false);
-                                    loadProfile(); // Reload to reset changes
+                                    loadProfile();
                                 }}
                                 disabled={saving}
-                                className="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-gray-500 text-white font-bold shadow-[0px_4px_10px_rgba(0,0,0,0.05)] transition-transform hover:scale-[1.02] disabled:opacity-50"
+                                className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold text-sm hover:bg-gray-200 transition-all disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                         </div>
                     )}
+                </div>
 
-                    {/* Action List */}
-                    <div className="w-full mt-4 space-y-2">
+                {/* Quick Menu Options */}
+                <div className="w-full space-y-2.5">
                     <ActionRow
                         icon={IoCalendarOutline}
+                        iconBg="bg-teal-500 text-white"
                         label="My Bookings"
                         onClick={() => navigate("/user/my-bookings")}
                     />
                     <ActionRow
                         icon={IoWalletOutline}
+                        iconBg="bg-teal-500 text-white"
                         label="Wallet"
-                        onClick={handleWallet}
+                        onClick={() => navigate("/user/wallet")}
                     />
                     <ActionRow
-                        icon={IoStarOutline}
-                        label="My Ratings & Reviews"
-                        onClick={() => navigate("/user/ratings")}
+                        icon={IoNewspaperOutline}
+                        iconBg="bg-teal-500 text-white"
+                        label="Survey Reports"
+                        onClick={() => navigate("/user/survey-reports")}
                     />
                     <ActionRow
-                        icon={IoAlertCircleOutline}
-                        label="Dispute & Help"
-                        onClick={handleDisputes}
+                        icon={IoHelpCircleOutline}
+                        iconBg="bg-teal-500 text-white"
+                        label="Help & Support"
+                        onClick={() => navigate("/user/help-support")}
+                    />
+                    <ActionRow
+                        icon={IoInformationCircleOutline}
+                        iconBg="bg-teal-500 text-white"
+                        label="About Jaladhaara"
+                        onClick={() => setShowAboutModal(true)}
                     />
                     <ActionRow
                         icon={IoLogOutOutline}
+                        iconBg="bg-red-500 text-white"
                         label="Logout"
                         isLogout
                         onClick={handleLogoutClick}
@@ -424,21 +432,26 @@ export default function UserProfile() {
                 cancelText="Cancel"
                 confirmColor="danger"
             />
+
+            {/* About Jaladhaara Modal */}
+            <AboutJaladhaaraModal
+                isOpen={showAboutModal}
+                onClose={() => setShowAboutModal(false)}
+            />
         </div>
     );
 }
 
 /* -------------------- REUSABLE COMPONENTS -------------------- */
 
-function InfoRow({ icon, label, value, isEditing, onChange, disabled }) {
-    const IconComponent = icon;
+function InfoRow({ icon: IconComponent, iconBg, label, value, isEditing, onChange, disabled }) {
     return (
-        <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-[#F3F7FA] transition-colors">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 shrink-0 border-2 border-white shadow-sm">
-                <IconComponent className="text-xl text-white" />
+        <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-slate-50/70 border border-slate-100/90 transition-colors">
+            <div className={`flex h-11 w-11 items-center justify-center rounded-xl shrink-0 shadow-2xs ${iconBg}`}>
+                <IconComponent className="text-xl" />
             </div>
-            <div className="flex flex-col flex-1 min-w-0 w-full overflow-hidden">
-                <span className="text-xs text-[#6B7280] mb-2 font-semibold uppercase tracking-wide truncate">
+            <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                     {label}
                 </span>
                 {isEditing ? (
@@ -447,10 +460,10 @@ function InfoRow({ icon, label, value, isEditing, onChange, disabled }) {
                         value={value || ""}
                         onChange={onChange}
                         disabled={disabled}
-                        className="w-full text-base font-semibold text-[#3A3A3A] bg-[#F3F7FA] border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:border-[#0A84FF] focus:shadow-[0_0_0_3px_rgba(10,132,255,0.25)] disabled:opacity-50 transition-all"
+                        className="mt-0.5 w-full text-sm font-bold text-gray-800 bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                 ) : (
-                    <span className="text-base font-semibold text-[#3A3A3A] break-words">
+                    <span className="text-sm font-extrabold text-gray-800 truncate mt-0.5">
                         {value || "Not provided"}
                     </span>
                 )}
@@ -459,34 +472,106 @@ function InfoRow({ icon, label, value, isEditing, onChange, disabled }) {
     );
 }
 
-function ActionRow({ icon, label, isLogout, onClick }) {
-    const IconComponent = icon;
+function ActionRow({ icon: IconComponent, iconBg, label, isLogout, onClick }) {
     return (
         <div
             onClick={onClick}
-            className="flex min-h-14 w-full cursor-pointer items-center justify-between gap-4 rounded-xl bg-white p-4 shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
+            className="flex min-h-[58px] w-full cursor-pointer items-center justify-between gap-4 rounded-2xl bg-white p-4 shadow-xs border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all active:scale-[0.98] group"
         >
-            <div className="flex items-center gap-4 flex-1 min-w-0">
+            <div className="flex items-center gap-3.5 flex-1 min-w-0">
                 <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full flex-shrink-0 ${
-                        isLogout ? "bg-red-500" : "bg-teal-500"
+                    className={`flex h-10 w-10 items-center justify-center rounded-full flex-shrink-0 transition-transform group-hover:scale-105 shadow-2xs ${
+                        iconBg || (isLogout ? "bg-red-500 text-white" : "bg-teal-500 text-white")
                     }`}
                 >
-                    <IconComponent
-                        className="text-xl text-white"
-                    />
+                    <IconComponent className="text-xl text-white" />
                 </div>
                 <p
-                    className={`flex-1 text-base font-medium ${
-                        isLogout ? "text-red-600" : "text-gray-800"
+                    className={`flex-1 text-base font-semibold ${
+                        isLogout ? "text-red-600 font-bold" : "text-gray-800"
                     }`}
                 >
                     {label}
                 </p>
             </div>
-            <IoChevronForwardOutline className={`text-xl flex-shrink-0 ${
+            <IoChevronForwardOutline className={`text-xl flex-shrink-0 transition-transform group-hover:translate-x-0.5 ${
                 isLogout ? "text-red-400" : "text-gray-400"
             }`} />
+        </div>
+    );
+}
+
+function AboutJaladhaaraModal({ isOpen, onClose }) {
+    if (!isOpen) return null;
+
+    return (
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity duration-200"
+            onClick={onClose}
+        >
+            <div 
+                className="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Top Banner Gradient Background */}
+                <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-br from-[#0A84FF] via-teal-500 to-indigo-600">
+                    <div className="absolute top-0 right-0 -mr-6 -mt-6 w-24 h-24 bg-white/15 rounded-full blur-xl pointer-events-none"></div>
+                </div>
+
+                {/* Close Button */}
+                <button 
+                    onClick={onClose}
+                    className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition-colors"
+                >
+                    <IoCloseOutline className="text-xl" />
+                </button>
+
+                {/* Main Content */}
+                <div className="relative z-10 flex flex-col items-center text-center pt-8">
+                    <div className="w-20 h-20 rounded-2xl bg-white p-3 shadow-xl border-2 border-white flex items-center justify-center mb-3">
+                        <div className="w-full h-full rounded-xl bg-gradient-to-br from-[#0A84FF] to-teal-400 flex items-center justify-center text-white text-3xl shadow-xs">
+                            💧
+                        </div>
+                    </div>
+
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">Jaladhaara</h2>
+                    <p className="text-xs font-bold text-teal-700 bg-teal-50 px-3 py-1 rounded-full border border-teal-200/80 mt-1">
+                        India's 1st Groundwater Survey Platform
+                    </p>
+
+                    <p className="text-xs text-gray-600 leading-relaxed font-medium mt-4 px-2">
+                        Jaladhaara connects landowners, farmers, and commercial developers with verified hydrogeologists using advanced geoscientific instruments for precise groundwater location before drilling.
+                    </p>
+
+                    {/* Features list */}
+                    <div className="w-full mt-5 space-y-2.5 text-left bg-slate-50 rounded-2xl p-4 border border-slate-100 text-xs">
+                        <div className="flex items-center gap-2.5 text-gray-700 font-semibold">
+                            <span className="text-base">🔬</span>
+                            <span>Advanced ESI & VLF Geophysics</span>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-gray-700 font-semibold">
+                            <span className="text-base">👨‍🔧</span>
+                            <span>Certified Hydrogeology Experts</span>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-gray-700 font-semibold">
+                            <span className="text-base">📊</span>
+                            <span>Digital Soil & Depth Reports</span>
+                        </div>
+                    </div>
+
+                    <div className="mt-5 pt-3 border-t border-gray-100 flex items-center justify-between w-full text-[11px] text-gray-400 font-medium">
+                        <span>Version 1.2.0</span>
+                        <span>© {new Date().getFullYear()} Jaladhaara</span>
+                    </div>
+
+                    <button
+                        onClick={onClose}
+                        className="w-full mt-4 bg-gradient-to-r from-[#0A84FF] to-[#00C2A8] text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg active:scale-95 transition-all"
+                    >
+                        Got it
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }

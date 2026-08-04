@@ -36,7 +36,7 @@ const PurposeSelection = ({ onSelect }) => {
         { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "bg-green-100 text-green-600" },
         { id: "Domestic/Household", label: "Domestic/Household", icon: IoHomeOutline, color: "bg-blue-100 text-blue-600" },
         { id: "Industrial/Commercial", label: "Industrial/Commercial", icon: IoBusinessOutline, color: "bg-purple-100 text-purple-600" },
-        { id: "Open plots", label: "Open plots", icon: IoConstructOutline, color: "bg-orange-100 text-orange-600" }
+        { id: "Industrial", label: "Industrial", icon: IoConstructOutline, color: "bg-orange-100 text-orange-600" }
     ];
 
     return (

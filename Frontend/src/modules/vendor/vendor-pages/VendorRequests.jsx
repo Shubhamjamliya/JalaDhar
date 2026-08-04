@@ -39,12 +39,14 @@ export default function VendorRequests() {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
     const toast = useToast();
-    const [showAcceptConfirm, setShowAcceptConfirm] = useState(false);
+    const [showAcceptScheduler, setShowAcceptScheduler] = useState(false);
     const [showRejectInput, setShowRejectInput] = useState(false);
     const [showRejectConfirm, setShowRejectConfirm] = useState(false);
     const [selectedBookingId, setSelectedBookingId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState("");
     const rejectionReasonRef = useRef("");
+    const [acceptScheduleDate, setAcceptScheduleDate] = useState("");
+    const [acceptScheduleTime, setAcceptScheduleTime] = useState("");
     const loadAllRequestsRef = useRef(null);
 
     const loadAllRequests = async () => {
@@ -158,31 +160,37 @@ export default function VendorRequests() {
 
     const handleAccept = (bookingId) => {
         setSelectedBookingId(bookingId);
-        setShowAcceptConfirm(true);
+        // Pre-fill date with today
+        setAcceptScheduleDate(new Date().toISOString().split("T")[0]);
+        setAcceptScheduleTime("");
+        setShowAcceptScheduler(true);
     };
 
     const handleAcceptConfirm = async () => {
         if (!selectedBookingId) return;
+        if (!acceptScheduleDate || !acceptScheduleTime) {
+            toast.showError("Please select both a date and time for the visit.");
+            return;
+        }
         const bookingId = selectedBookingId;
-        setShowAcceptConfirm(false);
+        setShowAcceptScheduler(false);
 
         const loadingToast = toast.showLoading("Accepting booking...");
         try {
             setActionLoading(bookingId);
 
-            const response = await acceptBooking(bookingId);
+            const response = await acceptBooking(bookingId, {
+                scheduledDate: acceptScheduleDate,
+                scheduledTime: acceptScheduleTime,
+            });
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Booking accepted successfully!");
-                // Immediately update state - remove from new, will be added to confirmed on reload
+                toast.showSuccess("Booking accepted! Visit scheduled for " + acceptScheduleTime + " on " + new Date(acceptScheduleDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }));
                 setNewRequests(
                     newRequests.filter((req) => req._id !== bookingId)
                 );
-                // Reload all data immediately to update all tabs
                 await loadAllRequests();
-                // If on New tab and no more new requests, optionally switch to Confirmed tab
-                // But let user stay on current tab - they can switch manually
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to accept booking");
@@ -196,6 +204,8 @@ export default function VendorRequests() {
         } finally {
             setActionLoading(null);
             setSelectedBookingId(null);
+            setAcceptScheduleDate("");
+            setAcceptScheduleTime("");
         }
     };
 
@@ -268,12 +278,14 @@ export default function VendorRequests() {
             month: "short",
         });
 
+        const timeDisplay = (!timeString || timeString === "TBD") ? "Time TBD" : timeString;
+
         if (isToday) {
-            return `Today, ${timeString || "N/A"}`;
+            return `Today, ${timeDisplay}`;
         } else if (isTomorrow) {
-            return `Tomorrow, ${timeString || "N/A"}`;
+            return `Tomorrow, ${timeDisplay}`;
         } else {
-            return `${formattedDate}, ${timeString || "N/A"}`;
+            return `${formattedDate}, ${timeDisplay}`;
         }
     };
 
@@ -574,20 +586,86 @@ export default function VendorRequests() {
                 </div>
             </PageContainer>
 
-            {/* Accept Booking Confirmation Modal */}
-            <ConfirmModal
-                isOpen={showAcceptConfirm}
-                onClose={() => {
-                    setShowAcceptConfirm(false);
-                    setSelectedBookingId(null);
-                }}
-                onConfirm={handleAcceptConfirm}
-                title="Accept Booking"
-                message="Are you sure you want to accept this booking?"
-                confirmText="Yes, Accept"
-                cancelText="Cancel"
-                confirmColor="primary"
-            />
+            {/* Accept Booking — Schedule Picker Modal */}
+            {showAcceptScheduler && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+                        {/* Header */}
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-100 rounded-xl">
+                                <IoCalendarOutline className="text-green-600 text-xl" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-gray-900">Set Your Visit Schedule</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">Choose the date &amp; time you will conduct the survey</p>
+                            </div>
+                        </div>
+
+                        {/* Date Picker */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                                <IoCalendarOutline className="text-gray-400" /> Visit Date
+                            </label>
+                            <input
+                                type="date"
+                                value={acceptScheduleDate}
+                                min={new Date().toISOString().split("T")[0]}
+                                onChange={(e) => setAcceptScheduleDate(e.target.value)}
+                                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-800 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all"
+                            />
+                        </div>
+
+                        {/* Time Picker */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                                <IoTimeOutline className="text-gray-400" /> Visit Time
+                            </label>
+                            <select
+                                value={acceptScheduleTime}
+                                onChange={(e) => setAcceptScheduleTime(e.target.value)}
+                                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-800 bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all"
+                            >
+                                <option value="">Select a time slot</option>
+                                {Array.from({ length: 24 }, (_, i) => {
+                                    const ampm = i >= 12 ? "PM" : "AM";
+                                    const displayHour = i % 12 || 12;
+                                    const timeStr = `${String(displayHour).padStart(2, "0")}:00 ${ampm}`;
+                                    return <option key={i} value={timeStr}>{timeStr}</option>;
+                                })}
+                            </select>
+                        </div>
+
+                        {/* Preview */}
+                        {acceptScheduleDate && acceptScheduleTime && (
+                            <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-2.5 text-xs font-semibold text-green-800">
+                                ✓ Visit confirmed: {acceptScheduleTime} on {new Date(acceptScheduleDate).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                            </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex gap-3 pt-1">
+                            <button
+                                onClick={() => {
+                                    setShowAcceptScheduler(false);
+                                    setSelectedBookingId(null);
+                                    setAcceptScheduleDate("");
+                                    setAcceptScheduleTime("");
+                                }}
+                                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAcceptConfirm}
+                                disabled={!acceptScheduleDate || !acceptScheduleTime}
+                                className="flex-1 py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Confirm &amp; Accept
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Rejection Reason Input Modal */}
             <InputModal

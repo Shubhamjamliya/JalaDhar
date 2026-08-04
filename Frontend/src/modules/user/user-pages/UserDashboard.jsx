@@ -34,6 +34,7 @@ import {
 import { getUserProfile } from "../../../services/authApi";
 import { getUserDashboardStats, getNearbyVendors, cancelBooking, getUserBookings } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import InputModal from "../../shared/components/InputModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -46,6 +47,7 @@ import ExpertProfileCard from "../components/ExpertProfileCard";
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 export default function UserDashboard() {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuth();
@@ -553,13 +555,13 @@ export default function UserDashboard() {
                 <div className="relative z-10 flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[11px] sm:text-xs font-extrabold text-white mb-2 border border-white/25 shadow-2xs">
-                            <span>🇮🇳 India's 1st Groundwater Survey Booking Platform</span>
+                            <span>🇮🇳 {t('indiaFirstPlatform', "India's 1st Groundwater Survey Booking Platform")}</span>
                         </div>
                         <h1 className="text-lg sm:text-2xl font-black tracking-tight text-white leading-tight">
-                            Welcome back, {userName} 👋
+                            {t('welcomeBack', 'Welcome back')}, {userName} 👋
                         </h1>
                         <p className="text-xs sm:text-sm text-blue-100 font-medium mt-1 leading-normal">
-                            Find verified groundwater survey experts and book your survey.
+                            {t('findExpertsDesc', 'Find verified groundwater survey experts and book your survey.')}
                         </p>
                     </div>
                     {/* White Circular Profile Picture */}
@@ -577,18 +579,18 @@ export default function UserDashboard() {
             {/* Survey Categories Header */}
             <div className="px-1 pt-4 pb-2 flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">Survey Purpose</h2>
-                    <p className="text-xs text-gray-500 font-semibold mt-0.5">Select your site category to begin survey booking.</p>
+                    <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">{t('surveyPurpose', 'Survey Purpose')}</h2>
+                    <p className="text-xs text-gray-500 font-semibold mt-0.5">{t('selectSiteCategory', 'Select your site category to begin survey booking.')}</p>
                 </div>
             </div>
 
             {/* Category Cards — 4 Grid Items matching Survey Flow */}
             <div className="mt-2 mb-6 grid grid-cols-2 gap-3.5">
                 {[
-                    { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "from-emerald-50 to-teal-50", iconColor: "text-emerald-600 bg-emerald-100/80", border: "border-emerald-200/60" },
-                    { id: "Domestic/Household", label: "Household", icon: HiOutlineHome, color: "from-blue-50 to-indigo-50", iconColor: "text-[#0A84FF] bg-blue-100/80", border: "border-blue-200/60" },
-                    { id: "Industrial/Commercial", label: "Commercial", icon: HiOutlineBuildingOffice2, color: "from-indigo-50 to-purple-50", iconColor: "text-indigo-600 bg-indigo-100/80", border: "border-indigo-200/60" },
-                    { id: "Open plots", label: "Open Plots", icon: HiOutlineWrenchScrewdriver, color: "from-amber-50 to-orange-50", iconColor: "text-amber-600 bg-amber-100/80", border: "border-amber-200/60" }
+                    { id: "Agriculture", label: t('agriculture', 'Agriculture'), icon: IoLeafOutline, color: "from-emerald-50 to-teal-50", iconColor: "text-emerald-600 bg-emerald-100/80", border: "border-emerald-200/60" },
+                    { id: "Domestic/Household", label: t('household', 'Household'), icon: HiOutlineHome, color: "from-blue-50 to-indigo-50", iconColor: "text-[#0A84FF] bg-blue-100/80", border: "border-blue-200/60" },
+                    { id: "Industrial/Commercial", label: t('commercial', 'Commercial'), icon: HiOutlineBuildingOffice2, color: "from-indigo-50 to-purple-50", iconColor: "text-indigo-600 bg-indigo-100/80", border: "border-indigo-200/60" },
+                    { id: "Industrial", label: t('industrial', 'Industrial'), icon: HiOutlineBriefcase, color: "from-amber-50 to-orange-50", iconColor: "text-amber-600 bg-amber-100/80", border: "border-amber-200/60" }
                 ].map((cat) => (
                     <button
                         key={cat.id}
@@ -605,7 +607,7 @@ export default function UserDashboard() {
 
             {/* Services Overview / Quick Access */}
             <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
-                Quick Access
+                {t('quickAccess', 'Quick Access')}
             </h2>
             <div className="grid grid-cols-5 gap-1 mb-6 px-1">
                 {/* Request Status */}
@@ -618,7 +620,7 @@ export default function UserDashboard() {
                         <IoDocumentTextOutline className="text-xl text-blue-600 relative z-10" />
                     </div>
                     <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
-                        Booking Status
+                        {t('bookingStatus', 'Booking Status')}
                     </span>
                 </div>
 
@@ -633,7 +635,7 @@ export default function UserDashboard() {
                         <IoCheckmarkCircle className="absolute -bottom-0.5 -right-0.5 text-sm text-emerald-600 z-20" />
                     </div>
                     <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
-                        Current Booking
+                        {t('currentBooking', 'Current Booking')}
                     </span>
                 </div>
 
@@ -650,7 +652,7 @@ export default function UserDashboard() {
                         )}
                     </div>
                     <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
-                        Pending Payments
+                        {t('pendingPayments', 'Pending Payments')}
                     </span>
                 </div>
 
@@ -674,7 +676,7 @@ export default function UserDashboard() {
                         )}
                     </div>
                     <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
-                        Survey Reports
+                        {t('surveyReports', 'Survey Reports')}
                     </span>
                 </div>
 
@@ -689,7 +691,7 @@ export default function UserDashboard() {
                         <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-gray-400 border-2 border-white z-20"></div>
                     </div>
                     <span className="text-[10px] font-bold text-gray-700 text-center leading-tight px-0.5">
-                        Update Profile
+                        {t('updateProfile', 'Update Profile')}
                     </span>
                 </div>
             </div>
@@ -846,20 +848,24 @@ export default function UserDashboard() {
                 )}
             </div>
 
-            {/* Scientific Assessment Guarantee Banner */}
-            <div className="mx-1 mb-2 p-5 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-3xl text-white shadow-xl relative overflow-hidden border border-slate-700/50">
+            {/* Geoscientific Instruments Survey Disclaimer Banner */}
+            <div className="mx-1 mb-6 p-5 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-3xl text-white shadow-xl relative overflow-hidden border border-slate-700/50">
                 <div className="absolute top-0 right-0 -mr-6 -mt-6 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
-                <div className="relative z-10 flex items-start gap-3.5">
-                    <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/15 text-2xl shrink-0">
+                <div className="relative z-10 flex items-start gap-4">
+                    <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/15 text-2xl shrink-0 mt-0.5 shadow-xs flex items-center justify-center">
                         🔬
                     </div>
-                    <div>
-                        <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                            <span>100% Scientific Assessment Guarantee</span>
-                            <span className="text-[10px] font-bold bg-blue-500/30 text-blue-300 px-2 py-0.5 rounded-full border border-blue-400/30">Verified</span>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                            <span className="text-[10px] font-bold tracking-wide uppercase bg-blue-500/25 text-blue-300 px-2.5 py-0.5 rounded-full border border-blue-400/30 shrink-0">
+                                Verified
+                            </span>
+                        </div>
+                        <h3 className="font-extrabold text-sm sm:text-base text-white leading-snug tracking-tight">
+                            Professional Groundwater Surveys Using Advanced Geoscientific Instruments
                         </h3>
-                        <p className="text-xs text-slate-300 mt-1 leading-relaxed font-medium">
-                            Our certified hydrogeologists use Electrical Resistivity Imaging (ESI) and VLF geophysics to locate high-yield groundwater points before drilling.
+                        <p className="text-xs text-slate-300 mt-2 leading-relaxed font-medium">
+                            Our verified groundwater experts conduct professional groundwater surveys using advanced geoscientific instruments. Survey findings are based on local geological conditions and geophysical interpretations. Groundwater availability and borewell success cannot be guaranteed.
                         </p>
                     </div>
                 </div>

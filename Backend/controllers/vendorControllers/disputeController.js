@@ -11,13 +11,13 @@ const { uploadToCloudinary } = require('../../services/cloudinaryService');
 const createDispute = async (req, res) => {
   try {
     const vendorId = req.userId;
-    const { subject, description, type, bookingId, attachments } = req.body;
+    const finalSubject = (subject && subject.trim()) || type || 'Dispute';
 
     // Validation
-    if (!subject || !description || !type) {
+    if (!description || !type) {
       return res.status(400).json({
         success: false,
-        message: 'Subject, description, and type are required'
+        message: 'Description and type are required'
       });
     }
 
@@ -66,7 +66,7 @@ const createDispute = async (req, res) => {
       raisedByModel: 'Vendor',
       booking: bookingId || null,
       type,
-      subject: subject.trim(),
+      subject: finalSubject,
       description: description.trim(),
       status: 'PENDING',
       attachments: uploadedAttachments

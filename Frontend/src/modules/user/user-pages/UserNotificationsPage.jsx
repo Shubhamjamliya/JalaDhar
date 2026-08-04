@@ -30,7 +30,7 @@ export default function UserNotificationsPage() {
         clearAllNotifications
     } = useNotifications();
 
-    const [filter, setFilter] = useState("all"); // 'all' | 'unread'
+    const [filter, setFilter] = useState("all"); // 'all' | 'unread' | 'read'
     const [actionLoading, setActionLoading] = useState(false);
 
     const handleMarkAllRead = async () => {
@@ -68,12 +68,14 @@ export default function UserNotificationsPage() {
         }
     };
 
+    const readCount = notifications.filter(n => n.isRead).length;
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+
     const filteredNotifications = notifications.filter(n => {
         if (filter === "unread") return !n.isRead;
+        if (filter === "read") return n.isRead;
         return true;
     });
-
-    const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
         <PageContainer title="Notifications">
@@ -106,10 +108,10 @@ export default function UserNotificationsPage() {
 
                 {/* Filter & Action Toolbar */}
                 <div className="flex items-center justify-between gap-4 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar">
                         <button
                             onClick={() => setFilter("all")}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                                 filter === "all"
                                     ? "bg-[#0A84FF] text-white shadow-sm"
                                     : "text-gray-600 hover:bg-gray-100"
@@ -119,13 +121,23 @@ export default function UserNotificationsPage() {
                         </button>
                         <button
                             onClick={() => setFilter("unread")}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                                 filter === "unread"
                                     ? "bg-[#0A84FF] text-white shadow-sm"
                                     : "text-gray-600 hover:bg-gray-100"
                             }`}
                         >
                             Unread ({unreadCount})
+                        </button>
+                        <button
+                            onClick={() => setFilter("read")}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                                filter === "read"
+                                    ? "bg-[#0A84FF] text-white shadow-sm"
+                                    : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                        >
+                            Read ({readCount})
                         </button>
                     </div>
 
@@ -153,7 +165,11 @@ export default function UserNotificationsPage() {
                         </div>
                         <h3 className="text-lg font-bold text-gray-800 mb-1">No Notifications</h3>
                         <p className="text-gray-500 text-sm max-w-md mx-auto">
-                            {filter === "unread" ? "You have no unread notifications." : "You're all caught up!"}
+                            {filter === "unread"
+                                ? "You have no unread notifications."
+                                : filter === "read"
+                                ? "You have no read notifications."
+                                : "You're all caught up!"}
                         </p>
                     </div>
                 ) : (

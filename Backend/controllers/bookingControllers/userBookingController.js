@@ -111,7 +111,7 @@ const createBooking = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!serviceId || !vendorId || !scheduledDate || !scheduledTime || !address) {
+    if (!serviceId || !vendorId || !scheduledDate || !address) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
@@ -249,7 +249,7 @@ const createBooking = async (req, res) => {
       vendorStatus: BOOKING_STATUS.AWAITING_ADVANCE,
       userStatus: BOOKING_STATUS.AWAITING_ADVANCE,
       scheduledDate: new Date(scheduledDate),
-      scheduledTime,
+      scheduledTime: 'TBD', // Expert sets the actual time upon acceptance
       address: {
         street: address.street,
         city: address.city,

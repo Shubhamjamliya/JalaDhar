@@ -69,8 +69,10 @@ export const NotificationProvider = ({ children }) => {
 
   // Initialize Socket.io connection
   useEffect(() => {
-    if (!isAuthenticated || !currentUser) {
-      // Disconnect if not authenticated
+    const isPublicAuthRoute = pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
+
+    if (!isAuthenticated || !currentUser || isPublicAuthRoute) {
+      // Disconnect if not authenticated or on public auth routes
       if (socket) {
         socket.disconnect();
         setSocket(null);
@@ -228,14 +230,16 @@ export const NotificationProvider = ({ children }) => {
 
   // Load notifications on mount and when user changes
   useEffect(() => {
-    if (isAuthenticated && currentUser) {
+    const isPublicAuthRoute = pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
+
+    if (isAuthenticated && currentUser && !isPublicAuthRoute) {
       loadNotifications();
       loadUnreadCount();
     } else {
       setNotifications([]);
       setUnreadCount(0);
     }
-  }, [isAuthenticated, currentUser]);
+  }, [isAuthenticated, currentUser, pathname]);
 
   // Load notifications
   const loadNotifications = useCallback(async () => {

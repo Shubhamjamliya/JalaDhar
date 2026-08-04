@@ -25,8 +25,10 @@ import {
     IoCashOutline,
     IoLockClosedOutline,
     IoPersonAddOutline,
+    IoGlobeOutline
 } from "react-icons/io5";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import NotificationDropdown from "../../../components/NotificationDropdown";
 import logo from "@/assets/Header-logoo.png";
@@ -36,21 +38,24 @@ import UserSidebar from "./UserSidebar";
 const navItems = [
     {
         id: "dashboard",
-        label: "Home",
+        labelKey: "home",
+        fallbackLabel: "Home",
         to: "/user/dashboard",
         Icon: IoHomeOutline,
         ActiveIcon: IoHome,
     },
     {
         id: "status",
-        label: "Bookings",
+        labelKey: "bookings",
+        fallbackLabel: "Bookings",
         to: "/user/status",
         Icon: IoTimeOutline,
         ActiveIcon: IoTime,
     },
     {
         id: "survey",
-        label: "Book",
+        labelKey: "book",
+        fallbackLabel: "Book",
         to: "/user/survey",
         Icon: IoAdd,
         ActiveIcon: IoAdd,
@@ -58,14 +63,16 @@ const navItems = [
     },
     {
         id: "wallet",
-        label: "Wallet",
+        labelKey: "wallet",
+        fallbackLabel: "Wallet",
         to: "/user/wallet",
         Icon: IoWalletOutline,
         ActiveIcon: IoWallet,
     },
     {
         id: "profile",
-        label: "Profile",
+        labelKey: "profile",
+        fallbackLabel: "Profile",
         to: "/user/profile",
         Icon: IoPersonCircleOutline,
         ActiveIcon: IoPersonCircle,
@@ -75,6 +82,10 @@ const navItems = [
 export default function UserNavbar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [showLangMenu, setShowLangMenu] = useState(false);
+    const { language, setLanguage, t, supportedLanguages, isLanguageEnabled } = useLanguage();
+    const currentLangObj = supportedLanguages.find(l => l.code === language) || supportedLanguages[0];
+
     const toggleRef = useRef(null);
     const { logout, user } = useAuth();
     const location = useLocation();
@@ -110,7 +121,7 @@ export default function UserNavbar() {
 
                 {/* Desktop Navigation Links - Hidden on Mobile */}
                 <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
-                    {navItems.map(({ id, label, to, Icon }) => (
+                    {navItems.map(({ id, labelKey, fallbackLabel, to, Icon }) => (
                         <NavLink
                             key={id}
                             to={to}
@@ -123,7 +134,7 @@ export default function UserNavbar() {
                             end={id === "dashboard"}
                         >
                             <Icon className="text-xl" />
-                            <span className="text-sm font-medium">{label}</span>
+                            <span className="text-sm font-medium">{t(labelKey, fallbackLabel)}</span>
                         </NavLink>
                     ))}
                 </nav>
@@ -135,6 +146,40 @@ export default function UserNavbar() {
                         <span className="hidden md:block text-sm font-semibold text-gray-800">
                             {user.name}
                         </span>
+                    )}
+
+                    {/* Language Switcher */}
+                    {isLanguageEnabled && (
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowLangMenu(!showLangMenu)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-gray-200/90 text-xs font-bold text-gray-700 hover:border-blue-300 transition-all cursor-pointer shadow-2xs"
+                                title="Change Language"
+                            >
+                                <IoGlobeOutline className="text-[#0A84FF] text-base" />
+                                <span className="hidden sm:inline">{currentLangObj.nativeName}</span>
+                            </button>
+
+                            {showLangMenu && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                                    {supportedLanguages.map((lang) => (
+                                        <button
+                                            key={lang.code}
+                                            onClick={() => {
+                                                setLanguage(lang.code);
+                                                setShowLangMenu(false);
+                                            }}
+                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left cursor-pointer ${
+                                                language === lang.code ? "bg-blue-50 text-[#0A84FF]" : "text-gray-700 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            <span>{lang.nativeName}</span>
+                                            <span className="text-[10px] text-gray-400 font-mono">{lang.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     <NotificationDropdown disablePopup={true} />
@@ -171,7 +216,7 @@ export default function UserNavbar() {
             {/* Bottom Navigation — Mobile Only (Redesigned Senior UI with Floating FAB) */}
             <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden">
                 <div className="flex items-center justify-around gap-1 max-w-md mx-auto">
-                    {navItems.map(({ id, label, to, Icon, ActiveIcon, isFab }) => (
+                    {navItems.map(({ id, labelKey, fallbackLabel, to, Icon, ActiveIcon, isFab }) => (
                         <NavLink
                             key={id}
                             to={to}
@@ -192,7 +237,7 @@ export default function UserNavbar() {
                                                 <IoAdd className="text-2xl font-black text-white" />
                                             </div>
                                             <span className="text-[10px] leading-none mt-1 font-bold text-[#0A84FF] tracking-tight">
-                                                {label}
+                                                {t(labelKey, fallbackLabel)}
                                             </span>
                                         </div>
                                     );
@@ -212,7 +257,7 @@ export default function UserNavbar() {
                                         <span className={`text-[10px] leading-none mt-1 tracking-tight transition-colors duration-200 ${
                                             isActive ? "font-bold text-[#0A84FF]" : "font-semibold text-gray-500"
                                         }`}>
-                                            {label}
+                                            {t(labelKey, fallbackLabel)}
                                         </span>
                                     </>
                                 );

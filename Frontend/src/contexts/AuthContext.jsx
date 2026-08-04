@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { userLogin, userLogout, userRegister } from '../services/authApi';
+import { userLogin, userLogout, userRegister, verifyUserLoginOTP } from '../services/authApi';
 import { registerFCMToken, unregisterFCMToken } from '../services/pushNotificationService';
 
 const AuthContext = createContext(null);
@@ -109,6 +109,40 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyLoginOTP = async ({ token: verificationToken, otp }) => {
+    try {
+      const response = await verifyUserLoginOTP({ token: verificationToken, otp });
+
+      if (response.success && response.data?.tokens) {
+        const { tokens, user: userData } = response.data;
+
+        localStorage.setItem('accessToken', tokens.accessToken);
+        localStorage.setItem('refreshToken', tokens.refreshToken);
+        localStorage.setItem('user', JSON.stringify(userData));
+
+        setToken(tokens.accessToken);
+        setUser(userData);
+        registerFCMToken('user');
+
+        return {
+          success: true,
+          message: response.message || 'Login successful',
+          user: userData
+        };
+      } else {
+        return {
+          success: false,
+          message: response.message || 'Login verification failed'
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Login verification failed'
+      };
+    }
+  };
+
   /**
    * Logout user
    */
@@ -143,6 +177,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!token && !!user,
     login,
     register,
+    verifyLoginOTP,
     logout
   };
 

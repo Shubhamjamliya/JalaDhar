@@ -70,8 +70,8 @@ export const downloadInvoice = async (bookingId) => {
  * @param {string} bookingId
  * @returns {Promise}
  */
-export const acceptBooking = async (bookingId) => {
-  const response = await api.patch(`/vendors/bookings/${bookingId}/accept`);
+export const acceptBooking = async (bookingId, scheduleData) => {
+  const response = await api.patch(`/vendors/bookings/${bookingId}/accept`, scheduleData);
   return response.data;
 };
 

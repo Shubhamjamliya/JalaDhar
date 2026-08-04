@@ -51,6 +51,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  preferredLanguage: {
+    type: String,
+    enum: ['en', 'hi', 'te', 'ta', 'kn', 'mr', 'or'],
+    default: 'en'
+  },
   address: {
     street: String,
     city: String,

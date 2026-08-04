@@ -50,11 +50,14 @@ export default function AdminForgotPassword() {
             <div className="w-full max-w-sm">
                 {/* Logo */}
                 <div className="text-center mb-10 mt-4">
-                    <img
-                        src={logo}
-                        alt="Jaladhaara Logo"
-                        className="h-32 w-auto mx-auto mb-2 object-contain"
-                    />
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                        <img
+                            src={logo}
+                            alt="Jaladhaara Logo"
+                            className="h-14 sm:h-16 object-contain drop-shadow-sm"
+                        />
+                        <span className="text-2xl sm:text-3xl font-extrabold tracking-wide text-[#1565C0]" style={{letterSpacing: '0.06em'}}>Jaladhaara</span>
+                    </div>
                 </div>
 
                 {/* Title */}

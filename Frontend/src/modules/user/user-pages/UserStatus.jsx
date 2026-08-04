@@ -544,7 +544,7 @@ export default function UserStatus() {
                                         month: "short",
                                         year: "numeric",
                                     })}{" "}
-                                    at {currentBooking.scheduledTime || "N/A"}
+                                    at {(!currentBooking.scheduledTime || currentBooking.scheduledTime === "TBD") ? "Time TBD by expert" : currentBooking.scheduledTime}
                                 </span>
                             </div>
                         )}

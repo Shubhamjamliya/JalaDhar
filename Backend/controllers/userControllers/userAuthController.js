@@ -25,69 +25,94 @@ const sendRegistrationOTP = async (req, res) => {
 
     const { name, email, phone } = req.body;
 
+    const cleanEmail = email ? email.toLowerCase().trim() : null;
+    const cleanPhone = phone ? phone.trim() : '';
+
     // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email }, { phone }]
-    });
+    const searchConditions = [{ phone: cleanPhone }];
+    if (cleanEmail) searchConditions.push({ email: cleanEmail });
+
+    const existingUser = await User.findOne({ $or: searchConditions });
 
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: existingUser.email === email 
-          ? 'Email already registered' 
-          : 'Phone number already registered'
+        message: existingUser.phone === cleanPhone 
+          ? 'Mobile number already registered' 
+          : 'Email address already registered'
       });
     }
 
-    // Create OTP token with email stored separately (user doesn't exist yet)
-    // Delete any existing tokens for this email
-    await Token.deleteMany({ email, type: TOKEN_TYPES.EMAIL_VERIFICATION, isUsed: false });
+    const targetEmail = cleanEmail || `${cleanPhone}@jaladhar.internal`;
+
+    // Enterprise Rate Limiting & Cooldown Protection (60s Cooldown)
+    const existingToken = await Token.findOne({
+      email: targetEmail,
+      type: TOKEN_TYPES.EMAIL_VERIFICATION,
+      isUsed: false,
+      expiresAt: { $gt: new Date() }
+    }).sort({ createdAt: -1 });
+
+    const COOLDOWN_SECONDS = 60;
+    if (existingToken && (Date.now() - new Date(existingToken.createdAt).getTime() < COOLDOWN_SECONDS * 1000)) {
+      const remainingSeconds = Math.ceil((COOLDOWN_SECONDS * 1000 - (Date.now() - new Date(existingToken.createdAt).getTime())) / 1000);
+      
+      return res.json({
+        success: true,
+        reused: true,
+        message: `OTP already sent recently. Please wait ${remainingSeconds}s before requesting again.`,
+        data: {
+          token: existingToken.token,
+          email: cleanEmail || '',
+          phone: cleanPhone,
+          cooldownRemaining: remainingSeconds,
+          ...(process.env.NODE_ENV !== 'production' && { devOtp: existingToken.otp })
+        }
+      });
+    }
+
+    await Token.deleteMany({ email: targetEmail, type: TOKEN_TYPES.EMAIL_VERIFICATION, isUsed: false });
 
     const otp = generateOTP(6);
     const token = generateToken(32);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     const tokenDoc = await Token.create({
-      userId: new mongoose.Types.ObjectId(), // Dummy ObjectId
+      userId: new mongoose.Types.ObjectId(),
       userModel: 'User',
       token,
       type: TOKEN_TYPES.EMAIL_VERIFICATION,
       otp,
-      email, // Store email directly
+      email: targetEmail,
       expiresAt
     });
 
-    // Send OTP across Multi-Channel Notification Service (Email, SMS Text, WhatsApp)
+    // Dispatch OTP across SMS/WhatsApp/Email
     dispatchOTP({
-      email,
-      phone,
+      email: cleanEmail,
+      phone: cleanPhone,
       name,
       otp,
       type: 'verification'
     }).catch(err => console.error('Multi-channel OTP dispatch error:', err));
 
-    const emailResult = await sendOTPEmail({
-      email,
-      name,
-      otp,
-      type: 'verification'
-    });
-
-    if (!emailResult.success) {
-      await Token.deleteOne({ _id: tokenDoc._id });
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send OTP email',
-        error: emailResult.error
-      });
+    if (cleanEmail) {
+      sendOTPEmail({
+        email: cleanEmail,
+        name,
+        otp,
+        type: 'verification'
+      }).catch(err => console.error('OTP email send error:', err));
     }
 
     res.json({
       success: true,
-      message: 'OTP sent to email successfully',
+      message: 'OTP sent successfully',
       data: {
         token: tokenDoc.token,
-        email
+        email: cleanEmail || '',
+        phone: cleanPhone,
+        ...(process.env.NODE_ENV !== 'production' && { devOtp: otp })
       }
     });
   } catch (error) {
@@ -128,7 +153,6 @@ const register = async (req, res) => {
     const tokenDoc = await Token.findOne({
       token,
       type: TOKEN_TYPES.EMAIL_VERIFICATION,
-      email,
       isUsed: false,
       expiresAt: { $gt: new Date() }
     });
@@ -151,7 +175,7 @@ const register = async (req, res) => {
 
     // Verify OTP
     if (tokenDoc.otp !== otp) {
-      tokenDoc.attempts += 1;
+      tokenDoc.attempts = (tokenDoc.attempts || 0) + 1;
       await tokenDoc.save();
       return res.status(400).json({
         success: false,
@@ -159,38 +183,48 @@ const register = async (req, res) => {
       });
     }
 
+    const cleanEmail = email ? email.toLowerCase().trim() : null;
+    const cleanPhone = phone ? phone.trim() : '';
+
     // Check if user already exists (double check)
-    const existingUser = await User.findOne({
-      $or: [{ email }, { phone }]
-    });
+    const searchConditions = [{ phone: cleanPhone }];
+    if (cleanEmail) searchConditions.push({ email: cleanEmail });
+
+    const existingUser = await User.findOne({ $or: searchConditions });
 
     if (existingUser) {
       await markTokenAsUsed(tokenDoc._id);
       return res.status(400).json({
         success: false,
-        message: existingUser.email === email 
-          ? 'Email already registered' 
-          : 'Phone number already registered'
+        message: existingUser.phone === cleanPhone 
+          ? 'Mobile number already registered' 
+          : 'Email address already registered'
       });
     }
 
-    // Create user with email verified
+    // Create user
+    const { preferredLanguage } = req.body;
+    const userEmail = cleanEmail || `${cleanPhone}@jaladhar.internal`;
+    const defaultPassword = password || `Jaladhar@${cleanPhone.slice(-4)}`;
+
     const user = await User.create({
       name,
-      email,
-      phone,
-      password,
-      isEmailVerified: true // Email is verified via OTP
+      email: userEmail,
+      phone: cleanPhone,
+      password: defaultPassword,
+      preferredLanguage: preferredLanguage || 'en',
+      isEmailVerified: true
     });
 
     // Mark token as used
     await markTokenAsUsed(tokenDoc._id);
 
-    // Send welcome email
-    await sendWelcomeEmail({
-      email: user.email,
-      name: user.name
-    });
+    if (cleanEmail) {
+      sendWelcomeEmail({
+        email: user.email,
+        name: user.name
+      }).catch(err => console.error('Welcome email send error:', err));
+    }
 
     res.status(201).json({
       success: true,
@@ -231,13 +265,26 @@ const login = async (req, res) => {
 
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email/Phone and password are required'
+      });
+    }
+
+    const cleanInput = email.toString().trim();
+    const isEmail = cleanInput.includes('@');
+    const query = isEmail
+      ? { email: cleanInput.toLowerCase() }
+      : { $or: [{ email: cleanInput.toLowerCase() }, { phone: cleanInput }] };
+
     // Find user with password
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne(query).select('+password');
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email or password. Please check your credentials or click Sign Up to create an account.'
       });
     }
 
@@ -579,9 +626,222 @@ const logout = async (req, res) => {
   }
 };
 
+/**
+ * Send OTP for User Login via Mobile Number
+ */
+const sendLoginOTP = async (req, res) => {
+  try {
+    const { phone, email } = req.body;
+    const identifier = (phone || email || '').toString().trim();
+
+    if (!identifier) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mobile number or email is required'
+      });
+    }
+
+    const cleanInput = identifier.toLowerCase();
+    const digits = identifier.replace(/\D/g, '');
+    const phoneRegex = digits.length >= 10 ? new RegExp(digits.slice(-10) + '$') : identifier;
+
+    const user = await User.findOne({
+      $or: [
+        { phone: identifier },
+        { phone: phoneRegex },
+        { email: cleanInput }
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this mobile number. Please click Sign Up to create an account.'
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Your account has been deactivated. Please contact support.'
+      });
+    }
+
+    // Generate OTP & Token
+    const targetEmail = user.email || `${user.phone}@jaladhar.internal`;
+
+    // Enterprise Rate Limiting & Cooldown Protection (60s Cooldown)
+    const existingToken = await Token.findOne({
+      email: targetEmail,
+      type: TOKEN_TYPES.PHONE_VERIFICATION,
+      isUsed: false,
+      expiresAt: { $gt: new Date() }
+    }).sort({ createdAt: -1 });
+
+    const COOLDOWN_SECONDS = 60;
+    if (existingToken && (Date.now() - new Date(existingToken.createdAt).getTime() < COOLDOWN_SECONDS * 1000)) {
+      const remainingSeconds = Math.ceil((COOLDOWN_SECONDS * 1000 - (Date.now() - new Date(existingToken.createdAt).getTime())) / 1000);
+      
+      return res.json({
+        success: true,
+        reused: true,
+        message: `OTP already sent to mobile number. Please wait ${remainingSeconds}s before requesting again.`,
+        data: {
+          token: existingToken.token,
+          phone: user.phone,
+          cooldownRemaining: remainingSeconds,
+          ...(process.env.NODE_ENV !== 'production' && { devOtp: existingToken.otp })
+        }
+      });
+    }
+
+    await Token.deleteMany({ email: targetEmail, type: TOKEN_TYPES.PHONE_VERIFICATION, isUsed: false });
+
+    const otp = generateOTP(6);
+    const token = generateToken(32);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    const tokenDoc = await Token.create({
+      userId: user._id,
+      userModel: 'User',
+      token,
+      type: TOKEN_TYPES.PHONE_VERIFICATION,
+      otp,
+      email: targetEmail,
+      expiresAt
+    });
+
+    // Dispatch OTP across Multi-Channel (SMS, WhatsApp, Email)
+    dispatchOTP({
+      email: user.email,
+      phone: user.phone,
+      name: user.name,
+      otp,
+      type: 'login'
+    }).catch(err => console.error('Multi-channel OTP dispatch error:', err));
+
+    res.json({
+      success: true,
+      message: 'OTP sent to your mobile number successfully',
+      data: {
+        token: tokenDoc.token,
+        phone: user.phone,
+        ...(process.env.NODE_ENV !== 'production' && { devOtp: otp })
+      }
+    });
+  } catch (error) {
+    console.error('Send login OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send login OTP',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Verify Login OTP and authenticate user
+ */
+const verifyLoginOTP = async (req, res) => {
+  try {
+    const { token, otp } = req.body;
+
+    if (!token || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP and verification token are required'
+      });
+    }
+
+    const tokenDoc = await Token.findOne({
+      token,
+      type: TOKEN_TYPES.PHONE_VERIFICATION,
+      isUsed: false,
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!tokenDoc) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP token'
+      });
+    }
+
+    if (tokenDoc.otp !== otp) {
+      tokenDoc.attempts = (tokenDoc.attempts || 0) + 1;
+      await tokenDoc.save();
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP. Please try again.'
+      });
+    }
+
+    const user = await User.findById(tokenDoc.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User account not found'
+      });
+    }
+
+    // Mark token as used
+    await markTokenAsUsed(tokenDoc._id);
+
+    // Generate token pair
+    const { accessToken, refreshToken } = generateTokenPair({
+      userId: user._id,
+      role: user.role,
+      email: user.email
+    });
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        tokens: {
+          accessToken,
+          refreshToken
+        },
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          profilePicture: user.profilePicture,
+          preferredLanguage: user.preferredLanguage || 'en'
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Verify login OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Login verification failed',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
+  sendLoginOTP,
+  verifyLoginOTP,
   forgotPassword,
   resetPassword,
   sendRegistrationOTP,

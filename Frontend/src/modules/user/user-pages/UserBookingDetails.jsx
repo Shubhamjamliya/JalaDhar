@@ -902,7 +902,7 @@ export default function UserBookingDetails() {
                             <div>
                                 <p className="text-sm text-gray-500">Scheduled Date & Time</p>
                                 <p className="text-base font-semibold text-gray-800">
-                                    {formatDate(booking.scheduledDate)} at {booking.scheduledTime || "N/A"}
+                                    {formatDate(booking.scheduledDate)} &bull; {(!booking.scheduledTime || booking.scheduledTime === "TBD") ? "Time TBD by expert" : booking.scheduledTime}
                                 </p>
                             </div>
                         </div>

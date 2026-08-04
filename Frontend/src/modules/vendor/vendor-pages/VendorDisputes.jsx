@@ -1,15 +1,29 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    IoAlertCircleOutline,
     IoAddOutline,
-    IoEyeOutline,
     IoTimeOutline,
+    IoCheckmarkCircleOutline,
+    IoCloseCircleOutline,
+    IoChevronForwardOutline,
+    IoRefreshOutline,
+    IoHelpCircleOutline,
+    IoTicketOutline
 } from "react-icons/io5";
 import { getMyDisputes } from "../../../services/vendorApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import CustomDropdown from "../../shared/components/CustomDropdown";
+
+const STATUS_TABS = [
+    { key: "", label: "All" },
+    { key: "PENDING", label: "Pending" },
+    { key: "IN_PROGRESS", label: "In Progress" },
+    { key: "RESOLVED", label: "Resolved" },
+    { key: "CLOSED", label: "Closed" },
+    { key: "REJECTED", label: "Rejected" },
+];
 
 export default function VendorDisputes() {
     const navigate = useNavigate();
@@ -69,15 +83,49 @@ export default function VendorDisputes() {
         });
     };
 
-    const getStatusColor = (status) => {
-        const colors = {
-            PENDING: "bg-yellow-100 text-yellow-700",
-            IN_PROGRESS: "bg-blue-100 text-blue-700",
-            RESOLVED: "bg-green-100 text-green-700",
-            CLOSED: "bg-gray-100 text-gray-700",
-            REJECTED: "bg-red-100 text-red-700",
-        };
-        return colors[status] || "bg-gray-100 text-gray-700";
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case "PENDING":
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        Pending
+                    </span>
+                );
+            case "IN_PROGRESS":
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200/80">
+                        <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+                        In Progress
+                    </span>
+                );
+            case "RESOLVED":
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                        <IoCheckmarkCircleOutline className="text-xs text-emerald-600" />
+                        Resolved
+                    </span>
+                );
+            case "REJECTED":
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700 border border-red-200/80">
+                        <IoCloseCircleOutline className="text-xs text-red-600" />
+                        Rejected
+                    </span>
+                );
+            case "CLOSED":
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                        Closed
+                    </span>
+                );
+            default:
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                        {status}
+                    </span>
+                );
+        }
     };
 
     const getTypeLabel = (type) => {
@@ -93,196 +141,184 @@ export default function VendorDisputes() {
         return labels[type] || type;
     };
 
-    const getPriorityColor = (priority) => {
-        const colors = {
-            LOW: "bg-gray-100 text-gray-700",
-            MEDIUM: "bg-yellow-100 text-yellow-700",
-            HIGH: "bg-orange-100 text-orange-700",
-            URGENT: "bg-red-100 text-red-700",
-        };
-        return colors[priority] || "bg-gray-100 text-gray-700";
-    };
-
-    const CustomDropdown = ({ options, value, onChange }) => {
-        const [isOpen, setIsOpen] = useState(false);
-        const dropdownRef = useState(null)[1]; // simplified ref for outside click if needed, but simple toggle is enough for now
-
-        // Close logic could be added with a click-outside hook, but for now simple toggle
-
-        return (
-            <div className="relative min-w-0">
-                <button
-                    type="button"
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="w-full h-10 px-4 text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white flex items-center justify-between truncate"
-                >
-                    <span className="truncate">{options.find(o => o.value === value)?.label || options[0].label}</span>
-                    <span className="ml-2 text-gray-400 text-xs">▼</span>
-                </button>
-
-                {isOpen && (
-                    <>
-                        <div
-                            className="fixed inset-0 z-10"
-                            onClick={() => setIsOpen(false)}
-                        ></div>
-                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                            {options.map((option) => (
-                                <div
-                                    key={option.value}
-                                    onClick={() => {
-                                        onChange(option.value);
-                                        setIsOpen(false);
-                                    }}
-                                    className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-50 truncate ${value === option.value ? "text-[#0A84FF] font-medium bg-blue-50" : "text-gray-700"
-                                        }`}
-                                >
-                                    {option.label}
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
-            </div>
-        );
-    };
-
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+        <div className="max-w-3xl mx-auto space-y-5 pb-12">
+            {/* Header with compact CTA on top right */}
+            <div className="flex items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">My Disputes</h1>
-                    <p className="text-sm text-gray-500 mt-1">View and manage your disputes</p>
+                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                        <span>My Disputes</span>
+                        {disputes.length > 0 && (
+                            <span className="text-[11px] font-extrabold bg-teal-100/80 text-teal-800 px-2 py-0.5 rounded-full border border-teal-200">
+                                {pagination.totalDisputes || disputes.length}
+                            </span>
+                        )}
+                    </h1>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                        Manage your operational tickets &amp; complaints
+                    </p>
                 </div>
                 <button
                     onClick={() => navigate("/vendor/disputes/create")}
-                    className="bg-[#0A84FF] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#005BBB] transition-colors flex items-center gap-2"
+                    className="inline-flex items-center gap-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white px-3.5 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-teal-500/20 transition-all cursor-pointer shrink-0"
                 >
-                    <IoAddOutline className="text-xl" />
+                    <IoAddOutline className="text-base" />
                     <span>Raise Dispute</span>
                 </button>
             </div>
 
-            {/* Filters */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm md:text-base">
-                    <CustomDropdown
-                        options={[
-                            { value: "", label: "All Status" },
-                            { value: "PENDING", label: "Pending" },
-                            { value: "IN_PROGRESS", label: "In Progress" },
-                            { value: "RESOLVED", label: "Resolved" },
-                            { value: "CLOSED", label: "Closed" },
-                            { value: "REJECTED", label: "Rejected" },
-                        ]}
-                        value={filters.status}
-                        onChange={(val) => setFilters({ ...filters, status: val, page: 1 })}
-                    />
-                    <CustomDropdown
-                        options={[
-                            { value: "", label: "All Types" },
-                            { value: "PAYMENT_ISSUE", label: "Payment Issue" },
-                            { value: "SERVICE_QUALITY", label: "Service Quality" },
-                            { value: "VENDOR_BEHAVIOR", label: "Vendor Behavior" },
-                            { value: "REPORT_ISSUE", label: "Report Issue" },
-                            { value: "CANCELLATION", label: "Cancellation" },
-                            { value: "REFUND", label: "Refund" },
-                            { value: "OTHER", label: "Other" },
-                        ]}
-                        value={filters.type}
-                        onChange={(val) => setFilters({ ...filters, type: val, page: 1 })}
-                    />
-                    <div className="min-w-0">
+            {/* Horizontal Filter Tabs */}
+            <div className="space-y-2.5">
+                {/* Scrollable Status Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                    {STATUS_TABS.map((tab) => {
+                        const isActive = filters.status === tab.key;
+                        return (
+                            <button
+                                key={tab.key}
+                                onClick={() => setFilters({ ...filters, status: tab.key, page: 1 })}
+                                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border cursor-pointer ${
+                                    isActive
+                                        ? "bg-teal-700 text-white border-teal-700 shadow-xs"
+                                        : "bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50"
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Sub-Filters: Category & Reset */}
+                <div className="flex items-center gap-2 text-xs font-bold">
+                    <div className="flex-1 min-w-0">
+                        <CustomDropdown
+                            options={[
+                                { value: "", label: "All Categories" },
+                                { value: "PAYMENT_ISSUE", label: "Payment Issue" },
+                                { value: "SERVICE_QUALITY", label: "Service Quality" },
+                                { value: "VENDOR_BEHAVIOR", label: "Vendor Behavior" },
+                                { value: "REPORT_ISSUE", label: "Report Issue" },
+                                { value: "CANCELLATION", label: "Cancellation" },
+                                { value: "REFUND", label: "Refund" },
+                                { value: "OTHER", label: "Other" },
+                            ]}
+                            value={filters.type}
+                            onChange={(val) => setFilters({ ...filters, type: val, page: 1 })}
+                        />
+                    </div>
+
+                    {(filters.status || filters.type) && (
                         <button
                             onClick={() => setFilters({ status: "", type: "", page: 1 })}
-                            className="w-full h-10 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors bg-white font-medium border border-gray-300"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-slate-100 hover:bg-slate-200/70 text-slate-600 text-xs font-bold rounded-xl transition-all border border-slate-200 shrink-0 cursor-pointer"
                         >
-                            Clear Filters
+                            <IoRefreshOutline className="text-sm" />
+                            <span>Reset</span>
                         </button>
-                    </div>
+                    )}
                 </div>
             </div>
 
-            {/* Disputes List */}
+            {/* Main Content Area */}
             {loading ? (
-                <LoadingSpinner message="Loading disputes..." />
+                <div className="bg-white rounded-2xl p-10 border border-slate-100 flex justify-center items-center">
+                    <LoadingSpinner message="Loading disputes..." />
+                </div>
             ) : disputes.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-                    <IoAlertCircleOutline className="mx-auto text-6xl text-gray-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Disputes Found</h3>
-                    <p className="text-gray-600 mb-4">You haven't raised any disputes yet</p>
-                    <button
-                        onClick={() => navigate("/vendor/disputes/create")}
-                        className="bg-[#0A84FF] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#005BBB] transition-colors"
-                    >
-                        Raise Your First Dispute
-                    </button>
+                /* Empty State Card */
+                <div className="bg-white rounded-2xl p-6 sm:p-8 text-center border border-slate-100/90 shadow-xs space-y-4">
+                    <div className="w-14 h-14 bg-teal-50 border border-teal-100 rounded-2xl flex items-center justify-center mx-auto text-teal-600">
+                        <IoHelpCircleOutline className="text-3xl" />
+                    </div>
+                    <div className="max-w-xs mx-auto space-y-1">
+                        <h3 className="text-base font-bold text-slate-900 tracking-tight">No Disputes Found</h3>
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                            {filters.status || filters.type
+                                ? "No disputes match your current filter settings. Try resetting filters."
+                                : "You haven't raised any disputes yet. Submit a ticket if you need assistance."}
+                        </p>
+                    </div>
+                    <div className="pt-1">
+                        <button
+                            onClick={() => navigate("/vendor/disputes/create")}
+                            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer"
+                        >
+                            <IoAddOutline className="text-base" />
+                            <span>Raise a Dispute</span>
+                        </button>
+                    </div>
                 </div>
             ) : (
-                <div className="space-y-4">
+                /* Dispute Cards List */
+                <div className="space-y-3">
                     {disputes.map((dispute) => (
                         <div
                             key={dispute._id}
-                            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
                             onClick={() => navigate(`/vendor/disputes/${dispute._id}`)}
+                            className="group bg-white rounded-2xl p-4 sm:p-5 border border-slate-100 shadow-2xs hover:shadow-sm hover:border-teal-200 transition-all cursor-pointer space-y-3"
                         >
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex-1">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{dispute.subject}</h3>
-                                    <p className="text-sm text-gray-600 line-clamp-2">{dispute.description}</p>
+                            {/* Card Top */}
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="space-y-1 min-w-0">
+                                    <span className="inline-block text-[10px] font-extrabold text-teal-700 bg-teal-50/80 px-2 py-0.5 rounded border border-teal-100 uppercase tracking-wider">
+                                        {getTypeLabel(dispute.type)}
+                                    </span>
+                                    <h3 className="text-sm font-bold text-slate-900 group-hover:text-teal-700 transition-colors line-clamp-1">
+                                        {dispute.subject || dispute.type}
+                                    </h3>
                                 </div>
-                                <div className="flex flex-col items-end gap-2 ml-4">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(dispute.status)}`}>
-                                        {dispute.status}
-                                    </span>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(dispute.priority)}`}>
-                                        {dispute.priority}
-                                    </span>
+                                <div className="shrink-0">
+                                    {getStatusBadge(dispute.status)}
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between text-sm text-gray-500">
-                                <div className="flex items-center gap-4">
-                                    <span className="flex items-center gap-1">
-                                        <IoTimeOutline />
-                                        {formatDate(dispute.createdAt)}
+
+                            {/* Description Preview */}
+                            <p className="text-xs text-slate-600 line-clamp-2 leading-normal font-medium">
+                                {dispute.description}
+                            </p>
+
+                            {/* Card Footer */}
+                            <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                                <div className="flex items-center gap-3">
+                                    <span className="flex items-center gap-1 text-[11px]">
+                                        <IoTimeOutline className="text-slate-400 text-xs" />
+                                        <span>{formatDate(dispute.createdAt)}</span>
                                     </span>
-                                    <span>{getTypeLabel(dispute.type)}</span>
+                                    {dispute.booking && (
+                                        <span className="flex items-center gap-1 text-[11px] text-slate-600 font-bold bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200/60">
+                                            <IoTicketOutline className="text-teal-600 text-xs" />
+                                            <span>#{dispute.booking.toString().slice(-8).toUpperCase()}</span>
+                                        </span>
+                                    )}
                                 </div>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigate(`/vendor/disputes/${dispute._id}`);
-                                    }}
-                                    className="text-[#0A84FF] hover:text-[#005BBB] flex items-center gap-1"
-                                >
-                                    <IoEyeOutline className="text-lg" />
-                                    View Details
-                                </button>
+
+                                <div className="flex items-center gap-0.5 text-teal-700 font-bold text-[11px] group-hover:translate-x-0.5 transition-transform">
+                                    <span>Details</span>
+                                    <IoChevronForwardOutline className="text-xs" />
+                                </div>
                             </div>
                         </div>
                     ))}
 
                     {/* Pagination */}
                     {pagination.totalPages > 1 && (
-                        <div className="flex items-center justify-between bg-white rounded-lg shadow-sm p-4">
-                            <div className="text-sm text-gray-700">
-                                Showing {((pagination.currentPage - 1) * filters.limit) + 1} to{" "}
-                                {Math.min(pagination.currentPage * filters.limit, pagination.totalDisputes)} of{" "}
-                                {pagination.totalDisputes} disputes
+                        <div className="flex items-center justify-between gap-3 bg-white rounded-2xl p-3 border border-slate-100 text-xs font-semibold text-slate-600">
+                            <div>
+                                Page <span className="font-bold text-slate-900">{pagination.currentPage}</span> of {pagination.totalPages}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-1.5">
                                 <button
                                     onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
                                     disabled={filters.page === 1}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                                    className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold disabled:opacity-40 transition-colors"
                                 >
-                                    Previous
+                                    Prev
                                 </button>
                                 <button
                                     onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
                                     disabled={filters.page >= pagination.totalPages}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                                    className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold disabled:opacity-40 transition-colors"
                                 >
                                     Next
                                 </button>
@@ -294,4 +330,3 @@ export default function VendorDisputes() {
         </div>
     );
 }
-

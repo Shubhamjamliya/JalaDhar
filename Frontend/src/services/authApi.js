@@ -35,6 +35,26 @@ export const userLogin = async (credentials) => {
 };
 
 /**
+ * Send OTP for user login via Mobile Number
+ * @param {Object} data - { phone }
+ * @returns {Promise}
+ */
+export const sendUserLoginOTP = async (data) => {
+  const response = await api.post('/users/auth/login/send-otp', data);
+  return response.data;
+};
+
+/**
+ * Verify Login OTP and authenticate user
+ * @param {Object} data - { token, otp }
+ * @returns {Promise}
+ */
+export const verifyUserLoginOTP = async (data) => {
+  const response = await api.post('/users/auth/login/verify-otp', data);
+  return response.data;
+};
+
+/**
  * Logout user
  * @returns {Promise}
  */

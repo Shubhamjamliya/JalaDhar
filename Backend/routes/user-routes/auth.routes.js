@@ -5,6 +5,8 @@ const {
   sendRegistrationOTP,
   register,
   login,
+  sendLoginOTP,
+  verifyLoginOTP,
   forgotPassword,
   resetPassword,
   verifyEmail,
@@ -23,7 +25,7 @@ const registerValidation = [
 ];
 
 const loginValidation = [
-  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('email').trim().notEmpty().withMessage('Please provide a valid email or phone number'),
   body('password').notEmpty().withMessage('Password is required')
 ];
 
@@ -48,17 +50,17 @@ const resendEmailValidation = [
 
 // Validation for sending OTP
 const sendOTPValidation = [
-  body('name').trim().notEmpty().withMessage('Name is required'),
-  body('email').isEmail().withMessage('Please provide a valid email'),
-  body('phone').trim().notEmpty().withMessage('Phone number is required')
+  body('name').trim().notEmpty().withMessage('Full Name is required'),
+  body('phone').trim().notEmpty().withMessage('Mobile Number is required'),
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Please provide a valid email')
 ];
 
 // Validation for registration with OTP
 const registerWithOTPValidation = [
-  body('name').trim().notEmpty().withMessage('Name is required'),
-  body('email').isEmail().withMessage('Please provide a valid email'),
-  body('phone').trim().notEmpty().withMessage('Phone number is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('name').trim().notEmpty().withMessage('Full Name is required'),
+  body('phone').trim().notEmpty().withMessage('Mobile Number is required'),
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Please provide a valid email'),
+  body('password').optional({ checkFalsy: true }),
   body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
   body('token').trim().notEmpty().withMessage('Verification token is required')
 ];
@@ -67,6 +69,8 @@ const registerWithOTPValidation = [
 router.post('/register/send-otp', sendOTPValidation, sendRegistrationOTP);
 router.post('/register', registerWithOTPValidation, register);
 router.post('/login', loginValidation, login);
+router.post('/login/send-otp', sendLoginOTP);
+router.post('/login/verify-otp', verifyLoginOTP);
 router.post('/forgot-password', forgotPasswordValidation, forgotPassword);
 router.post('/reset-password', resetPasswordValidation, resetPassword);
 router.post('/verify-email', verifyEmailValidation, verifyEmail);

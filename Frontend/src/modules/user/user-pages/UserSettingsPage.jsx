@@ -102,29 +102,6 @@ export default function UserSettingsPage() {
                     </div>
                 </div>
 
-                {/* Section 2: Security & Password */}
-                <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
-                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                        <IoLockClosedOutline className="text-slate-700 text-xl" />
-                        Security & Authentication
-                    </h3>
-
-                    <div
-                        onClick={() => setShowChangePasswordModal(true)}
-                        className="p-4 bg-gray-50/80 hover:bg-gray-100/80 rounded-2xl border border-gray-100 flex items-center justify-between cursor-pointer transition-colors"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-slate-200 text-slate-800 rounded-xl">
-                                <IoKeyOutline className="text-lg" />
-                            </div>
-                            <div>
-                                <span className="text-sm font-bold text-gray-900 block">Change Password</span>
-                                <span className="text-xs text-gray-500">Update your login password and security settings</span>
-                            </div>
-                        </div>
-                        <IoChevronForwardOutline className="text-gray-400" />
-                    </div>
-                </div>
 
                 {/* Section 3: Notification Preferences */}
                 <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">

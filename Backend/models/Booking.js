@@ -43,7 +43,7 @@ const bookingSchema = new mongoose.Schema({
   },
   scheduledTime: {
     type: String,
-    required: [true, 'Scheduled time is required']
+    default: 'TBD'
   },
   address: {
     street: {
@@ -87,7 +87,7 @@ const bookingSchema = new mongoose.Schema({
   },
   purpose: {
     type: String,
-    enum: ['Agriculture', 'Industrial/Commercial', 'Domestic/Household', 'Open plots'],
+    enum: ['Agriculture', 'Industrial/Commercial', 'Domestic/Household', 'Open plots', 'Industrial'],
     trim: true
   },
   purposeExtent: {

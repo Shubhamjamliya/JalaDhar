@@ -269,6 +269,15 @@ const acceptBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const vendorId = req.userId;
+    const { scheduledDate, scheduledTime } = req.body;
+
+    // Vendor must provide the date and time they are available
+    if (!scheduledDate || !scheduledTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your available date and time for the survey visit.'
+      });
+    }
 
     const booking = await Booking.findOne({
       _id: bookingId,
@@ -283,16 +292,11 @@ const acceptBooking = async (req, res) => {
       });
     }
 
-    // Update booking status
+    // Update booking status and schedule with expert's confirmed time
     booking.status = BOOKING_STATUS.ACCEPTED;
+    booking.scheduledDate = new Date(scheduledDate);
+    booking.scheduledTime = scheduledTime;
     await booking.save();
-
-    // TODO: Send notification to user about booking acceptance
-    // await sendNotification({
-    //   userId: booking.user._id,
-    //   type: 'BOOKING_ACCEPTED',
-    //   message: `Your booking has been accepted by ${req.user.name}`
-    // });
 
     res.json({
       success: true,

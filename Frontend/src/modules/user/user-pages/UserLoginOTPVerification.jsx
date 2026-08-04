@@ -7,38 +7,34 @@ import {
 } from "react-icons/io5";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useLanguage } from "../../../contexts/LanguageContext";
-import { sendUserRegistrationOTP } from "../../../services/authApi";
+import { sendUserLoginOTP } from "../../../services/authApi";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 
 import logo from "@/assets/AppLogo.png";
 
-export default function UserOTPVerification() {
+export default function UserLoginOTPVerification() {
     const { t } = useLanguage();
     const navigate = useNavigate();
     const location = useLocation();
-    const { register } = useAuth();
+    const { verifyLoginOTP } = useAuth();
 
-    // Get registration data from location state
-    const registrationData = location.state?.registrationData;
     const verificationToken = location.state?.verificationToken;
     const phone = location.state?.phone;
-    const email = location.state?.email;
 
     const [otp, setOtp] = useState("");
     const [otpCountdown, setOtpCountdown] = useState(() => location.state?.cooldownRemaining ?? 60);
     const [loading, setLoading] = useState(false);
-    const [registrationSuccess, setRegistrationSuccess] = useState(false);
+    const [loginSuccess, setLoginSuccess] = useState(false);
     const toast = useToast();
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        // Redirect if no registration data or token
-        if (!registrationData || !verificationToken) {
-            navigate("/usersignup");
+        if (!verificationToken || !phone) {
+            navigate("/userlogin");
             return;
         }
-    }, [navigate, registrationData, verificationToken]);
+    }, [navigate, phone, verificationToken]);
 
     useEffect(() => {
         let timer;
@@ -50,22 +46,16 @@ export default function UserOTPVerification() {
 
     const handleResendOTP = async () => {
         setLoading(true);
-        const loadingToast = toast.showLoading("Resending OTP...");
+        const loadingToast = toast.showLoading("Resending Login OTP...");
         try {
-            const response = await sendUserRegistrationOTP({
-                name: registrationData.name,
-                phone: registrationData.phone,
-                email: registrationData.email,
-                preferredLanguage: registrationData.preferredLanguage
-            });
+            const response = await sendUserLoginOTP({ phone });
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("New OTP sent successfully!");
+                toast.showSuccess("New OTP sent to your mobile number!");
                 setOtpCountdown(60);
                 if (response.data?.otp) {
                     setOtp(response.data.otp);
                 }
-                // Update location state with new token
                 window.history.replaceState(
                     { ...location.state, verificationToken: response.data.token },
                     ""
@@ -82,7 +72,7 @@ export default function UserOTPVerification() {
         }
     };
 
-    const handleVerifyOTP = async (e) => {
+    const handleVerifyLogin = async (e) => {
         e?.preventDefault();
 
         if (!otp || otp.length !== 6) {
@@ -91,42 +81,34 @@ export default function UserOTPVerification() {
         }
 
         setLoading(true);
-        const loadingToast = toast.showLoading("Verifying OTP...");
+        const loadingToast = toast.showLoading("Logging in...");
 
         try {
-            const result = await register({
-                name: registrationData.name,
-                phone: registrationData.phone,
-                email: registrationData.email,
-                preferredLanguage: registrationData.preferredLanguage,
-                otp: otp,
-                token: verificationToken
+            const result = await verifyLoginOTP({
+                token: verificationToken,
+                otp: otp
             });
 
             if (result.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess(result.message || "Account created successfully! Redirecting to login...");
-                setRegistrationSuccess(true);
+                toast.showSuccess("Login successful! Redirecting...");
+                setLoginSuccess(true);
                 setTimeout(() => {
-                    navigate("/userlogin", {
-                        state: {
-                            message: "Account created successfully! Please log in to continue."
-                        }
-                    });
-                }, 1800);
+                    navigate("/user/dashboard");
+                }, 800);
             } else {
                 toast.dismissToast(loadingToast);
-                toast.showError(result.message || "Verification failed. Please try again.");
+                toast.showError(result.message || "Invalid OTP. Please try again.");
             }
         } catch (err) {
             toast.dismissToast(loadingToast);
-            handleApiError(err, "Registration failed. Please try again.");
+            handleApiError(err, "Login failed. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
-    if (registrationSuccess) {
+    if (loginSuccess) {
         return (
             <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] px-4 py-8 overflow-y-auto">
                 <div className="w-full max-w-md flex flex-col items-center">
@@ -141,10 +123,10 @@ export default function UserOTPVerification() {
                     <main className="w-full rounded-3xl bg-white p-8 shadow-xl border border-gray-100/80 text-center">
                         <IoCheckmarkCircle className="text-6xl text-emerald-500 mx-auto mb-4" />
                         <h2 className="text-2xl font-extrabold text-gray-800 mb-2">
-                            Account Created!
+                            Welcome Back!
                         </h2>
                         <p className="text-sm text-gray-600 mb-6">
-                            Your account has been created successfully. Redirecting you to login...
+                            Login successful. Redirecting to dashboard...
                         </p>
                         <div className="animate-spin rounded-full h-8 w-8 border-3 border-t-transparent border-[#0A84FF] mx-auto"></div>
                     </main>
@@ -156,7 +138,7 @@ export default function UserOTPVerification() {
     return (
         <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] px-4 py-8 overflow-y-auto">
             <div className="w-full max-w-md flex flex-col items-center">
-                {/* Logo & Header */}
+                {/* Logo & Subtitle */}
                 <div className="mb-6 flex flex-col items-center text-center">
                     <img
                         src={logo}
@@ -164,13 +146,13 @@ export default function UserOTPVerification() {
                         className="h-28 sm:h-32 object-contain mb-2 drop-shadow-xs"
                     />
                     <p className="text-sm font-semibold text-gray-600 mt-1">
-                        Enter the OTP sent to complete your account setup.
+                        Enter the OTP sent to your mobile number to log in.
                     </p>
                 </div>
 
                 {/* Main Form Card */}
                 <main className="w-full rounded-3xl bg-white p-6 sm:p-8 shadow-xl border border-gray-100/80">
-                    <form className="space-y-4" onSubmit={handleVerifyOTP}>
+                    <form className="space-y-4" onSubmit={handleVerifyLogin}>
                         {/* Pill Tag */}
                         <div className="flex justify-center mb-2">
                             <span className="text-xs font-bold text-[#0A84FF] bg-blue-50 px-4 py-1.5 rounded-full border border-blue-200/80 shadow-2xs">
@@ -181,16 +163,11 @@ export default function UserOTPVerification() {
                         {/* Recipient Details Banner */}
                         <div className="text-center bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80">
                             <p className="text-xs font-semibold text-gray-500 mb-1">
-                                {t('verificationOtpSentTo', 'Verification OTP sent to')}
+                                {t('loginOtpSentTo', 'Login OTP sent to')}
                             </p>
                             <p className="text-sm font-extrabold text-gray-800 tracking-wide">
                                 +91 {phone}
                             </p>
-                            {email && (
-                                <p className="text-xs font-medium text-gray-500 mt-0.5">
-                                    {email}
-                                </p>
-                            )}
                         </div>
 
                         {/* OTP Input */}
@@ -241,11 +218,11 @@ export default function UserOTPVerification() {
                             )}
                             <button
                                 type="button"
-                                onClick={() => navigate("/usersignup", { state: registrationData })}
+                                onClick={() => navigate("/userlogin", { state: { phone, devOtp: location.state?.devOtp } })}
                                 className="text-gray-500 hover:text-[#0A84FF] font-bold flex items-center gap-1 transition-all cursor-pointer"
                             >
                                 <IoArrowBackOutline className="text-sm" />
-                                {t('editDetails', 'Edit Details')}
+                                {t('backToLogin', 'Back to Login')}
                             </button>
                         </div>
 
@@ -255,7 +232,7 @@ export default function UserOTPVerification() {
                             disabled={loading || otp.length !== 6}
                             className="w-full rounded-full bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2"
                         >
-                            {loading ? "Verifying..." : t('verifyAndCreateAccount', 'Verify & Create Account')}
+                            {loading ? "Logging in..." : t('verifyLogin', 'Verify & Login')}
                         </button>
                     </form>
                 </main>
@@ -263,12 +240,12 @@ export default function UserOTPVerification() {
                 {/* Footer Link */}
                 <div className="mt-6 text-center">
                     <p className="text-sm font-medium text-gray-500">
-                        Already have an account?{" "}
+                        Don't have an account?{" "}
                         <Link
-                            to="/userlogin"
+                            to="/usersignup"
                             className="font-bold text-[#0A84FF] hover:text-blue-700 hover:underline transition-all"
                         >
-                            Log In
+                            Sign Up
                         </Link>
                     </p>
                 </div>

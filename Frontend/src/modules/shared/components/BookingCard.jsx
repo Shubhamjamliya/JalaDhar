@@ -23,7 +23,8 @@ export default function BookingCard({
     };
 
     const formatTime = (timeString) => {
-        return timeString || "N/A";
+        if (!timeString || timeString === "TBD") return "Time TBD by expert";
+        return timeString;
     };
 
     const formatAddress = (address) => {

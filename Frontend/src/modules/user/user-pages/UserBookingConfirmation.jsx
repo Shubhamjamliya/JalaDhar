@@ -121,7 +121,7 @@ export default function UserBookingConfirmation() {
                         <div className="flex-1">
                             <p className="text-sm text-gray-600 mb-1">Date & Time</p>
                             <p className="text-base font-semibold text-gray-800">
-                                {new Date(booking.scheduledDate).toLocaleDateString("en-IN")} at {booking.scheduledTime}
+                                {new Date(booking.scheduledDate).toLocaleDateString("en-IN")} &bull; {(!booking.scheduledTime || booking.scheduledTime === "TBD") ? "Time TBD by expert" : booking.scheduledTime}
                             </p>
                         </div>
                     </div>

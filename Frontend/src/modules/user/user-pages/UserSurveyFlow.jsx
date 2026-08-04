@@ -38,7 +38,7 @@ const CategorySelection = ({ onSelect }) => {
     { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "bg-green-100 text-green-600" },
     { id: "Domestic/Household", label: "Domestic/Household", icon: IoHomeOutline, color: "bg-blue-100 text-blue-600" },
     { id: "Industrial/Commercial", label: "Industrial/Commercial", icon: IoBusinessOutline, color: "bg-purple-100 text-purple-600" },
-    { id: "Open plots", label: "Open plots", icon: IoConstructOutline, color: "bg-orange-100 text-orange-600" }
+    { id: "Industrial", label: "Industrial", icon: IoConstructOutline, color: "bg-orange-100 text-orange-600" }
   ];
 
   return (
@@ -291,7 +291,7 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {isAgriCategory(category) ? "Survey No" :
-              (category === "Domestic/Household" || category === "Open plots") ? "Plot No" :
+              (category === "Domestic/Household" || category === "Industrial" || category === "Open plots") ? "Plot No" :
                 "Plot / Survey No"}
           </label>
           <input
@@ -702,11 +702,11 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
 
   const handlePay = () => {
     if (!date) {
-      toast.showError("Please select a date");
+      toast.showError("Please select a preferred visit date");
       return;
     }
-    // Default time passed as it's no longer selected by user
-    onConfirm({ scheduledDate: date, scheduledTime: "10:00 AM" });
+    // Expert sets the confirmed visit time when accepting — we send TBD
+    onConfirm({ scheduledDate: date, scheduledTime: "TBD" });
   };
 
   return (
@@ -734,8 +734,8 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
               </span>
             </div>
           )}
-          <p className="text-xs text-gray-500 italic">
-            * Our expert will contact you to coordinate the exact time.
+          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 font-medium">
+            ⏰ The expert will confirm the exact visit time upon accepting your booking.
           </p>
         </div>
       </div>
@@ -1098,12 +1098,13 @@ export default function UserSurveyFlow() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      // Map frontend category to backend enum
       const purposeMap = {
         "Agriculture": "Agriculture",
         "Domestic/Household": "Domestic/Household",
         "Commercial": "Industrial/Commercial",
-        "Industrial": "Industrial/Commercial"
+        "Industrial/Commercial": "Industrial/Commercial",
+        "Industrial": "Industrial",
+        "Open plots": "Industrial"
       };
 
       const bookingPayload = {
@@ -1121,7 +1122,7 @@ export default function UserSurveyFlow() {
         village: surveyData.details.village,
         mandal: surveyData.details.mandal,
         district: surveyData.details.district,
-        purpose: purposeMap[surveyData.category] || "Open plots",
+        purpose: purposeMap[surveyData.category] || "Industrial",
         purposeExtent: surveyData.details.purposeExtent,
         surveyNumber: surveyData.details.surveyNumber || surveyData.details.plotNumber || "",
         notes: `Category: ${surveyData.category}. ${surveyData.details.surveyNumber ? `Survey No: ${surveyData.details.surveyNumber}. ` : ''

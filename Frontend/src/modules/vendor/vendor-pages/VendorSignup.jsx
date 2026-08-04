@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { IoLocationOutline, IoCloseOutline, IoCheckmarkOutline, IoTrashOutline, IoImageOutline } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { sendVendorRegistrationOTP } from "../../../services/vendorAuthApi";
@@ -38,6 +38,25 @@ export default function VendorSignup() {
         `}</style>
     );
 
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { register } = useVendorAuth();
+    const toast = useToast();
+
+    // Extract initial registration data if coming back from OTP verification to edit
+    const initialData = location.state?.registrationData || location.state?.initialData || location.state;
+
+    // Helper to determine initial education values
+    const STANDARD_EDUCATION_OPTIONS = ["MSc in Geophysics", "MSc in Geology", "MSc in Earth Sciences"];
+    const getInitialEducation = () => {
+        if (!initialData?.education) return "";
+        return STANDARD_EDUCATION_OPTIONS.includes(initialData.education) ? initialData.education : "Other";
+    };
+    const getInitialCustomEducation = () => {
+        if (!initialData?.education) return "";
+        return STANDARD_EDUCATION_OPTIONS.includes(initialData.education) ? "" : initialData.education;
+    };
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [registrationStep, setRegistrationStep] = useState(1); // 1: form, 2: OTP
@@ -46,20 +65,31 @@ export default function VendorSignup() {
     const [otpCountdown, setOtpCountdown] = useState(0);
     const [loading, setLoading] = useState(false);
     const [mapsLoaded, setMapsLoaded] = useState(false);
-    const [fullAddress, setFullAddress] = useState("");
+    const [fullAddress, setFullAddress] = useState(() => {
+        return initialData?.selectedPlace?.formattedAddress || initialData?.address?.geoLocation?.formattedAddress || "";
+    });
     const [gettingLocation, setGettingLocation] = useState(false);
 
     // Machine Multi-select State
     const machineDropdownRef = useRef(null);
     const [isMachineDropdownOpen, setIsMachineDropdownOpen] = useState(false);
-    const [selectedMachines, setSelectedMachines] = useState([]);
+    const [selectedMachines, setSelectedMachines] = useState(() => {
+        if (initialData?.machineType) {
+            return initialData.machineType.split(', ').map(m => m.trim()).filter(Boolean);
+        }
+        return [];
+    });
     const [customMachine, setCustomMachine] = useState("");
     // Service Image Previews
-    const [serviceImagePreviews, setServiceImagePreviews] = useState([]);
-
-    const navigate = useNavigate();
-    const { register } = useVendorAuth();
-    const toast = useToast();
+    const [serviceImagePreviews, setServiceImagePreviews] = useState(() => {
+        if (initialData?.serviceImages && Array.isArray(initialData.serviceImages)) {
+            return initialData.serviceImages.map(file => ({
+                file,
+                preview: file instanceof File || file instanceof Blob ? URL.createObjectURL(file) : (typeof file === 'string' ? file : '')
+            })).filter(item => item.preview);
+        }
+        return [];
+    });
 
     // Check if Google Maps is loaded
     useEffect(() => {
@@ -144,48 +174,49 @@ export default function VendorSignup() {
     // Form state
     const [formData, setFormData] = useState({
         // Basic Details
-        name: "",
-        email: "",
-        phone: "",
-        bloodGroup: "",
-        gender: "",
-        designation: "",
-        password: "",
-        confirmPassword: "",
-        profilePicture: null,
+        name: initialData?.name || "",
+        email: initialData?.email || "",
+        phone: initialData?.phone || "",
+        bloodGroup: initialData?.bloodGroup || "",
+        gender: initialData?.gender || "",
+        designation: initialData?.designation || "",
+        password: initialData?.password || "",
+        confirmPassword: initialData?.password || "",
+        profilePicture: initialData?.profilePicture || null,
 
         // KYC Details
-        aadhaarNo: "",
-        panNo: "",
-        aadharCard: null,
-        panCard: null,
+        aadhaarNo: initialData?.aadhaarNo || "",
+        panNo: initialData?.panNo || "",
+        aadharCard: initialData?.aadharCard || null,
+        panCard: initialData?.panCard || null,
 
         // Education & Experience
-        education: "",
-        customEducation: "",
-        institution: "",
+        education: getInitialEducation(),
+        customEducation: getInitialCustomEducation(),
+        institution: initialData?.institution || "",
         // Experience & Registration
-        experience: "",
-        experienceDetails: "",
-        groundwaterRegDetails: null, // New: State groundwater department registration
-        trainingCertificates: [], // New: Training/Workshop certificates
-        certificates: [], // Degree certificates
+        experience: initialData?.experience !== undefined ? initialData.experience : "",
+        experienceDetails: initialData?.experienceDetails || "",
+        groundwaterRegDetails: initialData?.groundwaterRegDetails || null,
+        trainingCertificates: initialData?.trainingCertificates || [],
+        certificates: initialData?.certificates || [],
 
         // Service Details
-        machineType: "",
-        serviceImages: [],
-        servicePrice: "", // Global expertise fee
+        machineType: initialData?.machineType || "",
+        serviceImages: initialData?.serviceImages || [],
+        servicePrice: initialData?.servicePrice || "",
 
         // Bank Details
-        bankName: "",
-        accountHolderName: "",
-        accountNumber: "",
-        ifscCode: "",
-        branchName: "",
-        cancelledCheque: null,
+        bankName: initialData?.bankName || "",
+        accountHolderName: initialData?.accountHolderName || "",
+        accountNumber: initialData?.accountNumber || "",
+        ifscCode: initialData?.ifscCode || "",
+        branchName: initialData?.branchName || "",
+        cancelledCheque: initialData?.cancelledCheque || null,
 
         // Address - only geoLocation
-        address: {}
+        address: initialData?.address || {},
+        selectedPlace: initialData?.selectedPlace || null
     });
 
     // Sync machine selection to form data

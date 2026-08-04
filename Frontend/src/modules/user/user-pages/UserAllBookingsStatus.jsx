@@ -128,12 +128,14 @@ export default function UserAllBookingsStatus() {
       month: "short",
     });
 
+    const timeDisplay = (!timeString || timeString === "TBD") ? "Time TBD" : timeString;
+
     if (isToday) {
-      return `Today, ${timeString || "N/A"}`;
+      return `Today, ${timeDisplay}`;
     } else if (isTomorrow) {
-      return `Tomorrow, ${timeString || "N/A"}`;
+      return `Tomorrow, ${timeDisplay}`;
     } else {
-      return `${formattedDate}, ${timeString || "N/A"}`;
+      return `${formattedDate}, ${timeDisplay}`;
     }
   };
 

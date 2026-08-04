@@ -1,155 +1,184 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../../contexts/AuthContext";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import {
+    IoCallOutline,
+    IoGlobeOutline
+} from "react-icons/io5";
+import { sendUserLoginOTP } from "../../../services/authApi";
 import { useToast } from "../../../hooks/useToast";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import PolicyModal from "../../shared/components/PolicyModal";
 
 import logo from "@/assets/AppLogo.png";
 
 export default function UserLogin() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
+    const location = useLocation();
+    const { language, setLanguage, t, supportedLanguages, isLanguageEnabled } = useLanguage();
+    
+    // Form state
+    const [phone, setPhone] = useState(() => location.state?.phone || location.state?.mobile || "");
     const [loading, setLoading] = useState(false);
     const [showTermsModal, setShowTermsModal] = useState(false);
+    const [showLangMenu, setShowLangMenu] = useState(false);
+    
     const navigate = useNavigate();
-    const { login } = useAuth();
     const toast = useToast();
 
-    const handleLogin = async (e) => {
-        e?.preventDefault();
-        setLoading(true);
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
-        // Basic validation
-        if (!email || !password) {
-            toast.showError("Please fill in all fields");
-            setLoading(false);
+    // Handle Mobile OTP Login
+    const handleSendLoginOTP = async (e) => {
+        e?.preventDefault();
+
+        if (!phone || phone.trim().length < 10) {
+            toast.showError("Please enter a valid 10-digit Mobile Number");
             return;
         }
 
-        const loadingToast = toast.showLoading("Logging in...");
+        setLoading(true);
+        const loadingToast = toast.showLoading("Sending OTP...");
 
         try {
-            const result = await login({ email, password });
+            const response = await sendUserLoginOTP({ phone: phone.trim() });
 
-            if (result.success) {
+            if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Login successful! Redirecting...");
-                // Small delay to show success message
+                if (response.reused) {
+                    toast.showInfo(response.message || "Active OTP reused. Redirecting...");
+                } else {
+                    toast.showSuccess("OTP sent successfully! Please verify to log in.");
+                }
+
                 setTimeout(() => {
-                    navigate("/user/dashboard");
-                }, 500);
+                    navigate("/user/verify-login-otp", {
+                        state: {
+                            phone: phone.trim(),
+                            verificationToken: response.data?.token,
+                            devOtp: response.data?.devOtp || location.state?.devOtp,
+                            cooldownRemaining: response.data?.cooldownRemaining || 60
+                        }
+                    });
+                }, 600);
             } else {
                 toast.dismissToast(loadingToast);
-                toast.showError(result.message || "Login failed. Please try again.");
+                toast.showError(response.message || "Failed to send OTP");
             }
         } catch (err) {
             toast.dismissToast(loadingToast);
-            toast.showError("An unexpected error occurred. Please try again.");
+            toast.showError(err.response?.data?.message || "No account found with this mobile number. Please click Sign Up to create an account.");
         } finally {
             setLoading(false);
         }
     };
 
+    const currentLangObj = supportedLanguages.find(l => l.code === language) || supportedLanguages[0];
+
     return (
-        <div className="relative flex h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-6">
-            <div className="w-full max-w-sm">
-                <div className="mb-8 flex flex-col items-center">
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] px-4 py-8 overflow-y-auto">
+            {/* Top Language Toggle Button */}
+            {isLanguageEnabled && (
+                <div className="absolute top-4 right-4 z-20">
+                    <button
+                        onClick={() => setShowLangMenu(!showLangMenu)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-gray-200 shadow-2xs text-xs font-bold text-gray-700 hover:border-blue-300 transition-all cursor-pointer"
+                    >
+                        <IoGlobeOutline className="text-[#0A84FF] text-sm" />
+                        <span>{currentLangObj.nativeName}</span>
+                    </button>
+
+                    {showLangMenu && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-30 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                            {supportedLanguages.map((lang) => (
+                                <button
+                                    key={lang.code}
+                                    onClick={() => {
+                                        setLanguage(lang.code);
+                                        setShowLangMenu(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left cursor-pointer ${
+                                        language === lang.code ? "bg-blue-50 text-[#0A84FF]" : "text-gray-700 hover:bg-gray-50"
+                                    }`}
+                                >
+                                    <span>{lang.nativeName}</span>
+                                    <span className="text-[10px] text-gray-400 font-mono">{lang.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <div className="w-full max-w-md flex flex-col items-center">
+                {/* Logo & Subtitle */}
+                <div className="mb-6 flex flex-col items-center text-center">
                     <img
                         src={logo}
                         alt="Jaladhaara Logo"
-                        className="h-32 object-contain mb-4"
+                        className="h-28 sm:h-32 object-contain mb-2 drop-shadow-xs"
                     />
-                    <p className="mt-4 text-[#6B7280] text-center">
-                        Welcome back! Please login to your account.
+                    <p className="text-sm font-semibold text-gray-500 mt-1">
+                        {t('welcomeBackLogin', 'Welcome back! Please login to your account.')}
                     </p>
                 </div>
 
-                <form className="space-y-6 " onSubmit={handleLogin}>
-                    <div className="flex justify-center mb-4">
-                        <h2 className="button-white text-sm font-bold text-gradient px-3 py-1 rounded-full border-2 border-[#1A80E5]">
-                            User Login
-                        </h2>
-                    </div>
-                    <div className="relative">
-                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400">
-                            mail
-                        </span>
-                        <input
-                            className="w-full rounded-full border-gray-200 bg-white py-3 pl-12 pr-4 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5]"
-                            placeholder="Email or Phone"
-                            type="text"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={loading}
-                        />
-                    </div>
-
-                    <div className="relative">
-                        <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400">
-                            lock
-                        </span>
-                        <input
-                            className="w-full rounded-full border-gray-200 bg-white py-3 pl-12 pr-12 text-[#3A3A3A] shadow-sm focus:border-[#1A80E5] focus:ring-[#1A80E5]"
-                            placeholder="Password"
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled={loading}
-                            onKeyPress={(e) => {
-                                if (e.key === "Enter") {
-                                    handleLogin(e);
-                                }
-                            }}
-                        />
-                        <button
-                            type="button"
-                            className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                            onClick={() => setShowPassword(!showPassword)}
-                            disabled={loading}
-                        >
-                            <span className="material-symbols-outlined text-xl">
-                                {showPassword ? "visibility_off" : "visibility"}
+                {/* Main Form Card */}
+                <main className="w-full rounded-3xl bg-white p-6 sm:p-8 shadow-xl border border-gray-100/80">
+                    <form className="space-y-4" onSubmit={handleSendLoginOTP}>
+                        {/* Pill Tag */}
+                        <div className="flex justify-center mb-4">
+                            <span className="text-xs font-bold text-[#0A84FF] bg-blue-50 px-4 py-1.5 rounded-full border border-blue-200/80 shadow-2xs">
+                                {t('userLogin', 'User Login')}
                             </span>
-                        </button>
-                    </div>
+                        </div>
 
-                    <div className="text-right">
-                        <Link
-                            to="/user/forgot-password"
-                            className="text-sm font-medium text-[#1A80E5] hover:text-blue-700"
+                        {/* Mobile Number Input */}
+                        <div className="relative">
+                            <IoCallOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-lg" />
+                            <input
+                                className="w-full rounded-full border border-gray-200 bg-white py-3.5 pl-11 pr-4 text-gray-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-2 focus:ring-blue-100 transition-all outline-none"
+                                placeholder={`${t('mobileNumber', 'Mobile Number')} *`}
+                                type="tel"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                disabled={loading}
+                                required
+                                autoFocus
+                            />
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                            className="w-full rounded-full bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 mt-2"
+                            type="submit"
+                            disabled={loading || !phone}
                         >
-                            Forgot Password?
-                        </Link>
-                    </div>
+                            <span>{loading ? "Sending OTP..." : t('sendOtp', 'Send OTP')}</span>
+                            {!loading && <span className="text-base font-bold">→</span>}
+                        </button>
+                    </form>
+                </main>
 
-                    <button
-                        className="button-gradient w-full rounded-full py-3.5 text-base font-bold text-white shadow-[0_6px_15px_rgba(26,128,229,0.25)] transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                        type="submit"
-                        disabled={loading}
-                    >
-                        {loading ? "Logging in..." : "Login"}
-                    </button>
-                </form>
-
-                <div className="mt-8 text-center space-y-2">
-                    <p className="text-xs text-gray-500">
+                {/* Footer Links */}
+                <div className="mt-6 text-center space-y-2">
+                    <p className="text-xs text-gray-500 font-medium">
                         By logging in, you agree to our{" "}
                         <button
                             type="button"
                             onClick={() => setShowTermsModal(true)}
-                            className="font-semibold text-[#1A80E5] underline hover:text-blue-700"
+                            className="font-bold text-[#0A84FF] underline hover:text-blue-700 transition-all"
                         >
                             General Terms & Conditions
                         </button>
                     </p>
-                    <p className="text-sm text-[#6B7280]">
-                        Don't have an account?{" "}
+                    <p className="text-sm font-medium text-gray-500">
+                        {t('dontHaveAccount', "Don't have an account?")}{" "}
                         <Link
                             to="/usersignup"
-                            className="font-semibold text-[#1A80E5] hover:text-blue-700"
+                            className="font-bold text-[#0A84FF] hover:text-blue-700 hover:underline transition-all"
                         >
-                            Sign Up
+                            {t('signUp', 'Sign Up')}
                         </Link>
                     </p>
                 </div>

@@ -41,7 +41,6 @@ const createBookingValidation = [
   body('serviceId').notEmpty().withMessage('Service ID is required'),
   body('vendorId').notEmpty().withMessage('Vendor ID is required'),
   body('scheduledDate').notEmpty().withMessage('Scheduled date is required'),
-  body('scheduledTime').notEmpty().withMessage('Scheduled time is required'),
   body('address.street').notEmpty().withMessage('Street address is required'),
   body('address.city').notEmpty().withMessage('City is required'),
   body('address.state').notEmpty().withMessage('State is required'),

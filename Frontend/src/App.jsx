@@ -16,11 +16,14 @@ import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import LoadingSpinner from "./modules/shared/components/LoadingSpinner";
 import ToastProvider from "./components/ToastProvider";
 import LocationPermissionModal from "./components/LocationPermissionModal";
+import ScrollToTop from "./components/ScrollToTop";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 // Lazy load all route components for better performance
 const UserLogin = lazy(() => import("./modules/user/user-pages/UserLogin"));
 const UserSignup = lazy(() => import("./modules/user/user-pages/UserSignup"));
 const UserOTPVerification = lazy(() => import("./modules/user/user-pages/UserOTPVerification"));
+const UserLoginOTPVerification = lazy(() => import("./modules/user/user-pages/UserLoginOTPVerification"));
 const UserForgotPassword = lazy(() => import("./modules/user/user-pages/UserForgotPassword"));
 const UserResetPassword = lazy(() => import("./modules/user/user-pages/UserResetPassword"));
 const UserDashboard = lazy(() => import("./modules/user/user-pages/UserDashboard"));
@@ -106,11 +109,13 @@ import NotificationsRedirect from "./components/NotificationsRedirect";
 function App() {
     return (
         <ThemeProvider>
-            <ToastProvider />
-            <AuthProvider>
+            <LanguageProvider>
+                <ToastProvider />
+                <AuthProvider>
                 <VendorAuthProvider>
                     <AdminAuthProvider>
                         <Router>
+                            <ScrollToTop />
                             <NotificationProvider>
                                 <LocationPermissionModal />
                                 <Routes>
@@ -138,6 +143,14 @@ function App() {
                                         element={
                                             <Suspense fallback={<LoadingSpinner />}>
                                                 <UserOTPVerification />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/user/verify-login-otp"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <UserLoginOTPVerification />
                                             </Suspense>
                                         }
                                     />
@@ -998,7 +1011,8 @@ function App() {
                     </AdminAuthProvider>
                 </VendorAuthProvider>
             </AuthProvider>
-        </ThemeProvider>
+        </LanguageProvider>
+    </ThemeProvider>
     );
 }
 

@@ -27,6 +27,7 @@ export default function UserReports() {
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
+        window.scrollTo(0, 0);
         loadBookings();
     }, []);
 

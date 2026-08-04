@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     IoHelpCircleOutline,
@@ -41,6 +41,10 @@ export default function UserHelpSupport() {
     const navigate = useNavigate();
     const [openFaq, setOpenFaq] = useState(null);
     const [activePolicy, setActivePolicy] = useState(null);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     const toggleFaq = (index) => {
         setOpenFaq(openFaq === index ? null : index);

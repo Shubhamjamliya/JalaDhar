@@ -81,11 +81,14 @@ export default function AdminResetPassword() {
             <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5 py-8">
                 <div className="w-full max-w-sm">
                     <div className="text-center mb-10 mt-4">
-                        <img
-                            src={logo}
-                            alt="Jaladhaara"
-                            className="w-auto mx-auto mb-2"
-                        />
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                            <img
+                                src={logo}
+                                alt="Jaladhaara Logo"
+                                className="h-14 sm:h-16 object-contain drop-shadow-sm"
+                            />
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-wide text-[#1565C0]" style={{letterSpacing: '0.06em'}}>Jaladhaara</span>
+                        </div>
                     </div>
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
                         <IoCheckmarkCircleOutline className="text-6xl text-green-500 mx-auto mb-4" />
@@ -107,11 +110,14 @@ export default function AdminResetPassword() {
             <div className="w-full max-w-sm">
                 {/* Logo */}
                 <div className="text-center mb-10 mt-4">
-                    <img
-                        src="/src/assets/logo.png"
-                        alt="Jaladhaara"
-                        className="w-auto mx-auto mb-2"
-                    />
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                        <img
+                            src={logo}
+                            alt="Jaladhaara Logo"
+                            className="h-14 sm:h-16 object-contain drop-shadow-sm"
+                        />
+                        <span className="text-2xl sm:text-3xl font-extrabold tracking-wide text-[#1565C0]" style={{letterSpacing: '0.06em'}}>Jaladhaara</span>
+                    </div>
                 </div>
 
                 {/* Title */}

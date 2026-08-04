@@ -297,13 +297,14 @@ export default function VendorOTPVerification() {
                                     Resend OTP
                                 </button>
                             )}
-                            <Link
-                                to="/vendorsignup"
-                                className="text-[#6B7280] hover:text-[#1A80E5] font-medium flex items-center gap-1"
+                            <button
+                                type="button"
+                                onClick={() => navigate("/vendorsignup", { state: { registrationData } })}
+                                className="text-[#6B7280] hover:text-[#1A80E5] font-medium flex items-center gap-1 cursor-pointer"
                             >
                                 <span className="material-symbols-outlined text-sm">arrow_back</span>
                                 Edit Details
-                            </Link>
+                            </button>
                         </div>
 
                         {/* Verify & Register Button */}

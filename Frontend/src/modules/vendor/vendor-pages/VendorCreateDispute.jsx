@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-    IoChevronBackOutline,
     IoImageOutline,
     IoCloseOutline,
+    IoAlertCircleOutline,
+    IoTicketOutline,
+    IoDocumentTextOutline,
+    IoCloudUploadOutline,
+    IoTrashOutline,
+    IoSendOutline,
+    IoHelpCircleOutline
 } from "react-icons/io5";
-import { createDispute } from "../../../services/vendorApi";
-import { getVendorBookings } from "../../../services/vendorApi";
+import { createDispute, getVendorBookings } from "../../../services/vendorApi";
 import { getPublicSettings } from "../../../services/settingsApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
@@ -37,7 +42,6 @@ export default function VendorCreateDispute() {
     const [disputeTypes, setDisputeTypes] = useState(DEFAULT_DISPUTE_TYPES);
     const [loadingBookings, setLoadingBookings] = useState(false);
     const [formData, setFormData] = useState({
-        subject: "",
         description: "",
         type: "",
         bookingId: location.state?.bookingId || "",
@@ -105,11 +109,6 @@ export default function VendorCreateDispute() {
 
     const validateForm = () => {
         const newErrors = {};
-        if (!formData.subject.trim()) {
-            newErrors.subject = "Subject is required";
-        } else if (formData.subject.trim().length < 5) {
-            newErrors.subject = "Subject must be at least 5 characters";
-        }
         if (!formData.description.trim()) {
             newErrors.description = "Description is required";
         } else if (formData.description.trim().length < 10) {
@@ -131,14 +130,18 @@ export default function VendorCreateDispute() {
         setLoading(true);
         const loadingToast = toast.showLoading("Creating dispute...");
         try {
-            const response = await createDispute(formData, attachments);
+            const payload = {
+                ...formData,
+                subject: formData.type || "Dispute Issue"
+            };
+            const response = await createDispute(payload, attachments);
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Dispute created successfully!");
+                toast.showSuccess("Dispute submitted successfully!");
                 navigate("/vendor/disputes");
             } else {
                 toast.dismissToast(loadingToast);
-                toast.showError(response.message || "Failed to create dispute");
+                toast.showError(response.message || "Failed to submit dispute");
             }
         } catch (err) {
             toast.dismissToast(loadingToast);
@@ -148,127 +151,156 @@ export default function VendorCreateDispute() {
         }
     };
 
+    const formatFileSize = (bytes) => {
+        if (bytes < 1024) return bytes + " B";
+        else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+        else return (bytes / 1048576).toFixed(1) + " MB";
+    };
+
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center gap-4">
-                {/* Back button removed - handled by VendorNavbar */}
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Raise a Dispute</h1>
-                    <p className="text-sm text-gray-500 mt-1">Report an issue or complaint</p>
+        <div className="max-w-2xl mx-auto space-y-6 pb-12">
+            {/* Header Banner */}
+            <div className="bg-gradient-to-br from-slate-900 via-teal-950 to-slate-900 rounded-3xl p-6 text-white shadow-xl shadow-teal-950/20 relative overflow-hidden">
+                <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex items-start justify-between">
+                    <div>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-200 text-xs font-semibold uppercase tracking-wider mb-3">
+                            <IoHelpCircleOutline className="text-sm" /> Vendor Resolution Center
+                        </span>
+                        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Raise a Dispute</h1>
+                        <p className="text-sm text-teal-200/80 mt-1 font-medium max-w-md">
+                            Report an operational or booking issue. Admin will inspect and resolve it promptly.
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-                {/* Related Booking */}
-                <div>
+            {/* Main Form Card */}
+            <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 sm:p-8 space-y-6">
+                
+                {/* Related Booking Selector */}
+                <div className="space-y-2">
                     <CustomDropdown
                         name="bookingId"
                         label="Related Booking (Optional)"
                         value={formData.bookingId}
                         onChange={handleInputChange}
                         options={[
-                            { value: "", label: "Select a booking (optional)" },
+                            { value: "", label: "Select a booking reference (optional)" },
                             ...(loadingBookings
                                 ? [{ value: "", label: "Loading bookings..." }]
                                 : bookings.map(booking => ({
                                     value: booking._id,
-                                    label: `Booking #${booking._id.toString().slice(-8).toUpperCase()} - ${booking.service?.name || "Service"} - ${new Date(booking.scheduledDate).toLocaleDateString()}`
+                                    label: `#${booking._id.toString().slice(-8).toUpperCase()} — ${booking.service?.name || "Service"} (${new Date(booking.scheduledDate).toLocaleDateString("en-IN", { day: 'numeric', month: 'short' })})`
                                 }))
                             )
                         ]}
                     />
                 </div>
 
-                {/* Dispute Type */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Dispute Type <span className="text-red-500">*</span>
+                {/* Dispute Category / Type */}
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                        <IoAlertCircleOutline className="text-teal-600 text-base" />
+                        <span>Dispute Category</span>
+                        <span className="text-red-500 font-bold">*</span>
                     </label>
                     <CustomDropdown
                         name="type"
                         value={formData.type}
                         onChange={handleInputChange}
-                        className={errors.type ? "border-red-500" : "border-gray-300"}
+                        className={errors.type ? "border-red-400 focus:border-red-500 focus:ring-red-50" : ""}
                         options={[
-                            { value: "", label: "Select dispute type" },
+                            { value: "", label: "Select issue category" },
                             ...disputeTypes.map(t => ({ value: t, label: t }))
                         ]}
                     />
-                    {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
+                    {errors.type && <p className="text-red-500 text-xs font-medium mt-1 flex items-center gap-1"><IoAlertCircleOutline /> {errors.type}</p>}
                 </div>
 
-                {/* Subject */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Subject <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                        type="text"
-                        name="subject"
-                        value={formData.subject}
-                        onChange={handleInputChange}
-                        placeholder="Brief description of the issue"
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent ${errors.subject ? "border-red-500" : "border-gray-300"
-                            }`}
-                    />
-                    {errors.subject && <p className="text-red-500 text-sm mt-1">{errors.subject}</p>}
-                </div>
-
-                {/* Description */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Description <span className="text-red-500">*</span>
+                {/* Detailed Description */}
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                            <IoDocumentTextOutline className="text-teal-600 text-base" />
+                            <span>Detailed Explanation</span>
+                            <span className="text-red-500 font-bold">*</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-normal">min. 10 characters</span>
                     </label>
                     <textarea
                         name="description"
                         value={formData.description}
                         onChange={handleInputChange}
-                        rows={6}
-                        placeholder="Provide detailed information about the issue..."
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent ${errors.description ? "border-red-500" : "border-gray-300"
-                            }`}
+                        rows={5}
+                        placeholder="Please describe what went wrong in detail so our team can review and assist you..."
+                        className={`w-full p-4 bg-slate-50/70 border rounded-2xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:ring-4 outline-none transition-all resize-y ${
+                            errors.description
+                                ? "border-red-400 focus:border-red-500 focus:ring-red-50"
+                                : "border-slate-200 focus:border-teal-600 focus:ring-teal-50"
+                        }`}
                     />
-                    {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+                    {errors.description && <p className="text-red-500 text-xs font-medium mt-1 flex items-center gap-1"><IoAlertCircleOutline /> {errors.description}</p>}
                 </div>
 
-                {/* Attachments */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Attachments (Optional)
+                {/* Attachments Section */}
+                <div className="space-y-3">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                            <IoCloudUploadOutline className="text-teal-600 text-base" />
+                            <span>Supporting Evidence</span>
+                            <span className="text-[10px] text-slate-400 font-normal lowercase">(optional)</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-normal">Max 10MB per file</span>
                     </label>
+                    
                     <input
                         type="file"
                         multiple
                         accept="image/*,.pdf,.doc,.docx"
                         onChange={handleFileChange}
                         className="hidden"
-                        id="attachments"
+                        id="vendor-attachments"
                     />
                     <label
-                        htmlFor="attachments"
-                        className="block w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-[#0A84FF] transition-colors"
+                        htmlFor="vendor-attachments"
+                        className="group flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 hover:border-teal-500 rounded-2xl bg-slate-50/50 hover:bg-teal-50/30 transition-all cursor-pointer text-center"
                     >
-                        <div className="text-center">
-                            <IoImageOutline className="text-3xl text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-600">Click to upload files</p>
-                            <p className="text-xs text-gray-500 mt-1">Max 10MB per file (Images, PDF, DOC)</p>
+                        <div className="w-12 h-12 rounded-2xl bg-teal-100/80 group-hover:bg-teal-600 group-hover:text-white text-teal-700 flex items-center justify-center mb-3 transition-colors shadow-sm">
+                            <IoCloudUploadOutline className="text-2xl" />
                         </div>
+                        <p className="text-sm font-bold text-slate-800 group-hover:text-teal-700 transition-colors">
+                            Click to upload photos or documents
+                        </p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">
+                            PNG, JPG, PDF, DOC up to 10MB
+                        </p>
                     </label>
+
+                    {/* Attached File List */}
                     {attachments.length > 0 && (
-                        <div className="mt-4 space-y-2">
+                        <div className="space-y-2 pt-1">
                             {attachments.map((file, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
+                                    className="flex items-center justify-between bg-slate-50 border border-slate-200/80 p-3 rounded-2xl transition-all"
                                 >
-                                    <span className="text-sm text-gray-700 truncate flex-1">{file.name}</span>
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="p-2 bg-teal-100 text-teal-700 rounded-xl shrink-0">
+                                            <IoImageOutline className="text-lg" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-xs font-bold text-slate-800 truncate">{file.name}</p>
+                                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{formatFileSize(file.size)}</p>
+                                        </div>
+                                    </div>
                                     <button
                                         type="button"
                                         onClick={() => removeAttachment(index)}
-                                        className="ml-2 text-red-500 hover:text-red-700"
+                                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors shrink-0 ml-2"
+                                        title="Remove file"
                                     >
-                                        <IoCloseOutline className="text-xl" />
+                                        <IoTrashOutline className="text-lg" />
                                     </button>
                                 </div>
                             ))}
@@ -276,25 +308,34 @@ export default function VendorCreateDispute() {
                     )}
                 </div>
 
-                {/* Submit Button */}
-                <div className="flex gap-4 pt-4">
+                {/* Form Actions */}
+                <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
                     <button
                         type="button"
                         onClick={() => navigate("/vendor/disputes")}
-                        className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                        className="flex-1 py-3.5 px-5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex-1 px-6 py-3 bg-[#0A84FF] text-white rounded-lg font-semibold hover:bg-[#005BBB] transition-colors disabled:opacity-50"
+                        className="flex-[2] py-3.5 px-6 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-sm font-bold shadow-lg shadow-teal-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                     >
-                        {loading ? "Creating..." : "Submit Dispute"}
+                        {loading ? (
+                            <>
+                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span>Submitting...</span>
+                            </>
+                        ) : (
+                            <>
+                                <IoSendOutline className="text-base" />
+                                <span>Submit Dispute</span>
+                            </>
+                        )}
                     </button>
                 </div>
             </form>
         </div>
     );
 }
-

@@ -382,7 +382,9 @@ export default function UserAdvancePaymentConfirmation() {
     };
 
     const formatTime = (timeString) => {
-        if (!timeString) return "Not set";
+        if (!timeString || timeString === "TBD") return "Time TBD by expert";
+        // Already formatted like "10:00 AM" — return as-is
+        if (timeString.includes("AM") || timeString.includes("PM")) return timeString;
         const [hours, minutes] = timeString.split(':');
         const hour = parseInt(hours, 10);
         const ampm = hour >= 12 ? 'PM' : 'AM';
