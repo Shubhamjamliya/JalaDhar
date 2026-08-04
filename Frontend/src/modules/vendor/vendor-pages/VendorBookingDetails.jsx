@@ -860,12 +860,7 @@ export default function VendorBookingDetails() {
                         <p className="text-sm text-gray-500 mb-1">Service Name</p>
                         <p className="text-lg font-bold text-gray-800">{booking.service?.name || "Service"}</p>
                     </div>
-                    {booking.service?.machineType && (
-                        <div>
-                            <p className="text-sm text-gray-500 mb-1">Machine Type</p>
-                            <p className="text-base text-gray-800">{booking.service.machineType}</p>
-                        </div>
-                    )}
+
                     <div>
                         <p className="text-sm text-gray-500 mb-1">Service Price</p>
                         <p className="text-xl font-bold text-[#0A84FF]">
@@ -941,10 +936,6 @@ export default function VendorBookingDetails() {
                                 <p className="text-2xl font-black text-gray-900">
                                     ₹{booking.payment.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 mb-1">Machine Type</p>
-                                <p className="text-sm font-bold text-[#0A84FF]">{booking.service?.machineType || "Standard"}</p>
                             </div>
                         </div>
 

@@ -29,6 +29,8 @@ import { getUserBookings, uploadBorewellResult, getBookingDetails, cancelBooking
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { usePullToRefresh } from "../../../hooks/usePullToRefresh";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import InputModal, { CANCELLATION_REASONS } from "../../shared/components/InputModal";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 
@@ -46,11 +48,11 @@ export default function UserStatus() {
         images: []
     });
     const [uploadingBorewell, setUploadingBorewell] = useState(false);
-    const [showCancelModal, setShowCancelModal] = useState(false);
     const [showSupportModal, setShowSupportModal] = useState(false);
     const [cancelling, setCancelling] = useState(false);
-    const [selectedCancelReason, setSelectedCancelReason] = useState("");
-    const [customCancelReason, setCustomCancelReason] = useState("");
+    const [showCancellationInput, setShowCancellationInput] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [cancellationReason, setCancellationReason] = useState("");
     const loadCurrentBookingRef = useRef(null);
     const lastActionTimeRef = useRef(0); // Track when user performed an action
     const ACTION_COOLDOWN = 2000; // 2 seconds - ignore socket updates right after user action
@@ -424,25 +426,23 @@ export default function UserStatus() {
     };
 
     const handleCancelBooking = () => {
-        setSelectedCancelReason("");
-        setCustomCancelReason("");
-        setShowCancelModal(true);
+        setShowCancellationInput(true);
+    };
+
+    const handleCancellationReasonSubmit = (reason) => {
+        setCancellationReason(reason);
+        setShowCancellationInput(false);
+        setShowCancelConfirm(true);
     };
 
     const handleConfirmCancellation = async () => {
-        const reason = selectedCancelReason === "Other" ? customCancelReason : selectedCancelReason;
-        if (selectedCancelReason === "Other" && !customCancelReason.trim()) {
-            toast.showError("Please enter your cancellation reason.");
-            return;
-        }
-
+        setShowCancelConfirm(false);
         try {
             setCancelling(true);
             const bookingId = currentBooking.id || currentBooking._id;
-            const res = await cancelBooking(bookingId, reason || "Cancelled by user");
+            const res = await cancelBooking(bookingId, cancellationReason || "Cancelled by user");
             if (res.success) {
                 toast.showSuccess("Booking cancelled successfully. Refund initiated.");
-                setShowCancelModal(false);
                 if (loadCurrentBookingRef.current) {
                     await loadCurrentBookingRef.current();
                 }
@@ -1240,106 +1240,30 @@ export default function UserStatus() {
                 </div>
             )}
 
-            {/* Cancel Booking Reason Modal */}
-            {showCancelModal && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    onClick={() => !cancelling && setShowCancelModal(false)}
-                >
-                    <div
-                        className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-rose-50/60">
-                            <div className="flex items-center gap-2 text-rose-700 font-extrabold text-sm">
-                                <IoCloseCircleOutline className="text-xl" />
-                                <span>Cancel Booking Request</span>
-                            </div>
-                            <button
-                                onClick={() => !cancelling && setShowCancelModal(false)}
-                                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
-                            >
-                                <IoCloseOutline className="text-xl" />
-                            </button>
-                        </div>
+            {/* Cancellation Input Modal */}
+            <InputModal
+                isOpen={showCancellationInput}
+                onClose={() => setShowCancellationInput(false)}
+                onSubmit={handleCancellationReasonSubmit}
+                title="Cancel Booking"
+                message="Please select the reason for cancelling your booking:"
+                options={CANCELLATION_REASONS}
+                submitText="Continue"
+                cancelText="Keep Booking"
+            />
 
-                        <div className="p-5 space-y-4">
-                            <p className="text-xs text-slate-600 font-medium">
-                                Please select a reason for cancelling this booking:
-                            </p>
-
-                            <div className="space-y-2">
-                                {[
-                                    "Found another expert / local solution",
-                                    "Scheduled date/time is not suitable",
-                                    "Price is higher than expected",
-                                    "Booked by mistake",
-                                    "Other"
-                                ].map((reason) => (
-                                    <label
-                                        key={reason}
-                                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                                            selectedCancelReason === reason
-                                                ? "bg-rose-50/60 border-rose-300 ring-1 ring-rose-200"
-                                                : "bg-slate-50/50 border-slate-200/80 hover:bg-slate-50"
-                                        }`}
-                                    >
-                                        <input
-                                            type="radio"
-                                            name="cancelReason"
-                                            value={reason}
-                                            checked={selectedCancelReason === reason}
-                                            onChange={() => setSelectedCancelReason(reason)}
-                                            className="text-rose-600 focus:ring-rose-500 h-4 w-4"
-                                        />
-                                        <span className="text-xs font-semibold text-slate-800">{reason}</span>
-                                    </label>
-                                ))}
-                            </div>
-
-                            {selectedCancelReason === "Other" && (
-                                <textarea
-                                    rows="3"
-                                    placeholder="Please specify your reason..."
-                                    value={customCancelReason}
-                                    onChange={(e) => setCustomCancelReason(e.target.value)}
-                                    className="w-full p-3 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
-                                />
-                            )}
-
-                            {/* Refund Notice Policy Box */}
-                            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-900 leading-relaxed">
-                                <span className="font-bold">Refund Policy: </span>
-                                Any advance payment made will be 100% refunded to your original payment method within 2-3 business days.
-                            </div>
-                        </div>
-
-                        <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-2.5">
-                            <button
-                                disabled={cancelling}
-                                onClick={() => setShowCancelModal(false)}
-                                className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-100 transition-all cursor-pointer"
-                            >
-                                Keep Booking
-                            </button>
-                            <button
-                                disabled={cancelling || !selectedCancelReason}
-                                onClick={handleConfirmCancellation}
-                                className="flex-1 py-2.5 bg-rose-600 text-white font-bold text-xs rounded-xl hover:bg-rose-700 transition-all shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                            >
-                                {cancelling ? (
-                                    <>
-                                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        <span>Cancelling...</span>
-                                    </>
-                                ) : (
-                                    <span>Confirm Cancellation</span>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Cancellation Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showCancelConfirm}
+                onClose={() => setShowCancelConfirm(false)}
+                onConfirm={handleConfirmCancellation}
+                title="Confirm Cancellation"
+                message="Are you sure? This action cannot be undone."
+                confirmText="Yes, Cancel"
+                cancelText="Go Back"
+                confirmColor="danger"
+                isLoading={cancelling}
+            />
 
             {/* Support Modal (For Desktop / Web) */}
             {showSupportModal && (

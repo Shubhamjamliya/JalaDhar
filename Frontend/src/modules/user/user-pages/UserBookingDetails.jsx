@@ -830,22 +830,13 @@ export default function UserBookingDetails() {
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                <p className="text-sm text-gray-500 mb-1 font-medium">Machine Type</p>
-                                <div className="flex items-center gap-2">
-                                    <IoConstructOutline className="text-[#0A84FF]" />
-                                    <p className="text-base font-semibold text-gray-800">{booking.service?.machineType || "Standard"}</p>
-                                </div>
-                            </div>
-                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                <p className="text-sm text-gray-500 mb-1 font-medium">Base Price</p>
-                                <div className="flex items-center gap-2">
-                                    <IoCashOutline className="text-[#0A84FF]" />
-                                    <p className="text-base font-bold text-gray-800">
-                                        {formatAmount(booking.service?.price)}
-                                    </p>
-                                </div>
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                            <p className="text-sm text-gray-500 mb-1 font-medium">Base Price</p>
+                            <div className="flex items-center gap-2">
+                                <IoCashOutline className="text-[#0A84FF]" />
+                                <p className="text-base font-bold text-gray-800">
+                                    {formatAmount(booking.service?.price)}
+                                </p>
                             </div>
                         </div>
 
@@ -1193,9 +1184,8 @@ export default function UserBookingDetails() {
                                     {booking.borewellResult.status}
                                 </span>
                             ) : (
-                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full uppercase tracking-wider">
-                                    <IoHourglassOutline className="text-[12px]" />
-                                    Pending
+                                <span className="text-[10px] font-extrabold text-red-600 bg-red-100/80 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                    PENDING
                                 </span>
                             )}
                         </div>
@@ -1234,17 +1224,15 @@ export default function UserBookingDetails() {
                                 )}
                             </div>
                         ) : (
-                            <div className="text-center py-10 px-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                            <div className="text-center py-10 px-4 bg-gray-50/80 rounded-2xl border border-dashed border-gray-200">
+                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-gray-100">
                                     <IoConstructOutline className="text-3xl text-gray-300" />
                                 </div>
-                                <h3 className="text-gray-800 font-bold mb-1">
-                                    {!booking.report ? "Awaiting Survey Report" : "No Outcome Shared Yet"}
+                                <h3 className="text-gray-900 font-extrabold text-base mb-1.5">
+                                    Outcome Not Submitted Yet
                                 </h3>
-                                <p className="text-sm text-gray-500 max-w-[260px] mx-auto">
-                                    {!booking.report
-                                        ? "Borewell outcome can be shared once the official survey report is generated."
-                                        : "Once the drilling is completed at the surveyed point, share the outcome to help us improve."}
+                                <p className="text-xs text-gray-500 max-w-xs mx-auto leading-relaxed font-medium">
+                                    After borewell drilling is completed, please share the drilling outcome to help improve our survey accuracy and service quality.
                                 </p>
                                 {booking.status === "COMPLETED" && (
                                     <button
