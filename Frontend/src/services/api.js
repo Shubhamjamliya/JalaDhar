@@ -63,40 +63,32 @@ api.interceptors.request.use(
       url.includes('/auth/reset-password');
 
     if (!isPublicAuthEndpoint) {
-      // Admin routes - use admin token
-      if (url.startsWith('/admin/') || url === '/admin' || url.startsWith('/admin?')) {
-        token = localStorage.getItem('adminAccessToken');
+      const currentPath = window.location.pathname;
+
+      // 1. Explicit admin endpoint or active admin UI path -> use admin token
+      if (url.startsWith('/admin/') || url === '/admin' || url.startsWith('/admin?') || currentPath.startsWith('/admin')) {
+        token = localStorage.getItem('adminAccessToken') || localStorage.getItem('accessToken');
       }
-      // Vendor routes - use vendor token
-      else if (url.startsWith('/vendors/')) {
-        token = localStorage.getItem('vendorAccessToken');
+      // 2. Explicit vendor endpoint, vendor ratings, or active vendor UI path -> use vendor token
+      else if (url.startsWith('/vendors/') || url.startsWith('/ratings/my-ratings') || currentPath.startsWith('/vendor')) {
+        token = localStorage.getItem('vendorAccessToken') || localStorage.getItem('accessToken');
       }
-      // Vendor-specific rating route - use vendor token
-      else if (url === '/ratings/my-ratings' || url.startsWith('/ratings/my-ratings')) {
-        token = localStorage.getItem('vendorAccessToken');
-      }
-      // User routes, booking routes, and other rating routes - use user token
+      // 3. User endpoints or active user UI path -> use user token
       else if (url.startsWith('/users/') || url.startsWith('/bookings/') || url.startsWith('/ratings/')) {
         token = localStorage.getItem('accessToken');
       }
-      // Shared Notification Endpoints
-      else if (url.startsWith('/notifications') || url.includes('/notifications')) {
-        const currentPath = window.location.pathname;
+      // 4. Shared Notification / Dispute Endpoints -> resolve via path context
+      else if (url.startsWith('/notifications') || url.includes('/notifications') || url.startsWith('/disputes')) {
         if (currentPath.startsWith('/admin')) {
           token = localStorage.getItem('adminAccessToken');
         } else if (currentPath.startsWith('/vendor')) {
           token = localStorage.getItem('vendorAccessToken');
         } else {
-          // Neutral notification route: prioritize vendor or admin token if logged in
-          const vendorToken = localStorage.getItem('vendorAccessToken');
-          const adminToken = localStorage.getItem('adminAccessToken');
-          const userToken = localStorage.getItem('accessToken');
-          token = vendorToken || userToken || adminToken;
+          token = localStorage.getItem('vendorAccessToken') || localStorage.getItem('accessToken') || localStorage.getItem('adminAccessToken');
         }
       }
-      // Fallback: try to determine from current route
+      // 5. General Fallback
       else {
-        const currentPath = window.location.pathname;
         if (currentPath.startsWith('/admin')) {
           token = localStorage.getItem('adminAccessToken');
         } else if (currentPath.startsWith('/vendor')) {

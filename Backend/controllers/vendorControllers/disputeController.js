@@ -75,7 +75,7 @@ const createDispute = async (req, res) => {
     // Populate for response
     await dispute.populate('booking', 'status scheduledDate');
 
-    // Send notification to all admins
+    // Send notification to all admins and user if booking exists
     try {
       const Admin = require('../../models/Admin');
       const admins = await Admin.find({ isActive: true });
@@ -87,7 +87,7 @@ const createDispute = async (req, res) => {
           recipientModel: 'Admin',
           type: 'NEW_DISPUTE',
           title: 'New Dispute Raised',
-          message: `Vendor raised a new dispute: ${dispute.subject}`,
+          message: `Vendor raised a new dispute: ${finalSubject}`,
           relatedEntity: {
             entityType: 'Dispute',
             entityId: dispute._id
@@ -95,6 +95,25 @@ const createDispute = async (req, res) => {
           metadata: {
             disputeId: dispute._id.toString(),
             type: dispute.type
+          }
+        }, io);
+      }
+
+      if (booking && booking.user) {
+        await sendNotification({
+          recipient: booking.user,
+          recipientModel: 'User',
+          type: 'DISPUTE_CREATED',
+          title: 'Dispute Raised on Booking',
+          message: `Expert raised a dispute on booking #${booking._id.toString().slice(-6)}: ${finalSubject}`,
+          relatedEntity: {
+            entityType: 'Dispute',
+            entityId: dispute._id
+          },
+          metadata: {
+            disputeId: dispute._id.toString(),
+            type: dispute.type,
+            bookingId: booking._id.toString()
           }
         }, io);
       }

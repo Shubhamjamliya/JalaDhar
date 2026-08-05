@@ -136,6 +136,33 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
     const subtotal = baseServiceFee + gst;
     const totalAmount = subtotal + travelCharges;
 
+    // Reverse previous vendor's travel charges if they were credited
+    const oldVendorId = booking.vendor;
+    const oldTravelCharges = booking.payment?.travelCharges || 0;
+    if (oldVendorId && oldTravelCharges > 0 && booking.payment?.advancePaid) {
+      try {
+        const WalletTransaction = require('../models/WalletTransaction');
+        const { debitFromVendorWallet, creditToVendorWallet } = require('./walletService');
+        const existingTx = await WalletTransaction.findOne({
+          vendor: oldVendorId,
+          booking: booking._id,
+          type: 'TRAVEL_CHARGES',
+          status: 'SUCCESS'
+        });
+        if (existingTx) {
+          await debitFromVendorWallet(
+            oldVendorId,
+            oldTravelCharges,
+            'TRAVEL_CHARGES_REVERSAL',
+            booking._id,
+            { description: `Travel charges reversal due to booking rejection/reassignment` }
+          );
+        }
+      } catch (revError) {
+        console.error('Error reversing old vendor travel charges:', revError);
+      }
+    }
+
     // Update booking with new vendor, new service, and recalculated amounts
     booking.vendor = newVendor._id;
     booking.service = newService._id;
@@ -162,13 +189,16 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
     booking.assignedAt = new Date();
 
     // Recalculate vendor wallet payments for the new vendor
-    const { calculateVendorPayment } = require('./walletService');
+    const { calculateVendorPayment, creditToVendorWallet } = require('./walletService');
     const vendorPayment = calculateVendorPayment(baseServiceFee, travelCharges);
 
     booking.payment.vendorWalletPayments = {
       base: vendorPayment.base,
-      gst: vendorPayment.gst,
-      platformFee: vendorPayment.platformFee,
+      customerGST: vendorPayment.customerGST,
+      gross: vendorPayment.gross,
+      platformCommission: vendorPayment.platformCommission,
+      gstOnCommission: vendorPayment.gstOnCommission,
+      tds: vendorPayment.tds,
       totalVendorPayment: vendorPayment.totalVendorPayment,
       siteVisitPayment: {
         amount: vendorPayment.totalVendorPayment * 0.5,
@@ -182,6 +212,25 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
     };
 
     await booking.save();
+
+    // Credit travel charges to new vendor if advance payment was already paid
+    if (travelCharges > 0 && booking.payment.advancePaid) {
+      try {
+        await creditToVendorWallet(
+          newVendor._id,
+          travelCharges,
+          'TRAVEL_CHARGES',
+          booking._id,
+          {
+            description: `Travel charges for reassigned booking #${booking._id.toString().slice(-6)}`,
+            bookingId: booking._id.toString(),
+            distance: newDistance
+          }
+        );
+      } catch (creditErr) {
+        console.error('Error crediting new vendor travel charges:', creditErr);
+      }
+    }
 
     // Notify the new vendor
     const io = getIO();

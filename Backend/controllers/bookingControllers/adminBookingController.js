@@ -60,7 +60,11 @@ const getAllBookings = async (req, res) => {
     const query = {};
 
     if (status) {
-      query.status = status;
+      const sArr = status.split(',');
+      query.$or = [
+        { status: { $in: sArr } },
+        { vendorStatus: { $in: sArr } }
+      ];
     }
 
     if (search) {
@@ -338,12 +342,54 @@ const processVendorSettlement = async (req, res) => {
     booking.payment.vendorSettlement.status = 'COMPLETED';
     await booking.save();
 
-    // Update vendor payment collection
+    // Credit vendor wallet and update payment collection
+    const { creditToVendorWallet } = require('../../services/walletService');
+    const { sendNotification } = require('../../services/notificationService');
+    const { getIO } = require('../../sockets');
+
+    const settlementAmount = booking.payment.vendorSettlement.amount || 0;
+    if (settlementAmount > 0) {
+      await creditToVendorWallet(
+        booking.vendor._id,
+        settlementAmount,
+        'FINAL_SETTLEMENT',
+        booking._id,
+        {
+          description: `Admin settlement payout for booking #${booking._id.toString().slice(-6)}`,
+          bookingId: booking._id.toString()
+        }
+      );
+    }
+
     const vendor = await Vendor.findById(booking.vendor._id);
-    vendor.paymentCollection.totalEarnings += booking.payment.vendorSettlement.amount;
-    vendor.paymentCollection.collectedAmount += booking.payment.vendorSettlement.amount;
-    vendor.paymentCollection.lastPaymentDate = new Date();
-    await vendor.save();
+    if (vendor) {
+      vendor.paymentCollection.totalEarnings += settlementAmount;
+      vendor.paymentCollection.collectedAmount += settlementAmount;
+      vendor.paymentCollection.lastPaymentDate = new Date();
+      await vendor.save();
+    }
+
+    // Send real-time notification to Vendor
+    try {
+      const io = getIO();
+      await sendNotification({
+        recipient: booking.vendor._id,
+        recipientModel: 'Vendor',
+        type: 'PAYMENT_RELEASED',
+        title: 'Settlement Payment Released',
+        message: `Admin has processed your settlement payout of ₹${settlementAmount} for booking #${booking._id.toString().slice(-6)}.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          amount: settlementAmount,
+          bookingId: booking._id.toString()
+        }
+      }, io);
+    } catch (notifErr) {
+      console.error('Vendor settlement notification error:', notifErr);
+    }
 
     // Update payment record
     const payment = await Payment.findOne({
@@ -392,7 +438,16 @@ const getBookingStatistics = async (req, res) => {
       pendingSettlements
     ] = await Promise.all([
       Booking.countDocuments(),
-      Booking.countDocuments({ status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.ASSIGNED] } }),
+      Booking.countDocuments({ status: { $in: [
+        BOOKING_STATUS.PENDING,
+        BOOKING_STATUS.ASSIGNED,
+        BOOKING_STATUS.ACCEPTED,
+        BOOKING_STATUS.VISITED,
+        BOOKING_STATUS.REPORT_UPLOADED,
+        BOOKING_STATUS.PAYMENT_SUCCESS,
+        BOOKING_STATUS.ADMIN_APPROVED,
+        BOOKING_STATUS.BOREWELL_UPLOADED
+      ] } }),
       Booking.countDocuments({ status: BOOKING_STATUS.COMPLETED }),
       Booking.countDocuments({ status: BOOKING_STATUS.SUCCESS }),
       Booking.countDocuments({ status: BOOKING_STATUS.FAILED }),

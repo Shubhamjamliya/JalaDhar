@@ -19,22 +19,10 @@ const getVendorBookings = async (req, res) => {
     const query = { vendor: vendorId };
     if (status) {
       const statusArray = status.split(',');
-      if (statusArray.includes('COMPLETED')) {
-        // If COMPLETED is in the list, we need to check both fields for it
-        query.$or = [
-          { vendorStatus: { $in: statusArray } },
-          { status: 'COMPLETED' }
-        ];
-      } else if (statusArray.length > 1) {
-        query.vendorStatus = { $in: statusArray };
-      } else if (status === 'COMPLETED') {
-        query.$or = [
-          { status: status },
-          { vendorStatus: status }
-        ];
-      } else {
-        query.vendorStatus = status;
-      }
+      query.$or = [
+        { vendorStatus: { $in: statusArray } },
+        { status: { $in: statusArray } }
+      ];
     }
 
     // Exclude bookings where the global booking.status is in excludeStatus list

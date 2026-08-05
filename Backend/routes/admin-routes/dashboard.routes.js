@@ -9,13 +9,15 @@ const {
   getBookingTrends,
   getUserGrowthMetrics,
   getPaymentAnalytics,
-  getGeographicAnalysis
+  getGeographicAnalysis,
+  getSidebarCounts
 } = require('../../controllers/adminControllers/adminDashboardController');
 
 // All routes require admin authentication
 router.use(authenticate, isAdmin);
 
 router.get('/stats', getDashboardStats);
+router.get('/sidebar-counts', getSidebarCounts);
 router.get('/revenue', getRevenueAnalytics);
 router.get('/bookings/trends', getBookingTrends);
 router.get('/users/growth', getUserGrowthMetrics);

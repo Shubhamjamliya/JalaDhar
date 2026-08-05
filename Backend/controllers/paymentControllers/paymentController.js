@@ -288,11 +288,10 @@ const verifyRemainingPayment = async (req, res) => {
     booking.payment.remainingPaidAt = new Date();
     booking.payment.status = PAYMENT_STATUS.SUCCESS;
     // When user pays remaining 60%:
-    // - User status: PAYMENT_SUCCESS (can now see report)
-    // - Vendor status: Still REPORT_UPLOADED (waiting for admin to pay 50%)
+    // - Global, User, and Vendor status transition to PAYMENT_SUCCESS
     booking.status = BOOKING_STATUS.PAYMENT_SUCCESS;
     booking.userStatus = BOOKING_STATUS.PAYMENT_SUCCESS;
-    // vendorStatus remains REPORT_UPLOADED until admin pays
+    booking.vendorStatus = BOOKING_STATUS.PAYMENT_SUCCESS;
     await booking.save();
 
     // Update payment record
@@ -356,7 +355,23 @@ const verifyRemainingPayment = async (req, res) => {
         }
       }, io);
 
-      // No notification to vendor for remaining payment (vendor doesn't need to know about user payments)
+      // Notify vendor about customer payment completion
+      await sendNotification({
+        recipient: booking.vendor._id,
+        recipientModel: 'Vendor',
+        type: 'PAYMENT_RECEIVED',
+        title: 'Customer Payment Received',
+        message: `Customer ${booking.user.name} has completed the 60% remaining payment for booking #${booking._id.toString().slice(-6)}.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          amount: booking.payment.remainingAmount,
+          bookingId: booking._id.toString(),
+          userName: booking.user.name
+        }
+      }, io);
 
       // Notify admin about remaining payment
       try {

@@ -63,6 +63,7 @@ export const formatAcresGuntas = (acres, guntas) => {
 
 export const formatAcresGuntasDisplay = (input) => {
   if (input === null || input === undefined || input === '') return 'N/A';
+  if (typeof input === 'string' && (input.includes('Acre') || input.includes('Gunta'))) return input;
   const parsed = parseAcresGuntas(input);
   return parsed.formatted || `${input} Acres`;
 };

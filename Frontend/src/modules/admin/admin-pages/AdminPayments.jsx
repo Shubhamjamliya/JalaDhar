@@ -547,6 +547,17 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                 if (overviewResponse.success) {
                     setVendorOverview(overviewResponse.data);
                 }
+                // Eagerly pre-fetch pending settlements & withdrawal requests for tab header badges
+                const [pendingRes, withdrawalsRes] = await Promise.all([
+                    getPendingVendorFinalSettlements({ page: 1, limit: 100 }),
+                    getAllWithdrawalRequests()
+                ]);
+                if (pendingRes?.success) {
+                    setPendingFinalSettlements(pendingRes.data.bookings || []);
+                }
+                if (withdrawalsRes?.success) {
+                    setVendorWithdrawalRequests(withdrawalsRes.data.withdrawalRequests || []);
+                }
             }
         } catch (err) {
             console.error("Error loading payment data:", err);
@@ -1258,7 +1269,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                 >
                                     Withdrawal Requests
                                     {vendorWithdrawalRequests.filter(r => r.status === "PENDING").length > 0 && (
-                                        <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                                        <span className="ml-2 px-2 py-0.5 bg-teal-600 text-white text-xs font-bold rounded-full shadow-sm">
                                             {vendorWithdrawalRequests.filter(r => r.status === "PENDING").length}
                                         </span>
                                     )}
@@ -1271,6 +1282,11 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                         }`}
                                 >
                                     Final Settlement
+                                    {pendingFinalSettlements.length > 0 && (
+                                        <span className="ml-2 px-2 py-0.5 bg-purple-600 text-white text-xs font-bold rounded-full shadow-sm">
+                                            {pendingFinalSettlements.length}
+                                        </span>
+                                    )}
                                 </button>
                                 <button
                                     onClick={() => {

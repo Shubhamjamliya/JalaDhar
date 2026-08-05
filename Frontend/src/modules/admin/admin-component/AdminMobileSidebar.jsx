@@ -23,6 +23,7 @@ import {
     IoChevronDown,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
+import api from "../../../services/api";
 
 const navItems = [
     {
@@ -126,33 +127,85 @@ const navItems = [
         Icon: IoLockClosedOutline,
         roles: ["SUPER_ADMIN"]
     },
+    {
+        id: "policies",
+        label: "Policies",
+        to: "/admin/policies",
+        Icon: IoDocumentTextOutline,
+        roles: ["SUPER_ADMIN", "ADMIN"]
+    },
+    {
+        id: "settings",
+        label: "Settings",
+        to: "/admin/settings",
+        Icon: IoSettingsOutline,
+        roles: ["SUPER_ADMIN"],
+        children: [
+            { label: "General", to: "/admin/settings/general" },
+            { label: "Billing Info", to: "/admin/settings/billing" },
+            { label: "Pricing", to: "/admin/settings/pricing" },
+            { label: "Security", to: "/admin/settings/security" },
+            { label: "Register Admin", to: "/admin/settings/register" }
+        ]
+    },
 ];
 
 export default function AdminMobileSidebar({ isOpen, onClose }) {
     const { logout, admin } = useAdminAuth();
     const location = useLocation();
     const [expandedItems, setExpandedItems] = useState({});
+    const [counts, setCounts] = useState({
+        approvals: 0,
+        disputes: 0,
+        payments: 0,
+        bookings: 0
+    });
 
-    // Auto-expand based on route
     useEffect(() => {
-        const currentPath = location.pathname;
-        const activeParent = navItems.find(item =>
-            item.children && item.children.some(child =>
-                child.to === currentPath || currentPath.startsWith(child.to + "/")
-            )
-        );
-        if (activeParent) {
-            setExpandedItems(prev => ({ ...prev, [activeParent.id]: true }));
-        }
-    }, [location.pathname]);
+        let isMounted = true;
+        const fetchCounts = async () => {
+            try {
+                const res = await api.get('/admin/dashboard/sidebar-counts');
+                if (isMounted && res.data?.data?.counts) {
+                    setCounts(res.data.data.counts);
+                }
+            } catch (err) {
+                console.error("Failed to fetch admin mobile sidebar counts", err);
+            }
+        };
 
-    // Close on route change
+        fetchCounts();
+        const interval = setInterval(fetchCounts, 20000);
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, []);
+
+    // Auto-close on navigate
     useEffect(() => {
         onClose();
     }, [location.pathname]);
 
     const toggleExpand = (id) => {
         setExpandedItems(prev => ({ [id]: !prev[id] }));
+    };
+
+    const renderBadge = (id) => {
+        const val = counts[id];
+        if (!val || val <= 0) return null;
+
+        let badgeStyle = "bg-blue-500/20 text-blue-400 border-blue-500/30";
+        if (id === "approvals") badgeStyle = "bg-amber-500/20 text-amber-400 border-amber-500/30";
+        if (id === "disputes") badgeStyle = "bg-rose-500/20 text-rose-400 border-rose-500/30";
+        if (id === "payments") badgeStyle = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+        if (id === "bookings") badgeStyle = "bg-sky-500/20 text-sky-400 border-sky-500/30";
+
+        return (
+            <span className={`px-2 py-0.5 text-[11px] font-black rounded-full border shadow-sm ${badgeStyle}`}>
+                {val > 99 ? '99+' : val}
+            </span>
+        );
     };
 
     return (
@@ -227,11 +280,12 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                                 >
                                                     <Icon className={`text-lg ${isActive ? "text-blue-500" : "text-slate-500"}`} />
                                                     <span className="text-sm flex-1 text-left tracking-tight">{item.label}</span>
+                                                    {renderBadge(item.id)}
                                                     <motion.div
                                                         animate={{ rotate: isExpanded ? 180 : 0 }}
                                                         transition={{ duration: 0.2 }}
                                                     >
-                                                        <IoChevronDown className="text-slate-500 text-xs" />
+                                                        <IoChevronDown className="text-slate-500 text-xs ml-1" />
                                                     </motion.div>
                                                 </button>
                                             ) : (
@@ -247,7 +301,8 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                                     }
                                                 >
                                                     <Icon className="text-lg" />
-                                                    <span className="text-sm tracking-tight">{item.label}</span>
+                                                    <span className="text-sm tracking-tight flex-1">{item.label}</span>
+                                                    {renderBadge(item.id)}
                                                 </NavLink>
                                             )}
 
@@ -260,24 +315,42 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                                         transition={{ duration: 0.2 }}
                                                         className="overflow-hidden"
                                                     >
-                                                        <div className="ml-6 mt-1 pl-4 border-l border-slate-700/50 space-y-1">
-                                                            {item.children.map((child, idx) => (
-                                                                <NavLink
-                                                                    key={idx}
-                                                                    to={child.to}
-                                                                    end={child.end}
-                                                                    onClick={onClose}
-                                                                    className={({ isActive }) =>
-                                                                        `block px-4 py-2 text-[13px] rounded-lg transition-colors ${isActive
-                                                                            ? "text-blue-400 font-bold bg-blue-500/5"
-                                                                            : "text-slate-500 hover:text-slate-300"
-                                                                        }`
-                                                                    }
-                                                                >
-                                                                    {child.label}
-                                                                </NavLink>
-                                                            ))}
-                                                        </div>
+                                                            {item.children.map((child, idx) => {
+                                                                let childCount = 0;
+                                                                let childBadgeStyle = "bg-blue-500/20 text-blue-400 border-blue-500/30";
+                                                                if (child.to === "/admin/vendors/pending") {
+                                                                    childCount = counts.approvals;
+                                                                    childBadgeStyle = "bg-amber-500/20 text-amber-400 border-amber-500/30";
+                                                                } else if (child.to === "/admin/payments/vendor") {
+                                                                    childCount = counts.payments;
+                                                                    childBadgeStyle = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+                                                                } else if (child.to === "/admin/bookings" && child.end) {
+                                                                    childCount = counts.bookings;
+                                                                    childBadgeStyle = "bg-sky-500/20 text-sky-400 border-sky-500/30";
+                                                                }
+
+                                                                return (
+                                                                    <NavLink
+                                                                        key={idx}
+                                                                        to={child.to}
+                                                                        end={child.end}
+                                                                        onClick={onClose}
+                                                                        className={({ isActive }) =>
+                                                                            `flex items-center justify-between px-4 py-2 text-[13px] rounded-lg transition-colors ${isActive
+                                                                                ? "text-blue-400 font-bold bg-blue-500/5"
+                                                                                : "text-slate-500 hover:text-slate-300"
+                                                                            }`
+                                                                        }
+                                                                    >
+                                                                        <span>{child.label}</span>
+                                                                        {childCount > 0 && (
+                                                                            <span className={`px-2 py-0.5 text-[10px] font-black rounded-full border shadow-sm ${childBadgeStyle}`}>
+                                                                                {childCount > 99 ? '99+' : childCount}
+                                                                            </span>
+                                                                        )}
+                                                                    </NavLink>
+                                                                );
+                                                            })}
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>

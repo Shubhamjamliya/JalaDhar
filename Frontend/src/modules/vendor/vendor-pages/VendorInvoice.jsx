@@ -88,18 +88,19 @@ export default function VendorInvoice() {
       const invDate = booking.payment?.createdAt || booking.createdAt;
       const commInvoiceNo = `COMM-INV-${new Date(invDate).toISOString().slice(0, 10).replace(/-/g, '')}-${booking._id.slice(-6).toUpperCase()}`;
 
-      const baseF = booking.payment?.baseServiceFee || (booking.service?.price || 3500);
+      const vp = booking.payment?.vendorWalletPayments || {};
+      const baseF = vp.base || booking.payment?.baseServiceFee || (booking.service?.price || 3500);
       const trav = booking.payment?.travelCharges || 0;
       const netServiceVal = baseF + trav;
-      const custGst = booking.payment?.gst || (netServiceVal * 0.18);
-      const gross = booking.payment?.totalAmount || (netServiceVal + custGst);
+      const custGst = vp.customerGST || booking.payment?.gst || (baseF * 0.18);
+      const gross = vp.gross || booking.payment?.totalAmount || (netServiceVal + custGst);
 
-      const commBase = netServiceVal * 0.10;
-      const commCgst = commBase * 0.09;
-      const commSgst = commBase * 0.09;
+      const commBase = vp.platformCommission || (baseF * 0.10);
+      const commCgst = vp.gstOnCommission ? (vp.gstOnCommission / 2) : (commBase * 0.09);
+      const commSgst = vp.gstOnCommission ? (vp.gstOnCommission / 2) : (commBase * 0.09);
       const totalComm = commBase + commCgst + commSgst;
-      const tds = netServiceVal * 0.01;
-      const netPayout = gross - totalComm - tds;
+      const tds = vp.tds || (baseF * 0.01);
+      const netPayout = vp.totalVendorPayment || (gross - totalComm - tds);
 
       const activeVendor = (booking.vendor && typeof booking.vendor === 'object') ? booking.vendor : (loggedInVendor || {});
       const expertName = activeVendor.name || "Hydrogeologist Expert";

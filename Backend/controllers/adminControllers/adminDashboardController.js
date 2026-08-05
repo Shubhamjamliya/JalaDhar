@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const User = require('../../models/User');
 const Vendor = require('../../models/Vendor');
 const Booking = require('../../models/Booking');
+const Dispute = require('../../models/Dispute');
 const { BOOKING_STATUS } = require('../../utils/constants');
 
 /**
@@ -407,6 +408,66 @@ exports.getGeographicAnalysis = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch geographic analysis',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get dynamic notification badge counts for Admin Sidebar menu items
+ * @route GET /api/admin/dashboard/sidebar-counts
+ */
+exports.getSidebarCounts = async (req, res) => {
+  try {
+    const [
+      pendingVendors,
+      pendingDisputes,
+      pendingSettlements,
+      activeBookings
+    ] = await Promise.all([
+      Vendor.countDocuments({ isApproved: false }),
+      Dispute.countDocuments({ status: { $in: ['PENDING', 'IN_PROGRESS'] } }),
+      Booking.countDocuments({
+        'borewellResult.status': { $in: ['SUCCESS', 'FAILED'] },
+        'borewellResult.uploadedAt': { $exists: true },
+        vendorStatus: { $ne: BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE },
+        $or: [
+          { finalSettlement: { $exists: false } },
+          { 'finalSettlement.status': { $ne: 'PROCESSED' } }
+        ]
+      }),
+      Booking.countDocuments({
+        status: {
+          $in: [
+            BOOKING_STATUS.PENDING,
+            BOOKING_STATUS.ASSIGNED,
+            BOOKING_STATUS.ACCEPTED,
+            BOOKING_STATUS.VISITED,
+            BOOKING_STATUS.REPORT_UPLOADED,
+            BOOKING_STATUS.PAYMENT_SUCCESS,
+            BOOKING_STATUS.ADMIN_APPROVED,
+            BOOKING_STATUS.BOREWELL_UPLOADED
+          ]
+        }
+      })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        counts: {
+          approvals: pendingVendors,
+          disputes: pendingDisputes,
+          payments: pendingSettlements,
+          bookings: activeBookings
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error in getSidebarCounts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch sidebar counts',
       error: error.message
     });
   }

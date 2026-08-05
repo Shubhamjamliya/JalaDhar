@@ -21,7 +21,8 @@ const normalizeAcresGuntas = (input) => {
   if (strVal.includes('.')) {
     const parts = strVal.split('.');
     acres = parseInt(parts[0], 10) || 0;
-    guntas = parseInt(parts[1], 10) || 0;
+    const decPart = parts[1];
+    guntas = parseInt(decPart, 10) || 0;
   } else {
     acres = parseInt(strVal, 10) || 0;
     guntas = 0;
