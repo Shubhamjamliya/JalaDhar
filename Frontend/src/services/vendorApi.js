@@ -117,6 +117,16 @@ export const uploadVisitReport = async (bookingId, reportData) => {
 };
 
 /**
+ * Mark booking as en route
+ * @param {string} bookingId
+ * @returns {Promise}
+ */
+export const markBookingAsEnRoute = async (bookingId) => {
+  const response = await api.patch(`/vendors/bookings/${bookingId}/en-route`);
+  return response.data;
+};
+
+/**
  * Mark booking as visited
  * @param {string} bookingId
  * @returns {Promise}

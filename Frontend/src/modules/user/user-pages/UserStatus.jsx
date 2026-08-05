@@ -31,6 +31,7 @@ import { usePullToRefresh } from "../../../hooks/usePullToRefresh";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import InputModal, { CANCELLATION_REASONS } from "../../shared/components/InputModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
+import CancellationPolicyModal from "../../shared/components/CancellationPolicyModal";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 
@@ -224,6 +225,7 @@ export default function UserStatus() {
                 // These are changes from other users (vendor, admin, etc.)
                 if (notification.type === 'BOOKING_STATUS_UPDATED' ||
                     notification.type === 'BOOKING_ACCEPTED' ||
+                    notification.type === 'BOOKING_EN_ROUTE' ||
                     notification.type === 'BOOKING_VISITED' ||
                     notification.type === 'REPORT_UPLOADED' ||
                     notification.type === 'ADMIN_APPROVED' ||
@@ -563,7 +565,7 @@ export default function UserStatus() {
                             className="flex items-center justify-center gap-2 bg-[#0A84FF] text-white px-6 py-3 rounded-[12px] font-semibold hover:bg-[#005BBB] transition-colors shadow-[0px_4px_10px_rgba(10,132,255,0.2)]"
                         >
                             <IoSearchOutline className="text-xl" />
-                            Find a Vendor
+                            Find an Expert
                         </button>
                         <button
                             onClick={() => navigate("/user/status")}
@@ -663,6 +665,7 @@ export default function UserStatus() {
                                 <IoTimeOutline className="text-xs text-[#0A84FF] flex-shrink-0" />
                                 <span className="truncate">
                                     {new Date(currentBooking.scheduledDate).toLocaleDateString("en-IN", {
+                                        weekday: "long",
                                         day: "numeric",
                                         month: "short",
                                         year: "numeric",
@@ -1252,16 +1255,12 @@ export default function UserStatus() {
                 cancelText="Keep Booking"
             />
 
-            {/* Cancellation Confirmation Modal */}
-            <ConfirmModal
+            {/* Cancellation Confirmation Modal with Policy */}
+            <CancellationPolicyModal
                 isOpen={showCancelConfirm}
                 onClose={() => setShowCancelConfirm(false)}
                 onConfirm={handleConfirmCancellation}
-                title="Confirm Cancellation"
-                message="Are you sure? This action cannot be undone."
-                confirmText="Yes, Cancel"
-                cancelText="Go Back"
-                confirmColor="danger"
+                reason={cancellationReason}
                 isLoading={cancelling}
             />
 

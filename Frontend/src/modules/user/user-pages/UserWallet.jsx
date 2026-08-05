@@ -189,7 +189,7 @@ export default function UserWallet() {
                 </div>
                 <div className="relative z-10 flex flex-col items-center text-center">
                     <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-cyan-100 border border-white/25 mb-2 shadow-2xs">
-                        <span>💧 Jaladhaara Hydro-Wallet</span>
+                        <span>My Wallet</span>
                     </div>
                     <p className="text-xs font-bold uppercase tracking-wider text-cyan-100 opacity-90">Available Refund & Credit Balance</p>
                     <p className="mt-1 text-4xl sm:text-5xl font-black font-mono tracking-tight text-white drop-shadow-md">

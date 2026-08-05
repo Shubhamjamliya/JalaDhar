@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
     IoChevronBackOutline,
+    IoCalendarOutline,
+    IoLockClosedOutline,
     IoTimeOutline,
     IoLocationOutline,
     IoCallOutline,
@@ -125,21 +127,36 @@ export default function VendorBookingDetails() {
         }
     };
 
+    const [acceptScheduleDate, setAcceptScheduleDate] = useState("");
+    const [acceptScheduleTime, setAcceptScheduleTime] = useState("");
+
     const handleAccept = () => {
+        const fixedDate = booking?.scheduledDate || booking?.scheduleDate
+            ? new Date(booking.scheduledDate || booking.scheduleDate).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0];
+        setAcceptScheduleDate(fixedDate);
+        setAcceptScheduleTime(booking?.scheduledTime && booking?.scheduledTime !== "TBD" ? booking.scheduledTime : "09:00 AM - 10:00 AM");
         setShowAcceptConfirm(true);
     };
 
     const handleAcceptConfirm = async () => {
+        if (!acceptScheduleTime) {
+            toast.showError("Please select a visit time slot.");
+            return;
+        }
         setShowAcceptConfirm(false);
-        const loadingToast = toast.showLoading("Accepting booking...");
+        const loadingToast = toast.showLoading("Accepting booking & scheduling visit...");
         try {
             setActionLoading(true);
 
-            const response = await acceptBooking(bookingId);
+            const response = await acceptBooking(bookingId, {
+                visitDate: acceptScheduleDate,
+                scheduledTime: acceptScheduleTime
+            });
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Booking accepted successfully!");
+                toast.showSuccess("Booking accepted & visit scheduled successfully!");
                 await loadBookingDetails(); // Reload to get updated status
                 navigate("/vendor/bookings");
             } else {
@@ -1358,17 +1375,191 @@ export default function VendorBookingDetails() {
 
 
 
-            {/* Accept Booking Confirmation Modal */}
-            <ConfirmModal
-                isOpen={showAcceptConfirm}
-                onClose={() => setShowAcceptConfirm(false)}
-                onConfirm={handleAcceptConfirm}
-                title="Accept Booking"
-                message="Are you sure you want to accept this booking?"
-                confirmText="Yes, Accept"
-                cancelText="Cancel"
-                confirmColor="primary"
-            />
+            {/* Accept Booking — Schedule Time Modal */}
+            {showAcceptConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+                        {/* Header */}
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-green-100 rounded-2xl">
+                                <IoCalendarOutline className="text-green-600 text-xl" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-gray-900">Set Visit Time Slot</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">Select your arrival time slot for the survey</p>
+                            </div>
+                        </div>
+
+                        {/* Read-Only Locked Date Field */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-gray-600 flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                    <IoCalendarOutline className="text-gray-400" /> Survey Date
+                                </span>
+                                <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                                    <IoLockClosedOutline className="text-[10px]" /> User Selected
+                                </span>
+                            </label>
+                            <div className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 flex items-center justify-between cursor-not-allowed">
+                                <span>
+                                    {booking?.scheduledDate || booking?.scheduleDate
+                                        ? new Date(booking.scheduledDate || booking.scheduleDate).toLocaleDateString("en-IN", {
+                                            weekday: "short",
+                                            day: "numeric",
+                                            month: "short",
+                                            year: "numeric"
+                                        })
+                                        : new Date().toLocaleDateString("en-IN", {
+                                            weekday: "short",
+                                            day: "numeric",
+                                            month: "short",
+                                            year: "numeric"
+                                        })
+                                    }
+                                </span>
+                                <IoLockClosedOutline className="text-gray-400" />
+                            </div>
+                        </div>
+
+                        {/* Interactive Time Slot Selector Grid */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-gray-700 flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                    <IoTimeOutline className="text-emerald-600 text-sm" /> Select Time Slot
+                                </span>
+                                {acceptScheduleTime && (
+                                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                        {acceptScheduleTime}
+                                    </span>
+                                )}
+                            </label>
+
+                            <div className="max-h-52 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+                                {/* Morning */}
+                                <div>
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
+                                        🌅 Morning Slots
+                                    </span>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        {[
+                                            "08:00 AM - 09:00 AM",
+                                            "09:00 AM - 10:00 AM",
+                                            "10:00 AM - 11:00 AM",
+                                            "11:00 AM - 12:00 PM"
+                                        ].map((slot) => {
+                                            const isSelected = acceptScheduleTime === slot;
+                                            return (
+                                                <button
+                                                    key={slot}
+                                                    type="button"
+                                                    onClick={() => setAcceptScheduleTime(slot)}
+                                                    className={`px-2.5 py-2 text-[11px] font-bold rounded-xl border transition-all duration-200 text-left flex items-center justify-between ${
+                                                        isSelected
+                                                            ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-500/20 scale-[1.02]"
+                                                            : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-emerald-50 hover:border-emerald-300"
+                                                    }`}
+                                                >
+                                                    <span>{slot}</span>
+                                                    {isSelected && <span className="text-xs font-black">✓</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Afternoon */}
+                                <div>
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
+                                        ☀️ Afternoon Slots
+                                    </span>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        {[
+                                            "12:00 PM - 01:00 PM",
+                                            "01:00 PM - 02:00 PM",
+                                            "02:00 PM - 03:00 PM",
+                                            "03:00 PM - 04:00 PM"
+                                        ].map((slot) => {
+                                            const isSelected = acceptScheduleTime === slot;
+                                            return (
+                                                <button
+                                                    key={slot}
+                                                    type="button"
+                                                    onClick={() => setAcceptScheduleTime(slot)}
+                                                    className={`px-2.5 py-2 text-[11px] font-bold rounded-xl border transition-all duration-200 text-left flex items-center justify-between ${
+                                                        isSelected
+                                                            ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-500/20 scale-[1.02]"
+                                                            : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-emerald-50 hover:border-emerald-300"
+                                                    }`}
+                                                >
+                                                    <span>{slot}</span>
+                                                    {isSelected && <span className="text-xs font-black">✓</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Evening */}
+                                <div>
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
+                                        🌆 Evening Slots
+                                    </span>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        {[
+                                            "04:00 PM - 05:00 PM",
+                                            "05:00 PM - 06:00 PM",
+                                            "06:00 PM - 07:00 PM",
+                                            "07:00 PM - 08:00 PM"
+                                        ].map((slot) => {
+                                            const isSelected = acceptScheduleTime === slot;
+                                            return (
+                                                <button
+                                                    key={slot}
+                                                    type="button"
+                                                    onClick={() => setAcceptScheduleTime(slot)}
+                                                    className={`px-2.5 py-2 text-[11px] font-bold rounded-xl border transition-all duration-200 text-left flex items-center justify-between ${
+                                                        isSelected
+                                                            ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-500/20 scale-[1.02]"
+                                                            : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-emerald-50 hover:border-emerald-300"
+                                                    }`}
+                                                >
+                                                    <span>{slot}</span>
+                                                    {isSelected && <span className="text-xs font-black">✓</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Confirmation Banner */}
+                        {acceptScheduleTime && (
+                            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-green-800 flex items-center gap-2">
+                                <span className="text-green-600 text-sm">✓</span>
+                                <span>Visit set for <strong>{acceptScheduleTime}</strong></span>
+                            </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex gap-3 pt-1">
+                            <button
+                                onClick={() => setShowAcceptConfirm(false)}
+                                className="flex-1 py-2.5 border border-gray-200 text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAcceptConfirm}
+                                disabled={actionLoading || !acceptScheduleTime}
+                                className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold rounded-xl text-sm shadow-md transition-colors"
+                            >
+                                {actionLoading ? "Accepting..." : "Confirm & Accept"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Rejection Reason Input Modal */}
             <InputModal

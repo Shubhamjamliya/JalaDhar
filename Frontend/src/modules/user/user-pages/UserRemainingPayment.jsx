@@ -87,7 +87,8 @@ export default function UserRemainingPayment() {
                 key: paymentData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
                 amount: razorpayOrder.amount,
                 currency: razorpayOrder.currency || 'INR',
-                name: "Jaladhar",
+                name: "Jaladhaara",
+                image: `${window.location.origin}/favicon.png`,
                 description: `Remaining payment for ${booking.service?.name || 'Service'}`,
                 order_id: razorpayOrder.id,
                 handler: async function (paymentResponse) {

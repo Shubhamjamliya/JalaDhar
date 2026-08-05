@@ -162,7 +162,8 @@ export default function UserAdvancePaymentConfirmation() {
                 key: keyId,
                 amount: amount,
                 currency: currency,
-                name: "Jaladhar",
+                name: "Jaladhaara",
+                image: `${window.location.origin}/favicon.png`,
                 description: `Advance payment for ${service?.name || 'Service'}`,
                 order_id: orderId,
                 handler: async function (paymentResponse) {

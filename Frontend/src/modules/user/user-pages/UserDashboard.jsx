@@ -37,6 +37,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import InputModal, { CANCELLATION_REASONS } from "../../shared/components/InputModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
+import CancellationPolicyModal from "../../shared/components/CancellationPolicyModal";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
@@ -76,6 +77,7 @@ export default function UserDashboard() {
     const [showCancellationInput, setShowCancellationInput] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [cancellationReason, setCancellationReason] = useState("");
+    const [cancelling, setCancelling] = useState(false);
     const [selectedBookingForAction, setSelectedBookingForAction] = useState(null);
     const [showPaymentPrompt, setShowPaymentPrompt] = useState(false);
     const [bookingToUnlock, setBookingToUnlock] = useState(null);
@@ -490,12 +492,11 @@ export default function UserDashboard() {
     const handleCancelConfirm = async () => {
         if (!selectedBookingForAction) return;
 
+        setCancelling(true);
         try {
-            const loadingToast = toast.showLoading("Cancelling booking...");
             const response = await cancelBooking(selectedBookingForAction.id, cancellationReason);
 
             if (response.success) {
-                toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking cancelled successfully");
                 setShowCancelConfirm(false);
                 setSelectedBookingForAction(null);
@@ -503,11 +504,12 @@ export default function UserDashboard() {
                 // Refresh data
                 loadDashboardData();
             } else {
-                toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to cancel booking");
             }
         } catch (err) {
             toast.showError(err.response?.data?.message || "Failed to cancel booking");
+        } finally {
+            setCancelling(false);
         }
     };
 
@@ -1024,15 +1026,13 @@ export default function UserDashboard() {
                 cancelText="Keep Booking"
             />
 
-            <ConfirmModal
+            {/* Cancellation Confirmation Modal with Policy */}
+            <CancellationPolicyModal
                 isOpen={showCancelConfirm}
                 onClose={() => setShowCancelConfirm(false)}
                 onConfirm={handleCancelConfirm}
-                title="Confirm Cancellation"
-                message="Are you sure? This action cannot be undone."
-                confirmText="Yes, Cancel"
-                cancelText="Go Back"
-                confirmColor="danger"
+                reason={cancellationReason}
+                isLoading={cancelling}
             />
 
             {/* Payment Prompt Modal */}

@@ -11,6 +11,7 @@ import {
   IoHomeOutline,
   IoBusinessOutline,
   IoConstructOutline,
+  IoBriefcaseOutline,
   IoCashOutline,
   IoInformationCircleOutline,
   IoSearchOutline,
@@ -36,9 +37,9 @@ import { formatDateToDDMMYYYY, formatDateToLongString } from "../../../utils/dat
 const CategorySelection = ({ onSelect }) => {
   const categories = [
     { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "bg-emerald-50 text-emerald-600 border border-emerald-100" },
-    { id: "Domestic/Household", label: "Domestic / Household", icon: IoHomeOutline, color: "bg-blue-50 text-[#0A84FF] border border-blue-100" },
-    { id: "Industrial/Commercial", label: "Industrial / Commercial", icon: IoBusinessOutline, color: "bg-purple-50 text-purple-600 border border-purple-100" },
-    { id: "Industrial", label: "Industrial Projects", icon: IoConstructOutline, color: "bg-amber-50 text-amber-600 border border-amber-100" }
+    { id: "Household", label: "Household", icon: IoHomeOutline, color: "bg-blue-50 text-[#0A84FF] border border-blue-100" },
+    { id: "Commercial", label: "Commercial", icon: IoBusinessOutline, color: "bg-purple-50 text-purple-600 border border-purple-100" },
+    { id: "Industrial", label: "Industrial", icon: IoBriefcaseOutline, color: "bg-amber-50 text-amber-600 border border-amber-100" }
   ];
 
   return (

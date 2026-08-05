@@ -1,29 +1,45 @@
-import { useState, useEffect } from "react";
-import { IoReaderOutline, IoShieldCheckmarkOutline } from "react-icons/io5";
+import { useState, useEffect, useCallback } from "react";
+import {
+  IoReaderOutline,
+  IoShieldCheckmarkOutline,
+  IoSaveOutline,
+  IoCheckmarkCircle,
+  IoDocumentTextOutline,
+  IoCardOutline,
+  IoReceiptOutline,
+  IoCloseCircleOutline,
+  IoAlertCircleOutline,
+  IoWalletOutline,
+} from "react-icons/io5";
 import { getAllSettings, updateMultipleSettings } from "../../../services/adminApi";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import { useToast } from "../../../hooks/useToast";
-import ReactQuill from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
 
+/* ──────────────────────────────────────────────
+   Quill Configuration
+   ────────────────────────────────────────────── */
 const modules = {
   toolbar: [
-    [{ 'header': [1, 2, 3, false] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-    ['link', 'clean'],
-    [{ 'color': [] }, { 'background': [] }],
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["link", "clean"],
+    [{ color: [] }, { background: [] }],
   ],
 };
-
 const formats = [
-  'header',
-  'bold', 'italic', 'underline', 'strike',
-  'list', 'bullet',
-  'link',
-  'color', 'background',
+  "header",
+  "bold", "italic", "underline", "strike",
+  "list", "bullet",
+  "link",
+  "color", "background",
 ];
 
+/* ──────────────────────────────────────────────
+   Default policy text values
+   ────────────────────────────────────────────── */
 const DEFAULT_POLICIES = {
   general_terms: `<ul>
   <li>By creating an account or logging in, you agree to abide by Jaladhaara platform guidelines and privacy terms.</li>
@@ -37,12 +53,12 @@ const DEFAULT_POLICIES = {
 </ul>`,
   cancellation_policy: `<ul>
   <li><strong>Cancellation Before 24h:</strong> Full refund of advance payment if cancelled at least 24 hours before the scheduled visit.</li>
-  <li><strong>Late Cancellation:</strong> 50% of the advance amount will be forfeited if cancelled between 12-24 hours before the visit.</li>
+  <li><strong>Late Cancellation:</strong> 50% of the advance amount will be forfeited if cancelled between 12–24 hours before the visit.</li>
   <li><strong>Same Day Cancellation:</strong> No refund for cancellations made within 12 hours of the visit.</li>
 </ul>`,
   refund_policy: `<ul>
-  <li><strong>Refund Processing:</strong> Approved refunds will be processed back to the original payment method within 5-7 business days.</li>
-  <li><strong>Failed Survey Visits:</strong> If an expert fails to attend due to platform issues, a 100% refund will be issued.</li>
+  <li><strong>Refund Processing:</strong> Approved refunds will be credited to your JalaDhar wallet instantly upon cancellation.</li>
+  <li><strong>Failed Survey Visits:</strong> If an expert fails to attend due to platform issues, a 100% refund will be issued to your wallet.</li>
   <li><strong>Inquiries:</strong> Contact support for any refund status queries.</li>
 </ul>`,
   advance_payment_policy: `<ul>
@@ -75,298 +91,445 @@ const DEFAULT_POLICIES = {
   <li>By using the Jaladhaara app, you consent to the collection, use, storage, and processing of your information in accordance with this Privacy Policy.</li>
   <li>Jaladhaara may update this Privacy Policy from time to time. The latest version will always be available within the app and on our website.</li>
 </ol>
-<p>For more information, please refer to the full Privacy Policy available in the app or contact Jaladhaara Customer Support.</p>`
+<p>For more information, please refer to the full Privacy Policy available in the app or contact Jaladhaara Customer Support.</p>`,
 };
 
+/* ──────────────────────────────────────────────
+   Tab definitions (3 tabs — no numeric rules tab)
+   ────────────────────────────────────────────── */
+const TABS = [
+  { id: "legal",      label: "Legal & Terms",       icon: IoDocumentTextOutline, color: "blue"   },
+  { id: "booking",    label: "Booking & Cancellation", icon: IoCardOutline,       color: "violet" },
+  { id: "refund",     label: "Refund & Privacy",    icon: IoReceiptOutline,      color: "green"  },
+];
+
+const TAB_COLOR_MAP = {
+  blue:   { active: "bg-blue-600 text-white shadow-blue-200",     inactive: "text-slate-600 hover:bg-blue-50 hover:text-blue-700",   accent: "#2563EB" },
+  violet: { active: "bg-violet-600 text-white shadow-violet-200", inactive: "text-slate-600 hover:bg-violet-50 hover:text-violet-700", accent: "#7C3AED" },
+  green:  { active: "bg-emerald-600 text-white shadow-emerald-200", inactive: "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700", accent: "#059669" },
+};
+
+/* ──────────────────────────────────────────────
+   Sub-components
+   ────────────────────────────────────────────── */
+
+function PolicyBlock({ label, description, value, onChange, placeholder }) {
+  return (
+    <div className="space-y-2">
+      <div>
+        <label className="block text-sm font-bold text-slate-800">{label}</label>
+        {description && <p className="text-xs text-slate-500 mt-0.5">{description}</p>}
+      </div>
+      <div className="policy-editor-wrap rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+        <ReactQuill
+          theme="snow"
+          value={value}
+          onChange={onChange}
+          modules={modules}
+          formats={formats}
+          placeholder={placeholder}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({ title, description, icon: Icon, color = "blue", onSave, saving, saved, children }) {
+  const colors = TAB_COLOR_MAP[color];
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50/60 to-white">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl" style={{ backgroundColor: colors.accent + "15" }}>
+            <Icon className="text-lg" style={{ color: colors.accent }} />
+          </div>
+          <div>
+            <h2 className="text-sm font-extrabold text-slate-800">{title}</h2>
+            {description && <p className="text-xs text-slate-500 mt-0.5">{description}</p>}
+          </div>
+        </div>
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md
+            ${saved
+              ? "bg-emerald-500 text-white shadow-emerald-200"
+              : `text-white shadow-lg ${saving ? "opacity-60 cursor-not-allowed" : "hover:opacity-90 active:scale-95"}`
+            }`}
+          style={!saved ? { backgroundColor: colors.accent, boxShadow: `0 4px 14px ${colors.accent}40` } : {}}
+        >
+          {saving ? (
+            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : saved ? (
+            <IoCheckmarkCircle className="text-base" />
+          ) : (
+            <IoSaveOutline className="text-base" />
+          )}
+          {saving ? "Saving…" : saved ? "Saved!" : "Save Section"}
+        </button>
+      </div>
+      <div className="p-6 space-y-6">{children}</div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────
+   Main Page Component
+   ────────────────────────────────────────────── */
 export default function AdminPolicies() {
   const toast = useToast();
-  const [error, setError] = useState("");
-  const [policiesLoading, setPoliciesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-
+  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("legal");
   const [policySettings, setPolicySettings] = useState(DEFAULT_POLICIES);
 
-  // Load policy settings
+  const [sectionState, setSectionState] = useState({
+    legal:   { saving: false, saved: false },
+    booking: { saving: false, saved: false },
+    refund:  { saving: false, saved: false },
+  });
+
+  /* Load all settings on mount */
   useEffect(() => {
-    const loadPolicySettings = async () => {
+    const load = async () => {
       try {
         setLoading(true);
-        const response = await getAllSettings('policy');
-        if (response.success && response.data.settings) {
-          const settingsObj = {};
-          response.data.settings.forEach(setting => {
-            if (setting.value && setting.value.trim() !== "") {
-              settingsObj[setting.key] = setting.value;
+        const res = await getAllSettings("policy");
+        if (res.success && res.data?.settings) {
+          const map = {};
+          res.data.settings.forEach((s) => {
+            if (s.value !== undefined && s.value !== null && s.value !== "") {
+              map[s.key] = s.value;
             }
           });
-          setPolicySettings(prev => ({
-            ...DEFAULT_POLICIES,
-            ...settingsObj
-          }));
+          setPolicySettings((prev) => ({ ...DEFAULT_POLICIES, ...map }));
         }
       } catch (err) {
-        console.error('Error loading policy settings:', err);
-        setError("Failed to load policy settings");
+        console.error("Error loading policy settings:", err);
+        setError("Failed to load policy settings. Please refresh the page.");
       } finally {
         setLoading(false);
       }
     };
-    loadPolicySettings();
+    load();
   }, []);
 
-  const handlePolicySettingsUpdate = async (e) => {
-    e.preventDefault();
+  const patch = useCallback((key, value) => {
+    setPolicySettings((prev) => ({ ...prev, [key]: value }));
+    const sectionKey = getSectionForKey(key);
+    if (sectionKey) {
+      setSectionState((prev) => ({
+        ...prev,
+        [sectionKey]: { ...prev[sectionKey], saved: false },
+      }));
+    }
+  }, []);
+
+  const getSectionForKey = (key) => {
+    const legal = ["general_terms", "terms_of_service", "privacy_policy"];
+    const booking = ["booking_policy", "cancellation_policy", "advance_payment_policy", "remaining_payment_policy"];
+    const refundKeys = ["refund_policy"];
+    if (legal.includes(key)) return "legal";
+    if (booking.includes(key)) return "booking";
+    if (refundKeys.includes(key)) return "refund";
+    return null;
+  };
+
+  const saveSection = async (section) => {
+    setSectionState((prev) => ({ ...prev, [section]: { saving: true, saved: false } }));
     setError("");
-    setPoliciesLoading(true);
-
     try {
-      const settings = [
-        { key: 'general_terms', value: policySettings.general_terms },
-        { key: 'booking_policy', value: policySettings.booking_policy },
-        { key: 'cancellation_policy', value: policySettings.cancellation_policy },
-        { key: 'refund_policy', value: policySettings.refund_policy },
-        { key: 'advance_payment_policy', value: policySettings.advance_payment_policy },
-        { key: 'remaining_payment_policy', value: policySettings.remaining_payment_policy },
-        { key: 'terms_of_service', value: policySettings.terms_of_service },
-        { key: 'privacy_policy', value: policySettings.privacy_policy },
-      ];
+      let settings = [];
+      if (section === "legal") {
+        settings = [
+          { key: "general_terms",    value: policySettings.general_terms },
+          { key: "terms_of_service", value: policySettings.terms_of_service },
+          { key: "privacy_policy",   value: policySettings.privacy_policy },
+        ];
+      } else if (section === "booking") {
+        settings = [
+          { key: "booking_policy",          value: policySettings.booking_policy },
+          { key: "cancellation_policy",     value: policySettings.cancellation_policy },
+          { key: "advance_payment_policy",  value: policySettings.advance_payment_policy },
+          { key: "remaining_payment_policy", value: policySettings.remaining_payment_policy },
+        ];
+      } else if (section === "refund") {
+        settings = [
+          { key: "refund_policy", value: policySettings.refund_policy },
+        ];
+      }
 
-      const response = await updateMultipleSettings(settings);
-      if (response.success) {
-        toast.showSuccess("Policies updated successfully!");
+      const res = await updateMultipleSettings(settings);
+      if (res.success) {
+        setSectionState((prev) => ({ ...prev, [section]: { saving: false, saved: true } }));
+        toast.showSuccess("Section saved successfully!");
+        setTimeout(
+          () => setSectionState((prev) => ({ ...prev, [section]: { ...prev[section], saved: false } })),
+          3000
+        );
       } else {
-        setError(response.message || "Failed to update policies");
+        throw new Error(res.message || "Failed to save.");
       }
     } catch (err) {
-      console.error("Update policy settings error:", err);
-      setError(err.response?.data?.message || "Failed to update policies. Please try again.");
-    } finally {
-      setPoliciesLoading(false);
+      console.error("Save section error:", err);
+      setError(err.message || "Failed to save section. Please try again.");
+      setSectionState((prev) => ({ ...prev, [section]: { saving: false, saved: false } }));
     }
   };
 
+  /* ── Loading skeleton ── */
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0A84FF]"></div>
+      <div className="min-h-[calc(100vh-5rem)] flex flex-col">
+        <div className="mb-6 animate-pulse">
+          <div className="h-8 w-56 bg-slate-200 rounded-xl mb-2" />
+          <div className="h-4 w-80 bg-slate-100 rounded-lg" />
+        </div>
+        <div className="flex gap-2 mb-6">
+          {[1, 2, 3].map((i) => <div key={i} className="h-10 w-44 bg-slate-200 rounded-xl animate-pulse" />)}
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 animate-pulse">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-4 w-40 bg-slate-200 rounded" />
+              <div className="h-36 bg-slate-100 rounded-xl" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-[calc(100vh-5rem)]">
-      <style>{`
-                .quill {
-                    background: white;
-                    border-radius: 0.5rem;
-                }
-                .ql-toolbar.ql-snow {
-                    border-top-left-radius: 0.5rem;
-                    border-top-right-radius: 0.5rem;
-                    border-color: #e5e7eb;
-                    background: #f9fafb;
-                }
-                .ql-container.ql-snow {
-                    border-bottom-left-radius: 0.5rem;
-                    border-bottom-right-radius: 0.5rem;
-                    border-color: #e5e7eb;
-                    min-height: 200px;
-                    font-size: 0.875rem;
-                }
-                .ql-editor {
-                    min-height: 200px;
-                }
-                .ql-editor.ql-blank::before {
-                    color: #9ca3af;
-                    font-style: normal;
-                }
-                .ql-snow.ql-toolbar button:hover,
-                .ql-snow .ql-toolbar button:hover,
-                .ql-snow.ql-toolbar button:focus,
-                .ql-snow .ql-toolbar button:focus,
-                .ql-snow.ql-toolbar button.ql-active,
-                .ql-snow .ql-toolbar button.ql-active,
-                .ql-snow.ql-toolbar .ql-picker-label:hover,
-                .ql-snow .ql-toolbar .ql-picker-label:hover,
-                .ql-snow.ql-toolbar .ql-picker-label.ql-active,
-                .ql-snow .ql-toolbar .ql-picker-label.ql-active,
-                .ql-snow.ql-toolbar .ql-picker-item:hover,
-                .ql-snow .ql-toolbar .ql-picker-item:hover,
-                .ql-snow.ql-toolbar .ql-picker-item.ql-selected,
-                .ql-snow .ql-toolbar .ql-picker-item.ql-selected {
-                    color: #0A84FF;
-                }
-                .ql-snow.ql-toolbar button:hover .ql-stroke,
-                .ql-snow .ql-toolbar button:hover .ql-stroke,
-                .ql-snow.ql-toolbar button:focus .ql-stroke,
-                .ql-snow .ql-toolbar button:focus .ql-stroke,
-                .ql-snow.ql-toolbar button.ql-active .ql-stroke,
-                .ql-snow .ql-toolbar button.ql-active .ql-stroke,
-                .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke,
-                .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke,
-                .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke,
-                .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke,
-                .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke,
-                .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke,
-                .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke,
-                .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke {
-                    stroke: #0A84FF;
-                }
-            `}</style>
+  const { saving, saved } = sectionState[activeTab] || {};
 
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-          <IoReaderOutline className="text-[#0A84FF]" />
-          Policy Management
-        </h1>
-        <p className="text-gray-600">Edit the policies shown to users across the platform using a rich text editor</p>
+  return (
+    <div className="min-h-[calc(100vh-5rem)] space-y-6">
+      {/* ── Quill styles ── */}
+      <style>{`
+        .policy-editor-wrap .ql-toolbar.ql-snow {
+          border-top-left-radius: 0.75rem;
+          border-top-right-radius: 0.75rem;
+          border-color: #e2e8f0;
+          background: #f8fafc;
+          padding: 8px 10px;
+        }
+        .policy-editor-wrap .ql-container.ql-snow {
+          border-bottom-left-radius: 0.75rem;
+          border-bottom-right-radius: 0.75rem;
+          border-color: #e2e8f0;
+          min-height: 180px;
+          font-size: 0.875rem;
+          font-family: inherit;
+        }
+        .policy-editor-wrap .ql-editor {
+          min-height: 180px;
+          line-height: 1.7;
+          color: #1e293b;
+        }
+        .policy-editor-wrap .ql-editor.ql-blank::before {
+          color: #94a3b8;
+          font-style: normal;
+        }
+        .policy-editor-wrap .ql-snow.ql-toolbar button:hover,
+        .policy-editor-wrap .ql-snow.ql-toolbar button.ql-active {
+          color: #2563eb;
+        }
+        .policy-editor-wrap .ql-snow.ql-toolbar button:hover .ql-stroke,
+        .policy-editor-wrap .ql-snow.ql-toolbar button.ql-active .ql-stroke {
+          stroke: #2563eb;
+        }
+      `}</style>
+
+      {/* ── Page Header ── */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-200">
+            <IoReaderOutline className="text-2xl" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 leading-tight">Policy Management</h1>
+            <p className="text-sm text-slate-500 font-medium mt-0.5">
+              Configure all platform policies and legal documents shown to users
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full">
+          <IoShieldCheckmarkOutline className="text-emerald-600 text-sm" />
+          <span className="text-xs font-bold text-emerald-700">Saved to DB</span>
+        </div>
       </div>
 
-      <div className="max-w-4xl">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <ErrorMessage message={error} />
+      {/* Error Banner */}
+      {error && (
+        <div className="flex items-start gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-2xl text-sm text-red-700 font-medium">
+          <IoAlertCircleOutline className="text-lg shrink-0 mt-0.5" />
+          <span>{error}</span>
+          <button onClick={() => setError("")} className="ml-auto text-red-400 hover:text-red-600">
+            <IoCloseCircleOutline />
+          </button>
+        </div>
+      )}
 
-          <p className="text-sm text-gray-500 mb-6 flex items-center gap-2">
-            <IoShieldCheckmarkOutline className="text-green-500" />
-            Use the toolbar to format your text. The changes will be saved as HTML.
-          </p>
+      {/* ── Tab Navigation ── */}
+      <div className="flex flex-wrap gap-2 p-1 bg-slate-100 rounded-2xl">
+        {TABS.map((tab) => {
+          const isActive = tab.id === activeTab;
+          const colors = TAB_COLOR_MAP[tab.color];
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 flex-1 min-w-[160px] justify-center
+                ${isActive ? `${colors.active} shadow-md` : `${colors.inactive} bg-transparent`}`}
+            >
+              <tab.icon className="text-base shrink-0" />
+              {tab.label}
+              {sectionState[tab.id]?.saved && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-          <form onSubmit={handlePolicySettingsUpdate} className="space-y-8">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                General Terms & Conditions (Login / Registration)
-              </label>
-              <p className="text-xs text-gray-500 mb-2">Terms accepted by users during login and registration.</p>
-              <ReactQuill
-                theme="snow"
-                value={policySettings.general_terms}
-                onChange={(content) => setPolicySettings(prev => ({ ...prev, general_terms: content }))}
-                modules={modules}
-                formats={formats}
-                placeholder="Write general terms and conditions here..."
-              />
+      {/* ── Legal & Terms Tab ── */}
+      {activeTab === "legal" && (
+        <SectionCard
+          title="Legal & Terms Policies"
+          description="Platform agreements accepted by users at login, signup, and booking stages"
+          icon={IoDocumentTextOutline}
+          color="blue"
+          onSave={() => saveSection("legal")}
+          saving={saving}
+          saved={saved}
+        >
+          <PolicyBlock
+            label="General Terms & Conditions (Login / Registration)"
+            description="Terms accepted by users during login and registration."
+            value={policySettings.general_terms}
+            onChange={(v) => patch("general_terms", v)}
+            placeholder="Write general terms and conditions here…"
+          />
+          <div className="border-t border-dashed border-slate-200" />
+          <PolicyBlock
+            label="Terms of Service"
+            description="General legal terms shown during survey flow and booking confirmation."
+            value={policySettings.terms_of_service}
+            onChange={(v) => patch("terms_of_service", v)}
+            placeholder="Write your terms of service here…"
+          />
+          <div className="border-t border-dashed border-slate-200" />
+          <PolicyBlock
+            label="Privacy Policy"
+            description="Privacy policy details regarding user data collection and protection."
+            value={policySettings.privacy_policy}
+            onChange={(v) => patch("privacy_policy", v)}
+            placeholder="Write your privacy policy here…"
+          />
+        </SectionCard>
+      )}
+
+      {/* ── Booking & Cancellation Tab ── */}
+      {activeTab === "booking" && (
+        <SectionCard
+          title="Booking & Cancellation Policies"
+          description="Policies shown during booking flow, payment confirmations, and cancellation modal"
+          icon={IoCardOutline}
+          color="violet"
+          onSave={() => saveSection("booking")}
+          saving={saving}
+          saved={saved}
+        >
+          <PolicyBlock
+            label="Booking Policy"
+            description="Shown during booking requests and survey scheduling."
+            value={policySettings.booking_policy}
+            onChange={(v) => patch("booking_policy", v)}
+            placeholder="Write your booking policy here…"
+          />
+          <div className="border-t border-dashed border-slate-200" />
+
+          {/* Cancellation Policy — highlighted as it drives the user's cancellation modal */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-bold text-slate-800">
+                  Cancellation Policy
+                </label>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  This exact text is shown to users inside the cancellation confirmation modal before they confirm cancelling their booking.
+                </p>
+              </div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 bg-red-50 border border-red-200 text-red-600 rounded-full shrink-0 ml-3">
+                Shown in Cancel Modal
+              </span>
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Booking Policy
-              </label>
-              <p className="text-xs text-gray-500 mb-2">Shown during booking requests and survey scheduling.</p>
-              <ReactQuill
-                theme="snow"
-                value={policySettings.booking_policy}
-                onChange={(content) => setPolicySettings(prev => ({ ...prev, booking_policy: content }))}
-                modules={modules}
-                formats={formats}
-                placeholder="Write your booking policy here..."
-              />
+            {/* Info notice about refund flow */}
+            <div className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-3">
+              <IoWalletOutline className="text-emerald-600 text-base shrink-0 mt-0.5" />
+              <p className="text-[11px] text-emerald-800 font-medium leading-relaxed">
+                <strong>Refund flow:</strong> When a user cancels, the full advance payment is automatically credited to their JalaDhar wallet. Write your cancellation terms below — these will be displayed verbatim to the user.
+              </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Cancellation Policy
-              </label>
-              <p className="text-xs text-gray-500 mb-2">Terms regarding booking cancellations.</p>
+            <div className="policy-editor-wrap rounded-xl overflow-hidden border-2 border-red-100 shadow-sm">
               <ReactQuill
                 theme="snow"
                 value={policySettings.cancellation_policy}
-                onChange={(content) => setPolicySettings(prev => ({ ...prev, cancellation_policy: content }))}
+                onChange={(v) => patch("cancellation_policy", v)}
                 modules={modules}
                 formats={formats}
-                placeholder="Write your cancellation policy here..."
+                placeholder="Write your cancellation terms here…"
               />
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Refund Policy
-              </label>
-              <p className="text-xs text-gray-500 mb-2">Terms regarding money-back conditions and refund timelines.</p>
-              <ReactQuill
-                theme="snow"
-                value={policySettings.refund_policy}
-                onChange={(content) => setPolicySettings(prev => ({ ...prev, refund_policy: content }))}
-                modules={modules}
-                formats={formats}
-                placeholder="Write your refund policy here..."
-              />
-            </div>
+          <div className="border-t border-dashed border-slate-200" />
+          <PolicyBlock
+            label="Advance Payment Policy"
+            description="Shown during initial advance payment confirmation (40% payment screen)."
+            value={policySettings.advance_payment_policy}
+            onChange={(v) => patch("advance_payment_policy", v)}
+            placeholder="Write advance payment terms here…"
+          />
+          <div className="border-t border-dashed border-slate-200" />
+          <PolicyBlock
+            label="Remaining Payment Policy"
+            description="Shown during final balance payment confirmation (60% payment screen)."
+            value={policySettings.remaining_payment_policy}
+            onChange={(v) => patch("remaining_payment_policy", v)}
+            placeholder="Write remaining balance payment terms here…"
+          />
+        </SectionCard>
+      )}
 
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Advance Payment Policy
-              </label>
-              <p className="text-xs text-gray-500 mb-2">Shown during initial advance payment confirmation.</p>
-              <ReactQuill
-                theme="snow"
-                value={policySettings.advance_payment_policy}
-                onChange={(content) => setPolicySettings(prev => ({ ...prev, advance_payment_policy: content }))}
-                modules={modules}
-                formats={formats}
-                placeholder="Write advance payment terms here..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Remaining Payment Policy
-              </label>
-              <p className="text-xs text-gray-500 mb-2">Shown during final balance payment confirmation.</p>
-              <ReactQuill
-                theme="snow"
-                value={policySettings.remaining_payment_policy}
-                onChange={(content) => setPolicySettings(prev => ({ ...prev, remaining_payment_policy: content }))}
-                modules={modules}
-                formats={formats}
-                placeholder="Write remaining balance payment terms here..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Terms of Service
-              </label>
-              <p className="text-xs text-gray-500 mb-2">General legal terms for using JalaDhar (shown during survey flow and booking confirmation).</p>
-              <ReactQuill
-                theme="snow"
-                value={policySettings.terms_of_service}
-                onChange={(content) => setPolicySettings(prev => ({ ...prev, terms_of_service: content }))}
-                modules={modules}
-                formats={formats}
-                placeholder="Write your terms of service here..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Privacy Policy
-              </label>
-              <p className="text-xs text-gray-500 mb-2">Privacy policy details regarding user data collection and protection.</p>
-              <ReactQuill
-                theme="snow"
-                value={policySettings.privacy_policy}
-                onChange={(content) => setPolicySettings(prev => ({ ...prev, privacy_policy: content }))}
-                modules={modules}
-                formats={formats}
-                placeholder="Write your privacy policy here..."
-              />
-            </div>
-
-            <div className="flex justify-end pt-4 border-t border-gray-100">
-              <button
-                type="submit"
-                disabled={policiesLoading}
-                className="px-8 py-3 bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-blue-200"
-              >
-                {policiesLoading && (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                )}
-                {policiesLoading ? "Updating Policies..." : "Save All Policies"}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+      {/* ── Refund & Privacy Tab ── */}
+      {activeTab === "refund" && (
+        <SectionCard
+          title="Refund Policy"
+          description="Terms regarding refund conditions — refunds are credited to the user's JalaDhar wallet"
+          icon={IoReceiptOutline}
+          color="green"
+          onSave={() => saveSection("refund")}
+          saving={saving}
+          saved={saved}
+        >
+          <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+            <IoWalletOutline className="text-emerald-600 text-xl shrink-0 mt-0.5" />
+            <p className="text-xs text-emerald-800 font-medium leading-relaxed">
+              Refunds are automatically credited to the user's <strong>JalaDhar wallet</strong> upon cancellation. Ensure this policy is consistent with the cancellation terms in the <strong>Booking & Cancellation</strong> tab.
+            </p>
+          </div>
+          <PolicyBlock
+            label="Refund Policy"
+            description="Terms regarding money-back conditions and refund timelines."
+            value={policySettings.refund_policy}
+            onChange={(v) => patch("refund_policy", v)}
+            placeholder="Write your refund policy here…"
+          />
+        </SectionCard>
+      )}
     </div>
   );
 }

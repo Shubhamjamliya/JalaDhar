@@ -43,14 +43,21 @@ export const NotificationProvider = ({ children }) => {
     userRole = 'User';
     currentUser = user;
   } else {
-    // Neutral path (e.g. /notifications): check vendor/admin first if active token exists
-    if (isVendorAuthenticated && localStorage.getItem('vendorAccessToken')) {
+    // Neutral path (e.g. /notifications, /notification): check active tokens and authenticated users safely
+    const hasUserToken = !!localStorage.getItem('accessToken');
+    const hasVendorToken = !!localStorage.getItem('vendorAccessToken');
+    const hasAdminToken = !!localStorage.getItem('adminAccessToken');
+
+    if (isUserAuthenticated && hasUserToken && (!hasVendorToken && !hasAdminToken)) {
+      userRole = 'User';
+      currentUser = user;
+    } else if (isVendorAuthenticated && hasVendorToken) {
       userRole = 'Vendor';
       currentUser = vendor;
-    } else if (isAdminAuthenticated && localStorage.getItem('adminAccessToken')) {
+    } else if (isAdminAuthenticated && hasAdminToken) {
       userRole = 'Admin';
       currentUser = admin;
-    } else if (isUserAuthenticated) {
+    } else if (isUserAuthenticated && hasUserToken) {
       userRole = 'User';
       currentUser = user;
     }

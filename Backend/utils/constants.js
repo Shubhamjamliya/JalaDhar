@@ -51,6 +51,7 @@ const BOOKING_STATUS = {
   PENDING: 'PENDING',                    // Booking created/paid, waiting for vendor assignment
   ASSIGNED: 'ASSIGNED',                  // Vendor auto-assigned, waiting for vendor acceptance
   ACCEPTED: 'ACCEPTED',                  // Vendor accepted the booking
+  EN_ROUTE: 'EN_ROUTE',                  // Vendor is en route / traveling to survey site
 
   // Service execution
   VISITED: 'VISITED',                    // Vendor visited user's location and completed testing

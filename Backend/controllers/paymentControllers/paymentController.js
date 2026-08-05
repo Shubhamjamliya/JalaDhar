@@ -149,7 +149,7 @@ const verifyAdvancePayment = async (req, res) => {
         recipientModel: 'User',
         type: 'PAYMENT_ADVANCE_SUCCESS',
         title: 'Advance Payment Successful',
-        message: `Advance payment of ₹${booking.payment.advanceAmount} completed successfully. Booking assigned to vendor.`,
+        message: `Advance payment of ₹${booking.payment.advanceAmount} completed successfully. Booking assigned to expert.`,
         relatedEntity: {
           entityType: 'Booking',
           entityId: booking._id

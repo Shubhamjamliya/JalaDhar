@@ -252,6 +252,78 @@ const initializeDefaultSettings = async () => {
       description: 'Configurable list of dispute category options',
       type: 'json',
       category: 'general'
+    },
+    {
+      key: 'CANCELLATION_FULL_REFUND_HOURS',
+      value: 24,
+      label: 'Full Refund Threshold (Hours)',
+      description: 'Hours before scheduled visit to get 100% full refund',
+      type: 'number',
+      category: 'policy'
+    },
+    {
+      key: 'CANCELLATION_FULL_REFUND_PERCENT',
+      value: 100,
+      label: 'Full Refund Percentage (%)',
+      description: 'Percentage of advance payment refunded if cancelled early',
+      type: 'number',
+      category: 'policy'
+    },
+    {
+      key: 'CANCELLATION_FULL_REFUND_TEXT',
+      value: '100% Full Refund of advance payment if cancelled at least 24 hours prior.',
+      label: 'Full Refund Policy Text',
+      description: 'Text explanation for full refund policy rule',
+      type: 'string',
+      category: 'policy'
+    },
+    {
+      key: 'CANCELLATION_PARTIAL_REFUND_HOURS',
+      value: 12,
+      label: 'Partial Refund Threshold (Hours)',
+      description: 'Hours before scheduled visit to get partial refund',
+      type: 'number',
+      category: 'policy'
+    },
+    {
+      key: 'CANCELLATION_PARTIAL_REFUND_PERCENT',
+      value: 50,
+      label: 'Partial Refund Percentage (%)',
+      description: 'Percentage of advance payment refunded if cancelled between partial and full window',
+      type: 'number',
+      category: 'policy'
+    },
+    {
+      key: 'CANCELLATION_PARTIAL_REFUND_TEXT',
+      value: '50% Refund of advance payment.',
+      label: 'Partial Refund Policy Text',
+      description: 'Text explanation for partial refund policy rule',
+      type: 'string',
+      category: 'policy'
+    },
+    {
+      key: 'CANCELLATION_LATE_REFUND_PERCENT',
+      value: 0,
+      label: 'Late Cancellation Refund Percentage (%)',
+      description: 'Percentage of advance payment refunded if cancelled within late window',
+      type: 'number',
+      category: 'policy'
+    },
+    {
+      key: 'CANCELLATION_LATE_REFUND_TEXT',
+      value: 'Advance payment is non-refundable due to reserved expert availability.',
+      label: 'Late Refund Policy Text',
+      description: 'Text explanation for late cancellation policy rule',
+      type: 'string',
+      category: 'policy'
+    },
+    {
+      key: 'CANCELLATION_REFUND_SETTLEMENT_TEXT',
+      value: 'Processed back to original payment mode within 5-7 business days.',
+      label: 'Refund Settlement Time Text',
+      description: 'Text explanation for refund processing timeframe',
+      type: 'string',
+      category: 'policy'
     }
   ];
 

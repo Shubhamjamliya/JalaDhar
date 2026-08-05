@@ -90,7 +90,9 @@ const acceptBooking = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       vendor: vendorId
-    }).populate('user', 'name email');
+    })
+      .populate('user', 'name email')
+      .populate('vendor', 'name designation companyName');
 
     if (!booking) {
       console.log(`[acceptBooking] Booking ${bookingId} not found or doesn't belong to vendor ${vendorId}`);
@@ -109,49 +111,74 @@ const acceptBooking = async (req, res) => {
       });
     }
 
+    const { visitDate, scheduledTime } = req.body || {};
+
     booking.status = BOOKING_STATUS.ACCEPTED;
     booking.vendorStatus = BOOKING_STATUS.ACCEPTED;
     booking.userStatus = BOOKING_STATUS.ACCEPTED;
     booking.acceptedAt = new Date();
+    if (visitDate) booking.scheduleDate = new Date(visitDate);
+    if (scheduledTime) booking.scheduledTime = scheduledTime;
     await booking.save();
 
-    // Send notification to user
-    try {
-      await sendBookingStatusUpdateEmail({
-        email: booking.user.email,
-        name: booking.user.name,
-        bookingId: booking._id.toString(),
-        status: 'ACCEPTED',
-        message: 'Vendor has accepted your booking request'
-      });
+    // Format visit date & time details for user notification
+    const visitDateObj = booking.scheduleDate || booking.scheduledDate;
+    const formattedDate = visitDateObj 
+      ? new Date(visitDateObj).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+      : null;
+    const timeDetail = booking.scheduledTime && booking.scheduledTime !== 'TBD'
+      ? (formattedDate ? `on ${formattedDate} (${booking.scheduledTime})` : `at ${booking.scheduledTime}`)
+      : (formattedDate ? `on ${formattedDate}` : '');
 
-      // Send real-time notification
+    // 1. Create In-App Notification (Database & Real-time Socket) — Independent of Email
+    try {
+      let io = null;
       try {
         const { getIO } = require('../../sockets');
-        const io = getIO();
-        const expertCategory = booking.vendor?.designation || 'Groundwater Professional';
-        await sendNotification({
-          recipient: booking.user._id,
-          recipientModel: 'User',
-          type: 'BOOKING_ACCEPTED',
-          title: 'Booking Accepted',
-          message: `Your booking has been accepted by ${booking.vendor?.name ? `${booking.vendor.name} (${expertCategory})` : `a specialized ${expertCategory.toLowerCase()}`}`,
-          relatedEntity: {
-            entityType: 'Booking',
-            entityId: booking._id
-          },
-          metadata: {
-            vendorName: booking.vendor?.name,
-            expertCategory: expertCategory,
-            bookingId: booking._id.toString()
-          }
-        }, io);
-      } catch (socketError) {
-        console.error('Socket notification error:', socketError);
-        // Continue even if Socket.io fails
+        io = getIO();
+      } catch (e) {
+        console.log('[acceptBooking] Socket.io not initialized yet');
+      }
+
+      const expertCategory = booking.vendor?.designation || 'Groundwater Professional';
+      const vendorName = booking.vendor?.name ? `${booking.vendor.name} (${expertCategory})` : `a specialized ${expertCategory.toLowerCase()}`;
+
+      await sendNotification({
+        recipient: booking.user._id,
+        recipientModel: 'User',
+        type: 'BOOKING_ACCEPTED',
+        title: 'Booking Accepted & Visit Scheduled',
+        message: `Your booking has been accepted by ${vendorName}.${timeDetail ? ` Visit scheduled ${timeDetail}.` : ''}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          vendorName: booking.vendor?.name,
+          expertCategory: expertCategory,
+          bookingId: booking._id.toString(),
+          scheduledTime: booking.scheduledTime,
+          scheduleDate: booking.scheduleDate || booking.scheduledDate
+        }
+      }, io);
+      console.log(`[acceptBooking] Notification successfully saved & sent for user ${booking.user._id}`);
+    } catch (notifErr) {
+      console.error('[acceptBooking] Error creating notification:', notifErr);
+    }
+
+    // 2. Send Email Notification (Isolated try/catch)
+    try {
+      if (booking.user?.email) {
+        await sendBookingStatusUpdateEmail({
+          email: booking.user.email,
+          name: booking.user.name,
+          bookingId: booking._id.toString(),
+          status: 'ACCEPTED',
+          message: `Vendor has accepted your booking request.${timeDetail ? ` Visit scheduled ${timeDetail}.` : ''}`
+        });
       }
     } catch (emailError) {
-      console.error('Email notification error:', emailError);
+      console.error('[acceptBooking] Email notification error:', emailError);
     }
 
     res.json({
@@ -255,6 +282,82 @@ const rejectBooking = async (req, res) => {
 };
 
 /**
+ * Mark booking as En Route (Vendor is traveling to site)
+ */
+const markAsEnRoute = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const vendorId = req.userId;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      vendor: vendorId,
+      vendorStatus: BOOKING_STATUS.ACCEPTED
+    })
+      .populate('user', 'name email')
+      .populate('vendor', 'name designation companyName');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or not in accepted status'
+      });
+    }
+
+    // Update booking status
+    booking.status = BOOKING_STATUS.EN_ROUTE;
+    booking.vendorStatus = BOOKING_STATUS.EN_ROUTE;
+    booking.userStatus = BOOKING_STATUS.EN_ROUTE;
+    booking.enRouteAt = new Date();
+    await booking.save();
+
+    // Send Notification to User
+    try {
+      let io = null;
+      try {
+        const { getIO } = require('../../sockets');
+        io = getIO();
+      } catch (e) {}
+
+      const expertCategory = booking.vendor?.designation || 'Groundwater Professional';
+      const vendorName = booking.vendor?.name ? `${booking.vendor.name} (${expertCategory})` : `Your assigned expert`;
+
+      await sendNotification({
+        recipient: booking.user._id,
+        recipientModel: 'User',
+        type: 'BOOKING_EN_ROUTE',
+        title: 'Expert En Route! 🚗',
+        message: `${vendorName} is now traveling to your property for the groundwater survey!`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          vendorName: booking.vendor?.name,
+          expertCategory: expertCategory,
+          bookingId: booking._id.toString()
+        }
+      }, io);
+    } catch (notifErr) {
+      console.error('[markAsEnRoute] Error creating notification:', notifErr);
+    }
+
+    res.json({
+      success: true,
+      message: 'Status updated to En Route',
+      data: { booking }
+    });
+  } catch (error) {
+    console.error('Mark as En Route error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update status to En Route',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Mark booking as visited (simple - without report upload)
  */
 const markAsVisited = async (req, res) => {
@@ -265,7 +368,7 @@ const markAsVisited = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       vendor: vendorId,
-      vendorStatus: BOOKING_STATUS.ACCEPTED
+      vendorStatus: { $in: [BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.EN_ROUTE] }
     }).populate('user', 'name email');
 
     if (!booking) {
@@ -991,6 +1094,7 @@ module.exports = {
   acceptBooking,
   rejectBooking,
   cancelBooking,
+  markAsEnRoute,
   markAsVisited,
   markVisitedAndUploadReport,
   markAsCompleted,

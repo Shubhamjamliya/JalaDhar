@@ -19,6 +19,7 @@ const notificationSchema = new mongoose.Schema({
       'BOOKING_CREATED',
       'BOOKING_ASSIGNED',
       'BOOKING_ACCEPTED',
+      'BOOKING_EN_ROUTE',
       'BOOKING_REJECTED',
       'BOOKING_VISITED',
       'BOOKING_CANCELLED',

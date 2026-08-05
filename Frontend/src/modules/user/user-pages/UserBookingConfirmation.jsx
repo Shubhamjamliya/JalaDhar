@@ -92,7 +92,7 @@ export default function UserBookingConfirmation() {
                     <IoCheckmarkCircleOutline className="text-5xl text-green-600" />
                 </div>
                 <h1 className="text-2xl font-bold text-gray-800 mb-2">Booking Confirmed!</h1>
-                <p className="text-gray-600 text-center">Your service request has been received and is waiting for vendor acceptance.</p>
+                <p className="text-gray-600 text-center">Your service request has been received and is waiting for expert acceptance.</p>
             </div>
 
             <div className="bg-white rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] p-6 mb-4">
@@ -112,7 +112,7 @@ export default function UserBookingConfirmation() {
                     <div className="flex items-start gap-3">
                         <IoPersonOutline className="text-xl text-[#0A84FF] mt-1" />
                         <div className="flex-1">
-                            <p className="text-sm text-gray-600 mb-1">Vendor</p>
+                            <p className="text-sm text-gray-600 mb-1">Expert</p>
                             <p className="text-base font-semibold text-gray-800">{booking.vendor?.name || "N/A"}</p>
                         </div>
                     </div>
@@ -121,7 +121,7 @@ export default function UserBookingConfirmation() {
                         <div className="flex-1">
                             <p className="text-sm text-gray-600 mb-1">Date & Time</p>
                             <p className="text-base font-semibold text-gray-800">
-                                {new Date(booking.scheduledDate).toLocaleDateString("en-IN")} &bull; {(!booking.scheduledTime || booking.scheduledTime === "TBD") ? "Time TBD by expert" : booking.scheduledTime}
+                                {new Date(booking.scheduledDate).toLocaleDateString("en-IN", { weekday: 'long' })} {new Date(booking.scheduledDate).toLocaleDateString("en-IN")} &bull; {(!booking.scheduledTime || booking.scheduledTime === "TBD") ? "Time TBD by expert" : booking.scheduledTime}
                             </p>
                         </div>
                     </div>
@@ -143,13 +143,13 @@ export default function UserBookingConfirmation() {
                     )}
                     <div className="flex items-center justify-between pt-4 border-t">
                         <span className="text-sm text-gray-600">Status</span>
-                        <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-semibold">Pending Vendor Acceptance</span>
+                        <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-semibold">Pending Expert Acceptance</span>
                     </div>
                 </div>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-[12px] p-4 mb-6">
-                <p className="text-sm text-blue-800"><strong>What's next?</strong> The vendor will review your request and accept it. You'll be notified once the vendor accepts your booking.</p>
+                <p className="text-sm text-blue-800"><strong>What's next?</strong> The expert will review your request and accept it. You'll be notified once the expert accepts your booking.</p>
             </div>
 
             <button onClick={() => navigate("/user/status", { state: { bookingId, refresh: true } })} className="w-full h-14 bg-[#0A84FF] text-white font-semibold rounded-[12px] hover:bg-[#005BBB] transition-colors text-lg flex items-center justify-center gap-2">

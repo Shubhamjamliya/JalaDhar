@@ -36,6 +36,7 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal, { CANCELLATION_REASONS } from "../../shared/components/InputModal";
+import CancellationPolicyModal from "../../shared/components/CancellationPolicyModal";
 import RatingModal from "../../shared/components/RatingModal";
 
 export default function UserBookingDetails() {
@@ -48,6 +49,7 @@ export default function UserBookingDetails() {
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [showCancellationInput, setShowCancellationInput] = useState(false);
     const [cancellationReason, setCancellationReason] = useState("");
+    const [cancelling, setCancelling] = useState(false);
     const [showWorkProof, setShowWorkProof] = useState(false);
     const [showRatingModal, setShowRatingModal] = useState(false);
     const [ratingData, setRatingData] = useState({
@@ -187,7 +189,7 @@ export default function UserBookingDetails() {
     };
 
     const handleCancelConfirm = async () => {
-        setShowCancelConfirm(false);
+        setCancelling(true);
         const loadingToast = toast.showLoading("Cancelling booking...");
         try {
             const response = await cancelBooking(bookingId, cancellationReason || "");
@@ -195,6 +197,7 @@ export default function UserBookingDetails() {
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking cancelled successfully!");
+                setShowCancelConfirm(false);
                 setCancellationReason("");
                 await loadBookingDetails();
             } else {
@@ -204,6 +207,8 @@ export default function UserBookingDetails() {
         } catch (err) {
             toast.dismissToast(loadingToast);
             handleApiError(err, "Failed to cancel booking");
+        } finally {
+            setCancelling(false);
         }
     };
 
@@ -392,7 +397,7 @@ export default function UserBookingDetails() {
             FINAL_SETTLEMENT: "Booking Completed: Your survey request has been fully completed.",
             COMPLETED: "Booking Completed: Thank you for choosing Jaladhaara!",
             CANCELLED: "Booking Cancelled: This survey request has been cancelled.",
-            REJECTED: "Booking Rejected: Unfortunately, vendors could not fulfill this request at this time.",
+            REJECTED: "Booking Rejected: Unfortunately, experts could not fulfill this request at this time.",
             FAILED: "Booking Failed: Process error encountered. Our support team is investigating.",
         };
         return descriptions[status] || "Track your real-time booking progress here.";
@@ -402,6 +407,7 @@ export default function UserBookingDetails() {
         if (!dateString) return "N/A";
         const date = new Date(dateString);
         const formattedDate = date.toLocaleDateString("en-IN", {
+            weekday: "long",
             day: "numeric",
             month: "short",
             year: "numeric",
@@ -539,7 +545,7 @@ export default function UserBookingDetails() {
                             )}
                             {booking.status === "REJECTED" && booking.rejectionReason && (
                                 <p className="mt-2 text-xs text-rose-700 font-bold bg-rose-50 p-2.5 rounded-lg border border-rose-100">
-                                    Vendor Reason: {booking.rejectionReason}
+                                    Expert Reason: {booking.rejectionReason}
                                 </p>
                             )}
                         </div>
@@ -1263,7 +1269,7 @@ export default function UserBookingDetails() {
                             </div>
 
                             <p className="text-xs text-slate-600 mb-4 leading-relaxed font-medium">
-                                If you have any concerns regarding the service, payment, or vendor behavior, please let us know. Our support team is here to assist you.
+                                If you have any concerns regarding the service, payment, or expert behavior, please let us know. Our support team is here to assist you.
                             </p>
 
                             <button
@@ -1389,15 +1395,13 @@ export default function UserBookingDetails() {
                 cancelText="Keep Booking"
             />
 
-            <ConfirmModal
+            {/* Cancellation Confirmation Modal with Policy */}
+            <CancellationPolicyModal
                 isOpen={showCancelConfirm}
                 onClose={() => setShowCancelConfirm(false)}
                 onConfirm={handleCancelConfirm}
-                title="Confirm Cancellation"
-                message="Are you sure? This action cannot be undone."
-                confirmText="Yes, Cancel"
-                cancelText="Go Back"
-                confirmColor="danger"
+                reason={cancellationReason}
+                isLoading={cancelling}
             />
 
             {/* Payment Prompt Modal */}
