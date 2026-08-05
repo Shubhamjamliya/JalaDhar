@@ -501,13 +501,15 @@ export default function VendorBookingDetails() {
                             const rawStatus = (_vIdx >= _sIdx ? (booking.vendorStatus || booking.status) : booking.status) || booking.status;
                             const lateStatuses = ["APPROVED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED", "SUCCESS", "FAILED"];
                             const hasBorell = booking.borewellResult && booking.borewellResult.uploadedAt && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED');
-                            const hasFullPayment = booking.payment?.remainingPaid || booking.payment?.status === "SUCCESS" || rawStatus === "PAYMENT_SUCCESS" || rawStatus === "PAID_FIRST";
-                            const hasReport = !!(booking.reportUploadedAt || booking.report);
+                            const hasFullPayment = (booking.payment?.remainingPaid === true) || rawStatus === "PAYMENT_SUCCESS" || rawStatus === "PAID_FIRST";
+                            const hasReport = !!(booking.reportUploadedAt || (booking.report && (booking.report.uploadedAt || booking.report.waterFound !== undefined)));
+
+                            const isEarlyStage = ["ASSIGNED", "ACCEPTED", "VISITED", "AWAITING_ADVANCE"].includes(rawStatus);
 
                             const status = lateStatuses.includes(rawStatus) ? rawStatus
-                                : hasBorell ? "BOREWELL_UPLOADED"
-                                : hasFullPayment ? "PAYMENT_SUCCESS"
-                                : hasReport ? "REPORT_UPLOADED"
+                                : (!isEarlyStage && hasBorell) ? "BOREWELL_UPLOADED"
+                                : (!isEarlyStage && hasFullPayment) ? "PAYMENT_SUCCESS"
+                                : (!isEarlyStage && hasReport) ? "REPORT_UPLOADED"
                                 : rawStatus;
 
                             const timelineSteps = [
@@ -632,29 +634,27 @@ export default function VendorBookingDetails() {
                 </div>
             </div>
 
-            {/* Action Buttons - Moved to right below Booking Status */}
+            {/* Action Buttons - Required Action Card */}
             {booking.status === "ASSIGNED" && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(10,132,255,0.08)] mb-6 border-2 border-blue-50 ring-4 ring-blue-50/30">
-                    <h2 className="text-lg font-black text-gray-800 mb-4 flex items-center gap-2">
+                <div className="bg-white rounded-[24px] p-6 shadow-[0px_10px_30px_rgba(0,0,0,0.06)] mb-6 border border-blue-50/50">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <span className="w-1.5 h-6 bg-[#0A84FF] rounded-full"></span>
-                        Current Action
+                        Required Action
                     </h2>
-                    <div className="flex gap-4">
+                    <div className="flex flex-col gap-3">
                         <button
                             onClick={handleReject}
                             disabled={actionLoading}
-                            className="flex-1 bg-red-50 text-red-600 font-bold py-4 rounded-2xl hover:bg-red-100 transition-all active:scale-95 disabled:opacity-50"
+                            className="w-full py-3.5 px-6 bg-[#FFF0F0] text-[#E53935] text-base font-bold rounded-[20px] hover:bg-red-100 transition-all active:scale-[0.98] disabled:opacity-50 text-center"
                         >
-                            <IoCloseCircleOutline className="text-xl inline mr-1" />
-                            Reject
+                            Reject Booking
                         </button>
                         <button
                             onClick={handleAccept}
                             disabled={actionLoading}
-                            className="flex-[2] bg-[#0A84FF] text-white font-black py-4 rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 shadow-xl shadow-blue-100 disabled:opacity-50"
+                            className="w-full py-4 px-6 bg-[#0A84FF] text-white text-base font-bold rounded-[20px] hover:bg-[#0070E0] transition-all active:scale-[0.98] shadow-lg shadow-blue-200/50 disabled:opacity-50 text-center"
                         >
-                            <IoCheckmarkCircleOutline className="text-xl inline mr-1" />
-                            {actionLoading ? "Accepting..." : "Accept Booking"}
+                            {actionLoading ? "Accepting..." : "Accept Booking Now"}
                         </button>
                     </div>
                 </div>
@@ -713,7 +713,7 @@ export default function VendorBookingDetails() {
             )}
 
             {/* Stage Action Guide Card: Report Uploaded & Awaiting Final Payment */}
-            {(booking.reportUploadedAt || booking.report) && !booking.payment?.remainingPaid && booking.status !== "PAYMENT_SUCCESS" && (
+            {!["ASSIGNED", "ACCEPTED", "VISITED", "AWAITING_ADVANCE", "CANCELLED", "REJECTED"].includes(booking.status) && (booking.reportUploadedAt || (booking.report && (booking.report.uploadedAt || booking.report.waterFound !== undefined))) && !booking.payment?.remainingPaid && booking.status !== "PAYMENT_SUCCESS" && (
                 <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(10,132,255,0.08)] mb-6 border-2 border-blue-50 ring-4 ring-blue-50/30">
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="text-lg font-black text-gray-800 flex items-center gap-2">
@@ -741,7 +741,7 @@ export default function VendorBookingDetails() {
             )}
 
             {/* Stage Action Guide Card: Full Payment Received (PAYMENT_SUCCESS) */}
-            {(booking.payment?.remainingPaid || booking.payment?.status === "SUCCESS" || booking.status === "PAYMENT_SUCCESS") && (!booking.borewellResult || !booking.borewellResult?.uploadedAt) && (
+            {!["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "AWAITING_ADVANCE", "CANCELLED", "REJECTED"].includes(booking.status) && (booking.payment?.remainingPaid === true || booking.status === "PAYMENT_SUCCESS" || booking.status === "PAID_FIRST") && (!booking.borewellResult || !booking.borewellResult?.uploadedAt) && (
                 <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(16,185,129,0.08)] mb-6 border-2 border-emerald-100 ring-4 ring-emerald-50/50">
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="text-lg font-black text-gray-800 flex items-center gap-2">
@@ -1416,28 +1416,64 @@ export default function VendorBookingDetails() {
             />
 
             {/* Download Invoices Center - Dual Marketplace Invoices */}
-            {booking && (
+            {booking && !["CANCELLED", "REJECTED"].includes(booking.status) && (
                 <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Tax Invoices Center</h2>
-                    <p className="text-sm text-gray-500 mb-4">
-                        View and download tax invoices for platform commission settlement and customer booking receipts.
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <button
-                            onClick={() => navigate(`/vendor/booking/${booking._id || booking.id}/invoice`)}
-                            className="bg-[#0A84FF] text-white font-bold py-3 px-4 rounded-xl hover:bg-[#005BBB] transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-100 text-xs sm:text-sm"
-                        >
-                            <IoDownloadOutline className="text-lg" />
-                            <span>Platform Commission Invoice</span>
-                        </button>
-                        <button
-                            onClick={() => navigate(`/user/booking/${booking._id || booking.id}/invoice`)}
-                            className="bg-gray-100 text-gray-800 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm border border-gray-200"
-                        >
-                            <IoDocumentTextOutline className="text-lg text-gray-600" />
-                            <span>Customer Service Invoice</span>
-                        </button>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                        <h2 className="text-xl font-bold text-gray-800">Tax Invoices Center</h2>
+                        {booking.payment?.remainingPaid || ["PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED", "SUCCESS"].includes(booking.status) ? (
+                            <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-full border border-emerald-200 self-start sm:self-auto">
+                                100% Settled & Invoiced
+                            </span>
+                        ) : (
+                            <span className="px-3 py-1 bg-amber-100 text-amber-800 font-bold text-xs rounded-full border border-amber-200 self-start sm:self-auto">
+                                Advance (40%) Paid • 60% Pending
+                            </span>
+                        )}
                     </div>
+
+                    <p className="text-sm text-gray-500 mb-4">
+                        {booking.payment?.remainingPaid || ["PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED", "SUCCESS"].includes(booking.status)
+                            ? "View and download official tax invoices for platform commission settlement and customer booking receipts."
+                            : "Full Tax Invoices & Platform Commission Settlement Invoices unlock once the customer completes the remaining 60% settlement."}
+                    </p>
+
+                    {(booking.payment?.remainingPaid || ["PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED", "SUCCESS"].includes(booking.status)) ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button
+                                onClick={() => navigate(`/vendor/booking/${booking._id || booking.id}/invoice`)}
+                                className="bg-[#0A84FF] text-white font-bold py-3 px-4 rounded-xl hover:bg-[#005BBB] transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-100 text-xs sm:text-sm cursor-pointer"
+                            >
+                                <IoDownloadOutline className="text-lg" />
+                                <span>Platform Commission Invoice</span>
+                            </button>
+                            <button
+                                onClick={() => navigate(`/user/booking/${booking._id || booking.id}/invoice`)}
+                                className="bg-gray-100 text-gray-800 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm border border-gray-200 cursor-pointer"
+                            >
+                                <IoDocumentTextOutline className="text-lg text-gray-600" />
+                                <span>Customer Service Invoice</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button
+                                disabled
+                                title="Unlocked after remaining 60% settlement"
+                                className="bg-gray-100 text-gray-400 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-xs sm:text-sm border border-gray-200 cursor-not-allowed opacity-75"
+                            >
+                                <IoDownloadOutline className="text-lg" />
+                                <span>Platform Commission Invoice (Locked)</span>
+                            </button>
+                            <button
+                                disabled
+                                title="Unlocked after remaining 60% settlement"
+                                className="bg-gray-100 text-gray-400 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-xs sm:text-sm border border-gray-200 cursor-not-allowed opacity-75"
+                            >
+                                <IoDocumentTextOutline className="text-lg" />
+                                <span>Customer Service Invoice (Locked)</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 

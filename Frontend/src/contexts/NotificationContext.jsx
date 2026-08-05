@@ -43,15 +43,16 @@ export const NotificationProvider = ({ children }) => {
     userRole = 'User';
     currentUser = user;
   } else {
-    if (isAdminAuthenticated) {
+    // Neutral path (e.g. /notifications): check vendor/admin first if active token exists
+    if (isVendorAuthenticated && localStorage.getItem('vendorAccessToken')) {
+      userRole = 'Vendor';
+      currentUser = vendor;
+    } else if (isAdminAuthenticated && localStorage.getItem('adminAccessToken')) {
       userRole = 'Admin';
       currentUser = admin;
     } else if (isUserAuthenticated) {
       userRole = 'User';
       currentUser = user;
-    } else if (isVendorAuthenticated) {
-      userRole = 'Vendor';
-      currentUser = vendor;
     }
   }
 

@@ -79,6 +79,21 @@ api.interceptors.request.use(
       else if (url.startsWith('/users/') || url.startsWith('/bookings/') || url.startsWith('/ratings/')) {
         token = localStorage.getItem('accessToken');
       }
+      // Shared Notification Endpoints
+      else if (url.startsWith('/notifications') || url.includes('/notifications')) {
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/admin')) {
+          token = localStorage.getItem('adminAccessToken');
+        } else if (currentPath.startsWith('/vendor')) {
+          token = localStorage.getItem('vendorAccessToken');
+        } else {
+          // Neutral notification route: prioritize vendor or admin token if logged in
+          const vendorToken = localStorage.getItem('vendorAccessToken');
+          const adminToken = localStorage.getItem('adminAccessToken');
+          const userToken = localStorage.getItem('accessToken');
+          token = vendorToken || userToken || adminToken;
+        }
+      }
       // Fallback: try to determine from current route
       else {
         const currentPath = window.location.pathname;

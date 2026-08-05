@@ -11,9 +11,24 @@ let io = null;
  * Initialize Socket.io server
  */
 const initializeSocket = (server) => {
+  const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.SOCKET_CORS_ORIGIN,
+    'http://localhost:3000',
+    'http://localhost:5000',
+    'http://localhost:5050',
+    'http://localhost:5173',
+    'https://jala-dhar.vercel.app'
+  ].filter(Boolean);
+
   io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'https://jala-dhar.vercel.app',
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+          return callback(null, true);
+        }
+        return callback(null, true);
+      },
       credentials: true,
       methods: ['GET', 'POST']
     },

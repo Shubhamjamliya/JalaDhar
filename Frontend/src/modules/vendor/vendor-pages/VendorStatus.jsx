@@ -302,24 +302,23 @@ export default function VendorStatus() {
         const _sIdx = _progressOrder.indexOf(booking.status);
         const rawStatus = (_vIdx >= _sIdx ? (booking.vendorStatus || booking.status) : booking.status) || booking.status;
 
+        // Stage check: early stages cannot have report, full payment, or borewell result
+        const isEarlyStage = ["ASSIGNED", "ACCEPTED", "VISITED", "AWAITING_ADVANCE"].includes(rawStatus);
+
         // Build effectiveStatus from actual milestone data
-        const hasBorell = booking.borewellResult && booking.borewellResult.uploadedAt && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED');
-        const hasFullPayment = booking.payment?.remainingPaid
-            || booking.payment?.status === "SUCCESS"
-            || rawStatus === "PAYMENT_SUCCESS"
-            || rawStatus === "PAID_FIRST";
-        const hasReport = !!(booking.reportUploadedAt || booking.report);
-        const hasVisited = !!(booking.visitedAt || ["VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"].includes(rawStatus));
-        const hasAccepted = !!(booking.acceptedAt || rawStatus !== "ASSIGNED");
+        const hasBorell = !isEarlyStage && booking.borewellResult && booking.borewellResult.uploadedAt && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED');
+        const hasFullPayment = (booking.payment?.remainingPaid === true)
+            || ["PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED", "SUCCESS"].includes(rawStatus);
+        const hasReport = !isEarlyStage && !!(booking.reportUploadedAt || (booking.report && (booking.report.uploadedAt || booking.report.waterFound !== undefined)));
+        const hasVisited = !!(booking.visitedAt || !["ASSIGNED", "ACCEPTED", "AWAITING_ADVANCE"].includes(rawStatus));
+        const hasAccepted = !!(booking.acceptedAt || !["ASSIGNED", "AWAITING_ADVANCE"].includes(rawStatus));
 
         // Map to statusOrder-compatible string
-        // IMPORTANT: always prefer rawStatus when it's already at a later stage
-        // to avoid locking the timeline at BOREWELL_UPLOADED when it has already progressed
         const lateStatuses = ["APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED", "SUCCESS", "FAILED"];
         const status = lateStatuses.includes(rawStatus) ? rawStatus
-            : hasBorell ? "BOREWELL_UPLOADED"
-            : hasFullPayment ? "PAYMENT_SUCCESS"
-            : hasReport ? "REPORT_UPLOADED"
+            : (!isEarlyStage && hasBorell) ? "BOREWELL_UPLOADED"
+            : (!isEarlyStage && hasFullPayment) ? "PAYMENT_SUCCESS"
+            : (!isEarlyStage && hasReport) ? "REPORT_UPLOADED"
             : rawStatus;
 
         // Define status progression for completed check
@@ -341,14 +340,14 @@ export default function VendorStatus() {
                 active: rawStatus === "ASSIGNED",
                 completed: hasAccepted && rawStatus !== "ASSIGNED",
                 description: "Booking has been assigned to you. Please accept or reject.",
-                date: booking.assignedAt,
+                date: booking.assignedAt || booking.createdAt,
             },
             {
                 id: "accepted",
                 label: "Booking Accepted",
                 icon: IoCheckmarkCircleOutline,
                 active: rawStatus === "ACCEPTED",
-                completed: hasVisited,
+                completed: hasVisited && rawStatus !== "ASSIGNED" && rawStatus !== "ACCEPTED",
                 description: "You have accepted the booking. You can mark as visited.",
                 date: booking.acceptedAt,
             },
@@ -356,8 +355,8 @@ export default function VendorStatus() {
                 id: "visited",
                 label: "Site Visited",
                 icon: IoConstructOutline,
-                active: rawStatus === "VISITED" && !hasReport,
-                completed: hasReport || effectiveIndex > 2,
+                active: rawStatus === "VISITED",
+                completed: hasReport && rawStatus !== "ASSIGNED" && rawStatus !== "ACCEPTED" && rawStatus !== "VISITED",
                 description: "You have visited the customer site.",
                 date: booking.visitedAt,
             },
@@ -365,20 +364,24 @@ export default function VendorStatus() {
                 id: "first-payment",
                 label: "1st Payment Release",
                 icon: IoWalletOutline,
-                active: hasVisited && !booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited && !hasReport,
-                completed: booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited || hasReport,
+                active: rawStatus === "VISITED" && !booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited,
+                completed: !!booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited,
                 description: booking.payment?.vendorWalletPayments?.siteVisitPayment?.credited
                     ? "1st payment (50%) has been credited to your wallet."
-                    : "1st payment (50%) is pending release from admin.",
+                    : hasVisited
+                        ? "1st payment (50%) is pending release from admin."
+                        : "Pending site visit completion.",
                 date: booking.payment?.vendorWalletPayments?.siteVisitPayment?.creditedAt,
             },
             {
                 id: "upload-report",
                 label: "Upload Report",
                 icon: IoDocumentTextOutline,
-                active: hasVisited && !hasReport,
+                active: (rawStatus === "VISITED" || rawStatus === "REPORT_UPLOADED") && !hasReport,
                 completed: hasReport,
-                description: "Please upload the service report after receiving 1st payment.",
+                description: hasReport
+                    ? "Survey report uploaded successfully."
+                    : "Please upload the service report after site visit.",
                 date: booking.reportUploadedAt || booking.report?.uploadedAt || null,
             },
             {
@@ -412,7 +415,7 @@ export default function VendorStatus() {
                 label: "2nd Platform Payout",
                 icon: IoWalletOutline,
                 active: hasFullPayment && !booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited,
-                completed: booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited || hasBorell,
+                completed: !!booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited || hasBorell,
                 description: booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited
                     ? "2nd payout (50%) has been credited to your wallet."
                     : hasFullPayment
@@ -505,12 +508,12 @@ export default function VendorStatus() {
     const rawStatus = (_vIdx2 >= _sIdx2 ? (booking?.vendorStatus || booking?.status) : booking?.status) || booking?.status;
 
     // Derive milestone flags at component level for use in JSX
-    const hasBorell = booking?.borewellResult && booking.borewellResult.uploadedAt && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED');
-    const hasFullPayment = booking?.payment?.remainingPaid
-        || booking?.payment?.status === "SUCCESS"
+    const isEarlyStage = ["ASSIGNED", "ACCEPTED", "VISITED", "AWAITING_ADVANCE"].includes(rawStatus);
+    const hasBorell = !isEarlyStage && booking?.borewellResult && booking.borewellResult.uploadedAt && (booking.borewellResult.status === 'SUCCESS' || booking.borewellResult.status === 'FAILED');
+    const hasFullPayment = (booking?.payment?.remainingPaid === true)
         || rawStatus === "PAYMENT_SUCCESS"
         || rawStatus === "PAID_FIRST";
-    const hasReport = !!(booking?.reportUploadedAt || booking?.report);
+    const hasReport = !isEarlyStage && !!(booking?.reportUploadedAt || (booking?.report && (booking?.report.uploadedAt || booking?.report.waterFound !== undefined)));
 
     return (
         <div
@@ -702,20 +705,20 @@ export default function VendorStatus() {
 
                             {/* ASSIGNED ACTIONS */}
                             {rawStatus === "ASSIGNED" && (
-                                <div className="flex flex-col sm:flex-row gap-3">
+                                <div className="flex flex-col gap-3">
                                     <button
                                         onClick={handleReject}
                                         disabled={actionLoading}
-                                        className="flex-1 h-14 bg-red-50 text-red-600 text-base font-bold rounded-2xl hover:bg-red-100 transition-all active:scale-95 disabled:opacity-50"
+                                        className="w-full py-3.5 px-6 bg-[#FFF0F0] text-[#E53935] text-base font-bold rounded-[20px] hover:bg-red-100 transition-all active:scale-[0.98] disabled:opacity-50 text-center"
                                     >
                                         Reject Booking
                                     </button>
                                     <button
                                         onClick={handleAccept}
                                         disabled={actionLoading}
-                                        className="flex-[2] h-14 bg-[#0A84FF] text-white text-base font-black rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 shadow-xl shadow-blue-100 disabled:opacity-50"
+                                        className="w-full py-4 px-6 bg-[#0A84FF] text-white text-base font-bold rounded-[20px] hover:bg-[#0070E0] transition-all active:scale-[0.98] shadow-lg shadow-blue-200/50 disabled:opacity-50 text-center"
                                     >
-                                        Accept Booking Now
+                                        {actionLoading ? "Accepting..." : "Accept Booking Now"}
                                     </button>
                                 </div>
                             )}
