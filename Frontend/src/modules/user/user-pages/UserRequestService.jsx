@@ -797,11 +797,23 @@ const ReviewAndBook = ({ surveyData, service, vendor, onConfirm, onBack }) => {
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 flex gap-3 z-40 md:relative md:bg-transparent md:border-0 md:p-0">
                 <button onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
                 <button
-                    onClick={() => setActivePolicy('checkout')}
+                    onClick={() => {
+                        if (!date) {
+                            toast.showError("Please scroll up and select a visit date");
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            return;
+                        }
+                        setActivePolicy('checkout');
+                    }}
                     disabled={!charges || loading}
-                    className="flex-1 py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                    className={`flex-1 py-3 font-bold rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 ${!date ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-black hover:bg-gray-800 text-white'}`}
                 >
-                    {loading ? <div className="spinner-border w-4 h-4 rounded-full border-2 border-white"></div> : <><IoCashOutline /> Pay Advance</>}
+                    {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : (
+                        <>
+                            {!date ? <IoCalendarOutline /> : <IoCashOutline />}
+                            {!date ? "Select Date to Book" : "Pay Advance"}
+                        </>
+                    )}
                 </button>
             </div>
         </div>

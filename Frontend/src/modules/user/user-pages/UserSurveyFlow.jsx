@@ -101,7 +101,7 @@ const TermsAndConditions = ({ category, onAccept, onCancel }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150" onClick={onCancel}>
       <div className="bg-white rounded-[22px] shadow-2xl max-w-md w-full p-5 sm:p-6 border border-gray-100 space-y-4 transform transition-all animate-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
-        
+
         {/* Header — Tight & Aligned */}
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
@@ -867,9 +867,9 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
       </div>
 
       {activePolicy && (
-        <PolicyModal 
-          type={activePolicy} 
-          onClose={() => setActivePolicy(null)} 
+        <PolicyModal
+          type={activePolicy}
+          onClose={() => setActivePolicy(null)}
           onAgree={activePolicy === 'checkout' ? handlePay : undefined}
           loadingAction={isSubmitting}
         />
@@ -878,11 +878,19 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
       <div className="flex gap-3 pt-2">
         <button onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
         <button
-          onClick={() => setActivePolicy('checkout')}
+          onClick={() => {
+            if (!date) {
+              toast.showError("Please select a visit date");
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return;
+            }
+            setActivePolicy('checkout');
+          }}
           disabled={!charges || isSubmitting}
-          className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`flex-1 py-3 font-bold rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${!date ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
         >
-          <IoCashOutline /> Book & Pay
+          {!date ? <IoCalendarOutline /> : <IoCashOutline />}
+          {!date ? "Select Date to Book" : "Book & Pay"}
         </button>
       </div>
     </div>
@@ -1172,11 +1180,10 @@ export default function UserSurveyFlow() {
             return (
               <div
                 key={i}
-                className={`h-2 flex-1 rounded-full transition-all duration-300 ${
-                  i <= step
-                    ? 'bg-[#0A84FF] shadow-2xs'
-                    : 'bg-slate-200/80'
-                }`}
+                className={`h-2 flex-1 rounded-full transition-all duration-300 ${i <= step
+                  ? 'bg-[#0A84FF] shadow-2xs'
+                  : 'bg-slate-200/80'
+                  }`}
               />
             );
           })}

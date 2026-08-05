@@ -162,9 +162,11 @@ export default function UserAdvancePaymentConfirmation() {
                 key: keyId,
                 amount: amount,
                 currency: currency,
-                name: "Jaladhaara",
+                name: "Jaladhaara Groundwater Surveys",
+                // Razorpay requires a publicly accessible URL for the logo. 
+                // If on localhost, Razorpay's CDN can't fetch it, so it defaults to a letter avatar.
                 image: `${window.location.origin}/favicon.png`,
-                description: `Advance payment for ${service?.name || 'Service'}`,
+                description: `Advance Payment - ${service?.name || 'Booking'}`,
                 order_id: orderId,
                 handler: async function (paymentResponse) {
                     // Payment successful - verify payment on backend
