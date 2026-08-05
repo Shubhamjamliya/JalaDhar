@@ -348,7 +348,8 @@ export default function VendorStatus() {
         const hasFullPayment = (booking.payment?.remainingPaid === true)
             || ["PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED", "SUCCESS"].includes(rawStatus);
         const hasReport = !isEarlyStage && !!(booking.reportUploadedAt || (booking.report && (booking.report.uploadedAt || booking.report.waterFound !== undefined)));
-        const hasVisited = !!(booking.visitedAt || !["ASSIGNED", "ACCEPTED", "AWAITING_ADVANCE"].includes(rawStatus));
+        const hasVisited = !!(booking.visitedAt || !["ASSIGNED", "ACCEPTED", "EN_ROUTE", "AWAITING_ADVANCE"].includes(rawStatus));
+        const hasEnRoute = !!(booking.enRouteAt || !["ASSIGNED", "ACCEPTED", "AWAITING_ADVANCE"].includes(rawStatus));
         const hasAccepted = !!(booking.acceptedAt || !["ASSIGNED", "AWAITING_ADVANCE"].includes(rawStatus));
 
         // Map to statusOrder-compatible string
@@ -361,7 +362,7 @@ export default function VendorStatus() {
 
         // Define status progression for completed check
         const statusOrder = [
-            "ASSIGNED", "ACCEPTED", "VISITED",
+            "ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED",
             "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST",
             "BOREWELL_UPLOADED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"
         ];
@@ -385,9 +386,18 @@ export default function VendorStatus() {
                 label: "Booking Accepted",
                 icon: IoCheckmarkCircleOutline,
                 active: rawStatus === "ACCEPTED",
-                completed: hasVisited && rawStatus !== "ASSIGNED" && rawStatus !== "ACCEPTED",
-                description: "You have accepted the booking. You can mark as visited.",
+                completed: hasEnRoute && rawStatus !== "ASSIGNED" && rawStatus !== "ACCEPTED",
+                description: "You have accepted the booking. You can start journey.",
                 date: booking.acceptedAt,
+            },
+            {
+                id: "en_route",
+                label: "Journey Started",
+                icon: IoCarOutline,
+                active: rawStatus === "EN_ROUTE",
+                completed: hasVisited && !["ASSIGNED", "ACCEPTED", "EN_ROUTE"].includes(rawStatus),
+                description: "You have started the journey to the customer site.",
+                date: booking.enRouteAt,
             },
             {
                 id: "visited",
@@ -540,7 +550,7 @@ export default function VendorStatus() {
     const user = booking?.user;
     // Use vendorStatus for vendor view
     // Pick the MORE ADVANCED of vendorStatus vs booking.status to avoid divergence
-    const _progressOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
+    const _progressOrder = ["ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
     const _vIdx2 = _progressOrder.indexOf(booking?.vendorStatus);
     const _sIdx2 = _progressOrder.indexOf(booking?.status);
     const rawStatus = (_vIdx2 >= _sIdx2 ? (booking?.vendorStatus || booking?.status) : booking?.status) || booking?.status;

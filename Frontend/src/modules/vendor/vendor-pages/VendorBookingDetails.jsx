@@ -23,7 +23,7 @@ import {
     IoWaterOutline,
     IoLogoWhatsapp
 } from "react-icons/io5";
-import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, markBookingAsVisited, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
+import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -219,6 +219,27 @@ export default function VendorBookingDetails() {
                     loadBookingDetails();
                 }, 1000);
             }
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleMarkEnRoute = async () => {
+        const loadingToast = toast.showLoading("Updating status to En Route...");
+        try {
+            setActionLoading(true);
+            const response = await markBookingAsEnRoute(bookingId);
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Trip started! You are now marked En Route.");
+                await loadBookingDetails();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to update status");
+            }
+        } catch (err) {
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to update status");
         } finally {
             setActionLoading(false);
         }
@@ -528,7 +549,7 @@ export default function VendorBookingDetails() {
                             const hasFullPayment = (booking.payment?.remainingPaid === true) || rawStatus === "PAYMENT_SUCCESS" || rawStatus === "PAID_FIRST";
                             const hasReport = !!(booking.reportUploadedAt || (booking.report && (booking.report.uploadedAt || booking.report.waterFound !== undefined)));
 
-                            const isEarlyStage = ["ASSIGNED", "ACCEPTED", "VISITED", "AWAITING_ADVANCE"].includes(rawStatus);
+                            const isEarlyStage = ["ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED", "AWAITING_ADVANCE"].includes(rawStatus);
 
                             const status = lateStatuses.includes(rawStatus) ? rawStatus
                                 : (!isEarlyStage && hasBorell) ? "BOREWELL_UPLOADED"
@@ -539,13 +560,14 @@ export default function VendorBookingDetails() {
                             const timelineSteps = [
                                 { id: "assigned", label: "Assigned", icon: "📋", statuses: ["ASSIGNED"] },
                                 { id: "accepted", label: "Accepted", icon: "✅", statuses: ["ACCEPTED"] },
+                                { id: "en_route", label: "En Route", icon: "🚗", statuses: ["EN_ROUTE"] },
                                 { id: "visited", label: "Visited", icon: "🏠", statuses: ["VISITED"] },
                                 { id: "report", label: "Report", icon: "📄", statuses: ["REPORT_UPLOADED"] },
                                 { id: "payment", label: "Payment", icon: "💰", statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"] },
                                 { id: "borewell", label: "Borewell", icon: "🚰", statuses: ["BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED"] },
                                 { id: "completed", label: "Completed", icon: "🎉", statuses: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"] },
                             ];
-                            const statusOrder = ["ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
+                            const statusOrder = ["ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"];
                             const currentIndex = statusOrder.indexOf(status);
 
 
@@ -692,12 +714,12 @@ export default function VendorBookingDetails() {
                     </h2>
                     <div className="flex flex-col gap-3">
                         <button
-                            onClick={handleMarkAsVisited}
+                            onClick={handleMarkEnRoute}
                             disabled={actionLoading}
                             className="w-full bg-[#0A84FF] text-white font-black py-4 rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100 disabled:opacity-50"
                         >
-                            <IoCheckmarkCircleOutline className="text-2xl" />
-                            {actionLoading ? "Processing..." : "Mark as Visited"}
+                            <IoCarOutline className="text-2xl" />
+                            {actionLoading ? "Processing..." : "Start Journey"}
                         </button>
                         <div className="flex gap-3">
                             <button
@@ -714,6 +736,41 @@ export default function VendorBookingDetails() {
                             >
                                 <IoNavigateOutline className="text-xl" />
                                 Get Directions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {booking.status === "EN_ROUTE" && (
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(10,132,255,0.08)] mb-6 border-2 border-blue-50 ring-4 ring-blue-50/30">
+                    <h2 className="text-lg font-black text-gray-800 mb-4 flex items-center gap-2">
+                        <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+                        Next Step
+                    </h2>
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={handleMarkAsVisited}
+                            disabled={actionLoading}
+                            className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-emerald-200 disabled:opacity-50"
+                        >
+                            <IoCheckmarkCircleOutline className="text-2xl" />
+                            {actionLoading ? "Processing..." : "Mark as Visited"}
+                        </button>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowMapPicker(true)}
+                                className="flex-1 bg-white text-emerald-600 font-bold py-3.5 rounded-2xl border-2 border-emerald-50 hover:bg-emerald-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <IoNavigateOutline className="text-xl" />
+                                Directions
+                            </button>
+                            <button
+                                onClick={handleCancel}
+                                disabled={actionLoading}
+                                className="bg-red-50 text-red-600 font-bold px-4 rounded-2xl border-2 border-red-50 hover:bg-red-100 transition-all active:scale-95 flex items-center justify-center"
+                            >
+                                <IoCloseCircleOutline className="text-xl" />
                             </button>
                         </div>
                     </div>

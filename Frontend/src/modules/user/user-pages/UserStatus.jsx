@@ -261,7 +261,7 @@ export default function UserStatus() {
         const borewellUploaded = !!currentBooking.borewellResult?.uploadedAt;
 
         // Define status progression for completed check
-        const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
+        const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
         const currentStatusIndex = statusOrder.indexOf(status);
         // If status not found, assume we're past all steps if we have payment or borewell
         const effectiveIndex = currentStatusIndex === -1 ? (remainingPaid || borewellUploaded ? 11 : 0) : currentStatusIndex;

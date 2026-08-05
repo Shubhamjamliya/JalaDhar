@@ -26,7 +26,8 @@ import {
     IoLockClosedOutline,
     IoChevronForwardOutline,
     IoHelpCircleOutline,
-    IoArrowBackOutline
+    IoArrowBackOutline,
+    IoCarOutline
 } from "react-icons/io5";
 import { getBookingDetails, downloadInvoice, cancelBooking, submitRating, getBookingRating, uploadBorewellResult } from "../../../services/bookingApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
@@ -565,13 +566,14 @@ export default function UserBookingDetails() {
                             { id: "requested", label: "Booking Confirmed", icon: <IoDocumentTextOutline />, statuses: ["PENDING"], date: booking.createdAt, alwaysComplete: true },
                             { id: "assigned",  label: "Expert Assigned",   icon: <IoPersonOutline />,         statuses: ["ASSIGNED"],  date: booking.assignedAt,       proofKey: "assignedAt" },
                             { id: "accepted",  label: "Expert Accepted",   icon: <IoCheckmarkCircleOutline />, statuses: ["ACCEPTED"],  date: booking.acceptedAt,       proofKey: "acceptedAt" },
+                            { id: "en_route",  label: "Expert En Route",   icon: <IoCarOutline />,            statuses: ["EN_ROUTE"],  date: booking.enRouteAt,        proofKey: "enRouteAt" },
                             { id: "visited",   label: "Survey Done",       icon: <IoConstructOutline />,       statuses: ["VISITED"],   date: booking.visitedAt,        proofKey: "visitedAt" },
                             { id: "report",    label: "Report Ready",      icon: <IoDocumentTextOutline />,    statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt, proofKey: "reportUploadedAt" },
                             { id: "payment",   label: "Final Payment",     icon: <IoCashOutline />,            statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"], date: booking.payment?.remainingPaidAt },
                             { id: "completed", label: "Report Unlocked",   icon: <IoCheckmarkCircleOutline />, statuses: ["COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt },
                         ];
 
-                        const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
+                        const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
                         let currentIndex = -1;
                         if (!["CANCELLED", "REJECTED", "FAILED"].includes(status)) {
                             currentIndex = statusOrder.indexOf(status);
@@ -591,8 +593,9 @@ export default function UserBookingDetails() {
                                                 ? !!booking[step.proofKey]
                                                 : currentIndex > stepPrimaryStatusIndex;
 
-                                        const isCompleted = !isActive && currentIndex >= 0 && currentIndex > stepPrimaryStatusIndex && hasTimestampProof;
-                                        const isPast = !isActive && index < timelineSteps.findIndex(s => s.statuses.includes(status)) && hasTimestampProof;
+                                        // A step is completed if it's strictly before the current index, or if we're past its index in the array
+                                        const isCompleted = !isActive && currentIndex >= 0 && (currentIndex > stepPrimaryStatusIndex || index < timelineSteps.findIndex(s => s.statuses.includes(status)));
+                                        const isPast = isCompleted;
 
                                         return (
                                             <div key={step.id} className="flex flex-col items-center relative flex-1 min-w-[76px]">
