@@ -434,22 +434,29 @@ export default function VendorStatus() {
             },
             {
                 id: "report-approved",
-                label: "Report Approved",
+                label: "Report Approved + 2nd Payout",
                 icon: IoCheckmarkCircleOutline,
-                active: hasReport && !booking.report?.approvedAt && !hasFullPayment,
-                completed: !!booking.report?.approvedAt || hasFullPayment,
+                // Active while waiting for admin to approve the report
+                active: hasReport && !booking.report?.approvedAt,
+                // Completed once report is approved (2nd payout is auto-released at same time)
+                completed: !!booking.report?.approvedAt,
                 description: booking.report?.approvedAt
-                    ? "Your report has been approved by admin."
+                    ? booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited
+                        ? `Report approved. 2nd payout (₹${(booking.payment.vendorWalletPayments.reportUploadPayment.amount || 0).toLocaleString('en-IN')}) has been credited to your wallet.`
+                        : "Report approved. 2nd payout is being processed to your wallet."
                     : hasReport
-                        ? "Waiting for admin to approve your report."
+                        ? "Waiting for admin to approve your report. Payout will be auto-released on approval."
                         : "Report not yet uploaded.",
                 date: booking.report?.approvedAt,
+                payoutAmount: booking.payment?.vendorWalletPayments?.reportUploadPayment?.amount,
+                payoutCredited: !!booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited,
+                payoutKey: "reportUploadPayment",
             },
             {
                 id: "customer-payment",
                 label: "Customer Final Payment",
                 icon: IoWalletOutline,
-                active: hasReport && !hasFullPayment,
+                active: !!booking.report?.approvedAt && !hasFullPayment,
                 completed: hasFullPayment,
                 description: hasFullPayment
                     ? "Customer has completed the 60% final payment. ✅"
@@ -459,61 +466,36 @@ export default function VendorStatus() {
                 date: booking.payment?.remainingPaidAt,
             },
             {
-                id: "second-payment",
-                label: "2nd Platform Payout",
-                icon: IoWalletOutline,
-                active: hasFullPayment && !booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited && !hasBorell,
-                completed: !!booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited || hasBorell,
-                description: booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited
-                    ? "2nd payout (50%) has been credited to your wallet."
-                    : hasBorell
-                        ? "2nd payout is being processed by admin."
-                        : hasFullPayment
-                            ? "Your 2nd payout is pending release from admin after customer payment."
-                            : "Waiting for customer payment before payout release.",
-                date: booking.payment?.vendorWalletPayments?.reportUploadPayment?.creditedAt,
-            },
-            {
                 id: "borewell",
                 label: "Borewell Result Uploaded",
                 icon: IoImageOutline,
                 active: hasFullPayment && !hasBorell,
                 completed: hasBorell,
                 description: hasBorell
-                    ? "Customer has uploaded borewell result. Waiting for admin to approve and process final settlement."
+                    ? "Customer has uploaded borewell result. Waiting for admin to process final settlement."
                     : hasFullPayment
-                        ? "Customer will now drill borewell at your report location points and upload result."
+                        ? "Customer will now drill borewell at your survey location and upload result."
                         : "Waiting for customer to complete payment before borewell phase.",
                 date: booking.borewellResult?.uploadedAt,
             },
             {
-                id: "approved",
-                label: "Admin Approved",
-                icon: IoCheckmarkCircleOutline,
-                active: rawStatus === "APPROVED" || rawStatus === "BOREWELL_UPLOADED",
-                completed: effectiveIndex > statusOrder.indexOf("APPROVED") || rawStatus === "FINAL_SETTLEMENT_COMPLETE" || rawStatus === "COMPLETED" || !!booking.borewellResult?.approvedAt,
-                description: booking.borewellResult?.approvedAt
-                    ? "Admin has approved the borewell result. Waiting for final settlement processing."
-                    : hasBorell 
-                        ? "Waiting for admin to approve the borewell result."
-                        : "Waiting for borewell result upload.",
-                date: booking.borewellResult?.approvedAt,
-            },
-            {
                 id: "settlement",
-                label: "Final Settlement Complete",
+                label: "Final Settlement (Reward/Penalty)",
                 icon: IoWalletOutline,
-                active: rawStatus === "FINAL_SETTLEMENT_COMPLETE" || rawStatus === "APPROVED" || !!booking.borewellResult?.approvedAt,
-                completed: rawStatus === "FINAL_SETTLEMENT_COMPLETE" ||
+                active: hasBorell && !booking.finalSettlement?.processedAt,
+                completed: !!booking.finalSettlement?.processedAt ||
+                    rawStatus === "FINAL_SETTLEMENT_COMPLETE" ||
                     rawStatus === "COMPLETED" ||
-                    booking.finalSettlement?.status === "PROCESSED" ||
                     booking.payment?.vendorSettlement?.status === "COMPLETED",
-                description: (booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0) ||
-                    booking.finalSettlement?.status === "PROCESSED" ||
-                    booking.vendorStatus === "FINAL_SETTLEMENT_COMPLETE" ||
-                    booking.payment?.vendorSettlement?.status === "COMPLETED"
-                    ? `Admin has processed your final settlement. ${booking.finalSettlement?.rewardAmount > 0 ? `Reward of ₹${booking.finalSettlement.rewardAmount.toLocaleString('en-IN')} credited.` : booking.finalSettlement?.penaltyAmount > 0 ? `Penalty of ₹${booking.finalSettlement.penaltyAmount.toLocaleString('en-IN')} deducted.` : 'All payments completed.'}`
-                    : "Waiting for admin to process final settlement.",
+                description: booking.finalSettlement?.processedAt
+                    ? booking.finalSettlement?.rewardAmount > 0
+                        ? `Reward of ₹${booking.finalSettlement.rewardAmount.toLocaleString('en-IN')} credited to your wallet for successful borewell.`
+                        : booking.finalSettlement?.penaltyAmount > 0
+                            ? `Penalty of ₹${booking.finalSettlement.penaltyAmount.toLocaleString('en-IN')} deducted for failed borewell.`
+                            : "Final settlement processed. All payments completed."
+                    : hasBorell
+                        ? "Admin will process your final reward or penalty based on borewell outcome."
+                        : "Waiting for borewell result upload.",
                 date: booking.finalSettlement?.processedAt || booking.payment?.vendorSettlement?.settledAt,
             },
             {
