@@ -83,8 +83,10 @@ api.interceptors.request.use(
           token = localStorage.getItem('adminAccessToken');
         } else if (currentPath.startsWith('/vendor')) {
           token = localStorage.getItem('vendorAccessToken');
+        } else if (currentPath.startsWith('/user')) {
+          token = localStorage.getItem('accessToken');
         } else {
-          token = localStorage.getItem('vendorAccessToken') || localStorage.getItem('accessToken') || localStorage.getItem('adminAccessToken');
+          token = localStorage.getItem('accessToken') || localStorage.getItem('vendorAccessToken') || localStorage.getItem('adminAccessToken');
         }
       }
       // 5. General Fallback

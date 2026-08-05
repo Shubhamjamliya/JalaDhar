@@ -177,6 +177,10 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack, category }) => {
         district: "",
         state: "",
         purposeExtent: "",
+        areaUnit: "sqft",
+        surveyNumber: "",
+        plotNumber: "",
+        notes: "",
         existingBorewell: {
             hasExisting: false,
             yearOfDrilling: "",
@@ -310,9 +314,21 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack, category }) => {
                         <span>Area Extent</span>
                         <span className="text-red-500">*</span>
                     </label>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0A84FF] border border-blue-100/80">
-                        {isAgriCategory(category) ? "🌾 Acres & Guntas" : "📐 Square Feet (Sq. Ft.)"}
-                    </span>
+                    {isAgriCategory(category) ? (
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0A84FF] border border-blue-100/80">
+                            🌾 Acres & Guntas
+                        </span>
+                    ) : (
+                        <select
+                            name="areaUnit"
+                            value={formData.areaUnit || 'sqft'}
+                            onChange={(e) => handleChange("areaUnit", e.target.value)}
+                            className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-[#0A84FF] border border-blue-100/80 outline-none cursor-pointer"
+                        >
+                            <option value="sqft">📐 Square Feet (Sq. Ft.)</option>
+                            <option value="sqyd">📐 Square Yards (Sq. Yd.)</option>
+                        </select>
+                    )}
                 </div>
 
                 <div className="relative flex items-center">
@@ -346,14 +362,14 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack, category }) => {
                         step="any"
                     />
                     <div className="absolute right-2.5 px-3 py-1 bg-gray-100/90 text-gray-600 text-xs font-bold rounded-lg pointer-events-none select-none border border-gray-200/60">
-                        {isAgriCategory(category) ? "Acres" : "Sq. Ft."}
+                        {isAgriCategory(category) ? "Acres" : (formData.areaUnit === 'sqyd' ? "Sq. Yd." : "Sq. Ft.")}
                     </div>
                 </div>
 
                 {/* Live Conversion & Formatted Summary Card */}
-                {formData.purposeExtent && !isNaN(parseFloat(formData.purposeExtent)) && parseFloat(formData.purposeExtent) > 0 && (
+                {formData.purposeExtent && !isNaN(parseFloat(formData.purposeExtent)) && parseFloat(formData.purposeExtent) > 0 && isAgriCategory(category) && (
                     <div className="mt-2.5 p-3 rounded-xl bg-gradient-to-r from-blue-50/70 to-indigo-50/50 border border-blue-100/80 flex items-center justify-between text-xs transition-all animate-in fade-in duration-200">
-                        {isAgriCategory(category) ? (() => {
+                        {(() => {
                             const parsed = parseAcresGuntas(formData.purposeExtent);
                             return (
                                 <div className="flex items-center justify-between w-full">
@@ -365,24 +381,6 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack, category }) => {
                                     </div>
                                     <span className="text-[11px] font-medium text-[#0A84FF] bg-white/90 px-2 py-0.5 rounded-md border border-gray-200/60 shadow-2xs">
                                         40 Guntas = 1 Acre
-                                    </span>
-                                </div>
-                            );
-                        })() : (() => {
-                            const num = parseFloat(formData.purposeExtent);
-                            const sqFtFormatted = num % 1 === 0 ? num.toLocaleString('en-IN') : num.toFixed(2);
-                            const sqYardsCalc = num / 9;
-                            const sqYardsFormatted = sqYardsCalc % 1 === 0 ? sqYardsCalc.toLocaleString('en-IN') : sqYardsCalc.toFixed(2);
-                            return (
-                                <div className="flex items-center justify-between w-full">
-                                    <div className="flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#0A84FF] flex items-center justify-center font-bold text-xs">📐</span>
-                                        <span className="font-bold text-gray-900 text-xs">
-                                            {sqFtFormatted} Sq. Feet
-                                        </span>
-                                    </div>
-                                    <span className="text-[11px] font-bold text-[#0A84FF] bg-white/90 px-2.5 py-0.5 rounded-md border border-blue-100 shadow-2xs">
-                                        ≈ {sqYardsFormatted} Sq. Yards (Gaj)
                                     </span>
                                 </div>
                             );
@@ -917,7 +915,7 @@ export default function UserRequestService() {
                 mandal: formState.details.mandal,
                 district: formState.details.district,
                 purpose: formState.category,
-                purposeExtent: formState.details.purposeExtent,
+                purposeExtent: parseFloat(formState.details.purposeExtent),
                 existingBorewell: formState.details.existingBorewell?.hasExisting ? formState.details.existingBorewell : null,
                 techniqueUsed: formState.details.techniqueUsed,
                 techniqueProviderName: formState.details.techniqueProviderName,
