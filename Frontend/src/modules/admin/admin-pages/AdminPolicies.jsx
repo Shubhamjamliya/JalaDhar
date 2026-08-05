@@ -41,10 +41,21 @@ const formats = [
    Default policy text values
    ────────────────────────────────────────────── */
 const DEFAULT_POLICIES = {
-  checkout_policy: `<ul>
-  <li><strong>1. Booking & Service Execution:</strong> You are booking a verified groundwater survey expert for your specific location. Advance payment confirms your slot.</li>
-  <li><strong>2. Cancellation & Refunds:</strong> Cancel 24+ hours before schedule for a full 100% refund of the advance. Cancel within 24 hours of schedule and incur a 50% cancellation fee.</li>
-  <li><strong>3. Reporting & Balance Payment:</strong> The remaining 60% balance is payable after the physical survey is completed. Your digital survey report is generated instantly once the balance is cleared.</li>
+  checkout_policy: `<p><strong>1. Booking & Service Execution</strong></p>
+<ul>
+  <li>You are booking a verified groundwater survey expert for your specific location.</li>
+  <li>Advance payment confirms your slot. The expert will visit on the scheduled date.</li>
+</ul>
+<p><strong>2. Cancellation & Refunds</strong></p>
+<ul>
+  <li>Cancel 24+ hours before schedule for a full 100% refund of the advance.</li>
+  <li>Cancel within 24 hours of schedule and incur a 50% cancellation fee.</li>
+  <li>If the expert arrives at the location but cannot survey due to customer-side issues, the advance is strictly non-refundable.</li>
+</ul>
+<p><strong>3. Reporting & Balance Payment</strong></p>
+<ul>
+  <li>The remaining 60% balance is payable after the physical survey is completed.</li>
+  <li>Your digital survey report is generated instantly once the balance is cleared.</li>
 </ul>`,
   general_terms: `<ul>
   <li>By creating an account or logging in, you agree to abide by Jaladhaara platform guidelines and privacy terms.</li>

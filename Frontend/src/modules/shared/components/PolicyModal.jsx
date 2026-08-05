@@ -238,6 +238,41 @@ const PolicyModal = ({ type, onClose, onAgree, loadingAction = false }) => {
 
   const activePolicy = policies[type] || policies.terms;
 
+  // Helper to parse HTML from the admin panel into structured sections for premium UI rendering
+  const parseHTMLToSections = (html) => {
+    if (!html) return [];
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const sections = [];
+    let currentSection = { heading: '', points: [] };
+
+    Array.from(div.children).forEach(child => {
+      if (child.tagName === 'P' || /^H[1-6]$/.test(child.tagName)) {
+        if (currentSection.heading || currentSection.points.length > 0) {
+          sections.push(currentSection);
+          currentSection = { heading: '', points: [] };
+        }
+        currentSection.heading = child.textContent.trim();
+      } else if (child.tagName === 'UL' || child.tagName === 'OL') {
+        Array.from(child.children).forEach(li => {
+          if (li.tagName === 'LI' && li.textContent.trim()) {
+             currentSection.points.push(li.innerHTML);
+          }
+        });
+      } else if (child.textContent.trim()) {
+        currentSection.points.push(child.innerHTML);
+      }
+    });
+    
+    if (currentSection.heading || currentSection.points.length > 0) {
+      sections.push(currentSection);
+    }
+    
+    return sections;
+  };
+
+  const displaySections = policyData ? parseHTMLToSections(policyData) : activePolicy.sections;
+
   const modalContent = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
       <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[85vh] transition-all transform scale-100">
@@ -266,27 +301,26 @@ const PolicyModal = ({ type, onClose, onAgree, loadingAction = false }) => {
               <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
               <span className="text-xs font-semibold">Loading document...</span>
             </div>
-          ) : policyData ? (
-            <div 
-              className="prose prose-sm max-w-none text-gray-600 prose-p:leading-relaxed prose-li:marker:text-blue-500 prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4 prose-strong:text-gray-900 bg-gray-50/80 rounded-2xl p-5 border border-gray-100"
-              dangerouslySetInnerHTML={{ __html: policyData }} 
-            />
           ) : (
             /* Professional Point-by-Point Sections */
-            activePolicy.sections.map((section, idx) => (
+            displaySections.map((section, idx) => (
               <div key={idx} className="bg-gray-50/80 rounded-2xl p-4 border border-gray-100 space-y-2.5">
-                <h4 className="text-xs font-bold text-gray-900 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-                  {section.heading}
-                </h4>
-                <ul className="space-y-2.5 pl-1">
-                  {section.points.map((pt, pIdx) => (
-                    <li key={pIdx} className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed">
-                      <IoCheckmarkCircle className="text-blue-500 text-sm shrink-0 mt-0.5" />
-                      <span>{pt}</span>
-                    </li>
-                  ))}
-                </ul>
+                {section.heading && (
+                  <h4 className="text-xs font-bold text-gray-900 flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0 mt-1"></span>
+                    <div className="flex-1 min-w-0 break-words" dangerouslySetInnerHTML={{ __html: section.heading }} />
+                  </h4>
+                )}
+                {section.points.length > 0 && (
+                  <ul className="space-y-2.5 pl-1">
+                    {section.points.map((pt, pIdx) => (
+                      <li key={pIdx} className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed">
+                        <IoCheckmarkCircle className="text-blue-500 text-sm shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0 break-words [&_p]:inline" dangerouslySetInnerHTML={{ __html: pt }} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ))
           )}
