@@ -629,9 +629,10 @@ const LocationPicker = ({ onLocationSelect, onBack, initialLocation }) => {
                 <button
                     onClick={getCurrentLocation}
                     disabled={searching}
-                    className="w-full flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-200 py-3 rounded-xl font-medium hover:bg-blue-50 transition-colors shadow-sm"
+                    className="relative w-full flex items-center justify-center bg-white text-blue-600 border border-blue-200 py-3 rounded-xl font-medium hover:bg-blue-50 transition-colors shadow-sm text-[13px] sm:text-sm"
                 >
-                    <IoLocationSharp /> {searching ? "Locating..." : "Use Current Location of Your Land"}
+                    <IoLocationSharp className="absolute left-4 text-lg" />
+                    <span>{searching ? "Locating..." : "Use Current Location of Your Land / Plot"}</span>
                 </button>
             </div>
 

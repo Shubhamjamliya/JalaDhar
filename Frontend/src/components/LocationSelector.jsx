@@ -200,10 +200,11 @@ export default function LocationSelector({
                         type="button"
                         onClick={getCurrentLocation}
                         disabled={gettingLocation}
-                        className="flex items-center justify-center bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
-                        title={gettingLocation ? "Getting location..." : "Use Current Location of Your Land"}
+                        className="relative flex items-center justify-center bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg active:scale-[0.98] w-full text-sm font-medium"
+                        title={gettingLocation ? "Getting location..." : "Use Current Location of Your Land / Plot"}
                     >
-                        <IoLocationOutline className="text-xl text-white" />
+                        <IoLocationOutline className="absolute left-4 text-xl text-white" />
+                        <span>Use Current Location of Your Land / Plot</span>
                     </button>
                 </div>
 
