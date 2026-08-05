@@ -1307,15 +1307,14 @@ const getReportPendingApprovals = async (req, res) => {
     const query = {
       'report.uploadedAt': { $exists: true },
       'report.approvedAt': { $exists: false }, // Only unapproved reports
-      'firstInstallment.paid': { $ne: true } // Not yet paid
     };
 
     // Filter by vendorStatus
-    if (status === 'REPORT_UPLOADED') {
-      query.vendorStatus = { $in: [BOOKING_STATUS.REPORT_UPLOADED, BOOKING_STATUS.AWAITING_PAYMENT] };
-    } else if (status === 'PAID_FIRST') {
+    if (status === 'PAID_FIRST') {
       query.vendorStatus = BOOKING_STATUS.PAID_FIRST;
-      query['firstInstallment.paid'] = true;
+    } else {
+      // Default: all bookings where report is uploaded but not yet approved
+      query.vendorStatus = { $in: [BOOKING_STATUS.REPORT_UPLOADED, BOOKING_STATUS.AWAITING_PAYMENT] };
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
