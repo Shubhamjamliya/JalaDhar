@@ -41,6 +41,11 @@ const formats = [
    Default policy text values
    ────────────────────────────────────────────── */
 const DEFAULT_POLICIES = {
+  checkout_policy: `<ul>
+  <li><strong>1. Booking & Service Execution:</strong> You are booking a verified groundwater survey expert for your specific location. Advance payment confirms your slot.</li>
+  <li><strong>2. Cancellation & Refunds:</strong> Cancel 24+ hours before schedule for a full 100% refund of the advance. Cancel within 24 hours of schedule and incur a 50% cancellation fee.</li>
+  <li><strong>3. Reporting & Balance Payment:</strong> The remaining 60% balance is payable after the physical survey is completed. Your digital survey report is generated instantly once the balance is cleared.</li>
+</ul>`,
   general_terms: `<ul>
   <li>By creating an account or logging in, you agree to abide by Jaladhaara platform guidelines and privacy terms.</li>
   <li>Users are responsible for maintaining the confidentiality of their credentials and account access.</li>
@@ -227,7 +232,7 @@ export default function AdminPolicies() {
 
   const getSectionForKey = (key) => {
     const legal = ["general_terms", "terms_of_service", "privacy_policy"];
-    const booking = ["booking_policy", "cancellation_policy", "advance_payment_policy", "remaining_payment_policy"];
+    const booking = ["checkout_policy", "booking_policy", "cancellation_policy", "advance_payment_policy", "remaining_payment_policy"];
     const refundKeys = ["refund_policy"];
     if (legal.includes(key)) return "legal";
     if (booking.includes(key)) return "booking";
@@ -248,6 +253,7 @@ export default function AdminPolicies() {
         ];
       } else if (section === "booking") {
         settings = [
+          { key: "checkout_policy",         value: policySettings.checkout_policy },
           { key: "booking_policy",          value: policySettings.booking_policy },
           { key: "cancellation_policy",     value: policySettings.cancellation_policy },
           { key: "advance_payment_policy",  value: policySettings.advance_payment_policy },
@@ -440,6 +446,14 @@ export default function AdminPolicies() {
           saving={saving}
           saved={saved}
         >
+          <PolicyBlock
+            label="Combined Checkout Policy"
+            description="Shown in the popup right before the user pays the advance or remaining amount."
+            value={policySettings.checkout_policy}
+            onChange={(v) => patch("checkout_policy", v)}
+            placeholder="Write combined checkout terms here…"
+          />
+          <div className="border-t border-dashed border-slate-200" />
           <PolicyBlock
             label="Booking Policy"
             description="Shown during booking requests and survey scheduling."

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   IoClose, 
   IoInformationCircleOutline, 
@@ -9,7 +10,7 @@ import {
 } from "react-icons/io5";
 import { getPublicSettings } from "../../../services/settingsApi";
 
-const PolicyModal = ({ type, onClose }) => {
+const PolicyModal = ({ type, onClose, onAgree, loadingAction = false }) => {
   const [loading, setLoading] = useState(true);
   const [policyData, setPolicyData] = useState(null);
 
@@ -36,6 +37,7 @@ const PolicyModal = ({ type, onClose }) => {
           else if (type === 'remaining') key = 'remaining_payment_policy';
           else if (type === 'terms') key = 'terms_of_service';
           else if (type === 'privacy') key = 'privacy_policy';
+          else if (type === 'checkout') key = 'checkout_policy';
 
           const policyItem = settings.find(s => s.key === key);
           if (policyItem && policyItem.value && policyItem.value.trim().length > 30) {
@@ -203,12 +205,40 @@ const PolicyModal = ({ type, onClose }) => {
           ]
         }
       ]
+    },
+    checkout: {
+      title: "Booking & Cancellation Terms",
+      icon: <IoDocumentTextOutline className="text-indigo-500 text-2xl" />,
+      sections: [
+        {
+          heading: "1. Booking & Service Execution",
+          points: [
+            "You are booking a verified groundwater survey expert for your specific location.",
+            "Advance payment confirms your slot. The expert will visit on the scheduled date."
+          ]
+        },
+        {
+          heading: "2. Cancellation & Refunds",
+          points: [
+            "Cancel 24+ hours before schedule for a full 100% refund of the advance.",
+            "Cancel within 24 hours of schedule and incur a 50% cancellation fee.",
+            "If the expert arrives at the location but cannot survey due to customer-side issues, the advance is strictly non-refundable."
+          ]
+        },
+        {
+          heading: "3. Reporting & Balance Payment",
+          points: [
+            "The remaining 60% balance is payable after the physical survey is completed.",
+            "Your digital survey report is generated instantly once the balance is cleared."
+          ]
+        }
+      ]
     }
   };
 
   const activePolicy = policies[type] || policies.terms;
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
       <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[85vh] transition-all transform scale-100">
         
@@ -236,6 +266,11 @@ const PolicyModal = ({ type, onClose }) => {
               <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
               <span className="text-xs font-semibold">Loading document...</span>
             </div>
+          ) : policyData ? (
+            <div 
+              className="prose prose-sm max-w-none text-gray-600 prose-p:leading-relaxed prose-li:marker:text-blue-500 prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4 prose-strong:text-gray-900 bg-gray-50/80 rounded-2xl p-5 border border-gray-100"
+              dangerouslySetInnerHTML={{ __html: policyData }} 
+            />
           ) : (
             /* Professional Point-by-Point Sections */
             activePolicy.sections.map((section, idx) => (
@@ -258,17 +293,45 @@ const PolicyModal = ({ type, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
-          <button
-            onClick={onClose}
-            className="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.99]"
-          >
-            I Understand & Agree
-          </button>
+        <div className="p-4 border-t border-gray-100 bg-gray-50/50 shrink-0 flex gap-3">
+          {onAgree ? (
+            <>
+              <button
+                onClick={onClose}
+                disabled={loadingAction}
+                className="px-6 py-3 bg-white text-gray-700 border border-gray-200 font-bold text-xs rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onAgree}
+                disabled={loadingAction}
+                className="flex-1 py-3 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loadingAction ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Processing...
+                  </>
+                ) : (
+                  "I Understand & Pay"
+                )}
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onClose}
+              className="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.99]"
+            >
+              I Understand & Agree
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default PolicyModal;
