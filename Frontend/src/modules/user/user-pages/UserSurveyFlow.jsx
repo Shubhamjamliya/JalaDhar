@@ -301,9 +301,7 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
         {/* Survey/Plot Number */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {isAgriCategory(category) ? "Survey No" :
-              (category === "Domestic/Household" || category === "Industrial" || category === "Open plots") ? "Plot No" :
-                "Plot / Survey No"}
+            {isAgriCategory(category) ? "Survey No" : "Survey no / Plot no"}
           </label>
           <input
             required
@@ -316,7 +314,7 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
             autoCapitalize="characters"
             spellCheck={false}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
-            placeholder={`Enter ${isAgriCategory(category) ? "Survey No" : "Plot No"}`}
+            placeholder={`Enter ${isAgriCategory(category) ? "Survey No" : "Survey no / Plot no"}`}
           />
         </div>
 

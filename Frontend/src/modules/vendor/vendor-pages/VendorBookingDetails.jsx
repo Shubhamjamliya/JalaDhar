@@ -228,7 +228,14 @@ export default function VendorBookingDetails() {
         if (!booking) return {};
         
         let category = booking.purpose || '';
-        let extent = formatAcresGuntasDisplay(booking.purposeExtent) || booking.extent || '';
+        let extent = '';
+        if (booking.purposeExtent) {
+            extent = category === 'Agriculture' 
+                ? formatAcresGuntasDisplay(booking.purposeExtent) 
+                : `${booking.purposeExtent} Sq. Ft.`;
+        } else {
+            extent = booking.extent || '';
+        }
         let surveyNo = booking.surveyNumber || booking.address?.surveyNumber || '';
         let landmark = booking.address?.landmark || booking.landmark || '';
         let remarks = '';
@@ -1086,7 +1093,7 @@ export default function VendorBookingDetails() {
                             )}
                             {siteInfo.surveyNo && (
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-1">Survey No.</p>
+                                    <p className="text-sm text-gray-500 mb-1">{siteInfo.category === 'Agriculture' ? 'Survey No.' : 'Survey No / Plot No'}</p>
                                     <p className="text-base font-semibold text-gray-800">{siteInfo.surveyNo}</p>
                                 </div>
                             )}
