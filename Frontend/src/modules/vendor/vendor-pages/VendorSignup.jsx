@@ -283,7 +283,7 @@ export default function VendorSignup() {
                 responsibility: false,
                 timeframe: false,
                 agreement: false
-            }
+            },
             serviceRadius: initialData?.serviceRadius || d.serviceRadius || "",
             multipleStates: initialData?.multipleStates || d.multipleStates || "",
             willingToTravel: initialData?.willingToTravel || d.willingToTravel || "",
