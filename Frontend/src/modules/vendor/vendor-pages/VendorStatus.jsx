@@ -462,13 +462,15 @@ export default function VendorStatus() {
                 id: "second-payment",
                 label: "2nd Platform Payout",
                 icon: IoWalletOutline,
-                active: hasFullPayment && !booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited,
+                active: hasFullPayment && !booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited && !hasBorell,
                 completed: !!booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited || hasBorell,
                 description: booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited
                     ? "2nd payout (50%) has been credited to your wallet."
-                    : hasFullPayment
-                        ? "Your 2nd payout is pending release from admin after customer payment."
-                        : "Waiting for customer payment before payout release.",
+                    : hasBorell
+                        ? "2nd payout is being processed by admin."
+                        : hasFullPayment
+                            ? "Your 2nd payout is pending release from admin after customer payment."
+                            : "Waiting for customer payment before payout release.",
                 date: booking.payment?.vendorWalletPayments?.reportUploadPayment?.creditedAt,
             },
             {
@@ -476,7 +478,7 @@ export default function VendorStatus() {
                 label: "Borewell Result Uploaded",
                 icon: IoImageOutline,
                 active: hasFullPayment && !hasBorell,
-                completed: hasBorell && (effectiveIndex > statusOrder.indexOf("BOREWELL_UPLOADED")),
+                completed: hasBorell,
                 description: hasBorell
                     ? "Customer has uploaded borewell result. Waiting for admin to approve and process final settlement."
                     : hasFullPayment
@@ -488,21 +490,23 @@ export default function VendorStatus() {
                 id: "approved",
                 label: "Admin Approved",
                 icon: IoCheckmarkCircleOutline,
-                active: rawStatus === "APPROVED",
-                completed: effectiveIndex > statusOrder.indexOf("APPROVED") || rawStatus === "FINAL_SETTLEMENT_COMPLETE" || rawStatus === "COMPLETED",
-                description: "Admin has approved the borewell result. Waiting for final settlement processing.",
+                active: rawStatus === "APPROVED" || rawStatus === "BOREWELL_UPLOADED",
+                completed: effectiveIndex > statusOrder.indexOf("APPROVED") || rawStatus === "FINAL_SETTLEMENT_COMPLETE" || rawStatus === "COMPLETED" || !!booking.borewellResult?.approvedAt,
+                description: booking.borewellResult?.approvedAt
+                    ? "Admin has approved the borewell result. Waiting for final settlement processing."
+                    : hasBorell 
+                        ? "Waiting for admin to approve the borewell result."
+                        : "Waiting for borewell result upload.",
                 date: booking.borewellResult?.approvedAt,
             },
             {
                 id: "settlement",
                 label: "Final Settlement Complete",
                 icon: IoWalletOutline,
-                active: rawStatus === "FINAL_SETTLEMENT_COMPLETE",
+                active: rawStatus === "FINAL_SETTLEMENT_COMPLETE" || rawStatus === "APPROVED" || !!booking.borewellResult?.approvedAt,
                 completed: rawStatus === "FINAL_SETTLEMENT_COMPLETE" ||
                     rawStatus === "COMPLETED" ||
                     booking.finalSettlement?.status === "PROCESSED" ||
-                    booking.finalSettlement?.rewardAmount > 0 ||
-                    booking.finalSettlement?.penaltyAmount > 0 ||
                     booking.payment?.vendorSettlement?.status === "COMPLETED",
                 description: (booking.finalSettlement?.rewardAmount > 0 || booking.finalSettlement?.penaltyAmount > 0) ||
                     booking.finalSettlement?.status === "PROCESSED" ||

@@ -569,8 +569,8 @@ export default function UserBookingDetails() {
                             { id: "en_route",  label: "Expert En Route",   icon: <IoCarOutline />,            statuses: ["EN_ROUTE"],  date: booking.enRouteAt,        proofKey: "enRouteAt" },
                             { id: "visited",   label: "Survey Done",       icon: <IoConstructOutline />,       statuses: ["VISITED"],   date: booking.visitedAt,        proofKey: "visitedAt" },
                             { id: "report",    label: "Report Ready",      icon: <IoDocumentTextOutline />,    statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt, proofKey: "reportUploadedAt" },
-                            { id: "payment",   label: "Final Payment",     icon: <IoCashOutline />,            statuses: ["AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST"], date: booking.payment?.remainingPaidAt },
-                            { id: "completed", label: "Report Unlocked",   icon: <IoCheckmarkCircleOutline />, statuses: ["COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt },
+                            { id: "payment",   label: "Final Payment",     icon: <IoCashOutline />,            statuses: ["AWAITING_PAYMENT"], date: booking.payment?.remainingPaidAt },
+                            { id: "completed", label: "Report Unlocked",   icon: <IoCheckmarkCircleOutline />, statuses: ["PAYMENT_SUCCESS", "PAID_FIRST", "COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt || booking.payment?.remainingPaidAt },
                         ];
 
                         const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
