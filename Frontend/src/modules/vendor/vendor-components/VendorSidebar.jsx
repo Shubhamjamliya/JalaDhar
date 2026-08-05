@@ -1,11 +1,30 @@
 import { useRef, useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
-import { IoCloseOutline, IoLogOutOutline, IoCheckmarkCircle, IoPersonOutline } from "react-icons/io5";
+import { NavLink, useLocation } from "react-router-dom";
+import { 
+    IoCloseOutline, 
+    IoLogOutOutline, 
+    IoCheckmarkCircle, 
+    IoPersonOutline,
+    IoHomeOutline,
+    IoMapOutline,
+    IoTimeOutline,
+    IoStarOutline,
+    IoWalletOutline,
+    IoStatsChartOutline,
+    IoNotificationsOutline,
+    IoHelpBuoyOutline,
+    IoChatbubblesOutline,
+    IoDocumentTextOutline,
+    IoShieldCheckmarkOutline,
+    IoSettingsOutline,
+    IoInformationCircleOutline
+} from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 
-export default function VendorSidebar({ isOpen, onClose, navItems }) {
+export default function VendorSidebar({ isOpen, onClose }) {
     const closeRef = useRef(null);
+    const location = useLocation();
     const { logout, vendor } = useVendorAuth();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -41,6 +60,51 @@ export default function VendorSidebar({ isOpen, onClose, navItems }) {
         await logout();
     };
 
+    const menuGroups = [
+        {
+            title: "Dashboard",
+            items: [
+                { label: "Home", to: "/vendor/dashboard", icon: IoHomeOutline, exact: true }
+            ]
+        },
+        {
+            title: "My Account",
+            items: [
+                { label: "My Profile", to: "/vendor/profile", icon: IoPersonOutline, exact: true }
+            ]
+        },
+        {
+            title: "Earnings",
+            items: [
+                { label: "Wallet", to: "/vendor/wallet", icon: IoWalletOutline },
+                { label: "Earnings Summary", to: "/vendor/wallet", icon: IoStatsChartOutline }
+            ]
+        },
+        {
+            title: "Support",
+            items: [
+                { label: "Notifications", to: "/vendor/dashboard", icon: IoNotificationsOutline },
+                { label: "Help & Support", to: "/vendor/disputes", icon: IoHelpBuoyOutline },
+                { label: "FAQs", to: "/vendor/dashboard", icon: IoChatbubblesOutline }
+            ]
+        },
+        {
+            title: "Legal & Policies",
+            items: [
+                { label: "Expert Agreement", to: "/vendor/dashboard", icon: IoDocumentTextOutline },
+                { label: "Privacy Policy", to: "/vendor/dashboard", icon: IoShieldCheckmarkOutline },
+                { label: "Terms & Conditions", to: "/vendor/dashboard", icon: IoDocumentTextOutline },
+                { label: "Insurance Details", to: "/vendor/dashboard", icon: IoDocumentTextOutline }
+            ]
+        },
+        {
+            title: "Settings",
+            items: [
+                { label: "About Jaladhaara", to: "/vendor/dashboard", icon: IoInformationCircleOutline }
+            ]
+        }
+    ];
+
     return (
         <>
             {/* Backdrop Overlay */}
@@ -57,15 +121,15 @@ export default function VendorSidebar({ isOpen, onClose, navItems }) {
                 role="dialog"
                 aria-modal="true"
                 aria-label="Vendor Menu"
-                className={`fixed right-0 top-0 h-full w-[290px] sm:w-[320px] bg-white z-[100] shadow-2xl p-5 transform transition-transform duration-300 ease-in-out flex flex-col justify-between ${
+                className={`fixed right-0 top-0 h-full w-[300px] sm:w-[320px] bg-white z-[100] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
                     isOpen ? "translate-x-0" : "translate-x-full"
                 }`}
             >
-                <div>
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-5">
-                        <h2 className="text-xl font-extrabold text-[#0A84FF] tracking-tight">
-                            Menu
+                {/* Fixed Header */}
+                <div className="p-5 shrink-0 bg-white">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-[22px] font-black text-[#0A84FF] tracking-tight">
+                            Expert Menu
                         </h2>
 
                         <button
@@ -74,84 +138,85 @@ export default function VendorSidebar({ isOpen, onClose, navItems }) {
                             className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors active:scale-95 cursor-pointer"
                             aria-label="Close Menu"
                         >
-                            <IoCloseOutline className="text-2xl" />
+                            <IoCloseOutline className="text-xl" />
                         </button>
                     </div>
 
                     {/* Vendor Profile Card */}
                     {vendor && (
-                        <div className="mb-5 p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">
-                                {vendor.name ? vendor.name.charAt(0).toUpperCase() : <IoPersonOutline className="text-lg" />}
+                        <div className="p-3.5 rounded-2xl bg-[#F8F9FA] border border-[#E3F2FD] flex items-center gap-3.5">
+                            <div className="w-11 h-11 rounded-full bg-[#0A84FF] text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+                                {vendor.name ? vendor.name.charAt(0).toUpperCase() : <IoPersonOutline />}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1">
-                                    <h3 className="text-sm font-bold text-slate-800 truncate">
-                                        {vendor.name || "Vendor Partner"}
+                                <div className="flex items-center gap-1.5">
+                                    <h3 className="text-base font-bold text-slate-800 truncate">
+                                        {vendor.name || "Expert Partner"}
                                     </h3>
                                     {vendor.isApproved && (
-                                        <IoCheckmarkCircle className="text-teal-500 text-sm shrink-0" title="Verified Partner" />
+                                        <IoCheckmarkCircle className="text-[#0A84FF] text-sm shrink-0" title="Verified Partner" />
                                     )}
                                 </div>
-                                <p className="text-xs text-slate-500 font-medium truncate">
-                                    {vendor.phone || vendor.email || "Vendor Account"}
+                                <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                                    {vendor.expertId || vendor.phone}
                                 </p>
                             </div>
                         </div>
                     )}
-
-                    {/* Navigation Menu Items */}
-                    <nav className="flex flex-col gap-2.5">
-                        {navItems.map(({ id, label, to, Icon, ActiveIcon }) => (
-                            <NavLink
-                                key={id}
-                                to={to}
-                                onClick={onClose}
-                                className={({ isActive }) =>
-                                    `flex items-center gap-3.5 px-3 py-2.5 rounded-2xl transition-all duration-200 group active:scale-[0.98] ${
-                                        isActive
-                                            ? "bg-[#E3F2FD] font-bold text-[#0A84FF]"
-                                            : "hover:bg-slate-50 text-slate-700 font-semibold"
-                                    }`
-                                }
-                                end={id === "dashboard"}
-                            >
-                                {({ isActive }) => {
-                                    const CurrentIcon = (isActive && ActiveIcon) ? ActiveIcon : Icon;
-                                    return (
-                                        <>
-                                            <div className={`flex h-10 w-10 items-center justify-center rounded-full shrink-0 shadow-xs transition-all duration-200 ${
-                                                isActive
-                                                    ? "bg-teal-500 text-white scale-105"
-                                                    : "bg-teal-500 text-white group-hover:scale-105"
-                                            }`}>
-                                                <CurrentIcon className="text-xl" />
-                                            </div>
-                                            <span className={`text-[15px] tracking-wide ${
-                                                isActive ? "text-[#0A84FF] font-bold" : "text-slate-800 font-semibold"
-                                            }`}>
-                                                {label}
-                                            </span>
-                                        </>
-                                    );
-                                }}
-                            </NavLink>
-                        ))}
-                    </nav>
                 </div>
 
-                {/* Logout Button Footer */}
-                <div className="pt-4 border-t border-slate-100">
+                {/* Scrollable Navigation Menu Items */}
+                <div className="flex-1 overflow-y-auto p-5 scrollbar-hide">
+                    <div className="flex flex-col gap-6 pb-6">
+                        {menuGroups.map((group, groupIdx) => (
+                            <div key={groupIdx} className="space-y-3">
+                                <h4 className="text-[11px] font-black text-[#8E939C] uppercase tracking-[0.1em] px-2">
+                                    {group.title}
+                                </h4>
+                                <nav className="flex flex-col gap-1">
+                                    {group.items.map((item, itemIdx) => {
+                                        const Icon = item.icon;
+                                        
+                                        // Determine active state manually to handle hash links correctly
+                                        const isHashLink = item.to.includes('#');
+                                        const isActive = isHashLink 
+                                            ? location.pathname + location.hash === item.to
+                                            : location.pathname === item.to && (!item.exact || !location.hash);
+
+                                        return (
+                                            <NavLink
+                                                key={itemIdx}
+                                                to={item.to}
+                                                onClick={onClose}
+                                                className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl transition-all duration-200 group active:scale-[0.98] ${
+                                                    isActive
+                                                        ? "bg-[#E3F2FD] font-bold text-[#0A84FF]"
+                                                        : "hover:bg-slate-50 text-slate-600 font-semibold hover:text-slate-900"
+                                                }`}
+                                            >
+                                                <Icon className={`text-lg transition-colors ${
+                                                    isActive ? "text-[#0A84FF]" : "text-gray-400 group-hover:text-blue-500"
+                                                }`} />
+                                                <span className="text-sm tracking-wide">
+                                                    {item.label}
+                                                </span>
+                                            </NavLink>
+                                        );
+                                    })}
+                                </nav>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Logout Button (Inside Scrollable Area for exact match) */}
+                <div className="px-5 pb-8 bg-white shrink-0">
                     <button
                         onClick={handleLogoutClick}
-                        className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-2xl hover:bg-red-50 text-slate-800 font-semibold transition-all duration-200 group active:scale-[0.98] cursor-pointer"
+                        className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white border border-[#E5E7EB] hover:border-red-200 hover:bg-red-50 text-slate-800 font-bold transition-all duration-200 group active:scale-[0.98] cursor-pointer"
                     >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FF3B30] text-white shrink-0 shadow-xs group-hover:scale-105 transition-transform duration-200">
-                            <IoLogOutOutline className="text-xl" />
-                        </div>
-                        <span className="text-[15px] font-semibold text-slate-800 group-hover:text-red-600 transition-colors">
-                            Logout
-                        </span>
+                        <IoLogOutOutline className="text-2xl text-[#FF3B30]" />
+                        <span className="text-[15px]">Logout</span>
                     </button>
                 </div>
             </aside>
@@ -161,9 +226,9 @@ export default function VendorSidebar({ isOpen, onClose, navItems }) {
                 isOpen={showLogoutConfirm}
                 onClose={() => setShowLogoutConfirm(false)}
                 onConfirm={handleLogoutConfirm}
-                title="Confirm Logout"
-                message="Are you sure you want to logout from your vendor account?"
-                confirmText="Logout"
+                title="Logout Confirmation"
+                message="Are you sure you want to log out of your expert account?"
+                confirmText="Yes, Logout"
                 cancelText="Cancel"
                 confirmColor="danger"
             />

@@ -35,14 +35,14 @@ const navItems = [
     },
     {
         id: "bookings",
-        label: "Jobs",
+        label: "Bookings",
         to: "/vendor/bookings",
         Icon: IoDocumentTextOutline,
         ActiveIcon: IoDocumentText,
     },
     {
         id: "status",
-        label: "Status",
+        label: "Reports",
         to: "/vendor/status",
         Icon: IoTimeOutline,
         ActiveIcon: IoTime,

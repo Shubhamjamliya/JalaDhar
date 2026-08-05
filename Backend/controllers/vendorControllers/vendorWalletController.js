@@ -13,7 +13,7 @@ const getWalletBalance = async (req, res) => {
 
     // Get recent transactions
     const transactions = await WalletTransaction.find({ vendor: vendorId })
-      .populate('booking', 'service')
+      .populate({ path: 'booking', populate: [{ path: 'user', select: 'name' }, { path: 'service', select: 'name category price platformFee' }] })
       .sort({ createdAt: -1 })
       .limit(20);
 
@@ -56,7 +56,7 @@ const getWalletTransactions = async (req, res) => {
 
     const [transactions, total] = await Promise.all([
       WalletTransaction.find(query)
-        .populate('booking', 'service')
+        .populate({ path: 'booking', populate: [{ path: 'user', select: 'name' }, { path: 'service', select: 'name category price platformFee' }] })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit)),

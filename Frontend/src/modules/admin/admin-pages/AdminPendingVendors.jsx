@@ -65,7 +65,7 @@ export default function AdminPendingVendors() {
             const response = await approveVendor(selectedVendorId);
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Vendor approved successfully!");
+                toast.showSuccess("Expert approved successfully!");
                 await loadPendingVendors();
             }
         } catch (err) {
@@ -85,7 +85,7 @@ export default function AdminPendingVendors() {
             const response = await rejectVendor(selectedVendorId, rejectionReason);
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Vendor application rejected");
+                toast.showSuccess("Expert application rejected");
                 await loadPendingVendors();
             }
         } catch (err) {
@@ -129,7 +129,7 @@ export default function AdminPendingVendors() {
                                 <IoCheckmarkCircleOutline className="text-3xl" />
                             </div>
                             <h3 className="text-lg font-bold text-gray-900">All caught up!</h3>
-                            <p className="text-gray-500 text-sm">No pending vendor applications at the moment.</p>
+                            <p className="text-gray-500 text-sm">No pending expert applications at the moment.</p>
                         </motion.div>
                     ) : (
                         vendors.map((vendor, i) => (
@@ -228,7 +228,7 @@ export default function AdminPendingVendors() {
                 onClose={() => setShowApproveConfirm(false)}
                 onConfirm={handleApproveConfirm}
                 title="Confirm Business Partnership"
-                message="This will approve the vendor and allow them to start serving customers on the platform. Proceed?"
+                message="This will approve the expert and allow them to start serving customers on the platform. Proceed?"
                 confirmText="Verify & Approve"
                 confirmColor="primary"
             />
@@ -250,7 +250,7 @@ export default function AdminPendingVendors() {
                 onClose={() => setShowRejectConfirm(false)}
                 onConfirm={handleRejectConfirm}
                 title="Finalize Rejection"
-                message="Are you sure you want to reject this vendor? They will be notified of the reason."
+                message="Are you sure you want to reject this expert? They will be notified of the reason."
                 confirmText="Yes, Reject"
                 confirmColor="danger"
             />

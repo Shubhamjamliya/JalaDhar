@@ -214,7 +214,7 @@ export default function AdminSidebar() {
         }
         if (id === "payments") {
             badgeStyle = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-            titleText = `${val} Pending Vendor Payout Settlements`;
+            titleText = `${val} Pending Expert Payout Settlements`;
         }
         if (id === "bookings") {
             badgeStyle = "bg-sky-500/20 text-sky-400 border-sky-500/30";

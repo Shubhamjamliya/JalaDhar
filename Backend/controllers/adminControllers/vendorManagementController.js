@@ -24,12 +24,12 @@ const getAllVendors = async (req, res) => {
     const query = {};
 
     // Filter by approval status
-    if (isApproved !== undefined) {
+    if (isApproved !== undefined && isApproved !== '') {
       query.isApproved = isApproved === 'true';
     }
 
     // Filter by active status
-    if (isActive !== undefined) {
+    if (isActive !== undefined && isActive !== '') {
       query.isActive = isActive === 'true';
     }
 

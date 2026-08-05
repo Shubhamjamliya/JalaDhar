@@ -88,7 +88,7 @@ export default function AdminVendorAnalytics() {
     <div className="space-y-6 p-6 pb-20 lg:pb-6 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Vendor Analytics</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Expert Analytics</h1>
           <p className="text-gray-500">Business performance and registration insights</p>
         </div>
         <div className="flex bg-white rounded-xl shadow-sm border border-gray-100 p-1">
@@ -122,7 +122,7 @@ export default function AdminVendorAnalytics() {
               <IoArrowUpOutline /> 5%
             </span>
           </div>
-          <p className="text-sm text-gray-500 font-medium">Total Vendors</p>
+          <p className="text-sm text-gray-500 font-medium">Total Experts</p>
           <h3 className="text-2xl font-bold text-gray-900">{stats?.totalVendors || 0}</h3>
         </motion.div>
 
@@ -258,7 +258,7 @@ export default function AdminVendorAnalytics() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"
       >
-        <h4 className="font-bold text-gray-800 mb-6">Recently Active Vendors</h4>
+        <h4 className="font-bold text-gray-800 mb-6">Recently Active Experts</h4>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>

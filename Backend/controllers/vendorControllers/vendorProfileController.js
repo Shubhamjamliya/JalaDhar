@@ -171,13 +171,19 @@ const updateProfile = async (req, res) => {
       'experience',
       'experienceDetails',
       'instruments',
-      'servicePrice'
+      'servicePrice',
+      'languages',
+      'travelChargesPolicy',
+      'availableServices',
+      'workingDays',
+      'workingHours',
+      'aboutExpert'
     ];
 
     // Update allowed fields
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        if (typeof req.body[field] === 'string' && (field === 'address' || field === 'educationalQualifications' || field === 'instruments')) {
+        if (typeof req.body[field] === 'string' && (field === 'address' || field === 'educationalQualifications' || field === 'instruments' || field === 'languages' || field === 'availableServices')) {
           try {
             vendor[field] = JSON.parse(req.body[field]);
           } catch (e) {

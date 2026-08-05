@@ -42,11 +42,12 @@ import logo from "@/assets/AppLogo.png";
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 const MACHINE_OPTIONS = [
-    'Dowsing Rods',
-    '3D Locator',
+    'Resistivity Meter',
     'PQWT',
     'ADMT',
-    'Resistivity Meter'
+    '3D Locator',
+    'Dowsing Rods',
+    'Other'
 ];
 
 const DRAFT_STORAGE_KEY = "jaladhar_vendor_signup_draft";
@@ -127,10 +128,11 @@ export default function VendorSignup() {
         return [];
     });
     const [customMachine, setCustomMachine] = useState("");
+    
     // Service Image Previews
-    const [serviceImagePreviews, setServiceImagePreviews] = useState(() => {
-        if (initialData?.serviceImages && Array.isArray(initialData.serviceImages)) {
-            return initialData.serviceImages.map(file => ({
+    const [surveyPhotoPreviews, setSurveyPhotoPreviews] = useState(() => {
+        if (initialData?.surveyPhotos && Array.isArray(initialData.surveyPhotos)) {
+            return initialData.surveyPhotos.map(file => ({
                 file,
                 preview: file instanceof File || file instanceof Blob ? URL.createObjectURL(file) : (typeof file === 'string' ? file : '')
             })).filter(item => item.preview);
@@ -155,8 +157,6 @@ export default function VendorSignup() {
 
         // Load Google Maps API if not loaded
         if (!GOOGLE_MAPS_API_KEY) {
-            // API key not set - fields will still show but without autocomplete
-            // User can still use "Use Current Location" button and type manually
             return;
         }
 
@@ -164,26 +164,22 @@ export default function VendorSignup() {
         const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
 
         if (existingScript) {
-            // Script exists, poll until loaded
             const pollInterval = setInterval(() => {
                 if (checkMapsLoaded()) {
                     clearInterval(pollInterval);
                 }
             }, 200);
 
-            // Stop polling after 10 seconds
             setTimeout(() => {
                 clearInterval(pollInterval);
             }, 10000);
 
-            // Also listen for load event
             existingScript.addEventListener('load', () => {
                 setTimeout(() => {
                     checkMapsLoaded();
                 }, 500);
             });
         } else {
-            // Create new script
             const script = document.createElement("script");
             script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`;
             script.async = true;
@@ -191,21 +187,15 @@ export default function VendorSignup() {
             document.head.appendChild(script);
 
             script.onload = () => {
-                // Poll until places library is ready
                 const pollInterval = setInterval(() => {
                     if (checkMapsLoaded()) {
                         clearInterval(pollInterval);
                     }
                 }, 200);
 
-                // Stop polling after 5 seconds
                 setTimeout(() => {
                     clearInterval(pollInterval);
                 }, 5000);
-            };
-
-            script.onerror = () => {
-                // Failed to load Google Maps API
             };
         }
     }, []);
@@ -218,6 +208,16 @@ export default function VendorSignup() {
         return () => clearTimeout(timer);
     }, [otpCountdown]);
 
+    // Cleanup URLs
+    useEffect(() => {
+        return () => {
+            if (formData.profilePicture instanceof File) URL.revokeObjectURL(formData.profilePicture);
+            if (formData.aadharCard instanceof File) URL.revokeObjectURL(formData.aadharCard);
+            if (formData.panCard instanceof File) URL.revokeObjectURL(formData.panCard);
+            surveyPhotoPreviews.forEach(item => URL.revokeObjectURL(item.preview));
+        };
+    }, []);
+
     // Form state
     const [formData, setFormData] = useState(() => {
         const d = savedDraft?.formData || {};
@@ -226,48 +226,80 @@ export default function VendorSignup() {
             name: initialData?.name || d.name || "",
             email: initialData?.email || d.email || "",
             phone: initialData?.phone || d.phone || "",
+            dob: (initialData?.dob || d.dob || "").includes('-') ? (initialData?.dob || d.dob).split('-').reverse().join('/') : (initialData?.dob || d.dob || ""),
             bloodGroup: initialData?.bloodGroup || d.bloodGroup || "",
             gender: initialData?.gender || d.gender || "",
             designation: initialData?.designation || d.designation || "",
+            languages: initialData?.languages || d.languages || "",
             password: initialData?.password || d.password || "",
             confirmPassword: initialData?.password || d.confirmPassword || "",
             profilePicture: initialData?.profilePicture || null,
 
             // KYC Details
-            aadhaarNo: initialData?.aadhaarNo || d.aadhaarNo || "",
+            isGstRegistered: initialData?.isGstRegistered || d.isGstRegistered || "",
+            gstNumber: initialData?.gstNumber || d.gstNumber || "",
             panNo: initialData?.panNo || d.panNo || "",
-            aadharCard: initialData?.aadharCard || null,
             panCard: initialData?.panCard || null,
+            aadharCards: initialData?.aadharCards || d.aadharCards || [],
 
             // Education & Experience
-            education: initialData?.education ? getInitialEducation() : (d.education || ""),
-            customEducation: initialData?.customEducation ? getInitialCustomEducation() : (d.customEducation || ""),
+            education: initialData?.education || d.education || "",
+            specialization: initialData?.specialization || d.specialization || "",
             institution: initialData?.institution || d.institution || "",
-            // Experience & Registration
+            graduationYear: initialData?.graduationYear || d.graduationYear || "",
             experience: initialData?.experience !== undefined ? initialData.experience : (d.experience !== undefined ? d.experience : ""),
+            surveysCompleted: initialData?.surveysCompleted || d.surveysCompleted || "",
             experienceDetails: initialData?.experienceDetails || d.experienceDetails || "",
+            degreeCertificate: initialData?.degreeCertificate || null,
+            certificates: initialData?.certificates || d.certificates || [],
             groundwaterRegDetails: initialData?.groundwaterRegDetails || null,
+            professionalMembership: initialData?.professionalMembership || null,
+            registrationCertificate: initialData?.registrationCertificate || null,
             trainingCertificates: initialData?.trainingCertificates || [],
-            certificates: initialData?.certificates || [],
 
             // Service Details
             machineType: initialData?.machineType || d.machineType || "",
-            serviceImages: initialData?.serviceImages || [],
+            surveyPhotos: initialData?.surveyPhotos || d.surveyPhotos || [],
+            equipmentPhoto: initialData?.equipmentPhoto || null,
+            sampleReport: initialData?.sampleReport || null,
             servicePrice: initialData?.servicePrice || d.servicePrice || "",
 
             // Bank Details
             bankName: initialData?.bankName || d.bankName || "",
             accountHolderName: initialData?.accountHolderName || d.accountHolderName || "",
             accountNumber: initialData?.accountNumber || d.accountNumber || "",
+            confirmAccountNumber: initialData?.confirmAccountNumber || d.confirmAccountNumber || "",
             ifscCode: initialData?.ifscCode || d.ifscCode || "",
             branchName: initialData?.branchName || d.branchName || "",
             cancelledCheque: initialData?.cancelledCheque || null,
 
-            // Address - only geoLocation
+            // Address
             address: initialData?.address || d.address || {},
-            selectedPlace: initialData?.selectedPlace || d.selectedPlace || null
+            selectedPlace: initialData?.selectedPlace || d.selectedPlace || null,
+            district: initialData?.district || d.district || "",
+            state: initialData?.state || d.state || "",
+            declarations: initialData?.declarations || d.declarations || {
+                certifyTrue: false,
+                responsibility: false,
+                timeframe: false,
+                agreement: false
+            }
+            serviceRadius: initialData?.serviceRadius || d.serviceRadius || "",
+            multipleStates: initialData?.multipleStates || d.multipleStates || "",
+            willingToTravel: initialData?.willingToTravel || d.willingToTravel || "",
+            modeOfTravel: initialData?.modeOfTravel || d.modeOfTravel || [],
+            travelChargesPerKm: initialData?.travelChargesPerKm || d.travelChargesPerKm || ""
         };
     });
+
+    const handleModeOfTravelToggle = (mode) => {
+        setFormData(prev => ({
+            ...prev,
+            modeOfTravel: prev.modeOfTravel.includes(mode)
+                ? prev.modeOfTravel.filter(m => m !== mode)
+                : [...prev.modeOfTravel, mode]
+        }));
+    };
 
     // Auto-save form progress to sessionStorage so details survive page refresh
     useEffect(() => {
@@ -276,9 +308,11 @@ export default function VendorSignup() {
                 name: formData.name,
                 email: formData.email,
                 phone: formData.phone,
+                dob: formData.dob,
                 bloodGroup: formData.bloodGroup,
                 gender: formData.gender,
                 designation: formData.designation,
+                languages: formData.languages,
                 password: formData.password,
                 confirmPassword: formData.confirmPassword,
                 aadhaarNo: formData.aadhaarNo,
@@ -349,14 +383,14 @@ export default function VendorSignup() {
         }
     };
 
-    const handleServiceImageChange = (e) => {
+    const handleSurveyPhotoChange = (e) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
 
             // Add new files to formData
             setFormData(prev => ({
                 ...prev,
-                serviceImages: [...prev.serviceImages, ...files]
+                surveyPhotos: [...prev.surveyPhotos, ...files]
             }));
 
             // Create previews
@@ -364,19 +398,19 @@ export default function VendorSignup() {
                 file,
                 preview: URL.createObjectURL(file)
             }));
-            setServiceImagePreviews(prev => [...prev, ...newPreviews]);
+            setSurveyPhotoPreviews(prev => [...prev, ...newPreviews]);
         }
     };
 
-    const removeServiceImage = (index) => {
+    const removeSurveyPhoto = (index) => {
         // Remove from formData
         setFormData(prev => ({
             ...prev,
-            serviceImages: prev.serviceImages.filter((_, i) => i !== index)
+            surveyPhotos: prev.surveyPhotos.filter((_, i) => i !== index)
         }));
 
         // Remove preview
-        setServiceImagePreviews(prev => {
+        setSurveyPhotoPreviews(prev => {
             const newPreviews = [...prev];
             URL.revokeObjectURL(newPreviews[index].preview);
             return newPreviews.filter((_, i) => i !== index);
@@ -398,6 +432,33 @@ export default function VendorSignup() {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        
+        if (name === "dob") {
+            let val = value.replace(/\D/g, '');
+            if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2);
+            if (val.length > 5) val = val.substring(0, 5) + '/' + val.substring(5, 9);
+            setFormData(prev => ({ ...prev, [name]: val }));
+            return;
+        }
+
+        if (name === "email") {
+             setFormData(prev => ({ ...prev, [name]: value.toLowerCase() }));
+             return;
+        }
+
+        if (name === "phone") {
+             const onlyNums = value.replace(/[^0-9]/g, '');
+             if (onlyNums.length > 10) return;
+             setFormData(prev => ({ ...prev, [name]: onlyNums }));
+             return;
+        }
+
+        if (name === "languages") {
+             const noNums = value.replace(/[0-9]/g, '');
+             setFormData(prev => ({ ...prev, [name]: noNums }));
+             return;
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -533,18 +594,55 @@ export default function VendorSignup() {
 
                 setGettingLocation(false);
             },
-            (error) => {
-                let errorMessage = "Unable to get your location";
+            async (error) => {
+                let errorMessage = "Unable to get your location via GPS";
 
                 if (error.code === error.PERMISSION_DENIED) {
                     errorMessage = "Location permission denied. Please allow location access in your browser settings.";
                 } else if (error.code === error.POSITION_UNAVAILABLE) {
-                    errorMessage = "Location information unavailable. Please try searching manually.";
+                    errorMessage = "Location information unavailable via GPS.";
                 } else if (error.code === error.TIMEOUT) {
-                    errorMessage = "Location request timed out. Please try again.";
+                    errorMessage = "Location request timed out.";
                 }
 
                 toast.dismissToast(loadingToast);
+                
+                // Fallback to IP-based location if not a permission issue
+                if (error.code !== error.PERMISSION_DENIED) {
+                    const fallbackToast = toast.showLoading("Trying network-based location...");
+                    try {
+                        const ipRes = await fetch("https://ipapi.co/json/");
+                        const ipData = await ipRes.json();
+                        
+                        toast.dismissToast(fallbackToast);
+                        
+                        if (ipData && ipData.latitude && ipData.longitude) {
+                            const lat = parseFloat(ipData.latitude);
+                            const lng = parseFloat(ipData.longitude);
+                            const formattedAddress = [ipData.city, ipData.region, ipData.country_name].filter(Boolean).join(", ");
+                            
+                            setFormData(prev => ({
+                                ...prev,
+                                address: {
+                                    coordinates: { lat, lng },
+                                    geoLocation: {
+                                        formattedAddress,
+                                        placeId: null,
+                                        geocodedAt: new Date()
+                                    }
+                                }
+                            }));
+                            setFullAddress(formattedAddress);
+                            toast.showSuccess("Location found via network!");
+                            setGettingLocation(false);
+                            return;
+                        }
+                    } catch (e) {
+                        console.error("IP fallback failed:", e);
+                        toast.dismissToast(fallbackToast);
+                    }
+                }
+
                 toast.showError(errorMessage);
                 setGettingLocation(false);
             },
@@ -580,13 +678,133 @@ export default function VendorSignup() {
         }));
     };
 
+    const validateBasicInfo = () => {
+        if (!formData.name) { toast.showError("Full Name is required"); return false; }
+        if (!formData.email) { toast.showError("Email Address is required"); return false; }
+        if (!formData.phone) { toast.showError("Mobile Number is required"); return false; }
+        if (formData.phone.length !== 10) { toast.showError("Please enter a valid 10-digit mobile number"); return false; }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) { toast.showError("Please enter a valid email address"); return false; }
+        if (!formData.gender) { toast.showError("Gender is required"); return false; }
+        if (!formData.dob) { toast.showError("Date of Birth is required"); return false; }
+        if (!formData.bloodGroup) { toast.showError("Blood Group is required"); return false; }
+        if (!formData.designation) { toast.showError("Designation is required"); return false; }
+        if (!formData.password) { toast.showError("Password is required"); return false; }
+        if (!formData.confirmPassword) { toast.showError("Confirm Password is required"); return false; }
+        if (formData.password !== formData.confirmPassword) { toast.showError("Passwords do not match"); return false; }
+        return true;
+    };
+
+    const validateQualification = () => {
+        if (!formData.education) { toast.showError("Highest Qualification is required"); return false; }
+        if (!formData.specialization) { toast.showError("Specialization is required"); return false; }
+        if (!formData.institution) { toast.showError("University/Institution is required"); return false; }
+        if (!formData.graduationYear) { toast.showError("Graduation Year is required"); return false; }
+        if (!formData.experience) { toast.showError("Years of Experience is required"); return false; }
+        if (!formData.degreeCertificate) { toast.showError("Degree Certificate is required"); return false; }
+        return true;
+    };
+
+    const validateTraining = () => {
+        if (formData.machineType.length === 0) { toast.showError("Survey Equipment Used is required"); return false; }
+        if (!formData.servicePrice) { toast.showError("Survey Base Fee is required"); return false; }
+        if (formData.surveyPhotos.length < 3) { toast.showError("Please upload a minimum of 3 survey photos"); return false; }
+        if (!formData.equipmentPhoto) { toast.showError("Equipment Photo is required"); return false; }
+        return true;
+    };
+
+    const validateKYC = () => {
+        if (!formData.isGstRegistered) { toast.showError("GST Registered option is required"); return false; }
+        if (formData.isGstRegistered === "Yes" && !formData.gstNumber) { toast.showError("GST Number is required"); return false; }
+        if (!formData.panNo) { toast.showError("PAN Number is required"); return false; }
+        if (!formData.panCard) { toast.showError("PAN Card upload is required"); return false; }
+        if (formData.aadharCards.length === 0) { toast.showError("Aadhaar Card upload is required"); return false; }
+        if (!formData.accountHolderName) { toast.showError("Account Holder Name is required"); return false; }
+        if (!formData.bankName) { toast.showError("Bank Name is required"); return false; }
+        if (!formData.ifscCode) { toast.showError("IFSC Code is required"); return false; }
+        if (!formData.accountNumber) { toast.showError("Account Number is required"); return false; }
+        if (!formData.confirmAccountNumber) { toast.showError("Confirm Account Number is required"); return false; }
+        if (formData.accountNumber !== formData.confirmAccountNumber) { toast.showError("Account Numbers do not match"); return false; }
+        return true;
+    };
+
+    const validateAddress = () => {
+        if (!formData.district) { toast.showError("District is required"); return false; }
+        if (!formData.state) { toast.showError("State is required"); return false; }
+        if (!formData.serviceRadius) { toast.showError("Service Radius is required"); return false; }
+        if (formData.serviceRadius === "Multiple states" && !formData.multipleStates) { toast.showError("Multiple States selection is required"); return false; }
+        if (!formData.willingToTravel) { toast.showError("Willing to Travel option is required"); return false; }
+        if (formData.willingToTravel === "Yes") {
+            if (formData.modeOfTravel.length === 0) { toast.showError("Please select at least one Mode of Travel"); return false; }
+        }
+        if (!formData.declarations?.certifyTrue) { toast.showError("You must certify the information provided is true"); return false; }
+        if (!formData.declarations?.responsibility) { toast.showError("You must acknowledge the responsibility of survey reports"); return false; }
+        if (!formData.declarations?.timeframe) { toast.showError("You must agree to the 30-minute booking acceptance timeframe"); return false; }
+        if (!formData.declarations?.agreement) { toast.showError("You must agree to the Expert Agreement, Privacy Policy, and Payment Terms"); return false; }
+        return true;
+    };
+
+    const handleTabChange = (targetTabId) => {
+        const currentIndex = TABS.findIndex(t => t.id === activeTab);
+        const targetIndex = TABS.findIndex(t => t.id === targetTabId);
+        
+        if (targetIndex <= currentIndex) {
+            setActiveTab(targetTabId);
+            return;
+        }
+        
+        for (let i = currentIndex; i < targetIndex; i++) {
+            const tabId = TABS[i].id;
+            let isValid = true;
+            if (tabId === "basic") isValid = validateBasicInfo();
+            else if (tabId === "qualification") isValid = validateQualification();
+            else if (tabId === "training") isValid = validateTraining();
+            else if (tabId === "kyc") isValid = validateKYC();
+            
+            if (!isValid) {
+                setActiveTab(tabId);
+                return;
+            }
+        }
+        
+        setActiveTab(targetTabId);
+    };
+
     const handleSendOTP = async (e) => {
         e?.preventDefault();
         setLoading(true);
 
-        // Validation
-        if (!formData.name || !formData.email || !formData.phone || !formData.password) {
-            toast.showError("Please fill in all required fields");
+        if (!validateBasicInfo()) { setActiveTab("basic"); setLoading(false); return; }
+        if (!validateQualification()) { setActiveTab("qualification"); setLoading(false); return; }
+        if (!validateTraining()) { setActiveTab("training"); setLoading(false); return; }
+        if (!validateKYC()) { setActiveTab("kyc"); setLoading(false); return; }
+        if (!validateAddress()) { setActiveTab("address"); setLoading(false); return; }
+
+        const dobParts = formData.dob.split('/');
+        if (dobParts.length !== 3 || dobParts[0].length !== 2 || dobParts[1].length !== 2 || dobParts[2].length !== 4) {
+            toast.showError("Please enter Date of Birth in DD/MM/YYYY format");
+            setLoading(false);
+            return;
+        }
+        const dobDay = parseInt(dobParts[0], 10);
+        const dobMonth = parseInt(dobParts[1], 10);
+        const dobYear = parseInt(dobParts[2], 10);
+        const dobDate = new Date(dobYear, dobMonth - 1, dobDay);
+        
+        if (dobDate.getFullYear() !== dobYear || dobDate.getMonth() !== dobMonth - 1 || dobDate.getDate() !== dobDay) {
+            toast.showError("Please enter a valid Date of Birth");
+            setLoading(false);
+            return;
+        }
+
+        const today = new Date();
+        let age = today.getFullYear() - dobDate.getFullYear();
+        const m = today.getMonth() - dobDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) {
+            age--;
+        }
+        if (age < 18) {
+            toast.showError("You must be at least 18 years old to register");
             setLoading(false);
             return;
         }
@@ -658,14 +876,21 @@ export default function VendorSignup() {
                                 name: formData.name,
                                 email: formData.email,
                                 phone: formData.phone,
+                                dob: formData.dob.split('/').reverse().join('-'),
                                 bloodGroup: formData.bloodGroup,
                                 gender: formData.gender,
                                 designation: formData.designation,
+                                languages: formData.languages,
                                 password: formData.password,
                                 profilePicture: formData.profilePicture,
-                                aadharCard: formData.aadharCard,
+                                isGstRegistered: formData.isGstRegistered,
+                                gstNumber: formData.gstNumber,
+                                panNo: formData.panNo,
+                                aadharCards: formData.aadharCards,
                                 panCard: formData.panCard,
                                 groundwaterRegDetails: formData.groundwaterRegDetails,
+                                professionalMembership: formData.professionalMembership,
+                                registrationCertificate: formData.registrationCertificate,
                                 trainingCertificates: formData.trainingCertificates,
                                 certificates: formData.certificates,
                                 cancelledCheque: formData.cancelledCheque,
@@ -675,21 +900,34 @@ export default function VendorSignup() {
                                 bankName: formData.bankName,
                                 branchName: formData.branchName,
                                 education: formData.education === 'Other' ? formData.customEducation : formData.education,
+                                specialization: formData.specialization,
                                 institution: formData.institution,
+                                graduationYear: formData.graduationYear,
                                 experience: formData.experience,
+                                surveysCompleted: formData.surveysCompleted,
                                 experienceDetails: formData.experienceDetails,
+                                degreeCertificate: formData.degreeCertificate,
+                                certificates: formData.certificates,
                                 machineType: formData.machineType,
-                                serviceImages: formData.serviceImages,
+                                surveyPhotos: formData.surveyPhotos,
+                                equipmentPhoto: formData.equipmentPhoto,
+                                sampleReport: formData.sampleReport,
                                 servicePrice: formData.servicePrice,
                                 address: {
                                     ...formData.address,
-                                    // Coordinates are already in address.coordinates
                                     coordinates: formData.address.coordinates || null
                                 },
-                                selectedPlace: formData.selectedPlace || null
+                                selectedPlace: formData.selectedPlace,
+                                district: formData.district,
+                                state: formData.state,
+                                serviceRadius: formData.serviceRadius,
+                                multipleStates: formData.multipleStates,
+                                willingToTravel: formData.willingToTravel,
+                                modeOfTravel: formData.modeOfTravel,
+                                travelChargesPerKm: formData.travelChargesPerKm
                             },
                             verificationToken: response.data.token,
-                            email: formData.email,
+                            phone: formData.phone,
                             otpSent: true
                         }
                     });
@@ -763,7 +1001,7 @@ export default function VendorSignup() {
                                     <button
                                         key={tab.id}
                                         type="button"
-                                        onClick={() => setActiveTab(tab.id)}
+                                        onClick={() => handleTabChange(tab.id)}
                                         className="relative z-10 flex flex-col items-center group cursor-pointer"
                                     >
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isActive
@@ -837,8 +1075,17 @@ export default function VendorSignup() {
                                         onChange={handleInputChange}
                                         disabled={loading}
                                     />
+                                    <InputBox
+                                        label="Date of Birth * (Required for insurance)"
+                                        name="dob"
+                                        type="text"
+                                        placeholder="DD/MM/YYYY"
+                                        value={formData.dob}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                    />
                                     <SelectBox
-                                        label="Blood Group *"
+                                        label="Blood Group * (Required for insurance)"
                                         name="bloodGroup"
                                         options={[
                                             { value: "", label: "Select Blood Group" },
@@ -870,6 +1117,15 @@ export default function VendorSignup() {
                                         onChange={handleInputChange}
                                         disabled={loading}
                                     />
+                                    <InputBox
+                                        label="Languages Known (Optional)"
+                                        name="languages"
+                                        type="text"
+                                        placeholder="e.g. English, Hindi, Telugu"
+                                        value={formData.languages}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                    />
                                     <PasswordBox
                                         label="Password *"
                                         name="password"
@@ -893,7 +1149,7 @@ export default function VendorSignup() {
                                     <div className="pt-4">
                                         <button
                                             type="button"
-                                            onClick={() => setActiveTab("qualification")}
+                                            onClick={() => handleTabChange("qualification")}
                                             className="w-full rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                                         >
                                             Next: Qualification & Experience
@@ -911,35 +1167,33 @@ export default function VendorSignup() {
                                         Qualification & Experience
                                     </h3>
 
-                                    <SelectBox
-                                        label="Qualification *"
+                                    <InputBox
+                                        label="Highest Qualification *"
                                         name="education"
-                                        options={[
-                                            { value: "", label: "Select Qualification" },
-                                            { value: "MSc in Geophysics", label: "MSc in Geophysics" },
-                                            { value: "MSc in Geology", label: "MSc in Geology" },
-                                            { value: "MSc in Earth Sciences", label: "MSc in Earth Sciences" },
-                                            { value: "Other", label: "Other" }
-                                        ]}
+                                        type="text"
+                                        placeholder="e.g. BSc, MSc, PhD, Diploma"
                                         value={formData.education}
                                         onChange={handleInputChange}
                                         disabled={loading}
                                     />
 
-                                    {formData.education === "Other" && (
-                                        <InputBox
-                                            label="Specify Qualification *"
-                                            name="customEducation"
-                                            type="text"
-                                            placeholder="Enter your qualification"
-                                            value={formData.customEducation}
-                                            onChange={handleInputChange}
-                                            disabled={loading}
-                                        />
-                                    )}
+                                    <SelectBox
+                                        label="Specialization *"
+                                        name="specialization"
+                                        options={[
+                                            { value: "", label: "Select Specialization" },
+                                            { value: "Geology", label: "Geology" },
+                                            { value: "Geophysics", label: "Geophysics" },
+                                            { value: "Earth Science", label: "Earth Science" },
+                                            { value: "Diploma", label: "Diploma" }
+                                        ]}
+                                        value={formData.specialization}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                    />
 
                                     <InputBox
-                                        label="Institution Name *"
+                                        label="University/Institution *"
                                         name="institution"
                                         type="text"
                                         placeholder="Enter institution name"
@@ -948,41 +1202,61 @@ export default function VendorSignup() {
                                         disabled={loading}
                                     />
 
-                                    <div className="mb-3.5">
-                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
-                                            Experience (Years) *
-                                        </label>
-                                        <div className="flex gap-2">
-                                            <div className="relative w-24 shrink-0">
-                                                <IoCalendarOutline className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400 text-lg" />
-                                                <input
-                                                    type="number"
-                                                    name="experience"
-                                                    placeholder="Yrs"
-                                                    value={formData.experience}
-                                                    onChange={handleInputChange}
-                                                    min="0"
-                                                    className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-10 pr-3 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
-                                                    disabled={loading}
-                                                />
-                                            </div>
-                                            <div className="relative flex-1">
-                                                <IoDocumentTextOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
-                                                <input
-                                                    type="text"
-                                                    name="experienceDetails"
-                                                    placeholder="Recent project or specialization (optional)"
-                                                    value={formData.experienceDetails}
-                                                    onChange={handleInputChange}
-                                                    className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
-                                                    disabled={loading}
-                                                />
-                                            </div>
-                                        </div>
+                                    <div className="grid grid-cols-2 gap-3 mb-3.5">
+                                        <InputBox
+                                            label="Graduation Year *"
+                                            name="graduationYear"
+                                            type="number"
+                                            placeholder="e.g. 2018"
+                                            value={formData.graduationYear}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                        />
+                                        <InputBox
+                                            label="Years of Experience *"
+                                            name="experience"
+                                            type="number"
+                                            placeholder="Yrs"
+                                            value={formData.experience}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                        />
                                     </div>
+                                    
+                                    <InputBox
+                                        label="Number of Surveys Completed (Optional)"
+                                        name="surveysCompleted"
+                                        type="number"
+                                        placeholder="Surveys"
+                                        value={formData.surveysCompleted}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                    />
+
+                                    <SelectBox
+                                        label="Area of Expertise Examples *"
+                                        name="experienceDetails"
+                                        options={[
+                                            { value: "", label: "Select Area of Expertise" },
+                                            { value: "Agricultural Surveys", label: "Agricultural Surveys" },
+                                            { value: "Industrial Surveys", label: "Industrial Surveys" },
+                                            { value: "Residential Surveys", label: "Residential Surveys" },
+                                            { value: "Commercial Surveys", label: "Commercial Surveys" }
+                                        ]}
+                                        value={formData.experienceDetails}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                    />
+
+                                    <FileBox
+                                        label="Degree Certificate *"
+                                        file={formData.degreeCertificate}
+                                        onChange={(e) => handleFileChange('degreeCertificate', e)}
+                                        disabled={loading}
+                                    />
 
                                     <MultiFileBox
-                                        label="Degree Certificates *"
+                                        label="Additional Certificates (Optional)"
                                         files={formData.certificates}
                                         onChange={(e) => handleFileChange('certificates', e)}
                                         onRemove={(idx) => removeMultiFile('certificates', idx)}
@@ -992,7 +1266,7 @@ export default function VendorSignup() {
                                     <div className="grid grid-cols-2 gap-3 pt-4">
                                         <button
                                             type="button"
-                                            onClick={() => setActiveTab("basic")}
+                                            onClick={() => handleTabChange("basic")}
                                             className="bg-slate-100 text-slate-700 py-3.5 rounded-2xl font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                                         >
                                             <IoArrowBackOutline className="text-base" />
@@ -1000,7 +1274,7 @@ export default function VendorSignup() {
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setActiveTab("training")}
+                                            onClick={() => handleTabChange("training")}
                                             className="rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                                         >
                                             Next: Training
@@ -1015,15 +1289,39 @@ export default function VendorSignup() {
                                 <div className="tab-snappy space-y-4">
                                     <h3 className="text-base font-extrabold text-slate-800 mb-3 flex items-center gap-2">
                                         <IoBriefcaseOutline className="text-[#0A84FF] text-xl" />
-                                        Training & Registration
+                                        Registration
                                     </h3>
 
-                                    <FileBox
-                                        label="Groundwater Dept. Registration / ID Card"
-                                        onChange={(e) => handleFileChange('groundwaterRegDetails', e)}
-                                        file={formData.groundwaterRegDetails}
-                                        disabled={loading}
-                                    />
+                                    <div className="mb-2 block text-sm font-bold text-slate-700 uppercase tracking-wider ml-1 mt-4">
+                                        Government Registration / License (Optional)
+                                    </div>
+                                    <div className="space-y-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-6">
+                                        <FileBox
+                                            label="Groundwater Department ID"
+                                            onChange={(e) => handleFileChange('groundwaterRegDetails', e)}
+                                            file={formData.groundwaterRegDetails}
+                                            disabled={loading}
+                                        />
+
+                                        <FileBox
+                                            label="Professional Membership"
+                                            onChange={(e) => handleFileChange('professionalMembership', e)}
+                                            file={formData.professionalMembership}
+                                            disabled={loading}
+                                        />
+
+                                        <FileBox
+                                            label="Registration Certificate"
+                                            onChange={(e) => handleFileChange('registrationCertificate', e)}
+                                            file={formData.registrationCertificate}
+                                            disabled={loading}
+                                        />
+                                    </div>
+
+                                    <h3 className="text-base font-extrabold text-slate-800 mb-3 flex items-center gap-2 border-t border-slate-100 pt-5 mt-2">
+                                        <IoBriefcaseOutline className="text-[#0A84FF] text-xl" />
+                                        Training & Professional Certifications
+                                    </h3>
 
                                     <MultiFileBox
                                         label="Training / Workshop Certificates"
@@ -1037,7 +1335,7 @@ export default function VendorSignup() {
                                     <div className="mt-6 pt-5 border-t border-slate-100">
                                         <h3 className="text-base font-extrabold text-slate-800 mb-3 flex items-center gap-2">
                                             <IoConstructOutline className="text-[#0A84FF] text-xl" />
-                                            Setup Your Service
+                                            Service Setup
                                         </h3>
 
                                         {/* Service Name - Fixed Display */}
@@ -1057,7 +1355,7 @@ export default function VendorSignup() {
                                             {/* Machine Type Multi-Select */}
                                             <div className="relative" ref={machineDropdownRef}>
                                                 <label className="mb-1.5 block text-xs font-bold text-slate-700 uppercase tracking-wider ml-1">
-                                                    Machine Type *
+                                                    Survey Equipment Used *
                                                 </label>
 
                                                 {/* Dropdown Trigger */}
@@ -1133,9 +1431,12 @@ export default function VendorSignup() {
 
                                             {/* Service Charge */}
                                             <div>
-                                                <label className="mb-1.5 block text-xs font-bold text-slate-700 uppercase tracking-wider ml-1">
-                                                    Service Charge (₹) *
+                                                <label className="mb-1 block text-xs font-bold text-slate-700 uppercase tracking-wider ml-1">
+                                                    Survey Base Fee (₹) *
                                                 </label>
+                                                <span className="block text-[10px] text-slate-500 mb-1.5 ml-1 font-medium">
+                                                    Excluding travel charges
+                                                </span>
                                                 <div className="relative">
                                                     <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-500 font-extrabold text-sm">₹</span>
                                                     <input
@@ -1154,53 +1455,68 @@ export default function VendorSignup() {
                                         </div>
 
                                         {/* Service Images */}
-                                        <div className="mb-4">
-                                            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5 block ml-1">
-                                                Service Images
-                                            </label>
-
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                                {serviceImagePreviews.map((item, index) => (
-                                                    <div key={index} className="relative group rounded-2xl overflow-hidden aspect-square shadow-2xs border border-slate-200">
-                                                        <img
-                                                            src={item.preview}
-                                                            alt={`Preview ${index + 1}`}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => removeServiceImage(index)}
-                                                                className="bg-white/20 hover:bg-rose-500 text-white p-2 rounded-full backdrop-blur-sm transition-colors cursor-pointer"
-                                                            >
-                                                                <IoTrashOutline className="text-lg" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-
-                                                <label className={`flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-[#0A84FF] hover:bg-blue-50/50 transition-all group ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                                    <div className="h-10 w-10 rounded-2xl bg-blue-50 flex items-center justify-center mb-2 group-hover:bg-[#0A84FF] transition-colors">
-                                                        <IoImageOutline className="text-lg text-[#0A84FF] group-hover:text-white transition-colors" />
-                                                    </div>
-                                                    <p className="text-xs font-bold text-slate-500 group-hover:text-[#0A84FF]">Add Image</p>
-                                                    <input
-                                                        type="file"
-                                                        className="hidden"
-                                                        accept="image/*"
-                                                        multiple
-                                                        onChange={handleServiceImageChange}
-                                                        disabled={loading}
-                                                    />
+                                        <div className="mb-6 space-y-6">
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5 block ml-1">
+                                                    Survey Photos (Minimum 3) *
                                                 </label>
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                                    {surveyPhotoPreviews.map((item, index) => (
+                                                        <div key={index} className="relative group rounded-2xl overflow-hidden aspect-square shadow-2xs border border-slate-200">
+                                                            <img
+                                                                src={item.preview}
+                                                                alt={`Preview ${index + 1}`}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeSurveyPhoto(index)}
+                                                                    className="bg-white/20 hover:bg-rose-500 text-white p-2 rounded-full backdrop-blur-sm transition-colors cursor-pointer"
+                                                                >
+                                                                    <IoTrashOutline className="text-lg" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    <label className={`flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-[#0A84FF] hover:bg-blue-50/50 transition-all group ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                        <div className="h-10 w-10 rounded-2xl bg-blue-50 flex items-center justify-center mb-2 group-hover:bg-[#0A84FF] transition-colors">
+                                                            <IoImageOutline className="text-lg text-[#0A84FF] group-hover:text-white transition-colors" />
+                                                        </div>
+                                                        <p className="text-xs font-bold text-slate-500 group-hover:text-[#0A84FF]">Add Image</p>
+                                                        <input
+                                                            type="file"
+                                                            className="hidden"
+                                                            accept="image/*"
+                                                            multiple
+                                                            onChange={handleSurveyPhotoChange}
+                                                            disabled={loading}
+                                                        />
+                                                    </label>
+                                                </div>
                                             </div>
+
+                                            <FileBox
+                                                label="Equipment Photo *"
+                                                onChange={(e) => handleFileChange('equipmentPhoto', e)}
+                                                file={formData.equipmentPhoto}
+                                                disabled={loading}
+                                            />
+
+                                            <FileBox
+                                                label="Sample Survey Report (Optional)"
+                                                onChange={(e) => handleFileChange('sampleReport', e)}
+                                                file={formData.sampleReport}
+                                                disabled={loading}
+                                            />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3 pt-4">
                                         <button
                                             type="button"
-                                            onClick={() => setActiveTab("qualification")}
+                                            onClick={() => handleTabChange("qualification")}
                                             className="bg-slate-100 text-slate-700 py-3.5 rounded-2xl font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                                         >
                                             <IoArrowBackOutline className="text-base" />
@@ -1208,7 +1524,7 @@ export default function VendorSignup() {
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setActiveTab("kyc")}
+                                            onClick={() => handleTabChange("kyc")}
                                             className="rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                                         >
                                             Next: KYC
@@ -1226,23 +1542,66 @@ export default function VendorSignup() {
                                         KYC & Bank Details
                                     </h3>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <FileBox
-                                            label="Aadhar Card Image (JPG/PDF) *"
-                                            onChange={(e) => handleFileChange('aadharCard', e)}
-                                            file={formData.aadharCard}
+                                    <div className="space-y-4">
+                                        <SelectBox
+                                            label="GST Registered? *"
+                                            name="isGstRegistered"
+                                            options={[
+                                                { value: "", label: "Select Option" },
+                                                { value: "Yes", label: "Yes" },
+                                                { value: "No", label: "No" }
+                                            ]}
+                                            value={formData.isGstRegistered}
+                                            onChange={handleInputChange}
                                             disabled={loading}
                                         />
-                                        <FileBox
-                                            label="PAN Card Image (JPG/PDF) *"
-                                            onChange={(e) => handleFileChange('panCard', e)}
-                                            file={formData.panCard}
-                                            disabled={loading}
-                                        />
+
+                                        {formData.isGstRegistered === "Yes" && (
+                                            <InputBox
+                                                label="GST Number *"
+                                                name="gstNumber"
+                                                type="text"
+                                                placeholder="Enter GST Number"
+                                                value={formData.gstNumber}
+                                                onChange={handleInputChange}
+                                                disabled={loading}
+                                            />
+                                        )}
+
+                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-4">
+                                            <InputBox
+                                                label="PAN Number *"
+                                                name="panNo"
+                                                type="text"
+                                                placeholder="Enter PAN number"
+                                                value={formData.panNo}
+                                                onChange={handleInputChange}
+                                                disabled={loading}
+                                            />
+                                            <FileBox
+                                                label="Upload PAN *"
+                                                onChange={(e) => handleFileChange('panCard', e)}
+                                                file={formData.panCard}
+                                                disabled={loading}
+                                            />
+                                        </div>
+
+                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-4">
+                                            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block ml-1">
+                                                Aadhaar *
+                                            </label>
+                                            <MultiFileBox
+                                                label="Upload Front & Back"
+                                                files={formData.aadharCards}
+                                                onChange={(e) => handleFileChange('aadharCards', e)}
+                                                onRemove={(idx) => removeMultiFile('aadharCards', idx)}
+                                                disabled={loading}
+                                            />
+                                        </div>
                                     </div>
 
-                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
-                                        <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-4 px-1">Bank Account Information</p>
+                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-4 mt-6">
+                                        <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-2 px-1">Bank Account Information *</p>
                                         <InputBox
                                             label="Account Holder Name *"
                                             name="accountHolderName"
@@ -1252,26 +1611,24 @@ export default function VendorSignup() {
                                             onChange={handleInputChange}
                                             disabled={loading}
                                         />
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3">
-                                            <InputBox
-                                                label="Bank Name *"
-                                                name="bankName"
-                                                type="text"
-                                                placeholder="SBI, HDFC, etc."
-                                                value={formData.bankName}
-                                                onChange={handleInputChange}
-                                                disabled={loading}
-                                            />
-                                            <InputBox
-                                                label="IFSC Code *"
-                                                name="ifscCode"
-                                                type="text"
-                                                placeholder="SBIN0012345"
-                                                value={formData.ifscCode}
-                                                onChange={handleInputChange}
-                                                disabled={loading}
-                                            />
-                                        </div>
+                                        <InputBox
+                                            label="Bank Name *"
+                                            name="bankName"
+                                            type="text"
+                                            placeholder="SBI, HDFC, etc."
+                                            value={formData.bankName}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                        />
+                                        <InputBox
+                                            label="IFSC Code *"
+                                            name="ifscCode"
+                                            type="text"
+                                            placeholder="SBIN0012345"
+                                            value={formData.ifscCode}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                        />
                                         <InputBox
                                             label="Account Number *"
                                             name="accountNumber"
@@ -1281,8 +1638,17 @@ export default function VendorSignup() {
                                             onChange={handleInputChange}
                                             disabled={loading}
                                         />
+                                        <InputBox
+                                            label="Confirm Account Number *"
+                                            name="confirmAccountNumber"
+                                            type="text"
+                                            placeholder="Re-enter full account number"
+                                            value={formData.confirmAccountNumber}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                        />
                                         <FileBox
-                                            label="Cancelled Cheque Image"
+                                            label="Cancelled Cheque or Passbook (Either one)"
                                             onChange={(e) => handleFileChange('cancelledCheque', e)}
                                             file={formData.cancelledCheque}
                                             disabled={loading}
@@ -1292,7 +1658,7 @@ export default function VendorSignup() {
                                     <div className="grid grid-cols-2 gap-3 pt-4">
                                         <button
                                             type="button"
-                                            onClick={() => setActiveTab("training")}
+                                            onClick={() => handleTabChange("training")}
                                             className="bg-slate-100 text-slate-700 py-3.5 rounded-2xl font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                                         >
                                             <IoArrowBackOutline className="text-base" />
@@ -1300,7 +1666,7 @@ export default function VendorSignup() {
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setActiveTab("address")}
+                                            onClick={() => handleTabChange("address")}
                                             className="rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                                         >
                                             Next: Address
@@ -1345,6 +1711,118 @@ export default function VendorSignup() {
                                                 {gettingLocation ? "Locating..." : "Pin to My Current GPS"}
                                             </button>
                                         </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                                            <InputBox
+                                                label="District *"
+                                                name="district"
+                                                type="text"
+                                                placeholder="Enter District"
+                                                value={formData.district}
+                                                onChange={handleInputChange}
+                                                disabled={loading}
+                                            />
+                                            <InputBox
+                                                label="State *"
+                                                name="state"
+                                                type="text"
+                                                placeholder="Enter State"
+                                                value={formData.state}
+                                                onChange={handleInputChange}
+                                                disabled={loading}
+                                            />
+                                        </div>
+
+                                        <div className="mt-4">
+                                            <SelectBox
+                                                label="Service Radius *"
+                                                name="serviceRadius"
+                                                options={[
+                                                    { value: "", label: "Select Service Radius" },
+                                                    { value: "10 km", label: "10 km" },
+                                                    { value: "20 km", label: "20 km" },
+                                                    { value: "30 km", label: "30 km" },
+                                                    { value: "50 km", label: "50 km" },
+                                                    { value: "100 km", label: "100 km" },
+                                                    { value: "200 km", label: "200 km" },
+                                                    { value: "Entire District", label: "Entire District" },
+                                                    { value: "Entire State", label: "Entire State" },
+                                                    { value: "Multiple states", label: "Multiple states" }
+                                                ]}
+                                                value={formData.serviceRadius}
+                                                onChange={handleInputChange}
+                                                disabled={loading}
+                                            />
+                                        </div>
+
+                                        {formData.serviceRadius === "Multiple states" && (
+                                            <div className="mt-4">
+                                                <InputBox
+                                                    label="Multiple States (Comma separated) *"
+                                                    name="multipleStates"
+                                                    type="text"
+                                                    placeholder="e.g. Maharashtra, Gujarat, Goa"
+                                                    value={formData.multipleStates}
+                                                    onChange={handleInputChange}
+                                                    disabled={loading}
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div className="mt-4">
+                                            <SelectBox
+                                                label="Willing to Travel? *"
+                                                name="willingToTravel"
+                                                options={[
+                                                    { value: "", label: "Select Option" },
+                                                    { value: "Yes", label: "Yes" },
+                                                    { value: "No", label: "No" }
+                                                ]}
+                                                value={formData.willingToTravel}
+                                                onChange={handleInputChange}
+                                                disabled={loading}
+                                            />
+                                        </div>
+
+                                        {formData.willingToTravel === "Yes" && (
+                                            <>
+                                                <div className="mt-4">
+                                                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 block ml-1">Mode of Travel *</label>
+                                                    <div className="flex gap-4 flex-wrap">
+                                                        {['Bus', 'Car', 'Bike', 'Train'].map(mode => (
+                                                            <label key={mode} className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="rounded border-slate-300 text-[#0A84FF] focus:ring-[#0A84FF]"
+                                                                    checked={formData.modeOfTravel.includes(mode)}
+                                                                    onChange={() => handleModeOfTravelToggle(mode)}
+                                                                />
+                                                                {mode}
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="mt-4">
+                                                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 block ml-1">
+                                                        Travel Charges after Free Radius (₹ per km)
+                                                    </label>
+                                                    <div className="relative">
+                                                        <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-500 font-extrabold text-sm">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            name="travelChargesPerKm"
+                                                            value={formData.travelChargesPerKm}
+                                                            onChange={handleInputChange}
+                                                            placeholder="0.00"
+                                                            min="0"
+                                                            step="0.01"
+                                                            disabled={loading}
+                                                            className="w-full rounded-2xl border border-slate-200 bg-white p-3.5 pl-8 text-sm font-extrabold text-slate-800 focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
 
                                     {formData.address?.geoLocation?.formattedAddress && (
@@ -1357,6 +1835,46 @@ export default function VendorSignup() {
                                         </div>
                                     )}
 
+                                    <div className="pt-4 pb-2 space-y-3">
+                                        <p className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-slate-100 pb-2">Mandatory Declarations</p>
+                                        
+                                        <label className="flex items-start gap-3 cursor-pointer group">
+                                            <div className="relative flex items-center justify-center mt-0.5">
+                                                <input type="checkbox" className="peer sr-only" checked={formData.declarations?.certifyTrue} onChange={(e) => setFormData(prev => ({ ...prev, declarations: { ...prev.declarations, certifyTrue: e.target.checked } }))} />
+                                                <div className="w-5 h-5 rounded border-2 border-slate-300 bg-white peer-checked:bg-[#0A84FF] peer-checked:border-[#0A84FF] transition-all group-hover:border-[#0A84FF]"></div>
+                                                <IoCheckmarkOutline className="absolute text-white opacity-0 peer-checked:opacity-100 text-sm transition-opacity" />
+                                            </div>
+                                            <span className="text-xs text-slate-600 font-medium leading-relaxed group-hover:text-slate-800 transition-colors">I certify that the information provided is true.</span>
+                                        </label>
+
+                                        <label className="flex items-start gap-3 cursor-pointer group">
+                                            <div className="relative flex items-center justify-center mt-0.5">
+                                                <input type="checkbox" className="peer sr-only" checked={formData.declarations?.responsibility} onChange={(e) => setFormData(prev => ({ ...prev, declarations: { ...prev.declarations, responsibility: e.target.checked } }))} />
+                                                <div className="w-5 h-5 rounded border-2 border-slate-300 bg-white peer-checked:bg-[#0A84FF] peer-checked:border-[#0A84FF] transition-all group-hover:border-[#0A84FF]"></div>
+                                                <IoCheckmarkOutline className="absolute text-white opacity-0 peer-checked:opacity-100 text-sm transition-opacity" />
+                                            </div>
+                                            <span className="text-xs text-slate-600 font-medium leading-relaxed group-hover:text-slate-800 transition-colors">I understand Jaladhaara is a booking platform and survey reports are the sole responsibility of the expert.</span>
+                                        </label>
+
+                                        <label className="flex items-start gap-3 cursor-pointer group">
+                                            <div className="relative flex items-center justify-center mt-0.5">
+                                                <input type="checkbox" className="peer sr-only" checked={formData.declarations?.timeframe} onChange={(e) => setFormData(prev => ({ ...prev, declarations: { ...prev.declarations, timeframe: e.target.checked } }))} />
+                                                <div className="w-5 h-5 rounded border-2 border-slate-300 bg-white peer-checked:bg-[#0A84FF] peer-checked:border-[#0A84FF] transition-all group-hover:border-[#0A84FF]"></div>
+                                                <IoCheckmarkOutline className="absolute text-white opacity-0 peer-checked:opacity-100 text-sm transition-opacity" />
+                                            </div>
+                                            <span className="text-xs text-slate-600 font-medium leading-relaxed group-hover:text-slate-800 transition-colors">Experts must accept or decline a booking within 30 minutes. Otherwise, the booking is automatically reassigned to the next suitable expert.</span>
+                                        </label>
+
+                                        <label className="flex items-start gap-3 cursor-pointer group">
+                                            <div className="relative flex items-center justify-center mt-0.5">
+                                                <input type="checkbox" className="peer sr-only" checked={formData.declarations?.agreement} onChange={(e) => setFormData(prev => ({ ...prev, declarations: { ...prev.declarations, agreement: e.target.checked } }))} />
+                                                <div className="w-5 h-5 rounded border-2 border-slate-300 bg-white peer-checked:bg-[#0A84FF] peer-checked:border-[#0A84FF] transition-all group-hover:border-[#0A84FF]"></div>
+                                                <IoCheckmarkOutline className="absolute text-white opacity-0 peer-checked:opacity-100 text-sm transition-opacity" />
+                                            </div>
+                                            <span className="text-xs text-slate-600 font-medium leading-relaxed group-hover:text-slate-800 transition-colors">I agree to the Expert Agreement, Privacy Policy, and Payment Terms.</span>
+                                        </label>
+                                    </div>
+
                                     <div className="grid grid-cols-1 gap-3 pt-6">
                                         <button
                                             type="submit"
@@ -1367,7 +1885,7 @@ export default function VendorSignup() {
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setActiveTab("kyc")}
+                                            onClick={() => handleTabChange("kyc")}
                                             className="w-full text-slate-400 py-2 text-xs sm:text-sm font-bold hover:text-slate-600 transition-colors cursor-pointer"
                                         >
                                             Back to KYC
@@ -1440,11 +1958,13 @@ function ProfileImageUpload({ file, onChange }) {
     );
 }
 
-function InputBox({ label, name, type, placeholder, value, onChange, disabled }) {
+function InputBox({ label, name, type, placeholder, value, onChange, disabled, max, min }) {
     const renderIcon = () => {
         if (name === "name" || name.includes("Holder")) return <IoPersonOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
         if (name === "email") return <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
         if (name === "phone") return <IoCallOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
+        if (name === "dob") return <IoCalendarOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
+        if (name === "languages") return <IoDocumentTextOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
         if (name.includes("bank") || name.includes("account") || name.includes("ifsc") || name.includes("branch")) return <IoBusinessOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
         if (name.includes("pan") || name.includes("aadhaar") || name.includes("No")) return <IoCardOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
         if (name.includes("price") || name.includes("Price")) return <IoCashOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
@@ -1465,6 +1985,8 @@ function InputBox({ label, name, type, placeholder, value, onChange, disabled })
                     placeholder={placeholder}
                     value={value}
                     onChange={onChange}
+                    max={max}
+                    min={min}
                     className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                     disabled={disabled}
                 />

@@ -64,6 +64,8 @@ const MACHINE_OPTIONS = [
     'Resistivity Meter'
 ];
 
+import VendorProfileView from "./VendorProfileView";
+
 export default function VendorProfile() {
     const navigate = useNavigate();
     const { logout, vendor: authVendor } = useVendorAuth();
@@ -759,8 +761,8 @@ export default function VendorProfile() {
                                 </h1>
                             )}
                             {vendor?.isApproved && (
-                                <div className="bg-white text-[#0A84FF] p-1 rounded-full shadow-lg" title="Verified Professional">
-                                    <IoShieldCheckmarkOutline className="text-xl" />
+                                <div className="bg-white text-[#0A84FF] px-3 py-1 rounded-full shadow-lg flex items-center justify-center border-2 border-white/50" title="Verified Professional">
+                                    <span className="text-xs font-black uppercase tracking-wider">Verified Expert</span>
                                 </div>
                             )}
                         </div>
@@ -796,18 +798,22 @@ export default function VendorProfile() {
                     </div>
 
                     {/* Quick Stats in Header */}
-                    <div className="flex gap-4 md:border-l md:border-white/20 md:pl-8">
+                    <div className="flex flex-wrap justify-center gap-4 md:gap-6 md:border-l md:border-white/20 md:pl-8 mt-4 md:mt-0">
                         <div className="text-center">
-                            <p className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
-                            <p className="text-[10px] uppercase font-bold tracking-widest opacity-80">Rating</p>
+                            <p className="text-xl md:text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
+                            <p className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest opacity-80">Rating</p>
                         </div>
                         <div className="text-center">
-                            <p className="text-2xl font-bold">{stats.completedBookings}</p>
-                            <p className="text-[10px] uppercase font-bold tracking-widest opacity-80">Jobs</p>
+                            <p className="text-xl md:text-2xl font-bold">{stats.completedBookings}</p>
+                            <p className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest opacity-80">Surveys</p>
                         </div>
                         <div className="text-center">
-                            <p className="text-2xl font-bold">{profileData.experience}+</p>
-                            <p className="text-[10px] uppercase font-bold tracking-widest opacity-80">Years</p>
+                            <p className="text-xl md:text-2xl font-bold">{profileData.experience}+</p>
+                            <p className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest opacity-80">Experience</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-xl md:text-2xl font-bold">{new Date(vendor?.createdAt || Date.now()).getFullYear()}</p>
+                            <p className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest opacity-80">Joined Since</p>
                         </div>
                     </div>
                 </div>
@@ -840,16 +846,17 @@ export default function VendorProfile() {
                     bgColor="bg-green-50"
                 />
                 <StatItem
-                    icon={IoRibbonOutline}
-                    label="Membership"
-                    value={vendor?.isApproved ? "Verified Pro" : "Pending"}
-                    subValue="Account Status"
+                    icon={IoCheckmarkOutline}
+                    label="Success Rate"
+                    value={`${vendor?.rating?.successRatio || 0}%`}
+                    subValue="Overall Performance"
                     color="text-teal-500"
                     bgColor="bg-teal-50"
                 />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+            {isEditing ? (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
                 {/* Left Column: Account & Profile Info */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Section: Account Information */}
@@ -1141,6 +1148,9 @@ export default function VendorProfile() {
                     </div>
                 </div>
             </div>
+            ) : (
+                <VendorProfileView vendor={vendor} profileData={profileData} stats={stats} />
+            )}
 
             {/* Reorganized Button Layout for Editing */}
             {isEditing && (
@@ -1833,9 +1843,6 @@ export default function VendorProfile() {
                     </div>
                 )
             }
-
-
-
 
             {/* Delete Service Confirmation Modal */}
             <ConfirmModal

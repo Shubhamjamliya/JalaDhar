@@ -167,7 +167,7 @@ const AdminDashboard = () => {
             link: '/admin/users/analytics'
         },
         {
-            title: 'Total Vendors',
+            title: 'Total Experts',
             value: (stats.totalVendors || 0).toLocaleString(),
             change: 0,
             icon: FiBriefcase,

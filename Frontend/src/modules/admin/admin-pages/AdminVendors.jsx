@@ -14,7 +14,8 @@ import {
     IoLocationOutline,
     IoTimeOutline,
     IoArrowForwardOutline,
-    IoEllipsisVerticalOutline
+    IoEllipsisVerticalOutline,
+    IoChevronForwardOutline
 } from "react-icons/io5";
 import { motion, AnimatePresence } from "framer-motion";
 import { getAllVendors, approveVendor, rejectVendor, deactivateVendor, activateVendor } from "../../../services/adminApi";
@@ -78,17 +79,17 @@ export default function AdminVendors() {
 
     const handleApproveConfirm = async () => {
         setShowApproveConfirm(false);
-        const loadingToast = toast.showLoading("Approving vendor...");
+        const loadingToast = toast.showLoading("Approving expert...");
         try {
             const response = await approveVendor(selectedVendorId);
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Vendor approved successfully!");
+                toast.showSuccess("Expert approved successfully!");
                 await loadVendors();
             }
         } catch (err) {
             toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to approve vendor");
+            handleApiError(err, "Failed to approve expert");
         } finally {
             setSelectedVendorId(null);
         }
@@ -96,17 +97,17 @@ export default function AdminVendors() {
 
     const handleRejectConfirm = async () => {
         setShowRejectConfirm(false);
-        const loadingToast = toast.showLoading("Rejecting vendor...");
+        const loadingToast = toast.showLoading("Rejecting expert...");
         try {
             const response = await rejectVendor(selectedVendorId, rejectionReason);
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Vendor rejected successfully!");
+                toast.showSuccess("Expert rejected successfully!");
                 await loadVendors();
             }
         } catch (err) {
             toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to reject vendor");
+            handleApiError(err, "Failed to reject expert");
         } finally {
             setSelectedVendorId(null);
             setRejectionReason("");
@@ -120,7 +121,7 @@ export default function AdminVendors() {
             const response = await deactivateVendor(selectedVendorId);
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Vendor deactivated");
+                toast.showSuccess("Expert deactivated");
                 await loadVendors();
             }
         } catch (err) {
@@ -138,7 +139,7 @@ export default function AdminVendors() {
             const response = await activateVendor(selectedVendorId);
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Vendor activated");
+                toast.showSuccess("Expert activated");
                 await loadVendors();
             }
         } catch (err) {
@@ -154,7 +155,7 @@ export default function AdminVendors() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 font-outfit">Vendor Management</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 font-outfit">Expert Management</h1>
                     <p className="text-gray-500 text-sm">Review, approve, and manage service providers</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -221,7 +222,7 @@ export default function AdminVendors() {
                     ) : vendors.length === 0 ? (
                         <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-gray-100">
                             <IoBusinessOutline className="text-4xl text-gray-200 mx-auto mb-4" />
-                            <p className="text-gray-500">No vendors matching your search</p>
+                            <p className="text-gray-500">No experts matching your search</p>
                         </div>
                     ) : (
                         vendors.map((vendor, i) => (
@@ -269,7 +270,7 @@ export default function AdminVendors() {
                                         </div>
                                         <div className="flex items-start gap-3 text-sm text-gray-600">
                                             <IoLocationOutline className="text-blue-500 shrink-0 mt-0.5" />
-                                            <span className="line-clamp-1">{vendor.address || 'Address unlisted'}</span>
+                                            <span className="line-clamp-1">{vendor.address?.geoLocation?.formattedAddress || vendor.address?.city || vendor.address?.state || 'Address unlisted'}</span>
                                         </div>
                                     </div>
                                 </div>

@@ -2088,7 +2088,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                     </div>
                 )}
 
-                {/* Vendor Payments Tab */}
+                {/* Expert Payments Tab */}
                 {activeTab === "vendor-payments" && (
                     <div>
                         {/* Header Section */}
@@ -2098,7 +2098,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                     <IoCashOutline className="text-3xl text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-800 mb-1">Vendor Payments</h2>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-1">Expert Payments</h2>
                                     <p className="text-gray-600">Manage travel charges, first installment (50%), and final settlement payments</p>
                                 </div>
                             </div>
@@ -3507,7 +3507,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                             <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
                                                 <IoCashOutline className="text-2xl text-purple-600" />
                                             </div>
-                                            <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-1 rounded-full">Total Vendors</span>
+                                            <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-1 rounded-full">Total Experts</span>
                                         </div>
                                         <p className="text-3xl font-bold text-gray-800 mb-1">{vendorOverview.totalVendors}</p>
                                         <p className="text-xs text-gray-600">Active vendors</p>

@@ -35,14 +35,18 @@ const upload = multer({
 
 // Configure multer fields for document uploads
 const uploadDocuments = upload.fields([
-  { name: 'aadharCard', maxCount: 1 },
+  { name: 'aadharCards', maxCount: 2 },
   { name: 'panCard', maxCount: 1 },
   { name: 'profilePicture', maxCount: 1 },
   { name: 'certificates', maxCount: 10 }, // Allow multiple degree certificates
   { name: 'trainingCertificates', maxCount: 10 }, // Allow multiple training certificates
   { name: 'groundwaterRegDetails', maxCount: 1 },
   { name: 'cancelledCheque', maxCount: 1 },
-  { name: 'serviceImages', maxCount: 10 }
+  { name: 'serviceImages', maxCount: 10 },
+  { name: 'equipmentPhoto', maxCount: 1 },
+  { name: 'sampleReport', maxCount: 1 },
+  { name: 'professionalMembership', maxCount: 1 },
+  { name: 'registrationCertificate', maxCount: 1 }
 ]);
 
 // Validation rules

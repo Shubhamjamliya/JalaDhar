@@ -30,7 +30,7 @@ export default function AdminTopbar() {
 
     const getPageTitle = (pathname) => {
         if (pathname.includes('/dashboard')) return 'Dashboard Overview';
-        if (pathname.includes('/vendors')) return 'Vendors Management';
+        if (pathname.includes('/vendors')) return 'Expert Management';
         if (pathname.includes('/users')) return 'Users Directory';
         if (pathname.includes('/bookings')) return 'Service Bookings';
         if (pathname.includes('/payments')) return 'Payments & Finance';

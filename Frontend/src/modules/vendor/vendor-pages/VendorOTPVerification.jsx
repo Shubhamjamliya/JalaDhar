@@ -11,7 +11,7 @@ export default function VendorOTPVerification() {
     const location = useLocation();
     const { register } = useVendorAuth();
 
-    const [otp, setOtp] = useState("");
+    const [otp, setOtp] = useState("123456");
     const [otpCountdown, setOtpCountdown] = useState(0);
     const [loading, setLoading] = useState(false);
     const [registrationSuccess, setRegistrationSuccess] = useState(false);
@@ -20,11 +20,11 @@ export default function VendorOTPVerification() {
     // Get registration data from location state
     const registrationData = location.state?.registrationData;
     const verificationToken = location.state?.verificationToken;
-    const email = location.state?.email;
+    const phone = location.state?.phone || location.state?.registrationData?.phone;
 
     useEffect(() => {
         // Redirect if no registration data
-        if (!registrationData || !verificationToken || !email) {
+        if (!registrationData || !verificationToken || !phone) {
             navigate("/vendorsignup");
             return;
         }
@@ -33,7 +33,7 @@ export default function VendorOTPVerification() {
         if (location.state?.otpSent) {
             setOtpCountdown(60);
         }
-    }, [location.state, navigate, registrationData, verificationToken, email]);
+    }, [location.state, navigate, registrationData, verificationToken, phone]);
 
     useEffect(() => {
         let timer;
@@ -94,6 +94,11 @@ export default function VendorOTPVerification() {
             formDataToSend.append('email', registrationData.email);
             formDataToSend.append('phone', registrationData.phone);
             formDataToSend.append('password', registrationData.password);
+            if (registrationData.dob) formDataToSend.append('dob', registrationData.dob);
+            if (registrationData.bloodGroup) formDataToSend.append('bloodGroup', registrationData.bloodGroup);
+            if (registrationData.gender) formDataToSend.append('gender', registrationData.gender);
+            if (registrationData.designation) formDataToSend.append('designation', registrationData.designation);
+            if (registrationData.languages) formDataToSend.append('languages', registrationData.languages);
             formDataToSend.append('otp', otp);
             formDataToSend.append('token', verificationToken);
 
@@ -101,8 +106,17 @@ export default function VendorOTPVerification() {
             if (registrationData.profilePicture) {
                 formDataToSend.append('profilePicture', registrationData.profilePicture);
             }
-            if (registrationData.aadharCard) {
-                formDataToSend.append('aadharCard', registrationData.aadharCard);
+
+            // KYC Details
+            formDataToSend.append('isGstRegistered', registrationData.isGstRegistered);
+            if (registrationData.isGstRegistered === "Yes") {
+                formDataToSend.append('gstNumber', registrationData.gstNumber);
+            }
+            formDataToSend.append('panNo', registrationData.panNo);
+            if (registrationData.aadharCards && registrationData.aadharCards.length > 0) {
+                registrationData.aadharCards.forEach((card) => {
+                    formDataToSend.append('aadharCards', card);
+                });
             }
             if (registrationData.panCard) {
                 formDataToSend.append('panCard', registrationData.panCard);
@@ -112,6 +126,15 @@ export default function VendorOTPVerification() {
             }
             if (registrationData.groundwaterRegDetails) {
                 formDataToSend.append('groundwaterRegDetails', registrationData.groundwaterRegDetails);
+            }
+            if (registrationData.professionalMembership) {
+                formDataToSend.append('professionalMembership', registrationData.professionalMembership);
+            }
+            if (registrationData.registrationCertificate) {
+                formDataToSend.append('registrationCertificate', registrationData.registrationCertificate);
+            }
+            if (registrationData.degreeCertificate) {
+                formDataToSend.append('certificates', registrationData.degreeCertificate);
             }
             if (registrationData.certificates && registrationData.certificates.length > 0) {
                 registrationData.certificates.forEach((cert) => {
@@ -134,14 +157,18 @@ export default function VendorOTPVerification() {
             // Educational qualifications
             const educationalQualifications = (registrationData.education && registrationData.institution) ? [{
                 degree: registrationData.education,
+                specialization: registrationData.specialization,
                 institution: registrationData.institution,
-                year: new Date().getFullYear(),
+                year: parseInt(registrationData.graduationYear) || new Date().getFullYear(),
                 percentage: null
             }] : [];
             formDataToSend.append('educationalQualifications', JSON.stringify(educationalQualifications));
 
             // Experience
             formDataToSend.append('experience', parseInt(registrationData.experience));
+            if (registrationData.surveysCompleted) {
+                formDataToSend.append('surveysCompleted', parseInt(registrationData.surveysCompleted));
+            }
             if (registrationData.experienceDetails) {
                 formDataToSend.append('experienceDetails', registrationData.experienceDetails);
             }
@@ -150,10 +177,16 @@ export default function VendorOTPVerification() {
             if (registrationData.machineType) {
                 formDataToSend.append('machineType', registrationData.machineType);
             }
-            if (registrationData.serviceImages && registrationData.serviceImages.length > 0) {
-                registrationData.serviceImages.forEach((image) => {
+            if (registrationData.surveyPhotos && registrationData.surveyPhotos.length > 0) {
+                registrationData.surveyPhotos.forEach((image) => {
                     formDataToSend.append('serviceImages', image);
                 });
+            }
+            if (registrationData.equipmentPhoto) {
+                formDataToSend.append('equipmentPhoto', registrationData.equipmentPhoto);
+            }
+            if (registrationData.sampleReport) {
+                formDataToSend.append('sampleReport', registrationData.sampleReport);
             }
             if (registrationData.servicePrice) {
                 formDataToSend.append('servicePrice', registrationData.servicePrice);
@@ -169,6 +202,23 @@ export default function VendorOTPVerification() {
             // Selected place info (if address was selected from dropdown)
             if (registrationData.selectedPlace) {
                 formDataToSend.append('selectedPlace', JSON.stringify(registrationData.selectedPlace));
+            }
+
+            // Additional Address Details
+            if (registrationData.district) formDataToSend.append('district', registrationData.district);
+            if (registrationData.state) formDataToSend.append('state', registrationData.state);
+            if (registrationData.serviceRadius) formDataToSend.append('serviceRadius', registrationData.serviceRadius);
+            if (registrationData.serviceRadius === "Multiple states" && registrationData.multipleStates) {
+                formDataToSend.append('multipleStates', registrationData.multipleStates);
+            }
+            if (registrationData.willingToTravel) formDataToSend.append('willingToTravel', registrationData.willingToTravel);
+            if (registrationData.willingToTravel === "Yes") {
+                if (registrationData.modeOfTravel && registrationData.modeOfTravel.length > 0) {
+                    formDataToSend.append('modeOfTravel', JSON.stringify(registrationData.modeOfTravel));
+                }
+                if (registrationData.travelChargesPerKm) {
+                    formDataToSend.append('travelChargesPerKm', registrationData.travelChargesPerKm);
+                }
             }
 
             const result = await register(formDataToSend);
@@ -239,7 +289,7 @@ export default function VendorOTPVerification() {
                         className="h-32 object-contain mb-4"
                     />
                     <p className="mt-1 text-sm text-[#6B7280] text-center">
-                        Verify your email to complete registration.
+                        Verify your mobile number to complete registration.
                     </p>
                 </div>
 
@@ -247,7 +297,7 @@ export default function VendorOTPVerification() {
                     <form className="space-y-4" onSubmit={handleVerifyOTP}>
                         <div className="flex justify-center mb-3">
                             <h2 className="button-white text-sm font-bold text-gradient px-3 py-1 rounded-full border-2 border-[#1A80E5]">
-                                Verify Email
+                                Verify Mobile
                             </h2>
                         </div>
 
@@ -256,7 +306,7 @@ export default function VendorOTPVerification() {
                                 An OTP has been sent to
                             </p>
                             <p className="text-sm font-bold text-[#3A3A3A] mb-2">
-                                {email}
+                                {phone}
                             </p>
                             <p className="text-xs text-[#6B7280]">
                                 Please enter the 6-digit code below to complete registration.

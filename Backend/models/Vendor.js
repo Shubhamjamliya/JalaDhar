@@ -142,8 +142,40 @@ const vendorSchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
-
-
+  // New Expert Profile fields
+  languages: {
+    type: [String],
+    default: ['English', 'Hindi', 'Telugu']
+  },
+  profileViews: {
+    type: Number,
+    default: 0
+  },
+  travelChargesPolicy: {
+    type: String,
+    trim: true,
+    default: "Standard transport rates apply"
+  },
+  availableServices: {
+    type: [String],
+    enum: ['Agricultural Survey', 'Domestic Survey', 'Industrial Survey', 'Commercial Survey'],
+    default: ['Agricultural Survey', 'Domestic Survey']
+  },
+  workingDays: {
+    type: String,
+    trim: true,
+    default: "Monday - Saturday"
+  },
+  workingHours: {
+    type: String,
+    trim: true,
+    default: "08:00 AM - 07:00 PM"
+  },
+  aboutExpert: {
+    type: String,
+    trim: true,
+    default: ""
+  },
   // Services offered by vendor (legacy - kept for backward compatibility)
   services: [{
     type: mongoose.Schema.Types.ObjectId,

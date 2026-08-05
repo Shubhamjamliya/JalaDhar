@@ -7,6 +7,7 @@ const Service = require('../../models/Service');
 const { generateTokenPair } = require('../../utils/tokenService');
 const { createOTPToken, verifyOTPToken, markTokenAsUsed } = require('../../services/otpService');
 const { sendOTPEmail, sendWelcomeEmail } = require('../../services/emailService');
+const { sendSMSOTP } = require('../../services/smsService');
 const { geocodeAddress } = require('../../services/geocodingService');
 const { TOKEN_TYPES } = require('../../utils/constants');
 const { validationResult } = require('express-validator');
@@ -90,21 +91,29 @@ const sendRegistrationOTP = async (req, res) => {
       type: 'verification'
     });
 
-    if (!emailResult.success) {
+    // Send OTP SMS via SMS India Hub
+    const smsResult = await sendSMSOTP({
+      phone,
+      otp,
+      type: 'verification'
+    });
+
+    if (!emailResult.success && !smsResult.success) {
       await Token.deleteOne({ _id: tokenDoc._id });
       return res.status(500).json({
         success: false,
-        message: 'Failed to send OTP email',
-        error: emailResult.error
+        message: 'Failed to send OTP via email and SMS',
+        error: emailResult.error || smsResult.error
       });
     }
 
     res.json({
       success: true,
-      message: 'OTP sent to email successfully',
+      message: 'OTP sent to mobile & email successfully',
       data: {
         token: tokenDoc.token,
-        email
+        email,
+        phone
       }
     });
   } catch (error) {
@@ -214,13 +223,17 @@ const register = async (req, res) => {
     const documents = {};
     if (req.files) {
       try {
-        if (req.files.aadharCard && req.files.aadharCard[0]) {
-          const aadharResult = await uploadToCloudinary(req.files.aadharCard[0].buffer, 'vendor-documents/aadhar');
-          documents.aadharCard = {
-            url: aadharResult.secure_url,
-            publicId: aadharResult.public_id,
-            uploadedAt: new Date()
-          };
+        if (req.files.aadharCards && req.files.aadharCards.length > 0) {
+          documents.aadharCards = [];
+          for (const aadharFile of req.files.aadharCards) {
+            const aadharResult = await uploadToCloudinary(aadharFile.buffer, 'vendor-documents/aadhar');
+            documents.aadharCards.push({
+              url: aadharResult.secure_url,
+              publicId: aadharResult.public_id,
+              uploadedAt: new Date(),
+              name: aadharFile.originalname
+            });
+          }
         }
         if (req.files.panCard && req.files.panCard[0]) {
           const panResult = await uploadToCloudinary(req.files.panCard[0].buffer, 'vendor-documents/pan');
@@ -450,17 +463,20 @@ const register = async (req, res) => {
 
     // Create documents in separate collection
     const documentPromises = [];
-    if (documents.aadharCard) {
-      documentPromises.push(
-        VendorDocument.create({
-          vendor: vendor._id,
-          documentType: 'AADHAR',
-          url: documents.aadharCard.url,
-          publicId: documents.aadharCard.publicId,
-          uploadedAt: documents.aadharCard.uploadedAt,
-          status: 'PENDING'
-        })
-      );
+    if (documents.aadharCards && documents.aadharCards.length > 0) {
+      for (const card of documents.aadharCards) {
+        documentPromises.push(
+          VendorDocument.create({
+            vendor: vendor._id,
+            documentType: 'AADHAR',
+            url: card.url,
+            publicId: card.publicId,
+            uploadedAt: card.uploadedAt,
+            name: card.name,
+            status: 'PENDING'
+          })
+        );
+      }
     }
     if (documents.panCard) {
       documentPromises.push(

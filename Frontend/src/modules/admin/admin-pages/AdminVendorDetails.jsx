@@ -53,11 +53,11 @@ export default function AdminVendorDetails() {
                 setVendor(response.data.vendor);
                 setStatistics(response.data.statistics);
             } else {
-                toast.showError(response.message || "Failed to load vendor details");
+                toast.showError(response.message || "Failed to load expert details");
             }
         } catch (err) {
             console.error("Load vendor details error:", err);
-            handleApiError(err, "Failed to load vendor details");
+            handleApiError(err, "Failed to load expert details");
         } finally {
             setLoading(false);
         }
@@ -69,23 +69,23 @@ export default function AdminVendorDetails() {
 
     const handleApproveConfirm = async () => {
         setShowApproveConfirm(false);
-        const loadingToast = toast.showLoading("Approving vendor...");
+        const loadingToast = toast.showLoading("Approving expert...");
         try {
             setActionLoading(true);
             const response = await approveVendor(vendorId);
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Vendor approved successfully!");
+                toast.showSuccess("Expert approved successfully!");
                 await loadVendorDetails();
             } else {
                 toast.dismissToast(loadingToast);
-                toast.showError(response.message || "Failed to approve vendor");
+                toast.showError(response.message || "Failed to approve expert");
             }
         } catch (err) {
             console.error("Approve vendor error:", err);
             toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to approve vendor. Please try again.");
+            handleApiError(err, "Failed to approve expert. Please try again.");
         } finally {
             setActionLoading(false);
         }
@@ -104,24 +104,24 @@ export default function AdminVendorDetails() {
 
     const handleRejectConfirm = async () => {
         setShowRejectConfirm(false);
-        const loadingToast = toast.showLoading("Rejecting vendor...");
+        const loadingToast = toast.showLoading("Rejecting expert...");
         try {
             setActionLoading(true);
             const response = await rejectVendor(vendorId, rejectionReason);
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Vendor rejected successfully!");
+                toast.showSuccess("Expert rejected successfully!");
                 setRejectionReason("");
                 await loadVendorDetails();
             } else {
                 toast.dismissToast(loadingToast);
-                toast.showError(response.message || "Failed to reject vendor");
+                toast.showError(response.message || "Failed to reject expert");
             }
         } catch (err) {
             console.error("Reject vendor error:", err);
             toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to reject vendor. Please try again.");
+            handleApiError(err, "Failed to reject expert. Please try again.");
         } finally {
             setActionLoading(false);
         }
@@ -133,23 +133,23 @@ export default function AdminVendorDetails() {
 
     const handleDeactivateConfirm = async () => {
         setShowDeactivateConfirm(false);
-        const loadingToast = toast.showLoading("Deactivating vendor...");
+        const loadingToast = toast.showLoading("Deactivating expert...");
         try {
             setActionLoading(true);
             const response = await deactivateVendor(vendorId);
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Vendor deactivated successfully!");
+                toast.showSuccess("Expert deactivated successfully!");
                 await loadVendorDetails();
             } else {
                 toast.dismissToast(loadingToast);
-                toast.showError(response.message || "Failed to deactivate vendor");
+                toast.showError(response.message || "Failed to deactivate expert");
             }
         } catch (err) {
             console.error("Deactivate vendor error:", err);
             toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to deactivate vendor. Please try again.");
+            handleApiError(err, "Failed to deactivate expert. Please try again.");
         } finally {
             setActionLoading(false);
         }
@@ -161,23 +161,23 @@ export default function AdminVendorDetails() {
 
     const handleActivateConfirm = async () => {
         setShowActivateConfirm(false);
-        const loadingToast = toast.showLoading("Activating vendor...");
+        const loadingToast = toast.showLoading("Activating expert...");
         try {
             setActionLoading(true);
             const response = await activateVendor(vendorId);
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Vendor activated successfully!");
+                toast.showSuccess("Expert activated successfully!");
                 await loadVendorDetails();
             } else {
                 toast.dismissToast(loadingToast);
-                toast.showError(response.message || "Failed to activate vendor");
+                toast.showError(response.message || "Failed to activate expert");
             }
         } catch (err) {
             console.error("Activate vendor error:", err);
             toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to activate vendor. Please try again.");
+            handleApiError(err, "Failed to activate expert. Please try again.");
         } finally {
             setActionLoading(false);
         }
@@ -216,7 +216,7 @@ export default function AdminVendorDetails() {
             <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0A84FF] mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading vendor details...</p>
+                    <p className="text-gray-600">Loading expert details...</p>
                 </div>
             </div>
         );
@@ -226,12 +226,12 @@ export default function AdminVendorDetails() {
         return (
             <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-red-600 mb-4">Vendor not found</p>
+                    <p className="text-red-600 mb-4">Expert not found</p>
                     <button
                         onClick={() => navigate("/admin/vendors")}
                         className="px-4 py-2 bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors"
                     >
-                        Back to Vendors
+                        Back to Experts
                     </button>
                 </div>
             </div>
@@ -247,7 +247,7 @@ export default function AdminVendorDetails() {
                     className="mb-4 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
                 >
                     <IoArrowBackOutline className="text-xl" />
-                    <span>Back to Vendors</span>
+                    <span>Back to Experts</span>
                 </button>
 
                 {/* Header */}
@@ -321,7 +321,7 @@ export default function AdminVendorDetails() {
                                     className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-[8px] hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <IoCheckmarkCircleOutline className="text-base" />
-                                    {actionLoading ? "Processing..." : "Approve Vendor"}
+                                    {actionLoading ? "Processing..." : "Approve Expert"}
                                 </button>
                                 <button
                                     onClick={handleReject}
@@ -329,7 +329,7 @@ export default function AdminVendorDetails() {
                                     className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-[8px] hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <IoCloseCircleOutline className="text-base" />
-                                    {actionLoading ? "Processing..." : "Reject Vendor"}
+                                    {actionLoading ? "Processing..." : "Reject Expert"}
                                 </button>
                             </>
                         )}
@@ -687,12 +687,12 @@ export default function AdminVendorDetails() {
                 )}
             </div>
 
-            {/* Approve Vendor Confirmation Modal */}
+            {/* Approve Expert Confirmation Modal */}
             <ConfirmModal
                 isOpen={showApproveConfirm}
                 onClose={() => setShowApproveConfirm(false)}
                 onConfirm={handleApproveConfirm}
-                title="Approve Vendor"
+                title="Approve Expert"
                 message="Are you sure you want to approve this vendor?"
                 confirmText="Yes, Approve"
                 cancelText="Cancel"
@@ -707,7 +707,7 @@ export default function AdminVendorDetails() {
                     setRejectionReason("");
                 }}
                 onSubmit={handleRejectionReasonSubmit}
-                title="Reject Vendor"
+                title="Reject Expert"
                 message="Please provide a reason for rejection (minimum 10 characters):"
                 placeholder="Enter rejection reason..."
                 submitText="Continue"
@@ -717,7 +717,7 @@ export default function AdminVendorDetails() {
                 textareaRows={4}
             />
 
-            {/* Reject Vendor Confirmation Modal */}
+            {/* Reject Expert Confirmation Modal */}
             <ConfirmModal
                 isOpen={showRejectConfirm}
                 onClose={() => {
@@ -732,24 +732,24 @@ export default function AdminVendorDetails() {
                 confirmColor="danger"
             />
 
-            {/* Deactivate Vendor Confirmation Modal */}
+            {/* Deactivate Expert Confirmation Modal */}
             <ConfirmModal
                 isOpen={showDeactivateConfirm}
                 onClose={() => setShowDeactivateConfirm(false)}
                 onConfirm={handleDeactivateConfirm}
-                title="Deactivate Vendor"
+                title="Deactivate Expert"
                 message="Are you sure you want to deactivate this vendor?"
                 confirmText="Yes, Deactivate"
                 cancelText="Cancel"
                 confirmColor="warning"
             />
 
-            {/* Activate Vendor Confirmation Modal */}
+            {/* Activate Expert Confirmation Modal */}
             <ConfirmModal
                 isOpen={showActivateConfirm}
                 onClose={() => setShowActivateConfirm(false)}
                 onConfirm={handleActivateConfirm}
-                title="Activate Vendor"
+                title="Activate Expert"
                 message="Are you sure you want to activate this vendor?"
                 confirmText="Yes, Activate"
                 cancelText="Cancel"
