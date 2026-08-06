@@ -259,7 +259,7 @@ function RatingCard({ rating, renderStars, formatDate, navigate }) {
             {/* Header */}
             <div className="flex items-start justify-between gap-4 mb-3">
                 <div className="flex items-center gap-3 flex-1">
-                    {/* Vendor Avatar */}
+                    {/* Expert Avatar */}
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
                         {rating.vendor?.name ? (
                             <span className="text-lg font-bold text-blue-600">
@@ -271,7 +271,7 @@ function RatingCard({ rating, renderStars, formatDate, navigate }) {
                     </div>
                     <div className="flex-1 min-w-0">
                         <h3 className="text-base font-bold text-gray-800 truncate">
-                            {rating.vendor?.name || "Vendor"}
+                            {rating.vendor?.name || "Expert"}
                         </h3>
                         {rating.service && (
                             <p className="text-xs text-gray-500 truncate">

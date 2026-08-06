@@ -257,18 +257,85 @@ const rejectBooking = async (req, res) => {
     booking.rejectionReason = rejectionReason.trim();
     await booking.save();
 
-    // Automatically reassign to next best vendor
-    const reassignmentResult = await autoReassignBooking(bookingId, rejectionReason, 'VENDOR');
+    // Process user refund if advance payment was made
+    try {
+      const Payment = require('../../models/Payment');
+      const { creditToUserWallet } = require('../../services/userWalletService');
+      
+      const isAdvancePaidOnBooking = booking.payment?.advancePaid && (booking.payment?.advanceAmount > 0);
+      const completedAdvancePayment = await Payment.findOne({
+        booking: booking._id,
+        paymentType: 'ADVANCE',
+        status: 'COMPLETED'
+      });
+
+      const refundAmount = isAdvancePaidOnBooking 
+        ? booking.payment.advanceAmount 
+        : (completedAdvancePayment ? completedAdvancePayment.amount : 0);
+
+      if (refundAmount > 0) {
+        await creditToUserWallet(
+          booking.user._id,
+          refundAmount,
+          booking._id,
+          `Refund for rejected booking #${booking._id.toString().slice(-6).toUpperCase()}`
+        );
+
+        await Payment.create({
+          booking: booking._id,
+          user: booking.user._id,
+          vendor: vendorId,
+          paymentType: 'REFUND',
+          amount: refundAmount,
+          status: 'COMPLETED',
+          description: `Refund credited to user wallet for rejected booking #${booking._id.toString().slice(-6).toUpperCase()}`,
+          completedAt: new Date()
+        });
+      }
+    } catch (refundErr) {
+      console.error('Error auto-refunding to user wallet on rejectBooking:', refundErr);
+    }
+
+    // Notify User
+    await sendNotification({
+      recipient: booking.user._id,
+      recipientModel: 'User',
+      type: 'BOOKING_REJECTED',
+      title: 'Booking Rejected',
+      message: `Your booking was rejected by the expert. Reason: ${rejectionReason.trim()}`,
+      relatedEntity: {
+        entityType: 'Booking',
+        entityId: booking._id
+      }
+    });
+
+    // Notify Admins
+    try {
+      const Admin = require('../../models/Admin');
+      const admins = await Admin.find({ isActive: true });
+      for (const admin of admins) {
+        await sendNotification({
+          recipient: admin._id,
+          recipientModel: 'Admin',
+          type: 'BOOKING_REJECTED',
+          title: 'Booking Rejected',
+          message: `Booking #${booking._id.toString().slice(-6)} was rejected by vendor. Reason: ${rejectionReason.trim()}`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          }
+        });
+      }
+    } catch (adminErr) {
+      console.error('Error sending admin notification:', adminErr);
+    }
 
     res.json({
       success: true,
-      message: reassignmentResult.success
-        ? `Booking rejected and reassigned successfully.`
-        : `Booking rejected successfully. No other vendors available.`,
+      message: 'Booking rejected successfully and customer refunded if applicable.',
       data: {
         bookingId: booking._id,
-        reassigned: reassignmentResult.success,
-        newVendor: reassignmentResult.data?.vendorName
+        reassigned: false
       }
     });
   } catch (error) {
@@ -1006,18 +1073,85 @@ const cancelBooking = async (req, res) => {
     booking.cancelledAt = new Date();
     await booking.save();
 
-    // Trigger auto-reassignment
-    const reassignmentResult = await autoReassignBooking(bookingId, cancellationReason, 'VENDOR');
+    // Process user refund if advance payment was made
+    try {
+      const Payment = require('../../models/Payment');
+      const { creditToUserWallet } = require('../../services/userWalletService');
+      
+      const isAdvancePaidOnBooking = booking.payment?.advancePaid && (booking.payment?.advanceAmount > 0);
+      const completedAdvancePayment = await Payment.findOne({
+        booking: booking._id,
+        paymentType: 'ADVANCE',
+        status: 'COMPLETED'
+      });
+
+      const refundAmount = isAdvancePaidOnBooking 
+        ? booking.payment.advanceAmount 
+        : (completedAdvancePayment ? completedAdvancePayment.amount : 0);
+
+      if (refundAmount > 0) {
+        await creditToUserWallet(
+          booking.user,
+          refundAmount,
+          booking._id,
+          `Refund for cancelled booking #${booking._id.toString().slice(-6).toUpperCase()}`
+        );
+
+        await Payment.create({
+          booking: booking._id,
+          user: booking.user,
+          vendor: vendorId,
+          paymentType: 'REFUND',
+          amount: refundAmount,
+          status: 'COMPLETED',
+          description: `Refund credited to user wallet for cancelled booking #${booking._id.toString().slice(-6).toUpperCase()}`,
+          completedAt: new Date()
+        });
+      }
+    } catch (refundErr) {
+      console.error('Error auto-refunding to user wallet on cancelBooking:', refundErr);
+    }
+
+    // Notify User
+    await sendNotification({
+      recipient: booking.user,
+      recipientModel: 'User',
+      type: 'BOOKING_CANCELLED',
+      title: 'Booking Cancelled',
+      message: `Your booking was cancelled by the expert. Reason: ${cancellationReason.trim()}`,
+      relatedEntity: {
+        entityType: 'Booking',
+        entityId: booking._id
+      }
+    });
+
+    // Notify Admins
+    try {
+      const Admin = require('../../models/Admin');
+      const admins = await Admin.find({ isActive: true });
+      for (const admin of admins) {
+        await sendNotification({
+          recipient: admin._id,
+          recipientModel: 'Admin',
+          type: 'BOOKING_CANCELLED',
+          title: 'Booking Cancelled',
+          message: `Booking #${booking._id.toString().slice(-6)} was cancelled by vendor. Reason: ${cancellationReason.trim()}`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          }
+        });
+      }
+    } catch (adminErr) {
+      console.error('Error sending admin notification:', adminErr);
+    }
 
     res.json({
       success: true,
-      message: reassignmentResult.success
-        ? `Booking cancelled and reassigned successfully.`
-        : `Booking cancelled successfully.`,
+      message: 'Booking cancelled successfully and customer refunded if applicable.',
       data: {
         bookingId: booking._id,
-        reassigned: reassignmentResult.success,
-        newVendor: reassignmentResult.data?.vendorName
+        reassigned: false
       }
     });
 

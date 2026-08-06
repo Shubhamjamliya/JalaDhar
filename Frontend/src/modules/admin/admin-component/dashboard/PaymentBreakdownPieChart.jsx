@@ -14,8 +14,8 @@ const PaymentBreakdownPieChart = ({ bookings = [] }) => {
       else pending += 1;
     });
     return [
-      { name: 'Paid to Vendor', value: paid },
-      { name: 'Pending Vendor Payment', value: pending },
+      { name: 'Paid to Expert', value: paid },
+      { name: 'Pending Expert Payment', value: pending },
     ];
   }, [bookings]);
 

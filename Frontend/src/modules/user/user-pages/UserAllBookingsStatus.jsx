@@ -296,7 +296,7 @@ export default function UserAllBookingsStatus() {
                   {booking.vendor?.profilePicture ? (
                     <img
                       src={booking.vendor.profilePicture}
-                      alt="Vendor Avatar"
+                      alt="Expert Avatar"
                       className="h-10 w-10 rounded-full border border-slate-200 object-cover flex-shrink-0"
                     />
                   ) : (

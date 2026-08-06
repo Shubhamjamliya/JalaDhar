@@ -304,7 +304,7 @@ export default function AdminWithdrawals() {
                         <table className="w-full">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expert</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>

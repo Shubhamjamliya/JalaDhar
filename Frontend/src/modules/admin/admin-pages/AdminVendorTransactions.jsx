@@ -38,7 +38,7 @@ export default function AdminVendorTransactions() {
       setLoading(true);
       const response = await api.get("/admin/payments");
       if (response.data.success) {
-        // Focus on Vendor related payments
+        // Focus on Expert related payments
         const payments = response.data.data.payments || [];
         setTransactions(payments);
       }

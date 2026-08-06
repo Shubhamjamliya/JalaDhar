@@ -337,7 +337,7 @@ export default function PaymentReport() {
           { key: 'bookingNumber', header: 'Booking ID' },
           { key: 'service', header: 'Service' },
           { key: 'customer', header: 'Customer' },
-          { key: 'vendor', header: 'Vendor' },
+          { key: 'vendor', header: 'Expert' },
           { key: 'amount', header: 'Amount', render: (val) => `₹${(val || 0).toLocaleString('en-IN')}` },
           { key: 'platformFee', header: 'Platform Fee', render: (val) => `₹${(val || 0).toLocaleString('en-IN')}` },
           { key: 'paymentMethod', header: 'Method' },
@@ -364,7 +364,7 @@ export default function PaymentReport() {
         ];
       case 'tds':
         return [
-          { key: 'vendorName', header: 'Vendor' },
+          { key: 'vendorName', header: 'Expert' },
           { key: 'panNumber', header: 'PAN' },
           { key: 'grossSales', header: 'Gross Sales', render: (val) => `₹${(val || 0).toLocaleString('en-IN')}` },
           { key: 'tdsRate', header: 'Rate (%)', render: (val) => `${val}%` },
@@ -373,7 +373,7 @@ export default function PaymentReport() {
         ];
       case 'cod':
         return [
-          { key: 'vendorName', header: 'Vendor' },
+          { key: 'vendorName', header: 'Expert' },
           { key: 'totalCashCollected', header: 'Collected', render: (val) => `₹${(val || 0).toLocaleString('en-IN')}` }
         ];
       default:
@@ -505,7 +505,7 @@ export default function PaymentReport() {
                 <>
                   <SummaryItem label="Gross Amount" value={`₹${(reportSummary.totalAmount || 0).toLocaleString()}`} />
                   <SummaryItem label="Platform Share" value={`₹${(reportSummary.totalCommission || 0).toLocaleString()}`} color="text-blue-600" />
-                  <SummaryItem label="Vendor Payouts" value={`₹${(reportSummary.totalVendorEarnings || 0).toLocaleString()}`} />
+                  <SummaryItem label="Expert Payouts" value={`₹${(reportSummary.totalVendorEarnings || 0).toLocaleString()}`} />
                 </>
               )}
               {activeReport === 'tds' && (

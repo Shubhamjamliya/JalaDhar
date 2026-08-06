@@ -277,7 +277,7 @@ export default function AdminBorewellApproval() {
                                             <p className="text-xs text-gray-500">{booking.user?.email || ""}</p>
                                         </div>
                                         <div>
-                                            <p className="text-gray-600">Vendor</p>
+                                            <p className="text-gray-600">Expert</p>
                                             <p className="font-semibold text-gray-800">{booking.vendor?.name || "N/A"}</p>
                                             <p className="text-xs text-gray-500">{booking.vendor?.email || ""}</p>
                                         </div>
@@ -510,7 +510,7 @@ export default function AdminBorewellApproval() {
                                     placeholder="Enter incentive amount"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Final Vendor Payment:{" "}
+                                    Final Expert Payment:{" "}
                                     {formatCurrency(
                                         (selectedBooking.payment?.totalAmount || 0) * 0.5 + (settlementData.incentive || 0)
                                     )}
@@ -537,7 +537,7 @@ export default function AdminBorewellApproval() {
                                         placeholder="Enter penalty amount"
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
-                                        Final Vendor Payment:{" "}
+                                        Final Expert Payment:{" "}
                                         {formatCurrency(
                                             Math.max(
                                                 0,

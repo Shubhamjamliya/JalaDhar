@@ -166,7 +166,7 @@ export default function AdminBookingDetails() {
                 </div>
             </div>
 
-            {/* Vendor Details */}
+            {/* Expert Details */}
             <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Vendor Details</h2>
                 <div className="space-y-1">

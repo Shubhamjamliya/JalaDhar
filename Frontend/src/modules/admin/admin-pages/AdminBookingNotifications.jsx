@@ -72,7 +72,7 @@ const NOTIFICATION_TYPE_CONFIG = {
     icon: IoPersonAddOutline,
     color: "bg-indigo-50 text-indigo-600",
     badge: "bg-indigo-100 text-indigo-700",
-    label: "Vendor",
+    label: "Expert",
     actionPath: (meta) => meta?.vendorId ? `/admin/vendors/${meta.vendorId}` : `/admin/vendors`,
   },
   BOREWELL_UPLOADED: {
@@ -213,7 +213,7 @@ export default function AdminBookingNotifications() {
     { id: "BOREWELL_UPLOADED", label: "Borewell" },
     { id: "PAYMENT_RECEIVED", label: "Payments" },
     { id: "BOOKING_CREATED", label: "Bookings" },
-    { id: "VENDOR_REGISTERED", label: "Vendors" },
+    { id: "VENDOR_REGISTERED", label: "Experts" },
   ];
 
   const filtered = notifications.filter((n) => {

@@ -185,7 +185,7 @@ export default function AdminUserBookings() {
                     <p className="text-sm font-bold text-gray-900">₹{booking.payment?.totalAmount || '0'}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Vendor</p>
+                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Expert</p>
                     <p className="text-sm font-medium text-gray-600">{booking.vendor?.name || 'Not Assigned'}</p>
                   </div>
                   <button

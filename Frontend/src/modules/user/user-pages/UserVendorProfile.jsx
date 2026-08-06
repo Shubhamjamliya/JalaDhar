@@ -62,7 +62,7 @@ export default function UserVendorProfile() {
             }
             const response = await getVendorProfile(vendorId, params.lat, params.lng);
             if (response.success) {
-                console.log("Vendor Data Debug:", response.data.vendor);
+                console.log("Expert Data Debug:", response.data.vendor);
                 setVendorData(response.data.vendor);
             } else {
                 setError(response.message || "Failed to load vendor profile");
@@ -109,7 +109,7 @@ export default function UserVendorProfile() {
         return (
             <PageContainer>
                 <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-                    <ErrorMessage message={error || "Vendor not found"} />
+                    <ErrorMessage message={error || "Expert not found"} />
                     <button
                         onClick={() => navigate(-1)}
                         className="mt-6 flex items-center gap-2 text-[#0A84FF] hover:text-[#005BBB] transition-colors"
@@ -123,8 +123,8 @@ export default function UserVendorProfile() {
     }
 
     return (
-        <PageContainer title="Vendor Profile">
-            {/* Vendor Profile Header Card */}
+        <PageContainer title="Expert Profile">
+            {/* Expert Profile Header Card */}
             <section className="relative mb-6 overflow-hidden rounded-3xl bg-white p-6 shadow-sm">
                 <div className="flex flex-col items-center text-center">
                     {/* Profile Image */}

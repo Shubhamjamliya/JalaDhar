@@ -234,7 +234,7 @@ export default function AdminDisputes() {
         const labels = {
             PAYMENT_ISSUE: "Payment Issue",
             SERVICE_QUALITY: "Service Quality",
-            VENDOR_BEHAVIOR: "Vendor Behavior",
+            VENDOR_BEHAVIOR: "Expert Behavior",
             REPORT_ISSUE: "Report Issue",
             CANCELLATION: "Cancellation",
             REFUND: "Refund",

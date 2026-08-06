@@ -134,7 +134,7 @@ const ReportsOverview = () => {
         />
         <ReportCard
           title="Partner Health"
-          subtitle="Vendor engagement"
+          subtitle="Expert engagement"
           icon={<IoPieChartOutline />}
           color="purple"
           link="/admin/reports/vendors"

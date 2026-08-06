@@ -198,7 +198,7 @@ const GeographicAnalysis = () => {
                       <p className="text-sm font-black text-gray-900">{item.bookings}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Vendors</p>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Experts</p>
                       <p className="text-sm font-black text-gray-900">{item.vendors}</p>
                     </div>
                     <div>

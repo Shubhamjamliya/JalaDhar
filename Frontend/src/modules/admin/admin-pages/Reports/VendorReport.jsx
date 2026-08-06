@@ -52,7 +52,7 @@ export default function VendorReport() {
         });
       }
     } catch (error) {
-      console.error("Vendor report error:", error);
+      console.error("Expert report error:", error);
       toast.showError("Failed to fetch growth metrics");
     } finally {
       setLoading(false);

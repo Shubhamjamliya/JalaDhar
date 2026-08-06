@@ -214,7 +214,7 @@ export default function AdminVendors() {
                 </select>
             </div>
 
-            {/* Vendor Cards Grid */}
+            {/* Expert Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <AnimatePresence mode="popLayout">
                     {loading ? (
@@ -349,7 +349,7 @@ export default function AdminVendors() {
                 isOpen={showDeactivateConfirm}
                 onClose={() => setShowDeactivateConfirm(false)}
                 onConfirm={handleDeactivateConfirm}
-                title="Suspend Vendor Account"
+                title="Suspend Expert Account"
                 message="This will prevent the vendor from appearing in searches or accepting new jobs. Continue?"
                 confirmText="Yes, Suspend"
                 confirmColor="warning"
@@ -359,7 +359,7 @@ export default function AdminVendors() {
                 isOpen={showActivateConfirm}
                 onClose={() => setShowActivateConfirm(false)}
                 onConfirm={handleActivateConfirm}
-                title="Restore Vendor Access"
+                title="Restore Expert Access"
                 message="This will allow the vendor to resume normal business operations. Continue?"
                 confirmText="Yes, Restore"
                 confirmColor="primary"

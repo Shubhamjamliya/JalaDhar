@@ -161,7 +161,7 @@ export default function AdminVendorBookings() {
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-50">
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Order ID</th>
-                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Vendor</th>
+                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Expert</th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Customer</th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Total Amount</th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Status</th>

@@ -135,7 +135,7 @@ export default function VendorNavbar() {
 
                 {/* Right Icons */}
                 <div className="flex items-center gap-4">
-                    {/* Vendor Name - Desktop Only */}
+                    {/* Expert Name - Desktop Only */}
                     {vendor && (
                         <span className="hidden md:block text-sm font-medium text-gray-700">
                             {vendor.name}

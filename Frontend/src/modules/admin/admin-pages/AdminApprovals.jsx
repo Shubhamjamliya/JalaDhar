@@ -173,7 +173,7 @@ export default function AdminApprovals() {
             setError("");
             const response = await rejectReport(bookingId, { rejectionReason: rejectionReason.trim() });
             if (response.success) {
-                toast.showSuccess("Report rejected successfully! Vendor can re-upload the report.");
+                toast.showSuccess("Report rejected successfully! Expert can re-upload the report.");
                 setShowModal(false);
                 setRejectionReason("");
                 setSelectedBooking(null);
@@ -333,13 +333,13 @@ export default function AdminApprovals() {
                                                         Booking #{booking._id.toString().slice(-8)}
                                                     </h3>
                                                     <p className="text-sm text-gray-500">
-                                                        {booking.vendor?.name || "Vendor"} → {booking.user?.name || "User"}
+                                                        {booking.vendor?.name || "Expert"} → {booking.user?.name || "User"}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                 <div className="bg-gray-50 rounded-lg p-3">
-                                                    <p className="text-xs text-gray-600 mb-1">Vendor</p>
+                                                    <p className="text-xs text-gray-600 mb-1">Expert</p>
                                                     <p className="text-sm font-semibold text-gray-800">{booking.vendor?.name || "N/A"}</p>
                                                     <p className="text-xs text-gray-500">{booking.vendor?.email || ""}</p>
                                                 </div>
@@ -545,7 +545,7 @@ export default function AdminApprovals() {
                                                             Booking #{booking._id.toString().slice(-8)}
                                                         </h3>
                                                         <p className="text-sm text-gray-500">
-                                                            {booking.vendor?.name || "Vendor"} → {booking.user?.name || "User"}
+                                                            {booking.vendor?.name || "Expert"} → {booking.user?.name || "User"}
                                                         </p>
                                                     </div>
                                                     <span
@@ -559,7 +559,7 @@ export default function AdminApprovals() {
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                                                     <div className="bg-gray-50 rounded-lg p-3">
-                                                        <p className="text-xs text-gray-600 mb-1">Vendor</p>
+                                                        <p className="text-xs text-gray-600 mb-1">Expert</p>
                                                         <p className="text-sm font-semibold text-gray-800">{booking.vendor?.name || "N/A"}</p>
                                                         <p className="text-xs text-gray-500">{booking.vendor?.email || ""}</p>
                                                     </div>

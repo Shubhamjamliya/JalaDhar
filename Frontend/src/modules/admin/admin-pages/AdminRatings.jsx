@@ -244,7 +244,7 @@ export default function AdminRatings() {
                             <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expert</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rating</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Review</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
@@ -379,7 +379,7 @@ export default function AdminRatings() {
                                     <p className="text-sm text-gray-500">{selectedRating.user?.email}</p>
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium text-gray-500 mb-2">Vendor</h3>
+                                    <h3 className="text-sm font-medium text-gray-500 mb-2">Expert</h3>
                                     <p className="text-sm text-gray-900">{selectedRating.vendor?.name}</p>
                                     <p className="text-sm text-gray-500">{selectedRating.vendor?.email}</p>
                                 </div>

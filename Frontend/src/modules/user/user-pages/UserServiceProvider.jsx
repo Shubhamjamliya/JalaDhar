@@ -124,7 +124,7 @@ export default function UserServiceProvider() {
             </div>
 
 
-            {/* Vendor List */}
+            {/* Expert List */}
             <div className="flex flex-col gap-4 px-4">
                 {vendors.length === 0 ? (
                     <div className="bg-white rounded-lg p-8 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]">

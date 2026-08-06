@@ -758,7 +758,7 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
         </div>
       </div>
 
-      {/* Vendor Info (if pre-selected it's nice to show who) */}
+      {/* Expert Info (if pre-selected it's nice to show who) */}
       {surveyData.vendor && (
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
           <div>

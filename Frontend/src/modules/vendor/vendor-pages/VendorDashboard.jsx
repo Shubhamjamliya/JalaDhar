@@ -92,7 +92,7 @@ export default function VendorDashboard() {
     // Debug: Log when vendor profile data changes
     useEffect(() => {
         if (vendorProfileData) {
-            // Vendor profile data updated
+            // Expert profile data updated
         }
     }, [vendorProfileData]);
 
@@ -221,7 +221,7 @@ export default function VendorDashboard() {
     return (
         <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 px-4 pt-24 pb-20 md:-mx-6 md:-mt-28 md:pt-28 md:pb-12 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
 
-            {/* Profile Header — Senior SDE Vendor Glassmorphism Banner */}
+            {/* Profile Header — Senior SDE Expert Glassmorphism Banner */}
             <section className="relative my-3 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 p-6 shadow-xl text-white border border-slate-800/80">
                 <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
                 <div className="relative z-10 flex items-center justify-between gap-4">

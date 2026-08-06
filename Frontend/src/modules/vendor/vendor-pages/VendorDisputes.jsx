@@ -132,7 +132,7 @@ export default function VendorDisputes() {
         const labels = {
             PAYMENT_ISSUE: "Payment Issue",
             SERVICE_QUALITY: "Service Quality",
-            VENDOR_BEHAVIOR: "Vendor Behavior",
+            VENDOR_BEHAVIOR: "Expert Behavior",
             REPORT_ISSUE: "Report Issue",
             CANCELLATION: "Cancellation",
             REFUND: "Refund",
@@ -197,7 +197,7 @@ export default function VendorDisputes() {
                                 { value: "", label: "All Categories" },
                                 { value: "PAYMENT_ISSUE", label: "Payment Issue" },
                                 { value: "SERVICE_QUALITY", label: "Service Quality" },
-                                { value: "VENDOR_BEHAVIOR", label: "Vendor Behavior" },
+                                { value: "VENDOR_BEHAVIOR", label: "Expert Behavior" },
                                 { value: "REPORT_ISSUE", label: "Report Issue" },
                                 { value: "CANCELLATION", label: "Cancellation" },
                                 { value: "REFUND", label: "Refund" },

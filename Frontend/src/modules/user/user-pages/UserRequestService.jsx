@@ -703,7 +703,7 @@ const ReviewAndBook = ({ surveyData, service, vendor, onConfirm, onBack }) => {
         <div className="space-y-6 pb-20">
             <h2 className="text-xl font-bold text-gray-800">Review & Book</h2>
 
-            {/* Vendor Info */}
+            {/* Expert Info */}
             <div className="bg-white p-4 rounded-xl border border-gray-100 flex items-center justify-between">
                 <div>
                     <p className="text-xs text-gray-500">Service Provider</p>

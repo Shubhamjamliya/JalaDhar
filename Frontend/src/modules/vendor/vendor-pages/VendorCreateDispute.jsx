@@ -19,18 +19,21 @@ import { handleApiError } from "../../../utils/toastHelper";
 import CustomDropdown from "../../shared/components/CustomDropdown";
 
 const DEFAULT_DISPUTE_TYPES = [
-    "Expert did not arrive",
-    "Expert arrived late",
-    "Survey not completed",
-    "Incorrect survey location",
-    "Payment issue",
-    "Refund issue",
-    "Travel charges issue",
-    "Survey report issue",
-    "Expert behaviour",
-    "Requested offline payment",
-    "Safety concern",
-    "Other"
+    "Customer Not Available",
+    "Customer Cancelled After Arrival",
+    "Wrong Survey Location",
+    "Site Access Denied",
+    "Survey Could Not Be Completed",
+    "Customer Misconduct",
+    "Payment / Wallet Issue",
+    "Booking Issue",
+    "Technical / App Issue",
+    "GPS / OTP Issue",
+    "Report Upload Issue",
+    "Equipment Malfunction",
+    "Safety Concern",
+    "Weather Conditions",
+    "Other (with mandatory remarks)"
 ];
 
 export default function VendorCreateDispute() {
@@ -185,6 +188,8 @@ export default function VendorCreateDispute() {
                         label="Related Booking (Optional)"
                         value={formData.bookingId}
                         onChange={handleInputChange}
+                        isInline={true}
+                        activeColor="teal"
                         options={[
                             { value: "", label: "Select a booking reference (optional)" },
                             ...(loadingBookings
@@ -210,6 +215,8 @@ export default function VendorCreateDispute() {
                         value={formData.type}
                         onChange={handleInputChange}
                         className={errors.type ? "border-red-400 focus:border-red-500 focus:ring-red-50" : ""}
+                        isInline={true}
+                        activeColor="teal"
                         options={[
                             { value: "", label: "Select issue category" },
                             ...disputeTypes.map(t => ({ value: t, label: t }))

@@ -252,7 +252,7 @@ export default function AdminVendorAnalytics() {
         </motion.div>
       </div>
 
-      {/* Top Performing Vendors (Simplified) */}
+      {/* Top Performing Experts (Simplified) */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

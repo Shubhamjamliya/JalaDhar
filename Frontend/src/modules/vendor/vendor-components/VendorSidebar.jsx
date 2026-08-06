@@ -120,7 +120,7 @@ export default function VendorSidebar({ isOpen, onClose }) {
             <aside
                 role="dialog"
                 aria-modal="true"
-                aria-label="Vendor Menu"
+                aria-label="Expert Menu"
                 className={`fixed right-0 top-0 h-full w-[300px] sm:w-[320px] bg-white z-[100] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
                     isOpen ? "translate-x-0" : "translate-x-full"
                 }`}
@@ -142,7 +142,7 @@ export default function VendorSidebar({ isOpen, onClose }) {
                         </button>
                     </div>
 
-                    {/* Vendor Profile Card */}
+                    {/* Expert Profile Card */}
                     {vendor && (
                         <div className="p-3.5 rounded-2xl bg-[#F8F9FA] border border-[#E3F2FD] flex items-center gap-3.5">
                             <div className="w-11 h-11 rounded-full bg-[#0A84FF] text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">

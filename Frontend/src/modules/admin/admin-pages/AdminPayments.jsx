@@ -170,7 +170,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
     const [showUserProcessModal, setShowUserProcessModal] = useState(false);
     const [userRejectionReason, setUserRejectionReason] = useState("");
     const [userRazorpayPayoutId, setUserRazorpayPayoutId] = useState("");
-    // Vendor withdrawal modals
+    // Expert withdrawal modals
     const [showVendorApproveModal, setShowVendorApproveModal] = useState(false);
     const [showVendorRejectModal, setShowVendorRejectModal] = useState(false);
     const [vendorRejectionReason, setVendorRejectionReason] = useState("");
@@ -220,7 +220,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
     const [processingUserFinalSettlement, setProcessingUserFinalSettlement] = useState(false);
     // Admin Overview states
     const [adminOverview, setAdminOverview] = useState(null);
-    // Vendor Overview states
+    // Expert Overview states
     const [vendorOverview, setVendorOverview] = useState(null);
 
     useEffect(() => {
@@ -368,7 +368,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                             // Travel charges requests
                             if (booking.travelChargesRequest) return true;
 
-                            // Vendor settlements
+                            // Expert settlements
                             if (booking.payment?.vendorSettlement) return true;
 
                             // First installment - only show if report is approved
@@ -582,7 +582,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
             const response = await payFirstInstallment(bookingId);
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("First installment (50%) paid successfully! Vendor status updated to COMPLETED.");
+                toast.showSuccess("First installment (50%) paid successfully! Expert status updated to COMPLETED.");
                 setSelectedBookingId(null);
                 loadPaymentData();
             }
@@ -1029,7 +1029,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Vendor withdrawal payment processed successfully!");
+                toast.showSuccess("Expert withdrawal payment processed successfully!");
                 setShowTransactionModal(false);
                 setSelectedWithdrawalRequest(null);
                 setTransactionModalType(null);
@@ -1060,7 +1060,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
             "Razorpay Order ID",
             "Service Type",
             "User Name",
-            "Vendor Name",
+            "Expert Name",
             "Amount",
             "Status",
             "Type"
@@ -1248,7 +1248,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                             </>
                         )}
 
-                        {/* Vendor route tabs */}
+                        {/* Expert route tabs */}
                         {isVendorRoute && (
                             <>
                                 <button
@@ -1363,7 +1363,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                         <p className="text-xs text-gray-500">Net profit after all expenses</p>
                                     </div>
 
-                                    {/* Pending to Vendors */}
+                                    {/* Pending to Experts */}
                                     <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 shadow-lg border border-orange-200">
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="w-14 h-14 rounded-xl bg-orange-500 flex items-center justify-center">
@@ -1378,7 +1378,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                         </div>
                                     </div>
 
-                                    {/* Released to Vendors */}
+                                    {/* Released to Experts */}
                                     <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-6 shadow-lg border border-teal-200">
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="w-14 h-14 rounded-xl bg-teal-500 flex items-center justify-center">
@@ -1408,7 +1408,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
 
                                 {/* Detailed Breakdown */}
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                                    {/* Total Paid to Vendors Breakdown */}
+                                    {/* Total Paid to Experts Breakdown */}
                                     <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
                                         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                                             <IoCashOutline className="text-orange-500" />
@@ -2011,7 +2011,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: currentTheme.primaryDark }}>Payment ID</th>
                                                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: currentTheme.primaryDark }}>Type</th>
                                                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: currentTheme.primaryDark }}>User</th>
-                                                <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: currentTheme.primaryDark }}>Vendor</th>
+                                                <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: currentTheme.primaryDark }}>Expert</th>
                                                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: currentTheme.primaryDark }}>Amount</th>
                                                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: currentTheme.primaryDark }}>Status</th>
                                                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: currentTheme.primaryDark }}>Date</th>
@@ -2317,7 +2317,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                     </div>
                 )}
 
-                {/* Vendor Withdrawals Tab */}
+                {/* Expert Withdrawals Tab */}
                 {activeTab === "vendor-withdrawals" && (
                     <div>
                         <div className="flex gap-4 mb-6 border-b border-gray-200">
@@ -2376,7 +2376,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                                         </div>
                                                         <div>
                                                             <h3 className="text-lg font-bold text-gray-800">
-                                                                {request.vendorName || "Vendor"}
+                                                                {request.vendorName || "Expert"}
                                                             </h3>
                                                             <p className="text-sm text-gray-500">
                                                                 {request.vendorEmail} | {request.vendorPhone}
@@ -3458,7 +3458,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                     </div>
                 )}
 
-                {/* Vendor Overview Tab */}
+                {/* Expert Overview Tab */}
                 {activeTab === "vendor-overview" && (
                     <div>
                         {loading ? (
@@ -3647,7 +3647,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                                                     <IoTimeOutline className="text-3xl text-white" />
                                                 </div>
                                                 <div>
-                                                    <h2 className="text-2xl font-bold text-gray-800 mb-1">Pending Vendor Withdrawals</h2>
+                                                    <h2 className="text-2xl font-bold text-gray-800 mb-1">Pending Expert Withdrawals</h2>
                                                     <p className="text-gray-600">Approved withdrawal requests awaiting payment processing</p>
                                                 </div>
                                             </div>
@@ -3669,7 +3669,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                     </div>
                 )}
 
-                {/* Vendor Transactions Tab */}
+                {/* Expert Transactions Tab */}
                 {activeTab === "vendor-transactions" && (
                     <div className="space-y-6">
                         {/* Header & Export */}
@@ -4031,7 +4031,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                 confirmColor="primary"
             />
 
-            {/* Vendor Withdrawal Request Modals */}
+            {/* Expert Withdrawal Request Modals */}
             < ConfirmModal
                 isOpen={showVendorApproveModal}
                 onClose={() => {
@@ -4054,7 +4054,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                     setSelectedWithdrawalRequest(null);
                 }}
                 onConfirm={handleRejectVendorWithdrawal}
-                title="Reject Vendor Withdrawal Request"
+                title="Reject Expert Withdrawal Request"
                 message={`Are you sure you want to reject the withdrawal request of ${formatCurrency(selectedWithdrawalRequest?.amount || 0)}? Please provide a reason.`}
                 confirmText="Reject"
                 cancelText="Cancel"
@@ -4118,7 +4118,7 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                         handleProcessUserWithdrawalSubmit(transactionData);
                     }
                 }}
-                title={transactionModalType === "vendor" ? "Process Vendor Withdrawal" : "Process User Withdrawal"}
+                title={transactionModalType === "vendor" ? "Process Expert Withdrawal" : "Process User Withdrawal"}
                 amount={
                     transactionModalType === "vendor"
                         ? selectedWithdrawalRequest?.amount

@@ -56,7 +56,7 @@ const NotificationDropdown = ({ disablePopup = false }) => {
   const { notifications, unreadCount, userRole, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
 
   const notificationsPageUrl =
-    location.pathname.startsWith('/vendor') || userRole === 'Vendor' ? '/vendor/notifications' :
+    location.pathname.startsWith('/vendor') || userRole === 'Expert' ? '/vendor/notifications' :
     location.pathname.startsWith('/admin')  || userRole === 'Admin'  ? '/admin/notifications' :
     '/user/notifications';
 

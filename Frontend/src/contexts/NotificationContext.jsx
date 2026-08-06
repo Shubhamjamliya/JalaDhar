@@ -37,7 +37,7 @@ export const NotificationProvider = ({ children }) => {
     userRole = 'Admin';
     currentUser = admin;
   } else if (pathname.startsWith('/vendor') && isVendorAuthenticated) {
-    userRole = 'Vendor';
+    userRole = 'Expert';
     currentUser = vendor;
   } else if (pathname.startsWith('/user') && isUserAuthenticated) {
     userRole = 'User';
@@ -52,7 +52,7 @@ export const NotificationProvider = ({ children }) => {
       userRole = 'User';
       currentUser = user;
     } else if (isVendorAuthenticated && hasVendorToken) {
-      userRole = 'Vendor';
+      userRole = 'Expert';
       currentUser = vendor;
     } else if (isAdminAuthenticated && hasAdminToken) {
       userRole = 'Admin';
@@ -91,7 +91,7 @@ export const NotificationProvider = ({ children }) => {
     // Get token from localStorage
     const tokenKey = userRole === 'Admin'
       ? 'adminAccessToken'
-      : userRole === 'Vendor'
+      : userRole === 'Expert'
         ? 'vendorAccessToken'
         : 'accessToken';
     const token = localStorage.getItem(tokenKey);
