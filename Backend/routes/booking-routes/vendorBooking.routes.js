@@ -57,8 +57,7 @@ const rejectBookingValidation = [
 ];
 
 const uploadReportValidation = [
-  body('waterFound').notEmpty().withMessage('Water found status is required'),
-  body('machineReadings').optional().isJSON().withMessage('Machine readings must be valid JSON')
+  body('reportData').notEmpty().withMessage('Report data is required').isJSON().withMessage('Report data must be valid JSON')
 ];
 
 const travelChargesValidation = [

@@ -308,10 +308,10 @@ const bookingSchema = new mongoose.Schema({
   // Water detection report
   report: {
     waterFound: {
-      type: Boolean,
+      type: Boolean, // true = Suitable Borewell Point Identified, false = No Suitable Borewell Point Identified
       default: null
     },
-    // New Report Fields
+    // Booking / Customer Info (Snapshot at time of report generation)
     customerName: String,
     village: String,
     mandal: String,
@@ -320,27 +320,74 @@ const bookingSchema = new mongoose.Schema({
     landLocation: String,
     surveyNumber: String,
     extent: String,
-    commandArea: {
-      type: String,
-      enum: ['Command', 'Non-command'],
-      default: null
+    
+    // Geological Information
+    geologicalInfo: {
+      rockType: String,
+      soilType: String,
+      weatheredZone: String,
+      groundwaterCondition: {
+        type: String,
+        enum: ['Poor', 'Moderate', 'Good', 'Excellent', '']
+      }
     },
-    rockType: String,
-    soilType: String,
-    existingBorewellDetails: String,
-    pointsLocated: Number,
-    recommendedPointNumber: String,
-    recommendedDepth: Number,
-    recommendedCasingDepth: Number,
-    expectedFractureDepths: String,
-    expectedYield: Number,
 
-    machineReadings: {
+    // Existing Borewell Details
+    existingBorewell: {
+      distance: Number,
       depth: Number,
-      flowRate: Number,
-      quality: String,
-      notes: String
+      yield: Number,
+      status: {
+        type: String,
+        enum: ['Working', 'Seasonal', 'Dry', 'Failed', '']
+      }
     },
+
+    // Survey Recommendations
+    surveyRecommendations: {
+      pointsInvestigated: Number,
+      recommendedPointNumber: String,
+      latitude: String,
+      longitude: String,
+      groundElevation: String,
+      recommendedBoreDepth: Number,
+      recommendedCasingDepth: Number,
+      expectedFractureDepths: String,
+      expectedYield: Number
+    },
+
+    // Expert Analysis
+    confidenceLevel: {
+      type: String,
+      enum: ['High', 'Medium', 'Low', '']
+    },
+    drillingRecommendation: {
+      type: String,
+      enum: ['Proceed Immediately', 'Suitable After Monsoon', 'Proceed With Caution', 'Not Recommended', '']
+    },
+    
+    // Additional Notes
+    notes: String,
+
+    // Evidence
+    evidence: {
+      gpsLocation: {
+        lat: Number,
+        lng: Number
+      },
+      surveyTimestamp: Date,
+      photoCount: Number
+    },
+    
+    // Expert Declaration & Signature
+    declaration: {
+      expertDeclaration: {
+        type: Boolean,
+        default: false
+      },
+      signature: String
+    },
+
     images: [{
       url: String,
       publicId: String,
@@ -348,6 +395,7 @@ const bookingSchema = new mongoose.Schema({
         lat: Number,
         lng: Number
       },
+      category: String, // Site, Equipment, Marked Point
       uploadedAt: Date
     }],
     reportFile: {

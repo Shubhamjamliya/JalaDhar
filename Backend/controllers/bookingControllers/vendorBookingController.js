@@ -506,31 +506,7 @@ const markVisitedAndUploadReport = async (req, res) => {
       });
     }
 
-    const {
-      waterFound,
-      machineReadings,
-      notes,
-      // New fields
-      customerName,
-      village,
-      mandal,
-      district,
-      state,
-      landLocation,
-      surveyNumber,
-      extent,
-      commandArea,
-      rockType,
-      soilType,
-      existingBorewellDetails,
-      pointsLocated,
-      recommendedPointNumber,
-      recommendedDepth,
-      recommendedCasingDepth,
-      expectedFractureDepths,
-      expectedYield
-    } = req.body;
-
+    const reportData = JSON.parse(req.body.reportData || '{}');
     const parseNum = (val) => {
       if (val === undefined || val === null || val === '') return undefined;
       const num = Number(val);
@@ -556,21 +532,6 @@ const markVisitedAndUploadReport = async (req, res) => {
         success: false,
         message: 'Booking not found or you are not the assigned expert.'
       });
-    }
-
-    // 2. Safe Parsing of machineReadings
-    let parsedMachineReadings = {};
-    if (machineReadings) {
-      if (typeof machineReadings === 'object') {
-        parsedMachineReadings = machineReadings;
-      } else if (typeof machineReadings === 'string') {
-        try {
-          parsedMachineReadings = JSON.parse(machineReadings);
-        } catch (parseErr) {
-          console.warn('[markVisitedAndUploadReport] JSON.parse machineReadings failed, using empty object:', parseErr);
-          parsedMachineReadings = {};
-        }
-      }
     }
 
     // 3. Handle file uploads with Cloudinary Error Isolation
@@ -631,30 +592,11 @@ const markVisitedAndUploadReport = async (req, res) => {
 
     // 4. Update booking with report data
     booking.report = {
-      waterFound: waterFound === 'true' || waterFound === true,
-      machineReadings: parsedMachineReadings,
+      ...reportData,
       images: reportImages,
       reportFile: reportFile,
       uploadedAt: new Date(),
-      uploadedBy: vendorId,
-      customerName,
-      village,
-      mandal,
-      district,
-      state,
-      landLocation,
-      surveyNumber,
-      extent,
-      commandArea: (commandArea === 'Command' || commandArea === 'Non-command') ? commandArea : undefined,
-      rockType,
-      soilType,
-      existingBorewellDetails,
-      pointsLocated: parseNum(pointsLocated),
-      recommendedPointNumber,
-      recommendedDepth: parseNum(recommendedDepth),
-      recommendedCasingDepth: parseNum(recommendedCasingDepth),
-      expectedFractureDepths,
-      expectedYield: parseNum(expectedYield)
+      uploadedBy: vendorId
     };
     booking.reportUploadedAt = new Date();
     booking.status = BOOKING_STATUS.REPORT_UPLOADED;

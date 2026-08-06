@@ -458,18 +458,27 @@ export default function VendorBookingDetails() {
 
     const getStatusBadge = (status) => {
         const statusConfig = {
-            ASSIGNED: { color: "bg-yellow-100 text-yellow-700", label: "Assigned" },
+            PENDING: { color: "bg-orange-100 text-orange-700", label: "Pending" },
+            ASSIGNED: { color: "bg-orange-100 text-orange-700", label: "Pending" },
             ACCEPTED: { color: "bg-blue-100 text-blue-700", label: "Accepted" },
+            EN_ROUTE: { color: "bg-sky-100 text-sky-700", label: "En Route" },
             VISITED: { color: "bg-purple-100 text-purple-700", label: "Visited" },
             REPORT_UPLOADED: { color: "bg-indigo-100 text-indigo-700", label: "Report Uploaded" },
+            PAID_FIRST: { color: "bg-teal-100 text-teal-700", label: "1st Payment Release" },
             AWAITING_PAYMENT: { color: "bg-orange-100 text-orange-700", label: "Awaiting Payment" },
+            PAYMENT_SUCCESS: { color: "bg-green-100 text-green-700", label: "Payment Success" },
+            FINAL_SETTLEMENT: { color: "bg-teal-100 text-teal-700", label: "Final Settlement" },
+            FINAL_SETTLEMENT_COMPLETE: { color: "bg-emerald-100 text-emerald-700", label: "Settlement Complete" },
+            BOREWELL_UPLOADED: { color: "bg-cyan-100 text-cyan-700", label: "Borewell Uploaded" },
+            ADMIN_APPROVED: { color: "bg-blue-100 text-blue-700", label: "Admin Approved" },
+            APPROVED: { color: "bg-green-100 text-green-700", label: "Approved" },
             COMPLETED: { color: "bg-green-100 text-green-700", label: "Completed" },
             REJECTED: { color: "bg-red-100 text-red-700", label: "Rejected" },
             CANCELLED: { color: "bg-gray-100 text-gray-700", label: "Cancelled" },
         };
-        const config = statusConfig[status] || { color: "bg-gray-100 text-gray-700", label: status };
+        const config = statusConfig[status] || { color: "bg-slate-100 text-slate-700", label: status };
         return (
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${config.color}`}>
+            <span className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider ${config.color}`}>
                 {config.label}
             </span>
         );
@@ -502,19 +511,19 @@ export default function VendorBookingDetails() {
             {/* Removed Back Button from here as it's now in VendorNavbar */}
 
             {/* Header */}
-            <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                    <p className="text-[#4A4A4A] text-sm">
-                        Booking ID: {booking._id || booking.id}
-                    </p>
-                    {/* Pending Status Badge - Right Side Top with Orange Color */}
-                    {(booking.status === "PENDING" || booking.status === "ASSIGNED") ? (
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
-                            Pending
-                        </span>
-                    ) : (
-                        getStatusBadge(booking.status)
-                    )}
+            <div className="mb-5 max-w-4xl mx-auto">
+                <div className="bg-white rounded-2xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.04)] border border-gray-100 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex flex-col gap-1">
+                            <span className="text-slate-500 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider">Booking ID:</span>
+                            <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md select-all truncate">
+                                {booking._id || booking.id}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                        {getStatusBadge(booking.status)}
+                    </div>
                 </div>
             </div>
 
