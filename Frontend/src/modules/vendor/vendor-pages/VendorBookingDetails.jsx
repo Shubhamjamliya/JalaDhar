@@ -698,6 +698,12 @@ export default function VendorBookingDetails() {
                             <span className="text-gray-800 font-bold">{formatDate(booking.acceptedAt)}</span>
                         </div>
                     )}
+                    {booking.enRouteAt && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Journey Started:</span>
+                            <span className="text-gray-800 font-bold">{formatDate(booking.enRouteAt)}</span>
+                        </div>
+                    )}
                     {booking.visitedAt && (
                         <div className="flex justify-between items-center">
                             <span className="text-gray-500">Site Visited:</span>

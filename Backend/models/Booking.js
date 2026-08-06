@@ -535,6 +535,7 @@ const bookingSchema = new mongoose.Schema({
   // Timestamps
   assignedAt: Date,
   acceptedAt: Date,
+  enRouteAt: Date,
   visitedAt: Date,
   reportUploadedAt: Date,
   completedAt: Date,
