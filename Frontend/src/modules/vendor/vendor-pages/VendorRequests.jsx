@@ -657,6 +657,8 @@ export default function VendorRequests() {
                                     </span>
                                     <div className="grid grid-cols-2 gap-1.5">
                                         {[
+                                            "06:00 AM - 07:00 AM",
+                                            "07:00 AM - 08:00 AM",
                                             "08:00 AM - 09:00 AM",
                                             "09:00 AM - 10:00 AM",
                                             "10:00 AM - 11:00 AM",
@@ -723,8 +725,7 @@ export default function VendorRequests() {
                                         {[
                                             "04:00 PM - 05:00 PM",
                                             "05:00 PM - 06:00 PM",
-                                            "06:00 PM - 07:00 PM",
-                                            "07:00 PM - 08:00 PM"
+                                            "06:00 PM - 07:00 PM"
                                         ].map((slot) => {
                                             const isSelected = acceptScheduleTime === slot;
                                             return (

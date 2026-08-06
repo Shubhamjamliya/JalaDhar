@@ -124,7 +124,13 @@ const SurveyReportPDF = ({ booking }) => {
     ? fractureDepths.map(d => d.includes('ft') ? d : `${d} ft`).join(', ')
     : 'To be determined during drilling';
 
-  const address = [report.village, report.mandal, report.district, report.state].filter(Boolean).join(', ');
+  const address = [
+    booking.village || booking.address?.city,
+    booking.mandal,
+    booking.district,
+    booking.address?.state,
+    (booking.address?.pincode && booking.address.pincode !== "000000") ? booking.address.pincode : null
+  ].filter(Boolean).join(', ');
 
   return (
     <Document>

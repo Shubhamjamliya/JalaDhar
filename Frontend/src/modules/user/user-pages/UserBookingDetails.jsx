@@ -483,7 +483,13 @@ export default function UserBookingDetails() {
             extent,
             surveyNo,
             landmark,
-            remarks
+            remarks,
+            village: booking.village || booking.address?.city || '',
+            mandal: booking.mandal || '',
+            district: booking.district || '',
+            state: booking.address?.state || '',
+            pincode: booking.address?.pincode || '',
+            coordinates: booking.address?.coordinates || null
         };
     };
 
@@ -970,10 +976,59 @@ export default function UserBookingDetails() {
                                         <p className="text-xs sm:text-sm font-bold text-slate-900">{siteInfo.surveyNo}</p>
                                     </div>
                                 )}
-                                {siteInfo.landmark && (
+                                {siteInfo.village && (
                                     <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Village</p>
+                                        <p className="text-xs sm:text-sm font-bold text-slate-900">{siteInfo.village}</p>
+                                    </div>
+                                )}
+                                {siteInfo.mandal && (
+                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Mandal</p>
+                                        <p className="text-xs sm:text-sm font-bold text-slate-900">{siteInfo.mandal}</p>
+                                    </div>
+                                )}
+                                {siteInfo.district && (
+                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">District</p>
+                                        <p className="text-xs sm:text-sm font-bold text-slate-900">{siteInfo.district}</p>
+                                    </div>
+                                )}
+                                {siteInfo.state && (
+                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">State</p>
+                                        <p className="text-xs sm:text-sm font-bold text-slate-900">{siteInfo.state}</p>
+                                    </div>
+                                )}
+                                {siteInfo.pincode && siteInfo.pincode !== "000000" && (
+                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Pin code (optional)</p>
+                                        <p className="text-xs sm:text-sm font-bold text-slate-900">{siteInfo.pincode}</p>
+                                    </div>
+                                )}
+                                {siteInfo.landmark && (
+                                    <div className="col-span-1 sm:col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Landmark</p>
                                         <p className="text-xs sm:text-sm font-bold text-slate-900">{siteInfo.landmark}</p>
+                                    </div>
+                                )}
+                                {siteInfo.coordinates && siteInfo.coordinates.lat && siteInfo.coordinates.lng && (
+                                    <div className="col-span-1 sm:col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2">GPS Coordinates</p>
+                                        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                                            <p className="text-xs sm:text-sm font-mono bg-white px-3 py-2 rounded-lg border border-slate-200 flex-1 w-full sm:w-auto overflow-hidden text-ellipsis whitespace-nowrap">
+                                                {siteInfo.coordinates.lat.toFixed(6)}, {siteInfo.coordinates.lng.toFixed(6)}
+                                            </p>
+                                            <a
+                                                href={`https://www.google.com/maps/dir/?api=1&destination=${siteInfo.coordinates.lat},${siteInfo.coordinates.lng}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 font-bold rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors w-full sm:w-auto text-xs sm:text-sm"
+                                            >
+                                                <IoMapOutline className="text-base" />
+                                                <span>Google Maps Navigation</span>
+                                            </a>
+                                        </div>
                                     </div>
                                 )}
                                 {siteInfo.remarks && (

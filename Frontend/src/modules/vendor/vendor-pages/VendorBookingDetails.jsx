@@ -324,7 +324,13 @@ export default function VendorBookingDetails() {
             extent,
             surveyNo,
             landmark,
-            remarks
+            remarks,
+            village: booking.village || booking.address?.city || '',
+            mandal: booking.mandal || '',
+            district: booking.district || '',
+            state: booking.address?.state || '',
+            pincode: booking.address?.pincode || '',
+            coordinates: booking.address?.coordinates || null
         };
     };
 
@@ -1222,10 +1228,59 @@ export default function VendorBookingDetails() {
                                     <p className="text-base font-semibold text-gray-800">{siteInfo.surveyNo}</p>
                                 </div>
                             )}
-                            {siteInfo.landmark && (
+                            {siteInfo.village && (
                                 <div>
+                                    <p className="text-sm text-gray-500 mb-1">Village</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.village}</p>
+                                </div>
+                            )}
+                            {siteInfo.mandal && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">Mandal</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.mandal}</p>
+                                </div>
+                            )}
+                            {siteInfo.district && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">District</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.district}</p>
+                                </div>
+                            )}
+                            {siteInfo.state && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">State</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.state}</p>
+                                </div>
+                            )}
+                            {siteInfo.pincode && siteInfo.pincode !== "000000" && (
+                                <div>
+                                    <p className="text-sm text-gray-500 mb-1">Pin code (optional)</p>
+                                    <p className="text-base font-semibold text-gray-800">{siteInfo.pincode}</p>
+                                </div>
+                            )}
+                            {siteInfo.landmark && (
+                                <div className="col-span-1 md:col-span-2">
                                     <p className="text-sm text-gray-500 mb-1">Landmark</p>
                                     <p className="text-base font-semibold text-gray-800">{siteInfo.landmark}</p>
+                                </div>
+                            )}
+                            {siteInfo.coordinates && siteInfo.coordinates.lat && siteInfo.coordinates.lng && (
+                                <div className="col-span-1 md:col-span-2 mt-2">
+                                    <p className="text-sm text-gray-500 mb-2">GPS Coordinates</p>
+                                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                                        <p className="text-sm font-mono bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 flex-1 w-full sm:w-auto overflow-hidden text-ellipsis whitespace-nowrap">
+                                            {siteInfo.coordinates.lat.toFixed(6)}, {siteInfo.coordinates.lng.toFixed(6)}
+                                        </p>
+                                        <a
+                                            href={`https://www.google.com/maps/dir/?api=1&destination=${siteInfo.coordinates.lat},${siteInfo.coordinates.lng}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 font-semibold rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors w-full sm:w-auto"
+                                        >
+                                            <IoMap className="text-lg" />
+                                            <span>Google Maps Navigation</span>
+                                        </a>
+                                    </div>
                                 </div>
                             )}
                             {siteInfo.remarks && (
@@ -1585,6 +1640,8 @@ export default function VendorBookingDetails() {
                                     </span>
                                     <div className="grid grid-cols-2 gap-1.5">
                                         {[
+                                            "06:00 AM - 07:00 AM",
+                                            "07:00 AM - 08:00 AM",
                                             "08:00 AM - 09:00 AM",
                                             "09:00 AM - 10:00 AM",
                                             "10:00 AM - 11:00 AM",
@@ -1651,8 +1708,7 @@ export default function VendorBookingDetails() {
                                         {[
                                             "04:00 PM - 05:00 PM",
                                             "05:00 PM - 06:00 PM",
-                                            "06:00 PM - 07:00 PM",
-                                            "07:00 PM - 08:00 PM"
+                                            "06:00 PM - 07:00 PM"
                                         ].map((slot) => {
                                             const isSelected = acceptScheduleTime === slot;
                                             return (
