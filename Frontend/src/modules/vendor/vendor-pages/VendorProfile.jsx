@@ -1759,8 +1759,8 @@ export default function VendorProfile() {
                                         </div>
                                     )}
 
-                                    {/* Price and Duration */}
-                                    <div className="grid grid-cols-2 gap-4">
+                                    {/* Price */}
+                                    <div className="grid grid-cols-1 gap-4">
                                         <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="material-symbols-outlined text-[#00C2A8] text-lg">
@@ -1781,22 +1781,6 @@ export default function VendorProfile() {
                                                 )}
                                             </p>
                                         </div>
-                                        {previewingService.duration && (
-                                            <div className="bg-white rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <span className="material-symbols-outlined text-[#00C2A8] text-lg">
-                                                        schedule
-                                                    </span>
-                                                    <label className="block text-sm font-semibold text-[#3A3A3A]">
-                                                        Duration
-                                                    </label>
-                                                </div>
-                                                <p className="text-sm text-[#3A3A3A]">
-                                                    {previewingService.duration}{" "}
-                                                    minutes
-                                                </p>
-                                            </div>
-                                        )}
                                     </div>
 
                                     {/* Category and Status in Grid */}
