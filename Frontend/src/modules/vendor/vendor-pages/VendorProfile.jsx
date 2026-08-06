@@ -120,6 +120,9 @@ export default function VendorProfile() {
             geoLocation: null
         },
         profilePicture: null,
+        workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        workingHours: { start: '08:00', end: '19:00' },
+        aboutExpert: "",
     });
 
     useEffect(() => {
@@ -177,6 +180,9 @@ export default function VendorProfile() {
                     address: address,
                     profilePicture:
                         vendorData.documents?.profilePicture?.url || null,
+                    workingDays: vendorData.workingDays?.length ? vendorData.workingDays : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                    workingHours: vendorData.workingHours?.start ? vendorData.workingHours : { start: '08:00', end: '19:00' },
+                    aboutExpert: vendorData.aboutExpert || "",
                 });
 
                 setFullAddress(fullAddressStr);
@@ -391,6 +397,9 @@ export default function VendorProfile() {
                 designation: profileData.designation,
                 experience: parseInt(profileData.experience) || 0,
                 address: addressToSave, // Send as object, not stringified
+                workingDays: profileData.workingDays,
+                workingHours: profileData.workingHours,
+                aboutExpert: profileData.aboutExpert,
             };
 
             const response = await updateVendorProfile(updateData);
@@ -987,11 +996,92 @@ export default function VendorProfile() {
                             {/* Experience Details */}
                             <div>
                                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                    <IoDocumentTextOutline /> Experience Summary
+                                    <IoDocumentTextOutline /> About the Expert
                                 </h4>
-                                <p className="text-gray-700 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    {vendor?.experienceDetails || "No detailed experience summary provided."}
-                                </p>
+                                {isEditing ? (
+                                    <textarea
+                                        value={profileData.aboutExpert}
+                                        onChange={(e) => setProfileData({ ...profileData, aboutExpert: e.target.value })}
+                                        className="w-full rounded-xl border-gray-200 bg-gray-50 p-4 focus:border-blue-500 focus:ring-blue-500 min-h-[120px]"
+                                        placeholder="Describe your expertise, background, and specializations..."
+                                    />
+                                ) : (
+                                    <p className="text-gray-700 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        {profileData.aboutExpert || vendor?.experienceDetails || "No detailed experience summary provided."}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Availability Section */}
+                            <div>
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <IoTimeOutline /> Availability
+                                </h4>
+                                {isEditing ? (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-xs text-gray-500 font-bold mb-2 block">Working Days</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                                                    <button
+                                                        key={day}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newDays = profileData.workingDays?.includes(day)
+                                                                ? profileData.workingDays.filter(d => d !== day)
+                                                                : [...(profileData.workingDays || []), day];
+                                                            setProfileData({ ...profileData, workingDays: newDays });
+                                                        }}
+                                                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                                                            profileData.workingDays?.includes(day)
+                                                                ? 'bg-blue-600 text-white shadow-md'
+                                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                        }`}
+                                                    >
+                                                        {day.substring(0, 3)}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs text-gray-500 font-bold mb-2 block">Start Time</label>
+                                                <input
+                                                    type="time"
+                                                    value={profileData.workingHours?.start || "08:00"}
+                                                    onChange={(e) => setProfileData({
+                                                        ...profileData,
+                                                        workingHours: { ...profileData.workingHours, start: e.target.value }
+                                                    })}
+                                                    className="w-full rounded-xl border-gray-200 bg-gray-50 p-3 focus:border-blue-500 focus:ring-blue-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-500 font-bold mb-2 block">End Time</label>
+                                                <input
+                                                    type="time"
+                                                    value={profileData.workingHours?.end || "19:00"}
+                                                    onChange={(e) => setProfileData({
+                                                        ...profileData,
+                                                        workingHours: { ...profileData.workingHours, end: e.target.value }
+                                                    })}
+                                                    className="w-full rounded-xl border-gray-200 bg-gray-50 p-3 focus:border-blue-500 focus:ring-blue-500"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex gap-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                        <div>
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Days</p>
+                                            <p className="font-semibold text-gray-900">{profileData.workingDays?.length === 7 ? 'Everyday' : profileData.workingDays?.join(', ')}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Hours</p>
+                                            <p className="font-semibold text-gray-900">{profileData.workingHours?.start} - {profileData.workingHours?.end}</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

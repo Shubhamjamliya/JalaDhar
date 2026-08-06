@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     IoPersonOutline,
     IoCallOutline,
@@ -13,10 +13,39 @@ import {
     IoLanguageOutline,
     IoInformationCircleOutline,
     IoBusinessOutline,
-    IoCalendarOutline
+    IoCalendarOutline,
+    IoChevronDownOutline,
+    IoChevronUpOutline
 } from "react-icons/io5";
 
 export default function VendorProfileView({ vendor, profileData, stats }) {
+    const [isCertificationsOpen, setIsCertificationsOpen] = useState(false);
+    const [isSafetyOpen, setIsSafetyOpen] = useState(false);
+
+    const formatWorkingDays = (days) => {
+        if (!days) return "Monday - Saturday";
+        if (Array.isArray(days)) {
+            if (days.length === 7) return "Everyday";
+            return days.join(', ');
+        }
+        return days;
+    };
+
+    const formatWorkingHours = (hours) => {
+        if (!hours) return "08:00 AM - 07:00 PM";
+        if (typeof hours === 'object' && hours.start && hours.end) {
+            const formatTime = (time) => {
+                const [h, m] = time.split(':');
+                let hr = parseInt(h);
+                const ampm = hr >= 12 ? 'PM' : 'AM';
+                hr = hr % 12 || 12;
+                return `${hr.toString().padStart(2, '0')}:${m} ${ampm}`;
+            };
+            return `${formatTime(hours.start)} - ${formatTime(hours.end)}`;
+        }
+        return hours;
+    };
+
     const renderStars = (rating) => {
         return [...Array(5)].map((_, index) => (
             <span key={index}>
@@ -138,11 +167,11 @@ export default function VendorProfileView({ vendor, profileData, stats }) {
                             </div>
                             <div className="flex justify-between border-b border-gray-50 pb-2">
                                 <span className="text-gray-500">Working Days</span>
-                                <span className="font-semibold text-gray-900">{vendor?.workingDays || "Monday - Saturday"}</span>
+                                <span className="font-semibold text-gray-900">{formatWorkingDays(vendor?.workingDays)}</span>
                             </div>
                             <div className="flex justify-between pb-2">
                                 <span className="text-gray-500">Working Hours</span>
-                                <span className="font-semibold text-gray-900">{vendor?.workingHours || "08:00 AM - 07:00 PM"}</span>
+                                <span className="font-semibold text-gray-900">{formatWorkingHours(vendor?.workingHours)}</span>
                             </div>
                         </div>
                     </div>
@@ -160,26 +189,48 @@ export default function VendorProfileView({ vendor, profileData, stats }) {
 
             {/* Performance, Certifications & Trust */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <IoDocumentTextOutline className="text-red-500" /> Certifications
-                    </h3>
-                    <div className="space-y-3">
-                        {renderBadge(true, "Qualification Certificates")}
-                        {renderBadge(vendor?.isApproved, "Government Registration")}
-                        {renderBadge(true, "Training Certificates")}
+                <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 transition-all duration-300">
+                    <div 
+                        className="flex justify-between items-center cursor-pointer group"
+                        onClick={() => setIsCertificationsOpen(!isCertificationsOpen)}
+                    >
+                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <IoDocumentTextOutline className="text-red-500" /> Certifications
+                        </h3>
+                        <div className="text-gray-400 group-hover:text-blue-500 transition-colors bg-gray-50 rounded-full p-1.5 group-hover:bg-blue-50">
+                            {isCertificationsOpen ? <IoChevronUpOutline /> : <IoChevronDownOutline />}
+                        </div>
+                    </div>
+                    
+                    <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isCertificationsOpen ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
+                        <div className="space-y-3">
+                            {renderBadge(true, "Qualification Certificates")}
+                            {renderBadge(vendor?.isApproved, "Government Registration")}
+                            {renderBadge(true, "Training Certificates")}
+                        </div>
                     </div>
                 </div>
 
-                <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <IoCheckmarkCircleOutline className="text-teal-500" /> Safety & Trust
-                    </h3>
-                    <div className="space-y-3">
-                        {renderBadge(vendor?.isApproved, "Aadhaar Verified")}
-                        {renderBadge(vendor?.isApproved, "PAN Verified")}
-                        {renderBadge(vendor?.isApproved, "Bank Verified")}
-                        {renderBadge(vendor?.isActive, "Insured Expert")}
+                <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 transition-all duration-300">
+                    <div 
+                        className="flex justify-between items-center cursor-pointer group"
+                        onClick={() => setIsSafetyOpen(!isSafetyOpen)}
+                    >
+                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <IoCheckmarkCircleOutline className="text-teal-500" /> Safety & Trust
+                        </h3>
+                        <div className="text-gray-400 group-hover:text-blue-500 transition-colors bg-gray-50 rounded-full p-1.5 group-hover:bg-blue-50">
+                            {isSafetyOpen ? <IoChevronUpOutline /> : <IoChevronDownOutline />}
+                        </div>
+                    </div>
+                    
+                    <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSafetyOpen ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
+                        <div className="space-y-3">
+                            {renderBadge(vendor?.isApproved, "Aadhaar Verified")}
+                            {renderBadge(vendor?.isApproved, "PAN Verified")}
+                            {renderBadge(vendor?.isApproved, "Bank Verified")}
+                            {renderBadge(vendor?.isActive, "Insured Expert")}
+                        </div>
                     </div>
                 </div>
 

@@ -728,7 +728,21 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
             value={date || ''}
             className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:border-blue-500 outline-none font-medium text-gray-800"
             min={new Date().toISOString().split("T")[0]}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => {
+              const selectedDate = e.target.value;
+              if (selectedDate) {
+                const [year, month, day] = selectedDate.split('-');
+                const localDate = new Date(year, month - 1, day);
+                const dayOfWeek = localDate.toLocaleDateString('en-US', { weekday: 'long' });
+                
+                if (surveyData.vendor?.workingDays && surveyData.vendor.workingDays.length > 0 && !surveyData.vendor.workingDays.includes(dayOfWeek)) {
+                  toast.showError(`The expert is not available on ${dayOfWeek}s. Please select a different date.`);
+                  setDate("");
+                  return;
+                }
+              }
+              setDate(selectedDate);
+            }}
           />
           {date && (
             <div className="bg-blue-50/70 border border-blue-100 rounded-lg p-2.5 flex items-center justify-between text-xs text-blue-900 font-semibold">
