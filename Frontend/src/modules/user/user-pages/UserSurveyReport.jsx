@@ -131,14 +131,14 @@ export default function UserSurveyReport() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 pt-6">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50 pb-20 pt-6 -mx-4 sm:mx-0">
+      <div className="max-w-2xl mx-auto w-full px-2 sm:px-0">
         
         {/* Main Card */}
         <div className="bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded-[24px] overflow-hidden border border-gray-100 font-sans mb-8">
           
           {/* Header */}
-          <div className="p-6 sm:p-8 bg-gradient-to-b from-blue-50/50 to-white">
+          <div className="p-5 sm:p-8 bg-gradient-to-b from-blue-50/50 to-white">
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2 text-[#102353]">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -178,7 +178,7 @@ export default function UserSurveyReport() {
             </div>
           </div>
 
-          <div className="px-6 sm:px-8 pb-8 space-y-10">
+          <div className="px-5 sm:px-8 pb-8 space-y-10">
             
             {/* Outcome Banner */}
             <div className={`rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 border ${isWaterFound ? "bg-[#ECFDF5] border-[#D1FAE5]" : "bg-[#FEF2F2] border-[#FEE2E2]"}`}>
@@ -198,7 +198,7 @@ export default function UserSurveyReport() {
               <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#102353] mb-4 pb-2 border-b border-gray-100">
                 <IoPersonOutline className="text-[#0A84FF]" /> Client & Site Details
               </h3>
-              <div className="bg-[#F9FAFB] p-6 rounded-2xl border border-gray-100 grid grid-cols-2 gap-y-6 gap-x-4">
+              <div className="bg-[#F9FAFB] p-5 sm:p-6 rounded-2xl border border-gray-100 grid grid-cols-2 gap-y-6 gap-x-4">
                 <div className="col-span-2 sm:col-span-1 flex flex-col">
                   <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Client Name</label>
                   <p className="font-bold text-gray-900 mt-auto">{report.customerName || booking.user?.name}</p>
@@ -233,7 +233,7 @@ export default function UserSurveyReport() {
               <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#102353] mb-4 pb-2 border-b border-gray-100">
                 <IoMapOutline className="text-[#0A84FF]" /> Geological Profile
               </h3>
-              <div className="bg-[#F9FAFB] p-6 rounded-2xl border border-gray-100 grid grid-cols-2 gap-y-6 gap-x-4">
+              <div className="bg-[#F9FAFB] p-5 sm:p-6 rounded-2xl border border-gray-100 grid grid-cols-2 gap-y-6 gap-x-4">
                 <div className="flex flex-col">
                   <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Rock Formation</label>
                   <p className="font-bold text-gray-900 mt-auto">{report.geologicalInfo?.rockType || "-"}</p>
@@ -303,7 +303,7 @@ export default function UserSurveyReport() {
             {/* Drilling Instructions */}
             <section>
               <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#102353] mb-4 pb-2 border-b border-gray-100">
-                <IoConstructOutline className="text-orange-500" /> Drilling Instructions
+                <IoDocumentTextOutline className="text-orange-500" /> Drilling Instructions
               </h3>
               <div className="bg-orange-50/50 p-5 rounded-2xl border border-orange-100 space-y-4">
                 <div className="flex items-start gap-3">
