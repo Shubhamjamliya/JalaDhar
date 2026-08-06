@@ -562,20 +562,21 @@ export default function VendorBookingDetails() {
                                 { id: "accepted", label: "Accepted", icon: "✅", statuses: ["ACCEPTED"] },
                                 { id: "en_route", label: "En Route", icon: "🚗", statuses: ["EN_ROUTE"] },
                                 { id: "visited", label: "Visited", icon: "🏠", statuses: ["VISITED"] },
-                                { id: "payment", label: "Payment", icon: "💰", statuses: ["PAID_FIRST", "AWAITING_PAYMENT", "PAYMENT_SUCCESS"] },
                                 { id: "report", label: "Report", icon: "📄", statuses: ["REPORT_UPLOADED"] },
+                                { id: "payment", label: "Payment", icon: "💰", statuses: ["PAID_FIRST", "AWAITING_PAYMENT", "PAYMENT_SUCCESS"] },
                                 { id: "completed", label: "Completed", icon: "🎉", statuses: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"] },
                                 { id: "borewell", label: "Borewell Result", icon: "🚰", statuses: ["BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED"] },
                             ];
+                            
+                            // Perfectly matches backend chronological flow
                             const statusOrder = [
                                 "ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED", 
-                                "PAID_FIRST", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", 
                                 "REPORT_UPLOADED", 
-                                "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED", "SUCCESS", "FAILED",
+                                "PAID_FIRST", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", 
+                                "COMPLETED", "SUCCESS", "FAILED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE",
                                 "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED"
                             ];
                             const currentIndex = statusOrder.indexOf(status);
-
 
                             return timelineSteps.map((step, index) => {
                                 const stepStatuses = step.id === "completed"
