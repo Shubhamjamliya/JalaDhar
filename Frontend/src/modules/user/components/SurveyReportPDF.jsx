@@ -5,6 +5,7 @@ Font.register({
   family: 'Open Sans',
   fonts: [
     { src: 'https://cdn.jsdelivr.net/npm/open-sans-all@0.1.3/fonts/open-sans-regular.ttf' },
+    { src: 'https://cdn.jsdelivr.net/npm/open-sans-all@0.1.3/fonts/open-sans-600.ttf', fontWeight: 600 },
     { src: 'https://cdn.jsdelivr.net/npm/open-sans-all@0.1.3/fonts/open-sans-700.ttf', fontWeight: 700 },
     { src: 'https://cdn.jsdelivr.net/npm/open-sans-all@0.1.3/fonts/open-sans-italic.ttf', fontStyle: 'italic' },
     { src: 'https://cdn.jsdelivr.net/npm/open-sans-all@0.1.3/fonts/open-sans-700italic.ttf', fontWeight: 700, fontStyle: 'italic' },
@@ -12,65 +13,91 @@ Font.register({
 });
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'Open Sans', fontSize: 10, color: '#333' },
-  header: { borderBottom: '2pt solid #102353', paddingBottom: 10, marginBottom: 20, display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  titleGroup: { flex: 1 },
-  title: { fontSize: 24, color: '#102353', fontWeight: 700 },
-  subtitle: { fontSize: 8, color: '#0A84FF', textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
-  metaGroup: { textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 },
-  bookingId: { fontSize: 9, backgroundColor: '#eff6ff', color: '#102353', padding: '3 6', borderRadius: 4, fontWeight: 700 },
-  date: { fontSize: 8, color: '#666' },
-  qrCode: { width: 50, height: 50, marginTop: 5 },
+  page: { padding: '40 40 60 40', fontFamily: 'Open Sans', fontSize: 10, color: '#333', backgroundColor: '#FFFFFF' },
   
-  summaryRibbon: { padding: 15, borderRadius: 8, marginBottom: 20, display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  summarySuccess: { backgroundColor: '#ecfdf5', border: '1pt solid #d1fae5' },
-  summaryFailure: { backgroundColor: '#fef2f2', border: '1pt solid #fee2e2' },
-  statusLabel: { fontSize: 7, textTransform: 'uppercase', fontWeight: 700, textAlign: 'center', marginBottom: 2 },
-  statusText: { fontSize: 16, fontWeight: 700, textAlign: 'center' },
-  textSuccess: { color: '#065f46' },
-  textFailure: { color: '#991b1b' },
+  // Header
+  header: { display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2pt solid #0A192F', paddingBottom: 15, marginBottom: 20 },
+  headerLeft: { flex: 1 },
+  logoText: { fontSize: 24, color: '#0A192F', fontWeight: 700, letterSpacing: -0.5 },
+  reportType: { fontSize: 9, color: '#0A84FF', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 4, fontWeight: 700 },
+  headerRight: { display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 15 },
+  metaBox: { textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4 },
+  metaLabel: { fontSize: 7, color: '#6B7280', textTransform: 'uppercase', fontWeight: 700 },
+  metaValue: { fontSize: 9, color: '#111827', fontWeight: 700 },
+  qrCode: { width: 50, height: 50 },
 
-  section: { marginBottom: 15 },
-  sectionTitle: { fontSize: 12, fontWeight: 700, borderBottom: '1pt solid #f3f4f6', paddingBottom: 5, marginBottom: 10, color: '#102353' },
-  
-  grid: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', backgroundColor: '#F9FAFB', border: '1pt solid #f3f4f6', borderRadius: 8, padding: 10 },
-  gridItem: { width: '50%', marginBottom: 10, paddingRight: 10 },
-  gridItemFull: { width: '100%', marginBottom: 10 },
-  label: { fontSize: 7, color: '#6b7280', textTransform: 'uppercase', fontWeight: 700, marginBottom: 2 },
-  value: { fontSize: 10, color: '#111827', fontWeight: 700 },
+  // Outcome Banner
+  banner: { width: '100%', padding: 12, borderRadius: 4, marginBottom: 25, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
+  bannerSuccess: { backgroundColor: '#ECFDF5', border: '1pt solid #A7F3D0' },
+  bannerFailure: { backgroundColor: '#FEF2F2', border: '1pt solid #FECACA' },
+  bannerLabel: { fontSize: 8, textTransform: 'uppercase', fontWeight: 700, letterSpacing: 1, marginBottom: 4 },
+  bannerText: { fontSize: 16, fontWeight: 700 },
+  textSuccess: { color: '#065F46' },
+  textFailure: { color: '#991B1B' },
 
-  observationBox: { backgroundColor: '#fff', border: '1pt solid #e5e7eb', padding: 8, borderRadius: 4, fontStyle: 'italic', fontSize: 9, color: '#374151', marginTop: 5 },
+  // Sections
+  section: { marginBottom: 25 },
+  sectionHeader: { display: 'flex', flexDirection: 'row', alignItems: 'center', borderBottom: '1pt solid #0A192F', paddingBottom: 6, marginBottom: 10 },
+  sectionTitle: { fontSize: 11, fontWeight: 700, color: '#0A192F', textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  recommendationGrid: { display: 'flex', flexDirection: 'row', gap: 5, marginBottom: 10 },
-  recommendationItem: { flex: 1, backgroundColor: '#f9fafb', padding: 8, borderRadius: 6, textAlign: 'center', border: '1pt solid #f3f4f6' },
-  recValue: { fontSize: 14, color: '#0A84FF', fontWeight: 700, marginTop: 2 },
-  
-  fractureBox: { backgroundColor: '#f5f3ff', padding: 10, borderRadius: 6, border: '1pt solid #ede9fe' },
-  fractureItem: { fontSize: 11, fontWeight: 700, color: '#5b21b6', marginBottom: 3 },
-  
-  instructionBox: { backgroundColor: '#fff7ed', padding: 10, borderRadius: 6, border: '1pt solid #ffedd5' },
-  instructionText: { fontSize: 10, fontWeight: 700, color: '#9a3412', marginBottom: 4 },
-  
-  expertSection: { marginTop: 20, backgroundColor: '#F8FAFC', border: '1pt solid #E2E8F0', borderRadius: 8, padding: 15, display: 'flex', flexDirection: 'row', justifyContent: 'space-between' },
-  expertDetails: { flex: 1 },
-  expertName: { fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 2 },
-  expertMeta: { fontSize: 9, color: '#4b5563', marginBottom: 2 },
-  signatureBox: { width: 120, display: 'flex', alignItems: 'center' },
-  signatureText: { fontFamily: 'Open Sans', fontStyle: 'italic', fontSize: 18, color: '#1e3a8a', borderBottom: '1pt solid #bfdbfe', width: '100%', textAlign: 'center', paddingBottom: 5, marginBottom: 5 },
-  verifiedBadge: { fontSize: 8, fontWeight: 700, color: '#047857', backgroundColor: '#ecfdf5', padding: '2 6', borderRadius: 4 },
+  // Tables
+  table: { width: '100%', border: '1pt solid #E5E7EB', borderRadius: 4 },
+  tableRow: { display: 'flex', flexDirection: 'row', borderBottom: '1pt solid #E5E7EB', minHeight: 24, alignItems: 'center' },
+  tableRowLast: { borderBottom: 'none' },
+  tableColLabel: { width: '35%', backgroundColor: '#F9FAFB', padding: '6 10', borderRight: '1pt solid #E5E7EB' },
+  tableColValue: { width: '65%', padding: '6 10' },
+  tableColLabelSplit: { width: '25%', backgroundColor: '#F9FAFB', padding: '6 10', borderRight: '1pt solid #E5E7EB' },
+  tableColValueSplit: { width: '25%', padding: '6 10', borderRight: '1pt solid #E5E7EB' },
+  tableColValueSplitLast: { width: '25%', padding: '6 10' },
+  label: { fontSize: 8, color: '#4B5563', textTransform: 'uppercase', fontWeight: 700 },
+  value: { fontSize: 9, color: '#111827', fontWeight: 600 },
+  valueHighlight: { fontSize: 9, color: '#0A84FF', fontWeight: 700 },
 
-  actionSection: { marginTop: 15, backgroundColor: '#0A84FF', color: '#fff', padding: 15, borderRadius: 8 },
-  actionTitle: { fontSize: 12, fontWeight: 700, marginBottom: 8 },
-  actionItem: { fontSize: 9, marginBottom: 4 },
+  // Quotes / Observations
+  quoteBox: { backgroundColor: '#F9FAFB', borderLeft: '3pt solid #D1D5DB', padding: 10, marginTop: 5 },
+  quoteText: { fontStyle: 'italic', fontSize: 9, color: '#374151', lineHeight: 1.4 },
 
-  disclaimer: { marginTop: 25, fontSize: 7, color: '#9ca3af', textAlign: 'justify', lineHeight: 1.4 },
+  // Technical Recommendations
+  techMetricsRow: { display: 'flex', flexDirection: 'row', backgroundColor: '#0A192F', borderRadius: 6, color: '#FFFFFF', padding: 12, marginBottom: 10, justifyContent: 'space-between' },
+  techMetric: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', borderRight: '1pt solid #1E3A8A' },
+  techMetricLast: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  techLabel: { fontSize: 7, textTransform: 'uppercase', color: '#9CA3AF', fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 },
+  techValue: { fontSize: 16, fontWeight: 700, color: '#FFFFFF' },
+  techUnit: { fontSize: 9, color: '#9CA3AF', fontWeight: 600 },
   
-  imageSection: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
-  imageWrapper: { width: '31%', display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  image: { width: '100%', height: 100, objectFit: 'cover', borderRadius: 6, border: '1pt solid #e5e7eb' },
-  imageLabel: { fontSize: 7, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginTop: 4 },
+  fractureZone: { display: 'flex', flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', border: '1pt solid #BFDBFE', borderRadius: 4, padding: '8 12', gap: 10 },
+  fractureLabel: { fontSize: 8, textTransform: 'uppercase', fontWeight: 700, color: '#1E40AF', width: '35%' },
+  fractureValues: { fontSize: 10, fontWeight: 700, color: '#1E3A8A', width: '65%' },
+
+  // Drilling Instructions
+  alertBox: { backgroundColor: '#FFFBEB', border: '1pt solid #FDE68A', borderLeft: '4pt solid #F59E0B', padding: 12, borderRadius: 4 },
+  alertItem: { fontSize: 9, color: '#92400E', fontWeight: 600, marginBottom: 4, lineHeight: 1.4 },
+
+  // Images
+  imageGrid: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  imageCard: { width: '31%', display: 'flex', flexDirection: 'column' },
+  imageFrame: { width: '100%', height: 120, objectFit: 'cover', borderRadius: 4, border: '1pt solid #E5E7EB', marginBottom: 4 },
+  imageCaption: { fontSize: 7, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', textAlign: 'center' },
   
-  mapImage: { width: '100%', height: 180, objectFit: 'cover', borderRadius: 8, border: '1pt solid #e5e7eb' }
+  mapFrame: { width: '100%', height: 200, objectFit: 'cover', borderRadius: 4, border: '1pt solid #E5E7EB' },
+
+  // Signature Block
+  signatureGrid: { display: 'flex', flexDirection: 'row', border: '1pt solid #E5E7EB', borderRadius: 4 },
+  sigLeft: { width: '60%', padding: 15, borderRight: '1pt solid #E5E7EB', backgroundColor: '#F9FAFB' },
+  sigRight: { width: '40%', padding: 15, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
+  sigRow: { display: 'flex', flexDirection: 'row', marginBottom: 4 },
+  sigLabel: { width: '40%', fontSize: 8, color: '#6B7280', fontWeight: 700, textTransform: 'uppercase' },
+  sigVal: { width: '60%', fontSize: 9, color: '#111827', fontWeight: 600 },
+  sigLine: { borderBottom: '1pt solid #111827', width: '80%', height: 30, marginBottom: 5 },
+  sigText: { fontFamily: 'Open Sans', fontStyle: 'italic', fontSize: 14, color: '#1E3A8A', textAlign: 'center', marginTop: -20, marginBottom: 10 },
+  stamp: { backgroundColor: '#ECFDF5', border: '1pt solid #059669', color: '#047857', fontSize: 7, fontWeight: 700, padding: '3 8', borderRadius: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  // Footer
+  footer: { position: 'absolute', bottom: 25, left: 40, right: 40, display: 'flex', flexDirection: 'column', borderTop: '1pt solid #E5E7EB', paddingTop: 10 },
+  disclaimer: { fontSize: 6, color: '#9CA3AF', textAlign: 'justify', lineHeight: 1.4, marginBottom: 5 },
+  footerBottom: { display: 'flex', flexDirection: 'row', justifyContent: 'space-between' },
+  footerBrand: { fontSize: 8, color: '#0A192F', fontWeight: 700 },
+  pageNumber: { fontSize: 8, color: '#6B7280', fontWeight: 600 }
 });
 
 const SurveyReportPDF = ({ booking }) => {
@@ -92,170 +119,184 @@ const SurveyReportPDF = ({ booking }) => {
   const qrData = `https://jaladhaara.in/verify/${booking._id}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
 
-  const fractureDepths = report.expectedFractureDepths ? report.expectedFractureDepths.split(',').map(s => s.trim()) : [];
+  const fractureDepths = report.expectedFractureDepths ? report.expectedFractureDepths.split(/[\s,]+/).map(s => s.trim()).filter(Boolean) : [];
+  const fractureText = fractureDepths.length > 0 
+    ? fractureDepths.map(d => d.includes('ft') ? d : `${d} ft`).join(', ')
+    : 'To be determined during drilling';
+
+  const address = [report.village, report.mandal, report.district, report.state].filter(Boolean).join(', ');
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         
-        {/* Header 1 */}
+        {/* Header */}
         <View style={styles.header}>
-          <View style={styles.titleGroup}>
-            <Text style={styles.title}>Jaladhaara</Text>
-            <Text style={styles.subtitle}>Digital Survey Report</Text>
+          <View style={styles.headerLeft}>
+            <Text style={styles.logoText}>Jaladhaara</Text>
+            <Text style={styles.reportType}>Official Survey Report</Text>
           </View>
-          <View style={styles.metaGroup}>
-            <Text style={styles.bookingId}>Report ID: {booking._id.slice(-8).toUpperCase()}</Text>
-            <Text style={styles.date}>Issued: {formatDate(booking.createdAt)}</Text>
-            <Text style={styles.date}>Status: Verified ✓</Text>
-          </View>
-          <View style={{ marginLeft: 15 }}>
+          <View style={styles.headerRight}>
+            <View style={styles.metaBox}>
+              <Text style={styles.metaLabel}>Report ID</Text>
+              <Text style={styles.metaValue}>{booking._id.slice(-8).toUpperCase()}</Text>
+              <Text style={[styles.metaLabel, { marginTop: 4 }]}>Date Issued</Text>
+              <Text style={styles.metaValue}>{formatDate(booking.createdAt)}</Text>
+            </View>
             <Image src={qrUrl} style={styles.qrCode} />
           </View>
         </View>
 
-        {/* 2. Survey Outcome */}
-        <View style={[styles.summaryRibbon, isSuccess ? styles.summarySuccess : styles.summaryFailure]}>
-          <View>
-            <Text style={[styles.statusLabel, isSuccess ? styles.textSuccess : styles.textFailure]}>Official Survey Outcome</Text>
-            <Text style={[styles.statusText, isSuccess ? styles.textSuccess : styles.textFailure]}>
-              {isSuccess ? "Recommended Borewell Location Identified" : "No Suitable Groundwater Potential Identified"}
-            </Text>
-          </View>
+        {/* Outcome Banner */}
+        <View style={[styles.banner, isSuccess ? styles.bannerSuccess : styles.bannerFailure]}>
+          <Text style={[styles.bannerLabel, isSuccess ? styles.textSuccess : styles.textFailure]}>Official Survey Outcome</Text>
+          <Text style={[styles.bannerText, isSuccess ? styles.textSuccess : styles.textFailure]}>
+            {isSuccess ? "Recommended Borewell Location Identified" : "No Suitable Groundwater Potential Identified"}
+          </Text>
         </View>
 
-        {/* 3. Client & Site Details */}
+        {/* Client & Site Details */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Client & Site Details</Text>
-          <View style={styles.grid}>
-            <View style={styles.gridItem}>
-              <Text style={styles.label}>Client Name</Text>
-              <Text style={styles.value}>{report.customerName || user?.name}</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>1. Client & Site Details</Text>
+          </View>
+          <View style={styles.table}>
+            <View style={styles.tableRow}>
+              <Text style={styles.tableColLabel}><Text style={styles.label}>Client Name</Text></Text>
+              <Text style={styles.tableColValue}><Text style={styles.value}>{report.customerName || user?.name}</Text></Text>
             </View>
-            <View style={styles.gridItem}>
-              <Text style={styles.label}>Booking ID</Text>
-              <Text style={styles.value}>{booking._id.toUpperCase()}</Text>
+            <View style={styles.tableRow}>
+              <Text style={styles.tableColLabel}><Text style={styles.label}>Booking Ref.</Text></Text>
+              <Text style={styles.tableColValue}><Text style={styles.value}>{booking._id.toUpperCase()}</Text></Text>
             </View>
-            <View style={styles.gridItemFull}>
-              <Text style={styles.label}>Site Address</Text>
-              <Text style={styles.value}>{[report.village, report.mandal, report.district, report.state].filter(Boolean).join(', ')}</Text>
+            <View style={styles.tableRow}>
+              <Text style={styles.tableColLabel}><Text style={styles.label}>Site Address</Text></Text>
+              <Text style={styles.tableColValue}><Text style={styles.value}>{address || "N/A"}</Text></Text>
             </View>
-            <View style={styles.gridItem}>
-              <Text style={styles.label}>Survey No.</Text>
-              <Text style={styles.value}>{report.surveyNumber || "N/A"}</Text>
-            </View>
-            <View style={styles.gridItem}>
-              <Text style={styles.label}>Extent</Text>
-              <Text style={styles.value}>{report.extent || "N/A"}</Text>
+            <View style={styles.tableRow}>
+              <Text style={styles.tableColLabelSplit}><Text style={styles.label}>Survey No.</Text></Text>
+              <Text style={styles.tableColValueSplit}><Text style={styles.value}>{report.surveyNumber || "N/A"}</Text></Text>
+              <Text style={styles.tableColLabelSplit}><Text style={styles.label}>Extent</Text></Text>
+              <Text style={styles.tableColValueSplitLast}><Text style={styles.value}>{report.extent || "N/A"}</Text></Text>
             </View>
             {report.surveyRecommendations?.latitude && (
-              <View style={styles.gridItemFull}>
-                <Text style={styles.label}>GPS Coordinates</Text>
-                <Text style={[styles.value, { color: '#0A84FF' }]}>{report.surveyRecommendations.latitude}, {report.surveyRecommendations.longitude}</Text>
+              <View style={[styles.tableRow, styles.tableRowLast]}>
+                <Text style={styles.tableColLabel}><Text style={styles.label}>GPS Coordinates</Text></Text>
+                <Text style={styles.tableColValue}><Text style={styles.valueHighlight}>{report.surveyRecommendations.latitude}, {report.surveyRecommendations.longitude}</Text></Text>
               </View>
             )}
           </View>
         </View>
 
-        {/* 4. Geological Profile */}
+        {/* Geological Profile */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Geological Profile</Text>
-          <View style={styles.grid}>
-            <View style={styles.gridItem}>
-              <Text style={styles.label}>Rock Formation</Text>
-              <Text style={styles.value}>{report.geologicalInfo?.rockType || "-"}</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>2. Geological Profile</Text>
+          </View>
+          <View style={styles.table}>
+            <View style={styles.tableRow}>
+              <Text style={styles.tableColLabelSplit}><Text style={styles.label}>Rock Formation</Text></Text>
+              <Text style={styles.tableColValueSplit}><Text style={styles.value}>{report.geologicalInfo?.rockType || "-"}</Text></Text>
+              <Text style={styles.tableColLabelSplit}><Text style={styles.label}>Surface Soil</Text></Text>
+              <Text style={styles.tableColValueSplitLast}><Text style={styles.value}>{report.geologicalInfo?.soilType || "-"}</Text></Text>
             </View>
-            <View style={styles.gridItem}>
-              <Text style={styles.label}>Surface Soil</Text>
-              <Text style={styles.value}>{report.geologicalInfo?.soilType || "-"}</Text>
-            </View>
-            <View style={styles.gridItem}>
-              <Text style={styles.label}>Terrain Type</Text>
-              <Text style={styles.value}>{report.geologicalInfo?.terrainType || "-"}</Text>
-            </View>
-            <View style={styles.gridItem}>
-              <Text style={styles.label}>Weathered Zone (ft)</Text>
-              <Text style={styles.value}>{report.geologicalInfo?.weatheredZone || "-"}</Text>
-            </View>
-            <View style={styles.gridItemFull}>
-              <Text style={styles.label}>Nearby Borewell Observations</Text>
-              <Text style={styles.observationBox}>"{report.existingBorewellDetails || "No existing borewell observations provided."}"</Text>
+            <View style={[styles.tableRow, styles.tableRowLast]}>
+              <Text style={styles.tableColLabelSplit}><Text style={styles.label}>Terrain Type</Text></Text>
+              <Text style={styles.tableColValueSplit}><Text style={styles.value}>{report.geologicalInfo?.terrainType || "-"}</Text></Text>
+              <Text style={styles.tableColLabelSplit}><Text style={styles.label}>Weathered Zone</Text></Text>
+              <Text style={styles.tableColValueSplitLast}><Text style={styles.value}>{report.geologicalInfo?.weatheredZone || "-"}</Text></Text>
             </View>
           </View>
+          {report.existingBorewellDetails && (
+            <View style={styles.quoteBox}>
+              <Text style={styles.label}>Nearby Borewell Observations</Text>
+              <Text style={styles.quoteText}>"{report.existingBorewellDetails}"</Text>
+            </View>
+          )}
         </View>
 
-        {/* 5. Technical Recommendations */}
+        {/* Technical Recommendations */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Technical Recommendations</Text>
-          <View style={styles.recommendationGrid}>
-            <View style={styles.recommendationItem}>
-              <Text style={styles.label}>Rec. Point No.</Text>
-              <Text style={styles.recValue}>#{report.surveyRecommendations?.recommendedPointNumber || "1"}</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>3. Technical Recommendations</Text>
+          </View>
+          <View style={styles.techMetricsRow}>
+            <View style={styles.techMetric}>
+              <Text style={styles.techLabel}>Rec. Point</Text>
+              <Text style={styles.techValue}>#{report.surveyRecommendations?.recommendedPointNumber || "1"}</Text>
             </View>
-            <View style={styles.recommendationItem}>
-              <Text style={styles.label}>Expected Yield</Text>
-              <Text style={styles.recValue}>{report.surveyRecommendations?.expectedYield || "--"} in</Text>
+            <View style={styles.techMetric}>
+              <Text style={styles.techLabel}>Exp. Yield</Text>
+              <Text style={styles.techValue}>{report.surveyRecommendations?.expectedYield || "--"} <Text style={styles.techUnit}>in</Text></Text>
             </View>
-            <View style={styles.recommendationItem}>
-              <Text style={styles.label}>Rec. Depth</Text>
-              <Text style={styles.recValue}>{report.surveyRecommendations?.recommendedBoreDepth || "--"} ft</Text>
+            <View style={styles.techMetric}>
+              <Text style={styles.techLabel}>Bore Depth</Text>
+              <Text style={styles.techValue}>{report.surveyRecommendations?.recommendedBoreDepth || "--"} <Text style={styles.techUnit}>ft</Text></Text>
             </View>
-            <View style={styles.recommendationItem}>
-              <Text style={styles.label}>Casing Length</Text>
-              <Text style={styles.recValue}>{report.surveyRecommendations?.recommendedCasingDepth || "--"} ft</Text>
+            <View style={styles.techMetricLast}>
+              <Text style={styles.techLabel}>Casing Len.</Text>
+              <Text style={styles.techValue}>{report.surveyRecommendations?.recommendedCasingDepth || "--"} <Text style={styles.techUnit}>ft</Text></Text>
             </View>
           </View>
           
-          <View style={styles.fractureBox}>
-             <Text style={[styles.label, { color: '#6b21a8' }]}>Expected Water-Bearing Fracture Zones</Text>
-             {fractureDepths.length > 0 ? fractureDepths.map((depth, idx) => (
-                <Text key={idx} style={styles.fractureItem}>• {depth.includes('ft') ? depth : `${depth} ft`}</Text>
-             )) : (
-                <Text style={styles.fractureItem}>To be determined during drilling</Text>
-             )}
+          <View style={styles.fractureZone}>
+             <Text style={styles.fractureLabel}>Exp. Fracture Zones</Text>
+             <Text style={styles.fractureValues}>{fractureText}</Text>
           </View>
         </View>
 
-        {/* 6. Drilling Instructions */}
+        {/* Drilling Instructions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Drilling Instructions</Text>
-          <View style={styles.instructionBox}>
-            <Text style={styles.instructionText}>• Stop drilling after {report.drillingInstructions?.stopDrillingDepth || "___"} ft if no fracture is encountered.</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>4. Drilling Instructions & Remarks</Text>
+          </View>
+          <View style={styles.alertBox}>
+            <Text style={styles.alertItem}>• Stop drilling after {report.drillingInstructions?.stopDrillingDepth || "___"} ft if no fracture is encountered.</Text>
             {report.drillingInstructions?.flushBorewell && (
-              <Text style={styles.instructionText}>• Flush borewell before yield testing (Recommended).</Text>
+              <Text style={styles.alertItem}>• Flush borewell thoroughly before yield testing (Recommended).</Text>
+            )}
+            {report.notes && (
+              <Text style={[styles.alertItem, { marginTop: 4, color: '#374151' }]}>• Remarks: {report.notes}</Text>
             )}
           </View>
         </View>
 
-      </Page>
-      
-      <Page size="A4" style={styles.page}>
-        
-        {/* 7. Professional Remarks */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Professional Remarks</Text>
-          <Text style={styles.observationBox}>"{report.notes || "No additional specific remarks noted for this location."}"</Text>
+        {/* Footer (Rendered on every page automatically) */}
+        <View style={styles.footer} fixed>
+          <Text style={styles.disclaimer}>
+            Disclaimer: This report is based on geophysical survey data, geological interpretation, and field observations conducted on the survey date. Groundwater occurrence is a natural phenomenon and cannot be guaranteed. Actual drilling results may vary due to local geological conditions, drilling practices, seasonal groundwater fluctuations, and other subsurface factors. Jaladhaara acts only as a technology platform connecting customers with independent survey experts and is not responsible for drilling outcomes.
+          </Text>
+          <View style={styles.footerBottom}>
+            <Text style={styles.footerBrand}>Jaladhaara Digital Survey</Text>
+            <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => (`Page ${pageNumber} of ${totalPages}`)} />
+          </View>
         </View>
 
-        {/* 10. Survey Location Map */}
+
+
+        {/* Site Evidence Map */}
         {report.surveyRecommendations?.latitude && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Survey Location Map</Text>
-            <Image src={staticMapUrl} style={styles.mapImage} />
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>5. Survey Location Context</Text>
+            </View>
+            <Image src={staticMapUrl} style={styles.mapFrame} />
           </View>
         )}
 
-        {/* 9. Site Evidence */}
+        {/* Site Evidence Images */}
         {report.images && report.images.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Site Evidence</Text>
-            <View style={styles.imageSection}>
+          <View style={styles.section} wrap={false}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>6. Site Evidence</Text>
+            </View>
+            <View style={styles.imageGrid}>
               {report.images.map((img, i) => {
                 const label = i === 0 ? "Site Photograph" : i === 1 ? "Marked Borewell Point" : i === 2 ? "Survey Equipment" : `Evidence ${i+1}`;
                 return (
-                  <View key={i} style={styles.imageWrapper}>
-                    <Image src={img.url || img} style={styles.image} />
-                    <Text style={styles.imageLabel}>{label}</Text>
+                  <View key={i} style={styles.imageCard}>
+                    <Image src={img.url || img} style={styles.imageFrame} />
+                    <Text style={styles.imageCaption}>{label}</Text>
                   </View>
                 );
               })}
@@ -263,36 +304,37 @@ const SurveyReportPDF = ({ booking }) => {
           </View>
         )}
 
-        {/* 8. Expert Verification */}
-        <View style={styles.expertSection}>
-          <View style={styles.expertDetails}>
-             <Text style={styles.label}>Survey Conducted By</Text>
-             <Text style={styles.expertName}>{vendor.name}</Text>
-             <Text style={styles.expertMeta}>Qualification: {vendor.qualification || "Hydrogeologist"}</Text>
-             <Text style={styles.expertMeta}>Experience: {vendor.experience || "-"} Years</Text>
-             <Text style={styles.expertMeta}>Expert ID: {vendor._id?.slice(-8).toUpperCase()}</Text>
-             <Text style={styles.expertMeta}>Survey Date: {formatDate(booking.createdAt)}</Text>
+        {/* Expert Verification */}
+        <View style={styles.section} wrap={false}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>7. Expert Verification</Text>
           </View>
-          <View style={styles.signatureBox}>
-             <Text style={styles.signatureText}>{vendor.name}</Text>
-             <Text style={styles.label}>Digital Signature</Text>
-             <View style={{ marginTop: 5 }}><Text style={styles.verifiedBadge}>✓ Verified by Jaladhaara</Text></View>
+          <View style={styles.signatureGrid}>
+            <View style={styles.sigLeft}>
+               <View style={styles.sigRow}><Text style={styles.sigLabel}>Conducted By</Text><Text style={styles.sigVal}>{vendor.name}</Text></View>
+               <View style={styles.sigRow}><Text style={styles.sigLabel}>Qualification</Text><Text style={styles.sigVal}>{vendor.qualification || "Hydrogeologist"}</Text></View>
+               <View style={styles.sigRow}><Text style={styles.sigLabel}>Experience</Text><Text style={styles.sigVal}>{vendor.experience || "-"} Years</Text></View>
+               <View style={styles.sigRow}><Text style={styles.sigLabel}>Expert ID</Text><Text style={styles.sigVal}>{vendor._id?.slice(-8).toUpperCase()}</Text></View>
+               <View style={styles.sigRow}><Text style={styles.sigLabel}>Survey Date</Text><Text style={styles.sigVal}>{formatDate(booking.createdAt)}</Text></View>
+            </View>
+            <View style={styles.sigRight}>
+               <View style={styles.sigLine}></View>
+               <Text style={styles.sigText}>{vendor.name}</Text>
+               <Text style={styles.stamp}>✓ Verified By Jaladhaara</Text>
+            </View>
           </View>
         </View>
 
-        {/* 11. Customer Action Section */}
-        <View style={styles.actionSection}>
-          <Text style={styles.actionTitle}>Next Steps for Customer</Text>
-          <Text style={styles.actionItem}>1. Share this report with your drilling contractor.</Text>
-          <Text style={styles.actionItem}>2. Drill at the recommended point.</Text>
-          <Text style={styles.actionItem}>3. Complete drilling as per the recommended depth.</Text>
-          <Text style={styles.actionItem}>4. Update the drilling outcome in the Jaladhaara app.</Text>
+        {/* Footer (Rendered on every page automatically) */}
+        <View style={styles.footer} fixed>
+          <Text style={styles.disclaimer}>
+            Disclaimer: This report is based on geophysical survey data, geological interpretation, and field observations conducted on the survey date. Groundwater occurrence is a natural phenomenon and cannot be guaranteed. Actual drilling results may vary due to local geological conditions, drilling practices, seasonal groundwater fluctuations, and other subsurface factors. Jaladhaara acts only as a technology platform connecting customers with independent survey experts and is not responsible for drilling outcomes.
+          </Text>
+          <View style={styles.footerBottom}>
+            <Text style={styles.footerBrand}>Jaladhaara Digital Survey</Text>
+            <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => (`Page ${pageNumber} of ${totalPages}`)} />
+          </View>
         </View>
-
-        {/* 13. Disclaimer */}
-        <Text style={styles.disclaimer}>
-          Disclaimer: This report is based on geophysical survey data, geological interpretation, and field observations conducted on the survey date. Groundwater occurrence is a natural phenomenon and cannot be guaranteed. Actual drilling results may vary due to local geological conditions, drilling practices, seasonal groundwater fluctuations, and other subsurface factors. Jaladhaara acts only as a technology platform connecting customers with independent survey experts and is not responsible for drilling outcomes.
-        </Text>
 
       </Page>
     </Document>
