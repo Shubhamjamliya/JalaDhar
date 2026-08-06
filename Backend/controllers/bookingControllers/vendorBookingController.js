@@ -988,8 +988,8 @@ const cancelBooking = async (req, res) => {
       });
     }
 
-    // Check if status is cancellable (ONLY ACCEPTED - until he visits the site)
-    const cancellableStatuses = [BOOKING_STATUS.ACCEPTED];
+    // Check if status is cancellable (ONLY ACCEPTED, EN_ROUTE, VISITED - until he uploads the report)
+    const cancellableStatuses = [BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.EN_ROUTE, BOOKING_STATUS.VISITED];
     if (!cancellableStatuses.includes(booking.status)) {
       return res.status(400).json({
         success: false,

@@ -68,12 +68,29 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
         recipientModel: 'User',
         type: 'BOOKING_FAILED',
         title: 'Booking Assignment Failed',
-        message: 'We couldn\'t find another expert for your request. Your booking has been cancelled.',
+        message: `We couldn't find another expert for your request. Your booking has been cancelled. Original reason: ${reason}`,
         relatedEntity: {
           entityType: 'Booking',
           entityId: booking._id
         }
       }, io);
+
+      // Notify admins
+      const Admin = require('../models/Admin');
+      const admins = await Admin.find({ isActive: true });
+      for (const admin of admins) {
+        await sendNotification({
+          recipient: admin._id,
+          recipientModel: 'Admin',
+          type: 'BOOKING_CANCELLED',
+          title: 'Booking Cancelled',
+          message: `Booking #${booking._id.toString().slice(-6)} was cancelled by vendor. Reason: ${reason}. System could not find another vendor.`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          }
+        }, io);
+      }
 
       return {
         success: false,
@@ -252,12 +269,29 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
       recipientModel: 'User',
       type: 'BOOKING_REASSIGNED',
       title: 'Expert Reassigned',
-      message: `Your booking has been reassigned to ${newVendor.name} due to ${initiatorRole === 'VENDOR' ? 'unavailability of the previous expert' : 'administrative changes'}.`,
+      message: `Your booking has been reassigned to ${newVendor.name}. Reason from previous expert: ${reason}`,
       relatedEntity: {
         entityType: 'Booking',
         entityId: booking._id
       }
     }, io);
+
+    // Notify admins
+    const Admin = require('../models/Admin');
+    const admins = await Admin.find({ isActive: true });
+    for (const admin of admins) {
+      await sendNotification({
+        recipient: admin._id,
+        recipientModel: 'Admin',
+        type: 'BOOKING_REASSIGNED',
+        title: 'Booking Reassigned',
+        message: `Booking #${booking._id.toString().slice(-6)} was cancelled by previous vendor and reassigned to ${newVendor.name}. Reason: ${reason}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        }
+      }, io);
+    }
 
     return {
       success: true,

@@ -1264,27 +1264,30 @@ export default function VendorProfile() {
             {/* My Services Section - Distinct and Professional */}
             {vendor?.isApproved && (
                 <div className="mt-12 mb-20 px-1">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-black text-gray-800 tracking-tight">Professional Services</h2>
-                        {services.length === 0 && !isAddingService && (
-                            <button
-                                onClick={() => {
-                                    setServiceFormData({
-                                        name: "Groundwater Survey",
-                                        description: "",
-                                        machineType: "",
-                                        skills: "",
-                                        price: "",
-                                        duration: "60",
-                                        category: "",
-                                    });
-                                    setIsAddingService(true);
-                                }}
-                                className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-blue-100"
-                            >
-                                <IoAddCircleOutline className="text-lg" /> Add New Service
-                            </button>
-                        )}
+                    <div className="flex flex-col mb-6">
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-2xl font-black text-gray-800 tracking-tight">Professional Services</h2>
+                            {services.length === 0 && !isAddingService && (
+                                <button
+                                    onClick={() => {
+                                        setServiceFormData({
+                                            name: "Groundwater Survey",
+                                            description: "",
+                                            machineType: "",
+                                            skills: "",
+                                            price: "",
+                                            duration: "60",
+                                            category: "",
+                                        });
+                                        setIsAddingService(true);
+                                    }}
+                                    className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-blue-100"
+                                >
+                                    <IoAddCircleOutline className="text-lg" /> Add New Service
+                                </button>
+                            )}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-sm">info</span> <span><strong>Note:</strong> Service charge is the base fee excluding traveling to the site.</span></p>
                     </div>
 
                     {/* Add/Edit Service Form */}
@@ -1559,7 +1562,7 @@ export default function VendorProfile() {
 
                                         <div className="mt-auto pt-4 border-t border-gray-50 flex items-end justify-between">
                                             <div>
-                                                <p className="text-xs text-gray-400 font-medium mb-0.5 uppercase tracking-wider">Service Charge</p>
+                                                <p className="text-xs text-gray-400 font-medium mb-0.5 uppercase tracking-wider">Service Charge <span className="text-[10px] normal-case">(Excluding traveling)</span></p>
                                                 <div className="flex items-baseline gap-1">
                                                     <span className="text-2xl font-bold text-gray-900">
                                                         ₹{service.price?.toLocaleString("en-IN")}
@@ -1767,7 +1770,7 @@ export default function VendorProfile() {
                                                     payments
                                                 </span>
                                                 <label className="block text-sm font-semibold text-[#3A3A3A]">
-                                                    Price
+                                                    Price <span className="text-xs font-normal text-gray-500">(Excluding traveling)</span>
                                                 </label>
                                             </div>
                                             <p className="text-base font-semibold text-[#0A84FF]">

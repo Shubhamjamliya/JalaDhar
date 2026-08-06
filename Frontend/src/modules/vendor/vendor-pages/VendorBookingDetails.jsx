@@ -53,12 +53,46 @@ export default function VendorBookingDetails() {
     const [showCancelInput, setShowCancelInput] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [cancellationReason, setCancellationReason] = useState("");
+    const [cancellationReasonType, setCancellationReasonType] = useState("");
+    const [cancellationRemarks, setCancellationRemarks] = useState("");
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    
+    const CANCELLATION_REASONS = [
+        "Unable to Reach Customer",
+        "Customer Requested Cancellation",
+        "Site Access Denied",
+        "Incorrect Booking Details",
+        "Survey Location Too Far",
+        "Safety or Security Concern",
+        "Severe Weather Conditions",
+        "Equipment Malfunction",
+        "Medical Emergency",
+        "Personal Emergency",
+        "Scheduling Conflict",
+        "Customer Unavailable at Site",
+        "Duplicate Booking",
+        "Payment/Booking Issue",
+        "Other"
+    ];
+
     const [travelChargesData, setTravelChargesData] = useState({
         amount: "",
         reason: ""
     });
     const [submittingTravelCharges, setSubmittingTravelCharges] = useState(false);
     const [showMapPicker, setShowMapPicker] = useState(false);
+
+    // Lock body scroll when modals are open
+    useEffect(() => {
+        if (showCancelInput) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showCancelInput]);
 
     // Load data on mount and when location/bookingId changes
     useEffect(() => {
@@ -794,18 +828,28 @@ export default function VendorBookingDetails() {
             )}
 
             {booking.status === "VISITED" && (
-                <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-6 border border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(10,132,255,0.08)] mb-6 border-2 border-blue-50 ring-4 ring-blue-50/30">
+                    <h2 className="text-lg font-black text-gray-800 mb-4 flex items-center gap-2">
                         <span className="w-1.5 h-6 bg-[#0A84FF] rounded-full"></span>
                         Required Action
                     </h2>
-                    <button
-                        onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
-                        className="w-full bg-[#0A84FF] text-white font-bold py-4 rounded-2xl hover:bg-[#0070DF] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm"
-                    >
-                        <IoDocumentTextOutline className="text-xl" />
-                        Upload Technical Report
-                    </button>
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
+                            className="w-full bg-[#0A84FF] text-white font-black py-4 rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100"
+                        >
+                            <IoDocumentTextOutline className="text-2xl" />
+                            Upload Technical Report
+                        </button>
+                        <button
+                            onClick={handleCancel}
+                            disabled={actionLoading}
+                            className="w-full bg-red-50 text-red-600 font-bold py-3.5 rounded-2xl border-2 border-red-50 hover:bg-red-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            <IoCloseCircleOutline className="text-xl" />
+                            Cancel Booking
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -908,24 +952,32 @@ export default function VendorBookingDetails() {
                                 {booking.user?.email && (
                                     <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                                         <IoMailOutline className="text-base text-gray-400" />
-                                        <a href={`mailto:${booking.user.email}`} className="hover:text-[#0A84FF] font-medium">
-                                            {booking.user.email}
-                                        </a>
+                                        {booking.status === "ASSIGNED" ? (
+                                            <span className="text-gray-400 font-medium italic">Email hidden until accepted</span>
+                                        ) : (
+                                            <a href={`mailto:${booking.user.email}`} className="hover:text-[#0A84FF] font-medium">
+                                                {booking.user.email}
+                                            </a>
+                                        )}
                                     </div>
                                 )}
                                 {booking.user?.phone && (
                                     <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                                         <IoCallOutline className="text-base text-gray-400" />
-                                        <a href={`tel:${booking.user.phone}`} className="hover:text-[#0A84FF] font-bold">
-                                            {booking.user.phone}
-                                        </a>
+                                        {booking.status === "ASSIGNED" ? (
+                                            <span className="text-gray-400 font-medium italic">+91 ***** *****</span>
+                                        ) : (
+                                            <a href={`tel:${booking.user.phone}`} className="hover:text-[#0A84FF] font-bold">
+                                                {booking.user.phone}
+                                            </a>
+                                        )}
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         {/* Quick 1-Tap Call & WhatsApp Action Buttons */}
-                        {booking.user?.phone && (
+                        {booking.user?.phone && booking.status !== "ASSIGNED" && (
                             <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                                 <a
                                     href={`tel:${booking.user.phone}`}
@@ -1840,18 +1892,110 @@ export default function VendorBookingDetails() {
                     </div>
                 </div>
             )}
-            {/* Cancellation Modals */}
-            <InputModal
-                isOpen={showCancelInput}
-                onClose={() => setShowCancelInput(false)}
-                onSubmit={handleCancelReasonSubmit}
-                title="Cancel Booking"
-                message="Please provide a reason for cancellation. This will be visible to the customer."
-                placeholder="Reason for cancellation..."
-                submitText="Submit Reason"
-                cancelText="Nevermind"
-                isTextarea={true}
-            />
+            {/* Custom Cancellation Modal */}
+            {showCancelInput && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-[24px] w-full max-w-md shadow-2xl transform transition-all">
+                        <div className="p-6">
+                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                <IoCloseCircleOutline className="text-2xl text-red-600" />
+                            </div>
+                            <h3 className="text-xl font-black text-gray-900 mb-2">Cancel Booking</h3>
+                            <p className="text-sm text-gray-500 mb-6">
+                                Please select a reason for cancellation. This will be visible to the customer and admin.
+                            </p>
+                            
+                            <div className="space-y-4">
+                                <div className="relative">
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Cancellation Reason *</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl focus:ring-[#0A84FF] focus:border-[#0A84FF] flex items-center justify-between p-3.5 outline-none font-medium text-left"
+                                    >
+                                        <span className={!cancellationReasonType ? "text-gray-400" : ""}>
+                                            {cancellationReasonType || "Select a reason..."}
+                                        </span>
+                                        <svg className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </button>
+                                    
+                                    {isDropdownOpen && (
+                                        <div className="w-full mt-2 bg-gray-50 border border-gray-200 rounded-2xl shadow-inner max-h-[200px] overflow-y-auto custom-scrollbar p-2">
+                                            {CANCELLATION_REASONS.map(reason => (
+                                                <button
+                                                    key={reason}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCancellationReasonType(reason);
+                                                        setIsDropdownOpen(false);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-3 text-sm font-bold transition-all rounded-xl flex items-center justify-between mb-1 last:mb-0 ${
+                                                        cancellationReasonType === reason 
+                                                            ? "bg-blue-50 text-[#0A84FF] shadow-sm ring-1 ring-blue-100" 
+                                                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                                    }`}
+                                                >
+                                                    {reason}
+                                                    {cancellationReasonType === reason && (
+                                                        <IoCheckmarkCircleOutline className="text-xl text-[#0A84FF]" />
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {(cancellationReasonType === "Other" || cancellationReasonType !== "") && (
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">
+                                            Remarks {cancellationReasonType === "Other" && <span className="text-red-500">*</span>}
+                                        </label>
+                                        <textarea
+                                            value={cancellationRemarks}
+                                            onChange={(e) => setCancellationRemarks(e.target.value)}
+                                            rows="3"
+                                            placeholder={cancellationReasonType === "Other" ? "Please specify your reason..." : "Additional details (optional)"}
+                                            className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl focus:ring-[#0A84FF] focus:border-[#0A84FF] block p-3.5 outline-none font-medium resize-none"
+                                        ></textarea>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 bg-gray-50 flex gap-3 rounded-b-[24px]">
+                            <button
+                                onClick={() => {
+                                    setShowCancelInput(false);
+                                    setCancellationReasonType("");
+                                    setCancellationRemarks("");
+                                }}
+                                className="flex-1 px-4 py-3 bg-white text-gray-700 text-sm font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all"
+                            >
+                                Nevermind
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (!cancellationReasonType) {
+                                        toast.showError("Please select a cancellation reason");
+                                        return;
+                                    }
+                                    if (cancellationReasonType === "Other" && (!cancellationRemarks || cancellationRemarks.trim().length < 5)) {
+                                        toast.showError("Please provide detailed remarks (min 5 characters)");
+                                        return;
+                                    }
+                                    const finalReason = cancellationReasonType === "Other" 
+                                        ? `Other: ${cancellationRemarks}` 
+                                        : (cancellationRemarks ? `${cancellationReasonType} - ${cancellationRemarks}` : cancellationReasonType);
+                                    
+                                    handleCancelReasonSubmit(finalReason);
+                                }}
+                                className="flex-1 px-4 py-3 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-200"
+                            >
+                                Submit Reason
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <ConfirmModal
                 isOpen={showCancelConfirm}
