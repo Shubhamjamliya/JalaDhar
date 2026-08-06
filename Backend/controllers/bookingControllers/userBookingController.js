@@ -100,13 +100,23 @@ const createBooking = async (req, res) => {
       scheduledTime,
       address,
       notes,
+      alternatePhone,
       // Customer Enquiry Form fields
       village,
       mandal,
       district,
       state,
       purpose,
+      surveyCategory,
       purposeExtent,
+      areaUnit,
+      existingBorewell,
+      existingBorewellInfo,
+      customerNotes,
+      customerPhotos,
+      supportingDocuments,
+      images,
+      documents,
       surveyNumber
     } = req.body;
 
@@ -262,13 +272,20 @@ const createBooking = async (req, res) => {
         district: district || address.district
       },
       notes,
+      alternatePhone: alternatePhone || undefined,
       // Customer Enquiry Form fields
       village: village || undefined,
       mandal: mandal || undefined,
       district: district || undefined,
       state: state || undefined,
       purpose: purpose || undefined,
+      surveyCategory: surveyCategory || purpose || undefined,
       purposeExtent: purposeExtent ? normalizeAcresGuntas(purposeExtent).decimalValue : undefined,
+      areaUnit: areaUnit || 'Acres',
+      existingBorewellInfo: existingBorewellInfo || (existingBorewell?.hasExisting ? `Yes (${[existingBorewell.depthInFeet ? `${existingBorewell.depthInFeet}ft` : null, existingBorewell.yearOfDrilling ? `Year: ${existingBorewell.yearOfDrilling}` : null, existingBorewell.gapsAndDepths ? `Gaps: ${existingBorewell.gapsAndDepths}` : null].filter(Boolean).join(', ')})` : 'None'),
+      customerNotes: customerNotes || notes || undefined,
+      customerPhotos: Array.isArray(customerPhotos) && customerPhotos.length > 0 ? customerPhotos : (Array.isArray(images) && images.length > 0 ? images.map(img => typeof img === 'string' ? { url: img } : img) : []),
+      supportingDocuments: Array.isArray(supportingDocuments) && supportingDocuments.length > 0 ? supportingDocuments : (Array.isArray(documents) && documents.length > 0 ? documents.map(doc => typeof doc === 'string' ? { url: doc, name: 'Attachment' } : doc) : []),
       surveyNumber: surveyNumber || undefined,
       payment: {
         baseServiceFee,
@@ -291,11 +308,8 @@ const createBooking = async (req, res) => {
           const vendorPayment = calculateVendorPayment(baseServiceFee, travelCharges);
           return {
             base: vendorPayment.base,
-            customerGST: vendorPayment.customerGST,
-            gross: vendorPayment.gross,
-            platformCommission: vendorPayment.platformCommission,
-            gstOnCommission: vendorPayment.gstOnCommission,
-            tds: vendorPayment.tds,
+            gst: vendorPayment.customerGST,
+            platformFee: vendorPayment.platformCommission + vendorPayment.gstOnCommission + vendorPayment.tds,
             totalVendorPayment: vendorPayment.totalVendorPayment,
             siteVisitPayment: {
               amount: parseFloat((vendorPayment.totalVendorPayment * 0.5).toFixed(2)),
@@ -325,7 +339,7 @@ const createBooking = async (req, res) => {
     });
 
     // Populate booking for response
-    await booking.populate('user', 'name email phone');
+    await booking.populate('user', 'name email phone alternatePhone');
     await booking.populate('vendor', 'name email phone designation');
     await booking.populate('service', 'name price');
 
@@ -487,7 +501,7 @@ const getBookingDetails = async (req, res) => {
       _id: bookingId,
       user: userId
     })
-      .populate('user', 'name email phone')
+      .populate('user', 'name email phone alternatePhone')
       .populate('vendor', 'name email phone rating address designation')
       .populate('service', 'name price machineType description');
 
@@ -795,7 +809,7 @@ const downloadInvoice = async (req, res) => {
         ]
       }
     })
-      .populate('user', 'name email phone address')
+      .populate('user', 'name email phone alternatePhone address')
       .populate('vendor', 'name email phone designation')
       .populate('service', 'name price machineType');
 

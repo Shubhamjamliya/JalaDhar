@@ -45,6 +45,11 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     default: 'TBD'
   },
+  alternatePhone: {
+    type: String,
+    trim: true,
+    default: null
+  },
   address: {
     street: {
       type: String,
@@ -87,13 +92,43 @@ const bookingSchema = new mongoose.Schema({
   },
   purpose: {
     type: String,
-    enum: ['Agriculture', 'Industrial/Commercial', 'Domestic/Household', 'Open plots', 'Industrial'],
+    trim: true
+  },
+  surveyCategory: {
+    type: String,
     trim: true
   },
   purposeExtent: {
     type: Number,
     min: 0
   },
+  areaUnit: {
+    type: String,
+    trim: true,
+    default: 'Acres'
+  },
+  existingBorewellInfo: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  customerNotes: {
+    type: String,
+    trim: true
+  },
+  customerPhotos: [{
+    url: String,
+    publicId: String,
+    caption: String,
+    uploadedAt: { type: Date, default: Date.now }
+  }],
+  supportingDocuments: [{
+    url: String,
+    name: String,
+    publicId: String,
+    fileType: String,
+    uploadedAt: { type: Date, default: Date.now }
+  }],
 
   payment: {
     baseServiceFee: {

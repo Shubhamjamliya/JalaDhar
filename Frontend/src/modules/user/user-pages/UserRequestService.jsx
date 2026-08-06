@@ -176,6 +176,7 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack, category }) => {
         mandal: "",
         district: "",
         state: "",
+        alternatePhone: "",
         purposeExtent: "",
         areaUnit: "sqft",
         surveyNumber: "",
@@ -191,7 +192,6 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack, category }) => {
         },
         techniqueUsed: "",
         techniqueProviderName: "",
-        notes: "",
         images: []
     });
 
@@ -302,6 +302,18 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack, category }) => {
                             }}
                             suggestions={getStatesList(formData.state)}
                             placeholder="Search or enter state..."
+                        />
+                    </div>
+                    <div className="col-span-2 mt-1">
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">
+                            Alternate Phone Number <span className="text-gray-400 font-normal">(Optional)</span>
+                        </label>
+                        <input
+                            type="tel"
+                            value={formData.alternatePhone || ''}
+                            onChange={(e) => handleChange("alternatePhone", e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm font-medium text-gray-800"
+                            placeholder="e.g. 9876543210 (Optional secondary contact)"
                         />
                     </div>
                 </div>

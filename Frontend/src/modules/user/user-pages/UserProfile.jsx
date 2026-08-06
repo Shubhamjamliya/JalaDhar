@@ -39,6 +39,7 @@ export default function UserProfile() {
         name: "",
         email: "",
         phone: "",
+        alternatePhone: "",
         address: {
             street: "",
             city: "",
@@ -64,6 +65,7 @@ export default function UserProfile() {
                     name: user.name || "",
                     email: user.email || "",
                     phone: user.phone || "",
+                    alternatePhone: user.alternatePhone || "",
                     address: user.address || {
                         street: "",
                         city: "",
@@ -105,6 +107,7 @@ export default function UserProfile() {
             const response = await updateUserProfile({
                 name: profileData.name,
                 phone: profileData.phone,
+                alternatePhone: profileData.alternatePhone,
                 address: profileData.address,
             });
 
@@ -266,6 +269,23 @@ export default function UserProfile() {
                                 setProfileData({
                                     ...profileData,
                                     phone: e.target.value,
+                                })
+                            }
+                            disabled={saving}
+                        />
+
+                        {/* Alternate Phone (Optional) */}
+                        <InfoRow
+                            icon={IoCallOutline}
+                            iconBg="bg-amber-50 text-amber-600 border border-amber-100"
+                            label="Alternate Phone (Optional)"
+                            value={profileData.alternatePhone || ""}
+                            placeholder="Optional alternate mobile number"
+                            isEditing={isEditing}
+                            onChange={(e) =>
+                                setProfileData({
+                                    ...profileData,
+                                    alternatePhone: e.target.value,
                                 })
                             }
                             disabled={saving}

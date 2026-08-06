@@ -21,7 +21,8 @@ import {
     IoMap,
     IoLogoGoogle,
     IoWaterOutline,
-    IoLogoWhatsapp
+    IoLogoWhatsapp,
+    IoCameraOutline
 } from "react-icons/io5";
 import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
@@ -953,9 +954,11 @@ export default function VendorBookingDetails() {
                             )}
                             <div>
                                 <h3 className="text-lg font-bold text-gray-800">
-                                    {booking.user?.name || "Customer"}
+                                    {booking.user?.name || booking.customerName || "Customer"}
                                 </h3>
-                                {booking.user?.email && (
+
+                                {/* Real Email (only display if not a dummy internal system email) */}
+                                {booking.user?.email && !booking.user.email.endsWith('@jaladhar.internal') && (
                                     <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                                         <IoMailOutline className="text-base text-gray-400" />
                                         {booking.status === "ASSIGNED" ? (
@@ -967,33 +970,59 @@ export default function VendorBookingDetails() {
                                         )}
                                     </div>
                                 )}
-                                {booking.user?.phone && (
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                                        <IoCallOutline className="text-base text-gray-400" />
+
+                                {/* Primary Mobile Number */}
+                                {(booking.user?.phone || booking.phone) && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-700 mt-1">
+                                        <IoCallOutline className="text-base text-[#0A84FF]" />
                                         {booking.status === "ASSIGNED" ? (
                                             <span className="text-gray-400 font-medium italic">+91 ***** *****</span>
                                         ) : (
-                                            <a href={`tel:${booking.user.phone}`} className="hover:text-[#0A84FF] font-bold">
-                                                {booking.user.phone}
+                                            <a href={`tel:${booking.user?.phone || booking.phone}`} className="hover:text-[#0A84FF] font-bold text-gray-900">
+                                                {booking.user?.phone || booking.phone}
                                             </a>
                                         )}
+                                    </div>
+                                )}
+
+                                {/* Alternate Mobile Number (Only if present) */}
+                                {booking.status !== "ASSIGNED" && (booking.alternatePhone || booking.user?.alternatePhone) && (
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1.5">
+                                        <span className="font-semibold text-gray-500">Alt Phone:</span>
+                                        <a href={`tel:${booking.alternatePhone || booking.user?.alternatePhone}`} className="hover:text-[#0A84FF] font-bold text-gray-800 flex items-center gap-1">
+                                            <IoCallOutline className="text-xs text-emerald-600" />
+                                            <span>{booking.alternatePhone || booking.user?.alternatePhone}</span>
+                                        </a>
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         {/* Quick 1-Tap Call & WhatsApp Action Buttons */}
-                        {booking.user?.phone && booking.status !== "ASSIGNED" && (
-                            <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                        {(booking.user?.phone || booking.phone) && booking.status !== "ASSIGNED" && (
+                            <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                                 <a
-                                    href={`tel:${booking.user.phone}`}
+                                    href={`tel:${booking.user?.phone || booking.phone}`}
                                     className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-50 text-[#0A84FF] font-bold text-xs rounded-xl hover:bg-blue-100 transition-all border border-blue-100"
+                                    title="Call Primary Number"
                                 >
                                     <IoCallOutline className="text-base" />
                                     <span>Call</span>
                                 </a>
+
+                                {(booking.alternatePhone || booking.user?.alternatePhone) && (
+                                    <a
+                                        href={`tel:${booking.alternatePhone || booking.user?.alternatePhone}`}
+                                        className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2.5 bg-amber-50 text-amber-700 font-bold text-xs rounded-xl hover:bg-amber-100 transition-all border border-amber-200"
+                                        title="Call Alternate Number"
+                                    >
+                                        <IoCallOutline className="text-base text-amber-600" />
+                                        <span>Call Alt</span>
+                                    </a>
+                                )}
+
                                 <a
-                                    href={`https://wa.me/91${booking.user.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${booking.user.name}, I am your ${booking.vendor?.designation || 'Groundwater Professional'} from Jaladhaara regarding Booking ORD-${booking._id?.slice(-8).toUpperCase()}`)}`}
+                                    href={`https://wa.me/91${(booking.user?.phone || booking.phone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${booking.user?.name || 'Customer'}, I am your ${booking.vendor?.designation || 'Groundwater Professional'} from Jaladhaara regarding Booking ORD-${booking._id?.slice(-8).toUpperCase()}`)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-xs rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100"
@@ -1007,33 +1036,69 @@ export default function VendorBookingDetails() {
                 </div>
             </div>
 
-            {/* Service Information Card */}
+            {/* Survey Information Card */}
             <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Service Information</h2>
-                <div className="space-y-3">
-                    <div>
-                        <p className="text-sm text-gray-500 mb-1">Service Name</p>
-                        <p className="text-lg font-bold text-gray-800">{booking.service?.name || "Service"}</p>
-                    </div>
-
-                    <div>
-                        <p className="text-sm text-gray-500 mb-1">Service Price</p>
-                        <p className="text-xl font-bold text-[#0A84FF]">
-                            ₹{booking.service?.price?.toLocaleString() || "0"}
-                        </p>
-                    </div>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <IoDocumentTextOutline className="text-[#0A84FF] text-2xl" />
+                        <span>Survey Information</span>
+                    </h2>
                 </div>
-            </div>
 
-            {/* Booking Schedule Card */}
-            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Schedule</h2>
-                <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                        <IoTimeOutline className="text-2xl text-[#0A84FF]" />
+                <div className="space-y-4">
+                    {/* Survey Category Header Banner */}
+                    <div className="p-3.5 bg-gradient-to-r from-blue-50/80 to-indigo-50/40 rounded-xl border border-blue-100 flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Scheduled Date & Time</p>
-                            <p className="text-base font-semibold text-gray-800">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Survey Category</p>
+                            <p className="text-base font-extrabold text-gray-800 mt-0.5">
+                                {booking.surveyCategory || booking.purpose || booking.service?.category || "Agriculture"}
+                            </p>
+                        </div>
+                        <span className="px-3 py-1 bg-white text-[#0A84FF] font-bold text-xs rounded-full border border-blue-200 shadow-sm">
+                            {booking.service?.name || "Hydrogeology Survey"}
+                        </span>
+                    </div>
+
+                    {/* Information Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {/* Land Area */}
+                        <div className="p-3.5 bg-gray-50/80 rounded-xl border border-gray-100 space-y-1">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Land Area</p>
+                            <p className="text-sm font-bold text-gray-900">
+                                {booking.purposeExtent 
+                                    ? formatAcresGuntasDisplay(booking.purposeExtent) 
+                                    : (booking.areaExtent ? `${booking.areaExtent} ${booking.areaUnit || 'Acres'}` : "Not specified")
+                                }
+                            </p>
+                        </div>
+
+                        {/* Purpose of Survey */}
+                        <div className="p-3.5 bg-gray-50/80 rounded-xl border border-gray-100 space-y-1">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Purpose of Survey</p>
+                            <p className="text-sm font-bold text-gray-900">
+                                {booking.purpose || "Groundwater Point Identification & Hydrogeological Survey"}
+                            </p>
+                        </div>
+
+                        {/* Existing Borewells */}
+                        <div className="p-3.5 bg-gray-50/80 rounded-xl border border-gray-100 space-y-1">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Existing Borewells</p>
+                            <p className="text-sm font-bold text-gray-900">
+                                {booking.existingBorewellInfo || 
+                                 (booking.reportData?.existingBorewell?.hasExisting || booking.existingBorewell?.depth 
+                                    ? `Yes (Depth: ${booking.reportData?.existingBorewell?.depthInFeet || booking.existingBorewell?.depth || 'N/A'}ft)` 
+                                    : "None / No Existing Borewell")
+                                }
+                            </p>
+                        </div>
+
+                        {/* Preferred Survey Date & Time */}
+                        <div className="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-1">
+                            <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+                                <IoTimeOutline className="text-sm text-emerald-600" />
+                                <span>Preferred Survey Date & Time</span>
+                            </p>
+                            <p className="text-sm font-extrabold text-emerald-950">
                                 {booking.scheduledDate
                                     ? new Date(booking.scheduledDate).toLocaleDateString("en-IN", {
                                         day: "numeric",
@@ -1041,31 +1106,164 @@ export default function VendorBookingDetails() {
                                         year: "numeric",
                                     })
                                     : "N/A"
-                                } at {booking.scheduledTime || "N/A"}
+                                } at {booking.scheduledTime || "TBD"}
                             </p>
                         </div>
                     </div>
-                    {booking.address && (
-                        <div className="flex items-start gap-3">
-                            <IoLocationOutline className="text-2xl text-[#0A84FF] mt-1" />
-                            <div>
-                                <p className="text-sm text-gray-500">Service Address</p>
-                                <p className="text-base text-gray-800">
-                                    {booking.address.street && `${booking.address.street}, `}
-                                    {booking.address.city && `${booking.address.city}, `}
-                                    {booking.address.state && `${booking.address.state} - `}
-                                    {booking.address.pincode}
-                                </p>
-                            </div>
+                </div>
+            </div>
+
+            {/* Survey Location Card */}
+            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <IoLocationOutline className="text-[#0A84FF] text-2xl" />
+                        <span>Survey Location</span>
+                    </h2>
+                </div>
+
+                <div className="space-y-3.5">
+                    {/* Complete Address */}
+                    <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Complete Address</p>
+                        <p className="text-sm font-bold text-gray-800 leading-snug">
+                            {booking.address?.street || booking.address?.landmark || [booking.address?.city, booking.address?.state].filter(Boolean).join(", ") || "N/A"}
+                        </p>
+                    </div>
+
+                    {/* Location Breakdown Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="p-3 bg-gray-50/70 rounded-xl border border-gray-100">
+                            <p className="text-[11px] font-medium text-gray-500">Village</p>
+                            <p className="text-xs font-bold text-gray-800 mt-0.5 truncate">{booking.village || booking.address?.village || booking.address?.city || "N/A"}</p>
                         </div>
-                    )}
-                    <button
-                        onClick={handleGetDirections}
-                        className="w-full mt-4 bg-emerald-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
+                        <div className="p-3 bg-gray-50/70 rounded-xl border border-gray-100">
+                            <p className="text-[11px] font-medium text-gray-500">Mandal / Taluk</p>
+                            <p className="text-xs font-bold text-gray-800 mt-0.5 truncate">{booking.mandal || booking.address?.mandal || "N/A"}</p>
+                        </div>
+                        <div className="p-3 bg-gray-50/70 rounded-xl border border-gray-100">
+                            <p className="text-[11px] font-medium text-gray-500">District</p>
+                            <p className="text-xs font-bold text-gray-800 mt-0.5 truncate">{booking.district || booking.address?.district || "N/A"}</p>
+                        </div>
+                        <div className="p-3 bg-gray-50/70 rounded-xl border border-gray-100">
+                            <p className="text-[11px] font-medium text-gray-500">State</p>
+                            <p className="text-xs font-bold text-gray-800 mt-0.5 truncate">{booking.state || booking.address?.state || "N/A"}</p>
+                        </div>
+                        <div className="p-3 bg-gray-50/70 rounded-xl border border-gray-100">
+                            <p className="text-[11px] font-medium text-gray-500">PIN Code</p>
+                            <p className="text-xs font-bold text-gray-800 mt-0.5">{booking.address?.pincode || "N/A"}</p>
+                        </div>
+                        <div className="p-3 bg-gray-50/70 rounded-xl border border-gray-100">
+                            <p className="text-[11px] font-medium text-gray-500">GPS Coordinates</p>
+                            <p className="text-xs font-bold text-emerald-700 mt-0.5 truncate">
+                                {(booking.address?.coordinates?.lat || booking.address?.location?.coordinates?.[1]) && (booking.address?.coordinates?.lng || booking.address?.location?.coordinates?.[0])
+                                    ? `${Number(booking.address?.coordinates?.lat || booking.address?.location?.coordinates?.[1]).toFixed(5)}, ${Number(booking.address?.coordinates?.lng || booking.address?.location?.coordinates?.[0]).toFixed(5)}`
+                                    : "N/A"
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Navigate with Google Maps Action Button */}
+                    <a
+                        href={(booking.address?.coordinates?.lat || booking.address?.location?.coordinates?.[1]) && (booking.address?.coordinates?.lng || booking.address?.location?.coordinates?.[0])
+                            ? `https://www.google.com/maps/dir/?api=1&destination=${booking.address?.coordinates?.lat || booking.address?.location?.coordinates?.[1]},${booking.address?.coordinates?.lng || booking.address?.location?.coordinates?.[0]}`
+                            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([booking.address?.street, booking.village || booking.address?.village, booking.district || booking.address?.district, booking.state || booking.address?.state, booking.address?.pincode].filter(Boolean).join(', '))}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full mt-2 bg-[#0A84FF] hover:bg-blue-600 text-white font-bold py-3.5 px-6 rounded-xl active:scale-98 transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-200"
                     >
                         <IoNavigateOutline className="text-xl" />
-                        Get Directions (Open Maps)
-                    </button>
+                        <span>Navigate with Google Maps</span>
+                    </a>
+                </div>
+            </div>
+
+            {/* Customer Requirements Card */}
+            <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <IoDocumentTextOutline className="text-[#0A84FF] text-2xl" />
+                        <span>Customer Requirements</span>
+                    </h2>
+                </div>
+
+                <div className="space-y-4">
+                    {/* Customer Notes */}
+                    <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-100/80">
+                        <p className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">Customer Notes / Specific Instructions</p>
+                        <p className="text-sm font-medium text-gray-800 leading-relaxed whitespace-pre-line">
+                            {booking.customerNotes || booking.notes || "No specific notes provided by customer."}
+                        </p>
+                    </div>
+
+                    {/* Uploaded Photos */}
+                    <div className="p-4 bg-gray-50/70 rounded-xl border border-gray-100 space-y-2">
+                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
+                            <IoImageOutline className="text-base text-[#0A84FF]" />
+                            <span>Uploaded Site Photos</span>
+                        </p>
+                        {(booking.customerPhotos?.length > 0 || booking.images?.length > 0 || booking.sitePhotos?.length > 0) ? (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 pt-1">
+                                {(booking.customerPhotos || booking.images || booking.sitePhotos || []).map((photo, idx) => {
+                                    const imgUrl = typeof photo === 'string' ? photo : (photo.url || photo.preview);
+                                    if (!imgUrl) return null;
+                                    return (
+                                        <a
+                                            key={idx}
+                                            href={imgUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="group relative aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm block hover:ring-2 hover:ring-[#0A84FF] transition-all"
+                                        >
+                                            <img src={imgUrl} alt={`Customer Site Photo ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                                                <IoDownloadOutline className="text-base" /> View
+                                            </div>
+                                        </a>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-xs font-medium text-gray-400 italic">No site photos uploaded by customer.</p>
+                        )}
+                    </div>
+
+                    {/* Supporting Documents (if any) */}
+                    <div className="p-4 bg-gray-50/70 rounded-xl border border-gray-100 space-y-2">
+                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
+                            <IoDocumentTextOutline className="text-base text-emerald-600" />
+                            <span>Supporting Documents (if any)</span>
+                        </p>
+                        {(booking.supportingDocuments?.length > 0 || booking.userDocuments?.length > 0) ? (
+                            <div className="space-y-2 pt-1">
+                                {(booking.supportingDocuments || booking.userDocuments || []).map((doc, idx) => {
+                                    const docUrl = typeof doc === 'string' ? doc : doc.url;
+                                    const docName = typeof doc === 'string' ? `Document ${idx + 1}` : (doc.name || `Supporting Document ${idx + 1}`);
+                                    if (!docUrl) return null;
+                                    return (
+                                        <div key={idx} className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200 text-xs">
+                                            <div className="flex items-center gap-2 truncate pr-2">
+                                                <IoDocumentTextOutline className="text-base text-[#0A84FF] shrink-0" />
+                                                <span className="font-bold text-gray-800 truncate">{docName}</span>
+                                            </div>
+                                            <a
+                                                href={docUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-3 py-1 bg-blue-50 text-[#0A84FF] font-bold rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1 shrink-0"
+                                            >
+                                                <IoDownloadOutline /> View Document
+                                            </a>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-xs font-medium text-gray-400 italic">No supporting documents attached.</p>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -1135,64 +1333,52 @@ export default function VendorBookingDetails() {
 
                         {/* Charges Breakdown Detail */}
                         <div className="bg-gray-50/80 backdrop-blur-sm rounded-2xl p-5 space-y-4 border border-gray-100 shadow-inner">
-                            {/* Base Fee */}
+                            {/* Total Survey Fee */}
                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-gray-500 font-medium">Base Service Fee</span>
+                                <span className="text-gray-500 font-medium">Total Survey Fee</span>
                                 <span className="text-gray-900 font-bold">₹{booking.payment.baseServiceFee?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
 
-                            {/* Travel Section */}
-                            <div className="space-y-2 pt-2 border-t border-gray-100">
-                                {/* Travel KM */}
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-gray-500">Travel Distance</span>
-                                    <span className="text-gray-700 font-semibold">{booking.payment.distance?.toFixed(2)} km</span>
-                                </div>
-                                {/* One Way */}
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-gray-500">One Way Charge</span>
-                                    <span className="text-gray-700 font-semibold">₹{(booking.payment.travelCharges / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                </div>
-                                {/* Two Way */}
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-gray-500">Round Trip (Two Way)</span>
-                                    <span className="text-blue-600 font-bold">Included (X 2)</span>
-                                </div>
-                                {/* Total Travel Charges */}
-                                <div className="flex justify-between items-center text-sm pt-1 border-t border-gray-100/50">
-                                    <span className="text-gray-600 font-bold">Total Travel Charges</span>
-                                    <span className="text-gray-900 font-bold">₹{booking.payment.travelCharges?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                </div>
+                            {/* Travel Charges */}
+                            <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-100">
+                                <span className="text-gray-500 font-medium">Travel Charges</span>
+                                <span className="text-gray-900 font-bold">₹{booking.payment.travelCharges?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
 
-                            {/* GST */}
-                            <div className="flex justify-between items-center text-xs font-medium pt-2 border-t border-gray-200">
-                                <span className="text-gray-500">GST (18%)</span>
+                            {/* Platform Fee */}
+                            <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-100">
+                                <span className="text-gray-500 font-medium">Platform Fee</span>
+                                <span className="text-red-500 font-bold">- ₹{(booking.vendorWalletPayments?.platformFee || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+
+                            {/* GST (if applicable) */}
+                            <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-100">
+                                <span className="text-gray-500 font-medium">GST (if applicable)</span>
                                 <span className="text-gray-900 font-bold">₹{booking.payment.gst?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
 
-                            {/* TOTAL */}
-                            <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
-                                <span className="text-base font-black text-gray-800">TOTAL AMOUNT</span>
-                                <span className="text-xl font-black text-blue-600">₹{booking.payment.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            {/* Advance Received */}
+                            <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-100">
+                                <span className="text-gray-500 font-medium">Advance Received</span>
+                                <span className={`font-bold ${booking.payment.advancePaid ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                    {booking.payment.advancePaid ? `₹${booking.payment.advanceAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Pending'}
+                                </span>
                             </div>
 
-                            {/* Payment Schedule */}
-                            <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-3">
-                                <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
-                                    <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-1">Advance (40%)</p>
-                                    <p className="text-sm font-black text-blue-700">₹{booking.payment.advanceAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
-                                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold inline-block mt-1 ${booking.payment.advancePaid ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                        {booking.payment.advancePaid ? 'RECEIVED' : 'PENDING'}
-                                    </span>
-                                </div>
-                                <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Remaining (60%)</p>
-                                    <p className="text-sm font-black text-gray-800">₹{booking.payment.remainingAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
-                                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold inline-block mt-1 ${booking.payment.remainingPaid ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                        {booking.payment.remainingPaid ? 'RECEIVED' : 'PENDING'}
-                                    </span>
-                                </div>
+                            {/* Balance Amount */}
+                            <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-100">
+                                <span className="text-gray-500 font-medium">Balance Amount</span>
+                                <span className={`font-bold ${booking.payment.remainingPaid ? 'text-emerald-600' : 'text-orange-500'}`}>
+                                    {booking.payment.remainingPaid ? `Paid (₹${booking.payment.remainingAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })})` : `₹${booking.payment.remainingAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                                </span>
+                            </div>
+
+                            {/* Expert Earnings */}
+                            <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
+                                <span className="text-base font-black text-gray-800">Expert Earnings</span>
+                                <span className="text-xl font-black text-[#0A84FF]">
+                                    ₹{((booking.vendorWalletPayments?.totalVendorPayment) || (booking.payment.baseServiceFee + booking.payment.travelCharges - (booking.vendorWalletPayments?.platformFee || 0)))?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1877,6 +2063,61 @@ export default function VendorBookingDetails() {
                     >
                         <IoAlertCircleOutline className="text-xl" />
                         Raise Dispute
+                    </button>
+                </div>
+            )}
+
+            {/* Inline Quick Actions Bar */}
+            {booking && (
+                <div className="bg-white -mx-4 -mb-6 mt-2 pt-4 pb-6 border-t border-gray-100 flex items-center justify-around md:mx-0 md:mb-0 md:rounded-[24px] md:border md:shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                    <button
+                        onClick={() => window.open(`tel:${booking.user?.phone || booking.phone}`)}
+                        className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-[#0A84FF] transition-colors"
+                    >
+                        <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-[#0A84FF]">
+                            <IoCallOutline className="text-xl" />
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-800">Call</span>
+                    </button>
+
+                    <button
+                        onClick={() => window.open(`https://wa.me/91${(booking.user?.phone || booking.phone || '').replace(/[^0-9]/g, '')}`, '_blank')}
+                        className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-green-500 transition-colors"
+                    >
+                        <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-500">
+                            <IoLogoWhatsapp className="text-xl" />
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-800">WhatsApp</span>
+                    </button>
+
+                    <button
+                        onClick={() => setShowMapPicker(true)}
+                        className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-indigo-500 transition-colors"
+                    >
+                        <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500">
+                            <IoNavigateOutline className="text-xl" />
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-800">Navigate</span>
+                    </button>
+
+                    <button
+                        onClick={() => toast.showInfo("Upload photos feature coming soon")}
+                        className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-purple-500 transition-colors"
+                    >
+                        <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center text-purple-500">
+                            <IoCameraOutline className="text-xl" />
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-800">Photos</span>
+                    </button>
+
+                    <button
+                        onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
+                        className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-orange-500 transition-colors"
+                    >
+                        <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-orange-500">
+                            <IoDocumentTextOutline className="text-xl" />
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-800">Report</span>
                     </button>
                 </div>
             )}

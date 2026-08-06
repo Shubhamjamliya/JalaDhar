@@ -46,7 +46,7 @@ const getVendorBookings = async (req, res) => {
 
     const [bookings, total] = await Promise.all([
       Booking.find(query)
-        .populate('user', 'name email phone address profilePicture documents.profilePicture')
+        .populate('user', 'name email phone alternatePhone address profilePicture documents.profilePicture')
         .populate('service', 'name price machineType')
         .sort(sortObj)
         .skip(skip)
@@ -849,7 +849,7 @@ const getBookingDetails = async (req, res) => {
       _id: bookingId,
       vendor: vendorId
     })
-      .populate('user', 'name email phone address profilePicture documents.profilePicture')
+      .populate('user', 'name email phone alternatePhone address profilePicture documents.profilePicture')
       .populate('vendor', 'name email phone vendorId address gstin pan bankDetails profilePicture')
       .populate('service', 'name price machineType description');
 
@@ -973,7 +973,7 @@ const downloadInvoice = async (req, res) => {
       vendor: vendorId,
       status: { $in: [BOOKING_STATUS.FINAL_SETTLEMENT, BOOKING_STATUS.COMPLETED, BOOKING_STATUS.SUCCESS] }
     })
-      .populate('user', 'name email phone address')
+      .populate('user', 'name email phone alternatePhone address')
       .populate('vendor', 'name email phone')
       .populate('service', 'name price machineType');
 

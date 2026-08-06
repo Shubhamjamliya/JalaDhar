@@ -156,13 +156,48 @@ export default function AdminBookingDetails() {
                 </div>
             </div>
 
-            {/* User Details */}
+            {/* Customer Details */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">User Details</h2>
-                <div className="space-y-1">
-                    <InfoRow icon={IoPersonOutline} label="Name" value={booking.user?.name} />
-                    <InfoRow icon={IoMailOutline} label="Email" value={booking.user?.email} />
-                    <InfoRow icon={IoCallOutline} label="Phone" value={booking.user?.phone} />
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Customer Details</h2>
+                <div className="space-y-3">
+                    <InfoRow icon={IoPersonOutline} label="Customer Name" value={booking.user?.name || booking.customerName || "Customer"} />
+                    {booking.user?.email && !booking.user.email.endsWith('@jaladhar.internal') && (
+                        <InfoRow icon={IoMailOutline} label="Email" value={booking.user.email} />
+                    )}
+                    
+                    <div className="flex items-center justify-between py-1 border-b border-gray-50">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <IoCallOutline className="text-gray-400 text-lg" />
+                            <span className="w-32 text-gray-500 font-medium">Primary Mobile:</span>
+                            <span className="font-bold text-gray-900">{booking.user?.phone || booking.phone || 'N/A'}</span>
+                        </div>
+                        {(booking.user?.phone || booking.phone) && (
+                            <a
+                                href={`tel:${booking.user?.phone || booking.phone}`}
+                                className="px-3 py-1 bg-blue-50 text-[#0A84FF] text-xs font-bold rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
+                            >
+                                <IoCallOutline /> Call
+                            </a>
+                        )}
+                    </div>
+
+                    {(booking.alternatePhone || booking.user?.alternatePhone) && (
+                        <div className="flex items-center justify-between py-1">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <IoCallOutline className="text-gray-400 text-lg" />
+                                <span className="w-32 text-gray-500 font-medium">Alternate Mobile:</span>
+                                <span className="font-bold text-gray-900">
+                                    {booking.alternatePhone || booking.user?.alternatePhone}
+                                </span>
+                            </div>
+                            <a
+                                href={`tel:${booking.alternatePhone || booking.user?.alternatePhone}`}
+                                className="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors flex items-center gap-1 border border-amber-200"
+                            >
+                                <IoCallOutline /> Call Alt
+                            </a>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -176,6 +211,49 @@ export default function AdminBookingDetails() {
                 </div>
             </div>
 
+            {/* Survey Information Card */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <IoDocumentTextOutline className="text-[#0A84FF] text-xl" />
+                    <span>Survey Information</span>
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <span className="text-xs font-semibold text-gray-500 uppercase block">Survey Category</span>
+                        <span className="font-bold text-gray-900 mt-1 block">
+                            {booking.surveyCategory || booking.purpose || booking.service?.category || "Agriculture"}
+                        </span>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <span className="text-xs font-semibold text-gray-500 uppercase block">Land Area</span>
+                        <span className="font-bold text-gray-900 mt-1 block">
+                            {booking.purposeExtent 
+                                ? formatAcresGuntasDisplay(booking.purposeExtent) 
+                                : (booking.areaExtent ? `${booking.areaExtent} ${booking.areaUnit || 'Acres'}` : "Not specified")
+                            }
+                        </span>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <span className="text-xs font-semibold text-gray-500 uppercase block">Purpose of Survey</span>
+                        <span className="font-bold text-gray-900 mt-1 block">
+                            {booking.purpose || "Groundwater Point Identification & Hydrogeological Survey"}
+                        </span>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <span className="text-xs font-semibold text-gray-500 uppercase block">Existing Borewells</span>
+                        <span className="font-bold text-gray-900 mt-1 block">
+                            {booking.existingBorewellInfo || "None / No Existing Borewell"}
+                        </span>
+                    </div>
+                    <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100 md:col-span-2">
+                        <span className="text-xs font-semibold text-emerald-700 uppercase block">Preferred Survey Date & Time</span>
+                        <span className="font-bold text-emerald-950 mt-1 block">
+                            {formatDate(booking.scheduledDate, booking.scheduledTime)}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             {/* Service Details */}
             <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Service Details</h2>
@@ -183,7 +261,150 @@ export default function AdminBookingDetails() {
                     <InfoRow icon={IoConstructOutline} label="Service Name" value={booking.service?.name} />
                     <InfoRow icon={IoDocumentTextOutline} label="Description" value={booking.service?.description} />
                     <InfoRow icon={IoTimeOutline} label="Scheduled Date" value={formatDate(booking.scheduledDate, booking.scheduledTime)} />
-                    <InfoRow icon={IoLocationOutline} label="Address" value={formatAddress(booking.address)} />
+                </div>
+            </div>
+
+            {/* Survey Location Card */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <IoLocationOutline className="text-[#0A84FF] text-xl" />
+                        <span>Survey Location</span>
+                    </h2>
+                    
+                    <a
+                        href={(booking.address?.coordinates?.lat || booking.address?.location?.coordinates?.[1]) && (booking.address?.coordinates?.lng || booking.address?.location?.coordinates?.[0])
+                            ? `https://www.google.com/maps/dir/?api=1&destination=${booking.address?.coordinates?.lat || booking.address?.location?.coordinates?.[1]},${booking.address?.coordinates?.lng || booking.address?.location?.coordinates?.[0]}`
+                            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([booking.address?.street, booking.village || booking.address?.village, booking.district || booking.address?.district, booking.state || booking.address?.state, booking.address?.pincode].filter(Boolean).join(', '))}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3.5 py-1.5 bg-[#0A84FF] hover:bg-blue-600 text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                    >
+                        <IoNavigateOutline className="text-sm" />
+                        <span>Navigate with Google Maps</span>
+                    </a>
+                </div>
+
+                <div className="space-y-3">
+                    <InfoRow icon={IoLocationOutline} label="Complete Address" value={booking.address?.street || booking.address?.landmark || [booking.address?.city, booking.address?.state].filter(Boolean).join(", ") || "N/A"} />
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+                        <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+                            <p className="text-[11px] text-gray-500 font-medium">Village</p>
+                            <p className="text-xs font-bold text-gray-800 mt-0.5 truncate">{booking.village || booking.address?.village || booking.address?.city || "N/A"}</p>
+                        </div>
+                        <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+                            <p className="text-[11px] text-gray-500 font-medium">Mandal / Taluk</p>
+                            <p className="text-xs font-bold text-gray-800 mt-0.5 truncate">{booking.mandal || booking.address?.mandal || "N/A"}</p>
+                        </div>
+                        <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+                            <p className="text-[11px] text-gray-500 font-medium">District</p>
+                            <p className="text-xs font-bold text-gray-800 mt-0.5 truncate">{booking.district || booking.address?.district || "N/A"}</p>
+                        </div>
+                        <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+                            <p className="text-[11px] text-gray-500 font-medium">State</p>
+                            <p className="text-xs font-bold text-gray-800 mt-0.5 truncate">{booking.state || booking.address?.state || "N/A"}</p>
+                        </div>
+                        <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+                            <p className="text-[11px] text-gray-500 font-medium">PIN Code</p>
+                            <p className="text-xs font-bold text-gray-800 mt-0.5">{booking.address?.pincode || "N/A"}</p>
+                        </div>
+                        <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+                            <p className="text-[11px] text-gray-500 font-medium">GPS Coordinates</p>
+                            <p className="text-xs font-bold text-emerald-700 mt-0.5 truncate">
+                                {(booking.address?.coordinates?.lat || booking.address?.location?.coordinates?.[1]) && (booking.address?.coordinates?.lng || booking.address?.location?.coordinates?.[0])
+                                    ? `${Number(booking.address?.coordinates?.lat || booking.address?.location?.coordinates?.[1]).toFixed(5)}, ${Number(booking.address?.coordinates?.lng || booking.address?.location?.coordinates?.[0]).toFixed(5)}`
+                                    : "N/A"
+                                }
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Customer Requirements Card */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <IoDocumentTextOutline className="text-[#0A84FF] text-xl" />
+                    <span>Customer Requirements</span>
+                </h2>
+
+                <div className="space-y-4 text-sm">
+                    {/* Customer Notes */}
+                    <div className="p-3.5 bg-amber-50 rounded-lg border border-amber-100">
+                        <span className="text-xs font-semibold text-amber-800 uppercase block mb-1">Customer Notes / Specific Instructions</span>
+                        <p className="text-gray-900 font-medium whitespace-pre-line leading-relaxed">
+                            {booking.customerNotes || booking.notes || "No specific notes provided by customer."}
+                        </p>
+                    </div>
+
+                    {/* Uploaded Photos */}
+                    <div className="p-3.5 bg-gray-50 rounded-lg border border-gray-100 space-y-2">
+                        <span className="text-xs font-semibold text-gray-600 uppercase flex items-center gap-1.5">
+                            <IoImageOutline className="text-base text-[#0A84FF]" />
+                            <span>Uploaded Site Photos</span>
+                        </span>
+                        {(booking.customerPhotos?.length > 0 || booking.images?.length > 0 || booking.sitePhotos?.length > 0) ? (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 pt-1">
+                                {(booking.customerPhotos || booking.images || booking.sitePhotos || []).map((photo, idx) => {
+                                    const imgUrl = typeof photo === 'string' ? photo : (photo.url || photo.preview);
+                                    if (!imgUrl) return null;
+                                    return (
+                                        <a
+                                            key={idx}
+                                            href={imgUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 shadow-sm block hover:ring-2 hover:ring-[#0A84FF] transition-all"
+                                        >
+                                            <img src={imgUrl} alt={`Customer Site Photo ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                                                <IoDownloadOutline className="text-base" /> View
+                                            </div>
+                                        </a>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-xs font-medium text-gray-400 italic">No site photos uploaded by customer.</p>
+                        )}
+                    </div>
+
+                    {/* Supporting Documents (if any) */}
+                    <div className="p-3.5 bg-gray-50 rounded-lg border border-gray-100 space-y-2">
+                        <span className="text-xs font-semibold text-gray-600 uppercase flex items-center gap-1.5">
+                            <IoDocumentTextOutline className="text-base text-emerald-600" />
+                            <span>Supporting Documents (if any)</span>
+                        </span>
+                        {(booking.supportingDocuments?.length > 0 || booking.userDocuments?.length > 0) ? (
+                            <div className="space-y-2 pt-1">
+                                {(booking.supportingDocuments || booking.userDocuments || []).map((doc, idx) => {
+                                    const docUrl = typeof doc === 'string' ? doc : doc.url;
+                                    const docName = typeof doc === 'string' ? `Document ${idx + 1}` : (doc.name || `Supporting Document ${idx + 1}`);
+                                    if (!docUrl) return null;
+                                    return (
+                                        <div key={idx} className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200 text-xs">
+                                            <div className="flex items-center gap-2 truncate pr-2">
+                                                <IoDocumentTextOutline className="text-base text-[#0A84FF] shrink-0" />
+                                                <span className="font-bold text-gray-800 truncate">{docName}</span>
+                                            </div>
+                                            <a
+                                                href={docUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-3 py-1 bg-blue-50 text-[#0A84FF] font-bold rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1 shrink-0"
+                                            >
+                                                <IoDownloadOutline /> View Document
+                                            </a>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-xs font-medium text-gray-400 italic">No supporting documents attached.</p>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -193,7 +414,7 @@ export default function AdminBookingDetails() {
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Details</h2>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                            <span className="text-gray-600">Base Service Fee:</span>
+                            <span className="text-gray-600">Total Survey Fee:</span>
                             <span className="font-medium">{formatAmount(booking.payment.baseServiceFee)}</span>
                         </div>
                         <div className="flex justify-between">
@@ -201,23 +422,29 @@ export default function AdminBookingDetails() {
                             <span className="font-medium">{formatAmount(booking.payment.travelCharges)}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-600">GST:</span>
-                            <span className="font-medium">{formatAmount(booking.payment.gst)}</span>
-                        </div>
-                        <div className="flex justify-between pt-2 border-t">
-                            <span className="font-semibold text-gray-900">Total Amount:</span>
-                            <span className="font-bold text-lg">{formatAmount(booking.payment.totalAmount)}</span>
+                            <span className="text-gray-600">Platform Fee:</span>
+                            <span className="font-medium text-red-500">- {formatAmount(booking.vendorWalletPayments?.platformFee || 0)}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-600">Advance Paid:</span>
-                            <span className={`font-medium ${booking.payment.advancePaid ? "text-green-600" : "text-red-600"}`}>
-                                {booking.payment.advancePaid ? "✓ Yes" : "✗ No"} - {formatAmount(booking.payment.advanceAmount)}
+                            <span className="text-gray-600">GST (if applicable):</span>
+                            <span className="font-medium">{formatAmount(booking.payment.gst)}</span>
+                        </div>
+                        <div className="flex justify-between border-t pt-2 mt-2">
+                            <span className="text-gray-600">Advance Received:</span>
+                            <span className={`font-medium ${booking.payment.advancePaid ? "text-green-600" : "text-yellow-600"}`}>
+                                {booking.payment.advancePaid ? formatAmount(booking.payment.advanceAmount) : 'Pending'}
                             </span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-600">Remaining Paid:</span>
-                            <span className={`font-medium ${booking.payment.remainingPaid ? "text-green-600" : "text-red-600"}`}>
-                                {booking.payment.remainingPaid ? "✓ Yes" : "✗ No"} - {formatAmount(booking.payment.remainingAmount)}
+                            <span className="text-gray-600">Balance Amount:</span>
+                            <span className={`font-medium ${booking.payment.remainingPaid ? "text-green-600" : "text-yellow-600"}`}>
+                                {booking.payment.remainingPaid ? `Paid (${formatAmount(booking.payment.remainingAmount)})` : formatAmount(booking.payment.remainingAmount)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between border-t-2 border-gray-200 pt-3 mt-3">
+                            <span className="font-bold text-gray-900 text-base">Expert Earnings:</span>
+                            <span className="font-bold text-blue-600 text-lg">
+                                {formatAmount((booking.vendorWalletPayments?.totalVendorPayment) || (booking.payment.baseServiceFee + booking.payment.travelCharges - (booking.vendorWalletPayments?.platformFee || 0)))}
                             </span>
                         </div>
                         {booking.payment.firstInstallment && (

@@ -15,7 +15,7 @@ const getBookingDetails = async (req, res) => {
     const { bookingId } = req.params;
 
     const booking = await Booking.findById(bookingId)
-      .populate('user', 'name email phone')
+      .populate('user', 'name email phone alternatePhone')
       .populate('vendor', 'name email phone')
       .populate('service', 'name price description machineType');
 

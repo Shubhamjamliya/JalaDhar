@@ -48,7 +48,7 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    const { name, phone, address } = req.body;
+    const { name, phone, alternatePhone, address } = req.body;
     const userId = req.userId;
 
     const user = await User.findById(userId);
@@ -62,6 +62,7 @@ const updateProfile = async (req, res) => {
     // Update fields
     if (name) user.name = name;
     if (phone) user.phone = phone;
+    if (alternatePhone !== undefined) user.alternatePhone = alternatePhone;
     if (address) {
       user.address = {
         street: address.street || user.address?.street || '',
