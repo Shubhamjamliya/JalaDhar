@@ -66,18 +66,15 @@ export default function VendorAllBookingsStatus() {
 
       if (response.success) {
         const allBookings = response.data.bookings || [];
-        // Filter bookings where user has confirmed by paying (advance payment done)
-        // Include: ASSIGNED (user paid advance - booking confirmed), ACCEPTED, and all statuses beyond
-        // Exclude: PENDING (user hasn't paid yet), REJECTED, CANCELLED
-        const confirmedBookings = allBookings.filter(
+        // Filter bookings where a report has been submitted
+        // Include: REPORT_UPLOADED, AWAITING_PAYMENT, PAYMENT_SUCCESS, PAID_FIRST, BOREWELL_UPLOADED, ADMIN_APPROVED, APPROVED, FINAL_SETTLEMENT, FINAL_SETTLEMENT_COMPLETE, COMPLETED
+        const submittedReports = allBookings.filter(
           (booking) => {
             const status = booking.vendorStatus || booking.status;
-            // Show bookings where user has paid (ASSIGNED = user confirmed by paying)
-            // or where booking has progressed beyond user confirmation
-            return !["PENDING"].includes(status);
+            return ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"].includes(status);
           }
         );
-        setBookings(confirmedBookings);
+        setBookings(submittedReports);
       } else {
         setError(response.message || "Failed to load bookings");
       }
@@ -167,7 +164,7 @@ export default function VendorAllBookingsStatus() {
   if (loading) {
     return (
       <PageContainer>
-        <LoadingSpinner message="Loading confirmed bookings..." />
+        <LoadingSpinner message="Loading submitted reports..." />
       </PageContainer>
     );
   }
@@ -178,7 +175,7 @@ export default function VendorAllBookingsStatus() {
 
       {/* Heading */}
       <h1 className="text-2xl font-bold text-[#3A3A3A] mt-4 pt-4 mb-6">
-        All Confirmed Bookings
+        Submitted Reports
       </h1>
 
       {/* Bookings List */}
@@ -189,18 +186,17 @@ export default function VendorAllBookingsStatus() {
               <IoCalendarOutline className="text-3xl text-blue-500" />
             </div>
             <p className="text-[#3A3A3A] font-semibold mb-2">
-              No Confirmed Bookings
+              No Submitted Reports
             </p>
             <p className="text-[#6B7280] text-sm">
-              You don't have any confirmed bookings yet. Accept bookings from the
-              requests page to see them here.
+              You haven't submitted any reports yet. Complete site visits and upload survey reports to see them here.
             </p>
           </div>
         ) : (
           bookings.map((booking) => (
             <div
               key={booking._id}
-              onClick={() => navigate(`/vendor/bookings/${booking._id}`)}
+              onClick={() => navigate(`/vendor/booking/${booking._id}/report`)}
               className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer hover:shadow-[0px_6px_15px_rgba(0,0,0,0.1)] transition-all"
             >
               {/* Customer Info Header */}
@@ -302,12 +298,12 @@ export default function VendorAllBookingsStatus() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/vendor/booking/${booking._id}/status`);
+                  navigate(`/vendor/booking/${booking._id}/report`);
                 }}
                 className="w-full rounded-lg bg-[#0A84FF] py-3 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#005BBB] flex items-center justify-center gap-2"
               >
                 <IoDocumentTextOutline className="text-xl" />
-                View Status Timeline
+                View Submitted Report
               </button>
             </div>
           ))
