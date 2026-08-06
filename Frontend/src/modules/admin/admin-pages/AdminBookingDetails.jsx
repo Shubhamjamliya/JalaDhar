@@ -320,6 +320,17 @@ export default function AdminBookingDetails() {
                                 </a>
                             </div>
                         )}
+                        
+                        {/* Customer Feedback */}
+                        {booking.report.feedback && typeof booking.report.feedback.isUseful === 'boolean' && (
+                            <div className="pt-3 mt-3 border-t border-gray-100">
+                                <span className="text-sm text-gray-600 block mb-2">Customer Feedback:</span>
+                                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border ${booking.report.feedback.isUseful ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-red-50 border-red-100 text-red-700'}`}>
+                                    <span className="text-lg">{booking.report.feedback.isUseful ? '👍' : '👎'}</span>
+                                    <span className="text-xs font-bold uppercase tracking-wider">{booking.report.feedback.isUseful ? 'Helpful Report' : 'Not Helpful'}</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

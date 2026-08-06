@@ -311,6 +311,10 @@ const bookingSchema = new mongoose.Schema({
       type: Boolean, // true = Suitable Borewell Point Identified, false = No Suitable Borewell Point Identified
       default: null
     },
+    feedback: {
+      isUseful: Boolean,
+      submittedAt: Date,
+    },
     // Booking / Customer Info (Snapshot at time of report generation)
     customerName: String,
     village: String,
@@ -325,6 +329,7 @@ const bookingSchema = new mongoose.Schema({
     geologicalInfo: {
       rockType: String,
       soilType: String,
+      terrainType: String,
       weatheredZone: String,
       groundwaterCondition: {
         type: String,
@@ -354,6 +359,15 @@ const bookingSchema = new mongoose.Schema({
       recommendedCasingDepth: Number,
       expectedFractureDepths: String,
       expectedYield: Number
+    },
+
+    // Drilling Instructions
+    drillingInstructions: {
+      stopDrillingDepth: Number,
+      flushBorewell: {
+        type: Boolean,
+        default: false
+      }
     },
 
     // Expert Analysis

@@ -14,7 +14,7 @@ import {
   IoConstructOutline,
   IoMapOutline
 } from "react-icons/io5";
-import { getBookingDetails as getUserBookingDetails } from "../../../services/bookingApi";
+import { getBookingDetails as getUserBookingDetails, submitReportFeedback } from "../../../services/bookingApi";
 import { getBookingDetails as getVendorBookingDetails } from "../../../services/vendorApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
@@ -31,6 +31,10 @@ export default function UserSurveyReport() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [booking, setBooking] = useState(null);
+  
+  // Feedback state
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [feedbackState, setFeedbackState] = useState(null); // true for thumbs up, false for thumbs down
 
   useEffect(() => {
     loadReportData();
@@ -56,6 +60,10 @@ export default function UserSurveyReport() {
           setError("Survey report has not been uploaded yet for this booking.");
         } else {
           setBooking(b);
+          // Initialize feedback state if already submitted
+          if (b.report.feedback && typeof b.report.feedback.isUseful === 'boolean') {
+            setFeedbackState(b.report.feedback.isUseful);
+          }
         }
       } else {
         setError(response.message || "Failed to load report");
@@ -95,210 +103,358 @@ export default function UserSurveyReport() {
     return uniqueParts.join(', ') || "N/A";
   };
 
+  const mapApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+  const staticMapUrl = mapApiKey && report.surveyRecommendations?.latitude && report.surveyRecommendations?.longitude
+    ? `https://maps.googleapis.com/maps/api/staticmap?center=${report.surveyRecommendations.latitude},${report.surveyRecommendations.longitude}&zoom=15&size=600x300&maptype=satellite&markers=color:red%7Clabel:B%7C${report.surveyRecommendations.latitude},${report.surveyRecommendations.longitude}&key=${mapApiKey}`
+    : `https://static-maps.yandex.ru/1.x/?ll=${report.surveyRecommendations?.longitude || 0},${report.surveyRecommendations?.latitude || 0}&size=600,300&z=15&l=sat,skl&pt=${report.surveyRecommendations?.longitude || 0},${report.surveyRecommendations?.latitude || 0},pm2rdl`;
+
+  const fractureDepths = report.expectedFractureDepths ? report.expectedFractureDepths.split(/[\s,]+/).map(s => s.trim()).filter(Boolean) : [];
+  
+  const handleFeedback = async (isUseful) => {
+    if (feedbackState === isUseful || location.pathname.startsWith('/vendor')) return; // Prevent duplicate clicks or vendor clicking
+    
+    // Optimistic UI Update for instant animation
+    const previousState = feedbackState;
+    setFeedbackState(isUseful);
+    setIsSubmittingFeedback(true);
+    
+    try {
+      await submitReportFeedback(bookingId, isUseful);
+      toast.showSuccess("Thank you for your feedback!");
+    } catch (err) {
+      // Revert if failed
+      setFeedbackState(previousState);
+      toast.showError("Failed to submit feedback");
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-12 pt-6">
-      {/* Report Content Container */}
-      <div className="max-w-4xl mx-auto px-2 sm:px-4 md:px-6">
-        <div className="bg-white shadow-[0_8px_30px_rgba(0,0,0,0.06)] rounded-xl sm:rounded-2xl overflow-hidden mb-8 border border-gray-100 font-sans">
+    <div className="min-h-screen bg-gray-50 pb-20 pt-6">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6">
+        
+        {/* Main Card */}
+        <div className="bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded-[24px] overflow-hidden border border-gray-100 font-sans mb-8">
           
-          {/* Official Document Header */}
-          <div className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 p-4 sm:p-6 md:p-10 border-b border-blue-100/50">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-extrabold text-blue-900 tracking-tight flex items-center gap-2">
-                  <IoWaterOutline className="text-blue-600 text-3xl md:text-4xl" />
-                  Jaladhaara
-                </h1>
-                <p className="text-xs md:text-sm font-bold text-blue-600 uppercase tracking-widest mt-1.5 ml-1">Digital Survey Report</p>
+          {/* Header */}
+          <div className="p-6 sm:p-8 bg-gradient-to-b from-blue-50/50 to-white">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 text-[#102353]">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2.69L19.5 13.94C21.1 16.34 20.35 19.54 17.86 20.97C15.37 22.4 12.06 22.15 9.87 20.35C8.01 18.82 7.15 16.42 7.7 14.15L12 2.69Z" stroke="#0A84FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M15.5 14C15.5 14 13.5 17 12 17C10.5 17 10.5 15.5 10.5 15.5" stroke="#0A84FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <h1 className="text-[28px] font-extrabold tracking-tight">Jaladhaara</h1>
               </div>
-              <div className="text-left md:text-right flex flex-col items-start md:items-end w-full md:w-auto">
-                <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-blue-50 text-blue-800 font-bold text-xs md:text-sm mb-3">
-                   Report ID: {booking._id.slice(-8).toUpperCase()}
+              <p className="text-[11px] font-bold text-[#0A84FF] uppercase tracking-widest -mt-2">Digital Survey Report</p>
+              
+              <div className="mt-2 flex flex-wrap justify-between items-center gap-4">
+                <div className="inline-flex items-center border border-gray-200 rounded-full px-4 py-1.5 text-sm font-bold text-[#102353]">
+                  Report ID: {booking._id.slice(-8).toUpperCase()}
                 </div>
-                <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4">
-                  <p className="text-xs md:text-sm text-gray-500 font-semibold">Issued: {formatDate(booking.createdAt)}</p>
-                  {booking && (
-                    <PDFDownloadLink
-                      document={<SurveyReportPDF booking={booking} />}
-                      fileName={`Survey_Report_${bookingId.slice(-6).toUpperCase()}.pdf`}
-                      className="flex items-center gap-1.5 bg-[#0A84FF] text-white px-3 py-1.5 rounded-lg font-bold shadow-sm hover:bg-[#0070DF] transition-all active:scale-95 text-xs md:text-sm"
-                    >
-                      {({ loading }) => (
-                        <>
-                          <IoDownloadOutline className="text-base md:text-lg" />
-                          <span>{loading ? "Wait..." : "Download PDF"}</span>
-                        </>
-                      )}
-                    </PDFDownloadLink>
+                {booking && (
+                  <PDFDownloadLink
+                    document={<SurveyReportPDF booking={booking} />}
+                    fileName={`Survey_Report_${bookingId.slice(-8).toUpperCase()}.pdf`}
+                    className="flex items-center gap-2 bg-[#0A84FF] text-white px-5 py-2.5 rounded-full font-bold shadow-md hover:bg-[#0070DF] transition-all active:scale-95 text-sm"
+                  >
+                    {({ loading }) => (
+                      <>
+                        <IoDownloadOutline className="text-lg" />
+                        <span>{loading ? "Preparing..." : "Download PDF"}</span>
+                      </>
+                    )}
+                  </PDFDownloadLink>
+                )}
+              </div>
+              
+              <div className="flex justify-between items-center text-sm font-medium text-gray-500 mt-2">
+                <span>Issued: {formatDate(booking.createdAt)}</span>
+                <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md font-bold">
+                  <IoCheckmarkCircleOutline /> Verified
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 sm:px-8 pb-8 space-y-10">
+            
+            {/* Outcome Banner */}
+            <div className={`rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 border ${isWaterFound ? "bg-[#ECFDF5] border-[#D1FAE5]" : "bg-[#FEF2F2] border-[#FEE2E2]"}`}>
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center border-2 ${isWaterFound ? "bg-white border-[#10B981] text-[#10B981]" : "bg-white border-[#EF4444] text-[#EF4444]"}`}>
+                {isWaterFound ? <IoCheckmarkCircleOutline className="text-3xl" /> : <IoCloseCircleOutline className="text-3xl" />}
+              </div>
+              <div>
+                <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${isWaterFound ? "text-[#047857]" : "text-[#B91C1C]"}`}>Official Survey Outcome</p>
+                <h2 className={`text-xl font-black ${isWaterFound ? "text-[#065F46]" : "text-[#991B1B]"}`}>
+                  {isWaterFound ? "Recommended Borewell Location Identified" : "No Suitable Groundwater Potential Identified"}
+                </h2>
+              </div>
+            </div>
+
+            {/* Client & Site Details */}
+            <section>
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#102353] mb-4 pb-2 border-b border-gray-100">
+                <IoPersonOutline className="text-[#0A84FF]" /> Client & Site Details
+              </h3>
+              <div className="bg-[#F9FAFB] p-6 rounded-2xl border border-gray-100 grid grid-cols-2 gap-y-6 gap-x-4">
+                <div className="col-span-2 sm:col-span-1 flex flex-col">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Client Name</label>
+                  <p className="font-bold text-gray-900 mt-auto">{report.customerName || booking.user?.name}</p>
+                </div>
+                <div className="col-span-2 sm:col-span-1 flex flex-col">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Booking ID</label>
+                  <p className="font-bold text-gray-900 mt-auto">{booking._id.toUpperCase()}</p>
+                </div>
+                <div className="col-span-2 flex flex-col pt-2 border-t border-gray-200/60">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Site Address</label>
+                  <p className="font-bold text-gray-900 mt-auto">{formatAddress(report)}</p>
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Survey No.</label>
+                  <p className="font-bold text-gray-900 mt-auto">{report.surveyNumber || "N/A"}</p>
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Extent</label>
+                  <p className="font-bold text-gray-900 mt-auto">{formatAcresGuntasDisplay(report.extent)}</p>
+                </div>
+                {report.surveyRecommendations?.latitude && (
+                  <div className="col-span-2 flex flex-col">
+                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">GPS Coordinates</label>
+                    <p className="font-bold text-[#0A84FF] mt-auto">{report.surveyRecommendations.latitude}, {report.surveyRecommendations.longitude}</p>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Geological Profile */}
+            <section>
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#102353] mb-4 pb-2 border-b border-gray-100">
+                <IoMapOutline className="text-[#0A84FF]" /> Geological Profile
+              </h3>
+              <div className="bg-[#F9FAFB] p-6 rounded-2xl border border-gray-100 grid grid-cols-2 gap-y-6 gap-x-4">
+                <div className="flex flex-col">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Rock Formation</label>
+                  <p className="font-bold text-gray-900 mt-auto">{report.geologicalInfo?.rockType || "-"}</p>
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Surface Soil</label>
+                  <p className="font-bold text-gray-900 mt-auto">{report.geologicalInfo?.soilType || "-"}</p>
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Terrain Type</label>
+                  <p className="font-bold text-gray-900 mt-auto">{report.geologicalInfo?.terrainType || "-"}</p>
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Weathered Zone (ft)</label>
+                  <p className="font-bold text-gray-900 mt-auto">{report.geologicalInfo?.weatheredZone || "-"}</p>
+                </div>
+                <div className="col-span-2 pt-4 border-t border-gray-200/60 flex flex-col">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-3">Nearby Borewell Observations</label>
+                  <p className="text-sm font-medium text-gray-700 italic bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    "{report.existingBorewellDetails || "No existing borewell observations provided."}"
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Technical Recommendations */}
+            <section>
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#102353] mb-4 pb-2 border-b border-gray-100">
+                <IoConstructOutline className="text-[#0A84FF]" /> Technical Recommendations
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-5 bg-blue-50/70 border border-blue-100 rounded-2xl text-center flex flex-col justify-center shadow-sm">
+                  <label className="text-[10px] text-blue-600 font-black uppercase tracking-widest block mb-2">Rec. Point No.</label>
+                  <div className="text-3xl font-black text-blue-900">#{report.surveyRecommendations?.recommendedPointNumber || "1"}</div>
+                </div>
+                <div className="p-5 bg-emerald-50/70 border border-emerald-100 rounded-2xl text-center flex flex-col justify-center shadow-sm">
+                  <label className="text-[10px] text-emerald-600 font-black uppercase tracking-widest block mb-2">Expected Yield</label>
+                  <div className="text-3xl font-black text-emerald-900">{report.surveyRecommendations?.expectedYield || "--"} <span className="text-base font-bold text-emerald-600">in</span></div>
+                </div>
+                <div className="p-5 bg-[#F9FAFB] border border-gray-100 rounded-2xl text-center flex flex-col justify-center shadow-sm">
+                  <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest block mb-2">Rec. Borewell Depth</label>
+                  <div className="text-2xl font-black text-gray-900">{report.surveyRecommendations?.recommendedBoreDepth || "--"} <span className="text-base font-bold text-gray-500">ft</span></div>
+                </div>
+                <div className="p-5 bg-[#F9FAFB] border border-gray-100 rounded-2xl text-center flex flex-col justify-center shadow-sm">
+                  <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest block mb-2">Rec. Casing Length</label>
+                  <div className="text-2xl font-black text-gray-900">{report.surveyRecommendations?.recommendedCasingDepth || "--"} <span className="text-base font-bold text-gray-500">ft</span></div>
+                </div>
+                
+                <div className="col-span-2 p-5 bg-purple-50/40 border border-purple-100 rounded-2xl mt-1">
+                  <label className="text-[10px] text-purple-600 font-black uppercase tracking-widest block mb-3">Expected Water-Bearing Fracture Zones</label>
+                  {fractureDepths.length > 0 ? (
+                    <div className="space-y-2">
+                      {fractureDepths.map((depth, idx) => (
+                        <div key={idx} className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg shadow-sm border border-purple-50">
+                          <IoWaterOutline className="text-purple-400" />
+                          <span className="font-extrabold text-purple-900">{depth.includes('ft') ? depth : `${depth} ft`}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="font-bold text-purple-900">To be determined during drilling</p>
                   )}
                 </div>
               </div>
-            </div>
-          </div>
+            </section>
 
-          <div className="p-4 sm:p-6 md:p-10">
-            {/* Unified Result Banner */}
-            <div className={`mb-8 md:mb-10 rounded-xl md:rounded-2xl p-4 sm:p-5 md:p-6 flex flex-col md:flex-row items-center gap-3 md:gap-6 border shadow-sm ${isWaterFound ? "bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-100" : "bg-gradient-to-br from-red-50 to-red-100/50 border-red-100"}`}>
-               <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shrink-0 shadow-inner ${isWaterFound ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"}`}>
-                 {isWaterFound ? <IoCheckmarkCircleOutline className="text-3xl md:text-4xl" /> : <IoCloseCircleOutline className="text-3xl md:text-4xl" />}
-               </div>
-               <div className="text-center md:text-left flex-1">
-                 <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest mb-1 opacity-80 ${isWaterFound ? "text-emerald-700" : "text-red-700"}`}>Official Survey Outcome</p>
-                 <h2 className={`text-xl md:text-3xl font-black ${isWaterFound ? "text-emerald-800" : "text-red-800"}`}>
-                   {isWaterFound ? "WATER SOURCE DETECTED" : "NO WATER SOURCE DETECTED"}
-                 </h2>
-               </div>
-            </div>
-
-            {/* Grid Layout for details */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-               
-               {/* Left Column */}
-               <div className="space-y-8">
-                  {/* Client & Site */}
-                  <section>
-                    <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4 pb-2 border-b border-gray-100">
-                      <IoPersonOutline className="text-blue-500 text-xl" />
-                      Client & Site Details
-                    </h3>
-                    <div className="space-y-4 bg-gray-50/50 p-4 sm:p-5 rounded-xl border border-gray-100/50">
-                      <div>
-                        <label className="text-[10px] md:text-[11px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Client Name</label>
-                        <p className="font-bold text-gray-900 text-sm md:text-base">{report.customerName || booking.user?.name}</p>
-                      </div>
-                      <div>
-                        <label className="text-[10px] md:text-[11px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Site Address</label>
-                        <p className="font-bold text-gray-900 text-sm md:text-base leading-snug">{formatAddress(report)}</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                         <div>
-                            <label className="text-[10px] md:text-[11px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Survey No.</label>
-                            <p className="font-bold text-gray-900 text-sm md:text-base">{report.surveyNumber || "N/A"}</p>
-                         </div>
-                         <div>
-                            <label className="text-[10px] md:text-[11px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Extent</label>
-                            <p className="font-bold text-gray-900 text-sm md:text-base">{formatAcresGuntasDisplay(report.extent)}</p>
-                         </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  {/* Geological Analysis */}
-                  <section>
-                    <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4 pb-2 border-b border-gray-100">
-                      <IoMapOutline className="text-blue-500 text-xl" />
-                      Geological Profile
-                    </h3>
-                    <div className="space-y-4 bg-gray-50/50 p-4 sm:p-5 rounded-xl border border-gray-100/50">
-                      <div className="grid grid-cols-2 gap-4">
-                         <div>
-                            <label className="text-[10px] md:text-[11px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Rock Formation</label>
-                            <p className="font-bold text-gray-900 text-sm md:text-base">{report.rockType || "Not Specified"}</p>
-                         </div>
-                         <div>
-                            <label className="text-[10px] md:text-[11px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Surface Soil</label>
-                            <p className="font-bold text-gray-900 text-sm md:text-base">{report.soilType || "Not Specified"}</p>
-                         </div>
-                      </div>
-                      <div>
-                        <label className="text-[10px] md:text-[11px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Historical Context</label>
-                        <p className="text-sm font-medium text-gray-700 italic bg-white p-3 rounded-xl border border-gray-100">
-                          {report.existingBorewellDetails || "No existing borewell data provided."}
-                        </p>
-                      </div>
-                    </div>
-                  </section>
-               </div>
-
-               {/* Right Column */}
-               <div className="space-y-8">
-                  {/* Technical Recommendations */}
-                  <section>
-                    <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-100">
-                      <IoConstructOutline className="text-blue-500 text-xl" />
-                      Technical Recommendations
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3 md:gap-4">
-                      <div className="p-4 bg-blue-50/50 border border-blue-100/50 rounded-2xl text-center">
-                        <label className="text-[9px] md:text-[10px] text-blue-600 font-black uppercase tracking-widest block mb-1">Drill Point</label>
-                        <div className="text-2xl md:text-3xl font-black text-blue-900">#{report.recommendedPointNumber || "1"}</div>
-                      </div>
-                      <div className="p-4 bg-emerald-50/50 border border-emerald-100/50 rounded-2xl text-center">
-                        <label className="text-[9px] md:text-[10px] text-emerald-600 font-black uppercase tracking-widest block mb-1">Estimated Yield</label>
-                        <div className="text-2xl md:text-3xl font-black text-emerald-900">{report.expectedYield || "--"} <span className="text-sm font-bold text-emerald-600">in</span></div>
-                      </div>
-                      <div className="p-4 bg-gray-50/80 border border-gray-100 rounded-2xl text-center">
-                        <label className="text-[9px] md:text-[10px] text-gray-500 font-black uppercase tracking-widest block mb-1">Expected Depth</label>
-                        <div className="text-xl md:text-2xl font-black text-gray-900">{report.recommendedDepth || "--"} <span className="text-sm font-bold text-gray-500">ft</span></div>
-                      </div>
-                      <div className="p-4 bg-gray-50/80 border border-gray-100 rounded-2xl text-center">
-                        <label className="text-[9px] md:text-[10px] text-gray-500 font-black uppercase tracking-widest block mb-1">Casing Depth</label>
-                        <div className="text-xl md:text-2xl font-black text-gray-900">{report.recommendedCasingDepth || "--"} <span className="text-sm font-bold text-gray-500">ft</span></div>
-                      </div>
-                      <div className="col-span-2 p-4 bg-purple-50/30 border border-purple-100/50 rounded-2xl">
-                        <label className="text-[9px] md:text-[10px] text-purple-600 font-black uppercase tracking-widest block mb-1">Target Fracture Depths</label>
-                        <p className="font-black text-purple-900 text-base md:text-lg">{report.expectedFractureDepths || "To be determined during drilling"}</p>
-                      </div>
-                    </div>
-                  </section>
-
-                  {/* Observations */}
-                  <section>
-                    <h3 className="flex items-center gap-2 text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4 pb-2 border-b border-gray-100">
-                      <IoDocumentTextOutline className="text-blue-500 text-xl" />
-                      Expert Observations
-                    </h3>
-                    <div className="bg-[#F8FAFC] p-4 sm:p-5 rounded-xl border border-gray-100 shadow-inner">
-                      <p className="text-gray-700 leading-relaxed text-sm font-medium italic">
-                        "{report.notes || "No additional specific observations noted for this location."}"
-                      </p>
-                    </div>
-                  </section>
-               </div>
-            </div>
-
-            {/* Signatures & Footer */}
-            <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center sm:items-end gap-6">
-              <div className="text-center sm:text-left order-2 sm:order-1">
-                <p className="text-[10px] md:text-[11px] text-gray-400 font-black uppercase tracking-widest mb-1.5">Certified Expert</p>
-                <p className="text-xl md:text-2xl font-black text-gray-900">{vendor.name}</p>
-                <p className="text-xs font-semibold text-gray-500 mt-1">{vendor.experience} Years Experience • ID: {vendor._id?.slice(-8).toUpperCase()}</p>
-              </div>
-              <div className="text-center order-1 sm:order-2">
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border-[3px] border-blue-600/20 bg-blue-50/50 flex flex-col items-center justify-center mb-2 mx-auto relative overflow-hidden">
-                  <div className="absolute inset-0 bg-blue-600 opacity-5 rotate-45 transform scale-150"></div>
-                  <IoCheckmarkCircleOutline className="text-3xl md:text-4xl text-blue-600 mb-0.5" />
-                  <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-blue-800">Verified</span>
+            {/* Drilling Instructions */}
+            <section>
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#102353] mb-4 pb-2 border-b border-gray-100">
+                <IoConstructOutline className="text-orange-500" /> Drilling Instructions
+              </h3>
+              <div className="bg-orange-50/50 p-5 rounded-2xl border border-orange-100 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-orange-100 p-1.5 rounded-full mt-0.5"><IoCloseCircleOutline className="text-orange-600 text-sm" /></div>
+                  <p className="font-semibold text-gray-800 text-sm">
+                    Stop drilling after <span className="font-bold text-orange-600 px-1">{report.drillingInstructions?.stopDrillingDepth || "___"} ft</span> if no fracture is encountered.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-orange-100 p-1.5 rounded-full mt-0.5"><IoCheckmarkCircleOutline className="text-orange-600 text-sm" /></div>
+                  <p className="font-semibold text-gray-800 text-sm">
+                    Flush borewell before yield testing{report.drillingInstructions?.flushBorewell ? " (Recommended)" : ""}.
+                  </p>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* Disclaimer */}
-            <div className="mt-10 pt-6 text-[9px] md:text-[10px] text-gray-400 font-semibold text-center border-t border-gray-50 leading-relaxed max-w-2xl mx-auto">
-              <p>Disclaimer: This survey report is based on technical readings and geological analysis at the time of the visit. Actual results may vary during drilling. Jaladhaara connects you with certified experts, but the physical outcome inherently depends on natural groundwater conditions.</p>
-              <p className="mt-2 text-gray-500 font-bold">© {new Date().getFullYear()} Jaladhaara. All rights reserved.</p>
-            </div>
+            {/* Professional Remarks */}
+            <section>
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#102353] mb-4 pb-2 border-b border-gray-100">
+                <IoDocumentTextOutline className="text-[#0A84FF]" /> Professional Remarks
+              </h3>
+              <div className="bg-[#F8FAFC] p-5 rounded-2xl border border-gray-100 shadow-inner">
+                <p className="text-gray-700 leading-relaxed text-sm font-medium italic">
+                  "{report.notes || "No additional specific remarks noted for this location."}"
+                </p>
+              </div>
+            </section>
+
+            {/* Map Section */}
+            {report.surveyRecommendations?.latitude && (
+              <section>
+                <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#102353] mb-4 pb-2 border-b border-gray-100">
+                  <IoLocationOutline className="text-[#0A84FF]" /> Survey Location Map
+                </h3>
+                <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-100 relative h-48 md:h-64 shadow-inner">
+                  <img src={staticMapUrl} alt="Map Location" className="w-full h-full object-cover" />
+                  <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg shadow-sm border border-gray-200">
+                    <p className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                      📍 Recommended Borewell Point
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Site Evidence */}
+            {report.images && report.images.length > 0 && (
+              <section>
+                <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#102353] mb-4 pb-2 border-b border-gray-100">
+                  <IoDocumentTextOutline className="text-[#0A84FF]" /> Site Evidence
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {report.images.map((img, i) => {
+                    const label = i === 0 ? "Site Photograph" : i === 1 ? "Marked Borewell Point" : i === 2 ? "Survey Equipment" : `Evidence ${i+1}`;
+                    return (
+                      <div key={i} className="flex flex-col gap-1.5">
+                        <div className="aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200 shadow-sm">
+                          <img src={img.url || img} alt={label} className="w-full h-full object-cover hover:scale-105 transition-transform" crossOrigin="anonymous" />
+                        </div>
+                        <p className="text-[10px] font-bold text-gray-600 text-center uppercase">{label}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Expert Verification */}
+            <section className="mt-12 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-6 relative overflow-hidden">
+              {/* Watermark */}
+              <div className="absolute -right-8 -bottom-8 opacity-5">
+                <IoCheckmarkCircleOutline className="text-9xl text-blue-600" />
+              </div>
+              
+              <h3 className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-4">Survey Conducted By</h3>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative z-10">
+                <div>
+                  <p className="text-2xl font-black text-gray-900 mb-1">{vendor.name}</p>
+                  <p className="text-sm font-semibold text-gray-600 mb-0.5">Qualification: {vendor.qualification || "Hydrogeologist"}</p>
+                  <p className="text-sm font-semibold text-gray-600 mb-2">Experience: {vendor.experience || "-"} Years</p>
+                  <p className="text-[11px] font-bold text-gray-400">Expert ID: {vendor._id?.slice(-8).toUpperCase()}</p>
+                  <p className="text-[11px] font-bold text-gray-400 mt-0.5">Survey Date: {formatDate(booking.createdAt)}</p>
+                </div>
+                
+                <div className="flex flex-col items-center gap-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100 w-full sm:w-auto">
+                  <div className="w-32 h-12 border-b-2 border-blue-600/30 flex items-end justify-center pb-1">
+                    <span className="font-['Caveat'] text-2xl text-blue-900 italic transform -rotate-2">{vendor.name}</span>
+                  </div>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Digital Signature</p>
+                  <div className="flex items-center gap-1.5 mt-2 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-100">
+                    <IoCheckmarkCircleOutline className="text-sm" />
+                    <span className="text-[10px] font-black uppercase tracking-wider">Verified by Jaladhaara</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
           </div>
         </div>
 
-        {/* Evidence Photos Section */}
-        {report.images && report.images.length > 0 && (
-          <div className="mt-8 mb-8">
-            <h4 className="text-lg font-bold text-gray-800 mb-4 px-2">Site Evidence Photos</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {report.images.map((img, i) => (
-                <div key={i} className="aspect-video rounded-xl overflow-hidden bg-white shadow-md border-2 border-white">
-                  <img
-                    src={img.url || img}
-                    alt={`Site Photo ${i + 1}`}
-                    className="w-full h-full object-cover"
-                    crossOrigin="anonymous"
-                  />
-                </div>
-              ))}
-            </div>
+        {/* Customer Action Section */}
+        <div className="bg-[#0A84FF] text-white rounded-[24px] p-8 shadow-lg mb-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-10">
+            <IoConstructOutline className="text-8xl" />
           </div>
-        )}
+          <h3 className="text-xl font-extrabold mb-4">Next Steps for Customer</h3>
+          <ul className="space-y-3 font-medium text-sm md:text-base relative z-10">
+            <li className="flex items-center gap-3"><div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">1</div> Share this report with your drilling contractor.</li>
+            <li className="flex items-center gap-3"><div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">2</div> Drill at the recommended point.</li>
+            <li className="flex items-center gap-3"><div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">3</div> Complete drilling as per the recommended depth.</li>
+            <li className="flex items-center gap-3"><div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">4</div> Update the drilling outcome in the Jaladhaara app.</li>
+          </ul>
+        </div>
+
+        {/* Feedback Section */}
+        <div className="bg-white rounded-[24px] p-8 shadow-sm border border-gray-100 mb-8 text-center">
+          <h3 className="text-lg font-extrabold text-gray-900 mb-2">Rate Expert</h3>
+          <p className="text-sm font-medium text-gray-500 mb-6">Was this report useful?</p>
+          <div className="flex justify-center gap-4">
+            <button 
+              onClick={() => handleFeedback(true)}
+              disabled={isSubmittingFeedback || location.pathname.startsWith('/vendor')}
+              className={`flex flex-col items-center gap-2 group p-2 rounded-xl border-2 transition-all ${feedbackState === true ? 'border-[#0A84FF] bg-blue-50/30' : 'border-transparent'}`}
+            >
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all ${feedbackState === true ? 'bg-white shadow-sm' : 'bg-gray-50 border-2 border-gray-100 group-hover:bg-emerald-50 group-hover:border-emerald-200 group-hover:scale-110'}`}>
+                👍
+              </div>
+              <span className={`text-xs font-bold uppercase tracking-widest ${feedbackState === true ? 'text-[#0A84FF]' : 'text-gray-400 group-hover:text-emerald-600'}`}>Yes</span>
+            </button>
+            <button 
+              onClick={() => handleFeedback(false)}
+              disabled={isSubmittingFeedback || location.pathname.startsWith('/vendor')}
+              className={`flex flex-col items-center gap-2 group p-2 rounded-xl border-2 transition-all ${feedbackState === false ? 'border-[#0A84FF] bg-blue-50/30' : 'border-transparent'}`}
+            >
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all ${feedbackState === false ? 'bg-white shadow-sm' : 'bg-gray-50 border-2 border-gray-100 group-hover:bg-red-50 group-hover:border-red-200 group-hover:scale-110'}`}>
+                👎
+              </div>
+              <span className={`text-xs font-bold uppercase tracking-widest ${feedbackState === false ? 'text-[#0A84FF]' : 'text-gray-400 group-hover:text-red-600'}`}>No</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Disclaimer */}
+        <div className="text-center px-4 mb-8">
+          <p className="text-[10px] leading-relaxed text-gray-400 font-medium">
+            Disclaimer: This report is based on geophysical survey data, geological interpretation, and field observations conducted on the survey date. Groundwater occurrence is a natural phenomenon and cannot be guaranteed. Actual drilling results may vary due to local geological conditions, drilling practices, seasonal groundwater fluctuations, and other subsurface factors. Jaladhaara acts only as a technology platform connecting customers with independent survey experts and is not responsible for drilling outcomes.
+          </p>
+        </div>
+
       </div>
     </div>
   );

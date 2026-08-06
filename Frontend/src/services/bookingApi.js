@@ -99,15 +99,25 @@ export const uploadBorewellResult = async (bookingId, data) => {
   const formData = new FormData();
   formData.append('status', data.status);
   if (data.images && data.images.length > 0) {
-    data.images.forEach((image) => {
+    Array.from(data.images).forEach(image => {
       formData.append('images', image);
     });
   }
+  
   const response = await api.post(`/bookings/${bookingId}/borewell-result`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    headers: { 'Content-Type': 'multipart/form-data' }
   });
+  return response.data;
+};
+
+/**
+ * Submit report feedback
+ * @param {string} bookingId - Booking ID
+ * @param {boolean} isUseful - Whether the report was useful
+ * @returns {Promise}
+ */
+export const submitReportFeedback = async (bookingId, isUseful) => {
+  const response = await api.post(`/bookings/${bookingId}/report-feedback`, { isUseful });
   return response.data;
 };
 

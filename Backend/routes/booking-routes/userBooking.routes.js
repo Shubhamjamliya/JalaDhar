@@ -15,7 +15,8 @@ const {
   uploadBorewellResult,
   downloadInvoice,
   getDashboardStats,
-  calculateBookingCharges
+  calculateBookingCharges,
+  submitReportFeedback
 } = require('../../controllers/bookingControllers/userBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isUser } = require('../../middleware/roleMiddleware');
@@ -64,6 +65,7 @@ router.get('/:bookingId', authenticate, isUser, getBookingDetails);
 router.patch('/:bookingId/cancel', authenticate, isUser, body('cancellationReason').optional().isLength({ max: 500 }), cancelBooking);
 router.post('/:bookingId/remaining-payment', authenticate, isUser, initiateRemainingPayment);
 router.post('/:bookingId/borewell-result', authenticate, isUser, upload.fields([{ name: 'images', maxCount: 10 }]), uploadBorewellResultValidation, uploadBorewellResult);
+router.post('/:bookingId/report-feedback', authenticate, isUser, submitReportFeedback);
 router.get('/:bookingId/invoice', authenticate, isUser, downloadInvoice);
 
 module.exports = router;

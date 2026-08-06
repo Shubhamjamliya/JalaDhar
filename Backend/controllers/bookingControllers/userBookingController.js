@@ -1541,6 +1541,56 @@ const calculateBookingCharges = async (req, res) => {
   }
 };
 
+/**
+ * Submit feedback for the survey report
+ */
+const submitReportFeedback = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { isUseful } = req.body;
+    const userId = req.userId;
+
+    const booking = await Booking.findOne({ _id: bookingId, user: userId });
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or unauthorized'
+      });
+    }
+
+    if (!booking.report) {
+      return res.status(400).json({
+        success: false,
+        message: 'Report has not been uploaded yet'
+      });
+    }
+
+    booking.report.feedback = {
+      isUseful,
+      submittedAt: new Date()
+    };
+    
+    booking.markModified('report');
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: 'Feedback submitted successfully',
+      data: {
+        feedback: booking.report.feedback
+      }
+    });
+  } catch (error) {
+    console.error('Submit report feedback error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit feedback',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllServices,
   getAvailableVendors,
@@ -1554,6 +1604,7 @@ module.exports = {
   uploadBorewellResult,
   downloadInvoice,
   getDashboardStats,
-  calculateBookingCharges
+  calculateBookingCharges,
+  submitReportFeedback
 };
 

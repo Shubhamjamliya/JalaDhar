@@ -75,6 +75,7 @@ export default function VendorUploadReport() {
         geologicalInfo: {
             rockType: "",
             soilType: "",
+            terrainType: "",
             weatheredZone: "",
             groundwaterCondition: ""
         },
@@ -98,6 +99,11 @@ export default function VendorUploadReport() {
             recommendedCasingDepth: "",
             expectedFractureDepths: "",
             expectedYield: ""
+        },
+        
+        drillingInstructions: {
+            stopDrillingDepth: "",
+            flushBorewell: false
         },
 
         confidenceLevel: "",
@@ -181,7 +187,7 @@ export default function VendorUploadReport() {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        const finalValue = type === "checkbox" ? checked : value;
+        const inputValue = type === 'checkbox' ? checked : value;
 
         if (name.includes(".")) {
             const [parent, child] = name.split(".");
@@ -189,11 +195,11 @@ export default function VendorUploadReport() {
                 ...prev,
                 [parent]: {
                     ...prev[parent],
-                    [child]: finalValue,
+                    [child]: inputValue,
                 },
             }));
         } else {
-            setFormData((prev) => ({ ...prev, [name]: finalValue }));
+            setFormData((prev) => ({ ...prev, [name]: inputValue }));
         }
     };
 
@@ -378,6 +384,7 @@ export default function VendorUploadReport() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <SelectGroup label="Rock Type" name="geologicalInfo.rockType" value={formData.geologicalInfo.rockType} onChange={handleInputChange} options={["", "Granite", "Basalt", "Peninsular Gneiss", "Quartzite", "Schist", "Limestone", "Sandstone", "Alluvium", "Laterite", "Other"]} />
                         <SelectGroup label="Soil Type" name="geologicalInfo.soilType" value={formData.geologicalInfo.soilType} onChange={handleInputChange} options={["", "Red Sandy", "Black Cotton", "Clay", "Gravelly", "Lateritic", "Alluvial", "Mixed", "Other"]} />
+                        <SelectGroup label="Terrain Type" name="geologicalInfo.terrainType" value={formData.geologicalInfo.terrainType} onChange={handleInputChange} options={["", "Flat", "Hilly", "Sloping", "Undulating", "Valley", "Other"]} />
                         <InputGroup label="Weathered Zone (in ft)" name="geologicalInfo.weatheredZone" value={formData.geologicalInfo.weatheredZone} onChange={handleInputChange} placeholder="e.g. 20-45 ft" />
                         <SelectGroup label="Groundwater Condition" name="geologicalInfo.groundwaterCondition" value={formData.geologicalInfo.groundwaterCondition} onChange={handleInputChange} options={["", "Poor", "Moderate", "Good", "Excellent"]} />
                     </div>
@@ -437,6 +444,23 @@ export default function VendorUploadReport() {
                     </div>
                 </div>
 
+                {/* 6.5 Drilling Instructions */}
+                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border-l-4 border-l-orange-400">
+                    <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2 pb-2 border-b border-gray-100">
+                        <IoConstructOutline className="text-orange-500" />
+                        Drilling Instructions for Contractor
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <InputGroup type="number" label="Stop drilling after (ft) if no fracture is encountered" name="drillingInstructions.stopDrillingDepth" value={formData.drillingInstructions.stopDrillingDepth} onChange={handleInputChange} placeholder="e.g. 500" />
+                        <div className="flex items-center h-full pt-4">
+                            <label className="flex items-center gap-3 p-4 bg-orange-50/50 rounded-lg border border-orange-100 cursor-pointer w-full hover:bg-orange-50 transition-colors">
+                                <input type="checkbox" name="drillingInstructions.flushBorewell" checked={formData.drillingInstructions.flushBorewell} onChange={handleInputChange} className="w-5 h-5 text-orange-500 rounded border-gray-300 focus:ring-orange-500" />
+                                <span className="text-sm font-semibold text-gray-800">Flush borewell before yield testing</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 {/* 7. Evidence & Notes */}
                 <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                     <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2 pb-2 border-b border-gray-100">
@@ -446,7 +470,7 @@ export default function VendorUploadReport() {
 
                     <div className="mb-6">
                         <div className="flex justify-between items-center mb-2">
-                            <label className="block text-sm font-semibold text-gray-700">Upload Photos (Min 3: Site, Equipment, Marked Point)</label>
+                            <label className="block text-sm font-semibold text-gray-700">Upload Site Evidence (Minimum 3: Site Photograph, Marked Point, Survey Equipment)</label>
                             <button type="button" onClick={() => {
                                 if(navigator.geolocation) {
                                     navigator.geolocation.getCurrentPosition((pos) => {
@@ -582,8 +606,9 @@ export default function VendorUploadReport() {
                                     <div className="grid grid-cols-2 gap-4 px-4 text-sm">
                                         <div className="flex justify-between border-b border-dashed border-gray-200 pb-2"><span className="text-gray-500">Rock Type:</span><span className="font-semibold text-gray-800">{formData.geologicalInfo.rockType || "-"}</span></div>
                                         <div className="flex justify-between border-b border-dashed border-gray-200 pb-2"><span className="text-gray-500">Soil Type:</span><span className="font-semibold text-gray-800">{formData.geologicalInfo.soilType || "-"}</span></div>
-                                        <div className="flex justify-between border-b border-dashed border-gray-200 pb-2"><span className="text-gray-500">Weathered Zone:</span><span className="font-semibold text-gray-800">{formData.geologicalInfo.weatheredZone || "-"}</span></div>
-                                        <div className="flex justify-between border-b border-dashed border-gray-200 pb-2"><span className="text-gray-500">GW Condition:</span><span className="font-semibold text-gray-800">{formData.geologicalInfo.groundwaterCondition || "-"}</span></div>
+                                        <div className="flex justify-between border-b border-dashed border-gray-200 pb-2"><span className="text-gray-500">Terrain Type:</span><span className="font-semibold text-gray-800">{formData.geologicalInfo.terrainType || "-"}</span></div>
+                                        <div className="flex justify-between border-b border-dashed border-gray-200 pb-2"><span className="text-gray-500">Weathered Zone:</span><span className="font-semibold text-gray-800">{formData.geologicalInfo.weatheredZone || "-"} ft</span></div>
+                                        <div className="flex justify-between border-b border-dashed border-gray-200 pb-2 col-span-2"><span className="text-gray-500">GW Condition:</span><span className="font-semibold text-gray-800">{formData.geologicalInfo.groundwaterCondition || "-"}</span></div>
                                     </div>
                                 </div>
 
@@ -609,6 +634,16 @@ export default function VendorUploadReport() {
                                             <p className="text-gray-400 text-xs font-bold uppercase">Expected Yield</p>
                                             <p className="font-bold text-gray-800">{formData.surveyRecommendations.expectedYield ? `${formData.surveyRecommendations.expectedYield} inches` : "-"}</p>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <div className="mb-10">
+                                    <h3 className="bg-orange-100 text-orange-800 py-2 px-4 font-bold rounded-lg mb-4 text-sm uppercase tracking-wider">Drilling Instructions</h3>
+                                    <div className="px-4 text-sm space-y-3">
+                                        <p className="font-medium text-gray-700">• Stop drilling after <span className="font-bold text-orange-600">{formData.drillingInstructions.stopDrillingDepth || "___"} ft</span> if no fracture is encountered.</p>
+                                        {formData.drillingInstructions.flushBorewell && (
+                                            <p className="font-medium text-gray-700">• Flush borewell thoroughly before yield testing.</p>
+                                        )}
                                     </div>
                                 </div>
                                 
