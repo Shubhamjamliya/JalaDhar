@@ -107,6 +107,16 @@ export default function VendorUploadReport() {
     // Automatically pre-fill all Customer, Village, Mandal, District, State, Survey No, Land Location, and Extent details filled during booking
     useEffect(() => {
         if (booking) {
+            let extractedSurveyNo = booking.surveyNumber || booking.surveyNo || booking.address?.surveyNumber;
+            
+            // Fallback: Try to extract from notes if it was embedded there (e.g., from older bookings or custom fields)
+            if (!extractedSurveyNo && booking.notes) {
+                const surMatch = booking.notes.match(/(?:Survey No|Plot No):\s*([^.\n]+)/i);
+                if (surMatch) {
+                    extractedSurveyNo = surMatch[1].trim();
+                }
+            }
+
             setFormData(prev => ({
                 ...prev,
                 customerName: booking.user?.name || booking.customerName || prev.customerName,
@@ -115,7 +125,7 @@ export default function VendorUploadReport() {
                 district: booking.district || booking.address?.district || prev.district,
                 state: booking.state || booking.address?.state || prev.state,
                 landLocation: booking.address?.landmark || booking.address?.street || booking.landmark || prev.landLocation,
-                surveyNumber: booking.surveyNumber || booking.surveyNo || booking.address?.surveyNumber || prev.surveyNumber,
+                surveyNumber: extractedSurveyNo || prev.surveyNumber,
                 extent: booking.purposeExtent ? formatAcresGuntasDisplay(booking.purposeExtent) : (booking.extent || prev.extent),
             }));
         }
@@ -451,11 +461,16 @@ export default function VendorUploadReport() {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InputGroup type="number" label="No. of Points Located" name="pointsLocated" value={formData.pointsLocated} onChange={handleInputChange} placeholder="Total points found" />
-                        <InputGroup label="Recommended Point No" name="recommendedPointNumber" value={formData.recommendedPointNumber} onChange={handleInputChange} placeholder="Best point number" />
-                        <InputGroup type="number" label="Recommended Depth (ft)" name="recommendedDepth" value={formData.recommendedDepth} onChange={handleInputChange} placeholder="Depth in feet" />
-                        <InputGroup type="number" label="Recommended Casing Length (ft)" name="recommendedCasingDepth" value={formData.recommendedCasingDepth} onChange={handleInputChange} placeholder="Casing length in feet" />
-                        <InputGroup label="Expected Fracture Depths" name="expectedFractureDepths" value={formData.expectedFractureDepths} onChange={handleInputChange} placeholder="e.g. 150, 320, 450 ft" />
-                        <InputGroup type="number" label="Expected Water Yield (inches)" name="expectedYield" value={formData.expectedYield} onChange={handleInputChange} placeholder="Yield in inches" />
+                        
+                        {formData.waterFound !== "false" && (
+                            <>
+                                <InputGroup label="Recommended Point No" name="recommendedPointNumber" value={formData.recommendedPointNumber} onChange={handleInputChange} placeholder="Best point number" />
+                                <InputGroup type="number" label="Recommended Depth (ft)" name="recommendedDepth" value={formData.recommendedDepth} onChange={handleInputChange} placeholder="Depth in feet" />
+                                <InputGroup type="number" label="Recommended Casing Length (ft)" name="recommendedCasingDepth" value={formData.recommendedCasingDepth} onChange={handleInputChange} placeholder="Casing length in feet" />
+                                <InputGroup label="Expected Fracture Depths" name="expectedFractureDepths" value={formData.expectedFractureDepths} onChange={handleInputChange} placeholder="e.g. 150, 320, 450 ft" />
+                                <InputGroup type="number" label="Expected Water Yield (inches)" name="expectedYield" value={formData.expectedYield} onChange={handleInputChange} placeholder="Yield in inches" />
+                            </>
+                        )}
                     </div>
                 </div>
 

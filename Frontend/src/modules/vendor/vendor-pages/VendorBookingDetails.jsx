@@ -777,18 +777,18 @@ export default function VendorBookingDetails() {
                 </div>
             )}
 
-            {booking.status === "VISITED" && (!booking.reportUploadedAt && !booking.report) && (
-                <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(10,132,255,0.08)] mb-6 border-2 border-blue-50 ring-4 ring-blue-50/30">
-                    <h2 className="text-lg font-black text-gray-800 mb-4 flex items-center gap-2">
+            {booking.status === "VISITED" && (
+                <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-6 border border-gray-100">
+                    <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                         <span className="w-1.5 h-6 bg-[#0A84FF] rounded-full"></span>
-                        Pending Action
+                        Required Action
                     </h2>
                     <button
                         onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
-                        className="w-full bg-[#0A84FF] text-white font-black py-4 rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100"
+                        className="w-full bg-[#0A84FF] text-white font-bold py-4 rounded-2xl hover:bg-[#0070DF] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm"
                     >
-                        <IoDocumentTextOutline className="text-2xl" />
-                        Fill & Upload Report
+                        <IoDocumentTextOutline className="text-xl" />
+                        Upload Technical Report
                     </button>
                 </div>
             )}
