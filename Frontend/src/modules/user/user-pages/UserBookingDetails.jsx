@@ -539,6 +539,31 @@ export default function UserBookingDetails() {
             </div>
 
             <div className="max-w-4xl mx-auto space-y-5">
+                {/* OTP Verification Card */}
+                {booking.status === "EN_ROUTE" && !booking.otp?.startSurvey?.verified && (
+                    <div className="bg-white rounded-2xl p-6 shadow-2xs border border-indigo-200 bg-indigo-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex-1">
+                            <h3 className="text-lg font-black text-indigo-900 mb-1">Start Survey OTP</h3>
+                            <p className="text-sm text-indigo-700 font-medium">Please share this OTP with your expert when they arrive at the site to begin the survey.</p>
+                        </div>
+                        <div className="bg-white px-6 py-3 rounded-xl border-2 border-indigo-200 shadow-sm flex items-center justify-center">
+                            <span className="text-3xl font-black text-indigo-600 tracking-[0.2em]">{booking.otp?.startSurvey?.code || '------'}</span>
+                        </div>
+                    </div>
+                )}
+
+                {booking.otp?.startSurvey?.verified && !booking.otp?.endSurvey?.verified && (
+                    <div className="bg-white rounded-2xl p-6 shadow-2xs border border-emerald-200 bg-emerald-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex-1">
+                            <h3 className="text-lg font-black text-emerald-900 mb-1">End Survey OTP</h3>
+                            <p className="text-sm text-emerald-700 font-medium">Please share this OTP with your expert to confirm the physical survey is complete.</p>
+                        </div>
+                        <div className="bg-white px-6 py-3 rounded-xl border-2 border-emerald-200 shadow-sm flex items-center justify-center">
+                            <span className="text-3xl font-black text-emerald-600 tracking-[0.2em]">{booking.otp?.endSurvey?.code || '------'}</span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Visual Status Timeline */}
                 <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-2xs border border-slate-200/80">
                     <div className="flex items-center justify-between mb-4">

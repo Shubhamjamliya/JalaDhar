@@ -376,6 +376,23 @@ const markAsEnRoute = async (req, res) => {
     booking.vendorStatus = BOOKING_STATUS.EN_ROUTE;
     booking.userStatus = BOOKING_STATUS.EN_ROUTE;
     booking.enRouteAt = new Date();
+
+    // Generate OTPs
+    if (!booking.otp || !booking.otp.startSurvey || !booking.otp.startSurvey.code) {
+      booking.otp = {
+        startSurvey: { 
+          code: Math.floor(100000 + Math.random() * 900000).toString(), 
+          generatedAt: new Date(), 
+          verified: false 
+        },
+        endSurvey: { 
+          code: Math.floor(100000 + Math.random() * 900000).toString(), 
+          generatedAt: new Date(), 
+          verified: false 
+        }
+      };
+    }
+
     await booking.save();
 
     // Send Notification to User
@@ -556,6 +573,115 @@ const markAsVisited = async (req, res) => {
     });
   }
 };
+/**
+ * Verify Start Survey OTP
+ */
+const verifyStartSurveyOTP = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const vendorId = req.userId;
+    const { otp } = req.body;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      vendor: vendorId
+    }).populate('user', 'name email');
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.status !== BOOKING_STATUS.EN_ROUTE) {
+      return res.status(400).json({ success: false, message: 'Booking must be En Route to start survey' });
+    }
+
+    if (!booking.otp || !booking.otp.startSurvey || !booking.otp.startSurvey.code) {
+      return res.status(400).json({ success: false, message: 'OTP not generated for this booking' });
+    }
+
+    if (booking.otp.startSurvey.verified) {
+      return res.status(400).json({ success: false, message: 'Start Survey OTP already verified' });
+    }
+
+    if (booking.otp.startSurvey.code !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+
+    booking.otp.startSurvey.verified = true;
+    booking.otp.startSurvey.verifiedAt = new Date();
+    
+    // Transition to VISITED
+    booking.status = BOOKING_STATUS.VISITED;
+    booking.vendorStatus = BOOKING_STATUS.VISITED;
+    booking.userStatus = BOOKING_STATUS.VISITED;
+    booking.visitedAt = new Date();
+
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: 'Start Survey OTP verified successfully',
+      data: { booking }
+    });
+  } catch (error) {
+    console.error('Verify Start Survey OTP error:', error);
+    res.status(500).json({ success: false, message: 'Failed to verify OTP', error: error.message });
+  }
+};
+
+/**
+ * Verify End Survey OTP
+ */
+const verifyEndSurveyOTP = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const vendorId = req.userId;
+    const { otp } = req.body;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      vendor: vendorId
+    });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.status !== BOOKING_STATUS.VISITED) {
+      return res.status(400).json({ success: false, message: 'Survey must be started before it can be ended' });
+    }
+
+    if (!booking.otp?.startSurvey?.verified) {
+      return res.status(400).json({ success: false, message: 'Start Survey OTP must be verified first' });
+    }
+
+    if (!booking.otp || !booking.otp.endSurvey || !booking.otp.endSurvey.code) {
+      return res.status(400).json({ success: false, message: 'OTP not generated for this booking' });
+    }
+
+    if (booking.otp.endSurvey.verified) {
+      return res.status(400).json({ success: false, message: 'End Survey OTP already verified' });
+    }
+
+    if (booking.otp.endSurvey.code !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+
+    booking.otp.endSurvey.verified = true;
+    booking.otp.endSurvey.verifiedAt = new Date();
+    
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: 'End Survey OTP verified successfully',
+      data: { booking }
+    });
+  } catch (error) {
+    console.error('Verify End Survey OTP error:', error);
+    res.status(500).json({ success: false, message: 'Failed to verify OTP', error: error.message });
+  }
+};
 
 /**
  * Mark booking as visited and upload report
@@ -598,6 +724,14 @@ const markVisitedAndUploadReport = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Booking not found or you are not the assigned expert.'
+      });
+    }
+
+    // OTP Verification check
+    if (booking.otp && booking.otp.endSurvey && !booking.otp.endSurvey.verified) {
+      return res.status(403).json({
+        success: false,
+        message: 'You must verify the End Survey OTP with the customer before uploading the report.'
       });
     }
 
@@ -1171,6 +1305,8 @@ module.exports = {
   rejectBooking,
   cancelBooking,
   markAsEnRoute,
+  verifyStartSurveyOTP,
+  verifyEndSurveyOTP,
   markAsVisited,
   markVisitedAndUploadReport,
   markAsCompleted,

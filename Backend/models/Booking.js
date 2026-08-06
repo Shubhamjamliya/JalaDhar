@@ -26,6 +26,21 @@ const bookingSchema = new mongoose.Schema({
     enum: Object.values(BOOKING_STATUS),
     default: BOOKING_STATUS.PENDING
   },
+  // OTP Verification for Survey
+  otp: {
+    startSurvey: {
+      code: String,
+      generatedAt: Date,
+      verified: { type: Boolean, default: false },
+      verifiedAt: Date
+    },
+    endSurvey: {
+      code: String,
+      generatedAt: Date,
+      verified: { type: Boolean, default: false },
+      verifiedAt: Date
+    }
+  },
   // Separate status for vendor and user views
   vendorStatus: {
     type: String,

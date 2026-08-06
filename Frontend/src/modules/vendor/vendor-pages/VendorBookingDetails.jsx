@@ -24,7 +24,7 @@ import {
     IoLogoWhatsapp,
     IoCameraOutline
 } from "react-icons/io5";
-import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice } from "../../../services/vendorApi";
+import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice, verifyStartOTP, verifyEndOTP } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -47,7 +47,6 @@ export default function VendorBookingDetails() {
     const [showAcceptConfirm, setShowAcceptConfirm] = useState(false);
     const [showRejectInput, setShowRejectInput] = useState(false);
     const [showRejectConfirm, setShowRejectConfirm] = useState(false);
-    const [showVisitConfirm, setShowVisitConfirm] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
     const rejectionReasonRef = useRef("");
     const [showTravelChargesModal, setShowTravelChargesModal] = useState(false);
@@ -82,6 +81,10 @@ export default function VendorBookingDetails() {
     });
     const [submittingTravelCharges, setSubmittingTravelCharges] = useState(false);
     const [showMapPicker, setShowMapPicker] = useState(false);
+    const [showStartOTPModal, setShowStartOTPModal] = useState(false);
+    const [showEndOTPModal, setShowEndOTPModal] = useState(false);
+    const [otpInput, setOtpInput] = useState("");
+    const [verifyingOTP, setVerifyingOTP] = useState(false);
 
     // Lock body scroll when modals are open
     useEffect(() => {
@@ -335,34 +338,63 @@ export default function VendorBookingDetails() {
         };
     };
 
-    const handleMarkAsVisited = () => {
-        setShowVisitConfirm(true);
-    };
+    const handleVerifyStartOTP = async (otp) => {
+        if (!otp || otp.length < 4) {
+            toast.showError("Please enter a valid OTP");
+            return;
+        }
 
-    const handleVisitConfirm = async () => {
-        setShowVisitConfirm(false);
-        const loadingToast = toast.showLoading("Marking as visited...");
+        const loadingToast = toast.showLoading("Verifying OTP...");
         try {
-            setActionLoading(true);
-
-            const response = await markBookingAsVisited(bookingId);
-
+            setVerifyingOTP(true);
+            const response = await verifyStartOTP(bookingId, otp);
+            
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Booking marked as visited successfully!");
-                await loadBookingDetails(); // Reload to get updated status
+                toast.showSuccess("Start Survey OTP verified successfully!");
+                setShowStartOTPModal(false);
+                setOtpInput("");
+                await loadBookingDetails();
             } else {
                 toast.dismissToast(loadingToast);
-                toast.showError(response.message || "Failed to mark booking as visited");
+                toast.showError(response.message || "Invalid OTP");
             }
         } catch (err) {
             toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to mark booking as visited");
+            handleApiError(err, "Failed to verify OTP");
         } finally {
-            setActionLoading(false);
+            setVerifyingOTP(false);
         }
     };
 
+    const handleVerifyEndOTP = async (otp) => {
+        if (!otp || otp.length < 4) {
+            toast.showError("Please enter a valid OTP");
+            return;
+        }
+
+        const loadingToast = toast.showLoading("Verifying OTP...");
+        try {
+            setVerifyingOTP(true);
+            const response = await verifyEndOTP(bookingId, otp);
+            
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("End Survey OTP verified successfully!");
+                setShowEndOTPModal(false);
+                setOtpInput("");
+                await loadBookingDetails();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Invalid OTP");
+            }
+        } catch (err) {
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to verify OTP");
+        } finally {
+            setVerifyingOTP(false);
+        }
+    };
     const handleCancel = () => {
         setCancellationReason("");
         setShowCancelInput(true);
@@ -813,12 +845,12 @@ export default function VendorBookingDetails() {
                     </h2>
                     <div className="flex flex-col gap-3">
                         <button
-                            onClick={handleMarkAsVisited}
+                            onClick={() => setShowStartOTPModal(true)}
                             disabled={actionLoading}
                             className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-emerald-200 disabled:opacity-50"
                         >
                             <IoCheckmarkCircleOutline className="text-2xl" />
-                            {actionLoading ? "Processing..." : "Mark as Visited"}
+                            {actionLoading ? "Processing..." : "Start Survey"}
                         </button>
                         <div className="flex gap-3">
                             <button
@@ -847,13 +879,23 @@ export default function VendorBookingDetails() {
                         Required Action
                     </h2>
                     <div className="flex flex-col gap-3">
-                        <button
-                            onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
-                            className="w-full bg-[#0A84FF] text-white font-black py-4 rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100"
-                        >
-                            <IoDocumentTextOutline className="text-2xl" />
-                            Upload Technical Report
-                        </button>
+                        {!booking.otp?.endSurvey?.verified ? (
+                            <button
+                                onClick={() => setShowEndOTPModal(true)}
+                                className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-emerald-200"
+                            >
+                                <IoCheckmarkCircleOutline className="text-2xl" />
+                                End Survey
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
+                                className="w-full bg-[#0A84FF] text-white font-black py-4 rounded-2xl hover:bg-[#005BBB] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100"
+                            >
+                                <IoDocumentTextOutline className="text-2xl" />
+                                Upload Technical Report
+                            </button>
+                        )}
                         <button
                             onClick={handleCancel}
                             disabled={actionLoading}
@@ -1985,17 +2027,6 @@ export default function VendorBookingDetails() {
                 confirmColor="danger"
             />
 
-            {/* Mark as Visited Confirmation Modal */}
-            <ConfirmModal
-                isOpen={showVisitConfirm}
-                onClose={() => setShowVisitConfirm(false)}
-                onConfirm={handleVisitConfirm}
-                title="Mark as Visited"
-                message="Have you visited the customer's location? This will mark the booking as visited."
-                confirmText="Yes, Mark as Visited"
-                cancelText="Cancel"
-                confirmColor="primary"
-            />
 
             {/* Download Invoices Center - Dual Marketplace Invoices */}
             {booking && !["CANCELLED", "REJECTED"].includes(booking.status) && (
@@ -2117,7 +2148,13 @@ export default function VendorBookingDetails() {
                     </button>
 
                     <button
-                        onClick={() => navigate(`/vendor/bookings/${bookingId}/upload-report`)}
+                        onClick={() => {
+                            if (booking.status === "EN_ROUTE" || (booking.status === "VISITED" && !booking.otp?.endSurvey?.verified)) {
+                                toast.showError("Please complete the survey and verify the End OTP first.");
+                            } else {
+                                navigate(`/vendor/bookings/${bookingId}/upload-report`);
+                            }
+                        }}
                         className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-orange-500 transition-colors"
                     >
                         <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-orange-500">
@@ -2310,7 +2347,38 @@ export default function VendorBookingDetails() {
                 cancelText="No, Keep It"
                 confirmColor="danger"
             />
+
+            <InputModal
+                isOpen={showStartOTPModal}
+                onClose={() => {
+                    setShowStartOTPModal(false);
+                    setOtpInput("");
+                }}
+                onSubmit={handleVerifyStartOTP}
+                title="Start Survey OTP"
+                message="Please ask the customer for the Start Survey OTP to begin the survey."
+                inputPlaceholder="Enter 6-digit OTP"
+                inputType="number"
+                submitText={verifyingOTP ? "Verifying..." : "Verify OTP"}
+                value={otpInput}
+                onChange={(e) => setOtpInput(e.target.value)}
+            />
+
+            <InputModal
+                isOpen={showEndOTPModal}
+                onClose={() => {
+                    setShowEndOTPModal(false);
+                    setOtpInput("");
+                }}
+                onSubmit={handleVerifyEndOTP}
+                title="End Survey OTP"
+                message="Please ask the customer for the End Survey OTP to complete the survey."
+                inputPlaceholder="Enter 6-digit OTP"
+                inputType="number"
+                submitText={verifyingOTP ? "Verifying..." : "Verify OTP"}
+                value={otpInput}
+                onChange={(e) => setOtpInput(e.target.value)}
+            />
         </div>
     );
 }
-

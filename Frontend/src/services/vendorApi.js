@@ -118,7 +118,7 @@ export const uploadVisitReport = async (bookingId, reportData) => {
 
 /**
  * Mark booking as en route
- * @param {string} bookingId
+ * @param {string} bookingId 
  * @returns {Promise}
  */
 export const markBookingAsEnRoute = async (bookingId) => {
@@ -127,8 +127,30 @@ export const markBookingAsEnRoute = async (bookingId) => {
 };
 
 /**
+ * Verify Start Survey OTP
+ * @param {string} bookingId 
+ * @param {string} otp 
+ * @returns {Promise}
+ */
+export const verifyStartOTP = async (bookingId, otp) => {
+  const response = await api.post(`/vendors/bookings/${bookingId}/verify-start-otp`, { otp });
+  return response.data;
+};
+
+/**
+ * Verify End Survey OTP
+ * @param {string} bookingId 
+ * @param {string} otp 
+ * @returns {Promise}
+ */
+export const verifyEndOTP = async (bookingId, otp) => {
+  const response = await api.post(`/vendors/bookings/${bookingId}/verify-end-otp`, { otp });
+  return response.data;
+};
+
+/**
  * Mark booking as visited
- * @param {string} bookingId
+ * @param {string} bookingId 
  * @returns {Promise}
  */
 export const markBookingAsVisited = async (bookingId) => {
