@@ -83,7 +83,7 @@ export default function VendorSidebar({ isOpen, onClose }) {
         {
             title: "Support",
             items: [
-                { label: "Notifications", to: "/vendor/dashboard", icon: IoNotificationsOutline },
+                { label: "Notifications", to: "/vendor/notifications", icon: IoNotificationsOutline },
                 { label: "Help & Support", to: "/vendor/disputes", icon: IoHelpBuoyOutline },
                 { label: "FAQs", to: "/vendor/dashboard", icon: IoChatbubblesOutline }
             ]

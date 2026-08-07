@@ -552,7 +552,7 @@ export default function UserBookingDetails() {
                     </div>
                 )}
 
-                {booking.otp?.startSurvey?.verified && !booking.otp?.endSurvey?.verified && (
+                {booking.status === "VISITED" && !booking.otp?.endSurvey?.verified && (
                     <div className="bg-white rounded-2xl p-6 shadow-2xs border border-emerald-200 bg-emerald-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex-1">
                             <h3 className="text-lg font-black text-emerald-900 mb-1">End Survey OTP</h3>

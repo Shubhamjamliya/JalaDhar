@@ -161,7 +161,7 @@ export default function VendorRequests() {
 
     const handleAccept = (bookingId) => {
         setSelectedBookingId(bookingId);
-        const req = requests.find(r => r._id === bookingId);
+        const req = newRequests.find(r => r._id === bookingId);
         const fixedDate = req?.scheduledDate || req?.scheduleDate
             ? new Date(req.scheduledDate || req.scheduleDate).toISOString().split("T")[0]
             : new Date().toISOString().split("T")[0];

@@ -411,7 +411,7 @@ const markAsEnRoute = async (req, res) => {
         recipientModel: 'User',
         type: 'BOOKING_EN_ROUTE',
         title: 'Expert En Route! 🚗',
-        message: `${vendorName} is now traveling to your property for the groundwater survey!`,
+        message: `${vendorName} is now traveling to your property. Please check your booking details for the Start Survey OTP to share upon arrival.`,
         relatedEntity: {
           entityType: 'Booking',
           entityId: booking._id

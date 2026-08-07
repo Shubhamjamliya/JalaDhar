@@ -248,18 +248,6 @@ export default function VendorProfileView({ vendor, profileData, stats }) {
                 </div>
             </div>
 
-            {/* Action Buttons Placeholder */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-wrap justify-center gap-4">
-                <button className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-colors">
-                    Bookings
-                </button>
-                <button className="px-8 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center gap-2">
-                    <IoCallOutline /> Call Customer
-                </button>
-                <button className="px-8 py-3 bg-green-50 text-green-600 border border-green-200 font-bold rounded-xl hover:bg-green-100 transition-colors flex items-center gap-2">
-                    Chat
-                </button>
-            </div>
         </div>
     );
 }

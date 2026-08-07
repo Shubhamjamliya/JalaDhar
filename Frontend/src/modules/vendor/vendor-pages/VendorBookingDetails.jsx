@@ -33,6 +33,7 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
+import OTPInputModal from "../../shared/components/OTPInputModal";
 
 export default function VendorBookingDetails() {
     const navigate = useNavigate();
@@ -1120,6 +1121,16 @@ export default function VendorBookingDetails() {
                             </p>
                         </div>
 
+                        {/* Survey No / Plot No */}
+                        <div className="p-3.5 bg-gray-50/80 rounded-xl border border-gray-100 space-y-1">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                {booking.surveyCategory === 'Agriculture' || booking.purpose === 'Agriculture' ? 'Survey No.' : 'Survey No / Plot No'}
+                            </p>
+                            <p className="text-sm font-bold text-gray-900">
+                                {parseSurveySiteInfo(booking).surveyNo || booking.surveyNumber || booking.address?.surveyNumber || "Not specified"}
+                            </p>
+                        </div>
+
                         {/* Purpose of Survey */}
                         <div className="p-3.5 bg-gray-50/80 rounded-xl border border-gray-100 space-y-1">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Purpose of Survey</p>
@@ -1434,99 +1445,6 @@ export default function VendorBookingDetails() {
             )}
 
 
-            {/* Survey Site Info */}
-            {(() => {
-                const siteInfo = parseSurveySiteInfo(booking);
-                const hasInfo = siteInfo.category || siteInfo.extent || siteInfo.surveyNo || siteInfo.landmark || siteInfo.remarks;
-                if (!hasInfo) return null;
-
-                return (
-                    <div className="bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-                        <h2 className="text-xl font-bold text-gray-800 mb-4">Survey Site Info</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {siteInfo.category && (
-                                <div>
-                                    <p className="text-sm text-gray-500 mb-1">Property Category</p>
-                                    <p className="text-base font-semibold text-gray-800">{siteInfo.category}</p>
-                                </div>
-                            )}
-                            {siteInfo.extent && (
-                                <div>
-                                    <p className="text-sm text-gray-500 mb-1">Land / Plot Area</p>
-                                    <p className="text-base font-semibold text-gray-800">{siteInfo.extent}</p>
-                                </div>
-                            )}
-                            {siteInfo.surveyNo && (
-                                <div>
-                                    <p className="text-sm text-gray-500 mb-1">{siteInfo.category === 'Agriculture' ? 'Survey No.' : 'Survey No / Plot No'}</p>
-                                    <p className="text-base font-semibold text-gray-800">{siteInfo.surveyNo}</p>
-                                </div>
-                            )}
-                            {siteInfo.village && (
-                                <div>
-                                    <p className="text-sm text-gray-500 mb-1">Village</p>
-                                    <p className="text-base font-semibold text-gray-800">{siteInfo.village}</p>
-                                </div>
-                            )}
-                            {siteInfo.mandal && (
-                                <div>
-                                    <p className="text-sm text-gray-500 mb-1">Mandal</p>
-                                    <p className="text-base font-semibold text-gray-800">{siteInfo.mandal}</p>
-                                </div>
-                            )}
-                            {siteInfo.district && (
-                                <div>
-                                    <p className="text-sm text-gray-500 mb-1">District</p>
-                                    <p className="text-base font-semibold text-gray-800">{siteInfo.district}</p>
-                                </div>
-                            )}
-                            {siteInfo.state && (
-                                <div>
-                                    <p className="text-sm text-gray-500 mb-1">State</p>
-                                    <p className="text-base font-semibold text-gray-800">{siteInfo.state}</p>
-                                </div>
-                            )}
-                            {siteInfo.pincode && siteInfo.pincode !== "000000" && (
-                                <div>
-                                    <p className="text-sm text-gray-500 mb-1">Pin code (optional)</p>
-                                    <p className="text-base font-semibold text-gray-800">{siteInfo.pincode}</p>
-                                </div>
-                            )}
-                            {siteInfo.landmark && (
-                                <div className="col-span-1 md:col-span-2">
-                                    <p className="text-sm text-gray-500 mb-1">Landmark</p>
-                                    <p className="text-base font-semibold text-gray-800">{siteInfo.landmark}</p>
-                                </div>
-                            )}
-                            {siteInfo.coordinates && siteInfo.coordinates.lat && siteInfo.coordinates.lng && (
-                                <div className="col-span-1 md:col-span-2 mt-2">
-                                    <p className="text-sm text-gray-500 mb-2">GPS Coordinates</p>
-                                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                                        <p className="text-sm font-mono bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 flex-1 w-full sm:w-auto overflow-hidden text-ellipsis whitespace-nowrap">
-                                            {siteInfo.coordinates.lat.toFixed(6)}, {siteInfo.coordinates.lng.toFixed(6)}
-                                        </p>
-                                        <a
-                                            href={`https://www.google.com/maps/dir/?api=1&destination=${siteInfo.coordinates.lat},${siteInfo.coordinates.lng}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 font-semibold rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors w-full sm:w-auto"
-                                        >
-                                            <IoMap className="text-lg" />
-                                            <span>Google Maps Navigation</span>
-                                        </a>
-                                    </div>
-                                </div>
-                            )}
-                            {siteInfo.remarks && (
-                                <div className="col-span-1 md:col-span-2">
-                                    <p className="text-sm text-gray-500 mb-1">Remarks</p>
-                                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100">{siteInfo.remarks}</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                );
-            })()}
 
             {/* Report Card (if uploaded) - Only show if status is REPORT_UPLOADED or later */}
             {booking.report && ["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking.status) && (
@@ -2348,36 +2266,24 @@ export default function VendorBookingDetails() {
                 confirmColor="danger"
             />
 
-            <InputModal
+            <OTPInputModal
                 isOpen={showStartOTPModal}
-                onClose={() => {
-                    setShowStartOTPModal(false);
-                    setOtpInput("");
-                }}
+                onClose={() => setShowStartOTPModal(false)}
                 onSubmit={handleVerifyStartOTP}
                 title="Start Survey OTP"
                 message="Please ask the customer for the Start Survey OTP to begin the survey."
-                inputPlaceholder="Enter 6-digit OTP"
-                inputType="number"
-                submitText={verifyingOTP ? "Verifying..." : "Verify OTP"}
-                value={otpInput}
-                onChange={(e) => setOtpInput(e.target.value)}
+                submitText="Verify OTP"
+                isLoading={verifyingOTP}
             />
 
-            <InputModal
+            <OTPInputModal
                 isOpen={showEndOTPModal}
-                onClose={() => {
-                    setShowEndOTPModal(false);
-                    setOtpInput("");
-                }}
+                onClose={() => setShowEndOTPModal(false)}
                 onSubmit={handleVerifyEndOTP}
                 title="End Survey OTP"
                 message="Please ask the customer for the End Survey OTP to complete the survey."
-                inputPlaceholder="Enter 6-digit OTP"
-                inputType="number"
-                submitText={verifyingOTP ? "Verifying..." : "Verify OTP"}
-                value={otpInput}
-                onChange={(e) => setOtpInput(e.target.value)}
+                submitText="Verify OTP"
+                isLoading={verifyingOTP}
             />
         </div>
     );
