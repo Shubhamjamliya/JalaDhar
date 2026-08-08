@@ -12,7 +12,6 @@ import {
     IoWalletOutline,
     IoNotificationsOutline,
     IoHelpBuoyOutline,
-    IoChatbubblesOutline,
     IoDocumentTextOutline,
     IoShieldCheckmarkOutline,
     IoSettingsOutline,
@@ -82,8 +81,7 @@ export default function VendorSidebar({ isOpen, onClose }) {
             title: "Support",
             items: [
                 { label: "Notifications", to: "/vendor/notifications", icon: IoNotificationsOutline },
-                { label: "Help & Support", to: "/vendor/disputes", icon: IoHelpBuoyOutline },
-                { label: "FAQs", to: "/vendor/faqs", icon: IoChatbubblesOutline }
+                { label: "Help & Support", to: "/vendor/disputes", icon: IoHelpBuoyOutline }
             ]
         },
         {
