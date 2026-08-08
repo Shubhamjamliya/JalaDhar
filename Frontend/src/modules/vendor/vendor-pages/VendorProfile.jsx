@@ -710,119 +710,133 @@ export default function VendorProfile() {
         <PageContainer>
             <ErrorMessage message={error} />
 
-            {/* Profile Header - Premium Professional Look */}
+            {/* Profile Header - Premium Compact Professional Look */}
             <section
-                className="relative my-4 overflow-hidden rounded-2xl p-6 text-white shadow-xl"
+                className="relative my-3 overflow-hidden rounded-2xl p-4 sm:p-5 text-white shadow-lg border border-white/10"
                 style={{
                     background: "linear-gradient(135deg, #0A84FF 0%, #00C2A8 100%)",
                 }}
             >
                 {/* Decorative Elements */}
-                <div className="absolute -top-10 -right-10 z-0 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
-                <div className="absolute -bottom-10 -left-10 z-0 h-40 w-40 rounded-full bg-white/5 blur-3xl"></div>
+                <div className="absolute -top-8 -right-8 z-0 h-32 w-32 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+                <div className="absolute -bottom-8 -left-8 z-0 h-32 w-32 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
 
-                <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-                    {/* Profile Image with Status Indicator */}
-                    <div className="relative group">
-                        <label htmlFor="profileImage" className="cursor-pointer block relative">
-                            <div className="h-32 w-32 rounded-2xl border-4 border-white/30 shadow-2xl overflow-hidden bg-white/20 backdrop-blur-md flex items-center justify-center transition-transform hover:scale-[1.02]">
-                                {profileData.profilePicture ? (
-                                    <img
-                                        src={profileData.profilePicture}
-                                        alt="Profile"
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-blue-400 to-teal-400 flex items-center justify-center">
-                                        <span className="text-5xl text-white">👤</span>
-                                    </div>
-                                )}
-                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <IoCameraOutline className="text-white text-3xl" />
-                                </div>
-                            </div>
-                            {/* Availability Dot */}
-                            <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-green-500 border-4 border-white shadow-lg"></div>
-                        </label>
-                        <input
-                            type="file"
-                            id="profileImage"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                            disabled={saving}
-                        />
-                    </div>
-
-                    {/* Name & Title */}
-                    <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left">
-                        <div className="flex items-center gap-2 mb-1">
-                            {isEditing ? (
-                                <input
-                                    type="text"
-                                    value={profileData.name}
-                                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                                    className="bg-white/20 border border-white/50 rounded-lg px-3 py-1 text-2xl font-bold text-white focus:outline-none focus:bg-white/30 truncate max-w-[200px]"
-                                />
-                            ) : (
-                                <h1 className="text-3xl font-extrabold tracking-tight">
-                                    {profileData.name || "Professional"}
-                                </h1>
-                            )}
+                <div className="relative z-10 space-y-3.5">
+                    {/* Top Header Row: Verified Badge & Action Button */}
+                    <div className="flex items-center justify-between gap-2">
+                        <div>
                             {vendor?.isApproved && (
-                                <div className="bg-white text-[#0A84FF] px-3 py-1 rounded-full shadow-lg flex items-center justify-center border-2 border-white/50" title="Verified Professional">
-                                    <span className="text-xs font-black uppercase tracking-wider">Verified Expert</span>
-                                </div>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-xs">
+                                    <IoCheckmarkCircle className="text-white text-xs" /> Verified Expert
+                                </span>
                             )}
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-2">
-                            {(() => {
-                                const expertIdStr = vendor?.expertId || (vendor?._id ? `EXP-${vendor._id.toString().slice(-6).toUpperCase()}` : null);
-                                return expertIdStr ? (
-                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/20 font-bold">
-                                        <span className="text-sm">Expert ID: {expertIdStr}</span>
-                                    </div>
-                                ) : null;
-                            })()}
-                            <div className="flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/10">
-                                <IoBriefcaseOutline className="text-sm" />
-                                <span className="text-sm font-medium">{profileData.designation || "Ground Water Professional"}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/10">
-                                <IoLocationOutline className="text-sm" />
-                                <span className="text-sm font-medium">{fullAddress ? fullAddress.split(',').pop() : 'Location N/A'}</span>
-                            </div>
                         </div>
 
                         {!isEditing && (
                             <button
                                 onClick={handleEdit}
-                                className="mt-4 flex items-center gap-2 px-4 py-2 bg-white text-[#0A84FF] rounded-xl text-sm font-bold shadow-lg hover:bg-blue-50 transition-colors"
+                                className="inline-flex items-center gap-1 px-3 py-1 bg-white text-[#0A84FF] hover:bg-white/95 rounded-lg text-[11px] font-extrabold shadow-sm transition-all active:scale-95 cursor-pointer"
                             >
-                                <IoPencilOutline />
-                                Edit Profile
+                                <IoPencilOutline className="text-xs" />
+                                <span>Edit Profile</span>
                             </button>
                         )}
                     </div>
 
-                    {/* Quick Stats in Header */}
-                    <div className="flex flex-wrap justify-center gap-4 md:gap-6 md:border-l md:border-white/20 md:pl-8 mt-4 md:mt-0">
-                        <div className="text-center">
-                            <p className="text-xl md:text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
-                            <p className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest opacity-80">Rating</p>
+                    {/* Core Profile Row: Image + Main Details */}
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
+                        {/* Profile Avatar */}
+                        <div className="relative group shrink-0">
+                            <label htmlFor="profileImage" className="cursor-pointer block relative">
+                                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl border-2 border-white/40 shadow-lg overflow-hidden bg-white/10 backdrop-blur-md flex items-center justify-center transition-transform hover:scale-[1.02]">
+                                    {profileData.profilePicture ? (
+                                        <img
+                                            src={profileData.profilePicture}
+                                            alt="Profile"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-gradient-to-br from-blue-400 to-teal-400 flex items-center justify-center">
+                                            <span className="text-2xl sm:text-3xl text-white">👤</span>
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <IoCameraOutline className="text-white text-lg" />
+                                    </div>
+                                </div>
+                                {/* Active Status Dot */}
+                                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-emerald-400 border-2 border-white shadow-sm" title="Active & Available" />
+                            </label>
+                            <input
+                                type="file"
+                                id="profileImage"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                                disabled={saving}
+                            />
                         </div>
-                        <div className="text-center">
-                            <p className="text-xl md:text-2xl font-bold">{stats.completedBookings}</p>
-                            <p className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest opacity-80">Surveys</p>
+
+                        {/* Name, ID & Badges */}
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                            <div>
+                                {isEditing ? (
+                                    <input
+                                        type="text"
+                                        value={profileData.name}
+                                        onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                                        className="bg-white/20 border border-white/50 rounded-lg px-2.5 py-1 text-lg font-bold text-white focus:outline-none focus:bg-white/30 max-w-full"
+                                    />
+                                ) : (
+                                    <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight leading-snug">
+                                        {profileData.name || "Professional"}
+                                    </h1>
+                                )}
+                            </div>
+
+                            {/* Single Sleek Metadata Row */}
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 text-[11px] font-medium text-white/90">
+                                {(() => {
+                                    const expertIdStr = vendor?.expertId || (vendor?._id ? `EXP-${vendor._id.toString().slice(-6).toUpperCase()}` : null);
+                                    return expertIdStr ? (
+                                        <span className="px-2 py-0.5 rounded-md bg-white/15 border border-white/20 font-bold">
+                                            Expert ID: {expertIdStr}
+                                        </span>
+                                    ) : null;
+                                })()}
+
+                                <span className="px-2 py-0.5 rounded-md bg-white/15 border border-white/20 flex items-center gap-1">
+                                    <IoBriefcaseOutline className="text-xs" />
+                                    <span>{profileData.designation || "Hydrogeologist"}</span>
+                                </span>
+
+                                <span className="px-2 py-0.5 rounded-md bg-white/15 border border-white/20 flex items-center gap-1">
+                                    <IoLocationOutline className="text-xs" />
+                                    <span>{fullAddress ? fullAddress.split(',').pop() : 'India'}</span>
+                                </span>
+                            </div>
                         </div>
-                        <div className="text-center">
-                            <p className="text-xl md:text-2xl font-bold">{profileData.experience}+</p>
-                            <p className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest opacity-80">Experience</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-xl md:text-2xl font-bold">{new Date(vendor?.createdAt || Date.now()).getFullYear()}</p>
-                            <p className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest opacity-80">Joined Since</p>
+                    </div>
+
+                    {/* Integrated Clean Stats Bar Footer */}
+                    <div className="pt-1">
+                        <div className="grid grid-cols-4 gap-1.5 bg-white/15 backdrop-blur-md rounded-xl p-2 border border-white/20 text-center divide-x divide-white/15">
+                            <div className="px-1">
+                                <p className="text-sm sm:text-base font-black text-white">{stats.averageRating.toFixed(1)}</p>
+                                <p className="text-[9px] uppercase font-bold tracking-wider text-white/80">Rating</p>
+                            </div>
+                            <div className="px-1">
+                                <p className="text-sm sm:text-base font-black text-white">{stats.completedBookings}</p>
+                                <p className="text-[9px] uppercase font-bold tracking-wider text-white/80">Surveys</p>
+                            </div>
+                            <div className="px-1">
+                                <p className="text-sm sm:text-base font-black text-white">{profileData.experience || 0}+</p>
+                                <p className="text-[9px] uppercase font-bold tracking-wider text-white/80">Experience</p>
+                            </div>
+                            <div className="px-1">
+                                <p className="text-sm sm:text-base font-black text-white">{new Date(vendor?.createdAt || Date.now()).getFullYear()}</p>
+                                <p className="text-[9px] uppercase font-bold tracking-wider text-white/80">Joined</p>
+                            </div>
                         </div>
                     </div>
                 </div>
