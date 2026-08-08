@@ -107,11 +107,11 @@ export default function UserNotificationsPage() {
                 </div>
 
                 {/* Filter & Action Toolbar */}
-                <div className="flex items-center justify-between gap-4 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 bg-white p-1.5 sm:p-2 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                         <button
                             onClick={() => setFilter("all")}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                            className={`px-3 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                                 filter === "all"
                                     ? "bg-[#0A84FF] text-white shadow-sm"
                                     : "text-gray-600 hover:bg-gray-100"
@@ -121,7 +121,7 @@ export default function UserNotificationsPage() {
                         </button>
                         <button
                             onClick={() => setFilter("unread")}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                            className={`px-3 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                                 filter === "unread"
                                     ? "bg-[#0A84FF] text-white shadow-sm"
                                     : "text-gray-600 hover:bg-gray-100"
@@ -131,7 +131,7 @@ export default function UserNotificationsPage() {
                         </button>
                         <button
                             onClick={() => setFilter("read")}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                            className={`px-3 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                                 filter === "read"
                                     ? "bg-[#0A84FF] text-white shadow-sm"
                                     : "text-gray-600 hover:bg-gray-100"
@@ -145,7 +145,7 @@ export default function UserNotificationsPage() {
                         <button
                             onClick={handleClearAll}
                             disabled={actionLoading}
-                            className="px-3 py-1.5 text-red-600 hover:bg-red-50 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                            className="px-2.5 sm:px-3 py-1.5 text-red-600 hover:bg-red-50 font-bold text-[11px] sm:text-xs rounded-xl transition-all flex items-center gap-1 cursor-pointer shrink-0 ml-auto"
                         >
                             <IoTrashOutline className="text-sm" />
                             <span>Clear All</span>
