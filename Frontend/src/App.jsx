@@ -449,7 +449,7 @@ function App() {
                                                 <Suspense fallback={<LoadingSpinner />}>
                                                     <VendorNavbar />
                                                 </Suspense>
-                                                <main className="px-4 pb-16 pt-16 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
+                                                <main className="px-4 pb-20 pt-20 md:pb-12 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
                                                     <Suspense fallback={<LoadingSpinner />}>
                                                         <Routes>
                                                             <Route

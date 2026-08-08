@@ -89,14 +89,14 @@ export default function VendorNavbar() {
     return (
         <>
             {/* Top Navbar - Mobile & Desktop */}
-            <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-[#F6F7F9] px-4 py-3 md:px-6 md:py-4">
+            <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-[#F6F7F9] px-4 py-2.5 md:px-6 md:py-3.5 border-b border-gray-200/60 shadow-sm">
                 {/* Left Section: Back Button + Logo */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     {/* Back Button - Only for sub-pages */}
                     {!navItems.some(item => item.to === location.pathname) && (
                         <button
                             onClick={() => navigate(-1)}
-                            className="flex items-center justify-center w-8 h-8 rounded-full bg-white text-gray-700 hover:text-[#0A84FF] shadow-sm border border-gray-100 transition-all active:scale-95"
+                            className="flex items-center justify-center w-8 h-8 rounded-full bg-white text-gray-700 hover:text-[#0A84FF] shadow-sm border border-gray-200 transition-all active:scale-95 shrink-0"
                             aria-label="Go Back"
                         >
                             <IoChevronBackOutline className="text-lg" />
@@ -108,7 +108,7 @@ export default function VendorNavbar() {
                         <img
                             src={logo}
                             alt="Jaladhaara Logo"
-                            className="h-12 md:h-14 w-40 md:w-48 object-contain ml-4 md:ml-6"
+                            className="h-9 sm:h-10 md:h-12 w-auto max-w-[140px] sm:max-w-[170px] md:max-w-[200px] object-contain"
                         />
                     </div>
                 </div>
