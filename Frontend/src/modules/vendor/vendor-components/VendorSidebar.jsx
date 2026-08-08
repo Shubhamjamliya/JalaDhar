@@ -10,7 +10,6 @@ import {
     IoTimeOutline,
     IoStarOutline,
     IoWalletOutline,
-    IoStatsChartOutline,
     IoNotificationsOutline,
     IoHelpBuoyOutline,
     IoChatbubblesOutline,
@@ -76,8 +75,7 @@ export default function VendorSidebar({ isOpen, onClose }) {
         {
             title: "Earnings",
             items: [
-                { label: "Wallet", to: "/vendor/wallet", icon: IoWalletOutline, exact: true },
-                { label: "Earnings Summary", to: "/vendor/wallet#summary", icon: IoStatsChartOutline }
+                { label: "Wallet", to: "/vendor/wallet", icon: IoWalletOutline, exact: true }
             ]
         },
         {

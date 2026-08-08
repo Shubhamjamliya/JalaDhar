@@ -170,14 +170,14 @@ export default function VendorDisputes() {
             {/* Horizontal Filter Tabs */}
             <div className="space-y-2.5">
                 {/* Scrollable Status Pills */}
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 px-1 sm:px-1.5 scroll-smooth touch-pan-x">
                     {STATUS_TABS.map((tab) => {
                         const isActive = filters.status === tab.key;
                         return (
                             <button
                                 key={tab.key}
                                 onClick={() => setFilters({ ...filters, status: tab.key, page: 1 })}
-                                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border cursor-pointer ${
+                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border shrink-0 cursor-pointer active:scale-95 ${
                                     isActive
                                         ? "bg-teal-700 text-white border-teal-700 shadow-xs"
                                         : "bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50"
