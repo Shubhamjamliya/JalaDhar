@@ -76,8 +76,8 @@ export default function VendorSidebar({ isOpen, onClose }) {
         {
             title: "Earnings",
             items: [
-                { label: "Wallet", to: "/vendor/wallet", icon: IoWalletOutline },
-                { label: "Earnings Summary", to: "/vendor/wallet", icon: IoStatsChartOutline }
+                { label: "Wallet", to: "/vendor/wallet", icon: IoWalletOutline, exact: true },
+                { label: "Earnings Summary", to: "/vendor/wallet#summary", icon: IoStatsChartOutline }
             ]
         },
         {
@@ -85,22 +85,22 @@ export default function VendorSidebar({ isOpen, onClose }) {
             items: [
                 { label: "Notifications", to: "/vendor/notifications", icon: IoNotificationsOutline },
                 { label: "Help & Support", to: "/vendor/disputes", icon: IoHelpBuoyOutline },
-                { label: "FAQs", to: "/vendor/dashboard", icon: IoChatbubblesOutline }
+                { label: "FAQs", to: "/vendor/faqs", icon: IoChatbubblesOutline }
             ]
         },
         {
             title: "Legal & Policies",
             items: [
-                { label: "Expert Agreement", to: "/vendor/dashboard", icon: IoDocumentTextOutline },
-                { label: "Privacy Policy", to: "/vendor/dashboard", icon: IoShieldCheckmarkOutline },
-                { label: "Terms & Conditions", to: "/vendor/dashboard", icon: IoDocumentTextOutline },
-                { label: "Insurance Details", to: "/vendor/dashboard", icon: IoDocumentTextOutline }
+                { label: "Expert Agreement", to: "/vendor/agreement", icon: IoDocumentTextOutline },
+                { label: "Privacy Policy", to: "/vendor/privacy", icon: IoShieldCheckmarkOutline },
+                { label: "Terms & Conditions", to: "/vendor/terms", icon: IoDocumentTextOutline },
+                { label: "Insurance Details", to: "/vendor/insurance", icon: IoDocumentTextOutline }
             ]
         },
         {
             title: "Settings",
             items: [
-                { label: "About Jaladhaara", to: "/vendor/dashboard", icon: IoInformationCircleOutline }
+                { label: "About Jaladhaara", to: "/vendor/about", icon: IoInformationCircleOutline }
             ]
         }
     ];
