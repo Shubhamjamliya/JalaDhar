@@ -181,14 +181,14 @@ export default function VendorSidebar({ isOpen, onClose }) {
                 </div>
 
                 {/* Scrollable Navigation Menu Items */}
-                <div className="flex-1 overflow-y-auto p-5 scrollbar-hide">
-                    <div className="flex flex-col gap-6 pb-6">
+                <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
+                    <div className="flex flex-col gap-3.5 pb-4">
                         {menuGroups.map((group, groupIdx) => (
-                            <div key={groupIdx} className="space-y-3">
-                                <h4 className="text-[11px] font-black text-[#8E939C] uppercase tracking-[0.1em] px-2">
+                            <div key={groupIdx} className="space-y-1.5">
+                                <h4 className="text-[10px] font-black text-[#8E939C] uppercase tracking-[0.1em] px-2 pt-1">
                                     {group.title}
                                 </h4>
-                                <nav className="flex flex-col gap-1">
+                                <nav className="flex flex-col gap-0.5">
                                     {group.items.map((item, itemIdx) => {
                                         const Icon = item.icon;
                                         
@@ -203,16 +203,16 @@ export default function VendorSidebar({ isOpen, onClose }) {
                                                 key={itemIdx}
                                                 to={item.to}
                                                 onClick={onClose}
-                                                className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl transition-all duration-200 group active:scale-[0.98] ${
+                                                className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group active:scale-[0.98] ${
                                                     isActive
                                                         ? "bg-[#E3F2FD] font-bold text-[#0A84FF]"
                                                         : "hover:bg-slate-50 text-slate-600 font-semibold hover:text-slate-900"
                                                 }`}
                                             >
-                                                <Icon className={`text-lg transition-colors ${
-                                                    isActive ? "text-[#0A84FF]" : "text-gray-400 group-hover:text-blue-500"
+                                                <Icon className={`text-base transition-colors ${
+                                                    isActive ? "text-[#0A84FF]" : "text-slate-400 group-hover:text-blue-500"
                                                 }`} />
-                                                <span className="text-sm tracking-wide">
+                                                <span className="text-xs font-semibold tracking-wide">
                                                     {item.label}
                                                 </span>
                                             </NavLink>
@@ -225,13 +225,13 @@ export default function VendorSidebar({ isOpen, onClose }) {
                 </div>
 
                 {/* Logout Button (Inside Scrollable Area for exact match) */}
-                <div className="px-5 pb-8 bg-white shrink-0">
+                <div className="px-4 py-3 bg-white shrink-0 border-t border-slate-100">
                     <button
                         onClick={handleLogoutClick}
-                        className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white border border-[#E5E7EB] hover:border-red-200 hover:bg-red-50 text-slate-800 font-bold transition-all duration-200 group active:scale-[0.98] cursor-pointer"
+                        className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-red-200 hover:bg-red-50 text-slate-800 font-bold transition-all duration-200 group active:scale-[0.98] cursor-pointer"
                     >
-                        <IoLogOutOutline className="text-2xl text-[#FF3B30]" />
-                        <span className="text-[15px]">Logout</span>
+                        <IoLogOutOutline className="text-xl text-[#FF3B30]" />
+                        <span className="text-sm">Logout</span>
                     </button>
                 </div>
             </aside>
