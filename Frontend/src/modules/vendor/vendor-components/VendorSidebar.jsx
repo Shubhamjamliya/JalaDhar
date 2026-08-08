@@ -98,6 +98,7 @@ export default function VendorSidebar({ isOpen, onClose }) {
         {
             title: "Settings",
             items: [
+                { label: "Settings", to: "/vendor/settings", icon: IoSettingsOutline },
                 { label: "About Jaladhaara", to: "/vendor/about", icon: IoInformationCircleOutline }
             ]
         }
@@ -142,22 +143,40 @@ export default function VendorSidebar({ isOpen, onClose }) {
 
                     {/* Expert Profile Card */}
                     {vendor && (
-                        <div className="p-3.5 rounded-2xl bg-[#F8F9FA] border border-[#E3F2FD] flex items-center gap-3.5">
-                            <div className="w-11 h-11 rounded-full bg-[#0A84FF] text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
-                                {vendor.name ? vendor.name.charAt(0).toUpperCase() : <IoPersonOutline />}
+                        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-[#F0F7FF] border border-[#D0E7FF] shadow-xs space-y-3">
+                            {/* Section Header */}
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                                    <span className="text-xs">👤</span> EXPERT PROFILE
+                                </span>
+                                {vendor.isApproved !== false && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 text-[#0A84FF] border border-blue-200">
+                                        <IoCheckmarkCircle className="text-xs text-[#0A84FF]" /> Verified Expert
+                                    </span>
+                                )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                    <h3 className="text-base font-bold text-slate-800 truncate">
+
+                            {/* Name, ID & Availability */}
+                            <div className="flex items-center gap-3">
+                                <div className="relative shrink-0">
+                                    <div className="w-11 h-11 rounded-full bg-[#0A84FF] text-white flex items-center justify-center font-bold text-base shadow-xs border-2 border-white">
+                                        {vendor.name ? vendor.name.charAt(0).toUpperCase() : <IoPersonOutline />}
+                                    </div>
+                                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" title="Active & Available" />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-sm font-bold text-slate-900 truncate">
                                         {vendor.name || "Expert Partner"}
                                     </h3>
-                                    {vendor.isApproved && (
-                                        <IoCheckmarkCircle className="text-[#0A84FF] text-sm shrink-0" title="Verified Partner" />
-                                    )}
+                                    <p className="text-[11px] font-semibold text-slate-500 truncate">
+                                        ID: {vendor.expertId || vendor.phone || "EXP-9123456789"}
+                                    </p>
+                                    <div className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[10px] font-bold">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span>Status: Active &amp; Available</span>
+                                    </div>
                                 </div>
-                                <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                                    {vendor.expertId || vendor.phone}
-                                </p>
                             </div>
                         </div>
                     )}

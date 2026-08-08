@@ -73,6 +73,7 @@ const VendorBookingDetails = lazy(() => import("./modules/vendor/vendor-pages/Ve
 const VendorUploadReport = lazy(() => import("./modules/vendor/vendor-pages/VendorUploadReport"));
 const VendorReviews = lazy(() => import("./modules/vendor/vendor-pages/VendorReviews"));
 const VendorAbout = lazy(() => import("./modules/vendor/vendor-pages/VendorAbout"));
+const VendorSettings = lazy(() => import("./modules/vendor/vendor-pages/VendorSettings"));
 const VendorPolicyPage = lazy(() => import("./modules/vendor/vendor-pages/VendorPolicyPage"));
 const AdminLogin = lazy(() => import("./modules/admin/admin-pages/AdminLogin"));
 const AdminForgotPassword = lazy(() => import("./modules/admin/admin-pages/AdminForgotPassword"));
@@ -638,6 +639,14 @@ function App() {
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <VendorPolicyPage />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/settings"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorSettings />
                                                                     </Suspense>
                                                                 }
                                                             />
