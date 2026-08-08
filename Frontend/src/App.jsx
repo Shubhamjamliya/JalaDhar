@@ -72,6 +72,8 @@ const VendorRequests = lazy(() => import("./modules/vendor/vendor-pages/VendorRe
 const VendorBookingDetails = lazy(() => import("./modules/vendor/vendor-pages/VendorBookingDetails"));
 const VendorUploadReport = lazy(() => import("./modules/vendor/vendor-pages/VendorUploadReport"));
 const VendorReviews = lazy(() => import("./modules/vendor/vendor-pages/VendorReviews"));
+const VendorAbout = lazy(() => import("./modules/vendor/vendor-pages/VendorAbout"));
+const VendorPolicyPage = lazy(() => import("./modules/vendor/vendor-pages/VendorPolicyPage"));
 const AdminLogin = lazy(() => import("./modules/admin/admin-pages/AdminLogin"));
 const AdminForgotPassword = lazy(() => import("./modules/admin/admin-pages/AdminForgotPassword"));
 const AdminResetPassword = lazy(() => import("./modules/admin/admin-pages/AdminResetPassword"));
@@ -376,6 +378,7 @@ function App() {
                                                                     </Suspense>
                                                                 }
                                                             />
+                                                            
                                                             <Route
                                                                 path="/help-support"
                                                                 element={
@@ -598,6 +601,46 @@ function App() {
                                                                     </Suspense>
                                                                 }
                                                             />
+                                                            <Route
+                                                                path="/about"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorAbout />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/agreement"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorPolicyPage />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/privacy"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorPolicyPage />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/terms"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorPolicyPage />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/insurance"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorPolicyPage />
+                                                                    </Suspense>
+                                                                }
+                                                            />
                                                         </Routes>
                                                     </Suspense>
                                                 </main>
@@ -665,7 +708,7 @@ function App() {
                                                                         path="/bookings/notifications"
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
-                                                                                <UserNotificationsPage />
+                                                                                <AdminBookingNotifications />
                                                                             </Suspense>
                                                                         }
                                                                     />
@@ -734,14 +777,6 @@ function App() {
                                                                         }
                                                                     />
                                                                     <Route
-                                                                        path="/vendors/pending"
-                                                                        element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPendingVendors />
-                                                                            </Suspense>
-                                                                        }
-                                                                    />
-                                                                    <Route
                                                                         path="/users"
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
@@ -794,14 +829,6 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminBookingTracking />
-                                                                            </Suspense>
-                                                                        }
-                                                                    />
-                                                                    <Route
-                                                                        path="/bookings/notifications"
-                                                                        element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminBookingNotifications />
                                                                             </Suspense>
                                                                         }
                                                                     />
