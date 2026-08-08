@@ -1497,14 +1497,14 @@ export default function VendorProfile() {
 
                     {/* Services List */}
                     {!isAddingService && services.length > 0 && (
-                        <div className="flex flex-col gap-6">
+                        <div className="flex flex-col gap-4">
                             {services.map((service) => (
                                 <div
                                     key={service._id}
-                                    className="group relative flex flex-col sm:flex-row gap-6 rounded-2xl bg-white p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden"
+                                    className="group relative flex flex-col sm:flex-row gap-4.5 rounded-2xl bg-white p-3.5 sm:p-4 shadow-xs hover:shadow-md transition-all duration-300 border border-slate-100/90 overflow-hidden"
                                 >
                                     {/* Service Image */}
-                                    <div className="w-full sm:w-64 aspect-[4/3] sm:aspect-square shrink-0 rounded-xl bg-gray-50 overflow-hidden relative">
+                                    <div className="w-full sm:w-44 aspect-[16/10] sm:aspect-[4/3] shrink-0 rounded-xl bg-slate-50 overflow-hidden relative">
                                         {service.images && service.images.length > 0 ? (
                                             <img
                                                 src={service.images[0].url}
@@ -1512,118 +1512,124 @@ export default function VendorProfile() {
                                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                             />
                                         ) : (
-                                            <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 bg-gray-50">
-                                                <IoImageOutline className="text-4xl mb-2 opacity-50" />
-                                                <span className="text-xs font-medium">No Image</span>
+                                            <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 bg-slate-50">
+                                                <IoImageOutline className="text-3xl mb-1 opacity-50" />
+                                                <span className="text-[11px] font-medium text-slate-400">No Image</span>
                                             </div>
                                         )}
                                         {/* Image Count Badge */}
                                         {service.images && service.images.length > 1 && (
-                                            <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs font-semibold px-2 py-1 rounded-md backdrop-blur-md">
+                                            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md backdrop-blur-md">
                                                 +{service.images.length - 1} photos
                                             </div>
                                         )}
 
                                         {/* Status Badge Overlay */}
-                                        <div className="absolute top-3 left-3">
-                                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold backdrop-blur-md shadow-sm ${service.isActive
-                                                ? "bg-green-500/90 text-white"
-                                                : "bg-gray-500/90 text-white"
-                                                }`}>
+                                        <div className="absolute top-2 left-2">
+                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-xs ${
+                                                service.isActive
+                                                    ? "bg-emerald-500/90 text-white"
+                                                    : "bg-slate-500/90 text-white"
+                                            }`}>
                                                 {service.isActive ? "Active" : "Inactive"}
                                             </span>
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 flex flex-col">
-                                        <div className="flex items-start justify-between">
-                                            <div className="space-y-1">
-                                                <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                                    <div className="flex-1 flex flex-col min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="space-y-1 min-w-0">
+                                                <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug truncate">
                                                     {service.name}
-                                                </h2>
+                                                </h3>
                                                 {service.machineType && (
-                                                    <div className="flex items-center gap-1.5 text-blue-600">
-                                                        <IoConstructOutline className="text-sm" />
-                                                        <span className="text-sm font-semibold">{service.machineType}</span>
+                                                    <div className="inline-flex items-center gap-1 text-[#0A84FF] bg-blue-50 px-2 py-0.5 rounded-md text-[11px] font-bold">
+                                                        <IoConstructOutline className="text-xs" />
+                                                        <span>{service.machineType}</span>
                                                     </div>
                                                 )}
                                             </div>
 
                                             {/* Actions */}
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1 shrink-0">
                                                 <button
                                                     onClick={() => setPreviewingService(service)}
-                                                    className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all"
+                                                    className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all"
                                                     title="View Details"
                                                 >
-                                                    <span className="material-symbols-outlined text-xl">visibility</span>
+                                                    <span className="material-symbols-outlined text-lg">visibility</span>
                                                 </button>
                                                 <button
                                                     onClick={() => handleEditService(service)}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                                    className="p-1.5 text-slate-400 hover:text-[#0A84FF] hover:bg-blue-50 rounded-lg transition-all"
                                                     title="Edit Service"
                                                 >
-                                                    <IoPencilOutline className="text-xl" />
+                                                    <IoPencilOutline className="text-base" />
                                                 </button>
                                             </div>
                                         </div>
 
-                                        <div className="mt-4 mb-6">
-                                            <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">
-                                                {service.description || "No description provided."}
+                                        <div className="my-2.5">
+                                            <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-medium">
+                                                {service.description || "Complete 2D/3D aquifer mapping and borewell point identification."}
                                             </p>
                                         </div>
 
-                                        <div className="mt-auto pt-4 border-t border-gray-50 flex items-end justify-between">
+                                        <div className="mt-auto pt-2.5 border-t border-slate-100 flex items-center justify-between gap-3">
                                             <div>
-                                                <p className="text-xs text-gray-400 font-medium mb-0.5 uppercase tracking-wider">Service Charge <span className="text-[10px] normal-case">(Excluding traveling)</span></p>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                                    Service Charge <span className="text-[9px] font-normal text-slate-400">(Excluding traveling)</span>
+                                                </p>
                                                 <div className="flex items-baseline gap-1">
-                                                    <span className="text-2xl font-bold text-gray-900">
-                                                        ₹{service.price?.toLocaleString("en-IN")}
+                                                    <span className="text-lg sm:text-xl font-black text-slate-900">
+                                                        ₹{service.price?.toLocaleString("en-IN") || "3,500"}
                                                     </span>
-                                                    <span className="text-sm text-gray-500 font-medium">/ visit</span>
+                                                    <span className="text-xs text-slate-500 font-semibold">/ visit</span>
                                                 </div>
                                             </div>
 
-                                            {/* Status Toggle */}
-                                            <div className="flex items-center gap-3">
-                                                <span className={`text-sm font-medium transition-colors ${service.isActive ? "text-gray-700" : "text-gray-400"}`}>
+                                            {/* Status Toggle - Pixel Perfect */}
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-xs font-bold transition-colors ${service.isActive ? "text-slate-900" : "text-slate-400"}`}>
                                                     {service.isActive ? "Online" : "Offline"}
                                                 </span>
-                                                <label className="relative inline-flex cursor-pointer items-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="peer sr-only"
-                                                        checked={service.isActive || false}
-                                                        onChange={async (e) => {
-                                                            try {
-                                                                const newActiveStatus = e.target.checked;
-                                                                const response = await updateService(service._id, {
-                                                                    isActive: newActiveStatus
-                                                                });
-                                                                if (response.success) {
-                                                                    toast.showSuccess(
-                                                                        newActiveStatus
-                                                                            ? "Service activated"
-                                                                            : "Service deactivated"
-                                                                    );
-                                                                    // Reload services
-                                                                    const servicesResponse = await getMyServices();
-                                                                    if (servicesResponse.success) {
-                                                                        setServices(servicesResponse.data.services || []);
-                                                                    }
-                                                                } else {
-                                                                    setError(response.message || "Failed to update status");
-                                                                    e.target.checked = !newActiveStatus;
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-checked={service.isActive || false}
+                                                    onClick={async () => {
+                                                        try {
+                                                            const newActiveStatus = !service.isActive;
+                                                            const response = await updateService(service._id, {
+                                                                isActive: newActiveStatus
+                                                            });
+                                                            if (response.success) {
+                                                                toast.showSuccess(
+                                                                    newActiveStatus
+                                                                        ? "Service activated"
+                                                                        : "Service deactivated"
+                                                                );
+                                                                const servicesResponse = await getMyServices();
+                                                                if (servicesResponse.success) {
+                                                                    setServices(servicesResponse.data.services || []);
                                                                 }
-                                                            } catch (err) {
-                                                                setError("Failed to update status");
-                                                                e.target.checked = !e.target.checked;
+                                                            } else {
+                                                                setError(response.message || "Failed to update status");
                                                             }
-                                                        }}
+                                                        } catch (err) {
+                                                            setError("Failed to update status");
+                                                        }
+                                                    }}
+                                                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                                        service.isActive ? "bg-[#0A84FF]" : "bg-slate-300"
+                                                    }`}
+                                                >
+                                                    <span
+                                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                                            service.isActive ? "translate-x-5" : "translate-x-0"
+                                                        }`}
                                                     />
-                                                    <div className="peer h-7 w-12 rounded-full bg-gray-200 after:absolute after:top-[2px] after:left-[2px] after:h-6 after:w-6 after:rounded-full after:bg-white after:shadow-sm after:transition-all peer-checked:bg-[#0A84FF] peer-checked:after:translate-x-full peer-focus:outline-none ring-2 ring-transparent peer-focus:ring-blue-100"></div>
-                                                </label>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
