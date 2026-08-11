@@ -38,6 +38,20 @@ export default function CancellationPolicyModal({
     const [policyHtml, setPolicyHtml] = useState("");
     const [fetchingPolicy, setFetchingPolicy] = useState(false);
 
+    // Body & HTML scroll locking
+    useEffect(() => {
+        if (isOpen) {
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+            document.body.style.overflow = "hidden";
+            document.documentElement.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+            };
+        }
+    }, [isOpen]);
+
     useEffect(() => {
         if (!isOpen) return;
         let cancelled = false;
