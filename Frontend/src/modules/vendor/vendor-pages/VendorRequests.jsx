@@ -208,10 +208,25 @@ export default function VendorRequests() {
         }
     };
 
-    // Store loadAllRequests function in ref so it can be used in socket listeners
+    // Keep ref updated to current loadAllRequests function
     useEffect(() => {
         loadAllRequestsRef.current = loadAllRequests;
     });
+
+    // Lock background document scroll when any modal is open
+    const isAnyModalOpen = Boolean(showAcceptScheduler || showRejectInput || showRejectConfirm || showStartOTPModal || showEndOTPModal);
+    useEffect(() => {
+        if (isAnyModalOpen) {
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+            document.body.style.overflow = "hidden";
+            document.documentElement.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+            };
+        }
+    }, [isAnyModalOpen]);
 
     // Load data on mount and when location changes (navigation back)
     useEffect(() => {
