@@ -671,8 +671,8 @@ export default function VendorBookingDetails() {
                                 { id: "visited", label: "Visited", icon: "🏠", statuses: ["VISITED"] },
                                 { id: "report", label: "Report", icon: "📄", statuses: ["REPORT_UPLOADED"] },
                                 { id: "payment", label: "Payment", icon: "💰", statuses: ["PAID_FIRST", "AWAITING_PAYMENT", "PAYMENT_SUCCESS"] },
-                                { id: "completed", label: "Completed", icon: "🎉", statuses: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "SUCCESS", "FAILED"] },
                                 { id: "borewell", label: "Borewell Result", icon: "🚰", statuses: ["BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED"] },
+                                { id: "completed", label: "Completed", icon: "🎉", statuses: ["COMPLETED", "FINAL_SETTLEMENT_COMPLETE", "FINAL_SETTLEMENT", "SUCCESS", "FAILED"] },
                             ];
                             
                             // Perfectly matches backend chronological flow
@@ -680,8 +680,8 @@ export default function VendorBookingDetails() {
                                 "ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED", 
                                 "REPORT_UPLOADED", 
                                 "PAID_FIRST", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", 
-                                "COMPLETED", "SUCCESS", "FAILED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE",
-                                "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED"
+                                "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED",
+                                "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED", "SUCCESS", "FAILED"
                             ];
                             const currentIndex = statusOrder.indexOf(status);
 
