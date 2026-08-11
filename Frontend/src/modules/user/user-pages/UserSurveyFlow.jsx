@@ -236,9 +236,8 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="text-center mb-2">
         <h2 className="text-xl font-bold text-gray-800">
-          {category} Survey Questionnaire
+          {category} Survey
         </h2>
-        <p className="text-xs text-slate-500">Provide site details to help experts prepare appropriate survey equipment.</p>
       </div>
 
       {/* Customer & Company Details for Commercial & Industrial */}
