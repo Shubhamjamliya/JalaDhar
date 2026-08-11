@@ -53,6 +53,20 @@ export default function VendorStatus() {
     const lastActionTimeRef = useRef(0); // Track when user performed an action
     const ACTION_COOLDOWN = 2000; // 2 seconds - ignore socket updates right after user action
 
+    // Lock body and html scroll when showAcceptConfirm modal is active
+    useEffect(() => {
+        if (showAcceptConfirm) {
+            const origBody = document.body.style.overflow;
+            const origHtml = document.documentElement.style.overflow;
+            document.body.style.overflow = "hidden";
+            document.documentElement.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = origBody;
+                document.documentElement.style.overflow = origHtml;
+            };
+        }
+    }, [showAcceptConfirm]);
+
     const loadBookingDetails = async () => {
         try {
             setLoading(true);
@@ -862,8 +876,17 @@ export default function VendorStatus() {
 
             {/* Accept Booking — Schedule Time Modal */}
             {showAcceptConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md px-4 touch-none overscroll-contain"
+                    onClick={() => setShowAcceptConfirm(false)}
+                    onTouchMove={(e) => {
+                        if (e.target === e.currentTarget) e.preventDefault();
+                    }}
+                >
+                    <div
+                        className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-5 overscroll-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         {/* Header */}
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 bg-green-100 rounded-2xl">
@@ -919,7 +942,7 @@ export default function VendorStatus() {
                                 )}
                             </label>
 
-                            <div className="max-h-52 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+                            <div className="max-h-52 overflow-y-auto space-y-3 pr-1 custom-scrollbar overscroll-contain">
                                 {/* Morning */}
                                 <div>
                                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
