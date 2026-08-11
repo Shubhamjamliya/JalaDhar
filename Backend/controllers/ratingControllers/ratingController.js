@@ -103,16 +103,19 @@ const submitRating = async (req, res) => {
     // Get user details for notification
     const user = await User.findById(userId).select('name');
 
-    // Send notification to vendor
+    // Send notifications to vendor (Expert) and admins
     try {
       const io = getIO();
       const reviewText = review ? ` Review: "${review.substring(0, 100)}${review.length > 100 ? '...' : ''}"` : '';
+      const formattedBookingId = bookingId.toString().slice(-6).toUpperCase();
+
+      // 1. Notify Vendor (Expert)
       await sendNotification({
         recipient: booking.vendor,
         recipientModel: 'Vendor',
         type: 'NEW_RATING',
         title: 'New Rating Received',
-        message: `${user?.name || 'A customer'} rated you ${overallRating}/5 stars.${reviewText} Your overall rating is now ${updatedVendor?.rating?.averageRating || overallRating}/5.`,
+        message: `${user?.name || 'A customer'} rated you ${overallRating}/5 stars for Booking #${formattedBookingId}.${reviewText} Your overall rating is now ${updatedVendor?.rating?.averageRating || overallRating}/5.`,
         relatedEntity: {
           entityType: 'Rating',
           entityId: rating._id
@@ -126,6 +129,35 @@ const submitRating = async (req, res) => {
           review: review || null
         }
       }, io);
+
+      // 2. Notify active Admins
+      try {
+        const Admin = require('../../models/Admin');
+        const admins = await Admin.find({ isActive: true });
+        const vendorName = updatedVendor?.name || 'an expert';
+        for (const admin of admins) {
+          await sendNotification({
+            recipient: admin._id,
+            recipientModel: 'Admin',
+            type: 'NEW_RATING',
+            title: 'New Booking Rating Received',
+            message: `${user?.name || 'A customer'} submitted a ${overallRating}/5 star rating for Expert ${vendorName} (Booking #${formattedBookingId}).${reviewText}`,
+            relatedEntity: {
+              entityType: 'Rating',
+              entityId: rating._id
+            },
+            metadata: {
+              ratingId: rating._id.toString(),
+              bookingId: bookingId.toString(),
+              vendorId: booking.vendor.toString(),
+              overallRating,
+              review: review || null
+            }
+          }, io);
+        }
+      } catch (adminErr) {
+        console.error('Failed to send admin rating notification:', adminErr);
+      }
     } catch (notifError) {
       console.error('Failed to send rating notification:', notifError);
       // Don't fail the request if notification fails

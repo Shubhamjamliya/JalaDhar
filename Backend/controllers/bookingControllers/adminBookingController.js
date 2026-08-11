@@ -727,8 +727,14 @@ const approveReport = async (req, res) => {
     }
 
     // Check if vendor status is correct
-    if (booking.vendorStatus !== BOOKING_STATUS.REPORT_UPLOADED &&
-      booking.vendorStatus !== BOOKING_STATUS.AWAITING_PAYMENT) {
+    const validApprovalStatuses = [
+      BOOKING_STATUS.REPORT_UPLOADED,
+      BOOKING_STATUS.AWAITING_PAYMENT,
+      BOOKING_STATUS.PAYMENT_SUCCESS,
+      BOOKING_STATUS.PAID_FIRST,
+      BOOKING_STATUS.VISITED
+    ];
+    if (!validApprovalStatuses.includes(booking.vendorStatus) && !validApprovalStatuses.includes(booking.status)) {
       return res.status(400).json({
         success: false,
         message: 'Booking is not in correct status for report approval'
@@ -1313,12 +1319,26 @@ const getReportPendingApprovals = async (req, res) => {
       'report.approvedAt': { $exists: false } // Only unapproved reports
     };
 
-    // Filter by vendorStatus
+    // Filter by status/vendorStatus
     if (status === 'PAID_FIRST') {
       query.vendorStatus = BOOKING_STATUS.PAID_FIRST;
     } else {
-      // Default: all bookings where report is uploaded but not yet approved
-      query.vendorStatus = { $in: [BOOKING_STATUS.REPORT_UPLOADED, BOOKING_STATUS.AWAITING_PAYMENT, BOOKING_STATUS.VISITED] };
+      // Default: all bookings where report is uploaded but not yet approved (including those where final payment was completed early)
+      const pendingStatuses = [
+        BOOKING_STATUS.REPORT_UPLOADED,
+        BOOKING_STATUS.AWAITING_PAYMENT,
+        BOOKING_STATUS.VISITED,
+        BOOKING_STATUS.PAYMENT_SUCCESS,
+        BOOKING_STATUS.PAID_FIRST
+      ];
+      query.$and = [
+        {
+          $or: [
+            { vendorStatus: { $in: pendingStatuses } },
+            { status: { $in: pendingStatuses } }
+          ]
+        }
+      ];
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
