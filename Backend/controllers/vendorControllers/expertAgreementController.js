@@ -285,8 +285,13 @@ const getAdminExpertAgreementLogs = async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
     const search = req.query.search || '';
+    const version = req.query.version || '';
 
     const query = {};
+
+    if (version) {
+      query.agreementVersion = version;
+    }
 
     if (search) {
       query.$or = [
@@ -304,10 +309,13 @@ const getAdminExpertAgreementLogs = async (req, res) => {
       .skip((page - 1) * limit)
       .limit(limit);
 
+    const availableVersions = await ExpertAgreementLog.distinct('agreementVersion');
+
     return res.status(200).json({
       success: true,
       data: {
         logs,
+        availableVersions: availableVersions.filter(Boolean),
         pagination: {
           total,
           page,

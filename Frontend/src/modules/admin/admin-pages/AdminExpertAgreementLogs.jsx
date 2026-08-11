@@ -45,6 +45,8 @@ export default function AdminExpertAgreementLogs() {
     });
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedVersion, setSelectedVersion] = useState('');
+    const [availableVersions, setAvailableVersions] = useState([]);
 
     // Modal & Editing States
     const [showEditModal, setShowEditModal] = useState(false);
@@ -98,7 +100,7 @@ export default function AdminExpertAgreementLogs() {
             const minor = parseInt(match[2], 10) + 1;
             return `v${major}.${minor}`;
         }
-        return `${ver}-new`;
+        return 'v1.1';
     };
 
     const fetchCurrentAgreement = async () => {
@@ -126,12 +128,14 @@ export default function AdminExpertAgreementLogs() {
                 params: {
                     page: targetPage,
                     limit: pagination.limit,
-                    search: searchQuery
+                    search: searchQuery,
+                    version: selectedVersion
                 }
             });
 
             if (response.data?.success && response.data?.data) {
                 setLogs(response.data.data.logs || []);
+                setAvailableVersions(response.data.data.availableVersions || []);
                 setPagination(response.data.data.pagination || {
                     total: 0,
                     page: targetPage,
@@ -150,7 +154,7 @@ export default function AdminExpertAgreementLogs() {
     useEffect(() => {
         fetchLogs(1);
         fetchCurrentAgreement();
-    }, []);
+    }, [selectedVersion]);
 
     const handleOpenEditModal = () => {
         fetchCurrentAgreement();
@@ -266,8 +270,25 @@ export default function AdminExpertAgreementLogs() {
                     />
                 </form>
 
-                <div className="text-xs text-slate-500 font-bold">
-                    Total Records: <strong className="text-blue-600">{pagination.total}</strong>
+                <div className="flex items-center gap-3">
+                    {/* Version Filter */}
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold">
+                        <span>Version:</span>
+                        <select
+                            value={selectedVersion}
+                            onChange={(e) => setSelectedVersion(e.target.value)}
+                            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                            <option value="">All Versions</option>
+                            {availableVersions.map((v) => (
+                                <option key={v} value={v}>{v}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="text-xs text-slate-500 font-bold bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+                        Total Records: <strong className="text-blue-600">{pagination.total}</strong>
+                    </div>
                 </div>
             </div>
 
@@ -294,6 +315,7 @@ export default function AdminExpertAgreementLogs() {
                                     <th className="py-3.5 px-4">Agreement Version</th>
                                     <th className="py-3.5 px-4">Acceptance Date &amp; Time</th>
                                     <th className="py-3.5 px-4">IP Address</th>
+                                    <th className="py-3.5 px-4">Device &amp; App</th>
                                     <th className="py-3.5 px-4 text-center">Status</th>
                                 </tr>
                             </thead>
@@ -327,7 +349,9 @@ export default function AdminExpertAgreementLogs() {
 
                                         {/* Version */}
                                         <td className="py-3.5 px-4 font-black text-indigo-600 font-mono">
-                                            {log.agreementVersion}
+                                            <span className="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-100">
+                                                {log.agreementVersion}
+                                            </span>
                                         </td>
 
                                         {/* Timestamp */}
@@ -344,6 +368,12 @@ export default function AdminExpertAgreementLogs() {
                                                 <IoGlobeOutline className="text-slate-400" />
                                                 {log.ipAddress}
                                             </div>
+                                        </td>
+
+                                        {/* Device & App */}
+                                        <td className="py-3.5 px-4 max-w-[180px] truncate text-[11px] text-slate-500 font-mono" title={log.deviceId}>
+                                            <div className="font-semibold text-slate-700 truncate">{log.deviceId || 'Browser / Native App'}</div>
+                                            <div className="text-[10px] text-slate-400">App v{log.appVersion || '1.0.0'}</div>
                                         </td>
 
                                         {/* Status */}
