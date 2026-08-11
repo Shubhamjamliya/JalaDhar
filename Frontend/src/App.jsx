@@ -108,6 +108,7 @@ const AdminTeamManagement = lazy(() => import("./modules/admin/admin-pages/Admin
 const AdminPolicies = lazy(() => import("./modules/admin/admin-pages/AdminPolicies"));
 const AdminAgreementLogs = lazy(() => import("./modules/admin/admin-pages/AdminAgreementLogs"));
 const AdminExpertAgreementLogs = lazy(() => import("./modules/admin/admin-pages/AdminExpertAgreementLogs"));
+const AdminOTPLogs = lazy(() => import("./modules/admin/admin-pages/AdminOTPLogs"));
 const AdminReports = lazy(() => import("./modules/admin/admin-pages/Reports"));
 const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavbar"));
 
@@ -1054,6 +1055,22 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminAgreementLogs />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/expert-agreements"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminExpertAgreementLogs />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/otp-logs"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminOTPLogs />
                                                                             </Suspense>
                                                                         }
                                                                     />

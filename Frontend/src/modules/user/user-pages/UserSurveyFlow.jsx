@@ -189,18 +189,32 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
     village: "",
     mandal: "",
     district: "",
-    // Extra fields
     state: "",
     purposeExtent: "",
-    areaUnit: "sqft",
+    areaUnit: category === "Commercial" || category === "Industrial" || category === "Household" || category === "Residential" ? "sqft" : "acres",
     surveyNumber: "",
     plotNumber: "",
     notes: "",
-    images: [] // placeholder if needed later
+    // Category Specific Questionnaire Fields
+    cropType: "Paddy",
+    irrigatedType: "Irrigated",
+    existingBorewells: "No",
+    existingOpenWells: "No",
+    waterSource: "Canal",
+    houseType: "Independent House",
+    colonyRoad: "",
+    landmark: "",
+    companyName: "",
+    contactPerson: "",
+    projectName: "",
+    propertyType: "Commercial Complex",
+    factoryName: "",
+    industryType: "Manufacturing",
+    waterRequirement: "Industrial Process",
+    pointsRequired: 1
   });
 
   const handleChange = (e) => {
-    // Check if e is processed manually or native event
     const field = e.target?.name;
     const value = e.target?.value;
     if (field) {
@@ -208,58 +222,113 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
     }
   };
 
-  const updateField = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  }
-
-
-
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
   };
 
+  const isAgri = isAgriCategory(category);
+  const isResi = category === "Household" || category === "Residential";
+  const isComm = category === "Commercial";
+  const isInd = category === "Industrial";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <h2 className="text-xl font-bold text-gray-800 mb-2">Project Details</h2>
+      <div className="text-center mb-2">
+        <h2 className="text-xl font-bold text-gray-800">
+          {category} Survey Questionnaire
+        </h2>
+        <p className="text-xs text-slate-500">Provide site details to help experts prepare appropriate survey equipment.</p>
+      </div>
 
+      {/* Customer & Company Details for Commercial & Industrial */}
+      {(isComm || isInd) && (
+        <div className="space-y-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+          <h3 className="font-semibold text-gray-700 mb-2">Customer &amp; Company Details</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Company / Organization Name *</label>
+              <input
+                required
+                name="companyName"
+                value={formData.companyName}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs"
+                placeholder="e.g. Acme Industries Ltd."
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Contact Person Name *</label>
+              <input
+                required
+                name="contactPerson"
+                value={formData.contactPerson}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs"
+                placeholder="e.g. John Doe"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Location Info */}
       <div className="space-y-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-        <h3 className="font-semibold text-gray-700 mb-2">Location Info</h3>
+        <h3 className="font-semibold text-gray-700 mb-2">Location &amp; Address</h3>
+        
+        {/* Residential Colony / Road & Landmark */}
+        {isResi && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Colony / Road Name</label>
+              <input
+                name="colonyRoad"
+                value={formData.colonyRoad}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs"
+                placeholder="Colony or Street Name"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Landmark</label>
+              <input
+                name="landmark"
+                value={formData.landmark}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs"
+                placeholder="Nearby Landmark"
+              />
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Village / Locality</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Village / Locality *</label>
             <input
               required
               name="village"
               value={formData.village}
               onChange={handleChange}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="words"
-              spellCheck={false}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs"
               placeholder="Village Name"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mandal</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Mandal *</label>
             <input
               required
               name="mandal"
               value={formData.mandal}
               onChange={handleChange}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="words"
-              spellCheck={false}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs"
               placeholder="Mandal"
             />
           </div>
           <div>
             <StateDistrictInput
               required
-              label="District"
+              label="District *"
               value={formData.district}
               onChange={(val) => {
                 handleChange({ target: { name: "district", value: val } });
@@ -282,7 +351,7 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
           <div>
             <StateDistrictInput
               required
-              label="State"
+              label="State *"
               value={formData.state}
               onChange={(val) => {
                 handleChange({ target: { name: "state", value: val } });
@@ -297,38 +366,287 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
         </div>
       </div>
 
-      {/* Dynamic Fields based on Category */}
+      {/* Dynamic Category Specific Questionnaire */}
       <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
-        {/* Survey/Plot Number */}
+        <h3 className="font-semibold text-gray-700 mb-2">Category Survey Information</h3>
+
+        {/* 1. Agriculture Specifics */}
+        {isAgri && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Crop Type *</label>
+              <select
+                name="cropType"
+                value={formData.cropType}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
+              >
+                <option value="Paddy">🌾 Paddy (Rice)</option>
+                <option value="Cotton">🌱 Cotton</option>
+                <option value="Vegetables">🥕 Vegetables</option>
+                <option value="Fruit Orchard">🍎 Fruit Orchard / Horticulture</option>
+                <option value="Sugarcane">🎋 Sugarcane</option>
+                <option value="Wheat">🌾 Wheat</option>
+                <option value="Pulses">🫘 Pulses / Grains</option>
+                <option value="Commercial">🌻 Commercial Crops</option>
+                <option value="Others">🌿 Others</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Farming Type *</label>
+              <select
+                name="irrigatedType"
+                value={formData.irrigatedType}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
+              >
+                <option value="Irrigated">💧 Irrigated Land</option>
+                <option value="Rain-fed">🌧️ Rain-fed Land</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Existing Borewells? *</label>
+              <select
+                name="existingBorewells"
+                value={formData.existingBorewells}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
+              >
+                <option value="No">No Existing Borewell</option>
+                <option value="Yes (Active)">Yes (Active Borewell)</option>
+                <option value="Yes (Dry / Failed)">Yes (Dry / Dried Up Borewell)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Existing Open Wells? *</label>
+              <select
+                name="existingOpenWells"
+                value={formData.existingOpenWells}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
+              >
+                <option value="No">No Open Well</option>
+                <option value="Yes">Yes (Open Well Present)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Primary Water Source *</label>
+              <select
+                name="waterSource"
+                value={formData.waterSource}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
+              >
+                <option value="Canal">🏞️ Canal Water</option>
+                <option value="Tank">🏊 Village Tank / Lake</option>
+                <option value="Borewell">🚰 Existing Borewell</option>
+                <option value="Rainfed">🌧️ Rainfed Only</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Borewell Points Required *</label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                name="pointsRequired"
+                value={formData.pointsRequired}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs font-bold"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 2. Residential Specifics */}
+        {isResi && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">House Type *</label>
+              <select
+                name="houseType"
+                value={formData.houseType}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
+              >
+                <option value="Independent House">🏡 Independent House</option>
+                <option value="Villa">🏰 Villa / Farmhouse</option>
+                <option value="Apartment">🏢 Apartment Complex</option>
+                <option value="Gated Community">🏘️ Gated Community</option>
+                <option value="Open Plot">📐 Open Residential Plot</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Existing Borewell? *</label>
+              <select
+                name="existingBorewells"
+                value={formData.existingBorewells}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
+              >
+                <option value="No">No Existing Borewell</option>
+                <option value="Yes (Active)">Yes (Active Borewell)</option>
+                <option value="Yes (Dry)">Yes (Dry / Low Yield Borewell)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Borewell Points Required *</label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                name="pointsRequired"
+                value={formData.pointsRequired}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs font-bold"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 3. Commercial Specifics */}
+        {isComm && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Property Type *</label>
+              <select
+                name="propertyType"
+                value={formData.propertyType}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
+              >
+                <option value="Commercial Complex">🏢 Commercial Complex</option>
+                <option value="Hotel / Restaurant">🏨 Hotel / Restaurant / Resort</option>
+                <option value="Hospital">🏥 Hospital / Healthcare</option>
+                <option value="Office Building">💼 Office Building</option>
+                <option value="Retail Mall">🛍️ Retail Mall / Shopping Hub</option>
+                <option value="Educational Institute">🏫 School / College</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Project Name</label>
+              <input
+                name="projectName"
+                value={formData.projectName}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs"
+                placeholder="Project / Building Name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Points Required *</label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                name="pointsRequired"
+                value={formData.pointsRequired}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs font-bold"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 4. Industrial Specifics */}
+        {isInd && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Industry Type *</label>
+              <select
+                name="industryType"
+                value={formData.industryType}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
+              >
+                <option value="Manufacturing">🏭 Manufacturing &amp; Assembly</option>
+                <option value="Chemical & Processing">🧪 Chemical &amp; Processing</option>
+                <option value="Textile">🧵 Textile &amp; Dyeing</option>
+                <option value="Food & Beverage">🧃 Food &amp; Beverage Processing</option>
+                <option value="Pharma">💊 Pharmaceuticals</option>
+                <option value="Electronics">🔌 Electronics &amp; Hardware</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Factory / Plant Name *</label>
+              <input
+                required
+                name="factoryName"
+                value={formData.factoryName}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs"
+                placeholder="e.g. Unit 1 Plant"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Water Requirement Purpose *</label>
+              <select
+                name="waterRequirement"
+                value={formData.waterRequirement}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
+              >
+                <option value="Industrial Process">⚙️ Industrial Manufacturing Process</option>
+                <option value="Cooling Plant">❄️ Cooling Towers / Chiller Plant</option>
+                <option value="Domestic & Staff">🚰 Domestic &amp; Staff Consumption</option>
+                <option value="Firefighting">🚒 Firefighting Reserve</option>
+                <option value="Irrigation">🌳 Campus Greenery Irrigation</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Points Required *</label>
+              <input
+                type="number"
+                min="1"
+                max="30"
+                name="pointsRequired"
+                value={formData.pointsRequired}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs font-bold"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Survey / Plot Number */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {isAgriCategory(category) ? "Survey No" : "Survey no / Plot no"}
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            {isAgri ? "Survey Number *" : "Survey / Plot / Door Number *"}
           </label>
           <input
             required
             type="text"
-            name={isAgriCategory(category) ? "surveyNumber" : "plotNumber"}
-            value={isAgriCategory(category) ? formData.surveyNumber : formData.plotNumber}
+            name={isAgri ? "surveyNumber" : "plotNumber"}
+            value={isAgri ? formData.surveyNumber : formData.plotNumber}
             onChange={handleChange}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="characters"
-            spellCheck={false}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-sm"
-            placeholder={`Enter ${isAgriCategory(category) ? "Survey No" : "Survey no / Plot no"}`}
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs"
+            placeholder={`Enter ${isAgri ? "Survey Number" : "Survey / Plot Number"}`}
           />
         </div>
 
-        {/* Extent Input Block — Senior UI Redesign */}
-        <div className="bg-white p-4.5 rounded-2xl border border-gray-200/80 shadow-sm space-y-2.5">
+        {/* Extent Input Block */}
+        <div className="bg-white p-4 rounded-2xl border border-gray-200/80 shadow-2xs space-y-2.5">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-bold text-gray-800 flex items-center gap-1">
-              <span>Area Extent</span>
-              <span className="text-red-500">*</span>
+            <label className="text-xs font-bold text-gray-800 flex items-center gap-1">
+              <span>Total Land / Site Area *</span>
             </label>
-            {isAgriCategory(category) ? (
+            {isAgri ? (
               <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0A84FF] border border-blue-100/80">
-                🌾 Acres & Guntas
+                🌾 Acres &amp; Guntas
               </span>
             ) : (
               <select
@@ -339,6 +657,7 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
               >
                 <option value="sqft">📐 Square Feet (Sq. Ft.)</option>
                 <option value="sqyd">📐 Square Yards (Sq. Yd.)</option>
+                <option value="acres">🌾 Acres</option>
               </select>
             )}
           </div>
@@ -351,7 +670,7 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
               value={formData.purposeExtent}
               onChange={(e) => {
                 const val = e.target.value;
-                if (val && isAgriCategory(category)) {
+                if (val && isAgri) {
                   const parsed = parseAcresGuntas(val);
                   if (val.includes('.') && parseInt(val.split('.')[1], 10) >= 40) {
                     handleChange({ target: { name: "purposeExtent", value: String(parsed.decimalValue) } });
@@ -360,50 +679,38 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
                 }
                 handleChange(e);
               }}
-              onBlur={(e) => {
-                const val = e.target.value;
-                if (val && isAgriCategory(category)) {
-                  const parsed = parseAcresGuntas(val);
-                  if (parsed.decimalValue > 0) {
-                    handleChange({ target: { name: "purposeExtent", value: String(parsed.decimalValue) } });
-                  }
-                }
-              }}
-              className="w-full pl-4 pr-24 py-3 rounded-xl border border-gray-200 focus:border-[#0A84FF] focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium text-gray-900 placeholder-gray-400 transition-all"
-              placeholder={isAgriCategory(category) ? "e.g. 2.20 (2 Acres 20 Guntas)" : "e.g. 1800"}
+              className="w-full pl-4 pr-24 py-2.5 rounded-xl border border-gray-200 focus:border-[#0A84FF] outline-none text-xs font-medium text-gray-900"
+              placeholder={isAgri ? "e.g. 2.20 (2 Acres 20 Guntas)" : "e.g. 1800"}
               min="0"
               step="any"
             />
-            <div className="absolute right-2.5 px-3 py-1 bg-gray-100/90 text-gray-600 text-xs font-bold rounded-lg pointer-events-none select-none border border-gray-200/60">
-              {isAgriCategory(category) ? "Acres" : (formData.areaUnit === 'sqyd' ? "Sq. Yd." : "Sq. Ft.")}
+            <div className="absolute right-2 px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg pointer-events-none select-none border border-gray-200">
+              {isAgri ? "Acres" : (formData.areaUnit === 'sqyd' ? "Sq. Yd." : (formData.areaUnit === 'acres' ? "Acres" : "Sq. Ft."))}
             </div>
           </div>
-
-          {/* Live Conversion & Formatted Summary Card */}
-          {formData.purposeExtent && !isNaN(parseFloat(formData.purposeExtent)) && parseFloat(formData.purposeExtent) > 0 && isAgriCategory(category) && (
-            <div className="mt-2.5 p-3 rounded-xl bg-gradient-to-r from-blue-50/70 to-indigo-50/50 border border-blue-100/80 flex items-center justify-between text-xs transition-all animate-in fade-in duration-200">
-              {(() => {
-                const parsed = parseAcresGuntas(formData.purposeExtent);
-                return (
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-sm">🌾</span>
-                      <span className="font-bold text-gray-900 text-xs">
-                        {parsed.formatted}
-                      </span>
-                    </div>
-                    <span className="text-[11px] font-medium text-gray-500 bg-white/90 px-2 py-0.5 rounded-md border border-gray-200/60 shadow-2xs">
-                      40 Guntas = 1 Acre
-                    </span>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
         </div>
       </div>
-
-
+      {/* Live Conversion & Formatted Summary Card */}
+      {formData.purposeExtent && !isNaN(parseFloat(formData.purposeExtent)) && parseFloat(formData.purposeExtent) > 0 && isAgriCategory(category) && (
+        <div className="mt-2.5 p-3 rounded-xl bg-gradient-to-r from-blue-50/70 to-indigo-50/50 border border-blue-100/80 flex items-center justify-between text-xs transition-all animate-in fade-in duration-200">
+          {(() => {
+            const parsed = parseAcresGuntas(formData.purposeExtent);
+            return (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-sm">🌾</span>
+                  <span className="font-bold text-gray-900 text-xs">
+                    {parsed.formatted}
+                  </span>
+                </div>
+                <span className="text-[11px] font-medium text-gray-500 bg-white/90 px-2 py-0.5 rounded-md border border-gray-200/60 shadow-2xs">
+                  40 Guntas = 1 Acre
+                </span>
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       <div className="pt-4 flex gap-3 pb-20">
         <button type="button" onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>

@@ -136,13 +136,14 @@ const navItems = [
     },
     {
         id: "agreement-logs",
-        label: "Agreement Logs",
+        label: "Agreement & Audit Logs",
         to: "/admin/agreements",
         Icon: IoShieldCheckmarkOutline,
         roles: ["SUPER_ADMIN", "ADMIN", "SUPPORT_ADMIN", "OPERATIONS_ADMIN"],
         children: [
             { label: "User Agreement Logs", to: "/admin/agreements" },
-            { label: "Expert Agreement Logs", to: "/admin/expert-agreements" }
+            { label: "Expert Agreement Logs", to: "/admin/expert-agreements" },
+            { label: "Survey OTP Audit Logs", to: "/admin/otp-logs" }
         ]
     },
     {

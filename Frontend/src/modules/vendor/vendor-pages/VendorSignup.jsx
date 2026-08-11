@@ -907,7 +907,6 @@ export default function VendorSignup() {
                                 surveysCompleted: formData.surveysCompleted,
                                 experienceDetails: formData.experienceDetails,
                                 degreeCertificate: formData.degreeCertificate,
-                                certificates: formData.certificates,
                                 machineType: formData.machineType,
                                 surveyPhotos: formData.surveyPhotos,
                                 equipmentPhoto: formData.equipmentPhoto,
