@@ -1305,8 +1305,12 @@ const getReportPendingApprovals = async (req, res) => {
     } = req.query;
 
     const query = {
-      'report.uploadedAt': { $exists: true },
-      'report.approvedAt': { $exists: false }, // Only unapproved reports
+      $or: [
+        { 'report.uploadedAt': { $exists: true } },
+        { reportUploadedAt: { $exists: true } },
+        { 'report.waterFound': { $exists: true } }
+      ],
+      'report.approvedAt': { $exists: false } // Only unapproved reports
     };
 
     // Filter by vendorStatus
@@ -1314,7 +1318,7 @@ const getReportPendingApprovals = async (req, res) => {
       query.vendorStatus = BOOKING_STATUS.PAID_FIRST;
     } else {
       // Default: all bookings where report is uploaded but not yet approved
-      query.vendorStatus = { $in: [BOOKING_STATUS.REPORT_UPLOADED, BOOKING_STATUS.AWAITING_PAYMENT] };
+      query.vendorStatus = { $in: [BOOKING_STATUS.REPORT_UPLOADED, BOOKING_STATUS.AWAITING_PAYMENT, BOOKING_STATUS.VISITED] };
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
