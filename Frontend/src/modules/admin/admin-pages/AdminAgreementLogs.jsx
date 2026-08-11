@@ -189,6 +189,7 @@ export default function AdminAgreementLogs() {
         const updated = [...clausesList, { id: newId, title: `Clause ${newId}`, text: '' }];
         setClausesList(updated);
         setRawHtmlCode(buildHtmlFromClauses(headerTitle, introText, updated));
+        toast.showSuccess(`New clause added (Clause ${newId})`);
     };
 
     const handleRemoveClause = (index) => {
@@ -196,9 +197,11 @@ export default function AdminAgreementLogs() {
             toast.showError('Agreement must contain at least one clause.');
             return;
         }
+        const removedTitle = clausesList[index]?.title || `Clause ${index + 1}`;
         const updated = clausesList.filter((_, idx) => idx !== index);
         setClausesList(updated);
         setRawHtmlCode(buildHtmlFromClauses(headerTitle, introText, updated));
+        toast.showInfo(`Removed "${removedTitle}"`);
     };
 
     const handleSearchSubmit = (e) => {
@@ -478,54 +481,6 @@ export default function AdminAgreementLogs() {
                             </button>
                         </div>
 
-                        {/* Editor Mode Tabs */}
-                        <div className="bg-slate-100 px-5 py-3 border-b border-slate-200 flex items-center justify-between shrink-0">
-                            <div className="flex items-center gap-1 bg-slate-200/80 p-1 rounded-xl">
-                                <button
-                                    type="button"
-                                    onClick={() => setEditorTab('form')}
-                                    className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-                                        editorTab === 'form'
-                                            ? 'bg-white text-blue-600 shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <IoListOutline className="text-base" />
-                                    <span>✍️ Edit Clauses (Admin Mode)</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => setEditorTab('preview')}
-                                    className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-                                        editorTab === 'preview'
-                                            ? 'bg-white text-blue-600 shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <IoEyeOutline className="text-base" />
-                                    <span>👁️ Live App Preview</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => setEditorTab('code')}
-                                    className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-                                        editorTab === 'code'
-                                            ? 'bg-white text-blue-600 shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <IoCodeSlashOutline className="text-base" />
-                                    <span>💻 HTML Code (Advanced)</span>
-                                </button>
-                            </div>
-
-                            <div className="text-[11px] font-bold text-slate-500 hidden sm:block">
-                                Total Clauses: <strong className="text-blue-600">{clausesList.length}</strong>
-                            </div>
-                        </div>
-
                         {/* Modal Form Body */}
                         <form onSubmit={handleUpdateAgreementSubmit} className="p-5 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
                             
@@ -549,93 +504,57 @@ export default function AdminAgreementLogs() {
                                 />
                             </div>
 
-                            {/* TAB 1: Admin Non-Developer Clause Form */}
-                            {editorTab === 'form' && (
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
-                                            Agreement Clauses ({clausesList.length} Items)
-                                        </h4>
-                                        <button
-                                            type="button"
-                                            onClick={handleAddClause}
-                                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1 cursor-pointer"
-                                        >
-                                            <IoAddCircleOutline className="text-base" />
-                                            <span>Add New Clause</span>
-                                        </button>
-                                    </div>
+                            {/* Clauses Form Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                                        Agreement Clauses ({clausesList.length} Items)
+                                    </h4>
+                                    <button
+                                        type="button"
+                                        onClick={handleAddClause}
+                                        className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <IoAddCircleOutline className="text-base" />
+                                        <span>Add New Clause</span>
+                                    </button>
+                                </div>
 
-                                    <div className="space-y-3">
-                                        {clausesList.map((clause, idx) => (
-                                            <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 hover:border-slate-300 transition-colors">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">
-                                                        {idx + 1}
-                                                    </span>
-                                                    <input
-                                                        type="text"
-                                                        value={clause.title}
-                                                        onChange={(e) => handleClauseChange(idx, 'title', e.target.value)}
-                                                        placeholder={`Clause ${idx + 1} Title`}
-                                                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-900 focus:outline-none focus:border-blue-500"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveClause(idx)}
-                                                        className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer shrink-0"
-                                                        title="Delete Clause"
-                                                    >
-                                                        <IoTrashOutline className="text-lg" />
-                                                    </button>
-                                                </div>
-
-                                                <textarea
-                                                    value={clause.text}
-                                                    onChange={(e) => handleClauseChange(idx, 'text', e.target.value)}
-                                                    rows={2}
-                                                    placeholder="Enter clause description text in plain English..."
-                                                    className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 leading-relaxed focus:outline-none focus:border-blue-500 font-medium"
+                                <div className="space-y-3">
+                                    {clausesList.map((clause, idx) => (
+                                        <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 hover:border-slate-300 transition-colors">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                                                    {idx + 1}
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    value={clause.title}
+                                                    onChange={(e) => handleClauseChange(idx, 'title', e.target.value)}
+                                                    placeholder={`Clause ${idx + 1} Title`}
+                                                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-900 focus:outline-none focus:border-blue-500"
                                                 />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveClause(idx)}
+                                                    className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer shrink-0"
+                                                    title="Delete Clause"
+                                                >
+                                                    <IoTrashOutline className="text-lg" />
+                                                </button>
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
 
-                            {/* TAB 2: Visual Live App Preview */}
-                            {editorTab === 'preview' && (
-                                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
-                                    <div className="flex items-center gap-2 pb-3 border-b border-slate-200">
-                                        <span className="w-3 h-3 rounded-full bg-emerald-500" />
-                                        <span className="text-xs font-black uppercase tracking-wider text-slate-700">
-                                            Live Preview (How users will view version {newVersionInput})
-                                        </span>
-                                    </div>
-
-                                    <div
-                                        className="prose prose-xs max-w-none text-slate-700 space-y-3 leading-relaxed"
-                                        dangerouslySetInnerHTML={{
-                                            __html: buildHtmlFromClauses(headerTitle, introText, clausesList)
-                                        }}
-                                    />
+                                            <textarea
+                                                value={clause.text}
+                                                onChange={(e) => handleClauseChange(idx, 'text', e.target.value)}
+                                                rows={2}
+                                                placeholder="Enter clause description text in plain English..."
+                                                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 leading-relaxed focus:outline-none focus:border-blue-500 font-medium"
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
-
-                            {/* TAB 3: Advanced Raw HTML Code */}
-                            {editorTab === 'code' && (
-                                <div>
-                                    <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-1">
-                                        Raw HTML Markup Code
-                                    </label>
-                                    <textarea
-                                        value={rawHtmlCode || buildHtmlFromClauses(headerTitle, introText, clausesList)}
-                                        onChange={(e) => setRawHtmlCode(e.target.value)}
-                                        rows={12}
-                                        className="w-full p-3.5 bg-slate-900 border border-slate-800 text-emerald-400 rounded-xl text-xs font-mono leading-relaxed focus:outline-none"
-                                    />
-                                </div>
-                            )}
+                            </div>
 
                             <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs">
                                 <strong>Notice:</strong> Publishing version <strong>{newVersionInput}</strong> will immediately prompt all registered platform users to read and accept the updated terms.
