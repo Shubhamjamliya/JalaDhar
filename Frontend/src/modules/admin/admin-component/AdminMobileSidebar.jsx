@@ -135,6 +135,17 @@ const navItems = [
         roles: ["SUPER_ADMIN", "ADMIN"]
     },
     {
+        id: "agreement-logs",
+        label: "Agreement Logs",
+        to: "/admin/agreements",
+        Icon: IoShieldCheckmarkOutline,
+        roles: ["SUPER_ADMIN", "ADMIN", "SUPPORT_ADMIN", "OPERATIONS_ADMIN"],
+        children: [
+            { label: "User Agreement Logs", to: "/admin/agreements" },
+            { label: "Expert Agreement Logs", to: "/admin/expert-agreements" }
+        ]
+    },
+    {
         id: "settings",
         label: "Settings",
         to: "/admin/settings",
