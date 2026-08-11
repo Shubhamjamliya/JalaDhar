@@ -601,7 +601,7 @@ export default function UserBookingDetails() {
                             { id: "visited",   label: "Survey Done",       icon: <IoConstructOutline />,       statuses: ["VISITED"],   date: booking.visitedAt,        proofKey: "visitedAt" },
                             { id: "report",    label: "Report Ready",      icon: <IoDocumentTextOutline />,    statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt, proofKey: "reportUploadedAt" },
                             { id: "payment",   label: "Final Payment",     icon: <IoCashOutline />,            statuses: ["AWAITING_PAYMENT"], date: booking.payment?.remainingPaidAt },
-                            { id: "completed", label: "Report Unlocked",   icon: <IoCheckmarkCircleOutline />, statuses: ["PAYMENT_SUCCESS", "PAID_FIRST", "COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt || booking.payment?.remainingPaidAt },
+                            { id: "completed", label: "Report Available",  icon: <IoCheckmarkCircleOutline />, statuses: ["PAYMENT_SUCCESS", "PAID_FIRST", "COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt || booking.payment?.remainingPaidAt },
                         ];
 
                         const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
@@ -1528,16 +1528,16 @@ function PaymentPromptModal({ isOpen, onClose, onPay, amount, isReportReady }) {
                     </div>
 
                     <h2 className="text-lg font-extrabold text-slate-900 mb-1.5">
-                        {isReportReady ? "Survey Report Locked" : "Survey Report in Progress"}
+                        {isReportReady ? "Awaiting Final Payment" : "Survey Report in Progress"}
                     </h2>
                     <p className="text-slate-600 mb-6 leading-relaxed text-xs">
                         {isReportReady ? (
                             <>
-                                Your survey report is ready. Complete the remaining payment of <span className="text-slate-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock and view your detailed groundwater survey report.
+                                Your survey report is ready. Complete the remaining payment of <span className="text-slate-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to access and view your detailed groundwater survey report.
                             </>
                         ) : (
                             <>
-                                Your assigned expert is currently preparing your groundwater survey report. Complete the remaining payment of <span className="text-slate-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock it immediately once uploaded.
+                                Your assigned expert is currently preparing your groundwater survey report. Complete the remaining payment of <span className="text-slate-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to access it immediately once uploaded.
                             </>
                         )}
                     </p>
@@ -1547,7 +1547,7 @@ function PaymentPromptModal({ isOpen, onClose, onPay, amount, isReportReady }) {
                             onClick={onPay}
                             className="w-full bg-[#0A84FF] text-white py-3 rounded-xl font-bold text-xs shadow-xs active:scale-[0.98] hover:bg-[#005BBB] transition-all cursor-pointer"
                         >
-                            {isReportReady ? "Pay and unlock report" : "Pay remaining payment"}
+                            {isReportReady ? "Pay balance to access report" : "Pay remaining payment"}
                         </button>
                         <button
                             onClick={onClose}

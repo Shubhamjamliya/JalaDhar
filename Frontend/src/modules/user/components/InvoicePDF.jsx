@@ -401,7 +401,7 @@ const InvoicePDF = ({ booking, billingInfo, qrCodeUrl }) => {
           <View style={styles.rowFlexBetween}>
             <Text style={styles.textLabel}>Survey Report Access</Text>
             <Text style={{ fontSize: 7.8, fontWeight: 700, color: isFullyPaid ? '#059669' : '#d97706' }}>
-              {isFullyPaid ? '🔓 Unlocked & Available in App' : `🔒 Locked (Pay ${formatCurrency(payment?.remainingAmount)} to unlock)`}
+              {isFullyPaid ? 'Available in App' : `Awaiting Final Payment (Pay ${formatCurrency(payment?.remainingAmount)} to view)`}
             </Text>
           </View>
           <View style={[styles.rowFlexBetween, { borderTop: '1pt solid #cbd5e1', paddingTop: 4, marginTop: 4 }]}>

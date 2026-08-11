@@ -1079,16 +1079,16 @@ function PaymentPromptModal({ isOpen, onClose, onPay, amount, isReportReady }) {
                     </div>
 
                     <h2 className="text-2xl font-black text-gray-900 mb-2">
-                        {isReportReady ? "Survey Report Locked" : "Survey Report in Progress"}
+                        {isReportReady ? "Awaiting Final Payment" : "Survey Report in Progress"}
                     </h2>
                     <p className="text-gray-500 mb-8 leading-relaxed text-sm">
                         {isReportReady ? (
                             <>
-                                Your survey report is ready. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock and view your detailed groundwater survey report.
+                                Your survey report is ready. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to access and view your detailed groundwater survey report.
                             </>
                         ) : (
                             <>
-                                Your assigned expert is currently preparing your groundwater survey report. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to unlock it immediately once uploaded.
+                                Your assigned expert is currently preparing your groundwater survey report. Complete the remaining payment of <span className="text-gray-900 font-bold">₹{amount?.toLocaleString('en-IN')}</span> to access it immediately once uploaded.
                             </>
                         )}
                     </p>

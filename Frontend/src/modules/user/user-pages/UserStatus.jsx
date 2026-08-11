@@ -330,7 +330,7 @@ export default function UserStatus() {
                 bullets: [
                     "Survey completed successfully.",
                     "Survey report securely uploaded by the expert.",
-                    "Report is locked until final payment is completed."
+                    "Report will be available once final payment is completed."
                 ],
                 date: currentBooking.reportUploadedAt,
             },
@@ -340,7 +340,7 @@ export default function UserStatus() {
                 icon: IoHourglassOutline,
                 active: ["REPORT_UPLOADED", "AWAITING_PAYMENT"].includes(status) && !currentBooking.payment?.remainingPaid,
                 completed: currentBooking.payment?.remainingPaid || ["PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status),
-                description: "Please pay the remaining 60% of the survey fee to unlock your survey report.",
+                description: "Please pay the remaining 60% of the survey fee to access your survey report.",
                 date: currentBooking.reportUploadedAt,
             },
             {
@@ -357,7 +357,7 @@ export default function UserStatus() {
             },
             {
                 id: "survey-report-unlocked",
-                label: "Survey Report Unlocked",
+                label: "Survey Report Available",
                 icon: IoDocumentTextOutline,
                 active: currentBooking.payment?.remainingPaid && ["PAYMENT_SUCCESS", "BOREWELL_UPLOADED"].includes(status),
                 completed: currentBooking.payment?.remainingPaid && ["PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status),
