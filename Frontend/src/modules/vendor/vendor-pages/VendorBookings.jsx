@@ -8,7 +8,7 @@ import {
     IoEyeOutline,
     IoChevronForwardOutline,
 } from "react-icons/io5";
-import { getVendorBookings, verifyStartOTP, verifyEndOTP, resendSurveyOTP } from "../../../services/vendorApi";
+import { getVendorBookings, verifyStartOTP, verifyEndOTP, resendSurveyOTP, markEnRoute } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -126,6 +126,25 @@ export default function VendorBookings() {
             handleApiError(err, "Failed to verify OTP");
         } finally {
             setVerifyingOTP(false);
+        }
+    };
+
+    const handleMarkEnRoute = async (b) => {
+        const targetId = b._id || b.id;
+        const loadingToast = toast.showLoading("Updating status to En Route...");
+        try {
+            const response = await markEnRoute(targetId);
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Status updated to En Route! Customer notified.");
+                await loadAllBookings();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to update status");
+            }
+        } catch (err) {
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to update status to En Route");
         }
     };
 
@@ -406,6 +425,7 @@ export default function VendorBookings() {
                                 <VendorOngoingBookingCard
                                     key={booking._id}
                                     booking={booking}
+                                    onMarkEnRoute={handleMarkEnRoute}
                                     onViewStatus={(id) => navigate(`/vendor/bookings/${id}`)}
                                     onUploadReport={(b) => navigate(`/vendor/bookings/${b._id}/upload-report`)}
                                     onVerifyStartOTP={(b) => {

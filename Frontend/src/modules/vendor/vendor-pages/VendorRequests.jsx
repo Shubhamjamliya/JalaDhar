@@ -7,6 +7,7 @@ import {
     verifyStartOTP,
     verifyEndOTP,
     resendSurveyOTP,
+    markEnRoute,
 } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -167,6 +168,25 @@ export default function VendorRequests() {
             handleApiError(err, "Failed to verify OTP");
         } finally {
             setVerifyingOTP(false);
+        }
+    };
+
+    const handleMarkEnRoute = async (b) => {
+        const targetId = b._id || b.id;
+        const loadingToast = toast.showLoading("Updating status to En Route...");
+        try {
+            const response = await markEnRoute(targetId);
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("Status updated to En Route! Customer notified.");
+                await loadAllRequests();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to update status");
+            }
+        } catch (err) {
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to update status to En Route");
         }
     };
 
@@ -539,6 +559,7 @@ export default function VendorRequests() {
                                 <VendorOngoingBookingCard
                                     key={request._id}
                                     booking={request}
+                                    onMarkEnRoute={handleMarkEnRoute}
                                     onViewStatus={(id) => navigate(`/vendor/bookings/${id}`)}
                                     onUploadReport={(b) => navigate(`/vendor/bookings/${b._id}/upload-report`)}
                                     onVerifyStartOTP={(b) => {

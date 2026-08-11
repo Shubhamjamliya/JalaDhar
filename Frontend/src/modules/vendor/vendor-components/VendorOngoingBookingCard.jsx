@@ -32,6 +32,7 @@ import { useToast } from "../../../hooks/useToast";
  */
 export default function VendorOngoingBookingCard({
     booking,
+    onMarkEnRoute,
     onVerifyStartOTP,
     onVerifyEndOTP,
     onUploadPhotos,
@@ -256,10 +257,19 @@ export default function VendorOngoingBookingCard({
                     </button>
                 </div>
 
-                {/* Contextual Action Row (OTP & Uploads) */}
+                {/* Contextual Action Row (Start Journey, OTP & Uploads) */}
                 <div className="grid grid-cols-2 gap-2 pt-1">
-                    {/* Verify Start OTP */}
-                    {!isStartOtpVerified ? (
+                    {/* 1. If status is ACCEPTED -> Show Start Journey */}
+                    {status === "ACCEPTED" ? (
+                        <button
+                            onClick={() => onMarkEnRoute ? onMarkEnRoute(booking) : navigate(`/vendor/bookings/${booking._id}`)}
+                            className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                            <IoCarOutline className="text-base" />
+                            <span>Start Journey</span>
+                        </button>
+                    ) : !isStartOtpVerified ? (
+                        /* 2. If status is EN_ROUTE -> Show Verify Start OTP */
                         <button
                             onClick={() => onVerifyStartOTP ? onVerifyStartOTP(booking) : navigate(`/vendor/bookings/${booking._id}`, { state: { openStartOTP: true } })}
                             className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
