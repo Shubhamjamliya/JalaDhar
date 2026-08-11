@@ -351,10 +351,10 @@ export default function VendorUploadReport() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div><span className="text-gray-500">Booking ID:</span> <span className="font-semibold">{booking?._id || booking?.id}</span></div>
                         <div><span className="text-gray-500">Booking Date:</span> <span className="font-semibold">{booking?.createdAt ? new Date(booking.createdAt).toLocaleDateString('en-IN') : '-'}</span></div>
-                        <div><span className="text-gray-500">Survey Category:</span> <span className="font-semibold">{booking?.serviceType || '-'}</span></div>
-                        <div><span className="text-gray-500">Property Type:</span> <span className="font-semibold">{booking?.propertyType || '-'}</span></div>
+                        <div><span className="text-gray-500">Survey Category:</span> <span className="font-semibold">{booking?.service?.category?.name || booking?.service?.name || booking?.surveyCategory || '-'}</span></div>
+                        <div><span className="text-gray-500">Property Type:</span> <span className="font-semibold">{booking?.purpose || booking?.propertyType || '-'}</span></div>
                         <div><span className="text-gray-500">Customer Name:</span> <span className="font-semibold">{booking?.user?.name || booking?.customerName || '-'}</span></div>
-                        <div><span className="text-gray-500">Mobile Number:</span> <span className="font-semibold">{booking?.user?.mobile || booking?.mobile || '-'}</span></div>
+                        <div><span className="text-gray-500">Mobile Number:</span> <span className="font-semibold">{booking?.user?.phone || booking?.user?.mobileNumber || booking?.alternatePhone || '-'}</span></div>
                     </div>
                 </div>
 
@@ -688,6 +688,7 @@ function InputGroup({ label, name, value, onChange, type = "text", placeholder, 
                 name={name}
                 value={value}
                 onChange={onChange}
+                onWheel={(e) => e.target.blur()}
                 placeholder={placeholder}
                 readOnly={readOnly}
                 className={`w-full px-4 py-2.5 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#0A84FF] transition-shadow text-gray-800 ${readOnly ? "bg-gray-50 text-gray-500 cursor-not-allowed" : "bg-white"}`}

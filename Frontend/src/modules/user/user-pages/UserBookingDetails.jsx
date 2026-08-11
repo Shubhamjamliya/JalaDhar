@@ -384,7 +384,7 @@ export default function UserBookingDetails() {
     const getStatusDescription = (status) => {
         const expertName = booking?.vendor?.name;
         const rawDesignation = booking?.vendor?.designation || booking?.service?.category || booking?.service?.name || "Groundwater Professional";
-        
+
         let expertDisplay = `a specialized ${rawDesignation.toLowerCase()}`;
         if (expertName) {
             const nameLower = expertName.toLowerCase();
@@ -455,12 +455,12 @@ export default function UserBookingDetails() {
 
     const parseSurveySiteInfo = (booking) => {
         if (!booking) return {};
-        
+
         let category = booking.purpose || '';
         let extent = '';
         if (booking.purposeExtent) {
-            extent = category === 'Agriculture' 
-                ? formatAcresGuntasDisplay(booking.purposeExtent) 
+            extent = category === 'Agriculture'
+                ? formatAcresGuntasDisplay(booking.purposeExtent)
                 : `${booking.purposeExtent} Sq. Ft.`;
         } else {
             extent = booking.extent || '';
@@ -602,6 +602,15 @@ export default function UserBookingDetails() {
                                     Expert Reason: {booking.rejectionReason}
                                 </p>
                             )}
+                            {["ACCEPTED", "EN_ROUTE", "VISITED"].includes((booking.status || "").toUpperCase()) && (
+                                <button
+                                    onClick={() => navigate(`/user/booking/${bookingId}/tracking`)}
+                                    className="mt-3 w-full py-2.5 px-4 bg-[#0A84FF] hover:bg-blue-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+                                >
+                                    <IoCarOutline className="text-lg" />
+                                    <span>Live Track Expert Movement 🚗</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -610,13 +619,13 @@ export default function UserBookingDetails() {
                         const status = booking.userStatus || booking.status;
                         const timelineSteps = [
                             { id: "requested", label: "Booking Confirmed", icon: <IoDocumentTextOutline />, statuses: ["PENDING"], date: booking.createdAt, alwaysComplete: true },
-                            { id: "assigned",  label: "Expert Assigned",   icon: <IoPersonOutline />,         statuses: ["ASSIGNED"],  date: booking.assignedAt,       proofKey: "assignedAt" },
-                            { id: "accepted",  label: "Expert Accepted",   icon: <IoCheckmarkCircleOutline />, statuses: ["ACCEPTED"],  date: booking.acceptedAt,       proofKey: "acceptedAt" },
-                            { id: "en_route",  label: "Expert En Route",   icon: <IoCarOutline />,            statuses: ["EN_ROUTE"],  date: booking.enRouteAt,        proofKey: "enRouteAt" },
-                            { id: "visited",   label: "Survey Done",       icon: <IoConstructOutline />,       statuses: ["VISITED"],   date: booking.visitedAt,        proofKey: "visitedAt" },
-                            { id: "report",    label: "Report Ready",      icon: <IoDocumentTextOutline />,    statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt, proofKey: "reportUploadedAt" },
-                            { id: "payment",   label: "Final Payment",     icon: <IoCashOutline />,            statuses: ["AWAITING_PAYMENT"], date: booking.payment?.remainingPaidAt },
-                            { id: "completed", label: "Report Available",  icon: <IoCheckmarkCircleOutline />, statuses: ["PAYMENT_SUCCESS", "PAID_FIRST", "COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt || booking.payment?.remainingPaidAt },
+                            { id: "assigned", label: "Expert Assigned", icon: <IoPersonOutline />, statuses: ["ASSIGNED"], date: booking.assignedAt, proofKey: "assignedAt" },
+                            { id: "accepted", label: "Expert Accepted", icon: <IoCheckmarkCircleOutline />, statuses: ["ACCEPTED"], date: booking.acceptedAt, proofKey: "acceptedAt" },
+                            { id: "en_route", label: "Expert En Route", icon: <IoCarOutline />, statuses: ["EN_ROUTE"], date: booking.enRouteAt, proofKey: "enRouteAt" },
+                            { id: "visited", label: "Survey Done", icon: <IoConstructOutline />, statuses: ["VISITED"], date: booking.visitedAt, proofKey: "visitedAt" },
+                            { id: "report", label: "Report Ready", icon: <IoDocumentTextOutline />, statuses: ["REPORT_UPLOADED"], date: booking.reportUploadedAt, proofKey: "reportUploadedAt" },
+                            { id: "payment", label: "Final Payment", icon: <IoCashOutline />, statuses: ["AWAITING_PAYMENT"], date: booking.payment?.remainingPaidAt },
+                            { id: "completed", label: "Report Available", icon: <IoCheckmarkCircleOutline />, statuses: ["PAYMENT_SUCCESS", "PAID_FIRST", "COMPLETED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"], date: booking.completedAt || booking.payment?.remainingPaidAt },
                         ];
 
                         const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"];
@@ -936,7 +945,7 @@ export default function UserBookingDetails() {
                                 </div>
 
                                 {/* Borewell Result Status */}
-                                <div 
+                                <div
                                     onClick={() => setShowBorewellModal(true)}
                                     className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl border border-slate-200/80 bg-white shadow-2xs cursor-pointer hover:border-teal-200 hover:bg-teal-50/30 transition-all"
                                 >

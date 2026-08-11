@@ -194,14 +194,12 @@ export default function VendorRequests() {
         try {
             setLoading(true);
 
-            // Load all three types in parallel
             // Fetch both ASSIGNED and PENDING bookings for "New" requests
-            const [assignedResponse, pendingResponse, confirmedResponse, completedResponse, historyResponse] =
+            const [assignedResponse, confirmedResponse, completedResponse, historyResponse] =
                 await Promise.all([
-                    getVendorBookings({ status: "ASSIGNED", limit: 50, sortBy: "createdAt", sortOrder: "desc" }),
-                    getVendorBookings({ status: "PENDING,AWAITING_ADVANCE", limit: 50, sortBy: "createdAt", sortOrder: "desc" }),
+                    getVendorBookings({ status: "ASSIGNED,PENDING", limit: 50, sortBy: "createdAt", sortOrder: "desc" }),
                     getVendorBookings({
-                        status: "ACCEPTED,VISITED,REPORT_UPLOADED,AWAITING_PAYMENT,PAYMENT_SUCCESS,PAID_FIRST,BOREWELL_UPLOADED,ADMIN_APPROVED,APPROVED",
+                        status: "ACCEPTED,EN_ROUTE,VISITED,REPORT_UPLOADED,AWAITING_PAYMENT,PAYMENT_SUCCESS,PAID_FIRST,BOREWELL_UPLOADED,ADMIN_APPROVED,APPROVED",
                         excludeStatus: "COMPLETED,FINAL_SETTLEMENT_COMPLETE",
                         limit: 50,
                         sortBy: "createdAt",
@@ -223,9 +221,6 @@ export default function VendorRequests() {
             const inProgress = [];
             if (confirmedResponse && confirmedResponse.success) {
                 inProgress.push(...(confirmedResponse.data.bookings || []));
-            }
-            if (pendingResponse && pendingResponse.success) {
-                inProgress.push(...(pendingResponse.data.bookings || []));
             }
             setConfirmedRequests(inProgress);
 

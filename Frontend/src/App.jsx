@@ -57,6 +57,7 @@ const UserPaymentsInvoices = lazy(() => import("./modules/user/user-pages/UserPa
 const UserNotificationsPage = lazy(() => import("./modules/user/user-pages/UserNotificationsPage"));
 const UserHelpSupport = lazy(() => import("./modules/user/user-pages/UserHelpSupport"));
 const UserSettingsPage = lazy(() => import("./modules/user/user-pages/UserSettingsPage"));
+const LiveTrackingPage = lazy(() => import("./modules/shared/pages/LiveTrackingPage"));
 const VendorDashboard = lazy(() => import("./modules/vendor/vendor-pages/VendorDashboard"));
 const VendorDisputes = lazy(() => import("./modules/vendor/vendor-pages/VendorDisputes"));
 const VendorCreateDispute = lazy(() => import("./modules/vendor/vendor-pages/VendorCreateDispute"));
@@ -252,6 +253,14 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/booking/:bookingId/tracking"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <LiveTrackingPage role="User" />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/booking/:bookingId"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
@@ -399,6 +408,18 @@ function App() {
                                                         </Routes>
                                                     </Suspense>
                                                 </main>
+                                            </ProtectedRoute>
+                                        }
+                                    />
+
+                                    {/* Top-Level Tracking Route Fallback */}
+                                    <Route
+                                        path="/booking/:bookingId/tracking"
+                                        element={
+                                            <ProtectedRoute>
+                                                <Suspense fallback={<LoadingSpinner />}>
+                                                    <LiveTrackingPage role="User" />
+                                                </Suspense>
                                             </ProtectedRoute>
                                         }
                                     />
@@ -551,6 +572,14 @@ function App() {
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <UserSurveyReport />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/booking/:bookingId/tracking"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <LiveTrackingPage role="Vendor" />
                                                                     </Suspense>
                                                                 }
                                                             />
@@ -710,6 +739,22 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminDashboard />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/booking/:bookingId/tracking"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <LiveTrackingPage role="User" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/booking/:bookingId"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <UserBookingDetails />
                                                                             </Suspense>
                                                                         }
                                                                     />

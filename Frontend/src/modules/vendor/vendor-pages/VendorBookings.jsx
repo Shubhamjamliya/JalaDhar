@@ -228,7 +228,7 @@ export default function VendorBookings() {
 
                 // Active: All in-progress statuses (vendor has accepted, work ongoing)
                 const activeList = bookings.filter(b =>
-                    ["ACCEPTED", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "AWAITING_ADVANCE"].includes(b.status)
+                    ["ACCEPTED", "EN_ROUTE", "VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE"].includes(b.status)
                 );
 
                 // History: Terminal statuses

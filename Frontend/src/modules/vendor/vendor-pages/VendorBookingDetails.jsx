@@ -378,7 +378,6 @@ export default function VendorBookingDetails() {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Start Survey OTP verified successfully!");
                 setShowStartOTPModal(false);
-                setOtpInput("");
                 await loadBookingDetails();
             } else {
                 toast.dismissToast(loadingToast);
@@ -407,7 +406,6 @@ export default function VendorBookingDetails() {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("End Survey OTP verified successfully!");
                 setShowEndOTPModal(false);
-                setOtpInput("");
                 await loadBookingDetails();
             } else {
                 toast.dismissToast(loadingToast);
@@ -560,7 +558,7 @@ export default function VendorBookingDetails() {
             ASSIGNED: { color: "bg-orange-100 text-orange-700", label: "Pending" },
             ACCEPTED: { color: "bg-blue-100 text-blue-700", label: "Accepted" },
             EN_ROUTE: { color: "bg-sky-100 text-sky-700", label: "En Route" },
-            VISITED: { color: "bg-purple-100 text-purple-700", label: "Visited" },
+            VISITED: { color: "bg-indigo-100 text-indigo-700", label: "Survey Started" },
             REPORT_UPLOADED: { color: "bg-indigo-100 text-indigo-700", label: "Report Uploaded" },
             PAID_FIRST: { color: "bg-teal-100 text-teal-700", label: "1st Payment Release" },
             AWAITING_PAYMENT: { color: "bg-orange-100 text-orange-700", label: "Awaiting Payment" },
@@ -668,7 +666,7 @@ export default function VendorBookingDetails() {
                                 { id: "assigned", label: "Assigned", icon: "📋", statuses: ["ASSIGNED"] },
                                 { id: "accepted", label: "Accepted", icon: "✅", statuses: ["ACCEPTED"] },
                                 { id: "en_route", label: "En Route", icon: "🚗", statuses: ["EN_ROUTE"] },
-                                { id: "visited", label: "Visited", icon: "🏠", statuses: ["VISITED"] },
+                                { id: "visited", label: "Survey Started", icon: "🛠️", statuses: ["VISITED"] },
                                 { id: "report", label: "Report", icon: "📄", statuses: ["REPORT_UPLOADED"] },
                                 { id: "payment", label: "Payment", icon: "💰", statuses: ["PAID_FIRST", "AWAITING_PAYMENT", "PAYMENT_SUCCESS"] },
                                 { id: "borewell", label: "Borewell Result", icon: "🚰", statuses: ["BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED"] },
@@ -1247,19 +1245,14 @@ export default function VendorBookingDetails() {
                         </div>
                     </div>
 
-                    {/* Navigate with Google Maps Action Button */}
-                    <a
-                        href={(booking.address?.coordinates?.lat || booking.address?.location?.coordinates?.[1]) && (booking.address?.coordinates?.lng || booking.address?.location?.coordinates?.[0])
-                            ? `https://www.google.com/maps/dir/?api=1&destination=${booking.address?.coordinates?.lat || booking.address?.location?.coordinates?.[1]},${booking.address?.coordinates?.lng || booking.address?.location?.coordinates?.[0]}`
-                            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([booking.address?.street, booking.village || booking.address?.village, booking.district || booking.address?.district, booking.state || booking.address?.state, booking.address?.pincode].filter(Boolean).join(', '))}`
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    {/* Track Live Action Button */}
+                    <button
+                        onClick={() => navigate(`/vendor/booking/${bookingId}/tracking`)}
                         className="w-full mt-2 bg-[#0A84FF] hover:bg-blue-600 text-white font-bold py-3.5 px-6 rounded-xl active:scale-98 transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-200"
                     >
                         <IoNavigateOutline className="text-xl" />
-                        <span>Navigate with Google Maps</span>
-                    </a>
+                        <span>Track Live / Navigate</span>
+                    </button>
                 </div>
             </div>
 

@@ -98,6 +98,36 @@ const initializeSocket = (server) => {
     socket.join(room);
     console.log(`[Socket] User ${socket.userId} joined room: ${room}`);
 
+    // Handle joining booking tracking room
+    socket.on('join_booking_tracking', (bookingId) => {
+      socket.join(`booking_${bookingId}`);
+      console.log(`[Socket] Socket ${socket.id} joined tracking room: booking_${bookingId}`);
+    });
+
+    // Handle live vendor/expert GPS location updates
+    socket.on('vendor_location_update', (data) => {
+      if (!data?.bookingId || !data?.lat || !data?.lng) return;
+      console.log(`[Socket] 📍 Live location for booking ${data.bookingId}: ${data.lat}, ${data.lng}`);
+
+      // Broadcast ONLY to the booking tracking room (not globally)
+      socket.to(`booking_${data.bookingId}`).emit('expert_location_updated', {
+        bookingId: data.bookingId,
+        lat: data.lat,
+        lng: data.lng,
+        speed: data.speed || 0,
+        heading: data.heading || 0,
+      });
+
+      // Also notify the specific user if userId provided
+      if (data.userId) {
+        socket.to(`User_${data.userId}`).emit('expert_location_updated', {
+          bookingId: data.bookingId,
+          lat: data.lat,
+          lng: data.lng,
+        });
+      }
+    });
+
     // Handle disconnect
     socket.on('disconnect', () => {
       console.log(`[Socket] User disconnected: ${socket.userId}`);

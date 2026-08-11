@@ -23,7 +23,8 @@ import {
     IoBuildOutline,
     IoTimeOutline,
     IoLocationOutline,
-    IoLockClosedOutline
+    IoLockClosedOutline,
+    IoCarOutline
 } from "react-icons/io5";
 import {
     HiOutlineHome,
@@ -802,6 +803,22 @@ export default function UserDashboard() {
                                             <span>{activeBooking.bookingData?.payment?.remainingPaid ? "View Report" : "Unlock Report"}</span>
                                         </button>
                                     )}
+
+                                    {(() => {
+                                        const rawStatus = (activeBooking.bookingData?.userStatus || activeBooking.bookingData?.status || activeBooking.status || "").toLowerCase();
+                                        if (['accepted', 'assigned', 'en_route', 'visited', 'pending', 'awaiting_advance'].includes(rawStatus)) {
+                                            return (
+                                                <button
+                                                    onClick={() => navigate(`/user/booking/${activeBooking.id}/tracking`)}
+                                                    className="w-full flex items-center justify-center gap-2 bg-[#0A84FF] text-white py-3.5 rounded-[12px] font-extrabold hover:bg-blue-600 transition-all shadow-md shadow-blue-500/20 active:scale-95 cursor-pointer"
+                                                >
+                                                    <IoCarOutline className="text-xl" />
+                                                    <span>Live Track Expert 🚗</span>
+                                                </button>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
 
                                     {['pending', 'assigned', 'accepted', 'awaiting_advance'].includes(activeBooking.status.toLowerCase()) && (
                                         <button

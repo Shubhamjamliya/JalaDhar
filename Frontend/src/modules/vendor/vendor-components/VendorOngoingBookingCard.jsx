@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     IoCallOutline,
@@ -20,6 +20,7 @@ import {
     IoChevronForwardOutline
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
+import { useNotifications } from "../../../contexts/NotificationContext";
 
 /**
  * Ongoing Survey Booking Card for Expert App
@@ -41,6 +42,62 @@ export default function VendorOngoingBookingCard({
 }) {
     const navigate = useNavigate();
     const toast = useToast();
+    const { socket } = useNotifications();
+    const gpsWatchIdRef = useRef(null);
+
+    // Sockets and rooms rely on the internal MongoDB _id
+    const bookingId = booking?._id;
+    const status = (booking?.status || booking?.vendorStatus || "").toUpperCase();
+    const isEnRoute = status === "EN_ROUTE";
+    const userId = booking?.user?._id;
+
+    // ── GPS Streaming: Auto-broadcast live location when EN_ROUTE ──────────────
+    useEffect(() => {
+        if (!socket || !bookingId || !isEnRoute) {
+            // Clear watcher if no longer en route
+            if (gpsWatchIdRef.current !== null) {
+                navigator.geolocation?.clearWatch(gpsWatchIdRef.current);
+                gpsWatchIdRef.current = null;
+            }
+            return;
+        }
+
+        if (!("geolocation" in navigator)) {
+            console.warn("[VendorCard] Geolocation not supported on this device");
+            return;
+        }
+
+        console.log("[VendorCard] 📍 Starting live GPS stream for booking:", bookingId);
+
+        // Join the booking tracking room as the sender too
+        socket.emit("join_booking_tracking", bookingId);
+
+        gpsWatchIdRef.current = navigator.geolocation.watchPosition(
+            (pos) => {
+                const { latitude, longitude, speed, heading } = pos.coords;
+                const payload = {
+                    bookingId,
+                    lat: latitude,
+                    lng: longitude,
+                    speed: speed ? Math.round(speed * 3.6) : 0,
+                    heading: heading || 0,
+                    userId,
+                };
+                socket.emit("vendor_location_update", payload);
+                console.log(`[VendorCard] 🚗 Emitted location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+            },
+            (err) => console.warn("[VendorCard] GPS error:", err.message),
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+        );
+
+        return () => {
+            if (gpsWatchIdRef.current !== null) {
+                navigator.geolocation.clearWatch(gpsWatchIdRef.current);
+                gpsWatchIdRef.current = null;
+                console.log("[VendorCard] 🛑 GPS stream stopped");
+            }
+        };
+    }, [socket, bookingId, isEnRoute, userId]);
 
     if (!booking) return null;
 
@@ -70,8 +127,7 @@ export default function VendorOngoingBookingCard({
         : "Scheduled";
     const surveyTime = booking.scheduledTime || "Time slot not specified";
 
-    // Status Resolution
-    const status = (booking.status || booking.vendorStatus || "").toUpperCase();
+    // Status Resolution (status is already declared above for GPS streaming)
     const isStartOtpVerified = Boolean(booking.otp?.startSurvey?.verified || booking.startSurveyVerifiedAt || ["VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
     const isEndOtpVerified = Boolean(booking.otp?.endSurvey?.verified || booking.endSurveyVerifiedAt || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
     const isReportUploaded = Boolean(booking.visitReport || booking.reportUploadedAt || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
@@ -108,17 +164,10 @@ export default function VendorOngoingBookingCard({
         }
     };
 
-    // Google Maps Navigation
+    // Live Tracking
     const handleNavigateMaps = (e) => {
         e.stopPropagation();
-        if (booking.address?.coordinates?.coordinates) {
-            const [lng, lat] = booking.address.coordinates.coordinates;
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, "_blank");
-        } else if (propertyAddress) {
-            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(propertyAddress)}`, "_blank");
-        } else {
-            toast.error("Address coordinates not available");
-        }
+        navigate(`/vendor/booking/${booking._id || booking.bookingId}/tracking`);
     };
 
     return (
@@ -238,14 +287,28 @@ export default function VendorOngoingBookingCard({
                         <span>WhatsApp</span>
                     </a>
 
-                    {/* Navigate */}
-                    <button
-                        onClick={handleNavigateMaps}
-                        className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
-                    >
-                        <IoNavigateOutline className="text-base text-blue-600" />
-                        <span>Navigate</span>
-                    </button>
+                    {/* Navigate / Track Live */}
+                    {status === "EN_ROUTE" ? (
+                        <button
+                            onClick={handleNavigateMaps}
+                            className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
+                        >
+                            <IoNavigateOutline className="text-base text-blue-600" />
+                            <span>Track Live</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const query = encodeURIComponent(propertyAddress);
+                                window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+                            }}
+                            className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
+                        >
+                            <IoNavigateOutline className="text-base text-blue-600" />
+                            <span>Navigate</span>
+                        </button>
+                    )}
 
                     {/* View Status */}
                     <button
