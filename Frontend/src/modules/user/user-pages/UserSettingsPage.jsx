@@ -156,7 +156,14 @@ export default function UserSettingsPage() {
                         Privacy & Legal Documents
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div
+                            onClick={() => setActivePolicy("user_agreement")}
+                            className="p-4 bg-blue-50/60 hover:bg-blue-100/80 rounded-2xl border border-blue-100 flex items-center justify-between cursor-pointer transition-colors"
+                        >
+                            <span className="text-xs font-black text-blue-900">Jaladhaara User Agreement</span>
+                            <IoChevronForwardOutline className="text-blue-500" />
+                        </div>
                         <div
                             onClick={() => setActivePolicy("terms")}
                             className="p-4 bg-gray-50/80 hover:bg-gray-100 rounded-2xl border border-gray-100 flex items-center justify-between cursor-pointer transition-colors"

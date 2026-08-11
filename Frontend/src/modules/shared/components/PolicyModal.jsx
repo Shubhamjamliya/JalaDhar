@@ -37,6 +37,7 @@ const PolicyModal = ({ type, onClose, onAgree, loadingAction = false }) => {
           else if (type === 'remaining') key = 'remaining_payment_policy';
           else if (type === 'terms') key = 'terms_of_service';
           else if (type === 'privacy') key = 'privacy_policy';
+          else if (type === 'user_agreement' || type === 'agreement') key = 'user_agreement';
           else if (type === 'checkout') key = 'checkout_policy';
 
           const policyItem = settings.find(s => s.key === key);

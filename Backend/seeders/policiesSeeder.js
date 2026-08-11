@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Settings = require('../models/Settings');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const policies = [
   {
@@ -109,6 +110,38 @@ const policies = [
     category: 'policy',
     type: 'string',
     description: 'Privacy policy for users and experts'
+  },
+  {
+    key: 'user_agreement_version',
+    label: 'User Agreement Active Version',
+    value: 'v1.0.0',
+    category: 'policy',
+    type: 'string',
+    description: 'Active version identifier of the Jaladhaara User Agreement'
+  },
+  {
+    key: 'user_agreement',
+    label: 'Jaladhaara User Agreement (13 Clauses)',
+    value: `<p><strong>Jaladhaara User Agreement</strong></p>
+    <p>This User Agreement ("Agreement") is entered into between Jaladhaara Groundwater Survey Pvt. Ltd. ("Jaladhaara") and the registered User ("User"). By clicking "I Agree", the User accepts the following terms:</p>
+    <ol>
+      <li><strong>Platform Services:</strong> Jaladhaara is a technology platform that enables Users to connect with independent Experts for groundwater survey services. Jaladhaara does not directly provide groundwater survey or borewell drilling services.</li>
+      <li><strong>User Responsibilities:</strong> The User shall provide accurate information, ensure safe access to the survey location, cooperate with the Expert, and make payments through the Jaladhaara platform in accordance with the applicable policies.</li>
+      <li><strong>Expert Services:</strong> Groundwater surveys are performed by independent Experts, who are solely responsible for their professional services, technical opinions, recommendations, and survey reports.</li>
+      <li><strong>Survey Scope & Disclaimer:</strong> The survey is limited to identifying potential groundwater zones based on the Expert's professional assessment. Groundwater availability, borewell success, water yield, and water quality depend on natural geological conditions and cannot be guaranteed.</li>
+      <li><strong>Payments & Policies:</strong> All bookings, payments, cancellations, refunds, rescheduling, and settlements shall be governed by Jaladhaara's applicable policies.</li>
+      <li><strong>User Conduct:</strong> The User shall not misuse the platform, provide false information, engage in abusive or unlawful behaviour, or make unauthorized payments outside the Jaladhaara platform.</li>
+      <li><strong>Privacy & Confidentiality:</strong> The User consents to the collection, processing, and use of personal information in accordance with Jaladhaara's Privacy Policy.</li>
+      <li><strong>Limitation of Liability:</strong> Jaladhaara acts only as a technology platform and shall not be liable for the professional services provided by the Expert, borewell drilling outcomes, groundwater availability, property damage, financial loss, or any indirect or consequential damages arising from the use of the platform.</li>
+      <li><strong>Suspension & Termination:</strong> Jaladhaara reserves the right to suspend or terminate any User account for violation of this Agreement, platform policies, or applicable laws.</li>
+      <li><strong>Intellectual Property:</strong> All trademarks, logos, software, content, and other intellectual property associated with Jaladhaara are the exclusive property of Jaladhaara Groundwater Survey Pvt. Ltd. and may not be used without prior written permission.</li>
+      <li><strong>Amendments:</strong> Jaladhaara may modify this Agreement or its policies from time to time. Continued use of the platform constitutes acceptance of the revised terms.</li>
+      <li><strong>Governing Law & Jurisdiction:</strong> This Agreement shall be governed by the laws of India. Any dispute arising out of or relating to this Agreement or the use of the Jaladhaara platform shall be subject to the exclusive jurisdiction of the competent courts at Hyderabad, Telangana.</li>
+      <li><strong>Electronic Acceptance:</strong> By clicking "I Agree", the User confirms that they have read, understood, and accepted this Agreement, the Terms & Conditions, Privacy Policy, Booking & Cancellation Policy, Refund Policy, No-Show Policy, and all other applicable Jaladhaara policies. This electronic acceptance shall have the same legal effect as a handwritten signature under applicable law.</li>
+    </ol>`,
+    category: 'policy',
+    type: 'string',
+    description: 'Official 13-clause Jaladhaara User Agreement text'
   }
 ];
 

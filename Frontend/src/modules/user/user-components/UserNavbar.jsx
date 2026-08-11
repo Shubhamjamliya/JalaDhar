@@ -35,9 +35,9 @@ import { useLanguage } from "../../../contexts/LanguageContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import NotificationDropdown from "../../../components/NotificationDropdown";
 import logo from "@/assets/Header-logoo.png";
-import { getUserBookings } from "../../../services/bookingApi";
-
 import UserSidebar from "./UserSidebar";
+import UserAgreementModal from "./UserAgreementModal";
+import api from "../../../services/api";
 
 const navItems = [
     {
@@ -97,6 +97,32 @@ export default function UserNavbar() {
 
     const [activeBooking, setActiveBooking] = useState(null);
     const [dismissedBanner, setDismissedBanner] = useState(false);
+
+    // User Agreement State
+    const [showAgreementModal, setShowAgreementModal] = useState(false);
+    const [agreementText, setAgreementText] = useState("");
+    const [agreementVersion, setAgreementVersion] = useState("v1.0.0");
+
+    // Check if User Agreement version is updated or needs acceptance
+    useEffect(() => {
+        if (!user) return;
+        const checkAgreementStatus = async () => {
+            try {
+                const res = await api.get('/agreements/status');
+                if (res.data?.success && res.data?.data) {
+                    const { requiresAcceptance, agreementText, activeVersion } = res.data.data;
+                    setAgreementText(agreementText || "");
+                    setAgreementVersion(activeVersion || "v1.0.0");
+                    if (requiresAcceptance) {
+                        setShowAgreementModal(true);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to check user agreement status:", err);
+            }
+        };
+        checkAgreementStatus();
+    }, [user, location.pathname]);
 
     // Fetch active/ongoing booking for Floating Live Tracking Popup
     useEffect(() => {
@@ -393,6 +419,14 @@ export default function UserNavbar() {
                 confirmText="Logout"
                 cancelText="Cancel"
                 confirmColor="danger"
+            />
+
+            {/* Mandatory User Agreement Modal */}
+            <UserAgreementModal
+                isOpen={showAgreementModal}
+                agreementText={agreementText}
+                agreementVersion={agreementVersion}
+                onAccepted={() => setShowAgreementModal(false)}
             />
         </>
     );

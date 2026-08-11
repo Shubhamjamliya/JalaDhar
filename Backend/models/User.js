@@ -61,6 +61,15 @@ const userSchema = new mongoose.Schema({
     enum: ['en', 'hi', 'te', 'ta', 'kn', 'mr', 'or'],
     default: 'en'
   },
+  // User Agreement Tracking
+  agreementAcceptedVersion: {
+    type: String,
+    default: null
+  },
+  agreementAcceptedAt: {
+    type: Date,
+    default: null
+  },
   address: {
     street: String,
     city: String,

@@ -137,7 +137,13 @@ export default function UserHelpSupport() {
                         Platform Policies & Legal Information
                     </h3>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <button
+                            onClick={() => setActivePolicy("user_agreement")}
+                            className="p-3 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-2xl text-center text-xs font-black text-blue-900 transition-all col-span-2 md:col-span-1"
+                        >
+                            User Agreement
+                        </button>
                         <button
                             onClick={() => setActivePolicy("terms")}
                             className="p-3 bg-gray-50 hover:bg-purple-50 border border-gray-100 rounded-2xl text-center text-xs font-bold text-gray-700 hover:text-purple-700 transition-all"

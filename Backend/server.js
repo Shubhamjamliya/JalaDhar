@@ -36,6 +36,7 @@ const allowedOrigins = [
   "https://jala-dhar.vercel.app",
   process.env.FRONTEND_URL,
   "http://localhost:5173",
+  "http://localhost:5050",
   "http://localhost:3000"
 ].filter(Boolean).map(o => o.trim().replace(/\/$/, "")); // Remove trailing slashes and trim
 
@@ -46,7 +47,7 @@ app.use((req, res, next) => {
   // Check if origin is allowed
   const isAllowed = !origin ||
     allowedOrigins.indexOf(origin) !== -1 ||
-    (origin && (origin.endsWith('.jaladhaaraapp.in') || origin === 'https://jaladhaaraapp.in')) ||
+    (origin && (origin.startsWith('http://localhost:') || origin.endsWith('.jaladhaaraapp.in') || origin === 'https://jaladhaaraapp.in')) ||
     process.env.NODE_ENV === 'development';
 
   if (isAllowed) {
@@ -58,15 +59,13 @@ app.use((req, res, next) => {
 
   // Handle preflight
   if (req.method === 'OPTIONS') {
-    if (isAllowed) {
-      return res.status(200).end();
-    } else {
-      // If not allowed, still return 200 but maybe without headers? 
-      // Actually, better to return 200 with headers to be safe for debugging, 
-      // but browser will block if Origin doesn't match.
-      res.header('Access-Control-Allow-Origin', allowedOrigins[0]);
-      return res.status(200).end();
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, fcm-token, access-control-allow-origin');
     }
+    return res.status(200).end();
   }
   next();
 });
@@ -168,6 +167,7 @@ app.use('/api/users/auth', require('./routes/user-routes/auth.routes'));
 app.use('/api/users', require('./routes/user-routes/profile.routes'));
 app.use('/api/user/wallet', require('./routes/user-routes/userWallet.routes'));
 app.use('/api/users/disputes', require('./routes/user-routes/dispute.routes'));
+app.use('/api/agreements', require('./routes/user-routes/agreement.routes'));
 
 // Vendor routes
 app.use('/api/vendors/auth', require('./routes/vendor-routes/auth.routes'));

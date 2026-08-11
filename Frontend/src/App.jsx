@@ -105,6 +105,7 @@ const AdminRatings = lazy(() => import("./modules/admin/admin-pages/AdminRatings
 const AdminDisputes = lazy(() => import("./modules/admin/admin-pages/AdminDisputes"));
 const AdminTeamManagement = lazy(() => import("./modules/admin/admin-pages/AdminTeamManagement"));
 const AdminPolicies = lazy(() => import("./modules/admin/admin-pages/AdminPolicies"));
+const AdminAgreementLogs = lazy(() => import("./modules/admin/admin-pages/AdminAgreementLogs"));
 const AdminReports = lazy(() => import("./modules/admin/admin-pages/Reports"));
 const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavbar"));
 
@@ -1019,6 +1020,14 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminPolicies />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/agreements"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminAgreementLogs />
                                                                             </Suspense>
                                                                         }
                                                                     />
