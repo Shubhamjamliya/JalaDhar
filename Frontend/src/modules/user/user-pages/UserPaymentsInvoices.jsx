@@ -56,14 +56,20 @@ export default function UserPaymentsInvoices() {
     // Helper to evaluate payment flags for a booking
     const getBookingPaymentInfo = (b) => {
         const p = b.payment || b.paymentStatus || {};
-        const statusUpper = (b.status || '').toUpperCase();
+        const mainStatus = (b.status || '').toUpperCase();
+        const userStatus = (b.userStatus || '').toUpperCase();
+        const vendorStatus = (b.vendorStatus || '').toUpperCase();
         const pStatusUpper = (p.status || '').toUpperCase();
+
+        const isCancelled = mainStatus === 'CANCELLED' || userStatus === 'CANCELLED' || vendorStatus === 'CANCELLED';
+        const isRejected = mainStatus === 'REJECTED' || userStatus === 'REJECTED' || vendorStatus === 'REJECTED';
+        const isCancelledOrRejected = isCancelled || isRejected;
 
         const isFullyPaid = Boolean(
             p.remainingPaid || 
             b.remainingPaid || 
-            statusUpper === 'COMPLETED' || 
-            statusUpper === 'FINAL_SETTLEMENT' ||
+            mainStatus === 'COMPLETED' || 
+            mainStatus === 'FINAL_SETTLEMENT' ||
             pStatusUpper === 'COMPLETED' ||
             pStatusUpper === 'PAID'
         );
@@ -72,18 +78,21 @@ export default function UserPaymentsInvoices() {
             isFullyPaid || 
             p.advancePaid || 
             b.advancePaid || 
-            postAdvanceStatuses.includes(statusUpper) ||
+            postAdvanceStatuses.includes(mainStatus) ||
             pStatusUpper === 'ADVANCE_PAID' ||
             pStatusUpper === 'PAID_FIRST'
         );
 
         const totalAmount = p.totalAmount || b.pricing?.totalPrice || b.totalPrice || ((p.advanceAmount || b.advanceAmount || 0) + (p.remainingAmount || b.remainingAmount || 0)) || 0;
         const advAmount = p.advanceAmount || b.advanceAmount || (totalAmount ? Math.round(totalAmount * 0.4) : 0);
-        const remAmount = p.remainingAmount || b.remainingAmount || (totalAmount ? totalAmount - advAmount : 0);
+        const remAmount = isCancelledOrRejected ? 0 : (p.remainingAmount || b.remainingAmount || (totalAmount ? totalAmount - advAmount : 0));
 
         const paidSoFar = isFullyPaid ? totalAmount : (isAdvancePaid ? advAmount : 0);
 
         return {
+            isCancelled,
+            isRejected,
+            isCancelledOrRejected,
             isAdvancePaid,
             isFullyPaid,
             totalAmount,
@@ -248,7 +257,7 @@ export default function UserPaymentsInvoices() {
                 ) : (
                     <div className="space-y-4">
                         {filteredBookings.map((booking) => {
-                            const { isFullyPaid, totalAmount, remAmount, paidSoFar } = getBookingPaymentInfo(booking);
+                            const { isCancelled, isRejected, isCancelledOrRejected, isFullyPaid, totalAmount, remAmount, paidSoFar } = getBookingPaymentInfo(booking);
 
                             return (
                                 <div
@@ -262,11 +271,15 @@ export default function UserPaymentsInvoices() {
                                                 ID: {booking.bookingId || booking._id?.slice(-8)}
                                             </span>
                                             <span className={`px-3 py-1 text-xs font-bold rounded-full ${
-                                                isFullyPaid ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
+                                                isCancelledOrRejected
+                                                    ? "bg-red-100 text-red-800"
+                                                    : isFullyPaid
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-amber-100 text-amber-800"
                                             }`}>
-                                                {isFullyPaid ? "Fully Paid" : "Advance Paid"}
+                                                {isRejected ? "Rejected" : isCancelled ? "Cancelled" : isFullyPaid ? "Fully Paid" : "Advance Paid"}
                                             </span>
-                                            {!isFullyPaid && remAmount > 0 && (
+                                            {!isCancelledOrRejected && !isFullyPaid && remAmount > 0 && (
                                                 <span className="px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
                                                     Remaining: ₹{remAmount.toLocaleString("en-IN")}
                                                 </span>
@@ -292,20 +305,25 @@ export default function UserPaymentsInvoices() {
                                     <div className="flex items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100 shrink-0" onClick={(e) => e.stopPropagation()}>
                                         <button
                                             onClick={() => navigate(`/user/booking/${booking._id}/invoice`)}
-                                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                                         >
                                             <IoReceiptOutline className="text-base text-emerald-600" />
-                                            <span>{isFullyPaid ? "Tax Invoice" : "Advance Receipt"}</span>
+                                            <span>{isCancelledOrRejected ? "Payment Receipt" : isFullyPaid ? "Tax Invoice" : "Advance Receipt"}</span>
                                         </button>
 
-                                        {!isFullyPaid && (
+                                        {!isCancelledOrRejected && !isFullyPaid && (
                                             <button
                                                 onClick={() => navigate(`/user/booking/${booking._id}`)}
-                                                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5"
+                                                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                                             >
                                                 <IoWalletOutline className="text-base" />
                                                 <span>Pay Balance (₹{remAmount.toLocaleString("en-IN")})</span>
                                             </button>
+                                        )}
+                                        {isCancelledOrRejected && (
+                                            <span className="px-3.5 py-2 bg-red-50 text-red-700 font-bold text-xs rounded-xl border border-red-200/80">
+                                                {isRejected ? "Booking Rejected" : "Booking Cancelled"}
+                                            </span>
                                         )}
                                     </div>
                                 </div>

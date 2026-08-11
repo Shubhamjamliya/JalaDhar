@@ -79,7 +79,8 @@ export default function UserReports() {
 
     // Filter bookings that have a report uploaded
     const allReportBookings = bookings.filter(booking => {
-        const statusUpper = (booking.status || '').toUpperCase();
+        const statusUpper = (booking.status || booking.userStatus || booking.vendorStatus || '').toUpperCase();
+        if (statusUpper === 'CANCELLED') return false;
         return booking.visitReport || booking.reportUploadedAt || postReportStatuses.includes(statusUpper);
     });
 

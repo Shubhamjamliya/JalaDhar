@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
     IoHome,
@@ -25,13 +25,17 @@ import {
     IoCashOutline,
     IoLockClosedOutline,
     IoPersonAddOutline,
-    IoGlobeOutline
+    IoGlobeOutline,
+    IoNavigateOutline,
+    IoChevronForwardOutline,
+    IoCloseOutline
 } from "react-icons/io5";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import NotificationDropdown from "../../../components/NotificationDropdown";
 import logo from "@/assets/Header-logoo.png";
+import { getUserBookings } from "../../../services/bookingApi";
 
 import UserSidebar from "./UserSidebar";
 
@@ -90,6 +94,37 @@ export default function UserNavbar() {
     const { logout, user } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+
+    const [activeBooking, setActiveBooking] = useState(null);
+    const [dismissedBanner, setDismissedBanner] = useState(false);
+
+    // Fetch active/ongoing booking for Floating Live Tracking Popup
+    useEffect(() => {
+        if (!user) return;
+        const fetchActiveBooking = async () => {
+            try {
+                const res = await getUserBookings({ limit: 10 });
+                if (res?.success && res.data?.bookings) {
+                    const activeStatuses = ["EN_ROUTE", "ACCEPTED", "VISITED", "IN_PROGRESS", "ASSIGNED"];
+                    const foundActive = res.data.bookings.find(b => {
+                        const s = (b.status || b.userStatus || b.vendorStatus || "").toUpperCase();
+                        return activeStatuses.includes(s);
+                    });
+                    if (foundActive) {
+                        setActiveBooking(foundActive);
+                    } else {
+                        setActiveBooking(null);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch active booking for navbar widget:", err);
+            }
+        };
+
+        fetchActiveBooking();
+        const interval = setInterval(fetchActiveBooking, 15000);
+        return () => clearInterval(interval);
+    }, [user, location.pathname]);
 
     const handleLogoutClick = () => {
         setShowLogoutConfirm(true);
@@ -212,6 +247,63 @@ export default function UserNavbar() {
                     onClose={() => setIsSidebarOpen(false)}
                 />
             </div>
+
+            {/* Floating Live Tracking / Active Booking Widget — Displayed Floating Above Bottom Navigation */}
+            {activeBooking && !dismissedBanner && (
+                <div className="fixed bottom-[68px] inset-x-3 z-35 max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-3 animate-slideUp transition-all">
+                    {/* Left Icon & Animated Pulse Status */}
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600/30 text-blue-400 border border-blue-400/30 flex-shrink-0">
+                            <IoNavigateOutline className="text-xl animate-bounce" />
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                            </span>
+                        </div>
+
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                                <p className="text-[11px] font-black uppercase tracking-wider text-emerald-400 truncate">
+                                    {(activeBooking.status || activeBooking.vendorStatus || "").toUpperCase() === "EN_ROUTE"
+                                        ? "Expert En Route 🚗"
+                                        : (activeBooking.status || activeBooking.vendorStatus || "").toUpperCase() === "VISITED"
+                                            ? "Survey in Progress 📍"
+                                            : "Expert Assigned 👨‍🔬"}
+                                </p>
+                            </div>
+                            <p className="text-xs font-semibold text-slate-200 truncate">
+                                {activeBooking.vendor?.name ? `Expert ${activeBooking.vendor.name}` : `Booking #${(activeBooking._id || activeBooking.id || "").slice(-6).toUpperCase()}`}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Right CTA Buttons */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                            onClick={() => {
+                                const currentStatus = (activeBooking.status || activeBooking.vendorStatus || "").toUpperCase();
+                                if (currentStatus === "EN_ROUTE") {
+                                    navigate(`/tracking/${activeBooking._id || activeBooking.id}`);
+                                } else {
+                                    navigate(`/user/booking/${activeBooking._id || activeBooking.id}`);
+                                }
+                            }}
+                            className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                        >
+                            <span>{(activeBooking.status || activeBooking.vendorStatus || "").toUpperCase() === "EN_ROUTE" ? "Track Live" : "View"}</span>
+                            <IoChevronForwardOutline className="text-xs" />
+                        </button>
+
+                        <button
+                            onClick={() => setDismissedBanner(true)}
+                            className="p-1 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+                            title="Dismiss"
+                        >
+                            <IoCloseOutline className="text-base" />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Bottom Navigation — Mobile Only (Redesigned Senior UI with Floating FAB) */}
             <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden">

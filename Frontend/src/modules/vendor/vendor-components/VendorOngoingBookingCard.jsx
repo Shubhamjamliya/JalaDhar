@@ -321,7 +321,7 @@ export default function VendorOngoingBookingCard({
                 </div>
 
                 {/* Contextual Action Row (Start Journey, OTP & Uploads) */}
-                <div className="grid grid-cols-2 gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                <div className="flex w-full pt-1" onClick={(e) => e.stopPropagation()}>
                     {/* 1. If status is ACCEPTED -> Show Start Journey */}
                     {status === "ACCEPTED" ? (
                         <button
@@ -362,32 +362,19 @@ export default function VendorOngoingBookingCard({
                             <span>Verify End OTP</span>
                         </button>
                     ) : (
-                        /* Site Photos Upload */
+                        /* Upload Survey Report */
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (onUploadPhotos) onUploadPhotos(booking);
-                                else navigate(`/vendor/bookings/${booking._id}`);
+                                if (onUploadReport) onUploadReport(booking);
+                                else navigate(`/vendor/bookings/${booking._id}/upload-report`);
                             }}
-                            className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                            <IoCameraOutline className="text-base" />
-                            <span>Upload Site Photos</span>
+                            <IoDocumentTextOutline className="text-base text-teal-400" />
+                            <span>Upload Report</span>
                         </button>
                     )}
-
-                    {/* Upload Survey Report */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (onUploadReport) onUploadReport(booking);
-                            else navigate(`/vendor/bookings/${booking._id}/upload-report`);
-                        }}
-                        className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                        <IoDocumentTextOutline className="text-base text-teal-400" />
-                        <span>Upload Report</span>
-                    </button>
                 </div>
             </div>
         </div>

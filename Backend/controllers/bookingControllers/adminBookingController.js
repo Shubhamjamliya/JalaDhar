@@ -1312,9 +1312,9 @@ const getReportPendingApprovals = async (req, res) => {
 
     const query = {
       $or: [
-        { 'report.uploadedAt': { $exists: true } },
-        { reportUploadedAt: { $exists: true } },
-        { 'report.waterFound': { $exists: true } }
+        { 'report.uploadedAt': { $exists: true, $ne: null } },
+        { reportUploadedAt: { $exists: true, $ne: null } },
+        { 'report.waterFound': { $in: [true, false] } }
       ],
       'report.approvedAt': { $exists: false } // Only unapproved reports
     };

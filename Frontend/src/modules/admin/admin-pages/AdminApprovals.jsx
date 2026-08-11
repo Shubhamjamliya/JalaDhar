@@ -430,14 +430,14 @@ export default function AdminApprovals() {
                                             </div>
 
                                             {/* Water Found Cardlet */}
-                                            <div className={`p-3.5 rounded-xl border ${booking.report?.waterFound !== false ? "bg-emerald-50/60 border-emerald-200/80" : "bg-rose-50/60 border-rose-200/80"}`}>
+                                            <div className={`p-3.5 rounded-xl border ${booking.report?.waterFound === true ? "bg-emerald-50/60 border-emerald-200/80" : booking.report?.waterFound === false ? "bg-rose-50/60 border-rose-200/80" : "bg-slate-50 border-slate-200"}`}>
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                    <IoWaterOutline className={booking.report?.waterFound !== false ? "text-emerald-600" : "text-rose-600"} /> Survey Outcome
+                                                    <IoWaterOutline className={booking.report?.waterFound === true ? "text-emerald-600" : booking.report?.waterFound === false ? "text-rose-600" : "text-slate-500"} /> Survey Outcome
                                                 </p>
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`w-2.5 h-2.5 rounded-full ${booking.report?.waterFound !== false ? "bg-emerald-500" : "bg-rose-500"}`}></span>
-                                                    <p className={`text-sm font-black ${booking.report?.waterFound !== false ? "text-emerald-700" : "text-rose-700"}`}>
-                                                        {booking.report?.waterFound !== false ? "SUITABLE POINT (WATER FOUND)" : "NO SUITABLE POINT"}
+                                                    <span className={`w-2.5 h-2.5 rounded-full ${booking.report?.waterFound === true ? "bg-emerald-500" : booking.report?.waterFound === false ? "bg-rose-500" : "bg-slate-400"}`}></span>
+                                                    <p className={`text-sm font-black ${booking.report?.waterFound === true ? "text-emerald-700" : booking.report?.waterFound === false ? "text-rose-700" : "text-slate-600"}`}>
+                                                        {booking.report?.waterFound === true ? "SUITABLE POINT (WATER FOUND)" : booking.report?.waterFound === false ? "NO SUITABLE POINT" : "REPORT PENDING"}
                                                     </p>
                                                 </div>
                                             </div>
