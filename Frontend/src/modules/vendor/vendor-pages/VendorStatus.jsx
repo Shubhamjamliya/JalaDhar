@@ -33,7 +33,7 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
-import InputModal from "../../shared/components/InputModal";
+import InputModal, { VENDOR_REJECTION_REASONS } from "../../shared/components/InputModal";
 
 export default function VendorStatus() {
     const navigate = useNavigate();
@@ -1052,12 +1052,11 @@ export default function VendorStatus() {
                 isOpen={showRejectInput}
                 onClose={() => setShowRejectInput(false)}
                 onSubmit={handleRejectionReasonSubmit}
-                title="Reject Booking"
-                message="Please provide a reason for rejecting this booking (minimum 10 characters):"
-                placeholder="Enter rejection reason..."
+                title="Decline / Reject Booking"
+                message="Please select a reason for rejecting this survey booking:"
+                options={VENDOR_REJECTION_REASONS}
                 submitText="Continue"
                 cancelText="Cancel"
-                minLength={10}
             />
 
             {/* Reject Confirmation Modal */}

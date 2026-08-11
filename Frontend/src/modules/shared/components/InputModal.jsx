@@ -19,6 +19,23 @@ export const CANCELLATION_REASONS = [
     "Other (Please specify)"
 ];
 
+export const VENDOR_REJECTION_REASONS = [
+    "Outside Service Area",
+    "Schedule Conflict",
+    "Already Assigned to Another Survey",
+    "Location Details Incomplete",
+    "Customer Not Reachable",
+    "Duplicate Booking",
+    "Survey Type Not Supported",
+    "Equipment Unavailable",
+    "Safety or Security Concern",
+    "Personal Emergency",
+    "Medical Emergency",
+    "Technical/App Issue",
+    "Invalid or Incorrect Booking",
+    "Other (Please specify)"
+];
+
 /**
  * Reusable Input / Dropdown Modal Component
  * Supports single-line input, multi-line textarea, or CustomDropdown option selection with blurred backdrop.

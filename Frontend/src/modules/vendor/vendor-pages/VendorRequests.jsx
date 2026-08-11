@@ -12,7 +12,8 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
-import InputModal from "../../shared/components/InputModal";
+import InputModal, { VENDOR_REJECTION_REASONS } from "../../shared/components/InputModal";
+import VendorOngoingBookingCard from "../vendor-components/VendorOngoingBookingCard";
 import {
     IoNotificationsOutline,
     IoTimeOutline,
@@ -404,11 +405,22 @@ export default function VendorRequests() {
                         </div>
                     ) : (
                         currentRequests.map((request) => (
-                            <div
-                                key={request._id}
-                                onClick={() => navigate(`/vendor/bookings/${request._id}`)}
-                                className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] transition-all"
-                            >
+                            activeTab === "In Progress" ? (
+                                <VendorOngoingBookingCard
+                                    key={request._id}
+                                    booking={request}
+                                    onViewStatus={(id) => navigate(`/vendor/bookings/${id}`)}
+                                    onUploadReport={(b) => navigate(`/vendor/bookings/${b._id}/upload-report`)}
+                                    onVerifyStartOTP={(b) => navigate(`/vendor/bookings/${b._id}`)}
+                                    onVerifyEndOTP={(b) => navigate(`/vendor/bookings/${b._id}`)}
+                                    onUploadPhotos={(b) => navigate(`/vendor/bookings/${b._id}`)}
+                                />
+                            ) : (
+                                <div
+                                    key={request._id}
+                                    onClick={() => navigate(`/vendor/bookings/${request._id}`)}
+                                    className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] transition-all"
+                                >
                                 {/* Customer Info Header */}
                                 <div className="flex items-center gap-4">
                                     {/* Profile Picture */}
@@ -585,6 +597,7 @@ export default function VendorRequests() {
                                         )}
                                 </div>
                             </div>
+                            )
                         ))
                     )}
                 </div>
@@ -787,21 +800,14 @@ export default function VendorRequests() {
                 isOpen={showRejectInput}
                 onClose={() => {
                     setShowRejectInput(false);
-                    // NOTE: Do NOT clear selectedBookingId here.
-                    // The InputModal calls onClose() after onSubmit(), so clearing
-                    // selectedBookingId here would race with handleRejectConfirm.
-                    // selectedBookingId is cleared in handleRejectConfirm's finally block.
                     setRejectionReason("");
                 }}
                 onSubmit={handleRejectionReasonSubmit}
-                title="Reject Booking"
-                message="Please provide a reason for rejection (minimum 10 characters):"
-                placeholder="Enter rejection reason..."
+                title="Decline / Reject Booking"
+                message="Please select a reason for rejecting this survey booking:"
+                options={VENDOR_REJECTION_REASONS}
                 submitText="Continue"
                 cancelText="Cancel"
-                minLength={10}
-                isTextarea={true}
-                textareaRows={4}
             />
 
             {/* Reject Booking Confirmation Modal */}

@@ -14,6 +14,7 @@ import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import VendorOngoingBookingCard from "../vendor-components/VendorOngoingBookingCard";
 
 export default function VendorBookings() {
     const navigate = useNavigate();
@@ -280,6 +281,20 @@ export default function VendorBookings() {
                     </div>
                 ) : (
                     currentBookings.map((booking) => {
+                        if (activeTab === "Active") {
+                            return (
+                                <VendorOngoingBookingCard
+                                    key={booking._id}
+                                    booking={booking}
+                                    onViewStatus={(id) => navigate(`/vendor/bookings/${id}`)}
+                                    onUploadReport={(b) => navigate(`/vendor/bookings/${b._id}/upload-report`)}
+                                    onVerifyStartOTP={(b) => navigate(`/vendor/bookings/${b._id}`)}
+                                    onVerifyEndOTP={(b) => navigate(`/vendor/bookings/${b._id}`)}
+                                    onUploadPhotos={(b) => navigate(`/vendor/bookings/${b._id}`)}
+                                />
+                            );
+                        }
+
                         const statusConfig = getStatusConfig(booking.status);
                         const progress = getProgressPercent(booking.status);
 
