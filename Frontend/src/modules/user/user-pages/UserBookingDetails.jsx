@@ -106,7 +106,7 @@ export default function UserBookingDetails() {
     }, [location.state]);
 
     // Lock background scroll when any modal is open
-    const isAnyModalOpen = showCancelModal || showCancelPolicyModal || showBorewellModal || showWorkProof || showPaymentPrompt;
+    const isAnyModalOpen = Boolean(showCancelConfirm || showCancellationInput || showBorewellModal || showWorkProof || showRatingModal || showPaymentPrompt);
     useEffect(() => {
         if (isAnyModalOpen) {
             const originalBodyOverflow = document.body.style.overflow;
