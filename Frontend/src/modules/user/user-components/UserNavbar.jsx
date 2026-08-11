@@ -38,6 +38,7 @@ import logo from "@/assets/Header-logoo.png";
 import UserSidebar from "./UserSidebar";
 import UserAgreementModal from "./UserAgreementModal";
 import api from "../../../services/api";
+import { getUserBookings } from "../../../services/bookingApi";
 
 const navItems = [
     {
