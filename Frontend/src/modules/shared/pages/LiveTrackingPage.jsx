@@ -427,45 +427,75 @@ export default function LiveTrackingPage({ role = "User" }) {
                 {/* Drag Handle */}
                 <div className="w-9 h-1 bg-slate-200 rounded-full mx-auto" />
 
-                {/* Compact ETA & Status Banner */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl px-3.5 py-2.5 text-white flex items-center justify-between shadow-xs">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center backdrop-blur-xs">
-                            <IoTimeOutline className="text-lg text-white" />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-blue-100 uppercase tracking-wider">Estimated Arrival</p>
-                            <div className="flex items-baseline gap-1.5 leading-none mt-0.5">
-                                <span className="text-xl font-black">{etaMinutes} {etaMinutes !== "--" ? "mins" : ""}</span>
-                                {distanceKm !== "--" && (
-                                    <span className="text-[11px] font-semibold text-blue-100/90">({distanceKm} km)</span>
+                {(() => {
+                    const isStartOtpVerified = booking?.otp?.startSurvey?.verified || ["VISITED", "IN_PROGRESS", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes((booking?.status || booking?.userStatus || "").toUpperCase());
+                    
+                    if (isStartOtpVerified) {
+                        return (
+                            <div className="bg-emerald-600 rounded-xl px-3.5 py-3 text-white flex items-center justify-between shadow-xs">
+                                <div className="flex items-center gap-2.5">
+                                    <IoShieldCheckmarkOutline className="text-2xl text-emerald-200 shrink-0" />
+                                    <div>
+                                        <p className="text-xs font-extrabold">Survey in Progress 📍</p>
+                                        <p className="text-[11px] text-emerald-100 leading-snug">Expert has arrived on site & Start OTP is verified.</p>
+                                    </div>
+                                </div>
+                                {role === "User" && (
+                                    <button
+                                        onClick={() => navigate(`/user/booking/${bookingId}`)}
+                                        className="px-3 py-1.5 bg-white text-emerald-800 font-bold text-xs rounded-lg shadow-2xs hover:bg-emerald-50 active:scale-95 transition-all cursor-pointer shrink-0 ml-2"
+                                    >
+                                        View Booking
+                                    </button>
                                 )}
                             </div>
-                        </div>
-                    </div>
+                        );
+                    }
 
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/15 rounded-lg border border-white/20 backdrop-blur-xs">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span className="text-xs font-bold text-white">En Route</span>
-                    </div>
-                </div>
+                    return (
+                        <>
+                            {/* Compact ETA & Status Banner */}
+                            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl px-3.5 py-2.5 text-white flex items-center justify-between shadow-xs">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center backdrop-blur-xs">
+                                        <IoTimeOutline className="text-lg text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-blue-100 uppercase tracking-wider">Estimated Arrival</p>
+                                        <div className="flex items-baseline gap-1.5 leading-none mt-0.5">
+                                            <span className="text-xl font-black">{etaMinutes} {etaMinutes !== "--" ? "mins" : ""}</span>
+                                            {distanceKm !== "--" && (
+                                                <span className="text-[11px] font-semibold text-blue-100/90">({distanceKm} km)</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
 
-                {/* Start OTP Pill (User only) */}
-                {role === "User" && startOtp && (
-                    <div className="bg-amber-50/90 border border-amber-200/90 rounded-xl px-3 py-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <IoKeyOutline className="text-base text-amber-600" />
-                            <span className="text-xs font-bold text-amber-900">Start OTP:</span>
-                            <span className="text-sm font-black text-amber-950 tracking-wider font-mono">{startOtp}</span>
-                        </div>
-                        <button
-                            onClick={handleCopyOTP}
-                            className="px-2.5 py-1 bg-amber-200/60 hover:bg-amber-200 text-amber-900 font-bold text-xs rounded-lg flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
-                        >
-                            <IoCopyOutline className="text-xs" /> Copy
-                        </button>
-                    </div>
-                )}
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/15 rounded-lg border border-white/20 backdrop-blur-xs">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    <span className="text-xs font-bold text-white">En Route</span>
+                                </div>
+                            </div>
+
+                            {/* Start OTP Pill (User only) */}
+                            {role === "User" && startOtp && (
+                                <div className="bg-amber-50/90 border border-amber-200/90 rounded-xl px-3 py-2 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <IoKeyOutline className="text-base text-amber-600" />
+                                        <span className="text-xs font-bold text-amber-900">Start OTP:</span>
+                                        <span className="text-sm font-black text-amber-950 tracking-wider font-mono">{startOtp}</span>
+                                    </div>
+                                    <button
+                                        onClick={handleCopyOTP}
+                                        className="px-2.5 py-1 bg-amber-200/60 hover:bg-amber-200 text-amber-900 font-bold text-xs rounded-lg flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
+                                    >
+                                        <IoCopyOutline className="text-xs" /> Copy
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    );
+                })()}
 
                 {/* Expert Info & Call/WhatsApp Row */}
                 <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-200/80 flex items-center justify-between">

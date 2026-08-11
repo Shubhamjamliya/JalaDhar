@@ -254,7 +254,8 @@ export default function UserNavbar() {
                     onClick={() => {
                         const bId = activeBooking._id || activeBooking.id;
                         const currentStatus = (activeBooking.status || activeBooking.vendorStatus || "").toUpperCase();
-                        if (currentStatus === "EN_ROUTE") {
+                        const isStartOtpVerified = activeBooking.otp?.startSurvey?.verified || activeBooking.bookingData?.otp?.startSurvey?.verified || ["VISITED", "IN_PROGRESS", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(currentStatus);
+                        if (currentStatus === "EN_ROUTE" && !isStartOtpVerified) {
                             navigate(`/user/booking/${bId}/tracking`);
                         } else {
                             navigate(`/user/booking/${bId}`);
@@ -275,11 +276,17 @@ export default function UserNavbar() {
                         <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                                 <p className="text-[11px] font-black uppercase tracking-wider text-emerald-400 truncate">
-                                    {(activeBooking.status || activeBooking.vendorStatus || "").toUpperCase() === "EN_ROUTE"
-                                        ? "Expert En Route 🚗"
-                                        : (activeBooking.status || activeBooking.vendorStatus || "").toUpperCase() === "VISITED"
-                                            ? "Survey in Progress 📍"
-                                            : "Expert Assigned 👨‍🔬"}
+                                    {(() => {
+                                        const currentStatus = (activeBooking.status || activeBooking.vendorStatus || "").toUpperCase();
+                                        const isStartOtpVerified = activeBooking.otp?.startSurvey?.verified || activeBooking.bookingData?.otp?.startSurvey?.verified || ["VISITED", "IN_PROGRESS", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(currentStatus);
+                                        if (isStartOtpVerified || currentStatus === "VISITED" || currentStatus === "IN_PROGRESS") {
+                                            return "Survey in Progress 📍";
+                                        }
+                                        if (currentStatus === "EN_ROUTE") {
+                                            return "Expert En Route 🚗";
+                                        }
+                                        return "Expert Assigned 👨‍🔬";
+                                    })()}
                                 </p>
                             </div>
                             <p className="text-xs font-semibold text-slate-200 truncate">
@@ -295,7 +302,8 @@ export default function UserNavbar() {
                                 e.stopPropagation();
                                 const bId = activeBooking._id || activeBooking.id;
                                 const currentStatus = (activeBooking.status || activeBooking.vendorStatus || "").toUpperCase();
-                                if (currentStatus === "EN_ROUTE") {
+                                const isStartOtpVerified = activeBooking.otp?.startSurvey?.verified || activeBooking.bookingData?.otp?.startSurvey?.verified || ["VISITED", "IN_PROGRESS", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(currentStatus);
+                                if (currentStatus === "EN_ROUTE" && !isStartOtpVerified) {
                                     navigate(`/user/booking/${bId}/tracking`);
                                 } else {
                                     navigate(`/user/booking/${bId}`);

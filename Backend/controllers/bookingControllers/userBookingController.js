@@ -349,8 +349,19 @@ const createBooking = async (req, res) => {
         email: booking.user.email,
         name: booking.user.name,
         bookingId: booking._id.toString(),
+        displayBookingId: booking.bookingId || `JLD-${booking._id.toString().slice(-5).toUpperCase()}`,
         serviceName: service.name,
-        vendorName: vendor.name
+        surveyCategory: booking.surveyCategory || service.name || 'Agriculture Survey',
+        surveyDate: booking.scheduledDate,
+        location: booking.address ? `${booking.address.city || booking.village || ''}, ${booking.address.state || booking.state || ''}`.trim().replace(/^,\s*/, '') : (booking.district ? `${booking.district}, ${booking.state}` : 'Nizamabad, Telangana'),
+        propertyType: booking.propertyType || 'Residential',
+        vendorName: vendor.name,
+        vendorDesignation: vendor.designation || 'Geophysicist',
+        surveyPurpose: booking.purpose || 'Borewell',
+        area: booking.purposeExtent ? `${booking.purposeExtent} ${booking.areaUnit || 'Acres'}` : '3.50 Acres',
+        totalAmount: booking.payment?.totalAmount || 15000,
+        advancePaidPercentage: '40%',
+        paymentStatus: 'Advance Paid'
       }).catch(err => console.error('Email notification error:', err)),
 
       (async () => {

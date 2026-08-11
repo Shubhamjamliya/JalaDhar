@@ -123,9 +123,13 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serve static files from public directory
+const path = require('path');
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 // Middleware to handle requests without /api prefix (common in production with api. subdomain)
 app.use((req, res, next) => {
-  if (!req.url.startsWith('/api') && req.url !== '/health' && !req.url.startsWith('/socket.io')) {
+  if (!req.url.startsWith('/api') && !req.url.startsWith('/public') && req.url !== '/health' && !req.url.startsWith('/socket.io')) {
     // If request comes as /users/auth/login, rewrite to /api/users/auth/login
     req.url = '/api' + req.url;
   }

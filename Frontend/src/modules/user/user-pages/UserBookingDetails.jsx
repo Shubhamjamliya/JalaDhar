@@ -602,7 +602,7 @@ export default function UserBookingDetails() {
                                     Expert Reason: {booking.rejectionReason}
                                 </p>
                             )}
-                            {["ACCEPTED", "EN_ROUTE", "VISITED"].includes((booking.status || "").toUpperCase()) && (
+                            {["ACCEPTED", "EN_ROUTE"].includes((booking.status || "").toUpperCase()) && !(booking.otp?.startSurvey?.verified || ["VISITED", "IN_PROGRESS", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes((booking.status || "").toUpperCase())) && (
                                 <button
                                     onClick={() => navigate(`/user/booking/${bookingId}/tracking`)}
                                     className="mt-3 w-full py-2.5 px-4 bg-[#0A84FF] hover:bg-blue-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"

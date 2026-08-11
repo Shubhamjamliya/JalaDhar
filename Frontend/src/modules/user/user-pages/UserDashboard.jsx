@@ -806,7 +806,8 @@ export default function UserDashboard() {
 
                                     {(() => {
                                         const rawStatus = (activeBooking.bookingData?.userStatus || activeBooking.bookingData?.status || activeBooking.status || "").toLowerCase();
-                                        if (['accepted', 'assigned', 'en_route', 'visited', 'pending', 'awaiting_advance'].includes(rawStatus)) {
+                                        const isStartOtpVerified = activeBooking.bookingData?.otp?.startSurvey?.verified || activeBooking.otp?.startSurvey?.verified || ["visited", "in_progress", "report_uploaded", "awaiting_payment", "payment_success", "paid_first", "borewell_uploaded", "admin_approved", "final_settlement", "completed"].includes(rawStatus);
+                                        if (['accepted', 'en_route'].includes(rawStatus) && !isStartOtpVerified) {
                                             return (
                                                 <button
                                                     onClick={() => navigate(`/user/booking/${activeBooking.id}/tracking`)}
