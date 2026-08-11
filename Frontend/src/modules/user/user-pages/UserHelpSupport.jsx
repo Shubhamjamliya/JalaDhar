@@ -9,31 +9,53 @@ import {
     IoChevronDownOutline,
     IoChevronUpOutline,
     IoShieldCheckmarkOutline,
-    IoDocumentTextOutline
+    IoDocumentTextOutline,
+    IoHeadsetOutline,
+    IoBulbOutline
 } from "react-icons/io5";
 import PageContainer from "../../shared/components/PageContainer";
 import PolicyModal from "../../shared/components/PolicyModal";
 
 const FAQS = [
     {
-        q: "How do I book a groundwater hydrogeological survey?",
-        a: "Navigate to the Book Survey section on your Dashboard, select your survey type (Agriculture, Commercial, Residential, etc.), provide your land location details, and choose your preferred hydrogeologist expert."
+        q: "What is an Agriculture Groundwater Survey?",
+        a: "An Agriculture Groundwater Survey is conducted on agricultural land to assess the geological and subsurface conditions and relevant groundwater indicators, and to identify a suitable location for borewell drilling."
     },
     {
-        q: "Are the survey reports 100% guaranteed for borewell success?",
-        a: "Hydrogeological surveys use scientific methods and geophysical instruments (Dowsing, 3D Locators, PQWT, ADMT) to identify potential aquifers. However, groundwater occurrence is governed by natural geological formations, so reports represent professional scientific opinions."
+        q: "What is a Household Groundwater Survey?",
+        a: "A Household Groundwater Survey is conducted for houses, residential plots and individual properties to assess the site and relevant subsurface conditions and identify a suitable location for borewell drilling for household water requirements."
     },
     {
-        q: "How can I view or download my survey report?",
-        a: "Go to the Survey Reports menu option. Once the expert completes the field visit and uploads findings, you can view and download the official PDF report."
+        q: "What is a Commercial Groundwater Survey?",
+        a: "A Commercial Groundwater Survey is conducted for commercial properties such as offices, apartments, hotels, institutions, shops and other commercial premises to assess groundwater conditions and identify suitable locations for borewell drilling."
     },
     {
-        q: "What is the advance payment policy?",
-        a: "A 40% advance payment is required to confirm your expert booking slot. The remaining 60% balance is payable after the physical survey visit."
+        q: "What is an Industrial Groundwater Survey?",
+        a: "An Industrial Groundwater Survey is conducted for factories, plants, warehouses and other industrial properties to assess geological and subsurface conditions and identify suitable borewell drilling locations based on the site's groundwater potential."
     },
     {
-        q: "What should I do if I have an issue with an expert or booking?",
-        a: "You can raise a formal issue by visiting the Disputes section in your menu and clicking 'Create Dispute'. Our dedicated support team will review and resolve it promptly."
+        q: "What does the survey cover?",
+        a: "Assessment of the site, geological and subsurface conditions, and relevant groundwater indicators to recommend a drilling location."
+    },
+    {
+        q: "Will I get the estimated drilling depth?",
+        a: "Where technically feasible, the expert will provide an estimated drilling depth based on the survey findings."
+    },
+    {
+        q: "Will I receive a survey report?",
+        a: "Yes. A digital survey report will be submitted through the Jaladhaara app."
+    },
+    {
+        q: "Can I request multiple drilling points?",
+        a: "Yes, if multiple points are included in the selected survey package."
+    },
+    {
+        q: "Does the survey guarantee water or borewell success?",
+        a: "No. The survey provides a professional assessment and recommendation. Groundwater availability, yield, quality, depth and borewell success cannot be guaranteed."
+    },
+    {
+        q: "Is borewell drilling included, and who conducts the survey?",
+        a: "No. Borewell drilling is separate. The survey is conducted by a verified groundwater survey expert assigned through Jaladhaara."
     }
 ];
 
@@ -143,32 +165,52 @@ export default function UserHelpSupport() {
                     </div>
                 </div>
 
-                {/* FAQs Section */}
-                <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
-                    <h3 className="text-base font-bold text-gray-900 mb-2">Frequently Asked Questions</h3>
+                {/* FAQs Section — Pixel Perfect Match with Design Mockup */}
+                <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-6">
+                    {/* Header with Title and Lightbulb Icon */}
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-900 tracking-tight">FAQs</h2>
+                            <p className="text-sm font-semibold text-slate-500 mt-0.5">Frequently Asked Questions</p>
+                        </div>
+                        <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500 shadow-xs">
+                            <IoBulbOutline className="text-2xl" />
+                        </div>
+                    </div>
 
+                    {/* Accordion List */}
                     <div className="space-y-3">
-                        {FAQS.map((faq, idx) => (
-                            <div key={idx} className="border border-gray-100 rounded-2xl overflow-hidden">
-                                <button
-                                    onClick={() => toggleFaq(idx)}
-                                    className="w-full p-4 text-left font-bold text-sm text-gray-800 bg-gray-50/50 hover:bg-gray-50 flex items-center justify-between gap-4 transition-colors"
+                        {FAQS.map((faq, idx) => {
+                            const isOpen = openFaq === idx;
+                            return (
+                                <div
+                                    key={idx}
+                                    className={`border rounded-2xl transition-all overflow-hidden ${
+                                        isOpen ? "border-slate-300 shadow-sm bg-slate-50/40" : "border-slate-200/80 hover:border-slate-300 bg-white"
+                                    }`}
                                 >
-                                    <span>{faq.q}</span>
-                                    {openFaq === idx ? (
-                                        <IoChevronUpOutline className="text-purple-600 shrink-0" />
-                                    ) : (
-                                        <IoChevronDownOutline className="text-gray-400 shrink-0" />
-                                    )}
-                                </button>
+                                    <button
+                                        onClick={() => toggleFaq(idx)}
+                                        className="w-full p-4 text-left font-bold text-sm text-slate-800 flex items-center justify-between gap-4 transition-colors cursor-pointer"
+                                    >
+                                        <span className="leading-snug">Q{idx + 1}. {faq.q}</span>
+                                        <div className="p-1 rounded-full text-slate-400 transition-colors">
+                                            {isOpen ? (
+                                                <IoChevronUpOutline className="text-lg text-slate-600" />
+                                            ) : (
+                                                <IoChevronDownOutline className="text-lg" />
+                                            )}
+                                        </div>
+                                    </button>
 
-                                {openFaq === idx && (
-                                    <div className="p-4 bg-white text-xs text-gray-600 leading-relaxed border-t border-gray-100">
-                                        {faq.a}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                                    {isOpen && (
+                                        <div className="px-4 pb-4 pt-1 text-xs text-slate-600 leading-relaxed border-t border-slate-100 bg-white">
+                                            {faq.a}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

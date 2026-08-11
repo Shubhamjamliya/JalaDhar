@@ -250,7 +250,18 @@ export default function UserNavbar() {
 
             {/* Floating Live Tracking / Active Booking Widget — Displayed Floating Above Bottom Navigation */}
             {activeBooking && !dismissedBanner && (
-                <div className="fixed bottom-[68px] inset-x-3 z-35 max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-3 animate-slideUp transition-all">
+                <div
+                    onClick={() => {
+                        const bId = activeBooking._id || activeBooking.id;
+                        const currentStatus = (activeBooking.status || activeBooking.vendorStatus || "").toUpperCase();
+                        if (currentStatus === "EN_ROUTE") {
+                            navigate(`/user/booking/${bId}/tracking`);
+                        } else {
+                            navigate(`/user/booking/${bId}`);
+                        }
+                    }}
+                    className="fixed bottom-[68px] inset-x-3 z-35 max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-3 animate-slideUp transition-all cursor-pointer hover:border-white/30"
+                >
                     {/* Left Icon & Animated Pulse Status */}
                     <div className="flex items-center gap-3 min-w-0">
                         <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600/30 text-blue-400 border border-blue-400/30 flex-shrink-0">
@@ -280,12 +291,14 @@ export default function UserNavbar() {
                     {/* Right CTA Buttons */}
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <button
-                            onClick={() => {
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const bId = activeBooking._id || activeBooking.id;
                                 const currentStatus = (activeBooking.status || activeBooking.vendorStatus || "").toUpperCase();
                                 if (currentStatus === "EN_ROUTE") {
-                                    navigate(`/tracking/${activeBooking._id || activeBooking.id}`);
+                                    navigate(`/user/booking/${bId}/tracking`);
                                 } else {
-                                    navigate(`/user/booking/${activeBooking._id || activeBooking.id}`);
+                                    navigate(`/user/booking/${bId}`);
                                 }
                             }}
                             className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
@@ -295,7 +308,10 @@ export default function UserNavbar() {
                         </button>
 
                         <button
-                            onClick={() => setDismissedBanner(true)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setDismissedBanner(true);
+                            }}
                             className="p-1 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
                             title="Dismiss"
                         >

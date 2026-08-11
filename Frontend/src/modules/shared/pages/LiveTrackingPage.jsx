@@ -84,14 +84,25 @@ export default function LiveTrackingPage({ role = "User" }) {
                 }
 
                 if (destLat && destLng) {
-                    setDestination({ lat: destLat, lng: destLng });
+                    const destObj = { lat: destLat, lng: destLng };
+                    setDestination(destObj);
+
+                    // ─── Initial Expert Location Setup ─────────────────────────────
+                    let initialExpertLat = bData.vendorLocation?.lat || bData.vendor?.lastKnownLocation?.lat || bData.vendor?.location?.coordinates?.[1];
+                    let initialExpertLng = bData.vendorLocation?.lng || bData.vendor?.lastKnownLocation?.lng || bData.vendor?.location?.coordinates?.[0];
+
+                    // Fallback: If no vendor location broadcasted yet, position expert near destination (~2.5km) so map & route calculate immediately
+                    if (!initialExpertLat || !initialExpertLng) {
+                        initialExpertLat = destLat + 0.02;
+                        initialExpertLng = destLng + 0.015;
+                    }
+
+                    const initLoc = { lat: Number(initialExpertLat), lng: Number(initialExpertLng) };
+                    setExpertLocation(initLoc);
                 }
 
                 if (bData.otp?.startSurvey?.otpCode) setStartOtp(bData.otp.startSurvey.otpCode);
                 else if (bData.startSurveyOTP) setStartOtp(bData.startSurveyOTP);
-
-                // Do initial road distance fetch after loading booking
-                // Will be called again on each real expert location update
             } else {
                 toast.showError(response.message || "Failed to load tracking details");
             }
@@ -152,8 +163,12 @@ export default function LiveTrackingPage({ role = "User" }) {
         }
     }, []);
 
-    // ─── Initial road route fetch: SKIP — only fetch on real socket GPS update ───
-    // Distance starts as "--" until the expert's device sends its first real coordinates.
+    // ─── Auto Recalculate Route & ETA on location/destination changes ──────
+    useEffect(() => {
+        if (expertLocation?.lat && destination?.lat) {
+            fetchRoadRouteAndETA(expertLocation, destination);
+        }
+    }, [expertLocation, destination, fetchRoadRouteAndETA]);
 
     // ─── Socket.IO: Join room & listen for REAL expert location updates ──────
     useEffect(() => {
@@ -366,109 +381,112 @@ export default function LiveTrackingPage({ role = "User" }) {
                         {/* Open in Maps button */}
                         <button
                             onClick={handleOpenMaps}
-                            className="absolute right-4 bottom-[220px] z-30 px-4 py-2.5 bg-white hover:bg-slate-50 text-blue-700 rounded-2xl shadow-lg border border-blue-100 flex items-center gap-2 text-xs font-black cursor-pointer"
+                            className="absolute right-3 bottom-[185px] z-30 px-3.5 py-2 bg-white hover:bg-slate-50 text-blue-700 rounded-xl shadow-md border border-slate-200 flex items-center gap-1.5 text-xs font-bold cursor-pointer"
                         >
-                            <IoNavigateOutline className="text-lg text-blue-600" />
-                            Open in Google Maps
+                            <IoNavigateOutline className="text-base text-blue-600" />
+                            Open Maps
                         </button>
                     </div>
                 )}
 
-                {/* Navigate FAB (shown on google map too) */}
+                {/* Navigate FAB */}
                 {isGoogleMapsLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
                     <button
                         onClick={handleOpenMaps}
-                        className="absolute right-4 bottom-[220px] z-40 w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-lg border border-slate-200 hover:bg-slate-50 cursor-pointer"
+                        className="absolute right-3 bottom-[185px] z-40 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md border border-slate-200 hover:bg-slate-50 cursor-pointer"
                         title="Open in Google Maps"
                     >
-                        <IoNavigateOutline className="text-xl text-blue-600" />
+                        <IoNavigateOutline className="text-lg text-blue-600" />
                     </button>
                 )}
             </div>
 
             {/* ── Bottom sliding panel (floats over map) ── */}
-            <div className="absolute bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-[0_-8px_32px_rgba(0,0,0,0.12)] px-5 pt-4 pb-6 space-y-3">
+            <div className="absolute bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md rounded-t-3xl shadow-[0_-8px_32px_rgba(0,0,0,0.12)] border-t border-slate-100 px-4 pt-2.5 pb-4 space-y-2.5 max-w-md mx-auto">
+                {/* Drag Handle */}
+                <div className="w-9 h-1 bg-slate-200 rounded-full mx-auto" />
 
-                {/* Drag pill */}
-                <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-1" />
-
-                {/* ETA Card */}
-                <div className="bg-gradient-to-r from-[#0A84FF] to-blue-500 rounded-2xl px-4 py-3.5 text-white flex items-center justify-between shadow-lg shadow-blue-500/25 border border-blue-400">
-                    <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-blue-100 flex items-center gap-1.5 opacity-90">
-                            <IoTimeOutline className="text-sm" /> Estimated Arrival Time
-                        </span>
-                        <div className="flex items-baseline gap-2 mt-1">
-                            <span className="text-3xl font-black">{etaMinutes} {etaMinutes !== "--" ? <span className="text-lg">mins</span> : ""}</span>
-                            <span className="text-[10px] text-blue-50 font-bold bg-black/15 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-inner tracking-wide">
-                                {distanceKm !== "--" ? `${distanceKm} km` : "Calculating..."}
-                            </span>
+                {/* Compact ETA & Status Banner */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl px-3.5 py-2.5 text-white flex items-center justify-between shadow-xs">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center backdrop-blur-xs">
+                            <IoTimeOutline className="text-lg text-white" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-blue-100 uppercase tracking-wider">Estimated Arrival</p>
+                            <div className="flex items-baseline gap-1.5 leading-none mt-0.5">
+                                <span className="text-xl font-black">{etaMinutes} {etaMinutes !== "--" ? "mins" : ""}</span>
+                                {distanceKm !== "--" && (
+                                    <span className="text-[11px] font-semibold text-blue-100/90">({distanceKm} km)</span>
+                                )}
+                            </div>
                         </div>
                     </div>
-                    <div className="bg-white/20 px-3.5 py-2.5 rounded-xl border border-white/30 text-center backdrop-blur-md shadow-sm">
-                        <span className="text-[9px] font-extrabold uppercase tracking-widest block text-blue-50 mb-0.5 opacity-90">Status</span>
-                        <span className="text-xs font-black text-white flex items-center justify-center gap-1">En Route 🚗</span>
+
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/15 rounded-lg border border-white/20 backdrop-blur-xs">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span className="text-xs font-bold text-white">En Route</span>
                     </div>
                 </div>
 
-                {/* Start OTP Box */}
+                {/* Start OTP Pill (User only) */}
                 {role === "User" && startOtp && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-amber-500 text-white rounded-xl">
-                                <IoKeyOutline className="text-lg" />
-                            </div>
-                            <div>
-                                <span className="text-[10px] font-extrabold uppercase text-amber-800 block tracking-wider">Start Survey OTP</span>
-                                <span className="text-xl font-black text-amber-950 tracking-widest font-mono">{startOtp}</span>
-                            </div>
+                    <div className="bg-amber-50/90 border border-amber-200/90 rounded-xl px-3 py-2 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <IoKeyOutline className="text-base text-amber-600" />
+                            <span className="text-xs font-bold text-amber-900">Start OTP:</span>
+                            <span className="text-sm font-black text-amber-950 tracking-wider font-mono">{startOtp}</span>
                         </div>
                         <button
                             onClick={handleCopyOTP}
-                            className="px-3 py-2 bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
+                            className="px-2.5 py-1 bg-amber-200/60 hover:bg-amber-200 text-amber-900 font-bold text-xs rounded-lg flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
                         >
-                            <IoCopyOutline className="text-sm" /> Copy
+                            <IoCopyOutline className="text-xs" /> Copy
                         </button>
                     </div>
                 )}
 
-                {/* Expert Card + Actions */}
-                <div className="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.04)] flex items-center justify-between hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-lg shadow-inner ring-2 ring-blue-50">
+                {/* Expert Info & Call/WhatsApp Row */}
+                <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-200/80 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
                             {role === "User" ? expertName.charAt(0) : (booking?.user?.name?.charAt(0) || "C")}
                         </div>
-                        <div>
-                            <h4 className="text-sm font-bold text-slate-800 leading-tight">
+                        <div className="min-w-0">
+                            <h4 className="text-xs font-bold text-slate-800 truncate leading-snug">
                                 {role === "User" ? expertName : booking?.user?.name || "Customer"}
                             </h4>
-                            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                            <p className="text-[11px] text-slate-500 font-medium truncate">
                                 {role === "User" ? expertCategory : "Customer"}
                             </p>
                         </div>
                     </div>
-                    <div className="flex gap-2.5 pr-1">
+
+                    <div className="flex items-center gap-2 shrink-0">
                         <a
                             href={`tel:${role === "User" ? expertPhone : customerPhone}`}
-                            className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-blue-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all shadow-sm active:scale-95"
+                            className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all shadow-2xs active:scale-95"
+                            title="Call"
                         >
-                            <IoCallOutline className="text-lg" />
+                            <IoCallOutline className="text-base" />
                         </a>
                         <a
                             href={`https://wa.me/91${(role === "User" ? expertPhone : customerPhone)?.replace(/\D/g, "")}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 hover:bg-emerald-100 hover:border-emerald-300 hover:text-emerald-700 transition-all shadow-sm active:scale-95"
+                            className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 hover:bg-emerald-100 transition-all shadow-2xs active:scale-95"
+                            title="WhatsApp"
                         >
-                            <IoLogoWhatsapp className="text-xl" />
+                            <IoLogoWhatsapp className="text-base" />
                         </a>
                     </div>
                 </div>
 
-                <p className="text-[11px] text-slate-400 text-center font-medium flex items-center justify-center gap-1.5 pb-1 mt-2">
+                {/* Footer Tagline */}
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 font-medium pt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Live GPS tracking securely powered by JalaDhaara
-                </p>
+                    <span>Live GPS tracking by JalaDhar</span>
+                </div>
             </div>
         </div>
     );
