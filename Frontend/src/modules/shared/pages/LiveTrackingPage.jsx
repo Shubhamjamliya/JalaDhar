@@ -204,6 +204,33 @@ export default function LiveTrackingPage({ role = "User" }) {
         if ((role !== "Vendor" && role !== "Expert") || !socket || !bookingId) return;
         if (!("geolocation" in navigator)) return;
 
+        const emitCurrentGPS = () => {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude: lat, longitude: lng, speed, heading } = pos.coords;
+                    socket.emit("vendor_location_update", {
+                        bookingId,
+                        lat, lng,
+                        speed: speed ? Math.round(speed * 3.6) : 30,
+                        heading: heading || 0,
+                        userId: booking?.user?._id,
+                    });
+                    const newLoc = { lat, lng };
+                    setExpertLocation(newLoc);
+                    setIsLive(true);
+                    
+                    if (mapRef.current) {
+                        mapRef.current.panTo(newLoc);
+                    }
+                },
+                (err) => console.warn("[LiveTracking] GPS 5s error:", err),
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+            );
+        };
+
+        emitCurrentGPS();
+        const intervalId = setInterval(emitCurrentGPS, 5000);
+
         const watchId = navigator.geolocation.watchPosition(
             (pos) => {
                 const { latitude: lat, longitude: lng, speed, heading } = pos.coords;
@@ -217,21 +244,15 @@ export default function LiveTrackingPage({ role = "User" }) {
                 const newLoc = { lat, lng };
                 setExpertLocation(newLoc);
                 setIsLive(true);
-                
-                if (mapRef.current) {
-                    mapRef.current.panTo(newLoc);
-                }
-                
-                // Automatically fetch/update road route for the expert themselves
-                if (destination && destination.lat) {
-                    fetchRoadRouteAndETA(newLoc, destination);
-                }
             },
             (err) => console.warn("[LiveTracking] GPS error:", err),
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
         );
 
-        return () => navigator.geolocation.clearWatch(watchId);
+        return () => {
+            clearInterval(intervalId);
+            navigator.geolocation.clearWatch(watchId);
+        };
     }, [role, socket, bookingId, booking]);
 
     const handleCopyOTP = () => {

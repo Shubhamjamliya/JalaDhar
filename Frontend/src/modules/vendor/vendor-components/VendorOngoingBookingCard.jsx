@@ -72,6 +72,34 @@ export default function VendorOngoingBookingCard({
         // Join the booking tracking room as the sender too
         socket.emit("join_booking_tracking", bookingId);
 
+        // Function to fetch and emit current position via Socket
+        const emitCurrentLocation = () => {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude, longitude, speed, heading } = pos.coords;
+                    const payload = {
+                        bookingId,
+                        lat: latitude,
+                        lng: longitude,
+                        speed: speed ? Math.round(speed * 3.6) : 30,
+                        heading: heading || 0,
+                        userId,
+                    };
+                    socket.emit("vendor_location_update", payload);
+                    console.log(`[VendorCard] 🚗 Emitted 5s location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+                },
+                (err) => console.warn("[VendorCard] GPS error:", err.message),
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+            );
+        };
+
+        // 1. Emit location immediately when journey starts
+        emitCurrentLocation();
+
+        // 2. Interval loop — emit location every 5 seconds guaranteed
+        const intervalId = setInterval(emitCurrentLocation, 5000);
+
+        // 3. Geolocation watch — emit immediately on motion changes
         gpsWatchIdRef.current = navigator.geolocation.watchPosition(
             (pos) => {
                 const { latitude, longitude, speed, heading } = pos.coords;
@@ -79,18 +107,18 @@ export default function VendorOngoingBookingCard({
                     bookingId,
                     lat: latitude,
                     lng: longitude,
-                    speed: speed ? Math.round(speed * 3.6) : 0,
+                    speed: speed ? Math.round(speed * 3.6) : 30,
                     heading: heading || 0,
                     userId,
                 };
                 socket.emit("vendor_location_update", payload);
-                console.log(`[VendorCard] 🚗 Emitted location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
             },
-            (err) => console.warn("[VendorCard] GPS error:", err.message),
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+            (err) => console.warn("[VendorCard] Watch GPS error:", err.message),
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
         );
 
         return () => {
+            clearInterval(intervalId);
             if (gpsWatchIdRef.current !== null) {
                 navigator.geolocation.clearWatch(gpsWatchIdRef.current);
                 gpsWatchIdRef.current = null;
