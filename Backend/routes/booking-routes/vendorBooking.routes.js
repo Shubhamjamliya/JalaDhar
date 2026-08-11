@@ -10,6 +10,7 @@ const {
   markAsEnRoute,
   verifyStartSurveyOTP,
   verifyEndSurveyOTP,
+  resendSurveyOTP,
   markAsVisited,
   markVisitedAndUploadReport,
   markAsCompleted,
@@ -90,6 +91,7 @@ router.patch('/:bookingId/cancel', authenticate, isVendor, cancelBooking);
 router.patch('/:bookingId/en-route', authenticate, isVendor, markAsEnRoute);
 router.post('/:bookingId/verify-start-otp', authenticate, isVendor, verifyStartSurveyOTP);
 router.post('/:bookingId/verify-end-otp', authenticate, isVendor, verifyEndSurveyOTP);
+router.post('/:bookingId/resend-otp', authenticate, isVendor, resendSurveyOTP);
 router.patch('/:bookingId/visited', authenticate, isVendor, markAsVisited);
 router.patch('/:bookingId/completed', authenticate, isVendor, markAsCompleted);
 router.post('/:bookingId/travel-charges', authenticate, isVendor, travelChargesValidation, requestTravelCharges);

@@ -713,6 +713,67 @@ const verifyEndSurveyOTP = async (req, res) => {
 };
 
 /**
+ * Resend Survey OTP (Start or End) via SMS & WhatsApp
+ */
+const resendSurveyOTP = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { type = 'end' } = req.body; // 'start' or 'end'
+
+    const booking = await Booking.findById(bookingId).populate('user', 'name phone email');
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (!booking.otp) {
+      booking.otp = {};
+    }
+
+    let otpCode = '';
+    const isStart = type === 'start';
+
+    if (isStart) {
+      if (!booking.otp.startSurvey) booking.otp.startSurvey = {};
+      if (!booking.otp.startSurvey.code) {
+        booking.otp.startSurvey.code = Math.floor(100000 + Math.random() * 900000).toString();
+      }
+      otpCode = booking.otp.startSurvey.code;
+    } else {
+      if (!booking.otp.endSurvey) booking.otp.endSurvey = {};
+      if (!booking.otp.endSurvey.code) {
+        booking.otp.endSurvey.code = Math.floor(100000 + Math.random() * 900000).toString();
+      }
+      otpCode = booking.otp.endSurvey.code;
+    }
+
+    await booking.save();
+
+    // Dispatch via SMS & Multi-channel
+    const userPhone = booking.user?.phone || booking.phone;
+    const userEmail = booking.user?.email || booking.email;
+    const userName = booking.user?.name || booking.userName || 'Customer';
+
+    if (userPhone || userEmail) {
+      dispatchSurveyOTP({
+        userPhone,
+        userEmail,
+        userName,
+        otp: otpCode,
+        type: isStart ? 'start' : 'end',
+      }).catch(err => console.error('[resendSurveyOTP] Error dispatching survey OTP:', err));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${isStart ? 'Start' : 'End'} Survey OTP resent to customer successfully via SMS & WhatsApp.`
+    });
+  } catch (error) {
+    console.error('Resend Survey OTP error:', error);
+    res.status(500).json({ success: false, message: 'Failed to resend OTP', error: error.message });
+  }
+};
+
+/**
  * Mark booking as visited and upload report
  */
 const markVisitedAndUploadReport = async (req, res) => {
@@ -1336,6 +1397,7 @@ module.exports = {
   markAsEnRoute,
   verifyStartSurveyOTP,
   verifyEndSurveyOTP,
+  resendSurveyOTP,
   markAsVisited,
   markVisitedAndUploadReport,
   markAsCompleted,

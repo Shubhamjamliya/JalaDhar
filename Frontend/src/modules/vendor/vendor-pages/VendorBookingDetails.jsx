@@ -24,7 +24,7 @@ import {
     IoLogoWhatsapp,
     IoCameraOutline
 } from "react-icons/io5";
-import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice, verifyStartOTP, verifyEndOTP } from "../../../services/vendorApi";
+import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice, verifyStartOTP, verifyEndOTP, resendSurveyOTP } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -84,8 +84,25 @@ export default function VendorBookingDetails() {
     const [showMapPicker, setShowMapPicker] = useState(false);
     const [showStartOTPModal, setShowStartOTPModal] = useState(false);
     const [showEndOTPModal, setShowEndOTPModal] = useState(false);
-    const [otpInput, setOtpInput] = useState("");
     const [verifyingOTP, setVerifyingOTP] = useState(false);
+    const [resendingOTP, setResendingOTP] = useState(false);
+
+    const handleResendOTP = async (type) => {
+        if (!bookingId) return;
+        try {
+            setResendingOTP(true);
+            const response = await resendSurveyOTP(bookingId, type);
+            if (response.success) {
+                toast.showSuccess(response.message || "Survey OTP resent to customer successfully!");
+            } else {
+                toast.showError(response.message || "Failed to resend OTP");
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to resend OTP");
+        } finally {
+            setResendingOTP(false);
+        }
+    };
 
     // Lock body scroll when modals are open
     useEffect(() => {
@@ -2272,6 +2289,8 @@ export default function VendorBookingDetails() {
                 isOpen={showStartOTPModal}
                 onClose={() => setShowStartOTPModal(false)}
                 onSubmit={handleVerifyStartOTP}
+                onResend={() => handleResendOTP("start")}
+                resending={resendingOTP}
                 title="Start Survey OTP"
                 message="Please ask the customer for the Start Survey OTP to begin the survey."
                 submitText="Verify OTP"
@@ -2282,6 +2301,8 @@ export default function VendorBookingDetails() {
                 isOpen={showEndOTPModal}
                 onClose={() => setShowEndOTPModal(false)}
                 onSubmit={handleVerifyEndOTP}
+                onResend={() => handleResendOTP("end")}
+                resending={resendingOTP}
                 title="End Survey OTP"
                 message="Please ask the customer for the End Survey OTP to complete the survey."
                 submitText="Verify OTP"

@@ -149,6 +149,17 @@ export const verifyEndOTP = async (bookingId, otp) => {
 };
 
 /**
+ * Resend Survey OTP (Start or End) via SMS & WhatsApp
+ * @param {string} bookingId 
+ * @param {string} type - 'start' or 'end'
+ * @returns {Promise}
+ */
+export const resendSurveyOTP = async (bookingId, type = 'end') => {
+  const response = await api.post(`/vendors/bookings/${bookingId}/resend-otp`, { type });
+  return response.data;
+};
+
+/**
  * Mark booking as visited
  * @param {string} bookingId 
  * @returns {Promise}

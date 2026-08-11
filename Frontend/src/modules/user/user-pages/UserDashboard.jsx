@@ -737,6 +737,36 @@ export default function UserDashboard() {
                                 </div>
 
                                 <div className="space-y-3">
+                                    {/* Start Survey OTP Display Box */}
+                                    {(activeBooking.status?.toUpperCase() === 'EN_ROUTE' || activeBooking.bookingData?.status === 'EN_ROUTE') && !activeBooking.bookingData?.otp?.startSurvey?.verified && (
+                                        <div className="bg-indigo-50/80 rounded-xl p-3.5 border border-indigo-200/80 flex items-center justify-between gap-3">
+                                            <div>
+                                                <span className="text-[11px] font-black uppercase text-indigo-900 block tracking-wide">Start Survey OTP</span>
+                                                <span className="text-xs text-indigo-700 font-semibold">Share with expert upon arrival</span>
+                                            </div>
+                                            <div className="bg-white px-3 py-1.5 rounded-lg border border-indigo-300 shadow-xs">
+                                                <span className="text-xl font-black text-indigo-600 tracking-widest">
+                                                    {activeBooking.bookingData?.otp?.startSurvey?.code || '------'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* End Survey OTP Display Box */}
+                                    {(activeBooking.status?.toUpperCase() === 'VISITED' || activeBooking.bookingData?.status === 'VISITED') && !activeBooking.bookingData?.otp?.endSurvey?.verified && (
+                                        <div className="bg-emerald-50/80 rounded-xl p-3.5 border border-emerald-200/80 flex items-center justify-between gap-3">
+                                            <div>
+                                                <span className="text-[11px] font-black uppercase text-emerald-900 block tracking-wide">End Survey OTP</span>
+                                                <span className="text-xs text-emerald-700 font-semibold">Share with expert to confirm completion</span>
+                                            </div>
+                                            <div className="bg-white px-3 py-1.5 rounded-lg border border-emerald-300 shadow-xs">
+                                                <span className="text-xl font-black text-emerald-600 tracking-widest">
+                                                    {activeBooking.bookingData?.otp?.endSurvey?.code || '------'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {(activeBooking.status === 'awaiting_payment' || activeBooking.status === 'report_uploaded') && !activeBooking.bookingData?.payment?.remainingPaid && (
                                         <button
                                             onClick={() => navigate(`/user/booking/${activeBooking.id}/payment`)}

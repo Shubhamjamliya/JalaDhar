@@ -6,6 +6,7 @@ import {
     rejectBooking,
     verifyStartOTP,
     verifyEndOTP,
+    resendSurveyOTP,
 } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -90,6 +91,24 @@ export default function VendorRequests() {
     const [showStartOTPModal, setShowStartOTPModal] = useState(false);
     const [showEndOTPModal, setShowEndOTPModal] = useState(false);
     const [verifyingOTP, setVerifyingOTP] = useState(false);
+    const [resendingOTP, setResendingOTP] = useState(false);
+
+    const handleResendOTP = async (type) => {
+        if (!selectedBookingId) return;
+        try {
+            setResendingOTP(true);
+            const response = await resendSurveyOTP(selectedBookingId, type);
+            if (response.success) {
+                toast.showSuccess(response.message || "Survey OTP resent to customer successfully!");
+            } else {
+                toast.showError(response.message || "Failed to resend OTP");
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to resend OTP");
+        } finally {
+            setResendingOTP(false);
+        }
+    };
     const [selectedBookingId, setSelectedBookingId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState("");
     const rejectionReasonRef = useRef("");
@@ -926,6 +945,8 @@ export default function VendorRequests() {
                     setSelectedBookingId(null);
                 }}
                 onSubmit={handleVerifyStartOTP}
+                onResend={() => handleResendOTP("start")}
+                resending={resendingOTP}
                 title="Start Survey OTP"
                 message="Please ask the customer for the Start Survey OTP to begin the survey."
                 submitText="Verify OTP"
@@ -940,6 +961,8 @@ export default function VendorRequests() {
                     setSelectedBookingId(null);
                 }}
                 onSubmit={handleVerifyEndOTP}
+                onResend={() => handleResendOTP("end")}
+                resending={resendingOTP}
                 title="End Survey OTP"
                 message="Please ask the customer for the End Survey OTP to complete the survey."
                 submitText="Verify OTP"

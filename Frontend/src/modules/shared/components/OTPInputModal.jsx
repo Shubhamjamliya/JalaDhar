@@ -5,6 +5,8 @@ export default function OTPInputModal({
     isOpen,
     onClose,
     onSubmit,
+    onResend,
+    resending = false,
     title = "Enter OTP",
     message = "Please enter the 6-digit OTP code.",
     submitText = "Verify",
@@ -13,12 +15,29 @@ export default function OTPInputModal({
 }) {
     const [otp, setOtp] = useState(new Array(length).fill(""));
     const [error, setError] = useState("");
+    const [resendTimer, setResendTimer] = useState(30);
+    const [isResendDisabled, setIsResendDisabled] = useState(true);
     const inputRefs = useRef([]);
 
     useEffect(() => {
         if (isOpen) {
             setOtp(new Array(length).fill(""));
             setError("");
+            setResendTimer(30);
+            setIsResendDisabled(true);
+
+            // Cooldown timer for resending OTP
+            const timer = setInterval(() => {
+                setResendTimer((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        setIsResendDisabled(false);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+
             // Focus first input automatically
             setTimeout(() => {
                 if (inputRefs.current[0]) {
@@ -27,12 +46,29 @@ export default function OTPInputModal({
             }, 100);
             
             // Lock background scroll
+            const origBody = document.body.style.overflow;
+            const origHtml = document.documentElement.style.overflow;
             document.body.style.overflow = "hidden";
-        } else {
-            document.body.style.overflow = "unset";
+            document.documentElement.style.overflow = "hidden";
+
+            return () => {
+                clearInterval(timer);
+                document.body.style.overflow = origBody;
+                document.documentElement.style.overflow = origHtml;
+            };
         }
-        return () => { document.body.style.overflow = "unset"; };
     }, [isOpen, length]);
+
+    const handleResendClick = async () => {
+        if (isResendDisabled || resending || !onResend) return;
+        setResendTimer(30);
+        setIsResendDisabled(true);
+        try {
+            await onResend();
+        } catch (err) {
+            console.error("Resend error:", err);
+        }
+    };
 
     const handleChange = (e, index) => {
         const value = e.target.value;
@@ -148,6 +184,28 @@ export default function OTPInputModal({
                             <IoAlertCircleOutline className="text-sm shrink-0" />
                             <span>{error}</span>
                         </p>
+                    )}
+
+                    {onResend && (
+                        <div className="pt-2 text-center text-xs">
+                            <span className="text-slate-500 font-medium">Didn't receive OTP? </span>
+                            <button
+                                type="button"
+                                onClick={handleResendClick}
+                                disabled={isResendDisabled || resending}
+                                className={`font-extrabold transition-colors ${
+                                    isResendDisabled || resending
+                                        ? "text-slate-400 cursor-not-allowed"
+                                        : "text-[#0A84FF] hover:underline cursor-pointer"
+                                }`}
+                            >
+                                {resending
+                                    ? "Resending..."
+                                    : isResendDisabled
+                                    ? `Resend OTP (${resendTimer}s)`
+                                    : "Resend OTP via SMS & WhatsApp"}
+                            </button>
+                        </div>
                     )}
                 </div>
 
