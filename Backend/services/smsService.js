@@ -96,9 +96,24 @@ const sendSurveyReportSMS = async ({ phone, bookingId, expertName }) => {
   return await sendSMS({ phone, text });
 };
 
+/**
+ * Send Survey OTP (Start or End Survey) via SMS India
+ */
+const sendSurveyOTPSMS = async ({ phone, otp, stage = 'Start', bookingId, vendorName = 'your expert' }) => {
+  const shortId = bookingId ? bookingId.toString().slice(-8) : '';
+  const actionText = stage === 'Start'
+    ? `to share with expert ${vendorName} upon arrival on site to begin your survey.`
+    : `to share with expert ${vendorName} to confirm completion of your site survey.`;
+
+  const text = `Your Jaladhaara ${stage} Survey OTP for Booking ID: ${shortId} is: ${otp}. Please provide this code ${actionText}`;
+  return await sendSMS({ phone, text });
+};
+
 module.exports = {
   sendSMS,
   sendSMSOTP,
   sendBookingConfirmationSMS,
-  sendSurveyReportSMS
+  sendSurveyReportSMS,
+  sendSurveyOTPSMS
 };
+

@@ -612,9 +612,9 @@ export default function UserDashboard() {
                 {t('quickAccess', 'Quick Access')}
             </h2>
             <div className="grid grid-cols-5 gap-1 mb-6 px-1">
-                {/* Request Status */}
+                {/* Booking Status */}
                 <div
-                    onClick={() => handleRequestStatusClick('ALL')}
+                    onClick={() => navigate("/user/status")}
                     className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-[0.95] transition-transform"
                 >
                     <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-blue-50 to-blue-200 shadow-[0px_2px_8px_rgba(59,130,246,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(59,130,246,0.3)] transition-all overflow-hidden shrink-0 border border-blue-100/50">
@@ -628,7 +628,17 @@ export default function UserDashboard() {
 
                 {/* Current Booking */}
                 <div
-                    onClick={() => navigate("/user/status")}
+                    onClick={() => {
+                        const activeBooking = requestStatuses.find(r =>
+                            !['cancelled', 'rejected', 'failed'].includes(r.status?.toLowerCase() || '') &&
+                            (!['completed', 'success'].includes(r.status?.toLowerCase() || '') || r.hasReport)
+                        );
+                        if (activeBooking?.id || activeBooking?._id) {
+                            navigate(`/user/booking/${activeBooking.id || activeBooking._id}`);
+                        } else {
+                            navigate("/user/status");
+                        }
+                    }}
                     className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-[0.95] transition-transform"
                 >
                     <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-emerald-50 to-emerald-200 shadow-[0px_2px_8px_rgba(16,185,129,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(16,185,129,0.3)] transition-all overflow-hidden shrink-0 border border-emerald-100/50">
@@ -641,9 +651,9 @@ export default function UserDashboard() {
                     </span>
                 </div>
 
-                {/* Pending Requests */}
+                {/* Pending Payments */}
                 <div
-                    onClick={() => handleRequestStatusClick('PENDING_PAYMENT')}
+                    onClick={() => navigate("/user/payments-invoices")}
                     className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-[0.95] transition-transform"
                 >
                     <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-amber-50 to-amber-200 shadow-[0px_2px_8px_rgba(245,158,11,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(245,158,11,0.3)] transition-all shrink-0 border border-amber-100/50">
@@ -660,7 +670,7 @@ export default function UserDashboard() {
 
                 {/* Survey Reports */}
                 <div
-                    onClick={() => handleRequestStatusClick('REPORTS')}
+                    onClick={() => navigate("/user/survey-reports")}
                     className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-[0.95] transition-transform"
                 >
                     <div className={`relative w-12 h-12 rounded-full bg-gradient-to-br from-indigo-50 to-indigo-200 shadow-[0px_2px_8px_rgba(79,70,229,0.2)] flex items-center justify-center hover:shadow-[0px_4px_12px_rgba(79,70,229,0.3)] transition-all overflow-hidden shrink-0 border border-indigo-100/50 ${requestStatuses.some(r => r.hasReport && r.bookingData?.payment?.remainingPaid) ? (requestStatuses.find(r => r.hasReport && r.bookingData?.payment?.remainingPaid)?.waterFound ? 'animate-blink-green' : 'animate-blink-red') : ''}`}>

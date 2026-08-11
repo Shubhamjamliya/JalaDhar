@@ -1,5 +1,5 @@
 const { sendEmail, sendOTPEmail, sendPaymentConfirmationEmail } = require('./emailService');
-const { sendSMS, sendSMSOTP, sendBookingConfirmationSMS, sendSurveyReportSMS } = require('./smsService');
+const { sendSMS, sendSMSOTP, sendBookingConfirmationSMS, sendSurveyReportSMS, sendSurveyOTPSMS } = require('./smsService');
 const { sendWhatsAppMessage, sendWhatsAppOTP, sendWhatsAppBookingConfirmation, sendWhatsAppSurveyReportAlert } = require('./whatsappService');
 const { sendNotification } = require('./notificationService');
 
@@ -37,6 +37,34 @@ const dispatchOTP = async ({ email, phone, name, otp, type = 'verification' }) =
     tasks.push(
       sendWhatsAppOTP({ phone, otp, name })
         .catch(err => console.error('WhatsApp OTP dispatch error:', err))
+    );
+  }
+
+  const results = await Promise.allSettled(tasks);
+  return { success: true, dispatches: results };
+};
+
+/**
+ * Send Survey OTP (Start or End) across SMS Text and WhatsApp concurrently
+ */
+const dispatchSurveyOTP = async ({ phone, email, name, otp, stage = 'Start', bookingId, vendorName }) => {
+  console.log(`🚀 [Multi-Channel Notification] Dispatching ${stage} Survey OTP:`, { phone, otp, bookingId });
+
+  const tasks = [];
+
+  // 1. SMS Text Channel
+  if (phone) {
+    tasks.push(
+      sendSurveyOTPSMS({ phone, otp, stage, bookingId, vendorName })
+        .catch(err => console.error(`SMS ${stage} Survey OTP dispatch error:`, err))
+    );
+  }
+
+  // 2. WhatsApp Channel
+  if (phone) {
+    tasks.push(
+      sendWhatsAppOTP({ phone, otp, name: name || 'Valued Customer' })
+        .catch(err => console.error(`WhatsApp ${stage} Survey OTP dispatch error:`, err))
     );
   }
 
@@ -150,6 +178,7 @@ const dispatchSurveyReportNotification = async ({ user, booking, expertName, rep
 
 module.exports = {
   dispatchOTP,
+  dispatchSurveyOTP,
   dispatchBookingConfirmation,
   dispatchSurveyReportNotification
 };

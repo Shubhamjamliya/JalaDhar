@@ -5,6 +5,7 @@ const { uploadToCloudinary } = require('../../services/cloudinaryService');
 const { Readable } = require('stream');
 const { sendBookingStatusUpdateEmail } = require('../../services/emailService');
 const { sendNotification } = require('../../services/notificationService');
+const { dispatchSurveyOTP } = require('../../services/multiChannelNotificationService');
 const { autoReassignBooking } = require('../../services/bookingReassignmentService');
 const { creditToVendorWallet, retryFailedCredit } = require('../../services/walletService');
 
@@ -361,7 +362,7 @@ const markAsEnRoute = async (req, res) => {
       vendor: vendorId,
       vendorStatus: BOOKING_STATUS.ACCEPTED
     })
-      .populate('user', 'name email')
+      .populate('user', 'name email phone')
       .populate('vendor', 'name designation companyName');
 
     if (!booking) {
@@ -422,6 +423,19 @@ const markAsEnRoute = async (req, res) => {
           bookingId: booking._id.toString()
         }
       }, io);
+
+      // Dispatch Start Survey OTP via SMS & Multi-channel
+      if (booking.user?.phone || booking.user?.email) {
+        dispatchSurveyOTP({
+          phone: booking.user.phone,
+          email: booking.user.email,
+          name: booking.user.name,
+          otp: booking.otp.startSurvey.code,
+          stage: 'Start',
+          bookingId: booking._id,
+          vendorName: booking.vendor?.name || 'your expert'
+        }).catch(err => console.error('[markAsEnRoute] Error dispatching Start Survey OTP:', err));
+      }
     } catch (notifErr) {
       console.error('[markAsEnRoute] Error creating notification:', notifErr);
     }
@@ -585,7 +599,9 @@ const verifyStartSurveyOTP = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       vendor: vendorId
-    }).populate('user', 'name email');
+    })
+      .populate('user', 'name email phone')
+      .populate('vendor', 'name designation companyName');
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -617,6 +633,19 @@ const verifyStartSurveyOTP = async (req, res) => {
     booking.visitedAt = new Date();
 
     await booking.save();
+
+    // Dispatch End Survey OTP via SMS & Multi-channel when survey starts
+    if (booking.otp?.endSurvey?.code && (booking.user?.phone || booking.user?.email)) {
+      dispatchSurveyOTP({
+        phone: booking.user.phone,
+        email: booking.user.email,
+        name: booking.user.name,
+        otp: booking.otp.endSurvey.code,
+        stage: 'End',
+        bookingId: booking._id,
+        vendorName: booking.vendor?.name || 'your expert'
+      }).catch(err => console.error('[verifyStartSurveyOTP] Error dispatching End Survey OTP:', err));
+    }
 
     res.json({
       success: true,
