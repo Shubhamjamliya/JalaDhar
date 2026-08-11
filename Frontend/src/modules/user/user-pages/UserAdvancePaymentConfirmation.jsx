@@ -10,6 +10,7 @@ import {
     IoConstructOutline,
     IoDocumentTextOutline,
     IoCashOutline,
+    IoShieldCheckmarkOutline,
 } from "react-icons/io5";
 import { verifyAdvancePayment, cancelBooking, getBookingDetails } from "../../../services/bookingApi";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -32,6 +33,7 @@ export default function UserAdvancePaymentConfirmation() {
     const [fetchedPaymentConfig, setFetchedPaymentConfig] = useState(null);
     const [fullBooking, setFullBooking] = useState(null);
     const [activePolicy, setActivePolicy] = useState(null);
+    const [isAcknowledgementChecked, setIsAcknowledgementChecked] = useState(false);
 
     // Get booking data from location state or recover from URL search params or localStorage
     const searchParams = new URLSearchParams(location.search);
@@ -119,6 +121,11 @@ export default function UserAdvancePaymentConfirmation() {
     }, [booking, bookingId, fetchingBooking, navigate]);
 
     const handlePayment = async () => {
+        if (!isAcknowledgementChecked) {
+            toast.showInfo("Please accept the Service Acknowledgement checkbox before proceeding to payment.");
+            return;
+        }
+
         try {
             setLoading(true);
             setError("");
@@ -665,12 +672,36 @@ export default function UserAdvancePaymentConfirmation() {
                 </div>
             )}
 
+            {/* Phase 5 – Service Acknowledgement (Mandatory Before Payment) */}
+            <div className="bg-amber-50/90 border border-amber-200 rounded-[12px] p-5 mb-6 shadow-2xs space-y-3">
+                <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs uppercase tracking-wider">
+                    <IoShieldCheckmarkOutline className="text-lg text-amber-600" />
+                    <span>Booking Confirmation &amp; Service Acknowledgement</span>
+                </div>
+                
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                        type="checkbox"
+                        checked={isAcknowledgementChecked}
+                        onChange={(e) => setIsAcknowledgementChecked(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-amber-400 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
+                    />
+                    <span className="text-xs text-amber-950 font-medium leading-relaxed">
+                        I understand that groundwater surveys are based on scientific and professional assessment. Groundwater availability, borewell success, water yield, and water quality depend on natural geological conditions and cannot be guaranteed.
+                    </span>
+                </label>
+            </div>
+
             {/* Payment Button */}
             <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
                 <button
                     onClick={handlePayment}
-                    disabled={loading}
-                    className="w-full bg-[#0A84FF] text-white py-4 rounded-[10px] font-semibold text-lg hover:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled={loading || !isAcknowledgementChecked}
+                    className={`w-full py-4 rounded-[10px] font-bold text-base transition-all flex items-center justify-center gap-2 ${
+                        isAcknowledgementChecked && !loading
+                            ? 'bg-[#0A84FF] hover:bg-[#005BBB] text-white cursor-pointer shadow-md active:scale-98'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300'
+                    }`}
                 >
                     {loading ? (
                         <>
