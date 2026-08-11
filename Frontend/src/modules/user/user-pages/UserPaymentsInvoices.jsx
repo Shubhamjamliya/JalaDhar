@@ -168,10 +168,10 @@ export default function UserPaymentsInvoices() {
                     </div>
 
                     {/* Filter Pills */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    <div className="flex items-center gap-2 overflow-x-auto p-1 no-scrollbar -mx-1">
                         <button
                             onClick={() => setStatusFilter('ALL')}
-                            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                            className={`shrink-0 px-4 py-2 rounded-xl font-bold text-xs transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                                 statusFilter === 'ALL'
                                     ? 'bg-emerald-600 text-white shadow-sm'
                                     : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
@@ -185,7 +185,7 @@ export default function UserPaymentsInvoices() {
 
                         <button
                             onClick={() => setStatusFilter('ADVANCE_PAID')}
-                            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                            className={`shrink-0 px-4 py-2 rounded-xl font-bold text-xs transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                                 statusFilter === 'ADVANCE_PAID'
                                     ? 'bg-amber-600 text-white shadow-sm'
                                     : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
@@ -199,14 +199,14 @@ export default function UserPaymentsInvoices() {
 
                         <button
                             onClick={() => setStatusFilter('FULLY_PAID')}
-                            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                            className={`shrink-0 px-4 py-2 rounded-xl font-bold text-xs transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                                 statusFilter === 'FULLY_PAID'
                                     ? 'bg-green-600 text-white shadow-sm'
                                     : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                             }`}
                         >
                             <span>Fully Paid</span>
-                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === 'FULLY_PAID' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                            <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === 'FULLY_PAID' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
                                 {fullyPaidCount}
                             </span>
                         </button>
@@ -225,10 +225,25 @@ export default function UserPaymentsInvoices() {
                         <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-500 text-2xl">
                             <IoReceiptOutline />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-800 mb-1">No Invoices Found</h3>
+                        <h3 className="text-lg font-bold text-gray-800 mb-1">
+                            {paidBookings.length > 0 ? "No Matching Invoices Found" : "No Invoices Found"}
+                        </h3>
                         <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
-                            Invoices and official receipts are generated automatically once payment transactions are completed.
+                            {paidBookings.length > 0
+                                ? "No invoices match your current filter or search criteria."
+                                : "Invoices and official receipts are generated automatically once payment transactions are completed."}
                         </p>
+                        {paidBookings.length > 0 && (
+                            <button
+                                onClick={() => {
+                                    setStatusFilter('ALL');
+                                    setSearchQuery('');
+                                }}
+                                className="px-6 py-2.5 bg-emerald-600 text-white font-semibold text-sm rounded-xl hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-200 cursor-pointer"
+                            >
+                                Show All Payments ({paidBookings.length})
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-4">
