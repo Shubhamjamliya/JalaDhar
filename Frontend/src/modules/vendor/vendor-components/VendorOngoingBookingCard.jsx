@@ -261,7 +261,7 @@ export default function VendorOngoingBookingCard({
                     {/* Verify Start OTP */}
                     {!isStartOtpVerified ? (
                         <button
-                            onClick={() => onVerifyStartOTP ? onVerifyStartOTP(booking) : navigate(`/vendor/bookings/${booking._id}`)}
+                            onClick={() => onVerifyStartOTP ? onVerifyStartOTP(booking) : navigate(`/vendor/bookings/${booking._id}`, { state: { openStartOTP: true } })}
                             className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                             <IoKeyOutline className="text-base" />
@@ -270,7 +270,7 @@ export default function VendorOngoingBookingCard({
                     ) : !isEndOtpVerified ? (
                         /* Verify End OTP */
                         <button
-                            onClick={() => onVerifyEndOTP ? onVerifyEndOTP(booking) : navigate(`/vendor/bookings/${booking._id}`)}
+                            onClick={() => onVerifyEndOTP ? onVerifyEndOTP(booking) : navigate(`/vendor/bookings/${booking._id}`, { state: { openEndOTP: true } })}
                             className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                             <IoKeyOutline className="text-base" />

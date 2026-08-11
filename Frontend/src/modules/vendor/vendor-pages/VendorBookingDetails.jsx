@@ -99,13 +99,18 @@ export default function VendorBookingDetails() {
         };
     }, [showCancelInput]);
 
-    // Load data on mount and when location/bookingId changes
+    // Reset stale booking data and handle auto-opening modals from navigation state
     useEffect(() => {
-        // Reset stale booking data immediately so previous booking's
-        // borewellResult images / data never show while new data loads
         setBooking(null);
         loadBookingDetails();
-    }, [bookingId, location.pathname]);
+        if (location.state?.openStartOTP) {
+            setShowStartOTPModal(true);
+            window.history.replaceState({}, document.title);
+        } else if (location.state?.openEndOTP) {
+            setShowEndOTPModal(true);
+            window.history.replaceState({}, document.title);
+        }
+    }, [bookingId, location.pathname, location.state]);
 
     // Refetch when page becomes visible (user switches tabs/windows)
     useEffect(() => {

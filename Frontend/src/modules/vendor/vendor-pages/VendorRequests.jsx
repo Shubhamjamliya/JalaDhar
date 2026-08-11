@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
     getVendorBookings,
     acceptBooking,
     rejectBooking,
+    verifyStartOTP,
+    verifyEndOTP,
 } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -13,6 +15,7 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal, { VENDOR_REJECTION_REASONS } from "../../shared/components/InputModal";
+import OTPInputModal from "../../shared/components/OTPInputModal";
 import VendorOngoingBookingCard from "../vendor-components/VendorOngoingBookingCard";
 import {
     IoNotificationsOutline,
@@ -31,9 +34,49 @@ import {
 export default function VendorRequests() {
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { vendor } = useVendorAuth();
     const { socket } = useNotifications();
-    const [activeTab, setActiveTab] = useState("New");
+
+    // Determine initial active tab from URL search params or location state or sessionStorage
+    const getInitialTab = () => {
+        const urlTab = searchParams.get("tab") || location.state?.tab;
+        if (urlTab) {
+            const normalized = urlTab.toLowerCase().replace(/_/g, " ");
+            if (normalized.includes("progress")) return "In Progress";
+            if (normalized.includes("complete")) return "Completed";
+            if (normalized.includes("history")) return "History";
+            if (normalized.includes("new") || normalized.includes("request")) return "New";
+        }
+        const savedTab = sessionStorage.getItem("vendor_active_tab");
+        return savedTab || "New";
+    };
+
+    const [activeTab, setActiveTabState] = useState(getInitialTab);
+
+    const setActiveTab = (tab) => {
+        setActiveTabState(tab);
+        sessionStorage.setItem("vendor_active_tab", tab);
+        setSearchParams({ tab: tab.toLowerCase().replace(/\s+/g, "_") }, { replace: true });
+    };
+
+    // Keep active tab in sync if URL search params or location state change
+    useEffect(() => {
+        const urlTab = searchParams.get("tab") || location.state?.tab;
+        if (urlTab) {
+            const normalized = urlTab.toLowerCase().replace(/_/g, " ");
+            let target = "New";
+            if (normalized.includes("progress")) target = "In Progress";
+            else if (normalized.includes("complete")) target = "Completed";
+            else if (normalized.includes("history")) target = "History";
+            else if (normalized.includes("new") || normalized.includes("request")) target = "New";
+
+            if (target !== activeTab) {
+                setActiveTabState(target);
+                sessionStorage.setItem("vendor_active_tab", target);
+            }
+        }
+    }, [searchParams, location.state]);
     const [newRequests, setNewRequests] = useState([]);
     const [confirmedRequests, setConfirmedRequests] = useState([]);
     const [completedRequests, setCompletedRequests] = useState([]);
@@ -44,12 +87,55 @@ export default function VendorRequests() {
     const [showAcceptScheduler, setShowAcceptScheduler] = useState(false);
     const [showRejectInput, setShowRejectInput] = useState(false);
     const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+    const [showStartOTPModal, setShowStartOTPModal] = useState(false);
+    const [showEndOTPModal, setShowEndOTPModal] = useState(false);
+    const [verifyingOTP, setVerifyingOTP] = useState(false);
     const [selectedBookingId, setSelectedBookingId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState("");
     const rejectionReasonRef = useRef("");
     const [acceptScheduleDate, setAcceptScheduleDate] = useState("");
     const [acceptScheduleTime, setAcceptScheduleTime] = useState("");
     const loadAllRequestsRef = useRef(null);
+
+    const handleVerifyStartOTP = async (otpCode) => {
+        if (!selectedBookingId) return;
+        try {
+            setVerifyingOTP(true);
+            const response = await verifyStartOTP(selectedBookingId, otpCode);
+            if (response.success) {
+                toast.showSuccess("Start Survey OTP verified successfully!");
+                setShowStartOTPModal(false);
+                setSelectedBookingId(null);
+                await loadAllRequests();
+            } else {
+                toast.showError(response.message || "Invalid OTP code");
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to verify OTP");
+        } finally {
+            setVerifyingOTP(false);
+        }
+    };
+
+    const handleVerifyEndOTP = async (otpCode) => {
+        if (!selectedBookingId) return;
+        try {
+            setVerifyingOTP(true);
+            const response = await verifyEndOTP(selectedBookingId, otpCode);
+            if (response.success) {
+                toast.showSuccess("End Survey OTP verified successfully!");
+                setShowEndOTPModal(false);
+                setSelectedBookingId(null);
+                await loadAllRequests();
+            } else {
+                toast.showError(response.message || "Invalid OTP code");
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to verify OTP");
+        } finally {
+            setVerifyingOTP(false);
+        }
+    };
 
     const loadAllRequests = async () => {
         try {
@@ -411,8 +497,14 @@ export default function VendorRequests() {
                                     booking={request}
                                     onViewStatus={(id) => navigate(`/vendor/bookings/${id}`)}
                                     onUploadReport={(b) => navigate(`/vendor/bookings/${b._id}/upload-report`)}
-                                    onVerifyStartOTP={(b) => navigate(`/vendor/bookings/${b._id}`)}
-                                    onVerifyEndOTP={(b) => navigate(`/vendor/bookings/${b._id}`)}
+                                    onVerifyStartOTP={(b) => {
+                                        setSelectedBookingId(b._id);
+                                        setShowStartOTPModal(true);
+                                    }}
+                                    onVerifyEndOTP={(b) => {
+                                        setSelectedBookingId(b._id);
+                                        setShowEndOTPModal(true);
+                                    }}
                                     onUploadPhotos={(b) => navigate(`/vendor/bookings/${b._id}`)}
                                 />
                             ) : (
@@ -824,6 +916,34 @@ export default function VendorRequests() {
                 confirmText="Yes, Reject"
                 cancelText="Cancel"
                 confirmColor="danger"
+            />
+
+            {/* Start Survey OTP Modal */}
+            <OTPInputModal
+                isOpen={showStartOTPModal}
+                onClose={() => {
+                    setShowStartOTPModal(false);
+                    setSelectedBookingId(null);
+                }}
+                onSubmit={handleVerifyStartOTP}
+                title="Start Survey OTP"
+                message="Please ask the customer for the Start Survey OTP to begin the survey."
+                submitText="Verify OTP"
+                isLoading={verifyingOTP}
+            />
+
+            {/* End Survey OTP Modal */}
+            <OTPInputModal
+                isOpen={showEndOTPModal}
+                onClose={() => {
+                    setShowEndOTPModal(false);
+                    setSelectedBookingId(null);
+                }}
+                onSubmit={handleVerifyEndOTP}
+                title="End Survey OTP"
+                message="Please ask the customer for the End Survey OTP to complete the survey."
+                submitText="Verify OTP"
+                isLoading={verifyingOTP}
             />
         </>
     );
