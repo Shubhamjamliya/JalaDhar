@@ -105,6 +105,21 @@ export default function UserBookingDetails() {
         }
     }, [location.state]);
 
+    // Lock background scroll when any modal is open
+    const isAnyModalOpen = showCancelModal || showCancelPolicyModal || showBorewellModal || showWorkProof || showPaymentPrompt;
+    useEffect(() => {
+        if (isAnyModalOpen) {
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+            document.body.style.overflow = "hidden";
+            document.documentElement.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+            };
+        }
+    }, [isAnyModalOpen]);
+
     // Refetch when page becomes visible
     useEffect(() => {
         const handleVisibilityChange = () => {

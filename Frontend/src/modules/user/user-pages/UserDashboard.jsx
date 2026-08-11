@@ -399,15 +399,17 @@ export default function UserDashboard() {
     };
 
     useEffect(() => {
-        // Prevent body scroll when modal is open
+        // Prevent body and html scroll when modal is open
         if (showStatusModal) {
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
             document.body.style.overflow = "hidden";
-        } else {
-            document.body.style.overflow = "unset";
+            document.documentElement.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+            };
         }
-        return () => {
-            document.body.style.overflow = "unset";
-        };
     }, [showStatusModal]);
 
     const handleRequestStatusClick = (filter = 'ALL') => {
