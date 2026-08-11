@@ -258,11 +258,15 @@ export default function VendorOngoingBookingCard({
                 </div>
 
                 {/* Contextual Action Row (Start Journey, OTP & Uploads) */}
-                <div className="grid grid-cols-2 gap-2 pt-1">
+                <div className="grid grid-cols-2 gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
                     {/* 1. If status is ACCEPTED -> Show Start Journey */}
                     {status === "ACCEPTED" ? (
                         <button
-                            onClick={() => onMarkEnRoute ? onMarkEnRoute(booking) : navigate(`/vendor/bookings/${booking._id}`)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onMarkEnRoute) onMarkEnRoute(booking);
+                                else navigate(`/vendor/bookings/${booking._id}`);
+                            }}
                             className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                             <IoCarOutline className="text-base" />
@@ -271,7 +275,11 @@ export default function VendorOngoingBookingCard({
                     ) : !isStartOtpVerified ? (
                         /* 2. If status is EN_ROUTE -> Show Verify Start OTP */
                         <button
-                            onClick={() => onVerifyStartOTP ? onVerifyStartOTP(booking) : navigate(`/vendor/bookings/${booking._id}`, { state: { openStartOTP: true } })}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onVerifyStartOTP) onVerifyStartOTP(booking);
+                                else navigate(`/vendor/bookings/${booking._id}`, { state: { openStartOTP: true } });
+                            }}
                             className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                             <IoKeyOutline className="text-base" />
@@ -280,7 +288,11 @@ export default function VendorOngoingBookingCard({
                     ) : !isEndOtpVerified ? (
                         /* Verify End OTP */
                         <button
-                            onClick={() => onVerifyEndOTP ? onVerifyEndOTP(booking) : navigate(`/vendor/bookings/${booking._id}`, { state: { openEndOTP: true } })}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onVerifyEndOTP) onVerifyEndOTP(booking);
+                                else navigate(`/vendor/bookings/${booking._id}`, { state: { openEndOTP: true } });
+                            }}
                             className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                             <IoKeyOutline className="text-base" />
@@ -289,7 +301,11 @@ export default function VendorOngoingBookingCard({
                     ) : (
                         /* Site Photos Upload */
                         <button
-                            onClick={() => onUploadPhotos ? onUploadPhotos(booking) : navigate(`/vendor/bookings/${booking._id}`)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onUploadPhotos) onUploadPhotos(booking);
+                                else navigate(`/vendor/bookings/${booking._id}`);
+                            }}
                             className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                             <IoCameraOutline className="text-base" />
@@ -299,7 +315,11 @@ export default function VendorOngoingBookingCard({
 
                     {/* Upload Survey Report */}
                     <button
-                        onClick={() => onUploadReport ? onUploadReport(booking) : navigate(`/vendor/bookings/${booking._id}/upload-report`)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onUploadReport) onUploadReport(booking);
+                            else navigate(`/vendor/bookings/${booking._id}/upload-report`);
+                        }}
                         className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                         <IoDocumentTextOutline className="text-base text-teal-400" />

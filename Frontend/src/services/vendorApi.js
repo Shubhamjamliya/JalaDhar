@@ -125,6 +125,7 @@ export const markBookingAsEnRoute = async (bookingId) => {
   const response = await api.patch(`/vendors/bookings/${bookingId}/en-route`);
   return response.data;
 };
+export const markEnRoute = markBookingAsEnRoute;
 
 /**
  * Verify Start Survey OTP
