@@ -179,13 +179,13 @@ export default function AdminPendingVendors() {
                                     >
                                         <IoEyeOutline className="text-xl" />
                                     </button>
-                                    <button
-                                        onClick={() => { setSelectedVendorId(vendor._id); setShowApproveConfirm(true); }}
-                                        className="px-4 py-2.5 bg-green-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-green-600/20 hover:bg-green-700 transition-all flex items-center gap-2"
-                                    >
-                                        <IoCheckmarkCircleOutline className="text-lg" />
-                                        Approve
-                                    </button>
+                                     <button
+                                         onClick={() => { setSelectedVendorId(vendor._id); setShowApproveConfirm(true); }}
+                                         className="px-4 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center gap-2 cursor-pointer"
+                                     >
+                                         <IoCheckmarkCircleOutline className="text-lg" />
+                                         Approve Docs &amp; Request Agreement
+                                     </button>
                                     <button
                                         onClick={() => { setSelectedVendorId(vendor._id); setShowRejectInput(true); }}
                                         className="px-4 py-2.5 bg-red-50 text-red-600 text-xs font-bold rounded-xl hover:bg-red-600 hover:text-white transition-all flex items-center gap-2 border border-red-100"

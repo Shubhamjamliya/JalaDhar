@@ -76,6 +76,7 @@ const VendorReviews = lazy(() => import("./modules/vendor/vendor-pages/VendorRev
 const VendorAbout = lazy(() => import("./modules/vendor/vendor-pages/VendorAbout"));
 const VendorSettings = lazy(() => import("./modules/vendor/vendor-pages/VendorSettings"));
 const VendorPolicyPage = lazy(() => import("./modules/vendor/vendor-pages/VendorPolicyPage"));
+const ExpertAgreementScreen = lazy(() => import("./modules/vendor/vendor-pages/ExpertAgreementScreen"));
 const AdminLogin = lazy(() => import("./modules/admin/admin-pages/AdminLogin"));
 const AdminForgotPassword = lazy(() => import("./modules/admin/admin-pages/AdminForgotPassword"));
 const AdminResetPassword = lazy(() => import("./modules/admin/admin-pages/AdminResetPassword"));
@@ -106,6 +107,7 @@ const AdminDisputes = lazy(() => import("./modules/admin/admin-pages/AdminDisput
 const AdminTeamManagement = lazy(() => import("./modules/admin/admin-pages/AdminTeamManagement"));
 const AdminPolicies = lazy(() => import("./modules/admin/admin-pages/AdminPolicies"));
 const AdminAgreementLogs = lazy(() => import("./modules/admin/admin-pages/AdminAgreementLogs"));
+const AdminExpertAgreementLogs = lazy(() => import("./modules/admin/admin-pages/AdminExpertAgreementLogs"));
 const AdminReports = lazy(() => import("./modules/admin/admin-pages/Reports"));
 const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavbar"));
 
@@ -680,6 +682,14 @@ function App() {
                                                                     </Suspense>
                                                                 }
                                                             />
+                                                            <Route
+                                                                path="/agreement"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <ExpertAgreementScreen />
+                                                                    </Suspense>
+                                                                }
+                                                            />
                                                         </Routes>
                                                     </Suspense>
                                                 </main>
@@ -740,6 +750,22 @@ function App() {
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                                 <AdminDashboard />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/agreements"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminAgreementLogs />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/expert-agreements"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminExpertAgreementLogs />
                                                                             </Suspense>
                                                                         }
                                                                     />

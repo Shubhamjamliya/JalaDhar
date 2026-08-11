@@ -142,6 +142,36 @@ const policies = [
     category: 'policy',
     type: 'string',
     description: 'Official 13-clause Jaladhaara User Agreement text'
+  },
+  {
+    key: 'expert_onboarding_agreement_version',
+    label: 'Expert Onboarding Agreement Active Version',
+    value: 'v1.0',
+    category: 'policy',
+    type: 'string',
+    description: 'Active version identifier of the Jaladhaara Expert Onboarding Agreement'
+  },
+  {
+    key: 'expert_onboarding_agreement',
+    label: 'Jaladhaara Expert Onboarding Agreement (10 Clauses)',
+    value: `<p><strong>Jaladhaara Expert Onboarding Agreement</strong></p>
+    <p>By selecting "I Agree & Activate Account", I confirm that:</p>
+    <ol>
+      <li><strong>Agreement Review:</strong> I have read and understood this Agreement.</li>
+      <li><strong>Professional Standards:</strong> I will provide groundwater survey services professionally, ethically, and in compliance with applicable laws.</li>
+      <li><strong>Sole Professional Responsibility:</strong> I am solely responsible for my surveys, technical opinions, recommendations, reports, and professional conduct.</li>
+      <li><strong>Technology Platform Disclaimer:</strong> I understand that Jaladhaara is only a technology platform connecting Customers with independent Experts and is not responsible for my professional services or survey outcomes.</li>
+      <li><strong>Privacy & Confidentiality:</strong> I will maintain the confidentiality of customer information and use it only for the booked service.</li>
+      <li><strong>No Off-Platform Solicitation:</strong> I will not solicit customers outside the platform or accept unauthorized off-platform payments.</li>
+      <li><strong>Groundwater Availability Disclaimer:</strong> I understand that groundwater occurrence depends on natural geological conditions, and I will not guarantee groundwater availability, borewell success, water yield, or water quality.</li>
+      <li><strong>Platform Policies Compliance:</strong> I agree to comply with Jaladhaara's Terms & Conditions, Privacy Policy, Booking & Cancellation Policy, Refund Policy, and all other applicable platform policies.</li>
+      <li><strong>Account Suspension & Termination:</strong> I understand that Jaladhaara may suspend or terminate my account if I violate this Agreement or any platform policy.</li>
+      <li><strong>Governing Law & Jurisdiction:</strong> This Agreement shall be governed by the laws of India, and any dispute shall be subject to the exclusive jurisdiction of the competent courts at Hyderabad, Telangana.</li>
+    </ol>
+    <p><strong>Declaration:</strong> I declare that all information and documents submitted by me are true and correct. I voluntarily accept this Agreement and agree to be bound by its terms.</p>`,
+    category: 'policy',
+    type: 'string',
+    description: 'Official 10-clause Jaladhaara Expert Onboarding Agreement text'
   }
 ];
 

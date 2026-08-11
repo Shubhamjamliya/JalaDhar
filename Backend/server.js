@@ -176,6 +176,7 @@ app.use('/api/vendors', require('./routes/vendor-routes/dashboard.routes'));
 app.use('/api/vendors', require('./routes/vendor-routes/service.routes'));
 app.use('/api/vendor/wallet', require('./routes/vendor-routes/vendorWallet.routes'));
 app.use('/api/vendors/disputes', require('./routes/vendor-routes/dispute.routes'));
+app.use('/api/vendors/agreement', require('./routes/vendor-routes/expertAgreement.routes'));
 
 // Admin routes
 app.use('/api/admin/auth', require('./routes/admin-routes/adminAuth.routes'));

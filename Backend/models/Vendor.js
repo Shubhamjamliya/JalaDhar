@@ -105,6 +105,19 @@ const vendorSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  verificationStatus: {
+    type: String,
+    enum: ['APPLICATION_SUBMITTED', 'PENDING', 'MORE_DOCS_NEEDED', 'VERIFIED_PENDING_AGREEMENT', 'ACTIVATED', 'APPROVED', 'REJECTED'],
+    default: 'APPLICATION_SUBMITTED'
+  },
+  expertAgreementAcceptedVersion: {
+    type: String,
+    default: null
+  },
+  expertAgreementAcceptedAt: {
+    type: Date,
+    default: null
+  },
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin',

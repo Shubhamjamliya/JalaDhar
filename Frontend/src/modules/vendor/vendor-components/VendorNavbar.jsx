@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
     IoHome,
@@ -24,6 +24,8 @@ import NotificationDropdown from "../../../components/NotificationDropdown";
 import logo from "@/assets/Header-logoo.png";
 
 import VendorSidebar from "./VendorSidebar";
+import ExpertAgreementModal from "./ExpertAgreementModal";
+import api from "../../../services/api";
 
 const navItems = [
     {
@@ -71,6 +73,36 @@ export default function VendorNavbar() {
     const location = useLocation();
     const navigate = useNavigate();
 
+    // Expert Agreement State
+    const [showAgreementModal, setShowAgreementModal] = useState(false);
+    const [agreementText, setAgreementText] = useState('');
+    const [agreementVersion, setAgreementVersion] = useState('v1.0');
+
+    // Check if Expert requires agreement acceptance
+    const isPendingAgreement = vendor && (vendor.verificationStatus === 'VERIFIED_PENDING_AGREEMENT');
+
+    useEffect(() => {
+        const checkExpertAgreement = async () => {
+            if (!vendor) return;
+            try {
+                const response = await api.get('/vendors/agreement/status');
+                if (response.data?.success && response.data?.data) {
+                    const { activeVersion, agreementText, requiresAcceptance, verificationStatus } = response.data.data;
+                    setAgreementVersion(activeVersion || 'v1.0');
+                    setAgreementText(agreementText || '');
+
+                    if (requiresAcceptance || verificationStatus === 'VERIFIED_PENDING_AGREEMENT') {
+                        setShowAgreementModal(true);
+                    }
+                }
+            } catch (err) {
+                console.error('Error checking expert agreement status:', err);
+            }
+        };
+
+        checkExpertAgreement();
+    }, [vendor]);
+
     const handleLogoutClick = () => {
         setShowLogoutConfirm(true);
     };
@@ -88,8 +120,21 @@ export default function VendorNavbar() {
 
     return (
         <>
+            {/* Agreement Pending Banner */}
+            {isPendingAgreement && (
+                <div className="fixed inset-x-0 top-0 z-[60] bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 text-xs font-bold flex items-center justify-between shadow-md">
+                    <span>🎉 Verification Approved! Review and accept the Expert Agreement to activate your account.</span>
+                    <button
+                        onClick={() => navigate('/vendor/agreement')}
+                        className="ml-2 px-3 py-1 bg-white text-emerald-800 rounded-lg font-black hover:bg-emerald-50 shrink-0 cursor-pointer shadow-2xs"
+                    >
+                        Accept & Activate Now
+                    </button>
+                </div>
+            )}
+
             {/* Top Navbar - Mobile & Desktop */}
-            <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-[#F6F7F9] px-4 py-2.5 md:px-6 md:py-3.5 border-b border-gray-200/60 shadow-sm">
+            <header className={`fixed inset-x-0 z-50 flex items-center justify-between bg-[#F6F7F9] px-4 py-2.5 md:px-6 md:py-3.5 border-b border-gray-200/60 shadow-sm ${isPendingAgreement ? 'top-8' : 'top-0'}`}>
                 {/* Left Section: Back Button + Logo */}
                 <div className="flex items-center gap-2 sm:gap-3">
                     {/* Back Button - Only for sub-pages */}
@@ -225,6 +270,17 @@ export default function VendorNavbar() {
                 confirmText="Logout"
                 cancelText="Cancel"
                 confirmColor="danger"
+            />
+
+            {/* Mandatory Expert Onboarding Agreement Modal Overlay */}
+            <ExpertAgreementModal
+                isOpen={showAgreementModal}
+                agreementText={agreementText}
+                agreementVersion={agreementVersion}
+                onAccepted={() => {
+                    setShowAgreementModal(false);
+                    window.location.reload();
+                }}
             />
         </>
     );

@@ -15,6 +15,7 @@ import {
     IoLogoWhatsapp
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
+import ExpertAgreementDocViewer from "../vendor-components/ExpertAgreementDocViewer";
 
 // Senior standard pixel-perfect ToggleSwitch component
 function ToggleSwitch({ checked, onChange, activeColor = "bg-[#0A84FF]", ariaLabel = "Toggle setting" }) {
@@ -42,6 +43,7 @@ export default function VendorSettings() {
     const navigate = useNavigate();
     const toast = useToast();
     const [saving, setSaving] = useState(false);
+    const [showDocViewer, setShowDocViewer] = useState(false);
 
     // Active Section State
     const [activeSection, setActiveSection] = useState("notifications");
@@ -400,6 +402,18 @@ export default function VendorSettings() {
                                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0A84FF]"
                                 />
                             </div>
+
+                            <div className="pt-4 border-t border-slate-100">
+                                <h4 className="text-xs font-bold text-slate-800 mb-1">Signed Legal Documents</h4>
+                                <p className="text-[11px] text-slate-500 mb-3">Download a stamped copy of your signed Jaladhaara Expert Onboarding Agreement.</p>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDocViewer(true)}
+                                    className="w-full px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 font-extrabold text-xs hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <span>📥 View &amp; Download Signed Agreement (PDF)</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -477,6 +491,12 @@ export default function VendorSettings() {
                     </div>
                 )}
             </div>
+
+            {/* In-App Responsive Document & PDF Viewer Modal */}
+            <ExpertAgreementDocViewer
+                isOpen={showDocViewer}
+                onClose={() => setShowDocViewer(false)}
+            />
         </div>
     );
 }

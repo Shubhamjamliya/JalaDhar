@@ -270,8 +270,8 @@ const approveVendor = async (req, res) => {
       });
     }
 
-    // Approve vendor
-    vendor.isApproved = true;
+    // Approve vendor documents & identity -> Move to VERIFIED_PENDING_AGREEMENT state
+    vendor.verificationStatus = 'VERIFIED_PENDING_AGREEMENT';
     vendor.approvedBy = adminId;
     vendor.approvedAt = new Date();
     vendor.rejectionReason = null;

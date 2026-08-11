@@ -5,7 +5,8 @@ const rateLimit = require('express-rate-limit');
  */
 const rateLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 60000, // 1 minute
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 120, // 120 requests per window
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 2000, // 2000 requests per window
+  skip: (req) => process.env.NODE_ENV === 'development' || req.ip === '::1' || req.ip === '127.0.0.1' || req.ip === '::ffff:127.0.0.1',
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'

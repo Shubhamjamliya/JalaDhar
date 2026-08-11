@@ -17,6 +17,7 @@ import {
     IoBusinessOutline,
     IoLockClosedOutline,
     IoNotificationsOutline,
+    IoRibbonOutline,
     IoChevronDown,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
@@ -137,6 +138,13 @@ const navItems = [
         label: "User Agreement Logs",
         to: "/admin/agreements",
         Icon: IoShieldCheckmarkOutline,
+        roles: ["SUPER_ADMIN", "ADMIN", "SUPPORT_ADMIN", "OPERATIONS_ADMIN"]
+    },
+    {
+        id: "expert-agreements",
+        label: "Expert Agreement Logs",
+        to: "/admin/expert-agreements",
+        Icon: IoRibbonOutline,
         roles: ["SUPER_ADMIN", "ADMIN", "SUPPORT_ADMIN", "OPERATIONS_ADMIN"]
     },
     {
