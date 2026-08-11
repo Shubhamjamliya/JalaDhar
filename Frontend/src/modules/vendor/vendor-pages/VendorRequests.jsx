@@ -211,7 +211,7 @@ export default function VendorRequests() {
     // Store loadAllRequests function in ref so it can be used in socket listeners
     useEffect(() => {
         loadAllRequestsRef.current = loadAllRequests;
-    }, []);
+    });
 
     // Load data on mount and when location changes (navigation back)
     useEffect(() => {
@@ -223,45 +223,56 @@ export default function VendorRequests() {
         loadAllRequests();
     }, [activeTab]);
 
-    // Refetch when page becomes visible (user switches tabs/windows)
+    // Refetch when page becomes visible or window gains focus
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
                 loadAllRequests();
             }
         };
+        window.addEventListener('focus', handleVisibilityChange);
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            window.removeEventListener('focus', handleVisibilityChange);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, []);
 
-    // Listen to socket notifications for new bookings
+    // Background auto-polling (every 8 seconds) so new requests appear live without refresh
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                loadAllRequestsRef.current?.();
+            }
+        }, 8000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Listen to socket notifications for real-time new bookings & status updates
     useEffect(() => {
         if (!socket) return;
 
-        const handleNewNotification = (notification) => {
-            console.log('[VendorRequests] New notification received:', notification);
-
-            // Refresh for any booking-related assigned or status update
-            if (notification.type === 'BOOKING_ASSIGNED' ||
-                notification.type === 'BOOKING_CREATED' ||
-                notification.type === 'NEW_BOOKING' ||
-                notification.type === 'BOOKING_ASSIGNED_TO_VENDOR' ||
-                notification.type === 'BOOKING_ACCEPTED' ||
-                notification.type === 'BOOKING_REJECTED' ||
-                notification.type === 'BOOKING_STATUS_UPDATED' ||
-                notification.type === 'PAYMENT_RECEIVED') {
-
-                console.log('[VendorRequests] Refreshing requests list...');
-                if (loadAllRequestsRef.current) {
-                    loadAllRequestsRef.current();
-                }
+        const handleSocketNotification = (data) => {
+            console.log('[VendorRequests] Real-time socket event received:', data);
+            if (loadAllRequestsRef.current) {
+                loadAllRequestsRef.current();
             }
         };
 
-        socket.on('new_notification', handleNewNotification);
+        socket.on('new_notification', handleSocketNotification);
+        socket.on('newNotification', handleSocketNotification);
+        socket.on('booking_assigned', handleSocketNotification);
+        socket.on('new_booking', handleSocketNotification);
+        socket.on('booking_updated', handleSocketNotification);
+        socket.on('booking_status_updated', handleSocketNotification);
 
         return () => {
-            socket.off('new_notification', handleNewNotification);
+            socket.off('new_notification', handleSocketNotification);
+            socket.off('newNotification', handleSocketNotification);
+            socket.off('booking_assigned', handleSocketNotification);
+            socket.off('new_booking', handleSocketNotification);
+            socket.off('booking_updated', handleSocketNotification);
+            socket.off('booking_status_updated', handleSocketNotification);
         };
     }, [socket]);
 

@@ -46,6 +46,10 @@ export const NOTIFICATION_TYPE_META = {
 export function getNotificationUrl(notification, userRole) {
   if (!notification) return '/';
 
+  // Normalize userRole (support both 'Vendor' and 'Expert')
+  const isVendor = userRole === 'Vendor' || userRole === 'Expert';
+  const isAdmin  = userRole === 'Admin';
+
   // 1. Explicit link in metadata
   if (notification.metadata?.link) {
     return notification.metadata.link;
@@ -61,19 +65,18 @@ export function getNotificationUrl(notification, userRole) {
                      notification.metadata?.paymentId;
 
   const type = notification.type || '';
+  const bookingId = entityId || notification.metadata?.bookingId;
 
   // 3. Booking related notifications
   if (entityType === 'Booking' || type.startsWith('BOOKING_') || type.startsWith('BOREWELL_') || type.startsWith('REPORT_') || type === 'NEW_BOOKING_PENDING') {
-    const bookingId = entityId || notification.metadata?.bookingId;
-
-    if (userRole === 'Vendor') {
-      if (type === 'BOOKING_CREATED' || type === 'NEW_BOOKING_PENDING') {
-        return '/vendor/requests';
+    if (isVendor) {
+      if (type === 'BOOKING_CREATED' || type === 'NEW_BOOKING_PENDING' || type === 'BOOKING_ASSIGNED') {
+        return '/vendor/bookings?tab=new';
       }
-      return bookingId ? `/vendor/booking/${bookingId}` : '/vendor/status';
+      return bookingId ? `/vendor/bookings/${bookingId}` : '/vendor/bookings';
     }
 
-    if (userRole === 'Admin') {
+    if (isAdmin) {
       if (type.includes('BOREWELL') || type.includes('REPORT')) {
         return '/admin/approvals';
       }
@@ -87,7 +90,7 @@ export function getNotificationUrl(notification, userRole) {
   // 4. Vendor / Registration related
   if (entityType === 'Vendor' || type.includes('VENDOR')) {
     const vendorId = entityId || notification.metadata?.vendorId;
-    if (userRole === 'Admin') {
+    if (isAdmin) {
       return vendorId ? `/admin/vendors/${vendorId}` : '/admin/vendors';
     }
     return '/vendor/profile';
@@ -96,27 +99,27 @@ export function getNotificationUrl(notification, userRole) {
   // 5. Dispute related
   if (entityType === 'Dispute' || type.includes('DISPUTE')) {
     const disputeId = entityId || notification.metadata?.disputeId;
-    if (userRole === 'Admin')  return disputeId ? `/admin/disputes/${disputeId}` : '/admin/disputes';
-    if (userRole === 'Vendor') return disputeId ? `/vendor/disputes/${disputeId}` : '/vendor/disputes';
+    if (isAdmin)  return disputeId ? `/admin/disputes/${disputeId}` : '/admin/disputes';
+    if (isVendor) return disputeId ? `/vendor/disputes/${disputeId}` : '/vendor/disputes';
     return disputeId ? `/user/disputes/${disputeId}` : '/user/disputes';
   }
 
   // 6. Payment / Wallet / Travel Charges
   if (entityType === 'Payment' || type.includes('PAYMENT') || type.includes('SETTLEMENT') || type.includes('TRAVEL_CHARGES') || type.includes('INSTALLMENT') || type.includes('REFUND')) {
-    if (userRole === 'Admin')  return '/admin/payments';
-    if (userRole === 'Vendor') return '/vendor/wallet';
+    if (isAdmin)  return '/admin/payments';
+    if (isVendor) return '/vendor/wallet';
     return '/user/wallet';
   }
 
   // 7. Ratings / Reviews
   if (type === 'NEW_RATING') {
-    if (userRole === 'Vendor') return '/vendor/reviews';
-    if (userRole === 'Admin')  return '/admin/ratings';
+    if (isVendor) return '/vendor/reviews';
+    if (isAdmin)  return '/admin/ratings';
     return '/user/ratings';
   }
 
   // 8. Role-based fallback
-  if (userRole === 'Vendor') return '/vendor/requests';
-  if (userRole === 'Admin')  return '/admin/bookings';
+  if (isVendor) return '/vendor/bookings';
+  if (isAdmin)  return '/admin/bookings';
   return '/user/dashboard';
 }

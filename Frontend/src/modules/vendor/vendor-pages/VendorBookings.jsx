@@ -129,47 +129,66 @@ export default function VendorBookings() {
         }
     };
 
+    const loadAllBookingsRef = useRef(null);
+    useEffect(() => {
+        loadAllBookingsRef.current = loadAllBookings;
+    });
+
     // Load data on mount and when location changes (navigation back)
     useEffect(() => {
         loadAllBookings();
     }, [location.pathname]);
 
-    // Refetch when page becomes visible (user switches tabs/windows)
+    // Refetch when page becomes visible or window gains focus
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
                 loadAllBookings();
             }
         };
+        window.addEventListener('focus', handleVisibilityChange);
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            window.removeEventListener('focus', handleVisibilityChange);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
+    // Background auto-polling (every 8 seconds) so new bookings appear live without refresh
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                loadAllBookingsRef.current?.();
+            }
+        }, 8000);
+        return () => clearInterval(interval);
     }, []);
 
     // Listen for real-time notifications via Socket.IO
     useEffect(() => {
         if (!socket) return;
 
-        const handleNewNotification = (notification) => {
-            console.log('[VendorBookings] New notification received:', notification);
-
-            // Auto-refresh bookings for any booking-related notification
-            if (notification.type === 'BOOKING_CREATED' ||
-                notification.type === 'BOOKING_ASSIGNED' ||
-                notification.type === 'BOOKING_STATUS_UPDATED' ||
-                notification.type === 'PAYMENT_RECEIVED' ||
-                notification.type === 'NEW_BOOKING' ||
-                notification.type === 'BOOKING_ACCEPTED' ||
-                notification.type === 'BOOKING_REJECTED' ||
-                notification.type === 'BOOKING_CANCELLED') {
-                console.log('[VendorBookings] Refreshing bookings list...');
-                loadAllBookings();
+        const handleSocketNotification = (data) => {
+            console.log('[VendorBookings] Real-time socket event received:', data);
+            if (loadAllBookingsRef.current) {
+                loadAllBookingsRef.current();
             }
         };
 
-        socket.on('new_notification', handleNewNotification);
+        socket.on('new_notification', handleSocketNotification);
+        socket.on('newNotification', handleSocketNotification);
+        socket.on('booking_assigned', handleSocketNotification);
+        socket.on('new_booking', handleSocketNotification);
+        socket.on('booking_updated', handleSocketNotification);
+        socket.on('booking_status_updated', handleSocketNotification);
 
         return () => {
-            socket.off('new_notification', handleNewNotification);
+            socket.off('new_notification', handleSocketNotification);
+            socket.off('newNotification', handleSocketNotification);
+            socket.off('booking_assigned', handleSocketNotification);
+            socket.off('new_booking', handleSocketNotification);
+            socket.off('booking_updated', handleSocketNotification);
+            socket.off('booking_status_updated', handleSocketNotification);
         };
     }, [socket]);
 

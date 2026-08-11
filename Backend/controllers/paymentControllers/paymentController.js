@@ -160,13 +160,13 @@ const verifyAdvancePayment = async (req, res) => {
         }
       }, io);
 
-      // Notify vendor - booking confirmed and assigned
+      // Notify vendor - new survey request assigned (advance paid)
       await sendNotification({
         recipient: booking.vendor._id,
         recipientModel: 'Vendor',
         type: 'BOOKING_ASSIGNED',
-        title: 'Booking Confirmed and Assigned',
-        message: `New booking confirmed and assigned from ${booking.user.name} for ${booking.service.name}. Please review and accept.`,
+        title: 'New Survey Request (Advance Paid)',
+        message: `New survey request from ${booking.user.name} for ${booking.service.name} (Advance Paid). Please review and accept.`,
         relatedEntity: {
           entityType: 'Booking',
           entityId: booking._id
