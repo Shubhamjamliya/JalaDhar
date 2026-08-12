@@ -871,16 +871,15 @@ export default function UserStatus() {
                                                 <h3 className={`font-bold text-sm ${isActive ? "text-[#0A84FF]" : isCompleted ? "text-slate-900" : "text-slate-500"}`}>
                                                     {step.label}
                                                 </h3>
-                                                {isCompleted && (
+                                                {isCompleted ? (
                                                     <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded uppercase">
                                                         Done
                                                     </span>
-                                                )}
-                                                {isActive && (
+                                                ) : isActive ? (
                                                     <span className="text-[10px] font-bold text-[#0A84FF] bg-blue-50 border border-blue-100 px-2 py-0.5 rounded uppercase">
                                                         Active
                                                     </span>
-                                                )}
+                                                ) : null}
                                             </div>
 
                                             {step.date && (
