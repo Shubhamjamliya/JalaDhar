@@ -1962,7 +1962,7 @@ export default function VendorBookingDetails() {
                     setShowRejectInput(false);
                     setRejectionReason("");
                 }}
-                onSubmit={handleRejectionReasonSubmit}
+                onSubmit={handleRejectReasonSubmit}
                 title="Decline / Reject Booking"
                 message="Please select a reason for rejecting this survey booking:"
                 options={VENDOR_REJECTION_REASONS}
