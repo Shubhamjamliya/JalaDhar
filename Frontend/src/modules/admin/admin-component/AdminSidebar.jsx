@@ -264,7 +264,7 @@ export default function AdminSidebar() {
             </div>
 
             {/* Navigation Menu */}
-            <nav className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar scrollbar-hide">
+            <nav className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar scrollbar-hide overscroll-contain">
                 {navItems
                     .filter(item => !item.roles || item.roles.includes(admin?.role))
                     .map((item) => {

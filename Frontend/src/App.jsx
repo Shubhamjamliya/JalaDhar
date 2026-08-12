@@ -756,12 +756,12 @@ function App() {
                                         path="/admin/*"
                                         element={
                                             <AdminProtectedRoute>
-                                                <div className="flex min-h-screen bg-[#F6F7F9]">
+                                                <div className="min-h-screen bg-[#F6F7F9]">
                                                     <Suspense fallback={<LoadingSpinner />}>
                                                         <AdminNavbar />
                                                     </Suspense>
-                                                    <div className="flex-1 flex flex-col lg:ml-[278px]">
-                                                        <main className="flex-1 p-8 mt-20">
+                                                    <div className="lg:pl-[278px] min-h-screen flex flex-col">
+                                                        <main className="flex-1 p-6 md:p-8 pt-24 md:pt-28">
                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                 <Routes>
                                                                     <Route

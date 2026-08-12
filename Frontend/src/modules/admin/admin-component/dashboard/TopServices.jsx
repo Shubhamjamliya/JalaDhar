@@ -30,7 +30,7 @@ const TopServices = ({ bookings = [], periodLabel = 'Top Services' }) => {
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
       <h3 className="text-lg font-bold text-gray-800 mb-6">{periodLabel}</h3>
-      <div className="space-y-4">
+      <div className="space-y-3">
         {paginated.map((svc, index) => {
           const globalIndex = (currentPage - 1) * itemsPerPage + index;
           return (

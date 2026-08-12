@@ -47,7 +47,7 @@ export default function AdminTopbar() {
 
     return (
         <>
-            <header className="fixed top-0 right-0 left-0 lg:left-[278px] h-20 bg-white/80 backdrop-blur-xl z-30 transition-all duration-300 border-b border-slate-100 font-outfit">
+            <header className="fixed top-0 right-0 left-0 lg:left-[278px] h-20 bg-white shadow-xs z-30 transition-all duration-300 border-b border-slate-200/80 font-outfit">
                 <div className="flex items-center justify-between h-full px-6 md:px-8">
                     <div className="flex items-center gap-6">
                         {/* Mobile Menu Trigger */}

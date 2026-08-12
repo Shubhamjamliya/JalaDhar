@@ -43,7 +43,7 @@ const RecentBookings = ({ bookings = [], onViewBooking }) => {
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
       <h3 className="text-lg font-bold text-gray-800 mb-6">Recent Bookings</h3>
-      <div className="space-y-4">
+      <div className="space-y-3">
         {paginated.map((b, index) => (
           <motion.div
             key={b.id || index}
