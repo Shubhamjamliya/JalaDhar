@@ -196,41 +196,45 @@ export default function UserSurveyReport() {
         <div className="bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded-[24px] overflow-hidden border border-gray-100 font-sans mb-8">
           
           {/* Header */}
-          <div className="p-5 sm:p-8 bg-gradient-to-b from-blue-50/50 to-white">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2 text-[#102353]">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2.69L19.5 13.94C21.1 16.34 20.35 19.54 17.86 20.97C15.37 22.4 12.06 22.15 9.87 20.35C8.01 18.82 7.15 16.42 7.7 14.15L12 2.69Z" stroke="#0A84FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M15.5 14C15.5 14 13.5 17 12 17C10.5 17 10.5 15.5 10.5 15.5" stroke="#0A84FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <h1 className="text-[28px] font-extrabold tracking-tight">Jaladhaara</h1>
-              </div>
-              <p className="text-[11px] font-bold text-[#0A84FF] uppercase tracking-widest -mt-2">Digital Survey Report</p>
-              
-              <div className="mt-2 flex flex-wrap justify-between items-center gap-4">
-                <div className="inline-flex items-center border border-gray-200 rounded-full px-4 py-1.5 text-sm font-bold text-[#102353]">
-                  Report ID: {booking._id.slice(-8).toUpperCase()}
+          <div className="p-5 sm:p-8 bg-gradient-to-b from-blue-50/50 to-white border-b border-gray-100/80">
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-[#102353]">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2.69L19.5 13.94C21.1 16.34 20.35 19.54 17.86 20.97C15.37 22.4 12.06 22.15 9.87 20.35C8.01 18.82 7.15 16.42 7.7 14.15L12 2.69Z" stroke="#0A84FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M15.5 14C15.5 14 13.5 17 12 17C10.5 17 10.5 15.5 10.5 15.5" stroke="#0A84FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <h1 className="text-[28px] font-extrabold tracking-tight">Jaladhaara</h1>
+                  </div>
+                  <p className="text-[11px] font-bold text-[#0A84FF] uppercase tracking-widest mt-0.5">Digital Survey Report</p>
                 </div>
-                {booking && (
-                  <PDFDownloadLink
-                    document={<SurveyReportPDF booking={booking} />}
-                    fileName={`Survey_Report_${bookingId.slice(-8).toUpperCase()}.pdf`}
-                    className="flex items-center gap-2 bg-[#0A84FF] text-white px-5 py-2.5 rounded-full font-bold shadow-md hover:bg-[#0070DF] transition-all active:scale-95 text-sm"
-                  >
-                    {({ loading }) => (
-                      <>
-                        <IoDownloadOutline className="text-lg" />
-                        <span>{loading ? "Preparing..." : "Download PDF"}</span>
-                      </>
-                    )}
-                  </PDFDownloadLink>
-                )}
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="inline-flex items-center border border-gray-200 bg-white/80 backdrop-blur-xs rounded-full px-4 py-2 text-xs sm:text-sm font-bold text-[#102353]">
+                    Report ID: {booking._id.slice(-8).toUpperCase()}
+                  </div>
+                  {booking && (
+                    <PDFDownloadLink
+                      document={<SurveyReportPDF booking={booking} />}
+                      fileName={`Survey_Report_${bookingId.slice(-8).toUpperCase()}.pdf`}
+                      className="flex items-center gap-2 bg-[#0A84FF] text-white px-5 py-2 rounded-full font-bold shadow-md hover:bg-[#0070DF] transition-all active:scale-95 text-xs sm:text-sm whitespace-nowrap"
+                    >
+                      {({ loading }) => (
+                        <>
+                          <IoDownloadOutline className="text-base sm:text-lg" />
+                          <span>{loading ? "Preparing..." : "Download PDF"}</span>
+                        </>
+                      )}
+                    </PDFDownloadLink>
+                  )}
+                </div>
               </div>
               
-              <div className="flex justify-between items-center text-sm font-medium text-gray-500 mt-2">
+              <div className="flex justify-between items-center text-xs sm:text-sm font-medium text-gray-500 pt-3 border-t border-gray-100">
                 <span>Issued: {formatDate(booking.createdAt)}</span>
-                <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md font-bold">
-                  <IoCheckmarkCircleOutline /> Verified
+                <span className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100">
+                  <IoCheckmarkCircleOutline className="text-sm" /> Verified Report
                 </span>
               </div>
             </div>
