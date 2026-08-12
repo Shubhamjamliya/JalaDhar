@@ -113,6 +113,24 @@ const COMMERCIAL_PROPERTY_TYPE_OPTIONS = [
   { value: "Other Commercial Property", label: "Other Commercial Property" }
 ];
 
+const INDUSTRIAL_PROPERTY_TYPE_OPTIONS = [
+  { value: "Manufacturing Unit / Factory", label: "Manufacturing Unit / Factory" },
+  { value: "Industrial Plant", label: "Industrial Plant" },
+  { value: "Processing Unit", label: "Processing Unit" },
+  { value: "Food Processing Unit", label: "Food Processing Unit" },
+  { value: "Pharmaceutical / Chemical Unit", label: "Pharmaceutical / Chemical Unit" },
+  { value: "Textile / Garment Unit", label: "Textile / Garment Unit" },
+  { value: "Steel / Metal Unit", label: "Steel / Metal Unit" },
+  { value: "Cement / Construction Material Unit", label: "Cement / Construction Material Unit" },
+  { value: "Power / Energy Plant", label: "Power / Energy Plant" },
+  { value: "Cold Storage", label: "Cold Storage" },
+  { value: "Warehouse / Logistics Facility", label: "Warehouse / Logistics Facility" },
+  { value: "Industrial Park / Estate", label: "Industrial Park / Estate" },
+  { value: "Mining / Quarrying Area", label: "Mining / Quarrying Area" },
+  { value: "Industrial Plot", label: "Industrial Plot" },
+  { value: "Other Industrial Property", label: "Other Industrial Property" }
+];
+
 // --- Sub-components for each step ---
 
 const CATEGORY_FAQS = [
@@ -726,14 +744,15 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
         {isInd && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Industry Type *</label>
-              <input
-                required
+              <label className="block text-xs font-medium text-gray-700 mb-1">Industrial Property Type *</label>
+              <CustomDropdown
                 name="industryType"
                 value={formData.industryType}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs font-medium"
-                placeholder="Enter Industry Type (e.g. Steel Plant, Solar Power, Agro Processing)"
+                options={INDUSTRIAL_PROPERTY_TYPE_OPTIONS}
+                placeholder="Select Industrial Property Type"
+                size="sm"
+                activeColor="blue"
               />
             </div>
 
