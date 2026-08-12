@@ -316,7 +316,7 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
     projectName: "",
     propertyType: "Commercial Complex",
     factoryName: "",
-    industryType: "Manufacturing",
+    industryType: "",
     waterRequirement: "Industrial Process",
     pointsRequired: 1
   });
@@ -669,20 +669,14 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Industry Type *</label>
-              <select
+              <input
+                required
                 name="industryType"
                 value={formData.industryType}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
-              >
-                <option value="Manufacturing">🏭 Manufacturing &amp; Assembly</option>
-                <option value="Chemical & Processing">🧪 Chemical &amp; Processing</option>
-                <option value="Textile">🧵 Textile &amp; Dyeing</option>
-                <option value="Food & Beverage">🧃 Food &amp; Beverage Processing</option>
-                <option value="Pharma">💊 Pharmaceuticals</option>
-                <option value="Electronics">🔌 Electronics &amp; Hardware</option>
-                <option value="Others">Others</option>
-              </select>
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs font-medium"
+                placeholder="Enter Industry Type (e.g. Steel Plant, Solar Power, Agro Processing)"
+              />
             </div>
 
             <div>
