@@ -87,8 +87,7 @@ const getPendingVendors = async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
 
     const query = {
-      isApproved: false,
-      isActive: true
+      isApproved: false
     };
 
     const skip = (parseInt(page) - 1) * parseInt(limit);

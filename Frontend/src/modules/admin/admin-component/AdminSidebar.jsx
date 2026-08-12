@@ -40,9 +40,9 @@ const navItems = [
         roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"],
         children: [
             { label: "All Experts", to: "/admin/vendors", end: true },
-            { label: "Pending Approvals", to: "/admin/vendors/pending" },
-            { label: "Expert Bookings", to: "/admin/vendors/bookings" },
-            { label: "Expert Analytics", to: "/admin/vendors/analytics" }
+            { label: "KYC & Approvals", to: "/admin/vendors/pending" },
+            { label: "Wallets & Settlements", to: "/admin/vendors/wallets" },
+            { label: "Performance Analytics", to: "/admin/vendors/analytics" }
         ]
     },
     {

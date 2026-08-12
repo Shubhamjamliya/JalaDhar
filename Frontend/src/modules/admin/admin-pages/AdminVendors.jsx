@@ -192,26 +192,30 @@ export default function AdminVendors() {
                 ))}
             </div>
 
-            {/* Filters */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                <select
-                    value={filters.isApproved}
-                    onChange={(e) => setFilters({ ...filters, isApproved: e.target.value, page: 1 })}
-                    className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-600 outline-none focus:border-blue-500"
-                >
-                    <option value="">All Verification</option>
-                    <option value="true">Approved</option>
-                    <option value="false">Pending</option>
-                </select>
-                <select
-                    value={filters.isActive}
-                    onChange={(e) => setFilters({ ...filters, isActive: e.target.value, page: 1 })}
-                    className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-600 outline-none focus:border-blue-500"
-                >
-                    <option value="">All Access</option>
-                    <option value="true">Active</option>
-                    <option value="false">Inactive</option>
-                </select>
+            {/* Quick Status Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {[
+                    { id: 'all', label: 'All Experts', isApproved: '', isActive: '' },
+                    { id: 'approved', label: 'Approved', isApproved: 'true', isActive: '' },
+                    { id: 'pending', label: 'Pending KYC', isApproved: 'false', isActive: '' },
+                    { id: 'active', label: 'Active', isApproved: '', isActive: 'true' },
+                    { id: 'inactive', label: 'Suspended / Inactive', isApproved: '', isActive: 'false' },
+                ].map((tab) => {
+                    const isSelected = filters.isApproved === tab.isApproved && filters.isActive === tab.isActive;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setFilters({ ...filters, isApproved: tab.isApproved, isActive: tab.isActive, page: 1 })}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                isSelected
+                                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
+                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Expert Cards Grid */}
