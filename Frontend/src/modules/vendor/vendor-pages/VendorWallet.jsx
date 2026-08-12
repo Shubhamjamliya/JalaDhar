@@ -21,7 +21,9 @@ import {
     IoCashOutline,
     IoCardOutline,
     IoBusinessOutline,
-    IoShieldCheckmarkOutline
+    IoShieldCheckmarkOutline,
+    IoEyeOutline,
+    IoEyeOffOutline
 } from "react-icons/io5";
 
 export default function VendorWallet() {
@@ -34,6 +36,7 @@ export default function VendorWallet() {
     const [thisMonthEarnings, setThisMonthEarnings] = useState(0);
     const [transactions, setTransactions] = useState([]);
     const [withdrawalRequests, setWithdrawalRequests] = useState([]);
+    const [showFullAccount, setShowFullAccount] = useState(true);
     const toast = useToast();
     
     // Tab Navigation State - default to "wallet-overview"
@@ -1005,7 +1008,9 @@ export default function VendorWallet() {
                                                 {vendor?.bankDetails?.bankName || "State Bank of India / Primary Bank"}
                                             </p>
                                             <p className="text-xs text-gray-500 font-mono font-medium">
-                                                {vendor?.bankDetails?.accountNumber ? `Acc: •••• •••• ${vendor.bankDetails.accountNumber.slice(-4)}` : "Acc: •••• •••• 4829"}
+                                                {vendor?.bankDetails?.accountNumber 
+                                                    ? `Acc: ${showFullAccount ? vendor.bankDetails.accountNumber : `•••• •••• ${vendor.bankDetails.accountNumber.slice(-4)}`}` 
+                                                    : "Acc: 48291020304829"}
                                                 {vendor?.bankDetails?.ifscCode ? ` • IFSC: ${vendor.bankDetails.ifscCode}` : ""}
                                             </p>
                                         </div>
@@ -1147,13 +1152,23 @@ export default function VendorWallet() {
                                 </p>
                             </div>
 
-                            {/* 3. Masked Account Number */}
+                            {/* 3. Account Number */}
                             <div className="bg-white p-3.5 rounded-xl border border-gray-100 shadow-2xs">
-                                <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">Masked Account Number</span>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">Account Number</span>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setShowFullAccount(!showFullAccount)} 
+                                        className="text-xs text-gray-500 hover:text-[#0A84FF] flex items-center gap-1 font-semibold transition-colors"
+                                    >
+                                        {showFullAccount ? <IoEyeOffOutline className="text-sm" /> : <IoEyeOutline className="text-sm" />}
+                                        <span>{showFullAccount ? "Hide" : "Show"}</span>
+                                    </button>
+                                </div>
                                 <p className="font-extrabold text-gray-900 text-sm font-mono tracking-wider mt-1">
-                                    {vendor?.bankDetails?.accountNumber 
-                                        ? `•••• •••• ${vendor.bankDetails.accountNumber.slice(-4)}` 
-                                        : "•••• •••• 4829"}
+                                    {showFullAccount 
+                                        ? (vendor?.bankDetails?.accountNumber || "48291020304829") 
+                                        : (vendor?.bankDetails?.accountNumber ? `•••• •••• ${vendor.bankDetails.accountNumber.slice(-4)}` : "•••• •••• 4829")}
                                 </p>
                             </div>
 

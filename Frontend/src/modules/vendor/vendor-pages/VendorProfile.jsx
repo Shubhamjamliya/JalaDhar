@@ -1166,7 +1166,7 @@ export default function VendorProfile() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <InfoBlock label="Account Holder" value={vendor.bankDetails.accountHolderName} />
                                         <InfoBlock label="Bank Name" value={vendor.bankDetails.bankName} />
-                                        <InfoBlock label="Account Number" value={vendor.bankDetails.accountNumber ? `••••${vendor.bankDetails.accountNumber.slice(-4)}` : "N/A"} />
+                                        <InfoBlock label="Account Number" value={vendor.bankDetails.accountNumber || "N/A"} />
                                         <InfoBlock label="IFSC Code" value={vendor.bankDetails.ifscCode} />
                                         {vendor.bankDetails.branchName && (
                                             <InfoBlock label="Branch" value={vendor.bankDetails.branchName} />
