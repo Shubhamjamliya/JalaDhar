@@ -96,6 +96,23 @@ const HOUSE_TYPE_OPTIONS = [
   { value: "Other Residential Property", label: "Other Residential Property" }
 ];
 
+const COMMERCIAL_PROPERTY_TYPE_OPTIONS = [
+  { value: "Commercial Building", label: "Commercial Building" },
+  { value: "Office / Corporate Building", label: "Office / Corporate Building" },
+  { value: "Shop / Retail Store", label: "Shop / Retail Store" },
+  { value: "Shopping Complex / Mall", label: "Shopping Complex / Mall" },
+  { value: "Hotel / Resort", label: "Hotel / Resort" },
+  { value: "Restaurant / Food Court", label: "Restaurant / Food Court" },
+  { value: "Warehouse / Godown", label: "Warehouse / Godown" },
+  { value: "Business Park", label: "Business Park" },
+  { value: "Hospital / Healthcare Facility", label: "Hospital / Healthcare Facility" },
+  { value: "School / College / Educational Institution", label: "School / College / Educational Institution" },
+  { value: "Petrol Pump / Fuel Station", label: "Petrol Pump / Fuel Station" },
+  { value: "Commercial Plot", label: "Commercial Plot" },
+  { value: "Market / Wholesale Market", label: "Market / Wholesale Market" },
+  { value: "Other Commercial Property", label: "Other Commercial Property" }
+];
+
 // --- Sub-components for each step ---
 
 const CATEGORY_FAQS = [
@@ -667,14 +684,15 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
         {isComm && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Property Type *</label>
-              <input
-                required
+              <label className="block text-xs font-medium text-gray-700 mb-1">Commercial Property Type *</label>
+              <CustomDropdown
                 name="propertyType"
                 value={formData.propertyType}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs font-medium"
-                placeholder="Enter Property Type (e.g. Commercial Complex, Hotel, Hospital, Office)"
+                options={COMMERCIAL_PROPERTY_TYPE_OPTIONS}
+                placeholder="Select Commercial Property Type"
+                size="sm"
+                activeColor="blue"
               />
             </div>
 
