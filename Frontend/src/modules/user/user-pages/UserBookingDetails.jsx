@@ -35,6 +35,7 @@ import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import { maskPhone } from "../../../utils/phoneMasker";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal, { CANCELLATION_REASONS } from "../../shared/components/InputModal";
 import CancellationPolicyModal from "../../shared/components/CancellationPolicyModal";
@@ -866,7 +867,7 @@ export default function UserBookingDetails() {
                                         <div className="flex items-center gap-1 text-[11px] text-slate-600 font-medium">
                                             <IoCallOutline className="text-xs text-slate-500" />
                                             <a href={`tel:${booking.vendor.phone}`} className="hover:text-[#0A84FF] transition-colors">
-                                                {booking.vendor.phone}
+                                                {maskPhone(booking.vendor.phone)}
                                             </a>
                                         </div>
                                     )}

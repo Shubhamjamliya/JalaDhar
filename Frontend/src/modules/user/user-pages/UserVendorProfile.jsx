@@ -15,6 +15,7 @@ import {
     IoShieldCheckmarkOutline
 } from "react-icons/io5";
 import { getVendorProfile } from "../../../services/bookingApi";
+import { maskPhone } from "../../../utils/phoneMasker";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import PageContainer from "../../shared/components/PageContainer";
@@ -220,7 +221,7 @@ export default function UserVendorProfile() {
                             <InfoRow
                                 icon={IoCallOutline}
                                 label="Phone Number"
-                                value={vendorData.phone}
+                                value={maskPhone(vendorData.phone)}
                                 color="bg-blue-500"
                             />
                         )}
