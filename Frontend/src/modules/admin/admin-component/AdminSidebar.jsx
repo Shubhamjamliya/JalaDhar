@@ -54,7 +54,7 @@ const navItems = [
         children: [
             { label: "All Users", to: "/admin/users", end: true },
             { label: "User Bookings", to: "/admin/users/bookings" },
-            { label: "Transactions", to: "/admin/users/transactions" },
+            { label: "User Wallets & Refunds", to: "/admin/users/transactions" },
             { label: "User Analytics", to: "/admin/users/analytics" }
         ]
     },

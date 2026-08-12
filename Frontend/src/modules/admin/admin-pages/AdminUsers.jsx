@@ -179,37 +179,42 @@ export default function AdminUsers() {
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row gap-4">
+            {/* Quick Status Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {[
+                    { id: 'all', label: 'All Users', isActive: '', isEmailVerified: '' },
+                    { id: 'active', label: 'Active Users', isActive: 'true', isEmailVerified: '' },
+                    { id: 'blocked', label: 'Blocked / Inactive', isActive: 'false', isEmailVerified: '' },
+                    { id: 'verified', label: 'Verified Email', isActive: '', isEmailVerified: 'true' },
+                ].map((tab) => {
+                    const isSelected = filters.isActive === tab.isActive && filters.isEmailVerified === tab.isEmailVerified;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setFilters(prev => ({ ...prev, isActive: tab.isActive, isEmailVerified: tab.isEmailVerified, page: 1 }))}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                isSelected
+                                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
+                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Search Bar */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center">
                 <div className="flex-1 relative">
-                    <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+                    <IoSearchOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                     <input
                         type="text"
-                        placeholder="Search by name, email, or phone..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                        placeholder="Search by user name, email, or phone..."
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                         value={filters.search}
                         onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
                     />
-                </div>
-                <div className="flex gap-4">
-                    <select
-                        className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                        value={filters.isActive}
-                        onChange={(e) => setFilters(prev => ({ ...prev, isActive: e.target.value, page: 1 }))}
-                    >
-                        <option value="">Account Status</option>
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                    </select>
-                    <select
-                        className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                        value={filters.isEmailVerified}
-                        onChange={(e) => setFilters(prev => ({ ...prev, isEmailVerified: e.target.value, page: 1 }))}
-                    >
-                        <option value="">Verification</option>
-                        <option value="true">Verified</option>
-                        <option value="false">Unverified</option>
-                    </select>
                 </div>
             </div>
 
