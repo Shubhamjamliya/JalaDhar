@@ -181,7 +181,7 @@ const approveBorewellResult = async (req, res) => {
     const settlementAmount = booking.payment.totalAmount * 0.5; // 50% of total
     const incentive = approved ? booking.payment.totalAmount * 0.1 : 0; // 10% incentive for success
     const penalty = !approved ? booking.payment.totalAmount * 0.05 : 0; // 5% penalty for failure
-    const travelCharges = 500; // Fixed travel charges (can be made configurable)
+    const travelCharges = Number(booking.travelChargesRequest?.amount || booking.travelCharges || 0);
 
     const finalSettlement = settlementAmount + incentive - penalty + travelCharges;
 
@@ -452,8 +452,32 @@ const getBookingStatistics = async (req, res) => {
       Booking.countDocuments({ status: BOOKING_STATUS.SUCCESS }),
       Booking.countDocuments({ status: BOOKING_STATUS.FAILED }),
       Booking.aggregate([
-        { $match: { 'payment.status': PAYMENT_STATUS.SUCCESS } },
-        { $group: { _id: null, total: { $sum: '$payment.totalAmount' } } }
+        {
+          $match: {
+            status: {
+              $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED]
+            }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: {
+              $sum: {
+                $add: [
+                  { $ifNull: ["$payment.advanceAmount", { $multiply: ["$payment.totalAmount", 0.4] }] },
+                  {
+                    $cond: [
+                      { $eq: ["$payment.remainingPaymentStatus", "PAID"] },
+                      { $ifNull: ["$payment.remainingAmount", { $multiply: ["$payment.totalAmount", 0.6] }] },
+                      0
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
       ]),
       Booking.countDocuments({ 'payment.vendorSettlement.status': 'PENDING' })
     ]);

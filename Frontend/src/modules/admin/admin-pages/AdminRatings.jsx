@@ -141,19 +141,20 @@ export default function AdminRatings() {
         });
     };
 
-    const renderStars = (rating) => {
+    const renderStars = (rating = 0) => {
+        const numRating = Number(rating || 0);
         return (
             <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                     <span key={star}>
-                        {star <= Math.round(rating) ? (
+                        {star <= Math.round(numRating) ? (
                             <IoStar className="text-yellow-400 text-lg" />
                         ) : (
                             <IoStarOutline className="text-gray-300 text-lg" />
                         )}
                     </span>
                 ))}
-                <span className="ml-2 text-sm font-medium text-gray-700">{rating.toFixed(1)}</span>
+                <span className="ml-2 text-sm font-medium text-gray-700">{numRating.toFixed(1)}</span>
             </div>
         );
     };

@@ -4,6 +4,7 @@ const Vendor = require('../../models/Vendor');
 const Booking = require('../../models/Booking');
 const Dispute = require('../../models/Dispute');
 const { BOOKING_STATUS } = require('../../utils/constants');
+const { getSetting } = require('../../services/settingsService');
 
 /**
  * Get Dashboard Stats
@@ -72,9 +73,10 @@ exports.getDashboardStats = async (req, res) => {
 
     const totalRevenue = revenueAggregation.length > 0 ? revenueAggregation[0].totalRevenue : 0;
 
-    // 6. Today's Activity Stats
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    // 6. Today's Activity Stats (IST timezone aware)
+    const nowInIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    const startOfToday = new Date(Date.UTC(nowInIST.getFullYear(), nowInIST.getMonth(), nowInIST.getDate(), 0, 0, 0, 0));
+    startOfToday.setMinutes(startOfToday.getMinutes() - 330);
 
     const [todaysNewBookings, todaysCompletedBookings, todaysNewUsers, todaysNewVendors, todaysRevenueAgg] = await Promise.all([
       Booking.countDocuments({ createdAt: { $gte: startOfToday } }),
@@ -126,8 +128,9 @@ exports.getDashboardStats = async (req, res) => {
       Booking.countDocuments({ status: BOOKING_STATUS.PENDING })
     ]);
 
-    // 8. Platform Fees breakdown (10% platform fee standard)
-    const platformFeeEarnings = Math.round(totalRevenue * 0.10);
+    // 8. Platform Fees breakdown (dynamic setting lookup)
+    const feePercentage = await getSetting('PLATFORM_FEE_PERCENTAGE', 10);
+    const platformFeeEarnings = Math.round(totalRevenue * (feePercentage / 100));
     const vendorNetPayouts = totalRevenue - platformFeeEarnings;
 
     // 9. Recent Bookings
@@ -139,7 +142,98 @@ exports.getDashboardStats = async (req, res) => {
       .populate('service', 'name')
       .select('status payment.totalAmount createdAt user vendor service');
 
-    // 10. Top Expert Performance Aggregation
+    // 10. Overall Booking Status Distribution Aggregation (All DB Bookings)
+    const statusDistAgg = await Booking.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    const bookingStatusDistribution = statusDistAgg.map(item => ({
+      status: item._id || 'OTHER',
+      count: item.count
+    }));
+
+    // 11. Vendor Payment Breakdown Aggregation (Paid vs Pending)
+    const vendorPaymentBreakdownAgg = await Booking.aggregate([
+      {
+        $match: {
+          status: {
+            $in: [
+              BOOKING_STATUS.WORK_DONE,
+              BOOKING_STATUS.FINAL_SETTLEMENT,
+              BOOKING_STATUS.COMPLETED,
+              BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE
+            ]
+          }
+        }
+      },
+      {
+        $group: {
+          _id: { $ifNull: ["$vendorPaymentStatus", "PENDING"] },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // 12. Top Services Aggregation Across Entire Database
+    const topServicesAgg = await Booking.aggregate([
+      {
+        $lookup: {
+          from: "services",
+          localField: "service",
+          foreignField: "_id",
+          as: "serviceDoc"
+        }
+      },
+      { $unwind: { path: "$serviceDoc", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: { $ifNull: ["$serviceDoc.name", "$serviceType", "Groundwater Survey"] },
+          bookings: { $sum: 1 },
+          completed: {
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    "$status",
+                    [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE]
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          revenue: {
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    "$status",
+                    [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE]
+                  ]
+                },
+                { $ifNull: ["$payment.totalAmount", 0] },
+                0
+              ]
+            }
+          }
+        }
+      },
+      { $sort: { bookings: -1 } },
+      { $limit: 10 }
+    ]);
+    const topServicesList = topServicesAgg.map(item => ({
+      name: item._id,
+      bookings: item.bookings,
+      completed: item.completed,
+      revenue: item.revenue
+    }));
+
+    // 13. Top Expert Performance Aggregation
     const topExpertsAgg = await Booking.aggregate([
       {
         $match: {
@@ -175,7 +269,7 @@ exports.getDashboardStats = async (req, res) => {
       };
     });
 
-    // 11. Urgent Alerts
+    // 14. Urgent Alerts
     const alerts = [];
     if (pendingVendorsCount > 0) {
       alerts.push({
@@ -253,8 +347,11 @@ exports.getDashboardStats = async (req, res) => {
           totalGrossVolume: totalRevenue,
           platformFeeEarnings,
           vendorNetPayouts,
-          feePercentage: 10
+          feePercentage
         },
+        bookingStatusDistribution,
+        vendorPaymentBreakdown: vendorPaymentBreakdownAgg,
+        topServices: topServicesList,
         expertPerformance,
         alerts,
         recentBookings

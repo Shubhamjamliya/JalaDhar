@@ -1,5 +1,6 @@
 const User = require('../../models/User');
 const Booking = require('../../models/Booking');
+const { BOOKING_STATUS } = require('../../utils/constants');
 const { validationResult } = require('express-validator');
 
 /**
@@ -94,8 +95,30 @@ const getUserDetails = async (req, res) => {
     // Get user statistics
     const [totalBookings, completedBookings, pendingBookings] = await Promise.all([
       Booking.countDocuments({ user: userId }),
-      Booking.countDocuments({ user: userId, status: 'COMPLETED' }),
-      Booking.countDocuments({ user: userId, status: 'PENDING' })
+      Booking.countDocuments({
+        user: userId,
+        status: {
+          $in: [
+            BOOKING_STATUS.COMPLETED,
+            BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE
+          ]
+        }
+      }),
+      Booking.countDocuments({
+        user: userId,
+        status: {
+          $in: [
+            BOOKING_STATUS.PENDING,
+            BOOKING_STATUS.ASSIGNED,
+            BOOKING_STATUS.ACCEPTED,
+            BOOKING_STATUS.VISITED,
+            BOOKING_STATUS.REPORT_UPLOADED,
+            BOOKING_STATUS.PAYMENT_SUCCESS,
+            BOOKING_STATUS.ADMIN_APPROVED,
+            BOOKING_STATUS.BOREWELL_UPLOADED
+          ]
+        }
+      })
     ]);
 
     res.json({

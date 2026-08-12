@@ -29,6 +29,8 @@ const AdminDashboard = () => {
     const [platformFeesData, setPlatformFeesData] = useState(null);
     const [expertPerformanceData, setExpertPerformanceData] = useState([]);
     const [alertsData, setAlertsData] = useState([]);
+    const [statusDistributionData, setStatusDistributionData] = useState([]);
+    const [topServicesData, setTopServicesData] = useState([]);
     const [stats, setStats] = useState({
         totalUsers: 0,
         totalVendors: 0,
@@ -59,6 +61,8 @@ const AdminDashboard = () => {
                     setPlatformFeesData(statsRes.data.platformFees || null);
                     setExpertPerformanceData(statsRes.data.expertPerformance || []);
                     setAlertsData(statsRes.data.alerts || []);
+                    setStatusDistributionData(statsRes.data.bookingStatusDistribution || []);
+                    setTopServicesData(statsRes.data.topServices || []);
                 }
 
                 // 2. Fetch Revenue Analytics based on Period
@@ -272,7 +276,7 @@ const AdminDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <BookingStatusPieChart bookings={recentBookingsList} />
+                <BookingStatusPieChart bookings={recentBookingsList} statusDistribution={statusDistributionData} />
                 <PaymentBreakdownPieChart bookings={recentBookingsList} />
             </div>
 
@@ -287,7 +291,8 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <TopServices
                     bookings={recentBookingsList}
-                    periodLabel="Top Booked Services (Recent)"
+                    topServicesList={topServicesData}
+                    periodLabel="Top Booked Services"
                 />
                 <RecentBookings bookings={recentBookingsList} onViewBooking={onViewBooking} />
             </div>

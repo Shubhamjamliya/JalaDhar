@@ -2,11 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '../../utils/adminHelpers';
 
-const TopServices = ({ bookings = [], periodLabel = 'Top Services' }) => {
+const TopServices = ({ bookings = [], topServicesList = [], periodLabel = 'Top Services' }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   const topServices = useMemo(() => {
+    if (topServicesList && topServicesList.length > 0) {
+      return [...topServicesList].sort((a, b) => b.bookings - a.bookings);
+    }
     const map = new Map();
     bookings.forEach((b) => {
       const name = b.service?.name || b.serviceType || 'Unknown Service';
@@ -19,7 +22,7 @@ const TopServices = ({ bookings = [], periodLabel = 'Top Services' }) => {
       map.set(name, prev);
     });
     return Array.from(map.values()).sort((a, b) => b.bookings - a.bookings);
-  }, [bookings]);
+  }, [bookings, topServicesList]);
 
   const totalPages = Math.ceil(topServices.length / itemsPerPage) || 1;
   const paginated = useMemo(() => {

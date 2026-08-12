@@ -21,15 +21,23 @@ const normalizeStatus = (s) => {
   return v;
 };
 
-const BookingStatusPieChart = ({ bookings = [] }) => {
+const BookingStatusPieChart = ({ bookings = [], statusDistribution = [] }) => {
   const data = useMemo(() => {
+    if (statusDistribution && statusDistribution.length > 0) {
+      const map = new Map();
+      statusDistribution.forEach((item) => {
+        const key = normalizeStatus(item.status || item.name);
+        map.set(key, (map.get(key) || 0) + Number(item.count || item.value || 0));
+      });
+      return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+    }
     const map = new Map();
     bookings.forEach((b) => {
       const key = normalizeStatus(b.status);
       map.set(key, (map.get(key) || 0) + 1);
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
-  }, [bookings]);
+  }, [bookings, statusDistribution]);
 
   const CustomTooltip = ({ active, payload }) => {
     if (!active || !payload || !payload.length) return null;
