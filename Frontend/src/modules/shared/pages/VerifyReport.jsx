@@ -67,7 +67,7 @@ export default function VerifyReport() {
             </div>
             <h2 style={{ ...styles.resultTitle, color: '#991B1B' }}>Verification Failed</h2>
             <p style={styles.errorMsg}>{error}</p>
-            <p style={styles.hint}>If you believe this is an error, please contact support at <strong>support@jaladhaara.in</strong></p>
+            <p style={styles.hint}>If you believe this is an error, please contact support at <strong>info@jaladhaaraapp.com</strong></p>
           </div>
         )}
 
@@ -126,7 +126,7 @@ export default function VerifyReport() {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ marginRight: 6, flexShrink: 0 }}>
                 <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" />
               </svg>
-              This report was issued through the <strong>Jaladhaara Digital Survey Platform</strong>. For disputes or queries, contact <strong>support@jaladhaara.in</strong>
+              This report was issued through the <strong>Jaladhaara Digital Survey Platform</strong>. For disputes or queries, contact <strong>info@jaladhaaraapp.com</strong>
             </div>
           </>
         )}

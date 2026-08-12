@@ -272,7 +272,7 @@ const InvoicePDF = ({ booking, billingInfo, qrCodeUrl }) => {
     BILLING_GSTIN = "22AAAAA0000A1Z5",
     BILLING_PAN = "AAACJ1234F",
     BILLING_PHONE = "+91 98765 43210",
-    BILLING_EMAIL = "billing@jaladhar.com",
+    BILLING_EMAIL = "info@jaladhaaraapp.com",
     BILLING_WEBSITE = "https://jaladhaaraapp.in",
     BILLING_SAC_CODE = "998341",
     BILLING_PLACE_OF_SUPPLY = "Chhattisgarh (State Code: 22)",

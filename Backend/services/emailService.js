@@ -21,7 +21,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
   try {
     const transporter = createTransporter();
 
-    const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'Jaladhar <noreply@jaladhar.com>';
+    const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'Jaladhaara <noreply@jaladhaaraapp.com>';
 
     const mailOptions = {
       from: fromEmail,
@@ -512,7 +512,7 @@ const sendBookingConfirmationEmail = async ({
               <td align="left" vertical-align="top" width="30%" style="padding-left: 15px;">
                 <div style="font-size: 12px; font-weight: 700; color: #0F172A; margin-bottom: 6px;">Need Help?</div>
                 <div style="font-size: 12px; color: #475569; margin-bottom: 4px;">📞 +91 6300 123 456</div>
-                <div style="font-size: 12px; color: #475569;">✉️ support@jaladhaara.com</div>
+                <div style="font-size: 12px; color: #475569;">✉️ info@jaladhaaraapp.com</div>
               </td>
 
               <td align="right" vertical-align="top" width="25%">

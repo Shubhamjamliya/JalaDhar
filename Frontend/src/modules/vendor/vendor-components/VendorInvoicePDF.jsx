@@ -216,7 +216,7 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
     BILLING_GSTIN = "22AAAAA0000A1Z5",
     BILLING_PAN = "AAACJ1234F",
     BILLING_PHONE = "+91 98765 43210",
-    BILLING_EMAIL = "billing@jaladhar.com",
+    BILLING_EMAIL = "info@jaladhaaraapp.com",
     BILLING_DECLARATION = "This is a computer-generated B2B Platform Fee Tax Invoice."
   } = billingInfo || {};
 

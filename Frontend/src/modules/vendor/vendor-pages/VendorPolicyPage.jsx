@@ -364,7 +364,7 @@ export default function VendorPolicyPage() {
             {/* Bottom Actions */}
             <div className="flex items-center justify-between pt-2">
                 <p className="text-[11px] text-slate-500 font-medium">
-                    Questions about policies? Contact <span className="font-bold text-slate-700">support@jaladhaaraapp.in</span>
+                    Questions about policies? Contact <span className="font-bold text-slate-700">info@jaladhaaraapp.com</span>
                 </p>
                 <button
                     onClick={() => navigate("/vendor/dashboard")}

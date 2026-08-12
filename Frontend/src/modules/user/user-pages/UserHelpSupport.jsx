@@ -104,7 +104,7 @@ export default function UserHelpSupport() {
                     </a>
 
                     <a
-                        href="mailto:support@jaladhaaraapp.in"
+                        href="mailto:info@jaladhaaraapp.com"
                         className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group"
                     >
                         <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl group-hover:scale-110 transition-transform">
@@ -112,7 +112,7 @@ export default function UserHelpSupport() {
                         </div>
                         <div>
                             <span className="text-xs text-gray-400 font-semibold block">Email Support</span>
-                            <span className="text-sm font-bold text-gray-900">support@jaladhaaraapp.in</span>
+                            <span className="text-sm font-bold text-gray-900">info@jaladhaaraapp.com</span>
                         </div>
                     </a>
 

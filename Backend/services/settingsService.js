@@ -164,7 +164,7 @@ const initializeDefaultSettings = async () => {
     },
     {
       key: 'BILLING_EMAIL',
-      value: 'billing@jaladhar.com',
+      value: 'info@jaladhaaraapp.com',
       label: 'Billing Email',
       description: 'Email address shown on invoices',
       type: 'string',

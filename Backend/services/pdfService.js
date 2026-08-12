@@ -31,7 +31,7 @@ const generateInvoice = async (booking) => {
       const companyGstin = settings.BILLING_GSTIN || '22AAAAA0000A1Z5';
       const companyPan = settings.BILLING_PAN || 'AAACJ1234F';
       const companyPhone = settings.BILLING_PHONE || '+91 98765 43210';
-      const companyEmail = settings.BILLING_EMAIL || 'billing@jaladhar.com';
+      const companyEmail = settings.BILLING_EMAIL || 'info@jaladhaaraapp.com';
       const companyWebsite = settings.BILLING_WEBSITE || 'https://jaladhaaraapp.in';
       const sacCode = settings.BILLING_SAC_CODE || '998341';
       const placeOfSupply = settings.BILLING_PLACE_OF_SUPPLY || 'Chhattisgarh (State Code: 22)';
