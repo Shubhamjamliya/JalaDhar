@@ -274,7 +274,7 @@ export default function UserVendorProfile() {
                         </div>
                     </div>
 
-                    {/* Certificates Section */}
+                    {/* Certificates Section (Masked Credentials) */}
                     {(vendorData.degreeCertificates?.length > 0 || vendorData.trainingCertificates?.length > 0) && (
                         <div className="w-full pt-4 border-t border-gray-100">
                             <h3 className="text-sm font-bold text-gray-800 mb-3 px-1">Verified Credentials</h3>
@@ -285,16 +285,14 @@ export default function UserVendorProfile() {
                                     <p className="text-xs text-gray-500 mb-2 font-medium">Degree Certificates</p>
                                     <div className="flex flex-wrap gap-2">
                                         {vendorData.degreeCertificates.map((cert, index) => (
-                                            <a
+                                            <div
                                                 key={index}
-                                                href={cert.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors border border-blue-100"
+                                                className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-800 rounded-xl text-xs font-semibold border border-blue-100/90 shadow-2xs cursor-default"
                                             >
-                                                <IoSchoolOutline className="text-sm" />
-                                                <span>{cert.name || `Certificate ${index + 1}`}</span>
-                                            </a>
+                                                <IoShieldCheckmarkOutline className="text-sm text-blue-600 shrink-0" />
+                                                <span>Verified Degree Certificate</span>
+                                                <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded ml-auto">Verified</span>
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
@@ -306,16 +304,14 @@ export default function UserVendorProfile() {
                                     <p className="text-xs text-gray-500 mb-2 font-medium">Training Certificates</p>
                                     <div className="flex flex-wrap gap-2">
                                         {vendorData.trainingCertificates.map((cert, index) => (
-                                            <a
+                                            <div
                                                 key={index}
-                                                href={cert.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors border border-green-100"
+                                                className="flex items-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-semibold border border-emerald-100/90 shadow-2xs cursor-default"
                                             >
-                                                <span className="material-symbols-outlined text-sm">workspace_premium</span>
-                                                <span>{cert.name || `Training ${index + 1}`}</span>
-                                            </a>
+                                                <IoShieldCheckmarkOutline className="text-sm text-emerald-600 shrink-0" />
+                                                <span>Verified Training Certificate</span>
+                                                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded ml-auto">Verified</span>
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
