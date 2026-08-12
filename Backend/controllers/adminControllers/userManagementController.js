@@ -17,7 +17,7 @@ const getAllUsers = async (req, res) => {
       sortOrder = 'desc'
     } = req.query;
 
-    const query = {};
+    const query = { role: 'USER' };
 
     // Filter by active status
     if (isActive !== undefined) {
