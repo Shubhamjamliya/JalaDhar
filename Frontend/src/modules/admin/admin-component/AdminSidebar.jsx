@@ -98,12 +98,11 @@ const navItems = [
         Icon: IoBarChartOutline,
         roles: ["SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN"],
         children: [
-            { label: "Overview", to: "/admin/reports", end: true },
-            { label: "Market IQ", to: "/admin/reports/geo" },
-            { label: "Revenue", to: "/admin/reports/revenue" },
-            { label: "Bookings", to: "/admin/reports/bookings" },
-            { label: "Payments", to: "/admin/reports/payments" },
-            { label: "Experts", to: "/admin/reports/vendors" }
+            { label: "Executive Overview", to: "/admin/reports", end: true },
+            { label: "Market IQ & Geo Heatmaps", to: "/admin/reports/geo" },
+            { label: "Revenue & Settlements", to: "/admin/reports/revenue" },
+            { label: "Bookings & Cancellations", to: "/admin/reports/bookings" },
+            { label: "Expert & User Performance", to: "/admin/reports/vendors" }
         ]
     },
     {
