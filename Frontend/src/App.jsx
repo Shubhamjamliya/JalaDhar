@@ -774,6 +774,14 @@ function App() {
                                                                         }
                                                                     />
                                                                     <Route
+                                                                        path="/dashboard"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminDashboard />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
                                                                         path="/expert-agreements"
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
