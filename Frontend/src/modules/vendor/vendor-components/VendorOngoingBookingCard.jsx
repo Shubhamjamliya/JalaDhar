@@ -21,6 +21,7 @@ import {
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import { useNotifications } from "../../../contexts/NotificationContext";
+import { maskPhone } from "../../../utils/phoneMasker";
 
 /**
  * Ongoing Survey Booking Card for Expert App
@@ -183,15 +184,6 @@ export default function VendorOngoingBookingCard({
 
     const currentStatus = getStatusConfig();
 
-    // Copy Phone Number
-    const handleCopyPhone = (e) => {
-        e.stopPropagation();
-        if (customerPhone) {
-            navigator.clipboard.writeText(customerPhone);
-            toast.success("Phone number copied!");
-        }
-    };
-
     // Live Tracking
     const handleNavigateMaps = (e) => {
         e.stopPropagation();
@@ -226,14 +218,7 @@ export default function VendorOngoingBookingCard({
                             </h3>
                             {customerPhone && (
                                 <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold mt-0.5">
-                                    <span>+91 {customerPhone}</span>
-                                    <button
-                                        onClick={handleCopyPhone}
-                                        title="Copy Phone Number"
-                                        className="p-1 hover:text-blue-600 transition-colors cursor-pointer"
-                                    >
-                                        <IoCopyOutline className="text-xs" />
-                                    </button>
+                                    <span>{maskPhone(customerPhone)}</span>
                                 </div>
                             )}
                         </div>

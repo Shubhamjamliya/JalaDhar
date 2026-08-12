@@ -31,6 +31,7 @@ import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import { maskPhone } from "../../../utils/phoneMasker";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal, { VENDOR_REJECTION_REASONS } from "../../shared/components/InputModal";
 import OTPInputModal from "../../shared/components/OTPInputModal";
@@ -1066,23 +1067,19 @@ export default function VendorBookingDetails() {
                                 {(booking.user?.phone || booking.phone) && (
                                     <div className="flex items-center gap-2 text-sm text-gray-700 mt-1">
                                         <IoCallOutline className="text-base text-[#0A84FF]" />
-                                        {booking.status === "ASSIGNED" ? (
-                                            <span className="text-gray-400 font-medium italic">+91 ***** *****</span>
-                                        ) : (
-                                            <a href={`tel:${booking.user?.phone || booking.phone}`} className="hover:text-[#0A84FF] font-bold text-gray-900">
-                                                {booking.user?.phone || booking.phone}
-                                            </a>
-                                        )}
+                                        <a href={`tel:${booking.user?.phone || booking.phone}`} className="hover:text-[#0A84FF] font-bold text-gray-900">
+                                            {maskPhone(booking.user?.phone || booking.phone)}
+                                        </a>
                                     </div>
                                 )}
 
                                 {/* Alternate Mobile Number (Only if present) */}
-                                {booking.status !== "ASSIGNED" && (booking.alternatePhone || booking.user?.alternatePhone) && (
+                                {(booking.alternatePhone || booking.user?.alternatePhone) && (
                                     <div className="flex items-center gap-2 text-xs text-gray-500 mt-1.5">
                                         <span className="font-semibold text-gray-500">Alt Phone:</span>
                                         <a href={`tel:${booking.alternatePhone || booking.user?.alternatePhone}`} className="hover:text-[#0A84FF] font-bold text-gray-800 flex items-center gap-1">
                                             <IoCallOutline className="text-xs text-emerald-600" />
-                                            <span>{booking.alternatePhone || booking.user?.alternatePhone}</span>
+                                            <span>{maskPhone(booking.alternatePhone || booking.user?.alternatePhone)}</span>
                                         </a>
                                     </div>
                                 )}
