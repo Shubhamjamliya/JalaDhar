@@ -60,14 +60,133 @@ exports.getDashboardStats = async (req, res) => {
 
     const totalRevenue = revenueAggregation.length > 0 ? revenueAggregation[0].totalRevenue : 0;
 
-    // 6. Recent Bookings
+    // 6. Today's Activity Stats
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [todaysNewBookings, todaysCompletedBookings, todaysNewUsers, todaysNewVendors, todaysRevenueAgg] = await Promise.all([
+      Booking.countDocuments({ createdAt: { $gte: startOfToday } }),
+      Booking.countDocuments({
+        createdAt: { $gte: startOfToday },
+        status: { $in: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE] }
+      }),
+      User.countDocuments({ createdAt: { $gte: startOfToday }, role: 'USER' }),
+      Vendor.countDocuments({ createdAt: { $gte: startOfToday } }),
+      Booking.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startOfToday },
+            status: { $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] }
+          }
+        },
+        { $group: { _id: null, total: { $sum: "$payment.totalAmount" } } }
+      ])
+    ]);
+
+    const todaysRevenue = todaysRevenueAgg.length > 0 ? todaysRevenueAgg[0].total : 0;
+
+    // 7. Pending Actions Counts
+    const [pendingVendorsCount, openDisputesCount, pendingSettlementsCount, unassignedBookingsCount] = await Promise.all([
+      Vendor.countDocuments({ isApproved: false }),
+      Dispute.countDocuments({ status: { $in: ['PENDING', 'IN_PROGRESS'] } }),
+      Booking.countDocuments({
+        'borewellResult.status': { $in: ['SUCCESS', 'FAILED'] },
+        vendorStatus: { $ne: BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE }
+      }),
+      Booking.countDocuments({ status: BOOKING_STATUS.PENDING })
+    ]);
+
+    // 8. Platform Fees breakdown (10% platform fee standard)
+    const platformFeeEarnings = Math.round(totalRevenue * 0.10);
+    const vendorNetPayouts = totalRevenue - platformFeeEarnings;
+
+    // 9. Recent Bookings
     const recentBookings = await Booking.find()
       .sort({ createdAt: -1 })
       .limit(5)
       .populate('user', 'name email mobile')
-      .populate('vendor', 'name businessName')
+      .populate('vendor', 'name businessName phone')
       .populate('service', 'name')
       .select('status payment.totalAmount createdAt user vendor service');
+
+    // 10. Top Expert Performance Aggregation
+    const topExpertsAgg = await Booking.aggregate([
+      {
+        $match: {
+          vendor: { $ne: null },
+          status: { $in: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE] }
+        }
+      },
+      {
+        $group: {
+          _id: "$vendor",
+          completedJobs: { $sum: 1 },
+          totalRevenue: { $sum: "$payment.totalAmount" }
+        }
+      },
+      { $sort: { completedJobs: -1, totalRevenue: -1 } },
+      { $limit: 5 }
+    ]);
+
+    const topVendorIds = topExpertsAgg.map(item => item._id);
+    const vendorDocs = await Vendor.find({ _id: { $in: topVendorIds } }).select('name businessName phone designation rating avatar experience');
+
+    const expertPerformance = topExpertsAgg.map(item => {
+      const v = vendorDocs.find(doc => doc._id.toString() === item._id.toString());
+      const numRating = v && v.rating ? (typeof v.rating === 'object' ? (v.rating.averageRating || 4.9) : v.rating) : 4.9;
+      return {
+        vendorId: item._id,
+        name: v ? (v.name || v.businessName || 'Expert Partner') : 'Expert Partner',
+        phone: v ? v.phone : '',
+        designation: v ? (v.designation || 'Hydrogeologist') : 'Hydrogeologist',
+        completedJobs: item.completedJobs,
+        totalRevenue: item.totalRevenue,
+        rating: Number(numRating || 4.9)
+      };
+    });
+
+    // 11. Urgent Alerts
+    const alerts = [];
+    if (pendingVendorsCount > 0) {
+      alerts.push({
+        id: 'pending_vendors',
+        title: 'Pending Expert Approvals',
+        message: `${pendingVendorsCount} expert applications are waiting for KYC document verification`,
+        type: 'warning',
+        link: '/admin/approvals',
+        count: pendingVendorsCount
+      });
+    }
+    if (openDisputesCount > 0) {
+      alerts.push({
+        id: 'open_disputes',
+        title: 'Unresolved Client Disputes',
+        message: `${openDisputesCount} customer disputes require immediate administrative review`,
+        type: 'critical',
+        link: '/admin/disputes',
+        count: openDisputesCount
+      });
+    }
+    if (unassignedBookingsCount > 0) {
+      alerts.push({
+        id: 'unassigned_bookings',
+        title: 'Unassigned Booking Requests',
+        message: `${unassignedBookingsCount} booking requests are pending vendor assignment`,
+        type: 'info',
+        link: '/admin/bookings',
+        count: unassignedBookingsCount
+      });
+    }
+    if (pendingSettlementsCount > 0) {
+      alerts.push({
+        id: 'pending_payouts',
+        title: 'Borewell Payout Settlements',
+        message: `${pendingSettlementsCount} completed jobs require final payout processing`,
+        type: 'warning',
+        link: '/admin/payments',
+        count: pendingSettlementsCount
+      });
+    }
 
     // Return Data
     res.status(200).json({
@@ -78,8 +197,36 @@ exports.getDashboardStats = async (req, res) => {
           totalVendors,
           pendingBookings: activeBookings,
           completedBookings,
-          totalRevenue
+          totalRevenue,
+          todayRevenue: todaysRevenue,
+          todaysNewBookings,
+          todaysCompletedBookings,
+          todaysNewUsers,
+          todaysNewVendors,
+          platformFeeEarnings,
+          vendorNetPayouts
         },
+        todaysActivity: {
+          revenue: todaysRevenue,
+          newBookings: todaysNewBookings,
+          completedBookings: todaysCompletedBookings,
+          newUsers: todaysNewUsers,
+          newVendors: todaysNewVendors
+        },
+        pendingActions: {
+          pendingVendors: pendingVendorsCount,
+          openDisputes: openDisputesCount,
+          pendingSettlements: pendingSettlementsCount,
+          unassignedBookings: unassignedBookingsCount
+        },
+        platformFees: {
+          totalGrossVolume: totalRevenue,
+          platformFeeEarnings,
+          vendorNetPayouts,
+          feePercentage: 10
+        },
+        expertPerformance,
+        alerts,
         recentBookings
       }
     });

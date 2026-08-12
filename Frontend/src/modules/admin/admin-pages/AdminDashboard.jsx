@@ -12,6 +12,11 @@ import { formatCurrency } from '../utils/adminHelpers';
 import CustomerGrowthAreaChart from '../admin-component/dashboard/CustomerGrowthAreaChart';
 import TopServices from '../admin-component/dashboard/TopServices';
 import RecentBookings from '../admin-component/dashboard/RecentBookings';
+import TodaysActivity from '../admin-component/dashboard/TodaysActivity';
+import PendingActions from '../admin-component/dashboard/PendingActions';
+import PlatformFeesWidget from '../admin-component/dashboard/PlatformFeesWidget';
+import ExpertPerformance from '../admin-component/dashboard/ExpertPerformance';
+import AdminAlerts from '../admin-component/dashboard/AdminAlerts';
 import { getDashboardStats, getRevenueAnalytics } from '../../../services/adminDashboardService';
 
 const AdminDashboard = () => {
@@ -19,6 +24,11 @@ const AdminDashboard = () => {
     const [period, setPeriod] = useState('month');
     const [revenueData, setRevenueData] = useState([]);
     const [recentBookingsList, setRecentBookingsList] = useState([]);
+    const [todaysActivityData, setTodaysActivityData] = useState(null);
+    const [pendingActionsData, setPendingActionsData] = useState(null);
+    const [platformFeesData, setPlatformFeesData] = useState(null);
+    const [expertPerformanceData, setExpertPerformanceData] = useState([]);
+    const [alertsData, setAlertsData] = useState([]);
     const [stats, setStats] = useState({
         totalUsers: 0,
         totalVendors: 0,
@@ -31,7 +41,7 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Fetch Stats & Recent Bookings
+                // 1. Fetch Stats & Dashboard Analytics
                 const statsRes = await getDashboardStats();
                 if (statsRes.success) {
                     const s = statsRes.data.stats;
@@ -41,9 +51,14 @@ const AdminDashboard = () => {
                         activeBookings: s.pendingBookings,
                         completedBookings: s.completedBookings,
                         totalRevenue: s.totalRevenue,
-                        todayRevenue: 0,
+                        todayRevenue: s.todayRevenue || 0,
                     });
                     setRecentBookingsList(statsRes.data.recentBookings || []);
+                    setTodaysActivityData(statsRes.data.todaysActivity || null);
+                    setPendingActionsData(statsRes.data.pendingActions || null);
+                    setPlatformFeesData(statsRes.data.platformFees || null);
+                    setExpertPerformanceData(statsRes.data.expertPerformance || []);
+                    setAlertsData(statsRes.data.alerts || []);
                 }
 
                 // 2. Fetch Revenue Analytics based on Period
@@ -235,6 +250,22 @@ const AdminDashboard = () => {
                 })}
             </div>
 
+            {/* Admin Alerts Widget */}
+            <AdminAlerts alerts={alertsData} />
+
+            {/* Today's Activity Widget */}
+            <TodaysActivity todaysActivity={todaysActivityData} />
+
+            {/* Pending Actions Widget */}
+            <PendingActions pendingActions={pendingActionsData} />
+
+            {/* Revenue & Platform Fees + Expert Performance Leaderboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <PlatformFeesWidget platformFees={platformFeesData} />
+                <ExpertPerformance expertPerformance={expertPerformanceData} />
+            </div>
+
+            {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <RevenueLineChart data={revenueData} period={period} />
                 <BookingsBarChart data={revenueData} period={period} />
@@ -265,4 +296,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
