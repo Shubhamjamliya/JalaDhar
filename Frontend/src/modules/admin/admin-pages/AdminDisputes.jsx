@@ -273,37 +273,52 @@ export default function AdminDisputes() {
                 </div>
             )}
 
+            {/* Dispute Resolution Quick Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {[
+                    { id: 'all', label: 'All Disputes', status: '' },
+                    { id: 'pending', label: 'Open / Pending', status: 'PENDING' },
+                    { id: 'in_progress', label: 'Under Review', status: 'IN_PROGRESS' },
+                    { id: 'resolved', label: 'Resolved', status: 'RESOLVED' },
+                    { id: 'rejected', label: 'Rejected', status: 'REJECTED' },
+                    { id: 'refund', label: 'Refund / Compensation', status: 'CLOSED' },
+                ].map((tab) => {
+                    const isSelected = filters.status === tab.status;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setFilters({ ...filters, status: tab.status, page: 1 })}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                isSelected
+                                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
+                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    );
+                })}
+            </div>
+
             {/* Filters */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="relative">
-                        <IoSearchOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                    <div className="relative md:col-span-2">
+                        <IoSearchOutline className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                         <input
                             type="text"
-                            placeholder="Search disputes..."
+                            placeholder="Search by dispute ID, user, vendor, or description..."
                             value={filters.search}
                             onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#0A84FF]/20 focus:border-[#0A84FF] outline-none transition-all"
                         />
                     </div>
                     <select
-                        value={filters.status}
-                        onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
-                    >
-                        <option value="">All Status</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="RESOLVED">Resolved</option>
-                        <option value="CLOSED">Closed</option>
-                        <option value="REJECTED">Rejected</option>
-                    </select>
-                    <select
                         value={filters.type}
                         onChange={(e) => setFilters({ ...filters, type: e.target.value, page: 1 })}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                        className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#0A84FF]/20 focus:border-[#0A84FF] outline-none"
                     >
-                        <option value="">All Types</option>
+                        <option value="">All Dispute Types</option>
                         {disputeTypes.map((typeOption, idx) => (
                             <option key={idx} value={typeOption}>
                                 {typeOption}
@@ -312,7 +327,7 @@ export default function AdminDisputes() {
                     </select>
                     <button
                         onClick={() => setFilters({ search: "", status: "", type: "", page: 1 })}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-200 transition-colors"
                     >
                         Clear Filters
                     </button>

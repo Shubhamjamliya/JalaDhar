@@ -18,6 +18,7 @@ import {
     IoLockClosedOutline,
     IoNotificationsOutline,
     IoRibbonOutline,
+    IoHeadsetOutline,
     IoChevronDown,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
@@ -143,6 +144,18 @@ const navItems = [
             { label: "User Agreement Logs", to: "/admin/agreements" },
             { label: "Expert Agreement Logs", to: "/admin/expert-agreements" },
             { label: "Survey OTP Audit Logs", to: "/admin/otp-logs" }
+        ]
+    },
+    {
+        id: "support",
+        label: "Support & Communication",
+        to: "/admin/bookings/notifications",
+        Icon: IoHeadsetOutline,
+        roles: ["SUPER_ADMIN", "ADMIN", "SUPPORT_ADMIN", "OPERATIONS_ADMIN"],
+        children: [
+            { label: "Push & Broadcast Alerts", to: "/admin/bookings/notifications" },
+            { label: "Complaints & Triage", to: "/admin/disputes" },
+            { label: "SMS & OTP Dispatch Audit", to: "/admin/otp-logs" }
         ]
     },
     {
