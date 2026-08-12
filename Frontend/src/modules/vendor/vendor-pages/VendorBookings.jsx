@@ -97,8 +97,24 @@ export default function VendorBookings() {
             if (response.success) {
                 toast.showSuccess("Start Survey OTP verified successfully!");
                 setShowStartOTPModal(false);
+                const updated = response.data?.booking;
+                if (updated) {
+                    setActiveBookings(prev => prev.map(b => (b._id === updated._id || b.id === updated._id) ? {
+                        ...b,
+                        ...updated,
+                        status: "VISITED",
+                        vendorStatus: "VISITED",
+                        userStatus: "VISITED",
+                        otp: {
+                            ...b.otp,
+                            ...updated.otp,
+                            startSurvey: { ...b.otp?.startSurvey, ...updated.otp?.startSurvey, verified: true }
+                        },
+                        startSurveyVerifiedAt: new Date()
+                    } : b));
+                }
                 setSelectedBookingId(null);
-                await loadAllBookings();
+                await loadAllBookings(false);
             } else {
                 toast.showError(response.message || "Invalid OTP code");
             }
@@ -117,8 +133,21 @@ export default function VendorBookings() {
             if (response.success) {
                 toast.showSuccess("End Survey OTP verified successfully!");
                 setShowEndOTPModal(false);
+                const updated = response.data?.booking;
+                if (updated) {
+                    setActiveBookings(prev => prev.map(b => (b._id === updated._id || b.id === updated._id) ? {
+                        ...b,
+                        ...updated,
+                        otp: {
+                            ...b.otp,
+                            ...updated.otp,
+                            endSurvey: { ...b.otp?.endSurvey, ...updated.otp?.endSurvey, verified: true }
+                        },
+                        endSurveyVerifiedAt: new Date()
+                    } : b));
+                }
                 setSelectedBookingId(null);
-                await loadAllBookings();
+                await loadAllBookings(false);
             } else {
                 toast.showError(response.message || "Invalid OTP code");
             }
@@ -137,7 +166,7 @@ export default function VendorBookings() {
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Status updated to En Route! Customer notified.");
-                await loadAllBookings();
+                await loadAllBookings(false);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to update status");
@@ -150,7 +179,7 @@ export default function VendorBookings() {
 
     const loadAllBookingsRef = useRef(null);
     useEffect(() => {
-        loadAllBookingsRef.current = loadAllBookings;
+        loadAllBookingsRef.current = (showLoading = false) => loadAllBookings(showLoading);
     });
 
     // Load data on mount and when location changes (navigation back)
@@ -162,7 +191,7 @@ export default function VendorBookings() {
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                loadAllBookings();
+                loadAllBookings(false);
             }
         };
         window.addEventListener('focus', handleVisibilityChange);
@@ -177,7 +206,7 @@ export default function VendorBookings() {
     useEffect(() => {
         const interval = setInterval(() => {
             if (document.visibilityState === 'visible') {
-                loadAllBookingsRef.current?.();
+                loadAllBookingsRef.current?.(false);
             }
         }, 8000);
         return () => clearInterval(interval);
@@ -190,7 +219,7 @@ export default function VendorBookings() {
         const handleSocketNotification = (data) => {
             console.log('[VendorBookings] Real-time socket event received:', data);
             if (loadAllBookingsRef.current) {
-                loadAllBookingsRef.current();
+                loadAllBookingsRef.current(false);
             }
         };
 
@@ -211,9 +240,9 @@ export default function VendorBookings() {
         };
     }, [socket]);
 
-    const loadAllBookings = async () => {
+    const loadAllBookings = async (showLoading = true) => {
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
 
             // Load all bookings at once, then categorize on the frontend
             const allResponse = await getVendorBookings({ limit: 200, sortBy: "createdAt", sortOrder: "desc" });
@@ -243,7 +272,7 @@ export default function VendorBookings() {
         } catch (err) {
             handleApiError(err, "Failed to load bookings");
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     };
 
@@ -363,7 +392,7 @@ export default function VendorBookings() {
     const tabs = [
         { key: "New", label: "New", count: newBookings.length, icon: "🔔" },
         { key: "Active", label: "Active", count: activeBookings.length, icon: "⚡" },
-        { key: "History", label: "History", count: historyBookings.length, icon: "📋" },
+        { key: "History", label: "Cancelled / Rejected", count: historyBookings.length, icon: "📋" },
     ];
 
     return (

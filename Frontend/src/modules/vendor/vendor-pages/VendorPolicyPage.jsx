@@ -7,18 +7,28 @@ import {
     IoMedkitOutline,
     IoCheckmarkCircle,
     IoChevronBackOutline,
-    IoInformationCircleOutline
+    IoInformationCircleOutline,
+    IoBulbOutline,
+    IoChevronDownOutline,
+    IoChevronUpOutline
 } from "react-icons/io5";
+import { VENDOR_EXPERT_FAQS } from "./VendorHelpSupport";
 
 export default function VendorPolicyPage() {
     const location = useLocation();
     const navigate = useNavigate();
+    const [openFaq, setOpenFaq] = useState(null);
+
+    const toggleFaq = (index) => {
+        setOpenFaq(openFaq === index ? null : index);
+    };
 
     // Determine initial active tab based on path
     const getTabFromPath = (pathname) => {
         if (pathname.includes("/privacy")) return "privacy";
         if (pathname.includes("/terms")) return "terms";
         if (pathname.includes("/insurance")) return "insurance";
+        if (pathname.includes("/faqs") || pathname.includes("/help")) return "faqs";
         return "agreement"; // default to agreement
     };
 
@@ -34,6 +44,7 @@ export default function VendorPolicyPage() {
         { id: "privacy", label: "Privacy Policy", icon: IoShieldCheckmarkOutline },
         { id: "terms", label: "Terms & Conditions", icon: IoLockClosedOutline },
         { id: "insurance", label: "Insurance Details", icon: IoMedkitOutline },
+        { id: "faqs", label: "Expert FAQs", icon: IoBulbOutline },
     ];
 
     return (
@@ -200,29 +211,151 @@ export default function VendorPolicyPage() {
                 {activeTab === "insurance" && (
                     <div className="space-y-6">
                         <div className="border-b border-slate-100 pb-4">
-                            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                <IoMedkitOutline className="text-rose-600 text-xl" />
+                            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                                <IoMedkitOutline className="text-rose-600 text-2xl" />
                                 <span>Insurance &amp; Safety Guidelines</span>
                             </h2>
-                            <p className="text-xs text-slate-500 font-medium mt-1">
-                                Safety standards, equipment protection, and field incident protocols
+                            <p className="text-xs text-slate-500 font-semibold mt-1">
+                                Booking-linked insurance and field safety for experts
                             </p>
                         </div>
 
-                        <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">1. Field Safety Standards</h3>
-                                <p>
-                                    Experts are advised to follow standard safety precautions while conducting surveys on agricultural, rocky, or remote field terrains. Avoid conducting electrical sounding during active thunderstorm activity.
+                        <div className="space-y-5 text-xs text-slate-600 leading-relaxed font-medium">
+                            <section className="space-y-1.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/60">
+                                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-blue-100 text-[#0A84FF] text-xs flex items-center justify-center font-extrabold shrink-0">1</span>
+                                    <span>1. Booking-Linked Insurance</span>
+                                </h3>
+                                <p className="pl-8 text-slate-600">
+                                    Insurance coverage is applicable to every confirmed Jaladhaara survey booking, subject to the terms and conditions of the applicable insurance policy.
+                                </p>
+                                <p className="pl-8 text-slate-600">
+                                    Coverage starts from the scheduled commencement of the survey and ends upon completion of the scheduled survey, or at the end of the applicable coverage period specified by the insurer, as applicable.
                                 </p>
                             </section>
 
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">2. Instrument Protection &amp; Third-Party Liability</h3>
-                                <p>
-                                    Experts are responsible for securing transit insurance for specialized geophysical testing equipment. Jaladhaara provides partner support for emergency field assistance and location dispatch logs.
+                            <section className="space-y-1.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/60">
+                                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 text-xs flex items-center justify-center font-extrabold shrink-0">2</span>
+                                    <span>2. Coverage</span>
+                                </h3>
+                                <p className="pl-8 text-slate-600">
+                                    Depending on the applicable policy, coverage may include accidental injury, medical expenses, accidental death/disability, or other specified risks.
                                 </p>
                             </section>
+
+                            <section className="space-y-1.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/60">
+                                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs flex items-center justify-center font-extrabold shrink-0">3</span>
+                                    <span>3. Field Safety</span>
+                                </h3>
+                                <p className="pl-8 text-slate-600">
+                                    Experts must follow reasonable safety precautions while conducting surveys, particularly at agricultural, rocky, remote, construction, industrial, or other hazardous sites.
+                                </p>
+                                <p className="pl-8 text-slate-600">
+                                    Experts should avoid field operations during lightning, thunderstorms, flooding, or other unsafe conditions.
+                                </p>
+                            </section>
+
+                            <section className="space-y-1.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/60">
+                                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs flex items-center justify-center font-extrabold shrink-0">4</span>
+                                    <span>4. Equipment &amp; Property</span>
+                                </h3>
+                                <p className="pl-8 text-slate-600">
+                                    Experts are responsible for the safe handling, transportation, and protection of their survey equipment.
+                                </p>
+                                <p className="pl-8 text-slate-600">
+                                    Booking-linked insurance does not cover equipment unless specifically stated in the applicable insurance policy.
+                                </p>
+                                <p className="pl-8 text-slate-600">
+                                    Experts must also take reasonable care to prevent injury or damage to customers, landowners, workers, livestock, vehicles, and property.
+                                </p>
+                            </section>
+
+                            <section className="space-y-1.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/60">
+                                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-rose-100 text-rose-600 text-xs flex items-center justify-center font-extrabold shrink-0">5</span>
+                                    <span>5. Accidents &amp; Incidents</span>
+                                </h3>
+                                <p className="pl-8 text-slate-600">
+                                    Any accident, injury, property damage, or other serious incident during a confirmed survey booking must be reported to Jaladhaara through the app or support channel as soon as possible.
+                                </p>
+                                <p className="pl-8 text-slate-600">
+                                    Where applicable, Jaladhaara will facilitate communication with the insurance provider.
+                                </p>
+                            </section>
+
+                            <section className="space-y-1.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/60">
+                                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-700 text-xs flex items-center justify-center font-extrabold shrink-0">6</span>
+                                    <span>6. Insurance Claims</span>
+                                </h3>
+                                <p className="pl-8 text-slate-600">
+                                    Insurance claims are processed and settled by the insurance provider according to the applicable policy terms, conditions, and exclusions.
+                                </p>
+                            </section>
+
+                            <div className="p-4 bg-amber-50/90 border border-amber-200/80 rounded-2xl text-xs text-slate-700 font-medium leading-relaxed mt-6">
+                                <p className="font-black text-slate-900 mb-1">Disclaimer</p>
+                                Jaladhaara facilitates booking-linked insurance through a licensed insurance provider and is not the insurer, underwriter, or claims decision-maker. Insurance coverage, eligibility, exclusions, claim assessment, approval, and settlement are governed solely by the applicable insurance policy and the insurer’s terms and conditions.
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* TAB 5: Expert FAQs */}
+                {activeTab === "faqs" && (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-800">Groundwater Survey FAQs – Expert App</h2>
+                                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                    Official survey assessment guidelines, report requirements, and partner standards
+                                </p>
+                            </div>
+                            <span className="text-[10px] font-extrabold bg-blue-50 text-[#0A84FF] px-2.5 py-1 rounded-full border border-blue-200 shrink-0">
+                                10 Official FAQs
+                            </span>
+                        </div>
+
+                        <div className="space-y-3">
+                            {VENDOR_EXPERT_FAQS.map((faq, idx) => {
+                                const isOpen = openFaq === idx;
+                                return (
+                                    <div
+                                        key={idx}
+                                        className={`border rounded-2xl transition-all overflow-hidden ${
+                                            isOpen
+                                                ? "border-slate-300 shadow-2xs bg-slate-50/40"
+                                                : "border-slate-200/80 hover:border-slate-300 bg-white"
+                                        }`}
+                                    >
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleFaq(idx)}
+                                            className="w-full p-4 text-left font-bold text-xs sm:text-sm text-slate-800 flex items-center justify-between gap-3 transition-colors cursor-pointer"
+                                        >
+                                            <span className="leading-snug text-slate-900 font-extrabold">
+                                                Q{idx + 1}. {faq.q}
+                                            </span>
+                                            <div className="p-1 rounded-full text-slate-400 shrink-0">
+                                                {isOpen ? (
+                                                    <IoChevronUpOutline className="text-base text-slate-600" />
+                                                ) : (
+                                                    <IoChevronDownOutline className="text-base" />
+                                                )}
+                                            </div>
+                                        </button>
+
+                                        {isOpen && (
+                                            <div className="px-4 pb-4 pt-1 text-xs text-slate-600 font-medium leading-relaxed border-t border-slate-100 bg-white">
+                                                {faq.a}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}

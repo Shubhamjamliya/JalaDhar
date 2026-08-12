@@ -593,8 +593,8 @@ export default function UserDashboard() {
             <div className="mt-2 mb-6 grid grid-cols-2 gap-3.5">
                 {[
                     { id: "Agriculture", label: t('agriculture', 'Agriculture'), icon: IoLeafOutline, color: "from-emerald-50 to-teal-50", iconColor: "text-emerald-600 bg-emerald-100/80", border: "border-emerald-200/60" },
-                    { id: "Domestic/Household", label: t('household', 'Household'), icon: HiOutlineHome, color: "from-blue-50 to-indigo-50", iconColor: "text-[#0A84FF] bg-blue-100/80", border: "border-blue-200/60" },
-                    { id: "Industrial/Commercial", label: t('commercial', 'Commercial'), icon: HiOutlineBuildingOffice2, color: "from-indigo-50 to-purple-50", iconColor: "text-indigo-600 bg-indigo-100/80", border: "border-indigo-200/60" },
+                    { id: "Household", label: t('household', 'Household'), icon: HiOutlineHome, color: "from-blue-50 to-indigo-50", iconColor: "text-[#0A84FF] bg-blue-100/80", border: "border-blue-200/60" },
+                    { id: "Commercial", label: t('commercial', 'Commercial'), icon: HiOutlineBuildingOffice2, color: "from-indigo-50 to-purple-50", iconColor: "text-indigo-600 bg-indigo-100/80", border: "border-indigo-200/60" },
                     { id: "Industrial", label: t('industrial', 'Industrial'), icon: HiOutlineBriefcase, color: "from-amber-50 to-orange-50", iconColor: "text-amber-600 bg-amber-100/80", border: "border-amber-200/60" }
                 ].map((cat) => (
                     <button

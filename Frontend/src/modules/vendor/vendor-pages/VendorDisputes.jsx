@@ -8,13 +8,17 @@ import {
     IoChevronForwardOutline,
     IoRefreshOutline,
     IoHelpCircleOutline,
-    IoTicketOutline
+    IoTicketOutline,
+    IoBulbOutline,
+    IoChevronDownOutline,
+    IoChevronUpOutline
 } from "react-icons/io5";
 import { getMyDisputes } from "../../../services/vendorApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import CustomDropdown from "../../shared/components/CustomDropdown";
+import { VENDOR_EXPERT_FAQS } from "./VendorHelpSupport";
 
 const STATUS_TABS = [
     { key: "", label: "All" },
@@ -27,6 +31,11 @@ const STATUS_TABS = [
 
 export default function VendorDisputes() {
     const navigate = useNavigate();
+    const [openFaq, setOpenFaq] = useState(null);
+
+    const toggleFaq = (index) => {
+        setOpenFaq(openFaq === index ? null : index);
+    };
     const [disputes, setDisputes] = useState([]);
     const [loading, setLoading] = useState(true);
     const toast = useToast();
@@ -327,6 +336,62 @@ export default function VendorDisputes() {
                     )}
                 </div>
             )}
+
+            {/* Expert FAQs Section */}
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs space-y-4 mt-6">
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                            Groundwater Survey FAQs
+                        </h2>
+                        <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                            Expert Partner Guidelines &amp; Operational FAQs
+                        </p>
+                    </div>
+                    <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500 shadow-2xs shrink-0">
+                        <IoBulbOutline className="text-2xl" />
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    {VENDOR_EXPERT_FAQS.map((faq, idx) => {
+                        const isOpen = openFaq === idx;
+                        return (
+                            <div
+                                key={idx}
+                                className={`border rounded-2xl transition-all overflow-hidden ${
+                                    isOpen
+                                        ? "border-slate-300 shadow-2xs bg-slate-50/40"
+                                        : "border-slate-200/80 hover:border-slate-300 bg-white"
+                                }`}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => toggleFaq(idx)}
+                                    className="w-full p-4 text-left font-bold text-xs sm:text-sm text-slate-800 flex items-center justify-between gap-3 transition-colors cursor-pointer"
+                                >
+                                    <span className="leading-snug text-slate-900 font-extrabold">
+                                        Q{idx + 1}. {faq.q}
+                                    </span>
+                                    <div className="p-1 rounded-full text-slate-400 shrink-0">
+                                        {isOpen ? (
+                                            <IoChevronUpOutline className="text-base text-slate-600" />
+                                        ) : (
+                                            <IoChevronDownOutline className="text-base" />
+                                        )}
+                                    </div>
+                                </button>
+
+                                {isOpen && (
+                                    <div className="px-4 pb-4 pt-1 text-xs text-slate-600 font-medium leading-relaxed border-t border-slate-100 bg-white">
+                                        {faq.a}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
         </div>
     );
 }

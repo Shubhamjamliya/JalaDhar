@@ -76,6 +76,7 @@ const VendorReviews = lazy(() => import("./modules/vendor/vendor-pages/VendorRev
 const VendorAbout = lazy(() => import("./modules/vendor/vendor-pages/VendorAbout"));
 const VendorSettings = lazy(() => import("./modules/vendor/vendor-pages/VendorSettings"));
 const VendorPolicyPage = lazy(() => import("./modules/vendor/vendor-pages/VendorPolicyPage"));
+const VendorHelpSupport = lazy(() => import("./modules/vendor/vendor-pages/VendorHelpSupport"));
 const ExpertAgreementScreen = lazy(() => import("./modules/vendor/vendor-pages/ExpertAgreementScreen"));
 const AdminLogin = lazy(() => import("./modules/admin/admin-pages/AdminLogin"));
 const AdminForgotPassword = lazy(() => import("./modules/admin/admin-pages/AdminForgotPassword"));
@@ -644,6 +645,22 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/help"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorHelpSupport />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/faqs"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorHelpSupport />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/agreement"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
@@ -744,22 +761,6 @@ function App() {
                                                                                 to="/admin/dashboard"
                                                                                 replace
                                                                             />
-                                                                        }
-                                                                    />
-                                                                    <Route
-                                                                        path="/dashboard"
-                                                                        element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminDashboard />
-                                                                            </Suspense>
-                                                                        }
-                                                                    />
-                                                                    <Route
-                                                                        path="/agreements"
-                                                                        element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminAgreementLogs />
-                                                                            </Suspense>
                                                                         }
                                                                     />
                                                                     <Route

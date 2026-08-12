@@ -173,9 +173,9 @@ export default function VendorBookingDetails() {
         };
     }, [socket, bookingId]);
 
-    const loadBookingDetails = async () => {
+    const loadBookingDetails = async (showLoading = true) => {
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
             const response = await getBookingDetails(bookingId);
 
             if (response.success) {
@@ -186,7 +186,7 @@ export default function VendorBookingDetails() {
         } catch (err) {
             handleApiError(err, "Failed to load booking details");
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     };
 
@@ -213,15 +213,14 @@ export default function VendorBookingDetails() {
             setActionLoading(true);
 
             const response = await acceptBooking(bookingId, {
-                visitDate: acceptScheduleDate,
-                scheduledTime: acceptScheduleTime
+                scheduleDate: acceptScheduleDate,
+                scheduleTime: acceptScheduleTime,
             });
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Booking accepted & visit scheduled successfully!");
-                await loadBookingDetails(); // Reload to get updated status
-                navigate("/vendor/bookings");
+                toast.showSuccess("Booking accepted successfully! Customer notified.");
+                await loadBookingDetails(false);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to accept booking");
@@ -229,46 +228,44 @@ export default function VendorBookingDetails() {
         } catch (err) {
             toast.dismissToast(loadingToast);
             handleApiError(err, "Failed to accept booking");
-            // Reload booking details to see current status
-            if (err.response?.status === 400) {
-                await loadBookingDetails();
-            }
         } finally {
             setActionLoading(false);
         }
     };
 
     const handleReject = () => {
+        rejectionReasonRef.current = "";
         setRejectionReason("");
         setShowRejectInput(true);
     };
 
-    const handleRejectionReasonSubmit = (reason) => {
-        setRejectionReason(reason);
+    const handleRejectReasonSubmit = (reason) => {
         rejectionReasonRef.current = reason;
+        setRejectionReason(reason);
         setShowRejectInput(false);
         setShowRejectConfirm(true);
     };
 
     const handleRejectConfirm = async () => {
-        const currentReason = rejectionReasonRef.current || rejectionReason;
-        if (!currentReason) return;
+        const finalReason = rejectionReasonRef.current || rejectionReason;
+        if (!finalReason || finalReason.trim().length < 10) {
+            toast.showError("Rejection reason must be at least 10 characters long.");
+            return;
+        }
 
         setShowRejectConfirm(false);
         const loadingToast = toast.showLoading("Rejecting booking...");
         try {
             setActionLoading(true);
 
-            const response = await rejectBooking(bookingId, currentReason);
+            const response = await rejectBooking(bookingId, finalReason.trim());
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Booking rejected successfully.");
-                setRejectionReason("");
+                toast.showSuccess("Booking rejected successfully. Full refund initiated for customer.");
                 rejectionReasonRef.current = "";
-                setTimeout(() => {
-                    navigate("/vendor/bookings");
-                }, 2000);
+                setRejectionReason("");
+                await loadBookingDetails(false);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to reject booking");
@@ -276,12 +273,6 @@ export default function VendorBookingDetails() {
         } catch (err) {
             toast.dismissToast(loadingToast);
             handleApiError(err, "Failed to reject booking");
-            // Reload booking details to see current status
-            if (err.response?.status === 400) {
-                setTimeout(() => {
-                    loadBookingDetails();
-                }, 1000);
-            }
         } finally {
             setActionLoading(false);
         }
@@ -378,7 +369,23 @@ export default function VendorBookingDetails() {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Start Survey OTP verified successfully!");
                 setShowStartOTPModal(false);
-                await loadBookingDetails();
+                const updated = response.data?.booking;
+                if (updated) {
+                    setBooking(prev => ({
+                        ...prev,
+                        ...updated,
+                        status: "VISITED",
+                        vendorStatus: "VISITED",
+                        userStatus: "VISITED",
+                        otp: {
+                            ...prev?.otp,
+                            ...updated?.otp,
+                            startSurvey: { ...prev?.otp?.startSurvey, ...updated?.otp?.startSurvey, verified: true }
+                        },
+                        startSurveyVerifiedAt: new Date()
+                    }));
+                }
+                await loadBookingDetails(false);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Invalid OTP");
@@ -406,7 +413,20 @@ export default function VendorBookingDetails() {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("End Survey OTP verified successfully!");
                 setShowEndOTPModal(false);
-                await loadBookingDetails();
+                const updated = response.data?.booking;
+                if (updated) {
+                    setBooking(prev => ({
+                        ...prev,
+                        ...updated,
+                        otp: {
+                            ...prev?.otp,
+                            ...updated?.otp,
+                            endSurvey: { ...prev?.otp?.endSurvey, ...updated?.otp?.endSurvey, verified: true }
+                        },
+                        endSurveyVerifiedAt: new Date()
+                    }));
+                }
+                await loadBookingDetails(false);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Invalid OTP");

@@ -18,7 +18,11 @@ import {
   IoClose,
   IoShieldCheckmarkOutline,
   IoCheckmarkCircleOutline,
-  IoCloseOutline
+  IoCloseOutline,
+  IoChevronDownOutline,
+  IoChevronUpOutline,
+  IoHelpCircleOutline,
+  IoBulbOutline
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import PageContainer from "../../shared/components/PageContainer";
@@ -34,7 +38,56 @@ import { formatDateToDDMMYYYY, formatDateToLongString } from "../../../utils/dat
 
 // --- Sub-components for each step ---
 
+const CATEGORY_FAQS = [
+  {
+    q: "What is an Agriculture Groundwater Survey?",
+    a: "An Agriculture Groundwater Survey is conducted on agricultural land to assess the geological and subsurface conditions and relevant groundwater indicators, and to identify a suitable location for borewell drilling."
+  },
+  {
+    q: "What is a Household Groundwater Survey?",
+    a: "A Household Groundwater Survey is conducted for houses, residential plots and individual properties to assess the site and relevant subsurface conditions and identify a suitable location for borewell drilling for household water requirements."
+  },
+  {
+    q: "What is a Commercial Groundwater Survey?",
+    a: "A Commercial Groundwater Survey is conducted for commercial properties such as offices, apartments, hotels, institutions, shops and other commercial premises to assess groundwater conditions and identify suitable locations for borewell drilling."
+  },
+  {
+    q: "What is an Industrial Groundwater Survey?",
+    a: "An Industrial Groundwater Survey is conducted for factories, plants, warehouses and other industrial properties to assess geological and subsurface conditions and identify suitable borewell drilling locations based on the site's groundwater potential."
+  },
+  {
+    q: "What does the survey cover?",
+    a: "Assessment of the site, geological and subsurface conditions, and relevant groundwater indicators to recommend a drilling location."
+  },
+  {
+    q: "Will I get the estimated drilling depth?",
+    a: "Where technically feasible, the expert will provide an estimated drilling depth based on the survey findings."
+  },
+  {
+    q: "Will I receive a survey report?",
+    a: "Yes. A digital survey report will be submitted through the Jaladhaara app."
+  },
+  {
+    q: "Can I request multiple drilling points?",
+    a: "Yes, if multiple points are included in the selected survey package."
+  },
+  {
+    q: "Does the survey guarantee water or borewell success?",
+    a: "No. The survey provides a professional assessment and recommendation. Groundwater availability, yield, quality, depth and borewell success cannot be guaranteed."
+  },
+  {
+    q: "Is borewell drilling included, and who conducts the survey?",
+    a: "No. Borewell drilling is separate. The survey is conducted by a verified groundwater survey expert assigned through Jaladhaara."
+  }
+];
+
 const CategorySelection = ({ onSelect }) => {
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const toggleFaq = (index) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
+
   const categories = [
     { id: "Agriculture", label: "Agriculture", icon: IoLeafOutline, color: "bg-emerald-50 text-emerald-600 border border-emerald-100" },
     { id: "Household", label: "Household", icon: IoHomeOutline, color: "bg-blue-50 text-[#0A84FF] border border-blue-100" },
@@ -43,7 +96,8 @@ const CategorySelection = ({ onSelect }) => {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Step Header */}
       <div className="text-center mb-5">
         <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight mb-1">
           Select Survey Category
@@ -53,6 +107,7 @@ const CategorySelection = ({ onSelect }) => {
         </p>
       </div>
 
+      {/* 2x2 Category Cards Grid */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {categories.map((cat) => (
           <button
@@ -68,6 +123,58 @@ const CategorySelection = ({ onSelect }) => {
             </span>
           </button>
         ))}
+      </div>
+
+      {/* FAQs Section — Pixel Perfect Match with Design Mockup */}
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs space-y-4">
+        {/* Header with Title and Lightbulb Icon */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">FAQs</h2>
+            <p className="text-xs font-semibold text-slate-500 mt-0.5">Frequently Asked Questions</p>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500 shadow-2xs shrink-0">
+            <IoBulbOutline className="text-2xl" />
+          </div>
+        </div>
+
+        {/* Accordion List */}
+        <div className="space-y-3">
+          {CATEGORY_FAQS.map((faq, idx) => {
+            const isOpen = openFaq === idx;
+            return (
+              <div
+                key={idx}
+                className={`border rounded-2xl transition-all overflow-hidden ${
+                  isOpen ? "border-slate-300 shadow-2xs bg-slate-50/40" : "border-slate-200/80 hover:border-slate-300 bg-white"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full p-4 text-left font-bold text-xs sm:text-sm text-slate-800 flex items-center justify-between gap-3 transition-colors cursor-pointer"
+                >
+                  <span className="leading-snug text-slate-900 font-extrabold">
+                    Q{idx + 1}. {faq.q}
+                  </span>
+                  <div className="p-1 rounded-full text-slate-400 shrink-0">
+                    {isOpen ? (
+                      <IoChevronUpOutline className="text-base text-slate-600" />
+                    ) : (
+                      <IoChevronDownOutline className="text-base" />
+                    )}
+                  </div>
+                </button>
+
+                {isOpen && (
+                  <div className="px-4 pb-4 pt-1 text-xs text-slate-600 font-medium leading-relaxed border-t border-slate-100 bg-white">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -1403,9 +1510,10 @@ export default function UserSurveyFlow() {
     try {
       const purposeMap = {
         "Agriculture": "Agriculture",
-        "Domestic/Household": "Domestic/Household",
-        "Commercial": "Industrial/Commercial",
-        "Industrial/Commercial": "Industrial/Commercial",
+        "Household": "Household",
+        "Domestic/Household": "Household",
+        "Commercial": "Commercial",
+        "Industrial/Commercial": "Commercial",
         "Industrial": "Industrial",
         "Open plots": "Industrial"
       };

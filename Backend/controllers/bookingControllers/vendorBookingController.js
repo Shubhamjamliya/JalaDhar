@@ -625,6 +625,7 @@ const verifyStartSurveyOTP = async (req, res) => {
 
     booking.otp.startSurvey.verified = true;
     booking.otp.startSurvey.verifiedAt = new Date();
+    booking.startSurveyVerifiedAt = new Date();
     
     // Transition to VISITED
     booking.status = BOOKING_STATUS.VISITED;
@@ -634,17 +635,57 @@ const verifyStartSurveyOTP = async (req, res) => {
 
     await booking.save();
 
+    // Populate full booking for client response
+    await booking.populate([
+      { path: 'user', select: 'name email phone alternatePhone address profilePicture' },
+      { path: 'vendor', select: 'name designation companyName phone' },
+      { path: 'service', select: 'name price machineType' }
+    ]);
+
     // Dispatch End Survey OTP via SMS & Multi-channel when survey starts
     if (booking.otp?.endSurvey?.code && (booking.user?.phone || booking.user?.email)) {
       dispatchSurveyOTP({
-        phone: booking.user.phone,
-        email: booking.user.email,
-        name: booking.user.name,
+        phone: booking.user?.phone,
+        email: booking.user?.email,
+        name: booking.user?.name,
         otp: booking.otp.endSurvey.code,
         stage: 'End',
         bookingId: booking._id,
         vendorName: booking.vendor?.name || 'your expert'
       }).catch(err => console.error('[verifyStartSurveyOTP] Error dispatching End Survey OTP:', err));
+    }
+
+    // Emit Real-Time Socket.io Notification & Status Update Event
+    let io = null;
+    try {
+      const { getIO } = require('../../sockets');
+      io = getIO();
+    } catch (e) {
+      console.log('[verifyStartSurveyOTP] Socket.io not initialized yet');
+    }
+
+    if (booking.user?._id || booking.user) {
+      await sendNotification({
+        recipient: booking.user._id || booking.user,
+        recipientModel: 'User',
+        title: 'Survey Started 📍',
+        message: `Expert ${booking.vendor?.name || ''} has verified Start OTP and started your groundwater survey.`,
+        type: 'BOOKING_UPDATE',
+        bookingId: booking._id,
+        data: { bookingId: booking._id, status: booking.status, userStatus: booking.userStatus, vendorStatus: booking.vendorStatus }
+      }, io).catch(err => console.error('[verifyStartSurveyOTP] Notification error:', err));
+    }
+
+    if (io) {
+      io.to(`booking_${booking._id}`).emit('booking_updated', {
+        bookingId: booking._id,
+        status: booking.status,
+        booking: booking
+      });
+      io.emit('booking_status_updated', {
+        bookingId: booking._id,
+        status: booking.status
+      });
     }
 
     res.json({
@@ -670,7 +711,9 @@ const verifyEndSurveyOTP = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       vendor: vendorId
-    });
+    })
+      .populate('user', 'name email phone')
+      .populate('vendor', 'name designation companyName');
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -698,8 +741,49 @@ const verifyEndSurveyOTP = async (req, res) => {
 
     booking.otp.endSurvey.verified = true;
     booking.otp.endSurvey.verifiedAt = new Date();
+    booking.endSurveyVerifiedAt = new Date();
     
     await booking.save();
+
+    // Populate full booking for client response
+    await booking.populate([
+      { path: 'user', select: 'name email phone alternatePhone address profilePicture' },
+      { path: 'vendor', select: 'name designation companyName phone' },
+      { path: 'service', select: 'name price machineType' }
+    ]);
+
+    // Emit Real-Time Socket.io Notification & Status Update Event
+    let io = null;
+    try {
+      const { getIO } = require('../../sockets');
+      io = getIO();
+    } catch (e) {
+      console.log('[verifyEndSurveyOTP] Socket.io not initialized yet');
+    }
+
+    if (booking.user?._id || booking.user) {
+      await sendNotification({
+        recipient: booking.user._id || booking.user,
+        recipientModel: 'User',
+        title: 'Survey Completed 🚀',
+        message: `Expert ${booking.vendor?.name || ''} has verified End OTP. Site survey is completed! You can now view status.`,
+        type: 'BOOKING_UPDATE',
+        bookingId: booking._id,
+        data: { bookingId: booking._id, status: booking.status, userStatus: booking.userStatus, vendorStatus: booking.vendorStatus }
+      }, io).catch(err => console.error('[verifyEndSurveyOTP] Notification error:', err));
+    }
+
+    if (io) {
+      io.to(`booking_${booking._id}`).emit('booking_updated', {
+        bookingId: booking._id,
+        status: booking.status,
+        booking: booking
+      });
+      io.emit('booking_status_updated', {
+        bookingId: booking._id,
+        status: booking.status
+      });
+    }
 
     res.json({
       success: true,

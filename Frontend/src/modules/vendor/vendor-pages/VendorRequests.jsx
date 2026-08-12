@@ -139,8 +139,24 @@ export default function VendorRequests() {
             if (response.success) {
                 toast.showSuccess("Start Survey OTP verified successfully!");
                 setShowStartOTPModal(false);
+                const updated = response.data?.booking;
+                if (updated) {
+                    setConfirmedRequests(prev => prev.map(b => (b._id === updated._id || b.id === updated._id) ? {
+                        ...b,
+                        ...updated,
+                        status: "VISITED",
+                        vendorStatus: "VISITED",
+                        userStatus: "VISITED",
+                        otp: {
+                            ...b.otp,
+                            ...updated.otp,
+                            startSurvey: { ...b.otp?.startSurvey, ...updated.otp?.startSurvey, verified: true }
+                        },
+                        startSurveyVerifiedAt: new Date()
+                    } : b));
+                }
                 setSelectedBookingId(null);
-                await loadAllRequests();
+                await loadAllRequests(false);
             } else {
                 toast.showError(response.message || "Invalid OTP code");
             }
@@ -159,8 +175,21 @@ export default function VendorRequests() {
             if (response.success) {
                 toast.showSuccess("End Survey OTP verified successfully!");
                 setShowEndOTPModal(false);
+                const updated = response.data?.booking;
+                if (updated) {
+                    setConfirmedRequests(prev => prev.map(b => (b._id === updated._id || b.id === updated._id) ? {
+                        ...b,
+                        ...updated,
+                        otp: {
+                            ...b.otp,
+                            ...updated.otp,
+                            endSurvey: { ...b.otp?.endSurvey, ...updated.otp?.endSurvey, verified: true }
+                        },
+                        endSurveyVerifiedAt: new Date()
+                    } : b));
+                }
                 setSelectedBookingId(null);
-                await loadAllRequests();
+                await loadAllRequests(false);
             } else {
                 toast.showError(response.message || "Invalid OTP code");
             }
@@ -179,7 +208,7 @@ export default function VendorRequests() {
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Status updated to En Route! Customer notified.");
-                await loadAllRequests();
+                await loadAllRequests(false);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to update status");
@@ -190,9 +219,9 @@ export default function VendorRequests() {
         }
     };
 
-    const loadAllRequests = async () => {
+    const loadAllRequests = async (showLoading = true) => {
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
 
             // Fetch both ASSIGNED and PENDING bookings for "New" requests
             const [assignedResponse, confirmedResponse, completedResponse, historyResponse] =
@@ -233,7 +262,7 @@ export default function VendorRequests() {
         } catch (err) {
             handleApiError(err, "Failed to load requests");
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     };
 
@@ -502,12 +531,12 @@ export default function VendorRequests() {
                     Your Booking
                 </h1>
 
-                <div className="flex bg-white/80 backdrop-blur-md sticky top-20 z-20 -mx-4 px-4 py-3 mb-6 border-b border-gray-100 overflow-x-auto no-scrollbar gap-2">
+                <div className="flex bg-[#F6F7F9] sticky top-[52px] sm:top-[56px] md:top-[64px] z-30 -mx-4 px-4 py-3 mb-6 border-b border-gray-200/80 shadow-2xs overflow-x-auto no-scrollbar gap-2">
                     {[
                         { id: "New", label: "Requests", count: newRequests.length, icon: <IoNotificationsOutline /> },
                         { id: "In Progress", label: "In Progress", count: confirmedRequests.length, icon: <IoBriefcaseOutline /> },
                         { id: "Completed", label: "Completed", count: completedRequests.length, icon: <IoStarOutline /> },
-                        { id: "History", label: "History", count: historyRequests.length, icon: <IoCloseCircleOutline /> }
+                        { id: "History", label: "Cancelled / Rejected", count: historyRequests.length, icon: <IoCloseCircleOutline /> }
                     ].map((tab) => (
                         <button
                             key={tab.id}
