@@ -314,10 +314,10 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
     companyName: "",
     contactPerson: "",
     projectName: "",
-    propertyType: "Commercial Complex",
+    propertyType: "",
     factoryName: "",
     industryType: "",
-    waterRequirement: "Industrial Process",
+    waterRequirement: "",
     pointsRequired: 1
   });
 
@@ -623,19 +623,14 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Property Type *</label>
-              <select
+              <input
+                required
                 name="propertyType"
                 value={formData.propertyType}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
-              >
-                <option value="Commercial Complex">🏢 Commercial Complex</option>
-                <option value="Hotel / Restaurant">🏨 Hotel / Restaurant / Resort</option>
-                <option value="Hospital">🏥 Hospital / Healthcare</option>
-                <option value="Office Building">💼 Office Building</option>
-                <option value="Retail Mall">🛍️ Retail Mall / Shopping Hub</option>
-                <option value="Educational Institute">🏫 School / College</option>
-              </select>
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs font-medium"
+                placeholder="Enter Property Type (e.g. Commercial Complex, Hotel, Hospital, Office)"
+              />
             </div>
 
             <div>
@@ -693,18 +688,14 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Water Requirement Purpose *</label>
-              <select
+              <input
+                required
                 name="waterRequirement"
                 value={formData.waterRequirement}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
-              >
-                <option value="Industrial Process">⚙️ Industrial Manufacturing Process</option>
-                <option value="Cooling Plant">❄️ Cooling Towers / Chiller Plant</option>
-                <option value="Domestic & Staff">🚰 Domestic &amp; Staff Consumption</option>
-                <option value="Firefighting">🚒 Firefighting Reserve</option>
-                <option value="Irrigation">🌳 Campus Greenery Irrigation</option>
-              </select>
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs font-medium"
+                placeholder="Enter Water Purpose (e.g. Process Water, Cooling Plant, Staff Use)"
+              />
             </div>
 
             <div>
