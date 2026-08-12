@@ -432,13 +432,11 @@ export default function UserSurveyReport() {
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {report.images.map((img, i) => {
-                    const label = i === 0 ? "Site Photograph" : i === 1 ? "Marked Borewell Point" : i === 2 ? "Survey Equipment" : `Evidence ${i+1}`;
                     return (
                       <div key={i} className="flex flex-col gap-1.5">
                         <div className="aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200 shadow-sm">
-                          <img src={img.url || img} alt={label} className="w-full h-full object-cover hover:scale-105 transition-transform" crossOrigin="anonymous" />
+                          <img src={img.url || img} alt={`Site Evidence ${i + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform" crossOrigin="anonymous" />
                         </div>
-                        <p className="text-[10px] font-bold text-gray-600 text-center uppercase">{label}</p>
                       </div>
                     );
                   })}

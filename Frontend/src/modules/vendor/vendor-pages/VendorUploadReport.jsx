@@ -60,6 +60,7 @@ export default function VendorUploadReport() {
     const [error, setError] = useState("");
     const [booking, setBooking] = useState(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [isDraftRestored, setIsDraftRestored] = useState(false);
 
     const [formData, setFormData] = useState({
         // Booking & Customer Details
@@ -135,12 +136,11 @@ export default function VendorUploadReport() {
         loadBookingDetails();
     }, [bookingId]);
 
-    // Automatically pre-fill all Customer, Village, Mandal, District, State, Survey No, Land Location, and Extent details filled during booking
+    // Automatically pre-fill details from booking & restore unsaved draft from localStorage if page was refreshed
     useEffect(() => {
-        if (booking) {
+        if (booking && bookingId) {
             let extractedSurveyNo = booking.surveyNumber || booking.surveyNo || booking.address?.surveyNumber;
             
-            // Fallback: Try to extract from notes if it was embedded there (e.g., from older bookings or custom fields)
             if (!extractedSurveyNo && booking.notes) {
                 const surMatch = booking.notes.match(/(?:Survey No|Plot No):\s*([^.\n]+)/i);
                 if (surMatch) {
@@ -148,19 +148,78 @@ export default function VendorUploadReport() {
                 }
             }
 
+            const initialValues = {
+                customerName: booking.user?.name || booking.customerName || "",
+                village: booking.village || booking.address?.village || booking.address?.city || "",
+                mandal: booking.mandal || booking.address?.mandal || booking.district || "",
+                district: booking.district || booking.address?.district || "",
+                state: booking.state || booking.address?.state || "",
+                landLocation: booking.address?.landmark || booking.address?.street || booking.landmark || "",
+                surveyNumber: extractedSurveyNo || "",
+                extent: booking.purposeExtent ? formatAcresGuntasDisplay(booking.purposeExtent) : (booking.extent || ""),
+            };
+
+            const savedDraftKey = `survey_report_draft_${bookingId}`;
+            const savedDraft = localStorage.getItem(savedDraftKey);
+
+            if (savedDraft) {
+                try {
+                    const parsedDraft = JSON.parse(savedDraft);
+                    setFormData(prev => ({
+                        ...prev,
+                        ...initialValues,
+                        ...parsedDraft,
+                        images: prev.images || [],
+                        reportFile: prev.reportFile || null
+                    }));
+                    setIsDraftRestored(true);
+                } catch (err) {
+                    console.error("Error loading draft:", err);
+                    setFormData(prev => ({ ...prev, ...initialValues }));
+                }
+            } else {
+                setFormData(prev => ({ ...prev, ...initialValues }));
+            }
+        }
+    }, [booking, bookingId]);
+
+    // Auto-save form draft to localStorage whenever form values change
+    useEffect(() => {
+        if (bookingId && formData) {
+            const { images, reportFile, ...draftToSave } = formData;
+            const hasUserChanges = 
+                draftToSave.waterFound || 
+                draftToSave.notes || 
+                draftToSave.confidenceLevel || 
+                draftToSave.geologicalInfo?.rockType || 
+                draftToSave.surveyRecommendations?.recommendedBoreDepth;
+
+            if (hasUserChanges) {
+                localStorage.setItem(`survey_report_draft_${bookingId}`, JSON.stringify(draftToSave));
+            }
+        }
+    }, [formData, bookingId]);
+
+    const handleClearDraft = () => {
+        localStorage.removeItem(`survey_report_draft_${bookingId}`);
+        setIsDraftRestored(false);
+        if (booking) {
+            let extractedSurveyNo = booking.surveyNumber || booking.surveyNo || booking.address?.surveyNumber;
             setFormData(prev => ({
                 ...prev,
-                customerName: booking.user?.name || booking.customerName || prev.customerName,
-                village: booking.village || booking.address?.village || booking.address?.city || prev.village,
-                mandal: booking.mandal || booking.address?.mandal || booking.district || prev.mandal,
-                district: booking.district || booking.address?.district || prev.district,
-                state: booking.state || booking.address?.state || prev.state,
-                landLocation: booking.address?.landmark || booking.address?.street || booking.landmark || prev.landLocation,
-                surveyNumber: extractedSurveyNo || prev.surveyNumber,
-                extent: booking.purposeExtent ? formatAcresGuntasDisplay(booking.purposeExtent) : (booking.extent || prev.extent),
+                geologicalInfo: { rockType: "", soilType: "", terrainType: "", weatheredZone: "", groundwaterCondition: "" },
+                existingBorewell: { distance: "", depth: "", yield: "", status: "" },
+                surveyRecommendations: { pointsInvestigated: "", recommendedPointNumber: "", latitude: "", longitude: "", groundElevation: "", recommendedBoreDepth: "", recommendedCasingDepth: "", expectedFractureDepths: "", expectedYield: "" },
+                drillingInstructions: { stopDrillingDepth: "", flushBorewell: false },
+                confidenceLevel: "",
+                drillingRecommendation: "",
+                notes: "",
+                waterFound: "",
+                declaration: { expertDeclaration: false, signature: "" }
             }));
+            toast.showInfo("Draft cleared. Form reset to default.");
         }
-    }, [booking]);
+    };
 
     const loadBookingDetails = async () => {
         try {
@@ -291,6 +350,7 @@ export default function VendorUploadReport() {
             const response = await uploadVisitReport(bookingId, reportFormData);
 
             if (response.success) {
+                localStorage.removeItem(`survey_report_draft_${bookingId}`);
                 toast.showSuccess("Report uploaded successfully! User will be notified.");
                 setShowPreviewModal(false);
                 setTimeout(() => {
@@ -340,6 +400,22 @@ export default function VendorUploadReport() {
                     Booking ID: <span className="font-mono bg-white px-2 py-1 rounded border border-gray-200">{booking._id?.slice(-8).toUpperCase() || booking.id}</span>
                 </p>
             </div>
+
+            {isDraftRestored && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-sm text-amber-900 shadow-xs">
+                    <div className="flex items-center gap-2 font-medium">
+                        <IoSparklesOutline className="text-amber-600 text-lg flex-shrink-0" />
+                        <span>Restored unsaved draft from your last session.</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleClearDraft}
+                        className="text-xs font-bold text-amber-700 underline hover:text-amber-950 transition-colors whitespace-nowrap"
+                    >
+                        Clear Draft
+                    </button>
+                </div>
+            )}
 
             <form onSubmit={handleOpenPreview} className="space-y-6">
 

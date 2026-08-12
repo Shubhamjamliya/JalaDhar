@@ -416,11 +416,9 @@ const SurveyReportPDF = ({ booking }) => {
             <Text style={[S.secTitle, S.mb8]}>6. Site Evidence</Text>
             <View style={S.imgGrid}>
               {report.images.map((img, i) => {
-                const captions = ['Site Photograph', 'Marked Borewell Point', 'Survey Equipment', 'Terrain View', 'Rock Sample', 'Evidence'];
                 return (
                   <View key={i} style={S.imgCard}>
                     <Image src={img.url || img} style={S.imgFrame} />
-
                   </View>
                 );
               })}
