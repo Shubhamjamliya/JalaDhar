@@ -393,7 +393,7 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
     district: "",
     state: "",
     purposeExtent: "",
-    areaUnit: category === "Commercial" || category === "Industrial" || category === "Household" || category === "Residential" ? "sqft" : "acres",
+    areaUnit: (category && (category.toLowerCase().includes("commer") || category.toLowerCase().includes("indus") || category.toLowerCase().includes("house") || category.toLowerCase().includes("resi"))) ? "sqft" : "acres",
     surveyNumber: "",
     plotNumber: "",
     notes: "",
@@ -429,10 +429,11 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
     onSubmit(formData);
   };
 
-  const isAgri = isAgriCategory(category);
-  const isResi = category === "Household" || category === "Residential";
-  const isComm = category === "Commercial";
-  const isInd = category === "Industrial";
+  const catLower = (category || "").toLowerCase();
+  const isAgri = isAgriCategory(category) || catLower.includes("agri");
+  const isResi = catLower.includes("house") || catLower.includes("resi");
+  const isInd = catLower.includes("indus");
+  const isComm = catLower.includes("commer") && !isInd;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
