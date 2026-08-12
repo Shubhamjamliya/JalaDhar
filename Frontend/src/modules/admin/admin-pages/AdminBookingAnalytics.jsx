@@ -27,13 +27,14 @@ import {
   AreaChart,
   Area
 } from "recharts";
-import { getDashboardStats } from "../../../services/adminDashboardService";
+import { getDashboardStats, getBookingTrends } from "../../../services/adminDashboardService";
 import { useToast } from "../../../hooks/useToast";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 
 export default function AdminBookingAnalytics() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
+  const [trendDataList, setTrendDataList] = useState([]);
   const toast = useToast();
 
   useEffect(() => {
@@ -43,9 +44,23 @@ export default function AdminBookingAnalytics() {
   const loadStats = async () => {
     try {
       setLoading(true);
-      const response = await getDashboardStats();
+      const [response, trendsRes] = await Promise.all([
+        getDashboardStats(),
+        getBookingTrends(30)
+      ]);
+
       if (response.success) {
         setStats(response.data.stats);
+      }
+
+      if (trendsRes.success && trendsRes.data?.trends) {
+        const mapped = trendsRes.data.trends.map(t => ({
+          name: t._id,
+          bookings: t.count,
+          completed: t.completed || 0,
+          cancelled: t.cancelled || 0
+        }));
+        setTrendDataList(mapped);
       }
     } catch (err) {
       console.error("Load stats error:", err);
@@ -63,15 +78,9 @@ export default function AdminBookingAnalytics() {
     { name: "Cancelled", value: stats?.cancelledBookings || 0, color: "#EF4444" },
   ];
 
-  // Mock trend data for visualization
-  const trendData = [
-    { name: "Mon", bookings: 12 },
-    { name: "Tue", bookings: 19 },
-    { name: "Wed", bookings: 15 },
-    { name: "Thu", bookings: 22 },
-    { name: "Fri", bookings: 30 },
-    { name: "Sat", bookings: 25 },
-    { name: "Sun", bookings: 18 },
+  // Dynamic booking trend data from Database
+  const trendData = trendDataList.length > 0 ? trendDataList : [
+    { name: "Total Jobs", bookings: stats?.totalBookings || 0, completed: stats?.completedBookings || 0, cancelled: stats?.cancelledBookings || 0 }
   ];
 
   return (

@@ -14,7 +14,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Legend, Cell
 } from "recharts";
-import { getUserGrowthMetrics } from "../../../../services/adminDashboardService";
+import { getUserGrowthMetrics, getDashboardStats } from "../../../../services/adminDashboardService";
 import { useToast } from "../../../../hooks/useToast";
 import LoadingSpinner from "../../../shared/components/LoadingSpinner";
 
@@ -31,10 +31,14 @@ export default function VendorReport() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const response = await getUserGrowthMetrics(30);
-      if (response.success && response.data) {
-        const merged = (response.data.userGrowth || []).map(ug => {
-          const vg = (response.data.vendorGrowth || []).find(v => v._id === ug._id);
+      const [growthRes, statsRes] = await Promise.all([
+        getUserGrowthMetrics(30),
+        getDashboardStats()
+      ]);
+
+      if (growthRes.success && growthRes.data) {
+        const merged = (growthRes.data.userGrowth || []).map(ug => {
+          const vg = (growthRes.data.vendorGrowth || []).find(v => v._id === ug._id);
           return {
             date: ug._id,
             users: ug.count,
@@ -42,13 +46,18 @@ export default function VendorReport() {
           };
         });
         setGrowthData(merged);
+      }
 
-        // Aggregate totals from growth for visual impact
-        const totalV = (response.data.vendorGrowth || []).reduce((acc, curr) => acc + curr.count, 0);
+      if (statsRes.success && statsRes.data) {
+        const s = statsRes.data.stats;
+        const totalV = s.totalVendors || 0;
+        const pendingV = statsRes.data.pendingActions?.pendingVendors || 0;
+        const approvedV = Math.max(0, totalV - pendingV);
+
         setStats({
-          totalVendors: totalV + 152, // Mocking some base data
-          approved: Math.round(totalV * 0.8) + 124,
-          active: Math.round(totalV * 0.9) + 140
+          totalVendors: totalV,
+          approved: approvedV,
+          active: totalV
         });
       }
     } catch (error) {

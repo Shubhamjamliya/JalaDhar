@@ -32,7 +32,7 @@ const getAllWithdrawalRequests = async (req, res) => {
     ]);
 
     // Get bank details for all vendors
-    const vendorIds = withdrawalRequests.map(req => req.vendor._id);
+    const vendorIds = withdrawalRequests.filter(req => req.vendor).map(req => req.vendor._id);
     const bankDetailsMap = {};
     const bankDetailsList = await VendorBankDetails.find({ vendor: { $in: vendorIds }, isActive: true }).lean();
     bankDetailsList.forEach(bd => {
@@ -42,11 +42,11 @@ const getAllWithdrawalRequests = async (req, res) => {
     // Format response
     const formattedRequests = withdrawalRequests.map(request => ({
       _id: request._id,
-      vendorId: request.vendor._id,
-      vendorName: request.vendor.name,
-      vendorEmail: request.vendor.email,
-      vendorPhone: request.vendor.phone,
-      bankDetails: bankDetailsMap[request.vendor._id.toString()] || null,
+      vendorId: request.vendor?._id || null,
+      vendorName: request.vendor?.name || "Expert Partner",
+      vendorEmail: request.vendor?.email || "",
+      vendorPhone: request.vendor?.phone || "",
+      bankDetails: request.vendor ? (bankDetailsMap[request.vendor._id.toString()] || null) : null,
       amount: request.amount,
       status: request.status,
       requestedAt: request.requestedAt,

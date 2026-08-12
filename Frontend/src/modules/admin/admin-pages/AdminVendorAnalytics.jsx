@@ -26,7 +26,7 @@ import {
   Cell,
   Legend
 } from "recharts";
-import { getDashboardStats } from "../../../services/adminDashboardService";
+import { getDashboardStats, getUserGrowthMetrics } from "../../../services/adminDashboardService";
 import { getAllVendors } from "../../../services/adminApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 
@@ -34,6 +34,7 @@ export default function AdminVendorAnalytics() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [vendors, setVendors] = useState([]);
+  const [growthTrendData, setGrowthTrendData] = useState([]);
   const [period, setPeriod] = useState(30);
 
   useEffect(() => {
@@ -43,9 +44,10 @@ export default function AdminVendorAnalytics() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const [statsRes, vendorsRes] = await Promise.all([
+      const [statsRes, growthRes, vendorsRes] = await Promise.all([
         getDashboardStats(),
-        getAllVendors({ limit: 1000 }) // Get all for distribution calculation
+        getUserGrowthMetrics(period),
+        getAllVendors({ limit: 1000 })
       ]);
 
       if (statsRes.success) {
@@ -54,6 +56,14 @@ export default function AdminVendorAnalytics() {
 
       if (vendorsRes.success) {
         setVendors(vendorsRes.data.vendors || []);
+      }
+
+      if (growthRes.success && growthRes.data?.vendorGrowth) {
+        const mapped = growthRes.data.vendorGrowth.map(item => ({
+          date: item._id,
+          vendors: item.count
+        }));
+        setGrowthTrendData(mapped);
       }
     } catch (err) {
       console.error("Error fetching vendor analytics:", err);
@@ -73,15 +83,9 @@ export default function AdminVendorAnalytics() {
     { name: 'Rejected', value: vendors.filter(v => v.rejectionReason).length, color: '#F87171' },
   ].filter(item => item.value > 0);
 
-  // Growth Trend (Mocked from stats or actual if available)
-  const growthData = [
-    { date: 'Mon', vendors: 12 },
-    { date: 'Tue', vendors: 15 },
-    { date: 'Wed', vendors: 14 },
-    { date: 'Thu', vendors: 18 },
-    { date: 'Fri', vendors: 22 },
-    { date: 'Sat', vendors: 20 },
-    { date: 'Sun', vendors: 25 },
+  // Growth Trend (Real Database Timestamps)
+  const growthData = growthTrendData.length > 0 ? growthTrendData : [
+    { date: 'Recent', vendors: vendors.length }
   ];
 
   return (

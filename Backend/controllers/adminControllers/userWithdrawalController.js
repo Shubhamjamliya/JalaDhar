@@ -31,10 +31,10 @@ const getAllWithdrawalRequests = async (req, res) => {
     // Format response
     const formattedRequests = withdrawalRequests.map(request => ({
       _id: request._id,
-      userId: request.user._id,
-      userName: request.user.name,
-      userEmail: request.user.email,
-      userPhone: request.user.phone,
+      userId: request.user?._id || null,
+      userName: request.user?.name || "Customer",
+      userEmail: request.user?.email || "",
+      userPhone: request.user?.phone || "",
       amount: request.amount,
       status: request.status,
       requestedAt: request.requestedAt,

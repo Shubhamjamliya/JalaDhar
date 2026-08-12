@@ -40,8 +40,7 @@ exports.getDashboardStats = async (req, res) => {
       }
     });
 
-    // 5. Total Revenue
-    // Sum of payment.totalAmount for all non-cancelled bookings
+    // 5. Total Revenue (Realized Collected Cash = Advance + Paid Balance)
     const revenueAggregation = await Booking.aggregate([
       {
         $match: {
@@ -53,7 +52,20 @@ exports.getDashboardStats = async (req, res) => {
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: "$payment.totalAmount" }
+          totalRevenue: {
+            $sum: {
+              $add: [
+                { $ifNull: ["$payment.advanceAmount", { $multiply: ["$payment.totalAmount", 0.4] }] },
+                {
+                  $cond: [
+                    { $eq: ["$payment.remainingPaymentStatus", "PAID"] },
+                    { $ifNull: ["$payment.remainingAmount", { $multiply: ["$payment.totalAmount", 0.6] }] },
+                    0
+                  ]
+                }
+              ]
+            }
+          }
         }
       }
     ]);
@@ -79,7 +91,25 @@ exports.getDashboardStats = async (req, res) => {
             status: { $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] }
           }
         },
-        { $group: { _id: null, total: { $sum: "$payment.totalAmount" } } }
+        {
+          $group: {
+            _id: null,
+            total: {
+              $sum: {
+                $add: [
+                  { $ifNull: ["$payment.advanceAmount", { $multiply: ["$payment.totalAmount", 0.4] }] },
+                  {
+                    $cond: [
+                      { $eq: ["$payment.remainingPaymentStatus", "PAID"] },
+                      { $ifNull: ["$payment.remainingAmount", { $multiply: ["$payment.totalAmount", 0.6] }] },
+                      0
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
       ])
     ]);
 
@@ -275,7 +305,20 @@ exports.getRevenueAnalytics = async (req, res) => {
       {
         $group: {
           _id: { $dateToString: { format: dateFormat, date: "$createdAt" } },
-          revenue: { $sum: "$payment.totalAmount" },
+          revenue: {
+            $sum: {
+              $add: [
+                { $ifNull: ["$payment.advanceAmount", { $multiply: ["$payment.totalAmount", 0.4] }] },
+                {
+                  $cond: [
+                    { $eq: ["$payment.remainingPaymentStatus", "PAID"] },
+                    { $ifNull: ["$payment.remainingAmount", { $multiply: ["$payment.totalAmount", 0.6] }] },
+                    0
+                  ]
+                }
+              ]
+            }
+          },
           bookings: { $sum: 1 }
         }
       },
