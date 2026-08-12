@@ -24,7 +24,10 @@ import {
     IoTimeOutline,
     IoLocationOutline,
     IoLockClosedOutline,
-    IoCarOutline
+    IoCarOutline,
+    IoPersonOutline,
+    IoEyeOutline,
+    IoChevronForwardOutline
 } from "react-icons/io5";
 import {
     HiOutlineHome,
@@ -813,8 +816,8 @@ export default function UserDashboard() {
                                                     onClick={() => navigate(`/user/booking/${activeBooking.id}/tracking`)}
                                                     className="w-full flex items-center justify-center gap-2 bg-[#0A84FF] text-white py-3.5 rounded-[12px] font-extrabold hover:bg-blue-600 transition-all shadow-md shadow-blue-500/20 active:scale-95 cursor-pointer"
                                                 >
-                                                    <IoCarOutline className="text-xl" />
-                                                    <span>Live Track Expert 🚗</span>
+                                                    <IoPersonOutline className="text-xl" />
+                                                    <span>Live Track Expert 🧑‍🔬</span>
                                                 </button>
                                             );
                                         }
@@ -841,12 +844,14 @@ export default function UserDashboard() {
                                         </button>
                                     )}
 
-                                    <button
-                                        onClick={() => navigate(`/user/booking/${activeBooking.id}`)}
-                                        className="w-full flex items-center justify-center gap-2 text-gray-500 py-2 text-sm font-medium hover:text-gray-700 transition-colors"
-                                    >
-                                        View Details
-                                    </button>
+                                     <button
+                                         onClick={() => navigate(`/user/booking/${activeBooking.id}`)}
+                                         className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-[#0A84FF] bg-blue-50/90 hover:bg-blue-100/90 border border-blue-200/90 shadow-2xs hover:shadow-xs transition-all active:scale-98 cursor-pointer group"
+                                     >
+                                         <IoEyeOutline className="text-base text-[#0A84FF] group-hover:scale-110 transition-transform" />
+                                         <span>View Full Booking Details</span>
+                                         <IoChevronForwardOutline className="text-xs text-blue-500 group-hover:translate-x-0.5 transition-transform" />
+                                     </button>
                                 </div>
                             </div>
                         </>

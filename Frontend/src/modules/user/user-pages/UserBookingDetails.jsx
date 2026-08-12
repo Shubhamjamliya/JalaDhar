@@ -608,8 +608,8 @@ export default function UserBookingDetails() {
                                     onClick={() => navigate(`/user/booking/${bookingId}/tracking`)}
                                     className="mt-3 w-full py-2.5 px-4 bg-[#0A84FF] hover:bg-blue-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
                                 >
-                                    <IoCarOutline className="text-lg" />
-                                    <span>Live Track Expert Movement 🚗</span>
+                                    <IoPersonOutline className="text-lg" />
+                                    <span>Live Track Expert Movement 🧑‍🔬</span>
                                 </button>
                             )}
                         </div>
