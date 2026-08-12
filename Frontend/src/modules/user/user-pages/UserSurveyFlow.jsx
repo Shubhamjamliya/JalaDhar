@@ -35,6 +35,61 @@ import { parseAcresGuntas, isAgriCategory } from "../../../utils/landAreaHelper"
 import StateDistrictInput from "../../../components/StateDistrictInput";
 import { getStatesList, getDistrictsList, findStateForDistrict } from "../../../utils/indianStatesDistricts";
 import { formatDateToDDMMYYYY, formatDateToLongString } from "../../../utils/dateFormatter";
+import CustomDropdown from "../../shared/components/CustomDropdown";
+
+const CROP_OPTIONS = [
+  { value: "Paddy", label: "Paddy (Rice)" },
+  { value: "Cotton", label: "Cotton" },
+  { value: "Vegetables", label: "Vegetables" },
+  { value: "Fruit Orchard", label: "Fruit Orchard / Horticulture" },
+  { value: "Sugarcane", label: "Sugarcane" },
+  { value: "Wheat", label: "Wheat" },
+  { value: "Pulses", label: "Pulses / Grains" },
+  { value: "Commercial", label: "Commercial Crops" },
+  { value: "Others", label: "Others" }
+];
+
+const FARMING_TYPE_OPTIONS = [
+  { value: "Dry Land (Metta)", label: "Dry Land (Metta)" },
+  { value: "Wet Land (Magani)", label: "Wet Land (Magani)" },
+  { value: "Irrigated Land", label: "Irrigated Land" },
+  { value: "Rainfed Land", label: "Rainfed Land" },
+  { value: "Garden Land", label: "Garden Land" },
+  { value: "Orchard Land", label: "Orchard Land" },
+  { value: "Plantation Land", label: "Plantation Land" },
+  { value: "Pasture / Grazing Land", label: "Pasture / Grazing Land" },
+  { value: "Barren / Fallow Agricultural Land", label: "Barren / Fallow Agricultural Land" },
+  { value: "Mixed Agricultural Land", label: "Mixed Agricultural Land" },
+  { value: "Converted Agricultural Land", label: "Converted Agricultural Land" },
+  { value: "Other Agricultural Land", label: "Other Agricultural Land" }
+];
+
+const EXISTING_BOREWELL_OPTIONS = [
+  { value: "No", label: "No Existing Borewell" },
+  { value: "Yes (Active)", label: "Yes (Active Borewell)" },
+  { value: "Yes (Dry / Failed)", label: "Yes (Dry / Dried Up Borewell)" }
+];
+
+const EXISTING_OPEN_WELL_OPTIONS = [
+  { value: "No", label: "No Open Well" },
+  { value: "Yes", label: "Yes (Open Well Present)" }
+];
+
+const WATER_SOURCE_OPTIONS = [
+  { value: "Canal", label: "Canal Water" },
+  { value: "Tank", label: "Village Tank / Lake" },
+  { value: "Borewell", label: "Existing Borewell" },
+  { value: "Rainfed", label: "Rainfed Only" },
+  { value: "Others", label: "Others" }
+];
+
+const HOUSE_TYPE_OPTIONS = [
+  { value: "Independent House", label: "Independent House" },
+  { value: "Villa", label: "Villa / Farmhouse" },
+  { value: "Apartment", label: "Apartment Complex" },
+  { value: "Gated Community", label: "Gated Community" },
+  { value: "Open Plot", label: "Open Residential Plot" }
+];
 
 // --- Sub-components for each step ---
 
@@ -481,78 +536,67 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Crop Type *</label>
-              <select
+              <CustomDropdown
                 name="cropType"
                 value={formData.cropType}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
-              >
-                <option value="Paddy">🌾 Paddy (Rice)</option>
-                <option value="Cotton">🌱 Cotton</option>
-                <option value="Vegetables">🥕 Vegetables</option>
-                <option value="Fruit Orchard">🍎 Fruit Orchard / Horticulture</option>
-                <option value="Sugarcane">🎋 Sugarcane</option>
-                <option value="Wheat">🌾 Wheat</option>
-                <option value="Pulses">🫘 Pulses / Grains</option>
-                <option value="Commercial">🌻 Commercial Crops</option>
-                <option value="Others">🌿 Others</option>
-              </select>
+                options={CROP_OPTIONS}
+                placeholder="Select Crop Type"
+                size="sm"
+                activeColor="blue"
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Farming Type *</label>
-              <select
+              <label className="block text-xs font-medium text-gray-700 mb-1">Agricultural Land Type *</label>
+              <CustomDropdown
                 name="irrigatedType"
                 value={formData.irrigatedType}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
-              >
-                <option value="Irrigated">💧 Irrigated Land</option>
-                <option value="Rain-fed">🌧️ Rain-fed Land</option>
-              </select>
+                options={FARMING_TYPE_OPTIONS}
+                placeholder="Select Land Type"
+                size="sm"
+                activeColor="blue"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Existing Borewells? *</label>
-              <select
+              <CustomDropdown
                 name="existingBorewells"
                 value={formData.existingBorewells}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
-              >
-                <option value="No">No Existing Borewell</option>
-                <option value="Yes (Active)">Yes (Active Borewell)</option>
-                <option value="Yes (Dry / Failed)">Yes (Dry / Dried Up Borewell)</option>
-              </select>
+                options={EXISTING_BOREWELL_OPTIONS}
+                placeholder="Select Existing Borewell Status"
+                size="sm"
+                activeColor="blue"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Existing Open Wells? *</label>
-              <select
+              <CustomDropdown
                 name="existingOpenWells"
                 value={formData.existingOpenWells}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
-              >
-                <option value="No">No Open Well</option>
-                <option value="Yes">Yes (Open Well Present)</option>
-              </select>
+                options={EXISTING_OPEN_WELL_OPTIONS}
+                placeholder="Select Open Well Status"
+                size="sm"
+                activeColor="blue"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Primary Water Source *</label>
-              <select
+              <CustomDropdown
                 name="waterSource"
                 value={formData.waterSource}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
-              >
-                <option value="Canal">🏞️ Canal Water</option>
-                <option value="Tank">🏊 Village Tank / Lake</option>
-                <option value="Borewell">🚰 Existing Borewell</option>
-                <option value="Rainfed">🌧️ Rainfed Only</option>
-                <option value="Others">Others</option>
-              </select>
+                options={WATER_SOURCE_OPTIONS}
+                placeholder="Select Primary Water Source"
+                size="sm"
+                activeColor="blue"
+              />
             </div>
 
             <div>
@@ -575,32 +619,28 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">House Type *</label>
-              <select
+              <CustomDropdown
                 name="houseType"
                 value={formData.houseType}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
-              >
-                <option value="Independent House">🏡 Independent House</option>
-                <option value="Villa">🏰 Villa / Farmhouse</option>
-                <option value="Apartment">🏢 Apartment Complex</option>
-                <option value="Gated Community">🏘️ Gated Community</option>
-                <option value="Open Plot">📐 Open Residential Plot</option>
-              </select>
+                options={HOUSE_TYPE_OPTIONS}
+                placeholder="Select House Type"
+                size="sm"
+                activeColor="blue"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Existing Borewell? *</label>
-              <select
+              <CustomDropdown
                 name="existingBorewells"
                 value={formData.existingBorewells}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 outline-none text-xs bg-white font-semibold"
-              >
-                <option value="No">No Existing Borewell</option>
-                <option value="Yes (Active)">Yes (Active Borewell)</option>
-                <option value="Yes (Dry)">Yes (Dry / Low Yield Borewell)</option>
-              </select>
+                options={EXISTING_BOREWELL_OPTIONS}
+                placeholder="Select Existing Borewell Status"
+                size="sm"
+                activeColor="blue"
+              />
             </div>
 
             <div>
