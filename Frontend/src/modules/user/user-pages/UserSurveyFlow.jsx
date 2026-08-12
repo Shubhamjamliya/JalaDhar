@@ -85,10 +85,15 @@ const WATER_SOURCE_OPTIONS = [
 
 const HOUSE_TYPE_OPTIONS = [
   { value: "Independent House", label: "Independent House" },
-  { value: "Villa", label: "Villa / Farmhouse" },
-  { value: "Apartment", label: "Apartment Complex" },
+  { value: "Apartment / Flat", label: "Apartment / Flat" },
+  { value: "Villa", label: "Villa" },
+  { value: "Residential Plot", label: "Residential Plot" },
+  { value: "Farmhouse", label: "Farmhouse" },
+  { value: "Residential Layout", label: "Residential Layout" },
   { value: "Gated Community", label: "Gated Community" },
-  { value: "Open Plot", label: "Open Residential Plot" }
+  { value: "Individual Residential Property", label: "Individual Residential Property" },
+  { value: "Mixed Residential Property", label: "Mixed Residential Property" },
+  { value: "Other Residential Property", label: "Other Residential Property" }
 ];
 
 // --- Sub-components for each step ---
@@ -618,13 +623,13 @@ const DetailsForm = ({ data, category, onSubmit, onBack }) => {
         {isResi && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">House Type *</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Household Land Type *</label>
               <CustomDropdown
                 name="houseType"
                 value={formData.houseType}
                 onChange={handleChange}
                 options={HOUSE_TYPE_OPTIONS}
-                placeholder="Select House Type"
+                placeholder="Select Property Type"
                 size="sm"
                 activeColor="blue"
               />
