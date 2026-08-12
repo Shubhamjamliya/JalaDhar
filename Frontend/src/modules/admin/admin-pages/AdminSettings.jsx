@@ -49,7 +49,6 @@ export default function AdminSettings({ defaultTab = "general" }) {
         { id: "pricing", label: "Pricing", icon: IoCashOutline },
         { id: "billing", label: "Billing Info", icon: IoBusinessOutline },
         { id: "security", label: "Security", icon: IoLockClosedOutline },
-        { id: "register", label: "Register Admin", icon: IoPersonAddOutline },
     ];
 
     // Pricing Settings State
@@ -456,13 +455,20 @@ export default function AdminSettings({ defaultTab = "general" }) {
         <div className="min-h-[calc(100vh-5rem)]">
             {/* Header */}
             <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Settings</h1>
-                <p className="text-gray-600">Manage your admin panel preferences and configurations</p>
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                    {activeTab === "register" ? "Admin Management" : "Settings"}
+                </h1>
+                <p className="text-gray-600">
+                    {activeTab === "register" 
+                        ? "Onboard new internal administrative team members" 
+                        : "Manage your admin panel preferences and configurations"}
+                </p>
             </div>
 
             {/* Tabs */}
-            <div className="mb-6">
-                <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
+            {activeTab !== "register" && (
+                <div className="mb-6">
+                    <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
                     {settingsTabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;
@@ -486,6 +492,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                     })}
                 </div>
             </div>
+            )}
 
             <div className="max-w-4xl">
                 {/* Settings Content */}

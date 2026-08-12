@@ -41,9 +41,9 @@ const navItems = [
         roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"],
         children: [
             { label: "All Experts", to: "/admin/vendors", end: true },
-            { label: "Pending Approvals", to: "/admin/vendors/pending" },
-            { label: "Expert Bookings", to: "/admin/vendors/bookings" },
-            { label: "Expert Analytics", to: "/admin/vendors/analytics" }
+            { label: "KYC & Approvals", to: "/admin/vendors/pending" },
+            { label: "Wallets & Settlements", to: "/admin/vendors/wallets" },
+            { label: "Performance Analytics", to: "/admin/vendors/analytics" }
         ]
     },
     {
@@ -55,7 +55,7 @@ const navItems = [
         children: [
             { label: "All Users", to: "/admin/users", end: true },
             { label: "User Bookings", to: "/admin/users/bookings" },
-            { label: "Transactions", to: "/admin/users/transactions" },
+            { label: "User Wallets & Refunds", to: "/admin/users/transactions" },
             { label: "User Analytics", to: "/admin/users/analytics" }
         ]
     },
@@ -74,9 +74,9 @@ const navItems = [
         roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"],
         children: [
             { label: "All Bookings", to: "/admin/bookings", end: true },
-            { label: "Live Tracking", to: "/admin/bookings/tracking" },
+            { label: "Live GPS Tracking", to: "/admin/bookings/tracking" },
             { label: "Booking Alerts", to: "/admin/bookings/notifications" },
-            { label: "Analytics", to: "/admin/bookings/analytics" }
+            { label: "Booking Analytics", to: "/admin/bookings/analytics" }
         ]
     },
     {
@@ -86,9 +86,9 @@ const navItems = [
         Icon: IoWalletOutline,
         roles: ["SUPER_ADMIN", "FINANCE_ADMIN"],
         children: [
-            { label: "Admin Payments", to: "/admin/payments/admin" },
-            { label: "User Payments", to: "/admin/payments/user" },
-            { label: "Expert Payments", to: "/admin/payments/vendor" }
+            { label: "All Transactions", to: "/admin/payments", end: true },
+            { label: "Expert Disbursals", to: "/admin/withdrawals" },
+            { label: "User Refunds & Claims", to: "/admin/user-withdrawals" }
         ]
     },
     {
@@ -98,12 +98,11 @@ const navItems = [
         Icon: IoBarChartOutline,
         roles: ["SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN"],
         children: [
-            { label: "Overview", to: "/admin/reports", end: true },
-            { label: "Market IQ", to: "/admin/reports/geo" },
-            { label: "Revenue", to: "/admin/reports/revenue" },
-            { label: "Bookings", to: "/admin/reports/bookings" },
-            { label: "Payments", to: "/admin/reports/payments" },
-            { label: "Experts", to: "/admin/reports/vendors" }
+            { label: "Executive Overview", to: "/admin/reports", end: true },
+            { label: "Market IQ & Geo Heatmaps", to: "/admin/reports/geo" },
+            { label: "Revenue & Settlements", to: "/admin/reports/revenue" },
+            { label: "Bookings & Cancellations", to: "/admin/reports/bookings" },
+            { label: "Expert & User Performance", to: "/admin/reports/vendors" }
         ]
     },
     {
@@ -115,7 +114,7 @@ const navItems = [
     },
     {
         id: "disputes",
-        label: "Disputes",
+        label: "Disputes & Support",
         to: "/admin/disputes",
         Icon: IoAlertCircleOutline,
         roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN", "SUPPORT_ADMIN"]
@@ -125,14 +124,24 @@ const navItems = [
         label: "Admin Management",
         to: "/admin/team",
         Icon: IoLockClosedOutline,
-        roles: ["SUPER_ADMIN"]
+        roles: ["SUPER_ADMIN"],
+        children: [
+            { label: "Team & Role Permissions", to: "/admin/team", end: true },
+            { label: "Register Internal Admin", to: "/admin/settings/register" }
+        ]
     },
     {
         id: "policies",
-        label: "Policies",
+        label: "Content & Policies",
         to: "/admin/policies",
         Icon: IoDocumentTextOutline,
-        roles: ["SUPER_ADMIN", "ADMIN"]
+        roles: ["SUPER_ADMIN", "ADMIN"],
+        children: [
+            { label: "Terms & Conditions", to: "/admin/policies" },
+            { label: "Privacy Policy", to: "/admin/policies" },
+            { label: "Cancellation & Refunds", to: "/admin/policies" },
+            { label: "Expert Facilitation Agreement", to: "/admin/policies" }
+        ]
     },
     {
         id: "agreement-logs",
@@ -153,11 +162,10 @@ const navItems = [
         Icon: IoSettingsOutline,
         roles: ["SUPER_ADMIN"],
         children: [
-            { label: "General", to: "/admin/settings/general" },
-            { label: "Billing Info", to: "/admin/settings/billing" },
-            { label: "Pricing", to: "/admin/settings/pricing" },
-            { label: "Security", to: "/admin/settings/security" },
-            { label: "Register Admin", to: "/admin/settings/register" }
+            { label: "General & App Info", to: "/admin/settings/general" },
+            { label: "Pricing & Travel Charges", to: "/admin/settings/pricing" },
+            { label: "Billing & GST Declarations", to: "/admin/settings/billing" },
+            { label: "Security & Integrations", to: "/admin/settings/security" }
         ]
     },
 ];

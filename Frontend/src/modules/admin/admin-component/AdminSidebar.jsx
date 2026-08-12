@@ -88,8 +88,7 @@ const navItems = [
         children: [
             { label: "All Transactions", to: "/admin/payments", end: true },
             { label: "Expert Disbursals", to: "/admin/withdrawals" },
-            { label: "User Refunds & Claims", to: "/admin/user-withdrawals" },
-            { label: "GST & Tax Invoices", to: "/admin/reports/revenue" }
+            { label: "User Refunds & Claims", to: "/admin/user-withdrawals" }
         ]
     },
     {
@@ -115,7 +114,7 @@ const navItems = [
     },
     {
         id: "disputes",
-        label: "Disputes",
+        label: "Disputes & Support",
         to: "/admin/disputes",
         Icon: IoAlertCircleOutline,
         roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN", "SUPPORT_ADMIN"]
@@ -125,14 +124,24 @@ const navItems = [
         label: "Admin Management",
         to: "/admin/team",
         Icon: IoLockClosedOutline,
-        roles: ["SUPER_ADMIN"]
+        roles: ["SUPER_ADMIN"],
+        children: [
+            { label: "Team & Role Permissions", to: "/admin/team", end: true },
+            { label: "Register Internal Admin", to: "/admin/settings/register" }
+        ]
     },
     {
         id: "policies",
-        label: "Policies",
+        label: "Content & Policies",
         to: "/admin/policies",
         Icon: IoDocumentTextOutline,
-        roles: ["SUPER_ADMIN", "ADMIN"]
+        roles: ["SUPER_ADMIN", "ADMIN"],
+        children: [
+            { label: "Terms & Conditions", to: "/admin/policies" },
+            { label: "Privacy Policy", to: "/admin/policies" },
+            { label: "Cancellation & Refunds", to: "/admin/policies" },
+            { label: "Expert Facilitation Agreement", to: "/admin/policies" }
+        ]
     },
     {
         id: "agreement-logs",
@@ -147,29 +156,16 @@ const navItems = [
         ]
     },
     {
-        id: "support",
-        label: "Support & Communication",
-        to: "/admin/bookings/notifications",
-        Icon: IoHeadsetOutline,
-        roles: ["SUPER_ADMIN", "ADMIN", "SUPPORT_ADMIN", "OPERATIONS_ADMIN"],
-        children: [
-            { label: "Push & Broadcast Alerts", to: "/admin/bookings/notifications" },
-            { label: "Complaints & Triage", to: "/admin/disputes" },
-            { label: "SMS & OTP Dispatch Audit", to: "/admin/otp-logs" }
-        ]
-    },
-    {
         id: "settings",
         label: "Settings",
         to: "/admin/settings",
         Icon: IoSettingsOutline,
         roles: ["SUPER_ADMIN"],
         children: [
-            { label: "General", to: "/admin/settings/general" },
-            { label: "Billing Info", to: "/admin/settings/billing" },
-            { label: "Pricing", to: "/admin/settings/pricing" },
-            { label: "Security", to: "/admin/settings/security" },
-            { label: "Register Admin", to: "/admin/settings/register" }
+            { label: "General & App Info", to: "/admin/settings/general" },
+            { label: "Pricing & Travel Charges", to: "/admin/settings/pricing" },
+            { label: "Billing & GST Declarations", to: "/admin/settings/billing" },
+            { label: "Security & Integrations", to: "/admin/settings/security" }
         ]
     },
 ];

@@ -8,6 +8,7 @@ import {
   IoCloseCircleOutline,
   IoRefreshOutline,
   IoPersonAddOutline,
+  IoTimeOutline,
 } from "react-icons/io5";
 import { getAllAdmins, updateAdmin, deleteAdmin } from "../../../services/adminApi";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
@@ -149,6 +150,7 @@ export default function AdminTeamManagement() {
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Name & Email</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Current Role</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Last Active Login</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -164,7 +166,7 @@ export default function AdminTeamManagement() {
                 ))
               ) : admins.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                     No admins found in the system.
                   </td>
                 </tr>
@@ -215,6 +217,16 @@ export default function AdminTeamManagement() {
                         )}
                         {admin.isActive ? 'Active' : 'Inactive'}
                       </button>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium">
+                        <IoTimeOutline className="text-gray-400 text-sm" />
+                        <span>
+                          {admin.lastLogin
+                            ? new Date(admin.lastLogin).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                            : 'Never'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
