@@ -79,7 +79,7 @@ exports.getDashboardStats = async (req, res) => {
     const [todaysNewBookings, todaysCompletedBookings, todaysNewUsers, todaysNewVendors, todaysRevenueAgg] = await Promise.all([
       Booking.countDocuments({ createdAt: { $gte: startOfToday } }),
       Booking.countDocuments({
-        createdAt: { $gte: startOfToday },
+        updatedAt: { $gte: startOfToday },
         status: { $in: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE] }
       }),
       User.countDocuments({ createdAt: { $gte: startOfToday }, role: 'USER' }),
@@ -304,7 +304,7 @@ exports.getRevenueAnalytics = async (req, res) => {
       },
       {
         $group: {
-          _id: { $dateToString: { format: dateFormat, date: "$createdAt" } },
+          _id: { $dateToString: { format: dateFormat, date: "$createdAt", timezone: "Asia/Kolkata" } },
           revenue: {
             $sum: {
               $add: [
@@ -361,7 +361,7 @@ exports.getBookingTrends = async (req, res) => {
       },
       {
         $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Kolkata" } },
           count: { $sum: 1 },
           completed: {
             $sum: {
@@ -426,7 +426,7 @@ exports.getUserGrowthMetrics = async (req, res) => {
         { $match: { createdAt: { $gte: start }, role: 'USER' } },
         {
           $group: {
-            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Kolkata" } },
             count: { $sum: 1 }
           }
         },
@@ -436,7 +436,7 @@ exports.getUserGrowthMetrics = async (req, res) => {
         { $match: { createdAt: { $gte: start } } },
         {
           $group: {
-            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Kolkata" } },
             count: { $sum: 1 }
           }
         },
@@ -477,7 +477,7 @@ exports.getPaymentAnalytics = async (req, res) => {
         { $match: { createdAt: { $gte: start } } },
         {
           $group: {
-            _id: "$payment.status",
+            _id: { $ifNull: ["$payment.advancePaymentStatus", "$status"] },
             count: { $sum: 1 },
             amount: { $sum: "$payment.totalAmount" }
           }
@@ -487,7 +487,7 @@ exports.getPaymentAnalytics = async (req, res) => {
         { $match: { createdAt: { $gte: start } } },
         {
           $group: {
-            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Kolkata" } },
             totalAmount: { $sum: "$payment.totalAmount" },
             count: { $sum: 1 }
           }

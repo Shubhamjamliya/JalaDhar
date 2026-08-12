@@ -37,10 +37,18 @@ const getAllRatings = async (req, res) => {
     }
 
     if (search) {
+      const [matchingUsers, matchingVendors] = await Promise.all([
+        User.find({ name: { $regex: search, $options: 'i' } }).select('_id'),
+        Vendor.find({ $or: [{ name: { $regex: search, $options: 'i' } }, { businessName: { $regex: search, $options: 'i' } }] }).select('_id')
+      ]);
+
+      const userIds = matchingUsers.map(u => u._id);
+      const vendorIds = matchingVendors.map(v => v._id);
+
       query.$or = [
         { review: { $regex: search, $options: 'i' } },
-        { 'user.name': { $regex: search, $options: 'i' } },
-        { 'vendor.name': { $regex: search, $options: 'i' } }
+        { user: { $in: userIds } },
+        { vendor: { $in: vendorIds } }
       ];
     }
 

@@ -182,7 +182,7 @@ export default function AdminTeamManagement() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${getRoleBadgeColor(admin.role)}`}>
-                          {admin.role.replace('_', ' ')}
+                          {admin.role ? admin.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : 'Admin'}
                         </span>
                         {admin._id !== currentAdmin.id && (
                           <select

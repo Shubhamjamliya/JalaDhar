@@ -66,11 +66,15 @@ export default function AdminUserAnalytics() {
 
   const COLORS = ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA'];
 
-  // Mock data for distribution if not available in API
+  // Dynamic distribution calculated from DB growth records
+  const newUsersInPeriod = (growthData || []).reduce((acc, curr) => acc + (curr.count || 0), 0);
+  const newUsersCount = newUsersInPeriod || stats?.todaysNewUsers || 0;
+  const activeUsersCount = Math.max(0, (stats?.totalUsers || 0) - newUsersCount);
+
   const userRoleDistribution = [
-    { name: 'Active Users', value: stats?.totalUsers || 0, color: '#34D399' },
-    { name: 'New Users', value: Math.floor((stats?.totalUsers || 0) * 0.2), color: '#60A5FA' },
-  ];
+    { name: 'Existing Active Users', value: activeUsersCount, color: '#34D399' },
+    { name: 'New Registrations', value: newUsersCount, color: '#60A5FA' },
+  ].filter(item => item.value > 0);
 
   return (
     <div className="space-y-6 p-6 pb-20 lg:pb-6">
