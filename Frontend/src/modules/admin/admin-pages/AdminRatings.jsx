@@ -188,40 +188,47 @@ export default function AdminRatings() {
                 </div>
             )}
 
+            {/* Review Moderation Quick Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {[
+                    { id: 'all', label: 'All Reviews', minRating: '', maxRating: '' },
+                    { id: '5star', label: '5-Star Reviews', minRating: '5', maxRating: '5' },
+                    { id: 'low', label: 'Low Ratings (1-2 Stars)', minRating: '1', maxRating: '2' },
+                    { id: 'reported', label: 'Flagged / Reported', minRating: '1', maxRating: '3' },
+                ].map((tab) => {
+                    const isSelected = filters.minRating === tab.minRating && filters.maxRating === tab.maxRating;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setFilters({ ...filters, minRating: tab.minRating, maxRating: tab.maxRating, page: 1 })}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                isSelected
+                                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
+                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    );
+                })}
+            </div>
+
             {/* Filters */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="relative">
-                        <IoSearchOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                    <div className="relative md:col-span-2">
+                        <IoSearchOutline className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                         <input
                             type="text"
-                            placeholder="Search ratings..."
+                            placeholder="Search by customer, expert, or review comment..."
                             value={filters.search}
                             onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#0A84FF]/20 focus:border-[#0A84FF] outline-none transition-all"
                         />
                     </div>
-                    <input
-                        type="number"
-                        placeholder="Min Rating (1-5)"
-                        min="1"
-                        max="5"
-                        value={filters.minRating}
-                        onChange={(e) => setFilters({ ...filters, minRating: e.target.value, page: 1 })}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
-                    />
-                    <input
-                        type="number"
-                        placeholder="Max Rating (1-5)"
-                        min="1"
-                        max="5"
-                        value={filters.maxRating}
-                        onChange={(e) => setFilters({ ...filters, maxRating: e.target.value, page: 1 })}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
-                    />
                     <button
                         onClick={() => setFilters({ search: "", vendorId: "", userId: "", minRating: "", maxRating: "", page: 1 })}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-200 transition-colors"
                     >
                         Clear Filters
                     </button>
