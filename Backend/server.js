@@ -207,8 +207,10 @@ app.use('/api/settings', require('./routes/settings.routes'));
 // Notification routes
 app.use('/api/notifications', require('./routes/notification.routes'));
 
-// FCM Token routes
 app.use('/api/fcm-tokens', require('./routes/fcmToken.routes'));
+
+// Public report verification route (no auth — QR scan use-case)
+app.use('/api/verify', require('./routes/verify.routes'));
 
 // 404 handler
 app.use((req, res) => {

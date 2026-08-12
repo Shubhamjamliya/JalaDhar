@@ -114,6 +114,7 @@ const AdminReports = lazy(() => import("./modules/admin/admin-pages/Reports"));
 const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavbar"));
 
 import NotificationsRedirect from "./components/NotificationsRedirect";
+const VerifyReport = lazy(() => import("./modules/shared/pages/VerifyReport"));
 
 function App() {
     return (
@@ -130,6 +131,15 @@ function App() {
                                 <Routes>
                                     <Route path="/notifications" element={<NotificationsRedirect />} />
                                     <Route path="/notification" element={<NotificationsRedirect />} />
+                                    {/* ---------- PUBLIC VERIFY (QR Scan) ---------- */}
+                                    <Route
+                                        path="/verify/:id"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <VerifyReport />
+                                            </Suspense>
+                                        }
+                                    />
                                     {/* ---------- USER AUTH ---------- */}
                                     <Route
                                         path="/userlogin"

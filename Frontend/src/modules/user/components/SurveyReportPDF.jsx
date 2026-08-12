@@ -205,7 +205,8 @@ const SurveyReportPDF = ({ booking }) => {
   };
   const staticMapUrl = getStaticMapUrl(report.surveyRecommendations?.latitude, report.surveyRecommendations?.longitude);
   const hasMap = !!staticMapUrl;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://jaladhaara.in/verify/${booking._id}`)}`;
+  const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:5173';
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${appUrl}/verify/${booking._id}`)}`;
 
   const fractureText = report.expectedFractureDepths
     ? report.expectedFractureDepths.split(/[\s,]+/).filter(Boolean).map(d => d.includes('ft') ? d : `${d} ft`).join(', ')
@@ -463,7 +464,7 @@ const SurveyReportPDF = ({ booking }) => {
           </View>
           <View style={[S.declItem, { marginBottom: 0 }]}>
             <Text style={S.declBullet}>›</Text>
-            <Text style={S.declText}>This document is digitally verified through Jaladhaara's platform. Scan the QR code on Page 1 to verify the authenticity of this report online at jaladhaara.in/verify.</Text>
+            <Text style={S.declText}>This document is digitally verified through Jaladhaara's platform. Scan the QR code on Page 1 to verify the authenticity of this report online at jaladhaaraapp.in/verify.</Text>
           </View>
         </View>
 
