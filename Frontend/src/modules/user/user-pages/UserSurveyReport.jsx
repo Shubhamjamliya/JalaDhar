@@ -103,10 +103,68 @@ export default function UserSurveyReport() {
     return uniqueParts.join(', ') || "N/A";
   };
 
+  const getGoogleMapCoords = (latVal, lngVal) => {
+    if (latVal === undefined || lngVal === undefined || latVal === null || lngVal === null) return null;
+    let numLat = parseFloat(latVal);
+    let numLng = parseFloat(lngVal);
+    if (isNaN(numLat) || isNaN(numLng) || (numLat === 0 && numLng === 0)) return null;
+
+    // Detect swapped coordinates where Lat is Lng (e.g. lat: 78.48, lng: 17.38)
+    if ((numLat >= 68 && numLat <= 97) && (numLng >= 6 && numLng <= 37)) {
+      const temp = numLat;
+      numLat = numLng;
+      numLng = temp;
+    }
+
+    // Sanitize out-of-bounds ocean coordinates (e.g. lat: 121, lng: 12) to India survey region
+    if (numLat > 37 || numLat < 6) {
+      numLat = 17.3850;
+    }
+    if (numLng > 97 || numLng < 68) {
+      numLng = 78.4867;
+    }
+
+    return { lat: numLat, lng: numLng };
+  };
+
   const mapApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-  const staticMapUrl = mapApiKey && report.surveyRecommendations?.latitude && report.surveyRecommendations?.longitude
-    ? `https://maps.googleapis.com/maps/api/staticmap?center=${report.surveyRecommendations.latitude},${report.surveyRecommendations.longitude}&zoom=15&size=600x300&maptype=satellite&markers=color:red%7Clabel:B%7C${report.surveyRecommendations.latitude},${report.surveyRecommendations.longitude}&key=${mapApiKey}`
-    : `https://static-maps.yandex.ru/1.x/?ll=${report.surveyRecommendations?.longitude || 0},${report.surveyRecommendations?.latitude || 0}&size=600,300&z=15&l=sat,skl&pt=${report.surveyRecommendations?.longitude || 0},${report.surveyRecommendations?.latitude || 0},pm2rdl`;
+  const getStaticMapUrl = (latVal, lngVal) => {
+    if (latVal === undefined || lngVal === undefined || latVal === null || lngVal === null) return null;
+    let numLat = parseFloat(latVal);
+    let numLng = parseFloat(lngVal);
+    if (isNaN(numLat) || isNaN(numLng) || (numLat === 0 && numLng === 0)) return null;
+
+    // Auto-correct swapped coordinates if latitude > 90 (e.g. lat: 121, lng: 12 -> lat: 12, lng: 121)
+    if (Math.abs(numLat) > 90 && Math.abs(numLng) <= 90) {
+      const temp = numLat;
+      numLat = numLng;
+      numLng = temp;
+    }
+
+    // Clamp coordinates to valid Web Mercator bounds [-85.05112878, 85.05112878]
+    if (Math.abs(numLat) > 85.05112878) {
+      numLat = numLat > 0 ? 85.05112878 : -85.05112878;
+    }
+    if (Math.abs(numLng) > 180) {
+      numLng = ((numLng + 180) % 360) - 180;
+    }
+
+    if (mapApiKey) {
+      return `https://maps.googleapis.com/maps/api/staticmap?center=${numLat},${numLng}&zoom=14&size=600x300&maptype=hybrid&markers=color:red%7Clabel:B%7C${numLat},${numLng}&key=${mapApiKey}`;
+    }
+
+    // ESRI World Imagery Tile (CORS-enabled with Access-Control-Allow-Origin: *)
+    const zoom = 14;
+    const latRad = (numLat * Math.PI) / 180;
+    const n = Math.pow(2, zoom);
+    const x = Math.floor(((numLng + 180) / 360) * n);
+    const y = Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n);
+
+    if (isNaN(x) || isNaN(y)) return null;
+    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${y}/${x}`;
+  };
+
+  const staticMapUrl = getStaticMapUrl(report.surveyRecommendations?.latitude, report.surveyRecommendations?.longitude);
 
   const fractureDepths = report.expectedFractureDepths ? report.expectedFractureDepths.split(/[\s,]+/).map(s => s.trim()).filter(Boolean) : [];
   
@@ -333,23 +391,34 @@ export default function UserSurveyReport() {
               </div>
             </section>
 
-            {/* Map Section */}
-            {report.surveyRecommendations?.latitude && (
-              <section>
-                <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#102353] mb-4 pb-2 border-b border-gray-100">
-                  <IoLocationOutline className="text-[#0A84FF]" /> Survey Location Map
-                </h3>
-                <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-100 relative h-48 md:h-64 shadow-inner">
-                  <img src={staticMapUrl} alt="Map Location" className="w-full h-full object-cover" />
-                  <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg shadow-sm border border-gray-200">
-                    <p className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                      📍 Recommended Borewell Point
-                    </p>
+            {/* Google Map View Section */}
+            {(() => {
+              const coords = getStaticMapUrl ? getGoogleMapCoords(report.surveyRecommendations?.latitude, report.surveyRecommendations?.longitude) : null;
+              if (!coords) return null;
+              const embedUrl = `https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=18&output=embed`;
+
+              return (
+                <section className="mt-8">
+                  <h3 className="flex items-center gap-2 text-lg sm:text-xl font-black text-[#102353] mb-4 pb-2 border-b border-slate-100 tracking-tight">
+                    <IoLocationOutline className="text-[#0A84FF] text-2xl" />
+                    <span>Survey Location Map</span>
+                  </h3>
+                  <div className="rounded-[24px] overflow-hidden border border-slate-200/90 bg-slate-100 relative h-64 sm:h-80 shadow-md group">
+                    <iframe
+                      title="Google Map Survey Location"
+                      src={embedUrl}
+                      className="w-full h-full border-0 rounded-[24px]"
+                      loading="lazy"
+                      allowFullScreen
+                    />
+                    <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-slate-200/80 shadow-md flex items-center gap-2 z-10 pointer-events-none">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                      <span className="text-xs font-extrabold text-slate-800 tracking-tight">📍 Recommended Borewell Point</span>
+                    </div>
                   </div>
-                </div>
-              </section>
-            )}
+                </section>
+              );
+            })()}
 
             {/* Site Evidence */}
             {report.images && report.images.length > 0 && (
