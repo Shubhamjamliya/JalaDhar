@@ -236,7 +236,7 @@ export default function AdminSidebar() {
         }
 
         return (
-            <span title={titleText} className={`px-2 py-0.5 text-[11px] font-black rounded-full border shadow-sm cursor-help ${badgeStyle}`}>
+            <span title={titleText} className={`px-2 py-0.5 text-[11px] font-black rounded-full border shadow-sm cursor-pointer ${badgeStyle}`}>
                 {val > 99 ? '99+' : val}
             </span>
         );
