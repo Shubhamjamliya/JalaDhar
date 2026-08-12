@@ -420,7 +420,9 @@ export default function UserStatus() {
     };
 
     const handleTrackExpert = () => {
-        toast.showInfo("Expert is currently travelling to your survey location.");
+        if (currentBooking) {
+            navigate(`/user/booking/${currentBooking.id || currentBooking._id}/tracking`);
+        }
     };
 
     const handleReschedule = () => {
@@ -682,51 +684,6 @@ export default function UserStatus() {
                                 </span>
                             </div>
                         )}
-                    </div>
-                </div>
-            )}
-
-            {/* Actions Card (Matching UX specification) */}
-            {currentBooking && !["CANCELLED", "COMPLETED", "REJECTED"].includes(status) && (
-                <div className="rounded-2xl bg-white p-3.5 sm:p-4 shadow-2xs border border-slate-200/80">
-                    <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-2.5">Actions</h2>
-
-                    {/* Notice Box */}
-                    {["PENDING", "ASSIGNED"].includes(status) && (
-                        <div className="mb-2.5 p-2.5 sm:p-3 rounded-xl bg-amber-50/80 border border-amber-200/70 flex items-start gap-2">
-                            <span className="text-base leading-none">⏳</span>
-                            <div>
-                                <h3 className="text-[11px] font-bold text-amber-900">Awaiting Expert Acceptance</h3>
-                                <p className="text-[10px] sm:text-[11px] text-amber-800 leading-relaxed mt-0.5">
-                                    Your assigned expert is reviewing this booking. Online payment will be available only after the expert formally accepts the booking.
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {/* Unlock Survey Report Button */}
-                        <button
-                            disabled={!currentBooking.payment?.remainingPaid}
-                            onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/report`)}
-                            className={`w-full py-2 px-3 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                                currentBooking.payment?.remainingPaid
-                                    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer"
-                                    : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-75"
-                            }`}
-                        >
-                            <IoDocumentTextOutline className="text-sm" />
-                            <span>Unlock Survey Report</span>
-                        </button>
-
-                        {/* Cancel Booking Button */}
-                        <button
-                            onClick={handleCancelBooking}
-                            className="w-full py-2 px-3 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
-                        >
-                            <IoCloseCircleOutline className="text-sm text-rose-600" />
-                            <span>Cancel Booking</span>
-                        </button>
                     </div>
                 </div>
             )}
