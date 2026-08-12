@@ -167,43 +167,51 @@ export default function AdminBookings() {
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
+            {/* Workflow Lifecycle Quick Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {[
+                    { id: 'all', label: 'All Bookings', status: '' },
+                    { id: 'pending', label: 'New / Pending', status: 'PENDING' },
+                    { id: 'accepted', label: 'Accepted', status: 'ACCEPTED' },
+                    { id: 'visited', label: 'Site Visited', status: 'VISITED' },
+                    { id: 'report_uploaded', label: 'Report Uploaded', status: 'REPORT_UPLOADED' },
+                    { id: 'borewell_uploaded', label: 'Borewell Uploaded', status: 'BOREWELL_UPLOADED' },
+                    { id: 'completed', label: 'Completed', status: 'COMPLETED' },
+                    { id: 'cancelled', label: 'Cancelled', status: 'CANCELLED' },
+                ].map((tab) => {
+                    const isSelected = filters.status === tab.status;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setFilters({ ...filters, status: tab.status, page: 1 })}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                isSelected
+                                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
+                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Search Bar & Dropdown */}
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                 <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1">
                         <div className="relative">
-                            <IoSearchOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+                            <IoSearchOutline className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                             <input
                                 type="text"
-                                placeholder="Search by user, vendor, or service..."
+                                placeholder="Search by user, vendor, or service type..."
                                 value={filters.search}
                                 onChange={(e) => {
                                     setFilters({ ...filters, search: e.target.value, page: 1 });
                                 }}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all"
                             />
                         </div>
-                    </div>
-                    <div className="md:w-48">
-                        <select
-                            value={filters.status}
-                            onChange={(e) => {
-                                setFilters({ ...filters, status: e.target.value, page: 1 });
-                            }}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                            <option value="">All Status</option>
-                            <option value="PENDING">Pending</option>
-                            <option value="ASSIGNED">Assigned</option>
-                            <option value="ACCEPTED">Accepted</option>
-                            <option value="VISITED">Visited</option>
-                            <option value="REPORT_UPLOADED">Report Uploaded</option>
-                            <option value="PAYMENT_SUCCESS">Payment Success</option>
-                            <option value="BOREWELL_UPLOADED">Borewell Uploaded</option>
-                            <option value="ADMIN_APPROVED">Admin Approved</option>
-                            <option value="COMPLETED">Completed</option>
-                            <option value="CANCELLED">Cancelled</option>
-                        </select>
                     </div>
                 </div>
             </div>

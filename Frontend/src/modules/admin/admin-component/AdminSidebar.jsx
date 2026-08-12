@@ -73,9 +73,9 @@ const navItems = [
         roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"],
         children: [
             { label: "All Bookings", to: "/admin/bookings", end: true },
-            { label: "Live Tracking", to: "/admin/bookings/tracking" },
+            { label: "Live GPS Tracking", to: "/admin/bookings/tracking" },
             { label: "Booking Alerts", to: "/admin/bookings/notifications" },
-            { label: "Analytics", to: "/admin/bookings/analytics" }
+            { label: "Booking Analytics", to: "/admin/bookings/analytics" }
         ]
     },
     {
@@ -85,9 +85,10 @@ const navItems = [
         Icon: IoWalletOutline,
         roles: ["SUPER_ADMIN", "FINANCE_ADMIN"],
         children: [
-            { label: "Admin Payments", to: "/admin/payments/admin" },
-            { label: "User Payments", to: "/admin/payments/user" },
-            { label: "Expert Payments", to: "/admin/payments/vendor" }
+            { label: "All Transactions", to: "/admin/payments", end: true },
+            { label: "Expert Disbursals", to: "/admin/withdrawals" },
+            { label: "User Refunds & Claims", to: "/admin/user-withdrawals" },
+            { label: "GST & Tax Invoices", to: "/admin/reports/revenue" }
         ]
     },
     {
