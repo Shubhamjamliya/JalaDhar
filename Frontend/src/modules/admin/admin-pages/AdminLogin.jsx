@@ -95,6 +95,7 @@ export default function AdminLogin() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                                     disabled={loading}
+                                    autoComplete="off"
                                     required
                                     autoFocus
                                     onKeyPress={(e) => {
@@ -108,9 +109,17 @@ export default function AdminLogin() {
 
                         {/* Password Input */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
-                                Password
-                            </label>
+                            <div className="flex items-center justify-between mb-1.5 ml-1">
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                    Password
+                                </label>
+                                <Link
+                                    to="/admin/forgot-password"
+                                    className="text-xs font-bold text-[#0A84FF] hover:underline"
+                                >
+                                    Forgot?
+                                </Link>
+                            </div>
                             <div className="relative">
                                 <IoLockClosedOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
                                 <input
@@ -120,6 +129,7 @@ export default function AdminLogin() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-16 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                                     disabled={loading}
+                                    autoComplete="new-password"
                                     required
                                     onKeyPress={(e) => {
                                         if (e.key === 'Enter') {

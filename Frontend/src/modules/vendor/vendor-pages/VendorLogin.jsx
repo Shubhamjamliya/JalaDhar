@@ -104,6 +104,7 @@ export default function VendorLogin() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 disabled={loading}
+                                autoComplete="off"
                                 required
                                 autoFocus
                             />
@@ -119,6 +120,7 @@ export default function VendorLogin() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 disabled={loading}
+                                autoComplete="new-password"
                                 required
                                 onKeyPress={(e) => {
                                     if (e.key === "Enter") {
