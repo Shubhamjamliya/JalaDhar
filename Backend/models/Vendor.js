@@ -175,14 +175,17 @@ const vendorSchema = new mongoose.Schema({
     default: ['Agricultural Survey', 'Domestic Survey']
   },
   workingDays: {
-    type: String,
-    trim: true,
-    default: "Monday - Saturday"
+    type: mongoose.Schema.Types.Mixed,
+    default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   },
   workingHours: {
-    type: String,
-    trim: true,
-    default: "08:00 AM - 07:00 PM"
+    type: mongoose.Schema.Types.Mixed,
+    default: {
+      start: '08:00',
+      end: '19:00',
+      preset: 'MORNING_TO_EVENING',
+      label: '08:00 AM - 07:00 PM'
+    }
   },
   aboutExpert: {
     type: String,

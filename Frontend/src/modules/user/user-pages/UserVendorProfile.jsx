@@ -12,10 +12,14 @@ import {
     IoBookOutline,
     IoSchoolOutline,
     IoPersonOutline,
-    IoShieldCheckmarkOutline
+    IoShieldCheckmarkOutline,
+    IoCalendarOutline,
+    IoTimeOutline
 } from "react-icons/io5";
 import { getVendorProfile } from "../../../services/bookingApi";
 import { maskPhone } from "../../../utils/phoneMasker";
+import { formatWorkingDays, formatWorkingHours } from "../../../utils/availabilityUtils";
+import GroundwaterSurveyFAQSection from "../../vendor/vendor-components/GroundwaterSurveyFAQSection";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import PageContainer from "../../shared/components/PageContainer";
@@ -253,6 +257,18 @@ export default function UserVendorProfile() {
                             value={formatAddress(vendorData.address)}
                             color="bg-teal-500"
                         />
+                        <InfoRow
+                            icon={IoCalendarOutline}
+                            label="Working Days"
+                            value={formatWorkingDays(vendorData.workingDays)}
+                            color="bg-blue-600"
+                        />
+                        <InfoRow
+                            icon={IoTimeOutline}
+                            label="Working Hours"
+                            value={formatWorkingHours(vendorData.workingHours)}
+                            color="bg-emerald-600"
+                        />
                         {/* Service Areas */}
                         <div className="flex items-start gap-4 text-left pt-2 border-t border-gray-50">
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 shrink-0 text-white shadow-sm">
@@ -374,6 +390,9 @@ export default function UserVendorProfile() {
                     </div>
                 </section>
             )}
+
+            {/* Groundwater Survey FAQs & Official Disclaimer */}
+            <GroundwaterSurveyFAQSection />
         </PageContainer>
     );
 }

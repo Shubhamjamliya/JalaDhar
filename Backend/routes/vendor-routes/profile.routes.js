@@ -34,17 +34,9 @@ const upload = multer({
 
 // Validation rules
 const updateProfileValidation = [
-  body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
-  body('phone').optional().trim().notEmpty().withMessage('Phone cannot be empty'),
-  body('experience').optional().isInt({ min: 0 }).withMessage('Experience must be a valid number (years)')
-];
-
-const updateAvailabilityValidation = [
-  body('isAvailable').optional().isBoolean().withMessage('isAvailable must be a boolean'),
-  body('workingDays').optional().isArray().withMessage('Working days must be an array'),
-  body('workingDays.*').optional().isIn(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']).withMessage('Invalid day'),
-  body('workingHours.start').optional().matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Invalid time format (use HH:MM)'),
-  body('workingHours.end').optional().matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Invalid time format (use HH:MM)')
+  body('name').optional({ checkFalsy: true }).trim().notEmpty().withMessage('Name cannot be empty'),
+  body('phone').optional({ checkFalsy: true }).trim().notEmpty().withMessage('Phone cannot be empty'),
+  body('experience').optional({ checkFalsy: true }).isInt({ min: 0 }).withMessage('Experience must be a valid number (years)')
 ];
 
 // Routes

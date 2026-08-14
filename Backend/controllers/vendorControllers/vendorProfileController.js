@@ -154,7 +154,8 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    const vendor = await Vendor.findById(req.userId);
+    const vendorId = req.userId;
+    const vendor = await Vendor.findById(vendorId);
     if (!vendor) {
       return res.status(404).json({
         success: false,
@@ -166,6 +167,9 @@ const updateProfile = async (req, res) => {
     const allowedFields = [
       'name',
       'phone',
+      'bloodGroup',
+      'gender',
+      'designation',
       'address',
       'educationalQualifications',
       'experience',
@@ -183,17 +187,36 @@ const updateProfile = async (req, res) => {
     // Update allowed fields
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        if (typeof req.body[field] === 'string' && (field === 'address' || field === 'educationalQualifications' || field === 'instruments' || field === 'languages' || field === 'availableServices')) {
+        let value = req.body[field];
+
+        // Sanitize empty strings for enum fields
+        if ((field === 'bloodGroup' || field === 'gender' || field === 'designation') && value === '') {
+          value = null;
+        }
+
+        if (typeof value === 'string' && (
+          field === 'address' ||
+          field === 'educationalQualifications' ||
+          field === 'instruments' ||
+          field === 'languages' ||
+          field === 'availableServices' ||
+          field === 'workingDays' ||
+          field === 'workingHours'
+        )) {
           try {
-            vendor[field] = JSON.parse(req.body[field]);
+            vendor[field] = JSON.parse(value);
           } catch (e) {
-            vendor[field] = req.body[field];
+            vendor[field] = value;
           }
         } else {
-          vendor[field] = req.body[field];
+          vendor[field] = value;
         }
       }
     });
+
+    vendor.markModified('workingDays');
+    vendor.markModified('workingHours');
+    vendor.markModified('address');
 
     await vendor.save();
 

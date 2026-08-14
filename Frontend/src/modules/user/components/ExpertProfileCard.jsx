@@ -7,8 +7,11 @@ import {
   IoLocationOutline,
   IoShieldCheckmarkOutline,
   IoTrendingUpOutline,
-  IoRibbonOutline
+  IoRibbonOutline,
+  IoCalendarOutline,
+  IoTimeOutline
 } from "react-icons/io5";
+import { formatWorkingDays, formatWorkingHours } from "../../../utils/availabilityUtils";
 
 /**
  * ExpertProfileCard
@@ -20,6 +23,7 @@ import {
  * 4. Failed Surveys
  * 5. Service Areas
  * 6. Average Rating
+ * 7. Availability Schedule (Working Days & Hours)
  */
 const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "Select Expert" }) => {
   if (!expert) return null;
@@ -163,6 +167,18 @@ const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "S
             <span className="text-xs font-black">{failedSurveys}</span>
           </div>
           <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tight text-center">Failed</span>
+        </div>
+      </div>
+
+      {/* Availability Schedule Section */}
+      <div className="mb-3 p-2 bg-emerald-50/70 rounded-xl border border-emerald-100 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+        <div className="flex items-center gap-1.5 font-bold text-emerald-900 truncate">
+          <IoCalendarOutline className="text-emerald-600 shrink-0 text-xs" />
+          <span className="truncate">{formatWorkingDays(expert.workingDays)}</span>
+        </div>
+        <div className="flex items-center gap-1 text-emerald-800 font-semibold shrink-0 bg-white px-2 py-0.5 rounded-md border border-emerald-200/80 shadow-2xs">
+          <IoTimeOutline className="text-emerald-600 text-xs" />
+          <span>{formatWorkingHours(expert.workingHours)}</span>
         </div>
       </div>
 

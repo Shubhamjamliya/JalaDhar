@@ -16,6 +16,19 @@ import {
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import ExpertAgreementDocViewer from "../vendor-components/ExpertAgreementDocViewer";
+import {
+    ALL_WEEKDAYS,
+    WORKING_DAYS_PRESETS,
+    WORKING_HOURS_PRESETS,
+    detectDaysPreset,
+    getDaysFromPreset,
+    detectHoursPreset,
+    normalizeWorkingDays,
+    normalizeWorkingHours,
+    formatWorkingDays,
+    formatWorkingHours,
+    formatTimeToAMPM
+} from "../../../utils/availabilityUtils";
 
 // Senior standard pixel-perfect ToggleSwitch component
 function ToggleSwitch({ checked, onChange, activeColor = "bg-[#0A84FF]", ariaLabel = "Toggle setting" }) {
@@ -331,26 +344,125 @@ export default function VendorSettings() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-800">Active Working Days</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {daysList.map((day) => {
-                                        const isSelected = settings.workingDays.includes(day);
-                                        return (
-                                            <button
-                                                key={day}
-                                                type="button"
-                                                onClick={() => handleDayToggle(day)}
-                                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                                    isSelected
-                                                        ? "bg-[#0A84FF] text-white shadow-2xs"
-                                                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                                }`}
-                                            >
-                                                {day}
-                                            </button>
-                                        );
-                                    })}
+                            {/* Working Days Dropdown & Custom Days */}
+                            <div className="space-y-2.5 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-slate-800">Working Days Schedule</label>
+                                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                                        {formatWorkingDays(settings.workingDays)}
+                                    </span>
+                                </div>
+                                <select
+                                    value={detectDaysPreset(settings.workingDays)}
+                                    onChange={(e) => {
+                                        const presetKey = e.target.value;
+                                        if (presetKey !== 'CUSTOM') {
+                                            const newDays = getDaysFromPreset(presetKey);
+                                            setSettings(prev => ({ ...prev, workingDays: newDays }));
+                                        }
+                                    }}
+                                    className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-800 shadow-xs focus:border-blue-500 outline-none cursor-pointer"
+                                >
+                                    {WORKING_DAYS_PRESETS.map((preset) => (
+                                        <option key={preset.key} value={preset.key}>
+                                            {preset.label}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                <div className="pt-2">
+                                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                                        Active Days:
+                                    </span>
+                                    <div className="grid grid-cols-7 gap-1.5">
+                                        {ALL_WEEKDAYS.map((day) => {
+                                            const isSelected = settings.workingDays?.some(
+                                                d => d.toLowerCase() === day.toLowerCase() || d.toLowerCase() === day.substring(0, 3).toLowerCase()
+                                            );
+                                            return (
+                                                <button
+                                                    key={day}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const currentDays = normalizeWorkingDays(settings.workingDays);
+                                                        const newDays = isSelected
+                                                            ? currentDays.filter(d => d.toLowerCase() !== day.toLowerCase())
+                                                            : [...currentDays, day];
+                                                        setSettings(prev => ({ ...prev, workingDays: newDays }));
+                                                    }}
+                                                    className={`py-2 px-1 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-[#0A84FF] text-white shadow-2xs"
+                                                            : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                                                    }`}
+                                                >
+                                                    {day.substring(0, 3)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Working Hours Dropdown & Custom Times */}
+                            <div className="space-y-2.5 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-slate-800">Working Hours Window</label>
+                                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                                        {formatTimeToAMPM(settings.workingHoursStart)} - {formatTimeToAMPM(settings.workingHoursEnd)}
+                                    </span>
+                                </div>
+                                <select
+                                    value={detectHoursPreset({ start: settings.workingHoursStart, end: settings.workingHoursEnd })}
+                                    onChange={(e) => {
+                                        const presetKey = e.target.value;
+                                        const matchedPreset = WORKING_HOURS_PRESETS.find(p => p.key === presetKey);
+                                        if (matchedPreset && presetKey !== 'CUSTOM') {
+                                            setSettings(prev => ({
+                                                ...prev,
+                                                workingHoursStart: matchedPreset.start,
+                                                workingHoursEnd: matchedPreset.end
+                                            }));
+                                        }
+                                    }}
+                                    className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-800 shadow-xs focus:border-blue-500 outline-none cursor-pointer"
+                                >
+                                    {WORKING_HOURS_PRESETS.map((preset) => (
+                                        <option key={preset.key} value={preset.key}>
+                                            {preset.label}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                                            Start Time
+                                        </label>
+                                        <input
+                                            type="time"
+                                            value={settings.workingHoursStart || "08:00"}
+                                            onChange={(e) => setSettings(prev => ({ ...prev, workingHoursStart: e.target.value }))}
+                                            className="w-full rounded-lg bg-gray-50 p-1.5 text-sm font-bold text-gray-800 outline-none"
+                                        />
+                                        <span className="text-[11px] font-semibold text-blue-600 block mt-0.5">
+                                            {formatTimeToAMPM(settings.workingHoursStart || "08:00")}
+                                        </span>
+                                    </div>
+                                    <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                                            End Time
+                                        </label>
+                                        <input
+                                            type="time"
+                                            value={settings.workingHoursEnd || "19:00"}
+                                            onChange={(e) => setSettings(prev => ({ ...prev, workingHoursEnd: e.target.value }))}
+                                            className="w-full rounded-lg bg-gray-50 p-1.5 text-sm font-bold text-gray-800 outline-none"
+                                        />
+                                        <span className="text-[11px] font-semibold text-blue-600 block mt-0.5">
+                                            {formatTimeToAMPM(settings.workingHoursEnd || "19:00")}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

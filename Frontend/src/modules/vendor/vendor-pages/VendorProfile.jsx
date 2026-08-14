@@ -64,7 +64,22 @@ const MACHINE_OPTIONS = [
     'Resistivity Meter'
 ];
 
+import {
+    ALL_WEEKDAYS,
+    WORKING_DAYS_PRESETS,
+    WORKING_HOURS_PRESETS,
+    detectDaysPreset,
+    getDaysFromPreset,
+    detectHoursPreset,
+    normalizeWorkingDays,
+    normalizeWorkingHours,
+    formatWorkingDays,
+    formatWorkingHours,
+    formatTimeToAMPM
+} from "../../../utils/availabilityUtils";
+
 import VendorProfileView from "./VendorProfileView";
+import GroundwaterSurveyFAQSection from "../vendor-components/GroundwaterSurveyFAQSection";
 
 export default function VendorProfile() {
     const navigate = useNavigate();
@@ -180,8 +195,8 @@ export default function VendorProfile() {
                     address: address,
                     profilePicture:
                         vendorData.documents?.profilePicture?.url || null,
-                    workingDays: vendorData.workingDays?.length ? vendorData.workingDays : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-                    workingHours: vendorData.workingHours?.start ? vendorData.workingHours : { start: '08:00', end: '19:00' },
+                    workingDays: normalizeWorkingDays(vendorData.workingDays),
+                    workingHours: normalizeWorkingHours(vendorData.workingHours),
                     aboutExpert: vendorData.aboutExpert || "",
                 });
 
@@ -390,16 +405,16 @@ export default function VendorProfile() {
             }
 
             const updateData = {
-                name: profileData.name,
-                phone: profileData.phone,
-                bloodGroup: profileData.bloodGroup,
-                gender: profileData.gender,
-                designation: profileData.designation,
-                experience: parseInt(profileData.experience) || 0,
+                name: profileData.name || vendor?.name,
+                phone: profileData.phone || vendor?.phone,
+                bloodGroup: profileData.bloodGroup || null,
+                gender: profileData.gender || null,
+                designation: profileData.designation || null,
+                experience: parseInt(profileData.experience, 10) || 0,
                 address: addressToSave, // Send as object, not stringified
-                workingDays: profileData.workingDays,
-                workingHours: profileData.workingHours,
-                aboutExpert: profileData.aboutExpert,
+                workingDays: normalizeWorkingDays(profileData.workingDays),
+                workingHours: normalizeWorkingHours(profileData.workingHours),
+                aboutExpert: profileData.aboutExpert || "",
             };
 
             const response = await updateVendorProfile(updateData);
@@ -420,10 +435,14 @@ export default function VendorProfile() {
                 setIsEditing(false);
                 await loadProfile();
             } else {
-                setError(response.message || "Failed to update profile");
+                const errMsg = response.message || response.errors?.[0]?.msg || "Failed to update profile";
+                setError(errMsg);
+                toast.showError(errMsg);
             }
         } catch (err) {
-            setError("Failed to update profile. Please try again.");
+            const errMsg = err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || "Failed to update profile. Please try again.";
+            setError(errMsg);
+            toast.showError(errMsg);
         } finally {
             setSaving(false);
         }
@@ -1029,70 +1048,239 @@ export default function VendorProfile() {
                             {/* Availability Section */}
                             <div>
                                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <IoTimeOutline /> Availability
+                                    <IoTimeOutline className="text-[#0A84FF] text-base" /> Availability & Schedule
                                 </h4>
                                 {isEditing ? (
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="text-xs text-gray-500 font-bold mb-2 block">Working Days</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                                                    <button
-                                                        key={day}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const newDays = profileData.workingDays?.includes(day)
-                                                                ? profileData.workingDays.filter(d => d !== day)
-                                                                : [...(profileData.workingDays || []), day];
-                                                            setProfileData({ ...profileData, workingDays: newDays });
-                                                        }}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                                                            profileData.workingDays?.includes(day)
-                                                                ? 'bg-blue-600 text-white shadow-md'
-                                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                        }`}
-                                                    >
-                                                        {day.substring(0, 3)}
-                                                    </button>
+                                    <div className="space-y-4 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
+                                        {/* Working Days Dropdown */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                                                    <IoCalendarOutline className="text-blue-600" />
+                                                    <span>Working Days</span>
+                                                </label>
+                                                <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                                                    {profileData.workingDays?.length || 0} / 7 Days Active
+                                                </span>
+                                            </div>
+                                            <select
+                                                value={detectDaysPreset(profileData.workingDays)}
+                                                onChange={(e) => {
+                                                    const presetKey = e.target.value;
+                                                    if (presetKey !== 'CUSTOM') {
+                                                        const newDays = getDaysFromPreset(presetKey);
+                                                        setProfileData({ ...profileData, workingDays: newDays });
+                                                    }
+                                                }}
+                                                className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-800 shadow-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all cursor-pointer"
+                                            >
+                                                {WORKING_DAYS_PRESETS.map((preset) => (
+                                                    <option key={preset.key} value={preset.key} className="py-1">
+                                                        {preset.label}
+                                                    </option>
                                                 ))}
+                                            </select>
+
+                                            {/* Interactive Day Pills */}
+                                            <div className="pt-2">
+                                                <div className="flex items-center justify-between mb-1.5">
+                                                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                                        Select / Customize Days:
+                                                    </span>
+                                                    <span className="text-[11px] text-gray-400">
+                                                        Click any day to toggle
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                                                    {ALL_WEEKDAYS.map((day) => {
+                                                        const isSelected = profileData.workingDays?.some(
+                                                            d => d.toLowerCase() === day.toLowerCase()
+                                                        );
+                                                        return (
+                                                            <button
+                                                                key={day}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const currentDays = normalizeWorkingDays(profileData.workingDays);
+                                                                    const newDays = isSelected
+                                                                        ? currentDays.filter(d => d.toLowerCase() !== day.toLowerCase())
+                                                                        : [...currentDays, day];
+                                                                    setProfileData({ ...profileData, workingDays: newDays });
+                                                                }}
+                                                                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer select-none ${
+                                                                    isSelected
+                                                                        ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/30'
+                                                                        : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 hover:text-gray-700'
+                                                                }`}
+                                                            >
+                                                                <span>{day.substring(0, 3)}</span>
+                                                                <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-transparent'}`} />
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="text-xs text-gray-500 font-bold mb-2 block">Start Time</label>
-                                                <input
-                                                    type="time"
-                                                    value={profileData.workingHours?.start || "08:00"}
-                                                    onChange={(e) => setProfileData({
-                                                        ...profileData,
-                                                        workingHours: { ...profileData.workingHours, start: e.target.value }
-                                                    })}
-                                                    className="w-full rounded-xl border-gray-200 bg-gray-50 p-3 focus:border-blue-500 focus:ring-blue-500"
-                                                />
+
+                                        {/* Working Hours Dropdown & Custom Times */}
+                                        <div className="space-y-3 pt-2 border-t border-slate-200/80">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                                                    <IoTimeOutline className="text-blue-600" />
+                                                    <span>Working Hours</span>
+                                                </label>
+                                                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                                                    {formatWorkingHours(profileData.workingHours)}
+                                                </span>
                                             </div>
+                                            <select
+                                                value={detectHoursPreset(profileData.workingHours)}
+                                                onChange={(e) => {
+                                                    const presetKey = e.target.value;
+                                                    const matchedPreset = WORKING_HOURS_PRESETS.find(p => p.key === presetKey);
+                                                    if (matchedPreset && presetKey !== 'CUSTOM') {
+                                                        setProfileData({
+                                                            ...profileData,
+                                                            workingHours: {
+                                                                start: matchedPreset.start,
+                                                                end: matchedPreset.end,
+                                                                preset: matchedPreset.key,
+                                                                label: matchedPreset.label
+                                                            }
+                                                        });
+                                                    } else if (presetKey === 'CUSTOM') {
+                                                        setProfileData({
+                                                            ...profileData,
+                                                            workingHours: {
+                                                                ...(profileData.workingHours || {}),
+                                                                start: profileData.workingHours?.start || '08:00',
+                                                                end: profileData.workingHours?.end || '19:00',
+                                                                preset: 'CUSTOM'
+                                                            }
+                                                        });
+                                                    }
+                                                }}
+                                                className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-800 shadow-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all cursor-pointer"
+                                            >
+                                                {WORKING_HOURS_PRESETS.map((preset) => (
+                                                    <option key={preset.key} value={preset.key} className="py-1">
+                                                        {preset.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+
+                                            {/* Time Inputs for Custom Hours or fine adjustment */}
+                                            <div className="grid grid-cols-2 gap-3 pt-1">
+                                                <div className="bg-white p-2.5 rounded-xl border border-gray-200 space-y-1">
+                                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                                                        Start Time
+                                                    </label>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="time"
+                                                            value={profileData.workingHours?.start || "08:00"}
+                                                            onChange={(e) => {
+                                                                const newStart = e.target.value;
+                                                                const currentHours = normalizeWorkingHours(profileData.workingHours);
+                                                                setProfileData({
+                                                                    ...profileData,
+                                                                    workingHours: {
+                                                                        ...currentHours,
+                                                                        start: newStart,
+                                                                        preset: 'CUSTOM'
+                                                                    }
+                                                                });
+                                                            }}
+                                                            className="w-full rounded-lg border-gray-200 bg-gray-50 p-2 text-sm font-bold text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                                        />
+                                                    </div>
+                                                    <span className="text-[11px] font-semibold text-blue-600 block">
+                                                        {formatTimeToAMPM(profileData.workingHours?.start || "08:00")}
+                                                    </span>
+                                                </div>
+
+                                                <div className="bg-white p-2.5 rounded-xl border border-gray-200 space-y-1">
+                                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                                                        End Time
+                                                    </label>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="time"
+                                                            value={profileData.workingHours?.end || "19:00"}
+                                                            onChange={(e) => {
+                                                                const newEnd = e.target.value;
+                                                                const currentHours = normalizeWorkingHours(profileData.workingHours);
+                                                                setProfileData({
+                                                                    ...profileData,
+                                                                    workingHours: {
+                                                                        ...currentHours,
+                                                                        end: newEnd,
+                                                                        preset: 'CUSTOM'
+                                                                    }
+                                                                });
+                                                            }}
+                                                            className="w-full rounded-lg border-gray-200 bg-gray-50 p-2 text-sm font-bold text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                                        />
+                                                    </div>
+                                                    <span className="text-[11px] font-semibold text-blue-600 block">
+                                                        {formatTimeToAMPM(profileData.workingHours?.end || "19:00")}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Live Summary Preview */}
+                                        <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-200/80 flex items-start gap-2.5 text-xs text-blue-900">
+                                            <IoShieldCheckmarkOutline className="text-base text-blue-600 shrink-0 mt-0.5" />
                                             <div>
-                                                <label className="text-xs text-gray-500 font-bold mb-2 block">End Time</label>
-                                                <input
-                                                    type="time"
-                                                    value={profileData.workingHours?.end || "19:00"}
-                                                    onChange={(e) => setProfileData({
-                                                        ...profileData,
-                                                        workingHours: { ...profileData.workingHours, end: e.target.value }
-                                                    })}
-                                                    className="w-full rounded-xl border-gray-200 bg-gray-50 p-3 focus:border-blue-500 focus:ring-blue-500"
-                                                />
+                                                <p className="font-bold">
+                                                    Schedule: {formatWorkingDays(profileData.workingDays)}
+                                                </p>
+                                                <p className="text-blue-700 font-medium text-[11px] mt-0.5">
+                                                    Operating Hours: {formatWorkingHours(profileData.workingHours)} • Customers can book field visits on these days.
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex gap-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                        <div>
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Days</p>
-                                            <p className="font-semibold text-gray-900">{profileData.workingDays?.length === 7 ? 'Everyday' : profileData.workingDays?.join(', ')}</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80">
+                                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-2xs space-y-1">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                                                <IoCalendarOutline className="text-blue-600" /> Working Days
+                                            </p>
+                                            <p className="font-extrabold text-sm text-gray-900">
+                                                {formatWorkingDays(profileData.workingDays)}
+                                            </p>
+                                            <div className="flex flex-wrap gap-1 pt-1">
+                                                {ALL_WEEKDAYS.map(day => {
+                                                    const isSelected = profileData.workingDays?.some(
+                                                        d => d.toLowerCase() === day.toLowerCase()
+                                                    );
+                                                    return (
+                                                        <span
+                                                            key={day}
+                                                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                                                isSelected
+                                                                    ? 'bg-blue-100 text-blue-800'
+                                                                    : 'bg-gray-100 text-gray-400 opacity-60'
+                                                            }`}
+                                                        >
+                                                            {day.substring(0, 3)}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Hours</p>
-                                            <p className="font-semibold text-gray-900">{profileData.workingHours?.start} - {profileData.workingHours?.end}</p>
+                                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-2xs space-y-1">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                                                <IoTimeOutline className="text-emerald-600" /> Working Hours
+                                            </p>
+                                            <p className="font-extrabold text-sm text-emerald-700">
+                                                {formatWorkingHours(profileData.workingHours)}
+                                            </p>
+                                            <span className="inline-block text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                                                ⚡ Available for Field Appointments
+                                            </span>
                                         </div>
                                     </div>
                                 )}
@@ -1277,8 +1465,8 @@ export default function VendorProfile() {
 
             {/* My Services Section - Distinct and Professional */}
             {vendor?.isApproved && (
-                <div className="mt-12 mb-20 px-1">
-                    <div className="flex flex-col mb-6">
+                <div className="mt-8 mb-4 px-1">
+                    <div className="flex flex-col mb-4">
                         <div className="flex items-center justify-between mb-2">
                             <h2 className="text-2xl font-black text-gray-800 tracking-tight">Professional Services</h2>
                             {services.length === 0 && !isAddingService && (
@@ -1956,6 +2144,11 @@ export default function VendorProfile() {
                 confirmColor="danger"
                 isLoading={isDeleting}
             />
+
+            {/* Groundwater Survey FAQs & Disclaimer (at the very bottom of profile) */}
+            <div className="mb-6">
+                <GroundwaterSurveyFAQSection />
+            </div>
         </PageContainer>
     );
 }

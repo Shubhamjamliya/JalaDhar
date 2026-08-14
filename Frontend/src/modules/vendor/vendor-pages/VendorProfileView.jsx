@@ -21,33 +21,15 @@ import {
     IoShieldCheckmarkOutline
 } from "react-icons/io5";
 
+import {
+    formatWorkingDays,
+    formatWorkingHours
+} from "../../../utils/availabilityUtils";
+import GroundwaterSurveyFAQSection from "../vendor-components/GroundwaterSurveyFAQSection";
+
 export default function VendorProfileView({ vendor, profileData, stats }) {
     const [isCertificationsOpen, setIsCertificationsOpen] = useState(false);
     const [isSafetyOpen, setIsSafetyOpen] = useState(false);
-
-    const formatWorkingDays = (days) => {
-        if (!days) return "Monday - Saturday";
-        if (Array.isArray(days)) {
-            if (days.length === 7) return "Everyday";
-            return days.join(', ');
-        }
-        return days;
-    };
-
-    const formatWorkingHours = (hours) => {
-        if (!hours) return "08:00 AM - 07:00 PM";
-        if (typeof hours === 'object' && hours.start && hours.end) {
-            const formatTime = (time) => {
-                const [h, m] = time.split(':');
-                let hr = parseInt(h);
-                const ampm = hr >= 12 ? 'PM' : 'AM';
-                hr = hr % 12 || 12;
-                return `${hr.toString().padStart(2, '0')}:${m} ${ampm}`;
-            };
-            return `${formatTime(hours.start)} - ${formatTime(hours.end)}`;
-        }
-        return hours;
-    };
 
     const renderBadge = (verified, text) => (
         <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${

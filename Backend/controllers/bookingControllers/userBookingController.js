@@ -36,7 +36,7 @@ const getAvailableVendors = async (req, res) => {
       isActive: true,
       isApproved: true,
       services: serviceId
-    }).select('name email phone experience rating address');
+    }).select('name email phone experience rating address workingDays workingHours aboutExpert languages availableServices instruments');
 
     // Calculate distance and sort vendors
     const vendorsWithDistance = vendors.map(vendor => {
@@ -184,6 +184,54 @@ const createBooking = async (req, res) => {
         success: false,
         message: 'Vendor not found or not available'
       });
+    }
+
+    // Validate vendor working day availability
+    if (scheduledDate && vendor.workingDays) {
+      let bookingDate;
+      if (typeof scheduledDate === 'string' && scheduledDate.includes('-')) {
+        const parts = scheduledDate.split('T')[0].split('-');
+        if (parts.length === 3) {
+          bookingDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        } else {
+          bookingDate = new Date(scheduledDate);
+        }
+      } else {
+        bookingDate = new Date(scheduledDate);
+      }
+
+      if (!isNaN(bookingDate.getTime())) {
+        const dayOfWeek = bookingDate.toLocaleDateString('en-US', { weekday: 'long' });
+        
+        let activeDays = [];
+        const rawDays = vendor.workingDays;
+        if (Array.isArray(rawDays)) {
+          activeDays = rawDays;
+        } else if (typeof rawDays === 'string') {
+          const trimmed = rawDays.trim().toLowerCase();
+          if (trimmed === 'all days' || trimmed === 'everyday' || trimmed === 'all' || trimmed === 'monday - sunday' || trimmed === 'monday to sunday') {
+            activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+          } else if (trimmed === 'weekdays' || trimmed === 'monday - friday' || trimmed === 'monday to friday') {
+            activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+          } else if (trimmed === 'weekends' || trimmed === 'weekends only' || trimmed === 'saturday & sunday' || trimmed === 'saturday - sunday') {
+            activeDays = ['Saturday', 'Sunday'];
+          } else if (trimmed === 'monday - saturday' || trimmed === 'monday to saturday') {
+            activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          } else if (rawDays.includes(',')) {
+            activeDays = rawDays.split(',').map(d => d.trim());
+          }
+        }
+
+        if (activeDays.length > 0) {
+          const isDayActive = activeDays.some(d => d.toLowerCase() === dayOfWeek.toLowerCase() || d.toLowerCase().startsWith(dayOfWeek.substring(0, 3).toLowerCase()));
+          if (!isDayActive) {
+            return res.status(400).json({
+              success: false,
+              message: `Expert is not available on ${dayOfWeek}s. Please select an available working date.`
+            });
+          }
+        }
+      }
     }
 
     // Get settings
@@ -932,7 +980,7 @@ const getNearbyVendors = async (req, res) => {
 
     // First, get all vendors with services populated (no status filter - show all services)
     const vendors = await Vendor.find(query)
-      .select('name email phone experience rating bookingStats serviceAreas designation address location services servicePrice')
+      .select('name email phone experience rating bookingStats serviceAreas designation address location services servicePrice workingDays workingHours aboutExpert languages availableServices instruments')
       .populate({
         path: 'services',
         // Removed match filter - show all services regardless of status
@@ -1134,7 +1182,7 @@ const getVendorProfile = async (req, res) => {
     }
 
     const vendor = await Vendor.findById(vendorId)
-      .select('name email phone experience rating bookingStats serviceAreas address location services isActive isApproved gender designation educationalQualifications')
+      .select('name email phone experience rating bookingStats serviceAreas address location services isActive isApproved gender designation educationalQualifications workingDays workingHours aboutExpert languages availableServices instruments')
       .populate({
         path: 'services',
         select: 'name category price description images status isActive machineType'
