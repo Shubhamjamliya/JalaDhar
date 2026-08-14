@@ -4,6 +4,7 @@ const Token = require('../../models/Token');
 const { generateTokenPair } = require('../../utils/tokenService');
 const { createOTPToken, verifyOTPToken, markTokenAsUsed } = require('../../services/otpService');
 const { sendOTPEmail, sendWelcomeEmail } = require('../../services/emailService');
+const { sendSMSOTP } = require('../../services/smsService');
 const { dispatchOTP } = require('../../services/multiChannelNotificationService');
 const { TOKEN_TYPES } = require('../../utils/constants');
 const { validationResult } = require('express-validator');
@@ -377,14 +378,32 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    const { email } = req.body;
+    const { email, phone, identifier } = req.body;
+    const inputVal = (email || phone || identifier || '').trim();
 
-    const user = await User.findOne({ email });
+    if (!inputVal) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email or mobile number'
+      });
+    }
+
+    let searchConditions = [];
+    if (inputVal.includes('@')) {
+      searchConditions.push({ email: inputVal.toLowerCase() });
+    } else {
+      const cleanPhone = inputVal.replace(/\D/g, '');
+      searchConditions.push({ phone: cleanPhone });
+      searchConditions.push({ phone: inputVal });
+      searchConditions.push({ email: inputVal.toLowerCase() });
+    }
+
+    const user = await User.findOne({ $or: searchConditions });
     if (!user) {
-      // Don't reveal if email exists
+      // Don't reveal if email/phone exists
       return res.json({
         success: true,
-        message: 'If the email exists, a password reset OTP has been sent.'
+        message: 'If the account exists, a password reset OTP has been sent.'
       });
     }
 
@@ -396,17 +415,28 @@ const forgotPassword = async (req, res) => {
       expiryMinutes: parseInt(process.env.PASSWORD_RESET_OTP_EXPIRY_MINUTES) || 10
     });
 
-    // Send OTP email
-    await sendOTPEmail({
-      email: user.email,
-      name: user.name,
-      otp,
-      type: 'password_reset'
-    });
+    // Send OTP SMS if phone is available
+    if (user.phone) {
+      await sendSMSOTP({
+        phone: user.phone,
+        otp,
+        type: 'password_reset'
+      }).catch(err => console.error('Forgot password SMS send error:', err));
+    }
+
+    // Send OTP email if email is available
+    if (user.email) {
+      await sendOTPEmail({
+        email: user.email,
+        name: user.name,
+        otp,
+        type: 'password_reset'
+      }).catch(err => console.error('Forgot password Email send error:', err));
+    }
 
     res.json({
       success: true,
-      message: 'Password reset OTP sent to your email'
+      message: 'Password reset OTP sent to your registered mobile number / email'
     });
   } catch (error) {
     console.error('Forgot password error:', error);
@@ -432,13 +462,31 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    const { email, otp, newPassword } = req.body;
+    const { email, phone, identifier, otp, newPassword } = req.body;
+    const inputVal = (email || phone || identifier || '').trim();
 
-    const user = await User.findOne({ email });
+    if (!inputVal) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email or mobile number'
+      });
+    }
+
+    let searchConditions = [];
+    if (inputVal.includes('@')) {
+      searchConditions.push({ email: inputVal.toLowerCase() });
+    } else {
+      const cleanPhone = inputVal.replace(/\D/g, '');
+      searchConditions.push({ phone: cleanPhone });
+      searchConditions.push({ phone: inputVal });
+      searchConditions.push({ email: inputVal.toLowerCase() });
+    }
+
+    const user = await User.findOne({ $or: searchConditions });
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'Account not found'
       });
     }
 
@@ -839,12 +887,75 @@ const verifyLoginOTP = async (req, res) => {
   }
 };
 
+/**
+ * Verify password reset OTP
+ */
+const verifyResetOTP = async (req, res) => {
+  try {
+    const { email, phone, identifier, otp } = req.body;
+    const inputVal = (email || phone || identifier || '').trim();
+
+    if (!inputVal || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mobile/Email and OTP are required'
+      });
+    }
+
+    let searchConditions = [];
+    if (inputVal.includes('@')) {
+      searchConditions.push({ email: inputVal.toLowerCase() });
+    } else {
+      const cleanPhone = inputVal.replace(/\D/g, '');
+      searchConditions.push({ phone: cleanPhone });
+      searchConditions.push({ phone: inputVal });
+      searchConditions.push({ email: inputVal.toLowerCase() });
+    }
+
+    const user = await User.findOne({ $or: searchConditions });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Account not found'
+      });
+    }
+
+    // Verify OTP
+    const { isValid, error } = await verifyOTPToken({
+      userId: user._id,
+      userModel: 'User',
+      type: TOKEN_TYPES.PASSWORD_RESET,
+      otp
+    });
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: error || 'Invalid or expired OTP'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'OTP verified successfully'
+    });
+  } catch (error) {
+    console.error('Verify reset OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'OTP verification failed',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   sendLoginOTP,
   verifyLoginOTP,
   forgotPassword,
+  verifyResetOTP,
   resetPassword,
   sendRegistrationOTP,
   verifyEmail,

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { adminResetPassword } from "../../../services/adminApi";
-import { IoCheckmarkCircleOutline } from "react-icons/io5";
+import { IoCheckmarkCircleOutline, IoLockClosedOutline, IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import logo from "@/assets/AppLogo.png";
@@ -9,8 +9,8 @@ import logo from "@/assets/AppLogo.png";
 export default function AdminResetPassword() {
     const navigate = useNavigate();
     const location = useLocation();
-    const [email] = useState(location.state?.email || "");
-    const [otp, setOtp] = useState("");
+    const [identifier, setIdentifier] = useState(location.state?.email || "");
+    const [otp, setOtp] = useState(location.state?.otp || "");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -20,44 +20,43 @@ export default function AdminResetPassword() {
     const toast = useToast();
 
     useEffect(() => {
-        if (!email) {
+        if (!identifier) {
             navigate("/admin/forgot-password");
         }
-    }, [email, navigate]);
+    }, [identifier, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
 
         if (!otp || otp.length !== 6) {
             toast.showError("Please enter a valid 6-digit OTP");
-            setLoading(false);
             return;
         }
 
         if (!newPassword || newPassword.length < 6) {
             toast.showError("Password must be at least 6 characters");
-            setLoading(false);
             return;
         }
 
         if (newPassword !== confirmPassword) {
             toast.showError("Passwords do not match");
-            setLoading(false);
             return;
         }
 
+        setLoading(true);
         const loadingToast = toast.showLoading("Resetting password...");
 
         try {
             const response = await adminResetPassword({
-                email,
-                otp,
-                newPassword
+                email: identifier,
+                otp: otp,
+                newPassword: newPassword
             });
+
+            toast.dismissToast(loadingToast);
+
             if (response.success) {
-                toast.dismissToast(loadingToast);
-                toast.showSuccess("Password reset successful! Redirecting to login...");
+                toast.showSuccess("Password reset successful!");
                 setSuccess(true);
                 setTimeout(() => {
                     navigate("/adminlogin", {
@@ -65,7 +64,6 @@ export default function AdminResetPassword() {
                     });
                 }, 2000);
             } else {
-                toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Password reset failed");
             }
         } catch (err) {
@@ -78,27 +76,21 @@ export default function AdminResetPassword() {
 
     if (success) {
         return (
-            <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5 py-8">
-                <div className="w-full max-w-sm">
-                    <div className="text-center mb-10 mt-4">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                            <img
-                                src={logo}
-                                alt="Jaladhaara Logo"
-                                className="h-14 sm:h-16 object-contain drop-shadow-sm"
-                            />
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-wide text-[#1565C0]" style={{letterSpacing: '0.06em'}}>Jaladhaara</span>
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 px-4 py-8">
+                <div className="w-full max-w-md">
+                    <div className="w-full rounded-3xl bg-white/95 backdrop-blur-md p-8 shadow-xl shadow-slate-200/60 border border-slate-200/80 text-center space-y-4">
+                        <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto border border-emerald-100 shadow-2xs">
+                            <IoCheckmarkCircleOutline className="text-4xl" />
                         </div>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-                        <IoCheckmarkCircleOutline className="text-6xl text-green-500 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                        <h2 className="text-2xl font-bold text-slate-800">
                             Password Reset Successful!
                         </h2>
-                        <p className="text-gray-600 mb-6">
-                            Your password has been reset successfully. You will be redirected to login page shortly.
+                        <p className="text-slate-600 text-sm leading-relaxed">
+                            Your admin password has been reset successfully. Redirecting to Admin Login...
                         </p>
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0A84FF] mx-auto"></div>
+                        <div className="pt-4 flex justify-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-3 border-[#0A84FF] border-t-transparent"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -106,111 +98,87 @@ export default function AdminResetPassword() {
     }
 
     return (
-        <div className="min-h-screen flex justify-center items-center bg-[#F6F7F9] px-5 py-8">
-            <div className="w-full max-w-sm">
-                {/* Logo */}
-                <div className="text-center mb-10 mt-4">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                        <img
-                            src={logo}
-                            alt="Jaladhaara Logo"
-                            className="h-14 sm:h-16 object-contain drop-shadow-sm"
-                        />
-                        <span className="text-2xl sm:text-3xl font-extrabold tracking-wide text-[#1565C0]" style={{letterSpacing: '0.06em'}}>Jaladhaara</span>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 px-4 py-8">
+            <div className="w-full max-w-md">
+                {/* Main Card */}
+                <div className="w-full rounded-3xl bg-white/95 backdrop-blur-md p-6 sm:p-8 shadow-xl shadow-slate-200/60 border border-slate-200/80">
+                    {/* Header Logo */}
+                    <div className="mb-6 flex flex-col items-center text-center">
+                        <div className="flex items-center justify-center gap-2 mb-3">
+                            <img
+                                src={logo}
+                                alt="Jaladhaara Logo"
+                                className="h-14 sm:h-16 object-contain drop-shadow-sm"
+                            />
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-wide text-[#1565C0]" style={{letterSpacing: '0.06em'}}>Jaladhaara</span>
+                        </div>
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">
+                            Admin Reset Password
+                        </h2>
+                        <p className="text-slate-500 text-xs sm:text-sm mt-1">
+                            Set a new password for <span className="font-semibold text-slate-700">{identifier}</span>
+                        </p>
                     </div>
-                </div>
 
-                {/* Title */}
-                <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
-                    Reset Password
-                </h2>
-
-                {/* Form */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <p className="text-gray-600 text-sm mb-6 text-center">
-                        Enter the OTP sent to <span className="font-semibold">{email}</span> and your new password.
-                    </p>
-
-                    <form onSubmit={handleSubmit}>
-                        {/* OTP */}
-                        <div className="mb-4">
-                            <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                                <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
-                                    Enter OTP
-                                </p>
+                    {/* Reset Form */}
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* New Password Input */}
+                        <div>
+                            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                                New Password
+                            </label>
+                            <div className="relative">
+                                <IoLockClosedOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
                                 <input
-                                    type="text"
-                                    placeholder="------"
-                                    value={otp}
-                                    onChange={(e) => {
-                                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                                        setOtp(value);
-                                    }}
-                                    maxLength="6"
-                                    className="w-full text-[14px] text-gray-600 focus:outline-none text-center text-xl tracking-widest"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Enter new password"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    className="w-full pl-11 pr-11 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 text-sm font-medium focus:outline-none focus:border-[#0A84FF] focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all"
                                     disabled={loading}
                                     required
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute top-1/2 right-4 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-lg focus:outline-none"
+                                >
+                                    {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                                </button>
                             </div>
                         </div>
 
-                        {/* New Password */}
-                        <div className="mb-4">
-                            <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                                <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
-                                    New Password
-                                </p>
-                                <div className="flex items-center">
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        placeholder="Enter new password"
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        className="w-[90%] text-[14px] text-gray-600 focus:outline-none"
-                                        disabled={loading}
-                                        required
-                                    />
-                                    <span
-                                        className="text-gray-500 text-sm cursor-pointer ml-2"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                    >
-                                        {showPassword ? "Hide" : "Show"}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Confirm Password */}
-                        <div className="mb-4">
-                            <div className="w-full bg-white border border-[#D9DDE4] rounded-[12px] px-4 py-3 shadow-[0px_4px_10px_rgba(0,0,0,0.05)]">
-                                <p className="text-[14px] font-semibold text-[#4A4A4A] mb-1">
-                                    Confirm Password
-                                </p>
-                                <div className="flex items-center">
-                                    <input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        placeholder="Re-enter new password"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-[90%] text-[14px] text-gray-600 focus:outline-none"
-                                        disabled={loading}
-                                        required
-                                    />
-                                    <span
-                                        className="text-gray-500 text-sm cursor-pointer ml-2"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    >
-                                        {showConfirmPassword ? "Hide" : "Show"}
-                                    </span>
-                                </div>
+                        {/* Confirm Password Input */}
+                        <div>
+                            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                                Confirm Password
+                            </label>
+                            <div className="relative">
+                                <IoLockClosedOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
+                                <input
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    placeholder="Confirm new password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className="w-full pl-11 pr-11 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 text-sm font-medium focus:outline-none focus:border-[#0A84FF] focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                    disabled={loading}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute top-1/2 right-4 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-lg focus:outline-none"
+                                >
+                                    {showConfirmPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                                </button>
                             </div>
                         </div>
 
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={loading || otp.length !== 6}
-                            className="w-full bg-[#0A84FF] text-white font-semibold py-4 text-lg rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] active:bg-[#005BBB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={loading || !newPassword || !confirmPassword}
+                            className="w-full py-3.5 px-4 bg-[#0A84FF] hover:bg-[#0070E0] active:bg-[#005BBB] text-white font-semibold text-base rounded-2xl shadow-lg shadow-blue-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                         >
                             {loading ? "Resetting..." : "Reset Password"}
                         </button>
@@ -218,10 +186,10 @@ export default function AdminResetPassword() {
                 </div>
 
                 {/* Back to Login */}
-                <p className="text-center text-sm mt-4 text-gray-700">
+                <p className="text-center text-sm mt-6 text-slate-600">
                     <Link
                         to="/adminlogin"
-                        className="text-[#0A84FF] font-semibold underline"
+                        className="text-[#0A84FF] font-semibold hover:underline"
                     >
                         Back to Login
                     </Link>
@@ -230,4 +198,3 @@ export default function AdminResetPassword() {
         </div>
     );
 }
-

@@ -58,6 +58,16 @@ export const vendorForgotPassword = async (data) => {
 };
 
 /**
+ * Verify reset OTP
+ * @param {Object} data - { email, otp }
+ * @returns {Promise}
+ */
+export const vendorVerifyResetOTP = async (data) => {
+  const response = await api.post('/vendors/auth/verify-reset-otp', data);
+  return response.data;
+};
+
+/**
  * Reset password with OTP
  * @param {Object} data - { email, otp, newPassword }
  * @returns {Promise}

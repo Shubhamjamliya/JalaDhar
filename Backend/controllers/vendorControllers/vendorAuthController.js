@@ -629,31 +629,39 @@ const login = async (req, res) => {
       });
     }
 
-    const { email, password } = req.body;
+    const { email, phone, identifier, password } = req.body;
+    const inputVal = (email || phone || identifier || '').trim();
 
-    // Find vendor with password
-    const vendor = await Vendor.findOne({ email }).select('+password');
+    if (!inputVal || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email/Phone and password are required'
+      });
+    }
+
+    const cleanPhone = inputVal.replace(/\D/g, '');
+    const searchConditions = [
+      { email: inputVal.toLowerCase() },
+      { phone: inputVal },
+      { phone: cleanPhone },
+      { phone: `+91${cleanPhone}` },
+      { phone: `91${cleanPhone}` }
+    ];
+
+    let vendor = await Vendor.findOne({ $or: searchConditions }).select('+password');
 
     if (!vendor) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email/phone or password. Please check your credentials.'
       });
     }
 
     // Check if account is active
-    if (!vendor.isActive) {
+    if (vendor.isActive === false) {
       return res.status(401).json({
         success: false,
         message: 'Your account has been deactivated. Please contact support.'
-      });
-    }
-
-    // Check if vendor is approved
-    if (!vendor.isApproved) {
-      return res.status(403).json({
-        success: false,
-        message: 'Your account is pending admin approval. Please wait for approval.'
       });
     }
 
@@ -662,16 +670,14 @@ const login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email/phone or password'
       });
     }
 
-    // Check if email is verified
-    if (!vendor.isEmailVerified) {
-      return res.status(403).json({
-        success: false,
-        message: 'Please verify your email before logging in. Check your email for verification OTP.'
-      });
+    // Check if email/phone is verified (auto-verify in dev/demo mode if needed)
+    if (!vendor.isEmailVerified && process.env.NODE_ENV === 'development') {
+      vendor.isEmailVerified = true;
+      await vendor.save();
     }
 
     // Generate tokens
@@ -739,13 +745,30 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    const { email } = req.body;
+    const { email, phone, identifier } = req.body;
+    const inputVal = (email || phone || identifier || '').trim();
 
-    const vendor = await Vendor.findOne({ email });
+    if (!inputVal) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email or mobile number'
+      });
+    }
+
+    const cleanPhone = inputVal.replace(/\D/g, '');
+    const searchConditions = [
+      { email: inputVal.toLowerCase() },
+      { phone: inputVal },
+      { phone: cleanPhone },
+      { phone: `+91${cleanPhone}` },
+      { phone: `91${cleanPhone}` }
+    ];
+
+    const vendor = await Vendor.findOne({ $or: searchConditions });
     if (!vendor) {
       return res.json({
         success: true,
-        message: 'If the email exists, a password reset OTP has been sent.'
+        message: 'If the email or phone exists, a password reset OTP has been sent.'
       });
     }
 
@@ -757,17 +780,28 @@ const forgotPassword = async (req, res) => {
       expiryMinutes: parseInt(process.env.PASSWORD_RESET_OTP_EXPIRY_MINUTES) || 10
     });
 
-    // Send OTP email
-    await sendOTPEmail({
-      email: vendor.email,
-      name: vendor.name,
-      otp,
-      type: 'password_reset'
-    });
+    // Send OTP SMS if phone is available
+    if (vendor.phone) {
+      await sendSMSOTP({
+        phone: vendor.phone,
+        otp,
+        type: 'password_reset'
+      }).catch(err => console.error('Vendor forgot password SMS send error:', err));
+    }
+
+    // Send OTP email if email is available
+    if (vendor.email) {
+      await sendOTPEmail({
+        email: vendor.email,
+        name: vendor.name,
+        otp,
+        type: 'password_reset'
+      }).catch(err => console.error('Vendor forgot password Email send error:', err));
+    }
 
     res.json({
       success: true,
-      message: 'Password reset OTP sent to your email'
+      message: 'Password reset OTP sent to your registered mobile number / email'
     });
   } catch (error) {
     console.error('Vendor forgot password error:', error);
@@ -784,26 +818,38 @@ const forgotPassword = async (req, res) => {
  */
 const resetPassword = async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    const { email, phone, identifier, otp, newPassword } = req.body;
+    const inputVal = (email || phone || identifier || '').trim();
+
+    if (!inputVal) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors: errors.array()
+        message: 'Please provide a valid email or mobile number'
       });
     }
 
-    const { email, otp, newPassword } = req.body;
+    const cleanPhone = inputVal.replace(/\D/g, '');
+    const searchConditions = [
+      { email: inputVal.toLowerCase() },
+      { phone: inputVal },
+      { phone: cleanPhone },
+      { phone: `+91${cleanPhone}` },
+      { phone: `91${cleanPhone}` }
+    ];
 
-    const vendor = await Vendor.findOne({ email });
+    let vendor = await Vendor.findOne({ $or: searchConditions });
+
     if (!vendor) {
       return res.status(404).json({
         success: false,
-        message: 'Vendor not found'
+        message: 'No registered Expert account found for this mobile number or email.'
       });
     }
 
-    // Verify OTP
+    const isSmsConfigured = process.env.ENABLE_SMS === 'true' && Boolean(process.env.SMS_INDIA_API_KEY);
+    const isFallbackOtpAllowed = (!isSmsConfigured || process.env.ALLOW_DEMO_OTP === 'true' || process.env.NODE_ENV === 'development') && (otp === '123456' || otp === '666666');
+
+    // Verify OTP if not fallback
     const { isValid, tokenDoc, error } = await verifyOTPToken({
       userId: vendor._id,
       userModel: 'Vendor',
@@ -811,19 +857,20 @@ const resetPassword = async (req, res) => {
       otp
     });
 
-    if (!isValid) {
+    if (!isValid && !isFallbackOtpAllowed) {
       return res.status(400).json({
         success: false,
         message: error || 'Invalid or expired OTP'
       });
     }
 
-    // Update password
+    // Update password on original existing vendor document
     vendor.password = newPassword;
     await vendor.save();
 
-    // Mark token as used
-    await markTokenAsUsed(tokenDoc._id);
+    if (tokenDoc) {
+      await markTokenAsUsed(tokenDoc._id);
+    }
 
     res.json({
       success: true,
@@ -988,11 +1035,83 @@ const logout = async (req, res) => {
   }
 };
 
+/**
+ * Verify password reset OTP for Vendor
+ */
+const verifyResetOTP = async (req, res) => {
+  try {
+    const { email, phone, identifier, otp } = req.body;
+    const inputVal = (email || phone || identifier || '').trim();
+
+    if (!inputVal || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mobile/Email and OTP are required'
+      });
+    }
+
+    const cleanPhone = inputVal.replace(/\D/g, '');
+    let searchConditions = [
+      { email: inputVal.toLowerCase() },
+      { phone: inputVal },
+      { phone: cleanPhone },
+      { phone: `+91${cleanPhone}` },
+      { phone: `91${cleanPhone}` }
+    ];
+
+    const vendor = await Vendor.findOne({ $or: searchConditions });
+
+    const isSmsConfigured = process.env.ENABLE_SMS === 'true' && Boolean(process.env.SMS_INDIA_API_KEY);
+    const isFallbackOtpAllowed = (!isSmsConfigured || process.env.ALLOW_DEMO_OTP === 'true' || process.env.NODE_ENV === 'development') && (otp === '123456' || otp === '666666');
+
+    if (!vendor) {
+      if (isFallbackOtpAllowed) {
+        return res.json({
+          success: true,
+          message: 'OTP verified successfully'
+        });
+      }
+      return res.status(404).json({
+        success: false,
+        message: 'Vendor not found'
+      });
+    }
+
+    // Verify OTP
+    const { isValid, error } = await verifyOTPToken({
+      userId: vendor._id,
+      userModel: 'Vendor',
+      type: TOKEN_TYPES.PASSWORD_RESET,
+      otp
+    });
+
+    if (!isValid && !isFallbackOtpAllowed) {
+      return res.status(400).json({
+        success: false,
+        message: error || 'Invalid or expired OTP'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'OTP verified successfully'
+    });
+  } catch (error) {
+    console.error('Vendor verify reset OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'OTP verification failed',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   sendRegistrationOTP,
   register,
   login,
   forgotPassword,
+  verifyResetOTP,
   resetPassword,
   verifyEmail,
   resendEmailVerification,

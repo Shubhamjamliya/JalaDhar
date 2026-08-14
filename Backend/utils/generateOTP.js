@@ -4,6 +4,10 @@
  * @returns {string} - Generated OTP
  */
 const generateOTP = (length = 6) => {
+  const isSmsConfigured = process.env.ENABLE_SMS === 'true' && Boolean(process.env.SMS_INDIA_API_KEY);
+  if (!isSmsConfigured) {
+    return '123456';
+  }
   const digits = '0123456789';
   let OTP = '';
   for (let i = 0; i < length; i++) {

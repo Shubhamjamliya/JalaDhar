@@ -7,6 +7,7 @@ const {
   register,
   login,
   forgotPassword,
+  verifyResetOTP,
   resetPassword,
   verifyEmail,
   resendEmailVerification,
@@ -63,16 +64,16 @@ const registerValidation = [
 ];
 
 const loginValidation = [
-  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('email').trim().notEmpty().withMessage('Please provide a valid email or mobile number'),
   body('password').notEmpty().withMessage('Password is required')
 ];
 
 const forgotPasswordValidation = [
-  body('email').isEmail().withMessage('Please provide a valid email')
+  body('email').trim().notEmpty().withMessage('Please provide a valid email or mobile number')
 ];
 
 const resetPasswordValidation = [
-  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('email').trim().notEmpty().withMessage('Please provide a valid email or mobile number'),
   body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
   body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
 ];
@@ -113,6 +114,7 @@ router.post('/register/send-otp', sendOTPValidation, sendRegistrationOTP);
 router.post('/register', uploadDocuments, registerWithOTPValidation, register);
 router.post('/login', loginValidation, login);
 router.post('/forgot-password', forgotPasswordValidation, forgotPassword);
+router.post('/verify-reset-otp', verifyResetOTP);
 router.post('/reset-password', resetPasswordValidation, resetPassword);
 router.post('/verify-email', verifyEmailValidation, verifyEmail);
 router.post('/resend-email-verification', resendEmailValidation, resendEmailVerification);
