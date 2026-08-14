@@ -18,8 +18,8 @@ const fcmTokenSchema = new mongoose.Schema({
   },
   platform: {
     type: String,
-    enum: ['web', 'mobile'],
-    default: 'web'
+    enum: ['web', 'mobile', 'app', 'android', 'ios'],
+    default: 'app'
   },
   isActive: {
     type: Boolean,

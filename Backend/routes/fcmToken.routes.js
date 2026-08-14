@@ -10,7 +10,7 @@ const { sendPushNotification, isFirebaseReady } = require('../services/firebaseA
  */
 router.post('/save', authenticate, async (req, res) => {
   try {
-    const { token, platform = 'web' } = req.body;
+    const { token, platform = 'app' } = req.body;
 
     if (!token || typeof token !== 'string' || token.trim().length === 0) {
       return res.status(400).json({
@@ -57,7 +57,7 @@ router.post('/save', authenticate, async (req, res) => {
  */
 router.delete('/remove', authenticate, async (req, res) => {
   try {
-    const { token, platform = 'web' } = req.body;
+    const { token, platform = 'app' } = req.body;
 
     if (!token) {
       return res.status(400).json({
