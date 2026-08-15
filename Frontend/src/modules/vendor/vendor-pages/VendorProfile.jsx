@@ -37,7 +37,8 @@ import {
     IoEyeOffOutline,
     IoSwapHorizontalOutline,
     IoWarningOutline,
-    IoOpenOutline
+    IoOpenOutline,
+    IoLanguageOutline
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import {
@@ -1005,8 +1006,6 @@ export default function VendorProfile() {
 
     return (
         <PageContainer>
-            <ErrorMessage message={error} />
-
             {/* Profile Header - Premium Compact Professional Look */}
             <section
                 className="relative my-3 overflow-hidden rounded-2xl p-4 sm:p-5 text-white shadow-lg border border-white/10"
@@ -1269,6 +1268,72 @@ export default function VendorProfile() {
                                     icon={IoConstructOutline}
                                     type="number"
                                 />
+                                <InfoField
+                                    label="GST Registered"
+                                    value={profileData.isGstRegistered || "No"}
+                                    isEditing={isEditing}
+                                    onChange={(val) => setProfileData({ ...profileData, isGstRegistered: val })}
+                                    icon={IoDocumentTextOutline}
+                                    type="select"
+                                    options={['Yes', 'No']}
+                                />
+                                {profileData.isGstRegistered === "Yes" && (
+                                    <InfoField
+                                        label="GST Number"
+                                        value={profileData.gstNumber}
+                                        isEditing={isEditing}
+                                        onChange={(val) => setProfileData({ ...profileData, gstNumber: val.toUpperCase() })}
+                                        icon={IoDocumentTextOutline}
+                                        type="text"
+                                        placeholder="e.g. 22AAAAA0000A1Z5"
+                                    />
+                                )}
+                            </div>
+
+                            {/* Languages Spoken */}
+                            <div className="pt-4 border-t border-slate-100 space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <IoLanguageOutline className="text-sm text-blue-500" />
+                                    Languages Spoken
+                                </label>
+                                {isEditing ? (
+                                    <div className="space-y-2">
+                                        <div className="flex flex-wrap gap-2">
+                                            {["English", "Hindi", "Telugu", "Tamil", "Kannada", "Malayalam", "Marathi", "Gujarati", "Bengali", "Punjabi"].map((lang) => {
+                                                const isSelected = (profileData.languages || []).includes(lang);
+                                                return (
+                                                    <button
+                                                        key={lang}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const currentLangs = profileData.languages || [];
+                                                            if (isSelected) {
+                                                                setProfileData({ ...profileData, languages: currentLangs.filter(l => l !== lang) });
+                                                            } else {
+                                                                setProfileData({ ...profileData, languages: [...currentLangs, lang] });
+                                                            }
+                                                        }}
+                                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                                                            isSelected
+                                                                ? 'bg-[#0A84FF] text-white border-[#0A84FF] shadow-xs scale-100'
+                                                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'
+                                                        }`}
+                                                    >
+                                                        {isSelected ? `✓ ${lang}` : `+ ${lang}`}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {(profileData.languages?.length ? profileData.languages : ["English", "Hindi"]).map((lang, idx) => (
+                                            <span key={idx} className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-extrabold text-xs border border-blue-100/80">
+                                                {lang}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -2517,19 +2582,12 @@ export default function VendorProfile() {
 
 
 
-                    {/* Logout and Help Actions */}
+                    {/* Help and Support Actions */}
                     <div className="space-y-3">
                         <ActionRow
                             icon={IoAlertCircleOutline}
                             label="Help & Disputes"
                             onClick={() => navigate("/vendor/disputes")}
-                        />
-
-                        <ActionRow
-                            icon={IoLogOutOutline}
-                            label="Sign Out"
-                            isLogout
-                            onClick={handleLogout}
                         />
                     </div>
                 </div>
