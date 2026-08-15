@@ -97,7 +97,7 @@ export default function VendorProfileView({ vendor, profileData, stats }) {
                     <div className="space-y-2 text-[11px]">
                         <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100/70">
                             <span className="font-medium text-slate-500">Designation / Role</span>
-                            <span className="font-bold text-slate-900">Groundwater Survey Expert</span>
+                            <span className="font-bold text-slate-900">{vendor?.designation || "Verified Groundwater Professional"}</span>
                         </div>
 
                         <div className="p-2 rounded-xl bg-slate-50/70 border border-slate-100/70 space-y-1">

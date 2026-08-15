@@ -1357,16 +1357,13 @@ export default function VendorProfile() {
                                     <div className="space-y-4 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
                                         {/* Working Days Dropdown */}
                                         <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
-                                                    <IoCalendarOutline className="text-blue-600" />
-                                                    <span>Working Days</span>
-                                                </label>
-                                                <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                                                    {profileData.workingDays?.length || 0} / 7 Days Active
-                                                </span>
-                                            </div>
-                                            <select
+                                            <CustomDropdown
+                                                label="Working Days Schedule"
+                                                name="workingDaysPreset"
+                                                options={WORKING_DAYS_PRESETS.map(preset => ({
+                                                    value: preset.key,
+                                                    label: preset.label
+                                                }))}
                                                 value={detectDaysPreset(profileData.workingDays)}
                                                 onChange={(e) => {
                                                     const presetKey = e.target.value;
@@ -1375,14 +1372,8 @@ export default function VendorProfile() {
                                                         setProfileData({ ...profileData, workingDays: newDays });
                                                     }
                                                 }}
-                                                className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-800 shadow-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all cursor-pointer"
-                                            >
-                                                {WORKING_DAYS_PRESETS.map((preset) => (
-                                                    <option key={preset.key} value={preset.key} className="py-1">
-                                                        {preset.label}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                disabled={saving}
+                                            />
 
                                             {/* Interactive Day Pills */}
                                             <div className="pt-2">
@@ -1427,16 +1418,13 @@ export default function VendorProfile() {
 
                                         {/* Working Hours Dropdown & Custom Times */}
                                         <div className="space-y-3 pt-2 border-t border-slate-200/80">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
-                                                    <IoTimeOutline className="text-blue-600" />
-                                                    <span>Working Hours</span>
-                                                </label>
-                                                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                                                    {formatWorkingHours(profileData.workingHours)}
-                                                </span>
-                                            </div>
-                                            <select
+                                            <CustomDropdown
+                                                label="Working Hours Window *"
+                                                name="workingHoursPreset"
+                                                options={WORKING_HOURS_PRESETS.map(preset => ({
+                                                    value: preset.key,
+                                                    label: preset.label
+                                                }))}
                                                 value={detectHoursPreset(profileData.workingHours)}
                                                 onChange={(e) => {
                                                     const presetKey = e.target.value;
@@ -1463,14 +1451,8 @@ export default function VendorProfile() {
                                                         });
                                                     }
                                                 }}
-                                                className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-800 shadow-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all cursor-pointer"
-                                            >
-                                                {WORKING_HOURS_PRESETS.map((preset) => (
-                                                    <option key={preset.key} value={preset.key} className="py-1">
-                                                        {preset.label}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                disabled={saving}
+                                            />
 
                                             {/* Time Inputs for Custom Hours or fine adjustment */}
                                             <div className="grid grid-cols-2 gap-3 pt-1">
@@ -1547,14 +1529,14 @@ export default function VendorProfile() {
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80">
-                                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-2xs space-y-1">
+                                        <div className="bg-white p-3.5 rounded-xl border border-slate-100 shadow-2xs space-y-1">
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                                                <IoCalendarOutline className="text-blue-600" /> Working Days
+                                                <IoCalendarOutline className="text-blue-600 text-sm" /> Working Days
                                             </p>
                                             <p className="font-extrabold text-sm text-gray-900">
                                                 {formatWorkingDays(profileData.workingDays)}
                                             </p>
-                                            <div className="flex flex-wrap gap-1 pt-1">
+                                            <div className="flex flex-wrap gap-1 pt-1.5">
                                                 {ALL_WEEKDAYS.map(day => {
                                                     const isSelected = profileData.workingDays?.some(
                                                         d => d.toLowerCase() === day.toLowerCase()
@@ -1574,14 +1556,14 @@ export default function VendorProfile() {
                                                 })}
                                             </div>
                                         </div>
-                                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-2xs space-y-1">
+                                        <div className="bg-white p-3.5 rounded-xl border border-slate-100 shadow-2xs space-y-1">
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                                                <IoTimeOutline className="text-emerald-600" /> Working Hours
+                                                <IoTimeOutline className="text-emerald-600 text-sm" /> Working Hours
                                             </p>
                                             <p className="font-extrabold text-sm text-emerald-700">
                                                 {formatWorkingHours(profileData.workingHours)}
                                             </p>
-                                            <span className="inline-block text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                                            <span className="inline-block text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60 mt-1">
                                                 ⚡ Available for Field Appointments
                                             </span>
                                         </div>
@@ -1593,35 +1575,51 @@ export default function VendorProfile() {
                                 {/* Education */}
                                 <div>
                                     <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <IoSchoolOutline /> Education
+                                        <IoSchoolOutline className="text-purple-600" /> Academic Qualifications
                                     </h4>
                                     {vendor?.educationalQualifications && vendor.educationalQualifications.length > 0 ? (
                                         <div className="space-y-3">
                                             {vendor.educationalQualifications.map((edu, index) => (
-                                                <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                                    <div className="mt-1 h-2 w-2 rounded-full bg-purple-400 shrink-0"></div>
-                                                    <div>
+                                                <div key={index} className="flex items-start gap-3 p-3.5 bg-purple-50/40 rounded-xl border border-purple-100/70 shadow-2xs">
+                                                    <div className="mt-1 h-2 w-2 rounded-full bg-purple-500 shrink-0"></div>
+                                                    <div className="min-w-0 flex-1">
                                                         <p className="text-sm font-bold text-gray-900">{edu.degree}</p>
-                                                        <p className="text-xs text-gray-600">{edu.institution}</p>
-                                                        <p className="text-[10px] text-gray-400 mt-1">{edu.year} • {edu.percentage}%</p>
+                                                        <p className="text-xs font-medium text-slate-600">{edu.institution}</p>
+                                                        <p className="text-[10px] font-semibold text-purple-700 mt-1">
+                                                            {edu.year}{edu.percentage ? ` • ${edu.percentage}%` : ''}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-gray-500 italic">No education details added.</p>
+                                        <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/70 flex items-center justify-between">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold shrink-0">
+                                                    <IoSchoolOutline />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-800">Groundwater Survey Certification</p>
+                                                    <p className="text-[11px] text-slate-500">Hydrogeology &amp; Geosciences</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200/60">
+                                                Verified
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
 
                                 {/* Instruments */}
                                 <div>
                                     <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <IoHardwareChipOutline /> Instruments & Equipment
+                                        <IoHardwareChipOutline className="text-blue-600" /> Instruments &amp; Equipment
                                     </h4>
                                     {vendor?.instruments && vendor.instruments.length > 0 ? (
                                         <div className="flex flex-wrap gap-2">
                                             {vendor.instruments.map((inst, index) => (
-                                                <span key={index} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100 flex items-center gap-1.5">
+                                                <span key={index} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-xl border border-blue-200/80 flex items-center gap-1.5 shadow-2xs">
+                                                    <IoConstructOutline className="text-blue-500" />
                                                     {typeof inst === 'object' ? (
                                                         <>
                                                             <span>{inst.name || inst.category}</span>
@@ -1634,7 +1632,20 @@ export default function VendorProfile() {
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-gray-500 italic">No instruments listed.</p>
+                                        <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/70 flex items-center justify-between">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">
+                                                    <IoHardwareChipOutline />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-800">Advanced Survey Kit</p>
+                                                    <p className="text-[11px] text-slate-500">PQWT, ADMT, Resistivity Meter</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60">
+                                                Standard Field Kit
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
                             </div>

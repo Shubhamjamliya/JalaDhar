@@ -234,7 +234,7 @@ export default function VendorDashboard() {
                             Welcome, {vendorProfileData?.name || vendor?.name || "Hydrogeologist Expert"} 👨‍🔧
                         </h1>
                         <p className="text-xs sm:text-sm text-slate-300 font-medium mt-0.5">
-                            Certified Groundwater Hydrogeology Specialist
+                            {vendorProfileData?.designation || "Verified Groundwater Professional"}
                         </p>
                     </div>
                     {/* White Circular Profile Picture */}

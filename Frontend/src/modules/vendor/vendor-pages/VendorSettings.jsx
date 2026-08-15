@@ -16,6 +16,7 @@ import {
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import ExpertAgreementDocViewer from "../vendor-components/ExpertAgreementDocViewer";
+import CustomDropdown from "../../shared/components/CustomDropdown";
 import {
     ALL_WEEKDAYS,
     WORKING_DAYS_PRESETS,
@@ -346,13 +347,13 @@ export default function VendorSettings() {
 
                             {/* Working Days Dropdown & Custom Days */}
                             <div className="space-y-2.5 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs font-bold text-slate-800">Working Days Schedule</label>
-                                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                                        {formatWorkingDays(settings.workingDays)}
-                                    </span>
-                                </div>
-                                <select
+                                <CustomDropdown
+                                    label="Working Days Schedule"
+                                    name="workingDaysSchedule"
+                                    options={WORKING_DAYS_PRESETS.map((preset) => ({
+                                        value: preset.key,
+                                        label: preset.label
+                                    }))}
                                     value={detectDaysPreset(settings.workingDays)}
                                     onChange={(e) => {
                                         const presetKey = e.target.value;
@@ -361,14 +362,7 @@ export default function VendorSettings() {
                                             setSettings(prev => ({ ...prev, workingDays: newDays }));
                                         }
                                     }}
-                                    className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-800 shadow-xs focus:border-blue-500 outline-none cursor-pointer"
-                                >
-                                    {WORKING_DAYS_PRESETS.map((preset) => (
-                                        <option key={preset.key} value={preset.key}>
-                                            {preset.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                />
 
                                 <div className="pt-2">
                                     <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
@@ -406,13 +400,13 @@ export default function VendorSettings() {
 
                             {/* Working Hours Dropdown & Custom Times */}
                             <div className="space-y-2.5 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs font-bold text-slate-800">Working Hours Window</label>
-                                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                                        {formatTimeToAMPM(settings.workingHoursStart)} - {formatTimeToAMPM(settings.workingHoursEnd)}
-                                    </span>
-                                </div>
-                                <select
+                                <CustomDropdown
+                                    label="Working Hours Window"
+                                    name="workingHoursWindow"
+                                    options={WORKING_HOURS_PRESETS.map((preset) => ({
+                                        value: preset.key,
+                                        label: preset.label
+                                    }))}
                                     value={detectHoursPreset({ start: settings.workingHoursStart, end: settings.workingHoursEnd })}
                                     onChange={(e) => {
                                         const presetKey = e.target.value;
@@ -425,14 +419,7 @@ export default function VendorSettings() {
                                             }));
                                         }
                                     }}
-                                    className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-800 shadow-xs focus:border-blue-500 outline-none cursor-pointer"
-                                >
-                                    {WORKING_HOURS_PRESETS.map((preset) => (
-                                        <option key={preset.key} value={preset.key}>
-                                            {preset.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                />
 
                                 <div className="grid grid-cols-2 gap-3 pt-2">
                                     <div className="bg-white p-2.5 rounded-xl border border-slate-200">

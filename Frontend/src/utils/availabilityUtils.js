@@ -35,31 +35,31 @@ export const FULL_TO_SHORT_DAYS_MAP = {
 export const WORKING_DAYS_PRESETS = [
   {
     key: 'ALL_DAYS',
-    label: 'All Days — Monday to Sunday',
+    label: 'All Days (Monday - Sunday)',
     shortLabel: 'All Days (Mon - Sun)',
     days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
   },
   {
     key: 'WEEKDAYS',
-    label: 'Weekdays — Monday to Friday',
+    label: 'Weekdays (Monday - Friday)',
     shortLabel: 'Weekdays (Mon - Fri)',
     days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
   },
   {
     key: 'WEEKENDS_ONLY',
-    label: 'Weekends Only — Saturday & Sunday',
+    label: 'Weekends Only (Saturday & Sunday)',
     shortLabel: 'Weekends (Sat & Sun)',
     days: ['Saturday', 'Sunday']
   },
   {
     key: 'MON_TO_SAT',
-    label: 'Monday – Saturday',
-    shortLabel: 'Monday – Saturday',
+    label: 'Monday - Saturday',
+    shortLabel: 'Mon - Sat',
     days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   },
   {
     key: 'CUSTOM',
-    label: 'Custom Days — Expert selects specific days',
+    label: 'Custom Days',
     shortLabel: 'Custom Schedule',
     days: []
   }
@@ -68,35 +68,35 @@ export const WORKING_DAYS_PRESETS = [
 export const WORKING_HOURS_PRESETS = [
   {
     key: 'MORNING',
-    label: 'Morning — 08:00 AM – 01:00 PM',
-    shortLabel: 'Morning (08:00 AM – 01:00 PM)',
+    label: 'Morning (08:00 AM - 01:00 PM)',
+    shortLabel: 'Morning (08:00 AM - 01:00 PM)',
     start: '08:00',
     end: '13:00'
   },
   {
     key: 'AFTERNOON',
-    label: 'Afternoon — 01:00 PM – 05:00 PM',
-    shortLabel: 'Afternoon (01:00 PM – 05:00 PM)',
+    label: 'Afternoon (01:00 PM - 05:00 PM)',
+    shortLabel: 'Afternoon (01:00 PM - 05:00 PM)',
     start: '13:00',
     end: '17:00'
   },
   {
     key: 'EVENING',
-    label: 'Evening — 05:00 PM – 07:00 PM',
-    shortLabel: 'Evening (05:00 PM – 07:00 PM)',
+    label: 'Evening (05:00 PM - 07:00 PM)',
+    shortLabel: 'Evening (05:00 PM - 07:00 PM)',
     start: '17:00',
     end: '19:00'
   },
   {
     key: 'MORNING_TO_EVENING',
-    label: 'Morning to Evening — 08:00 AM – 07:00 PM',
-    shortLabel: 'Full Day (08:00 AM – 07:00 PM)',
+    label: 'Full Day (08:00 AM - 07:00 PM)',
+    shortLabel: 'Full Day (08:00 AM - 07:00 PM)',
     start: '08:00',
     end: '19:00'
   },
   {
     key: 'CUSTOM',
-    label: 'Custom Hours — Expert selects start and end time',
+    label: 'Custom Hours',
     shortLabel: 'Custom Hours',
     start: '08:00',
     end: '19:00'
