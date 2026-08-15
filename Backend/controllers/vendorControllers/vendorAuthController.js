@@ -145,10 +145,21 @@ const register = async (req, res) => {
       email,
       phone,
       password,
+      dob,
+      bloodGroup,
+      panNo,
+      isGstRegistered,
+      gstNumber,
+      languages,
       bankDetails,
       educationalQualifications,
+      education,
+      institution,
+      graduationYear,
+      specialization,
       experience,
       experienceDetails,
+      surveysCompleted,
       instruments,
       machineType,
       servicePrice,
@@ -157,8 +168,6 @@ const register = async (req, res) => {
       token,
       gender,
       designation,
-      education,
-      institution,
       district,
       state,
       serviceRadius,
@@ -425,10 +434,26 @@ const register = async (req, res) => {
       }
     }
 
-    // Parse instruments if it's a string
+    // Parse instruments if it's a string or from machineType
     let parsedInstruments = [];
     if (instruments) {
       parsedInstruments = typeof instruments === 'string' ? JSON.parse(instruments) : instruments;
+    } else if (machineType) {
+      const machineNames = machineType.split(',').map(m => m.trim()).filter(Boolean);
+      parsedInstruments = machineNames.map(m => ({
+        name: m,
+        category: m.includes('Resistivity') ? 'Resistivity Meter' : (m.includes('PQWT') ? 'PQWT' : (m.includes('ADMT') ? 'ADMT' : (m.includes('3D') ? '3D Locator' : (m.includes('Dowsing') ? 'Dowsing Rods' : 'Other'))))
+      }));
+    }
+
+    // Parse languages if provided
+    let parsedLanguages = ['English', 'Hindi'];
+    if (languages) {
+      if (Array.isArray(languages)) {
+        parsedLanguages = languages;
+      } else if (typeof languages === 'string') {
+        parsedLanguages = languages.split(',').map(l => l.trim()).filter(Boolean);
+      }
     }
 
     // Parse multiple states if it's a string or array
@@ -480,8 +505,20 @@ const register = async (req, res) => {
       email,
       phone,
       password,
+      dob: dob || null,
+      bloodGroup: bloodGroup || null,
+      panNo: panNo || null,
+      isGstRegistered: isGstRegistered || null,
+      gstNumber: gstNumber || null,
+      languages: parsedLanguages,
+      education: education || null,
+      institution: institution || null,
+      graduationYear: graduationYear || null,
+      specialization: specialization || null,
+      surveysCompleted: surveysCompleted ? parseInt(surveysCompleted) : 0,
+      machineType: machineType || null,
       educationalQualifications: parsedQualifications,
-      experience: parseInt(experience),
+      experience: parseInt(experience) || 0,
       experienceDetails,
       instruments: parsedInstruments,
       servicePrice: servicePrice ? parseFloat(servicePrice) : null,
@@ -498,6 +535,10 @@ const register = async (req, res) => {
       gender,
       designation
     };
+
+    if (documents?.profilePicture?.url) {
+      vendorData.profilePicture = documents.profilePicture.url;
+    }
 
     const vendor = await Vendor.create(vendorData);
 

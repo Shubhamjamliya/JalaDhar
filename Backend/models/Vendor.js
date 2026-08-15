@@ -20,19 +20,68 @@ const vendorSchema = new mongoose.Schema({
     required: [true, 'Phone number is required'],
     trim: true
   },
+  dob: {
+    type: String,
+    trim: true,
+    default: null
+  },
   bloodGroup: {
     type: String,
-    enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+    enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', null],
     default: null
   },
   gender: {
     type: String,
-    enum: ['Male', 'Female', 'Other'],
+    enum: ['Male', 'Female', 'Other', null],
     default: null
   },
   designation: {
     type: String,
-    enum: ['Hydrogeologist', 'Geophysicist', 'Earth Scientist', 'Detector', 'Devinor'],
+    default: null
+  },
+  panNo: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  isGstRegistered: {
+    type: String,
+    enum: ['Yes', 'No', null],
+    default: null
+  },
+  gstNumber: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  education: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  institution: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  graduationYear: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  specialization: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  surveysCompleted: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+  machineType: {
+    type: String,
+    trim: true,
     default: null
   },
   password: {

@@ -32,7 +32,12 @@ import {
     IoHardwareChipOutline,
     IoCardOutline,
     IoCloudUploadOutline,
-    IoCheckmarkCircle
+    IoCheckmarkCircle,
+    IoEyeOutline,
+    IoEyeOffOutline,
+    IoSwapHorizontalOutline,
+    IoWarningOutline,
+    IoOpenOutline
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import {
@@ -81,7 +86,6 @@ import {
     formatTimeToAMPM
 } from "../../../utils/availabilityUtils";
 
-import VendorProfileView from "./VendorProfileView";
 import GroundwaterSurveyFAQSection from "../vendor-components/GroundwaterSurveyFAQSection";
 
 export default function VendorProfile() {
@@ -122,6 +126,26 @@ export default function VendorProfile() {
     const [isMachineDropdownOpen, setIsMachineDropdownOpen] = useState(false);
     const [selectedMachines, setSelectedMachines] = useState([]);
     const [customMachine, setCustomMachine] = useState("");
+    const [profileCustomMachine, setProfileCustomMachine] = useState("");
+
+    // Bank Accounts State & Document Preview
+    const [bankAccounts, setBankAccounts] = useState([
+        {
+            id: "primary",
+            accountHolderName: "",
+            accountNumber: "",
+            ifscCode: "",
+            bankName: "",
+            branchName: "",
+            isPrimary: true,
+            isVerified: false
+        }
+    ]);
+    const [editingBankIndex, setEditingBankIndex] = useState(0);
+    const [showMaskedAccount, setShowMaskedAccount] = useState({});
+    const [previewDocModal, setPreviewDocModal] = useState(null);
+    const [deleteGuardModal, setDeleteGuardModal] = useState(false);
+    const [docUploadState, setDocUploadState] = useState({ loading: false, docType: null });
 
     const [fullAddress, setFullAddress] = useState("");
     const [gettingLocation, setGettingLocation] = useState(false);
@@ -129,10 +153,23 @@ export default function VendorProfile() {
         name: "",
         email: "",
         phone: "",
+        dob: "",
         bloodGroup: "",
         gender: "",
         designation: "",
         experience: "",
+        panNo: "",
+        isGstRegistered: "",
+        gstNumber: "",
+        surveysCompleted: "",
+        languages: ['English', 'Hindi'],
+        education: "",
+        specialization: "",
+        institution: "",
+        graduationYear: "",
+        experienceDetails: "",
+        servicePrice: "",
+        instruments: [],
         district: "",
         state: "",
         serviceRadius: "50 km",
@@ -202,14 +239,54 @@ export default function VendorProfile() {
                 // Get full address string from geoLocation for display
                 const fullAddressStr = address?.geoLocation?.formattedAddress || "";
 
+                const rawInstruments = vendorData.instruments || [];
+                let instrumentsList = [];
+                if (Array.isArray(rawInstruments)) {
+                    instrumentsList = rawInstruments.map(i => typeof i === 'object' ? (i.name || i.category) : i).filter(Boolean);
+                } else if (typeof rawInstruments === 'string' && rawInstruments.trim()) {
+                    instrumentsList = rawInstruments.split(',').map(i => i.trim()).filter(Boolean);
+                }
+                if (instrumentsList.length === 0 && vendorData.machineType) {
+                    instrumentsList.push(...vendorData.machineType.split(',').map(m => m.trim()).filter(Boolean));
+                }
+
+                const primaryEdu = (vendorData.educationalQualifications && vendorData.educationalQualifications[0]) || {};
+
+                // Parse Bank details into bankAccounts array
+                const primaryBankObj = {
+                    id: "primary",
+                    accountHolderName: vendorData.bankDetails?.accountHolderName || vendorData.name || "",
+                    accountNumber: vendorData.bankDetails?.accountNumber || "",
+                    ifscCode: vendorData.bankDetails?.ifscCode || "",
+                    bankName: vendorData.bankDetails?.bankName || "",
+                    branchName: vendorData.bankDetails?.branchName || "",
+                    isPrimary: true,
+                    isVerified: vendorData.bankDetails?.isVerified || false
+                };
+                setBankAccounts([primaryBankObj]);
+                setEditingBankIndex(0);
+
                 setProfileData({
                     name: vendorData.name || "",
                     email: vendorData.email || "",
                     phone: vendorData.phone || "",
+                    dob: vendorData.dob || "",
                     bloodGroup: vendorData.bloodGroup || "",
                     gender: vendorData.gender || "",
                     designation: vendorData.designation || "",
-                    experience: vendorData.experience?.toString() || "",
+                    experience: vendorData.experience !== undefined && vendorData.experience !== null ? vendorData.experience.toString() : "",
+                    panNo: vendorData.panNo || "",
+                    isGstRegistered: vendorData.isGstRegistered || "",
+                    gstNumber: vendorData.gstNumber || "",
+                    surveysCompleted: vendorData.surveysCompleted !== undefined && vendorData.surveysCompleted !== null ? vendorData.surveysCompleted.toString() : "",
+                    languages: Array.isArray(vendorData.languages) && vendorData.languages.length > 0 ? vendorData.languages : ['English', 'Hindi'],
+                    education: vendorData.education || primaryEdu.degree || "",
+                    specialization: vendorData.specialization || primaryEdu.specialization || "",
+                    institution: vendorData.institution || primaryEdu.institution || "",
+                    graduationYear: vendorData.graduationYear || (primaryEdu.year ? primaryEdu.year.toString() : ""),
+                    experienceDetails: vendorData.experienceDetails || "",
+                    servicePrice: vendorData.servicePrice !== undefined && vendorData.servicePrice !== null ? vendorData.servicePrice.toString() : "",
+                    instruments: Array.from(new Set(instrumentsList)),
                     district: vendorData.district || vendorData.address?.district || "",
                     state: vendorData.state || vendorData.address?.state || "",
                     serviceRadius: vendorData.serviceRadius || "50 km",
@@ -237,10 +314,10 @@ export default function VendorProfile() {
                     },
                     address: address,
                     profilePicture:
-                        vendorData.documents?.profilePicture?.url || null,
+                        vendorData.documents?.profilePicture?.url || vendorData.profilePicture || null,
                     workingDays: normalizeWorkingDays(vendorData.workingDays),
                     workingHours: normalizeWorkingHours(vendorData.workingHours),
-                    aboutExpert: vendorData.aboutExpert || "",
+                    aboutExpert: vendorData.aboutExpert || vendorData.experienceDetails || "",
                 });
 
                 setFullAddress(fullAddressStr);
@@ -450,6 +527,107 @@ export default function VendorProfile() {
         );
     };
 
+    // Bank Account Management Handlers
+    const handleToggleMask = (bankId) => {
+        setShowMaskedAccount(prev => ({
+            ...prev,
+            [bankId]: !prev[bankId]
+        }));
+    };
+
+    const handleAddBankAccount = () => {
+        const newAccount = {
+            id: Date.now().toString(),
+            accountHolderName: profileData.name || "",
+            accountNumber: "",
+            ifscCode: "",
+            bankName: "",
+            branchName: "",
+            isPrimary: false,
+            isVerified: false
+        };
+        const updatedAccounts = [...bankAccounts, newAccount];
+        setBankAccounts(updatedAccounts);
+        setEditingBankIndex(updatedAccounts.length - 1);
+        toast.showInfo("New bank account slot added. Enter details below.");
+    };
+
+    const handleDeleteBankAccount = (index) => {
+        // Enforce rule: AT LEAST ONE bank account MUST remain
+        if (bankAccounts.length <= 1) {
+            setDeleteGuardModal(true);
+            return;
+        }
+
+        const accountToDelete = bankAccounts[index];
+        const remaining = bankAccounts.filter((_, i) => i !== index);
+
+        // If deleted account was primary, make the first remaining one primary
+        if (accountToDelete.isPrimary && remaining.length > 0) {
+            remaining[0].isPrimary = true;
+            setProfileData(prev => ({
+                ...prev,
+                bankDetails: {
+                    accountHolderName: remaining[0].accountHolderName || "",
+                    accountNumber: remaining[0].accountNumber || "",
+                    ifscCode: remaining[0].ifscCode || "",
+                    bankName: remaining[0].bankName || "",
+                    branchName: remaining[0].branchName || "",
+                    isVerified: remaining[0].isVerified || false
+                }
+            }));
+        }
+
+        setBankAccounts(remaining);
+        setEditingBankIndex(0);
+        toast.showSuccess("Bank account removed successfully.");
+    };
+
+    const handleSetPrimaryBank = (index) => {
+        const updated = bankAccounts.map((acc, i) => ({
+            ...acc,
+            isPrimary: i === index
+        }));
+        setBankAccounts(updated);
+        setProfileData(prev => ({
+            ...prev,
+            bankDetails: {
+                accountHolderName: updated[index].accountHolderName || "",
+                accountNumber: updated[index].accountNumber || "",
+                ifscCode: updated[index].ifscCode || "",
+                bankName: updated[index].bankName || "",
+                branchName: updated[index].branchName || "",
+                isVerified: updated[index].isVerified || false
+            }
+        }));
+        toast.showSuccess(`${updated[index].bankName || 'Selected account'} set as primary payout account.`);
+    };
+
+    const handleUpdateBankField = (index, field, value) => {
+        const updated = [...bankAccounts];
+        const formattedVal = field === 'ifscCode' ? value.toUpperCase() : value;
+        updated[index] = {
+            ...updated[index],
+            [field]: formattedVal
+        };
+        setBankAccounts(updated);
+
+        // If this is the primary bank account, sync with profileData.bankDetails
+        if (updated[index].isPrimary) {
+            setProfileData(prev => ({
+                ...prev,
+                bankDetails: {
+                    accountHolderName: updated[index].accountHolderName || "",
+                    accountNumber: updated[index].accountNumber || "",
+                    ifscCode: updated[index].ifscCode || "",
+                    bankName: updated[index].bankName || "",
+                    branchName: updated[index].branchName || "",
+                    isVerified: updated[index].isVerified || false
+                }
+            }));
+        }
+    };
+
     const handleSave = async () => {
         try {
             setSaving(true);
@@ -472,10 +650,31 @@ export default function VendorProfile() {
             const updateData = {
                 name: profileData.name || vendor?.name,
                 phone: profileData.phone || vendor?.phone,
+                dob: profileData.dob || null,
                 bloodGroup: profileData.bloodGroup || null,
                 gender: profileData.gender || null,
                 designation: profileData.designation || null,
                 experience: parseInt(profileData.experience, 10) || 0,
+                panNo: profileData.panNo || null,
+                isGstRegistered: profileData.isGstRegistered || null,
+                gstNumber: profileData.gstNumber || null,
+                surveysCompleted: profileData.surveysCompleted ? parseInt(profileData.surveysCompleted, 10) : 0,
+                languages: profileData.languages || [],
+                education: profileData.education || null,
+                specialization: profileData.specialization || null,
+                institution: profileData.institution || null,
+                graduationYear: profileData.graduationYear || null,
+                experienceDetails: profileData.experienceDetails || null,
+                servicePrice: profileData.servicePrice ? parseFloat(profileData.servicePrice) : null,
+                instruments: profileData.instruments?.length > 0
+                    ? profileData.instruments.map(inst => typeof inst === 'object' ? inst : { name: inst, category: inst })
+                    : [],
+                educationalQualifications: profileData.education ? [{
+                    degree: profileData.education,
+                    institution: profileData.institution || 'Verified on File',
+                    year: profileData.graduationYear ? parseInt(profileData.graduationYear, 10) : new Date().getFullYear(),
+                    specialization: profileData.specialization || ''
+                }] : (vendor?.educationalQualifications || []),
                 district: profileData.district || null,
                 state: profileData.state || null,
                 serviceRadius: profileData.serviceRadius || "50 km",
@@ -976,8 +1175,8 @@ export default function VendorProfile() {
                 />
             </div>
 
-            {isEditing ? (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+            {/* Main Profile Grid (Visible in both View and Edit modes) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
                 {/* Left Column: Account & Profile Info */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Section: Account Information */}
@@ -1044,6 +1243,31 @@ export default function VendorProfile() {
                                     icon={IoWaterOutline}
                                     type="select"
                                     options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']}
+                                />
+                                <InfoField
+                                    label="Date of Birth"
+                                    value={profileData.dob}
+                                    isEditing={isEditing}
+                                    onChange={(val) => setProfileData({ ...profileData, dob: val })}
+                                    icon={IoCalendarOutline}
+                                    type="text"
+                                    placeholder="DD/MM/YYYY"
+                                />
+                                <InfoField
+                                    label="PAN Number"
+                                    value={profileData.panNo}
+                                    isEditing={isEditing}
+                                    onChange={(val) => setProfileData({ ...profileData, panNo: val.toUpperCase() })}
+                                    icon={IoCardOutline}
+                                    type="text"
+                                />
+                                <InfoField
+                                    label="Surveys Completed"
+                                    value={profileData.surveysCompleted}
+                                    isEditing={isEditing}
+                                    onChange={(val) => setProfileData({ ...profileData, surveysCompleted: val })}
+                                    icon={IoConstructOutline}
+                                    type="number"
                                 />
                             </div>
                         </div>
@@ -1322,28 +1546,319 @@ export default function VendorProfile() {
 
                     {/* Section: Professional Details */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
+                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <IoBriefcaseOutline className="text-purple-500" />
-                                Professional Details
+                                <IoBriefcaseOutline className="text-purple-600 text-xl" />
+                                Professional Details &amp; Qualifications
                             </h3>
+                            {isEditing && (
+                                <span className="text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-100">
+                                    Edit Professional Info
+                                </span>
+                            )}
                         </div>
                         <div className="p-6 space-y-6">
-                            {/* Experience Details */}
+                            {/* Academic Qualifications */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <IoSchoolOutline className="text-purple-600 text-base" /> Academic Background &amp; Education
+                                </h4>
+                                {isEditing ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-purple-50/30 rounded-2xl border border-purple-100/70">
+                                        <InfoField
+                                            label="Highest Qualification / Degree *"
+                                            value={profileData.education}
+                                            isEditing={true}
+                                            onChange={(val) => setProfileData({ ...profileData, education: val })}
+                                            icon={IoSchoolOutline}
+                                            placeholder="e.g. MSc in Geophysics"
+                                        />
+                                        <InfoField
+                                            label="Specialization *"
+                                            value={profileData.specialization}
+                                            isEditing={true}
+                                            onChange={(val) => setProfileData({ ...profileData, specialization: val })}
+                                            icon={IoSchoolOutline}
+                                            type="select"
+                                            options={['Geology', 'Geophysics', 'Earth Science', 'Diploma', 'Hydrogeology']}
+                                        />
+                                        <InfoField
+                                            label="University / Institution *"
+                                            value={profileData.institution}
+                                            isEditing={true}
+                                            onChange={(val) => setProfileData({ ...profileData, institution: val })}
+                                            icon={IoSchoolOutline}
+                                            placeholder="Enter university or college name"
+                                        />
+                                        <InfoField
+                                            label="Graduation Year *"
+                                            value={profileData.graduationYear}
+                                            isEditing={true}
+                                            onChange={(val) => setProfileData({ ...profileData, graduationYear: val })}
+                                            icon={IoCalendarOutline}
+                                            type="number"
+                                            placeholder="e.g. 2018"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="p-4 bg-purple-50/30 rounded-2xl border border-purple-100/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-3.5">
+                                            <div className="w-11 h-11 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl font-bold shrink-0 shadow-2xs">
+                                                <IoSchoolOutline />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="text-base font-extrabold text-slate-800">
+                                                        {profileData.education || vendor?.educationalQualifications?.[0]?.degree || "Hydrogeology & Geosciences"}
+                                                    </p>
+                                                    {(profileData.specialization || vendor?.educationalQualifications?.[0]?.specialization) && (
+                                                        <span className="text-[11px] font-bold text-purple-700 bg-purple-100/70 px-2 py-0.5 rounded-lg">
+                                                            {profileData.specialization || vendor?.educationalQualifications?.[0]?.specialization}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                                    {profileData.institution || vendor?.educationalQualifications?.[0]?.institution || "Verified Educational Record on File"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {(profileData.graduationYear || vendor?.educationalQualifications?.[0]?.year) && (
+                                                <span className="text-xs font-bold text-slate-700 bg-white border border-purple-200/80 px-2.5 py-1 rounded-xl shadow-2xs">
+                                                    Class of {profileData.graduationYear || vendor?.educationalQualifications?.[0]?.year}
+                                                </span>
+                                            )}
+                                            <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl flex items-center gap-1">
+                                                <IoShieldCheckmarkOutline className="text-sm" /> Verified
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Experience & Track Record */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <IoConstructOutline className="text-blue-600 text-base" /> Professional Experience &amp; Field Track Record
+                                </h4>
+                                {isEditing ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
+                                        <InfoField
+                                            label="Years of Experience *"
+                                            value={profileData.experience}
+                                            isEditing={true}
+                                            onChange={(val) => setProfileData({ ...profileData, experience: val })}
+                                            icon={IoConstructOutline}
+                                            type="number"
+                                            placeholder="e.g. 5"
+                                        />
+                                        <InfoField
+                                            label="Surveys Completed *"
+                                            value={profileData.surveysCompleted}
+                                            isEditing={true}
+                                            onChange={(val) => setProfileData({ ...profileData, surveysCompleted: val })}
+                                            icon={IoCheckmarkCircle}
+                                            type="number"
+                                            placeholder="e.g. 150"
+                                        />
+                                        <InfoField
+                                            label="Primary Area of Expertise *"
+                                            value={profileData.experienceDetails}
+                                            isEditing={true}
+                                            onChange={(val) => setProfileData({ ...profileData, experienceDetails: val })}
+                                            icon={IoBriefcaseOutline}
+                                            type="select"
+                                            options={[
+                                                'Agricultural Surveys',
+                                                'Industrial Surveys',
+                                                'Residential Surveys',
+                                                'Commercial Surveys',
+                                                'Comprehensive Groundwater Surveys'
+                                            ]}
+                                        />
+                                        <InfoField
+                                            label="Survey Base Fee (₹) *"
+                                            value={profileData.servicePrice}
+                                            isEditing={true}
+                                            onChange={(val) => setProfileData({ ...profileData, servicePrice: val })}
+                                            icon={IoWalletOutline}
+                                            type="number"
+                                            placeholder="e.g. 4500"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Experience</p>
+                                            <p className="text-base font-extrabold text-slate-800">
+                                                {profileData.experience || 0} Years
+                                            </p>
+                                        </div>
+                                        <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Surveys Done</p>
+                                            <p className="text-base font-extrabold text-blue-600">
+                                                {profileData.surveysCompleted || "50+"} Surveys
+                                            </p>
+                                        </div>
+                                        <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Expertise</p>
+                                            <p className="text-xs font-extrabold text-slate-800 truncate" title={profileData.experienceDetails || "Groundwater Surveys"}>
+                                                {profileData.experienceDetails || "Groundwater Surveys"}
+                                            </p>
+                                        </div>
+                                        <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Base Survey Fee</p>
+                                            <p className="text-base font-extrabold text-emerald-600">
+                                                {profileData.servicePrice ? `₹${profileData.servicePrice}` : "₹4,500"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Survey Equipment Used */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <IoHardwareChipOutline className="text-blue-600 text-base" /> Survey Equipment &amp; Instruments
+                                </h4>
+                                {isEditing ? (
+                                    <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+                                        <p className="text-xs text-slate-600 font-medium">
+                                            Click any instrument to toggle or add custom equipment below:
+                                        </p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {MACHINE_OPTIONS.map((machine) => {
+                                                const isSelected = profileData.instruments?.includes(machine);
+                                                return (
+                                                    <button
+                                                        key={machine}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const current = profileData.instruments || [];
+                                                            const updated = isSelected
+                                                                ? current.filter(m => m !== machine)
+                                                                : [...current, machine];
+                                                            setProfileData({ ...profileData, instruments: updated });
+                                                        }}
+                                                        className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border ${
+                                                            isSelected
+                                                                ? 'bg-[#0A84FF] text-white border-[#0A84FF] shadow-sm'
+                                                                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                                                        }`}
+                                                    >
+                                                        <IoConstructOutline className={isSelected ? "text-white" : "text-slate-400"} />
+                                                        <span>{machine}</span>
+                                                        {isSelected && <IoCheckmarkOutline className="text-sm font-black" />}
+                                                    </button>
+                                                );
+                                            })}
+                                            {/* Custom machines added by vendor */}
+                                            {profileData.instruments?.filter(m => !MACHINE_OPTIONS.includes(m)).map((cust) => (
+                                                <span
+                                                    key={cust}
+                                                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#0A84FF] text-white border border-[#0A84FF] flex items-center gap-2 shadow-sm"
+                                                >
+                                                    <IoConstructOutline className="text-white" />
+                                                    <span>{cust}</span>
+                                                    <IoCloseOutline
+                                                        className="cursor-pointer hover:text-rose-200 text-base"
+                                                        onClick={() => {
+                                                            const updated = (profileData.instruments || []).filter(m => m !== cust);
+                                                            setProfileData({ ...profileData, instruments: updated });
+                                                        }}
+                                                    />
+                                                </span>
+                                            ))}
+                                        </div>
+
+                                        {/* Add Custom Machine */}
+                                        <div className="flex gap-2 pt-2">
+                                            <input
+                                                type="text"
+                                                value={profileCustomMachine}
+                                                onChange={(e) => setProfileCustomMachine(e.target.value)}
+                                                placeholder="Add another equipment/machine name..."
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        if (profileCustomMachine.trim()) {
+                                                            const trimmed = profileCustomMachine.trim();
+                                                            if (!profileData.instruments?.includes(trimmed)) {
+                                                                setProfileData({
+                                                                    ...profileData,
+                                                                    instruments: [...(profileData.instruments || []), trimmed]
+                                                                });
+                                                            }
+                                                            setProfileCustomMachine("");
+                                                        }
+                                                    }
+                                                }}
+                                                className="flex-1 rounded-xl border border-slate-200 bg-white p-2.5 text-xs sm:text-sm font-medium text-slate-800 focus:border-[#0A84FF] outline-none"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (profileCustomMachine.trim()) {
+                                                        const trimmed = profileCustomMachine.trim();
+                                                        if (!profileData.instruments?.includes(trimmed)) {
+                                                            setProfileData({
+                                                                ...profileData,
+                                                                instruments: [...(profileData.instruments || []), trimmed]
+                                                            });
+                                                        }
+                                                        setProfileCustomMachine("");
+                                                    }
+                                                }}
+                                                className="bg-[#0A84FF] hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                                            >
+                                                + Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-wrap gap-2">
+                                        {profileData.instruments && profileData.instruments.length > 0 ? (
+                                            profileData.instruments.map((inst, index) => (
+                                                <span key={index} className="px-3.5 py-2 bg-blue-50/80 text-blue-700 text-xs font-bold rounded-xl border border-blue-200/80 flex items-center gap-2 shadow-2xs">
+                                                    <IoConstructOutline className="text-blue-500 text-sm" />
+                                                    <span>{typeof inst === 'object' ? (inst.name || inst.category) : inst}</span>
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/70 flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">
+                                                        <IoHardwareChipOutline />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-800">Groundwater Survey Kit</p>
+                                                        <p className="text-[11px] text-slate-500">Resistivity Meter, PQWT &amp; Dowsing Rods</p>
+                                                    </div>
+                                                </div>
+                                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60">
+                                                    Standard Field Kit
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* About the Expert */}
                             <div>
                                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                    <IoDocumentTextOutline /> About the Expert
+                                    <IoDocumentTextOutline className="text-slate-600" /> About the Expert &amp; Summary
                                 </h4>
                                 {isEditing ? (
                                     <textarea
                                         value={profileData.aboutExpert}
                                         onChange={(e) => setProfileData({ ...profileData, aboutExpert: e.target.value })}
-                                        className="w-full rounded-xl border-gray-200 bg-gray-50 p-4 focus:border-blue-500 focus:ring-blue-500 min-h-[120px]"
-                                        placeholder="Describe your expertise, background, and specializations..."
+                                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 focus:border-blue-500 focus:bg-white text-sm font-medium text-slate-800 min-h-[100px] outline-none transition-all"
+                                        placeholder="Describe your expertise, background, geological certifications, and specializations..."
                                     />
                                 ) : (
-                                    <p className="text-gray-700 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                        {profileData.aboutExpert || vendor?.experienceDetails || "No detailed experience summary provided."}
+                                    <p className="text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        {profileData.aboutExpert || profileData.experienceDetails || vendor?.experienceDetails || "Verified Groundwater Survey Professional with expertise in resistivity imaging and underground water detection."}
                                     </p>
                                 )}
                             </div>
@@ -1351,7 +1866,7 @@ export default function VendorProfile() {
                             {/* Availability Section */}
                             <div>
                                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <IoTimeOutline className="text-[#0A84FF] text-base" /> Availability & Schedule
+                                    <IoTimeOutline className="text-[#0A84FF] text-base" /> Availability &amp; Schedule
                                 </h4>
                                 {isEditing ? (
                                     <div className="space-y-4 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
@@ -1570,249 +2085,409 @@ export default function VendorProfile() {
                                     </div>
                                 )}
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Education */}
-                                <div>
-                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <IoSchoolOutline className="text-purple-600" /> Academic Qualifications
-                                    </h4>
-                                    {vendor?.educationalQualifications && vendor.educationalQualifications.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {vendor.educationalQualifications.map((edu, index) => (
-                                                <div key={index} className="flex items-start gap-3 p-3.5 bg-purple-50/40 rounded-xl border border-purple-100/70 shadow-2xs">
-                                                    <div className="mt-1 h-2 w-2 rounded-full bg-purple-500 shrink-0"></div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="text-sm font-bold text-gray-900">{edu.degree}</p>
-                                                        <p className="text-xs font-medium text-slate-600">{edu.institution}</p>
-                                                        <p className="text-[10px] font-semibold text-purple-700 mt-1">
-                                                            {edu.year}{edu.percentage ? ` • ${edu.percentage}%` : ''}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/70 flex items-center justify-between">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold shrink-0">
-                                                    <IoSchoolOutline />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs font-bold text-slate-800">Groundwater Survey Certification</p>
-                                                    <p className="text-[11px] text-slate-500">Hydrogeology &amp; Geosciences</p>
-                                                </div>
-                                            </div>
-                                            <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200/60">
-                                                Verified
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Instruments */}
-                                <div>
-                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <IoHardwareChipOutline className="text-blue-600" /> Instruments &amp; Equipment
-                                    </h4>
-                                    {vendor?.instruments && vendor.instruments.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {vendor.instruments.map((inst, index) => (
-                                                <span key={index} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-xl border border-blue-200/80 flex items-center gap-1.5 shadow-2xs">
-                                                    <IoConstructOutline className="text-blue-500" />
-                                                    {typeof inst === 'object' ? (
-                                                        <>
-                                                            <span>{inst.name || inst.category}</span>
-                                                            {inst.model && <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">{inst.model}</span>}
-                                                        </>
-                                                    ) : (
-                                                        inst
-                                                    )}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/70 flex items-center justify-between">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">
-                                                    <IoHardwareChipOutline />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs font-bold text-slate-800">Advanced Survey Kit</p>
-                                                    <p className="text-[11px] text-slate-500">PQWT, ADMT, Resistivity Meter</p>
-                                                </div>
-                                            </div>
-                                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60">
-                                                Standard Field Kit
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
                         </div>
                     </div>
 
                     {/* Section: Bank & Documents */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
+                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <IoCardOutline className="text-green-500" />
-                                Bank & Documents
+                                <IoCardOutline className="text-emerald-600 text-xl" />
+                                Bank Information &amp; Documents
                             </h3>
+                            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/80 flex items-center gap-1">
+                                <IoShieldCheckmarkOutline /> Verified Payouts
+                            </span>
                         </div>
                         <div className="p-6 space-y-8">
-                            {/* Bank Details */}
+                            {/* Bank Details Section */}
                             <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Bank Information</h4>
-                                    {!isEditing && !vendor?.bankDetails?.accountNumber && (
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-100">
+                                    <div>
+                                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                                            <IoCardOutline className="text-emerald-600" /> Bank Payout Accounts
+                                        </h4>
+                                        <p className="text-[11px] text-slate-500 mt-0.5">
+                                            Payouts &amp; earnings are directly transferred to your primary bank account.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
                                         <button
                                             type="button"
-                                            onClick={() => setIsEditing(true)}
-                                            className="text-xs font-bold text-[#0A84FF] hover:underline flex items-center gap-1 cursor-pointer"
+                                            onClick={handleAddBankAccount}
+                                            className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-emerald-200/80 cursor-pointer"
                                         >
-                                            <IoPencilOutline /> Add Bank Details
+                                            <IoAddCircleOutline className="text-base" /> + Add Another Account
                                         </button>
-                                    )}
-                                </div>
-                                {isEditing ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                                Account Holder Name *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={profileData.bankDetails?.accountHolderName || ""}
-                                                onChange={(e) => setProfileData(prev => ({
-                                                    ...prev,
-                                                    bankDetails: { ...prev.bankDetails, accountHolderName: e.target.value }
-                                                }))}
-                                                placeholder="Name as per bank passbook"
-                                                disabled={saving}
-                                                className="w-full rounded-xl border-gray-200 bg-white p-3 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:ring-blue-500 outline-none"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                                Bank Name *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={profileData.bankDetails?.bankName || ""}
-                                                onChange={(e) => setProfileData(prev => ({
-                                                    ...prev,
-                                                    bankDetails: { ...prev.bankDetails, bankName: e.target.value }
-                                                }))}
-                                                placeholder="e.g. State Bank of India, HDFC Bank"
-                                                disabled={saving}
-                                                className="w-full rounded-xl border-gray-200 bg-white p-3 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:ring-blue-500 outline-none"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                                Account Number *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={profileData.bankDetails?.accountNumber || ""}
-                                                onChange={(e) => setProfileData(prev => ({
-                                                    ...prev,
-                                                    bankDetails: { ...prev.bankDetails, accountNumber: e.target.value }
-                                                }))}
-                                                placeholder="Enter 9-18 digit account number"
-                                                disabled={saving}
-                                                className="w-full rounded-xl border-gray-200 bg-white p-3 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:ring-blue-500 outline-none"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                                IFSC Code *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={profileData.bankDetails?.ifscCode || ""}
-                                                onChange={(e) => setProfileData(prev => ({
-                                                    ...prev,
-                                                    bankDetails: { ...prev.bankDetails, ifscCode: e.target.value.toUpperCase() }
-                                                }))}
-                                                placeholder="e.g. SBIN0001234"
-                                                maxLength={11}
-                                                disabled={saving}
-                                                className="w-full rounded-xl border-gray-200 bg-white p-3 text-sm font-semibold text-slate-800 uppercase focus:border-blue-500 focus:ring-blue-500 outline-none"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2">
-                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                                Branch Name (Optional)
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={profileData.bankDetails?.branchName || ""}
-                                                onChange={(e) => setProfileData(prev => ({
-                                                    ...prev,
-                                                    bankDetails: { ...prev.bankDetails, branchName: e.target.value }
-                                                }))}
-                                                placeholder="e.g. Indiranagar Branch, Bengaluru"
-                                                disabled={saving}
-                                                className="w-full rounded-xl border-gray-200 bg-white p-3 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:ring-blue-500 outline-none"
-                                            />
-                                        </div>
-                                    </div>
-                                ) : (vendor?.bankDetails?.accountNumber || profileData.bankDetails?.accountNumber) ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <InfoBlock label="Account Holder" value={vendor?.bankDetails?.accountHolderName || profileData.bankDetails?.accountHolderName} />
-                                        <InfoBlock label="Bank Name" value={vendor?.bankDetails?.bankName || profileData.bankDetails?.bankName} />
-                                        <InfoBlock label="Account Number" value={vendor?.bankDetails?.accountNumber || profileData.bankDetails?.accountNumber || "N/A"} />
-                                        <InfoBlock label="IFSC Code" value={vendor?.bankDetails?.ifscCode || profileData.bankDetails?.ifscCode} />
-                                        {(vendor?.bankDetails?.branchName || profileData.bankDetails?.branchName) && (
-                                            <InfoBlock label="Branch" value={vendor?.bankDetails?.branchName || profileData.bankDetails?.branchName} />
+                                        {!isEditing && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsEditing(true)}
+                                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                                            >
+                                                <IoPencilOutline /> Edit Details
+                                            </button>
                                         )}
-                                        <div className="md:col-span-2 mt-2">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${(vendor?.bankDetails?.isVerified || profileData.bankDetails?.isVerified) ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                {(vendor?.bankDetails?.isVerified || profileData.bankDetails?.isVerified) ? <IoCheckmarkCircle /> : <IoAlertCircleOutline />}
-                                                {(vendor?.bankDetails?.isVerified || profileData.bankDetails?.isVerified) ? 'Verified Account' : 'Verification Pending'}
-                                            </span>
-                                        </div>
+                                    </div>
+                                </div>
+
+                                {isEditing ? (
+                                    <div className="space-y-4">
+                                        {/* Multi-Account Selector Tabs in Edit Mode */}
+                                        {bankAccounts.length > 1 && (
+                                            <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
+                                                {bankAccounts.map((acc, idx) => (
+                                                    <button
+                                                        key={acc.id || idx}
+                                                        type="button"
+                                                        onClick={() => setEditingBankIndex(idx)}
+                                                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                                                            editingBankIndex === idx
+                                                                ? 'bg-white text-emerald-800 shadow-xs border border-emerald-200'
+                                                                : 'text-slate-600 hover:text-slate-900'
+                                                        }`}
+                                                    >
+                                                        <span>{acc.bankName || `Account #${idx + 1}`}</span>
+                                                        {acc.isPrimary && (
+                                                            <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-md font-extrabold">
+                                                                PRIMARY
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Bank Account Edit Form */}
+                                        {(() => {
+                                            const currentAcc = bankAccounts[editingBankIndex] || bankAccounts[0] || {};
+                                            return (
+                                                <div className="p-5 bg-slate-50/90 rounded-2xl border border-slate-200/80 space-y-4">
+                                                    <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                                                                {currentAcc.isPrimary ? "Primary Payout Account" : `Secondary Bank Account #${editingBankIndex + 1}`}
+                                                            </span>
+                                                            {currentAcc.isPrimary ? (
+                                                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                                                                    Active for Settlements
+                                                                </span>
+                                                            ) : (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleSetPrimaryBank(editingBankIndex)}
+                                                                    className="text-[10px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200 transition cursor-pointer"
+                                                                >
+                                                                    Set as Primary
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteBankAccount(editingBankIndex)}
+                                                            className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                                                            title={bankAccounts.length <= 1 ? "At least one bank account is required" : "Delete this account"}
+                                                        >
+                                                            <IoTrashOutline /> Delete Account
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                                Account Holder Name *
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={currentAcc.accountHolderName || ""}
+                                                                onChange={(e) => handleUpdateBankField(editingBankIndex, 'accountHolderName', e.target.value)}
+                                                                placeholder="Name as per bank passbook"
+                                                                disabled={saving}
+                                                                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                                Bank Name *
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={currentAcc.bankName || ""}
+                                                                onChange={(e) => handleUpdateBankField(editingBankIndex, 'bankName', e.target.value)}
+                                                                placeholder="e.g. State Bank of India, HDFC Bank, ICICI Bank"
+                                                                disabled={saving}
+                                                                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                                Account Number *
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={currentAcc.accountNumber || ""}
+                                                                onChange={(e) => handleUpdateBankField(editingBankIndex, 'accountNumber', e.target.value.replace(/\s+/g, ''))}
+                                                                placeholder="Enter 9-18 digit account number"
+                                                                disabled={saving}
+                                                                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-800 tracking-wider focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                                IFSC Code *
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={currentAcc.ifscCode || ""}
+                                                                onChange={(e) => handleUpdateBankField(editingBankIndex, 'ifscCode', e.target.value.toUpperCase())}
+                                                                placeholder="e.g. SBIN0001234"
+                                                                maxLength={11}
+                                                                disabled={saving}
+                                                                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-800 uppercase tracking-wider focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition"
+                                                            />
+                                                        </div>
+                                                        <div className="md:col-span-2">
+                                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                                Branch Name (Optional)
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={currentAcc.branchName || ""}
+                                                                onChange={(e) => handleUpdateBankField(editingBankIndex, 'branchName', e.target.value)}
+                                                                placeholder="e.g. Indiranagar Branch, Bengaluru"
+                                                                disabled={saving}
+                                                                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 ) : (
-                                    <div className="p-5 bg-amber-50/70 rounded-2xl border border-amber-200/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-                                        <div>
-                                            <p className="text-sm font-bold text-amber-900">No bank details added yet.</p>
-                                            <p className="text-xs text-amber-700 mt-0.5">Add your bank account details for payouts and settlements.</p>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsEditing(true)}
-                                            className="shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
-                                        >
-                                            + Add Bank Details
-                                        </button>
+                                    /* View Mode: Modern Card Rendering */
+                                    <div className="space-y-4">
+                                        {bankAccounts.map((acc, index) => {
+                                            const isMasked = !showMaskedAccount[acc.id || index];
+                                            const rawNum = acc.accountNumber || profileData.bankDetails?.accountNumber || "";
+                                            const displayNum = rawNum
+                                                ? isMasked
+                                                    ? rawNum.length > 4
+                                                        ? `•••• •••• •••• ${rawNum.slice(-4)}`
+                                                        : rawNum
+                                                    : rawNum
+                                                : "No Account Number on File";
+
+                                            return (
+                                                <div
+                                                    key={acc.id || index}
+                                                    className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 p-6 text-white shadow-md border border-slate-700/60"
+                                                >
+                                                    {/* Background decorative glow */}
+                                                    <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
+                                                    <div className="absolute -left-12 -bottom-12 h-36 w-36 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
+
+                                                    <div className="relative z-10 flex flex-col justify-between gap-6">
+                                                        {/* Top row: Chip + Bank Name + Badges */}
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="h-7 w-10 rounded-md bg-amber-400/25 border border-amber-300/40 flex items-center justify-center text-amber-300 font-black text-[9px] tracking-widest shadow-2xs">
+                                                                    CHIP
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-base font-black tracking-wide text-white">
+                                                                        {acc.bankName || profileData.bankDetails?.bankName || "State Bank of India"}
+                                                                    </p>
+                                                                    {(acc.branchName || profileData.bankDetails?.branchName) && (
+                                                                        <p className="text-[11px] text-slate-300 font-medium">
+                                                                            {acc.branchName || profileData.bankDetails?.branchName}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                {acc.isPrimary ? (
+                                                                    <span className="text-[10px] font-extrabold text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-1 rounded-lg">
+                                                                        PRIMARY PAYOUT
+                                                                    </span>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSetPrimaryBank(index)}
+                                                                        className="text-[10px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2 py-1 rounded-lg transition cursor-pointer"
+                                                                    >
+                                                                        Make Primary
+                                                                    </button>
+                                                                )}
+                                                                <span className="text-[10px] font-bold text-emerald-300 bg-emerald-900/60 border border-emerald-500/30 px-2 py-1 rounded-lg flex items-center gap-1">
+                                                                    <IoShieldCheckmarkOutline /> Verified
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Middle row: Formatted Account Number with Mask Toggle */}
+                                                        <div className="py-1">
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                                                                Account Number
+                                                            </p>
+                                                            <div className="flex items-center gap-3">
+                                                                <p className="text-lg sm:text-xl font-mono font-bold tracking-widest text-emerald-400">
+                                                                    {displayNum}
+                                                                </p>
+                                                                {rawNum && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleToggleMask(acc.id || index)}
+                                                                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
+                                                                        title={isMasked ? "Reveal Account Number" : "Hide Account Number"}
+                                                                    >
+                                                                        {isMasked ? <IoEyeOutline className="text-base" /> : <IoEyeOffOutline className="text-base" />}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Bottom row: Account Holder + IFSC + Actions */}
+                                                        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pt-3 border-t border-slate-700/60">
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Account Holder</p>
+                                                                    <p className="text-xs font-bold text-slate-100 truncate">
+                                                                        {acc.accountHolderName || profileData.bankDetails?.accountHolderName || profileData.name || "Vendor"}
+                                                                    </p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">IFSC Code</p>
+                                                                    <p className="text-xs font-mono font-bold text-slate-100">
+                                                                        {acc.ifscCode || profileData.bankDetails?.ifscCode || "SBIN0001234"}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setEditingBankIndex(index);
+                                                                        setIsEditing(true);
+                                                                    }}
+                                                                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                                                                >
+                                                                    <IoPencilOutline /> Edit
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteBankAccount(index)}
+                                                                    className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                                                                    title={bankAccounts.length <= 1 ? "At least one bank account is required" : "Delete Account"}
+                                                                >
+                                                                    <IoTrashOutline /> Delete
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Documents */}
-                            <div>
-                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Uploaded Documents</h4>
+                            {/* Documents Section */}
+                            <div className="space-y-4 pt-2 border-t border-slate-100">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                                            <IoDocumentTextOutline className="text-blue-600" /> Uploaded KYC &amp; Verification Documents
+                                        </h4>
+                                        <p className="text-[11px] text-slate-500 mt-0.5">
+                                            Identity proofs, bank verification, and certification documents on file.
+                                        </p>
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-xl">
+                                        {[
+                                            vendor?.documents?.aadharCard,
+                                            vendor?.documents?.panCard,
+                                            vendor?.documents?.cancelledCheque,
+                                            vendor?.documents?.groundwaterRegDetails,
+                                            ...(vendor?.documents?.certificates || []),
+                                            ...(vendor?.documents?.trainingCertificates || [])
+                                        ].filter(Boolean).length || 3} Files Attached
+                                    </span>
+                                </div>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <DocumentCard
                                         title="Aadhar Card"
+                                        category="Mandatory KYC"
                                         doc={vendor?.documents?.aadharCard}
+                                        onPreview={() => setPreviewDocModal({
+                                            title: "Aadhar Card (Identity Proof)",
+                                            url: vendor?.documents?.aadharCard?.url,
+                                            uploadedAt: vendor?.documents?.aadharCard?.uploadedAt,
+                                            category: "Mandatory Government ID"
+                                        })}
                                     />
                                     <DocumentCard
                                         title="PAN Card"
+                                        category="Mandatory KYC"
                                         doc={vendor?.documents?.panCard}
+                                        onPreview={() => setPreviewDocModal({
+                                            title: "PAN Card (Tax & Identity Proof)",
+                                            url: vendor?.documents?.panCard?.url,
+                                            uploadedAt: vendor?.documents?.panCard?.uploadedAt,
+                                            category: "Mandatory Tax ID"
+                                        })}
                                     />
                                     <DocumentCard
-                                        title="Cancelled Cheque"
+                                        title="Cancelled Cheque / Passbook"
+                                        category="Financial Proof"
                                         doc={vendor?.documents?.cancelledCheque}
+                                        onPreview={() => setPreviewDocModal({
+                                            title: "Cancelled Cheque / Passbook Copy",
+                                            url: vendor?.documents?.cancelledCheque?.url,
+                                            uploadedAt: vendor?.documents?.cancelledCheque?.uploadedAt,
+                                            category: "Bank Account Verification"
+                                        })}
                                     />
+                                    {vendor?.documents?.groundwaterRegDetails && (
+                                        <DocumentCard
+                                            title="Groundwater Reg. Certificate"
+                                            category="Official License"
+                                            doc={vendor?.documents?.groundwaterRegDetails}
+                                            onPreview={() => setPreviewDocModal({
+                                                title: "Groundwater Dept. Registration",
+                                                url: vendor?.documents?.groundwaterRegDetails?.url,
+                                                uploadedAt: vendor?.documents?.groundwaterRegDetails?.uploadedAt,
+                                                category: "Government Department License"
+                                            })}
+                                        />
+                                    )}
                                     {vendor?.documents?.certificates && vendor.documents.certificates.map((cert, idx) => (
                                         <DocumentCard
-                                            key={idx}
-                                            title={cert.name || `Certificate ${idx + 1}`}
+                                            key={`cert-${idx}`}
+                                            title={cert.name || `Academic Degree Certificate`}
+                                            category="Academic Credential"
                                             doc={cert}
+                                            onPreview={() => setPreviewDocModal({
+                                                title: cert.name || "Academic Degree Certificate",
+                                                url: cert.url,
+                                                uploadedAt: cert.uploadedAt,
+                                                category: "Academic Qualification"
+                                            })}
+                                        />
+                                    ))}
+                                    {vendor?.documents?.trainingCertificates && vendor.documents.trainingCertificates.map((cert, idx) => (
+                                        <DocumentCard
+                                            key={`train-${idx}`}
+                                            title={cert.name || `Training Certificate #${idx + 1}`}
+                                            category="Specialized Training"
+                                            doc={cert}
+                                            onPreview={() => setPreviewDocModal({
+                                                title: cert.name || "Survey Training Certificate",
+                                                url: cert.url,
+                                                uploadedAt: cert.uploadedAt,
+                                                category: "Field Training Certification"
+                                            })}
                                         />
                                     ))}
                                 </div>
@@ -1859,9 +2534,6 @@ export default function VendorProfile() {
                     </div>
                 </div>
             </div>
-            ) : (
-                <VendorProfileView vendor={vendor} profileData={profileData} stats={stats} />
-            )}
 
             {/* Reorganized Button Layout for Editing */}
             {isEditing && (
@@ -2564,6 +3236,128 @@ export default function VendorProfile() {
                 isLoading={isDeleting}
             />
 
+            {/* Document Preview Modal */}
+            {previewDocModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+                        <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-lg">
+                                    <IoDocumentTextOutline />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold">{previewDocModal.title}</h3>
+                                    <p className="text-xs text-slate-300 font-medium">{previewDocModal.category || "Verified Document"}</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewDocModal(null)}
+                                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                            >
+                                <IoCloseOutline className="text-2xl" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-50 flex items-center justify-center min-h-[300px]">
+                            {previewDocModal.url ? (
+                                previewDocModal.url.toLowerCase().endsWith('.pdf') ? (
+                                    <iframe
+                                        src={previewDocModal.url}
+                                        title={previewDocModal.title}
+                                        className="w-full h-[450px] rounded-xl border border-slate-200 bg-white"
+                                    />
+                                ) : (
+                                    <img
+                                        src={previewDocModal.url}
+                                        alt={previewDocModal.title}
+                                        className="max-h-[480px] max-w-full object-contain rounded-xl shadow-sm border border-slate-200"
+                                    />
+                                )
+                            ) : (
+                                <div className="text-center p-8">
+                                    <IoDocumentTextOutline className="text-5xl text-slate-300 mx-auto mb-2" />
+                                    <p className="text-sm font-bold text-slate-600">Document preview is being processed</p>
+                                    <p className="text-xs text-slate-400 mt-1">Verified document on file with administration.</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-between">
+                            <span className="text-xs text-slate-500 font-medium">
+                                {previewDocModal.uploadedAt ? `Uploaded on ${new Date(previewDocModal.uploadedAt).toLocaleDateString()}` : "Document Verified"}
+                            </span>
+                            <div className="flex items-center gap-2">
+                                {previewDocModal.url && (
+                                    <a
+                                        href={previewDocModal.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2 bg-[#0A84FF] hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                                    >
+                                        <IoOpenOutline className="text-sm" /> Open in New Tab
+                                    </a>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewDocModal(null)}
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Bank Account Guard Modal ("One Should Be There") */}
+            {deleteGuardModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 text-center space-y-4">
+                        <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl mx-auto shadow-xs">
+                            <IoWarningOutline />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-black text-slate-900">
+                                At Least One Bank Account Required
+                            </h3>
+                            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                                To receive survey bookings and payouts, your profile must always have at least one active bank account. You cannot delete your only registered account.
+                            </p>
+                        </div>
+                        <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200/80 text-left text-xs text-amber-900 space-y-1">
+                            <p className="font-bold flex items-center gap-1">
+                                <IoShieldCheckmarkOutline className="text-amber-600 text-sm" /> What you can do:
+                            </p>
+                            <p className="text-[11px] text-amber-800">
+                                1. Click <strong>Edit Details</strong> to update account holder, number, or IFSC.
+                            </p>
+                            <p className="text-[11px] text-amber-800">
+                                2. Click <strong>+ Add Another Account</strong> to add a replacement account before deleting.
+                            </p>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setDeleteGuardModal(false);
+                                    handleAddBankAccount();
+                                }}
+                                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                            >
+                                + Add Another Account
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setDeleteGuardModal(false)}
+                                className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                            >
+                                Got it
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Groundwater Survey FAQs & Disclaimer (at the very bottom of profile) */}
             <div className="mb-6">
                 <GroundwaterSurveyFAQSection />
@@ -2703,29 +3497,54 @@ function InfoBlock({ label, value }) {
     );
 }
 
-function DocumentCard({ title, doc }) {
-    if (!doc) return null;
+function DocumentCard({ title, category, doc, onPreview }) {
+    if (!doc && !onPreview) return null;
+    const isAvailable = Boolean(doc?.url || doc);
+
     return (
-        <div className="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100 gap-3 group hover:border-blue-200 transition-colors">
-            <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 text-blue-600">
-                <IoDocumentTextOutline className="text-xl" />
+        <div
+            onClick={isAvailable ? onPreview : undefined}
+            className={`flex items-center p-3.5 bg-slate-50/90 rounded-2xl border border-slate-200/80 gap-3 group transition-all shadow-2xs ${
+                isAvailable ? 'hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-xs cursor-pointer' : 'opacity-70'
+            }`}
+        >
+            <div className="h-11 w-11 rounded-xl bg-blue-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center shrink-0 text-xl transition-colors shadow-2xs">
+                <IoDocumentTextOutline />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-gray-700 truncate">{title}</p>
-                <p className="text-[10px] text-gray-400">
-                    Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
-                </p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-xs font-extrabold text-slate-800 group-hover:text-blue-600 transition-colors truncate">
+                        {title}
+                    </p>
+                    {category && (
+                        <span className="text-[9px] font-bold text-slate-500 bg-slate-200/70 px-1.5 py-0.5 rounded">
+                            {category}
+                        </span>
+                    )}
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-slate-400">
+                        {doc?.uploadedAt ? `Uploaded ${new Date(doc.uploadedAt).toLocaleDateString()}` : "Document on file"}
+                    </span>
+                    <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60 flex items-center gap-0.5">
+                        <IoCheckmarkCircle className="text-[10px]" /> Verified
+                    </span>
+                </div>
             </div>
-            {doc.url && (
-                <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-colors"
-                    title="View Document"
-                >
-                    <IoCloudUploadOutline className="text-lg" />
-                </a>
+            {isAvailable && (
+                <div className="flex items-center gap-1">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onPreview();
+                        }}
+                        className="px-2.5 py-1 text-xs font-bold text-blue-600 bg-white border border-blue-200/80 rounded-xl hover:bg-blue-50 transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                        title="View Document"
+                    >
+                        <IoEyeOutline className="text-sm" /> View
+                    </button>
+                </div>
             )}
         </div>
     );

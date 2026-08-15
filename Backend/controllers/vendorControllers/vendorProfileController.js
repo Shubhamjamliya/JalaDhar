@@ -77,11 +77,19 @@ const getProfile = async (req, res) => {
           uploadedAt: doc.uploadedAt
         };
       } else if (doc.documentType === 'AADHAR') {
-        formattedDocuments.aadharCard = {
+        if (!formattedDocuments.aadharCards) {
+          formattedDocuments.aadharCards = [];
+        }
+        const aadharDoc = {
           url: doc.url,
           publicId: doc.publicId,
-          uploadedAt: doc.uploadedAt
+          uploadedAt: doc.uploadedAt,
+          name: doc.name || 'Aadhaar Card'
         };
+        formattedDocuments.aadharCards.push(aadharDoc);
+        if (!formattedDocuments.aadharCard) {
+          formattedDocuments.aadharCard = aadharDoc;
+        }
       } else if (doc.documentType === 'PAN') {
         formattedDocuments.panCard = {
           url: doc.url,
@@ -104,28 +112,67 @@ const getProfile = async (req, res) => {
           uploadedAt: doc.uploadedAt,
           name: doc.name || doc.certificateName
         });
+      } else if (doc.documentType === 'GROUNDWATER_REG') {
+        formattedDocuments.groundwaterRegDetails = {
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt
+        };
+      } else if (doc.documentType === 'TRAINING_CERTIFICATE') {
+        if (!formattedDocuments.trainingCertificates) {
+          formattedDocuments.trainingCertificates = [];
+        }
+        formattedDocuments.trainingCertificates.push({
+          url: doc.url,
+          publicId: doc.publicId,
+          uploadedAt: doc.uploadedAt,
+          name: doc.name || doc.certificateName
+        });
       }
     });
 
     // Add bankDetails and documents to vendor object
     vendor.bankDetails = bankDetails || null;
     vendor.documents = formattedDocuments;
+    vendor.documentsList = documents;
 
-    // Extract unique instruments from services machineType
+    if (!vendor.profilePicture && formattedDocuments.profilePicture?.url) {
+      vendor.profilePicture = formattedDocuments.profilePicture.url;
+    }
+
+    // Extract unique instruments from services or machineType if instruments is empty
     const instrumentsSet = new Set();
+    if (vendor.instruments && Array.isArray(vendor.instruments) && vendor.instruments.length > 0) {
+      vendor.instruments.forEach(inst => {
+        const name = typeof inst === 'object' ? (inst.name || inst.category) : inst;
+        if (name) instrumentsSet.add(name);
+      });
+    }
     if (vendor.services && Array.isArray(vendor.services)) {
       vendor.services.forEach(service => {
         if (service.machineType) {
-          // split by comma, trim, and add to set
           const types = service.machineType.split(',').map(t => t.trim()).filter(Boolean);
           types.forEach(type => instrumentsSet.add(type));
         }
       });
     }
+    if (vendor.machineType) {
+      const types = vendor.machineType.split(',').map(t => t.trim()).filter(Boolean);
+      types.forEach(type => instrumentsSet.add(type));
+    }
 
-    // Override instruments with derived list if services exist
     if (instrumentsSet.size > 0) {
       vendor.instruments = Array.from(instrumentsSet);
+    }
+
+    // Ensure educationalQualifications has items if education is stored
+    if ((!vendor.educationalQualifications || vendor.educationalQualifications.length === 0) && vendor.education) {
+      vendor.educationalQualifications = [{
+        degree: vendor.education,
+        institution: vendor.institution || 'Verified on File',
+        year: vendor.graduationYear ? parseInt(vendor.graduationYear) : new Date().getFullYear(),
+        specialization: vendor.specialization || ''
+      }];
     }
 
     vendor.expertId = vendor.expertId || (vendor._id ? `EXP-${vendor._id.toString().slice(-6).toUpperCase()}` : null);
@@ -174,9 +221,19 @@ const updateProfile = async (req, res) => {
     const allowedFields = [
       'name',
       'phone',
+      'dob',
       'bloodGroup',
       'gender',
       'designation',
+      'panNo',
+      'isGstRegistered',
+      'gstNumber',
+      'education',
+      'institution',
+      'graduationYear',
+      'specialization',
+      'surveysCompleted',
+      'machineType',
       'address',
       'district',
       'state',
