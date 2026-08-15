@@ -158,7 +158,14 @@ const register = async (req, res) => {
       gender,
       designation,
       education,
-      institution
+      institution,
+      district,
+      state,
+      serviceRadius,
+      multipleStates,
+      willingToTravel,
+      modeOfTravel,
+      travelChargesPerKm
     } = req.body;
 
     if (!otp || !token) {
@@ -424,6 +431,46 @@ const register = async (req, res) => {
       parsedInstruments = typeof instruments === 'string' ? JSON.parse(instruments) : instruments;
     }
 
+    // Parse multiple states if it's a string or array
+    let parsedMultipleStates = [];
+    if (multipleStates) {
+      if (typeof multipleStates === 'string') {
+        try {
+          parsedMultipleStates = JSON.parse(multipleStates);
+        } catch (e) {
+          parsedMultipleStates = multipleStates.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      } else if (Array.isArray(multipleStates)) {
+        parsedMultipleStates = multipleStates;
+      }
+    }
+
+    // Parse mode of travel if it's a string or array
+    let parsedModeOfTravel = [];
+    if (modeOfTravel) {
+      if (typeof modeOfTravel === 'string') {
+        try {
+          parsedModeOfTravel = JSON.parse(modeOfTravel);
+        } catch (e) {
+          parsedModeOfTravel = modeOfTravel.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      } else if (Array.isArray(modeOfTravel)) {
+        parsedModeOfTravel = modeOfTravel;
+      }
+    }
+
+    // Determine initial service areas array
+    let serviceAreasList = [];
+    if (district && state) {
+      serviceAreasList.push(`${district}, ${state}`);
+    } else if (state) {
+      serviceAreasList.push(state);
+    }
+    if (parsedMultipleStates && parsedMultipleStates.length > 0) {
+      serviceAreasList.push(...parsedMultipleStates);
+    }
+    serviceAreasList = Array.from(new Set(serviceAreasList.filter(Boolean)));
+
     // Create vendor with email verified (without bankDetails and documents)
     const vendorId = new mongoose.Types.ObjectId();
     const vendorData = {
@@ -439,6 +486,14 @@ const register = async (req, res) => {
       instruments: parsedInstruments,
       servicePrice: servicePrice ? parseFloat(servicePrice) : null,
       address: parsedAddress,
+      district: district || (parsedAddress?.district || null),
+      state: state || (parsedAddress?.state || null),
+      serviceRadius: serviceRadius || "50 km",
+      multipleStates: parsedMultipleStates,
+      willingToTravel: willingToTravel || "Yes",
+      modeOfTravel: parsedModeOfTravel,
+      travelChargesPerKm: travelChargesPerKm ? parseFloat(travelChargesPerKm) : 0,
+      serviceAreas: serviceAreasList.length > 0 ? serviceAreasList : undefined,
       isEmailVerified: true, // Email is verified via OTP
       gender,
       designation

@@ -135,9 +135,43 @@ const vendorSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  district: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  state: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  serviceRadius: {
+    type: String,
+    trim: true,
+    default: "50 km"
+  },
+  multipleStates: [{
+    type: String,
+    trim: true
+  }],
+  willingToTravel: {
+    type: String,
+    enum: ['Yes', 'No'],
+    default: 'Yes'
+  },
+  modeOfTravel: [{
+    type: String,
+    enum: ['Bus', 'Car', 'Bike', 'Train']
+  }],
+  travelChargesPerKm: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
   address: {
     street: String,
     city: String,
+    district: String,
     state: String,
     pincode: String,
     coordinates: {

@@ -101,11 +101,26 @@ export default function VendorProfileView({ vendor, profileData, stats }) {
                         </div>
 
                         <div className="p-2 rounded-xl bg-slate-50/70 border border-slate-100/70 space-y-1">
-                            <span className="font-medium text-slate-500 block">Service Area / Coverage</span>
+                            <span className="font-medium text-slate-500 block">Service Area & Radius</span>
                             <span className="font-bold text-slate-900 block truncate">
-                                {vendor?.serviceAreas?.length > 0 ? vendor.serviceAreas.join(', ') : "Bengaluru Rural & Surrounding Regions"}
+                                {vendor?.serviceAreas?.length > 0
+                                    ? vendor.serviceAreas.join(', ')
+                                    : (vendor?.district && vendor?.state ? `${vendor.district}, ${vendor.state}` : "Local & Surrounding Regions")}
+                                {vendor?.serviceRadius && ` (${vendor.serviceRadius})`}
                             </span>
                         </div>
+
+                        {vendor?.willingToTravel && (
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100/70">
+                                <span className="font-medium text-slate-500">Travel Flexibility</span>
+                                <span className="font-bold text-slate-900">
+                                    {vendor.willingToTravel === 'Yes'
+                                        ? `Yes (${vendor.modeOfTravel?.length > 0 ? vendor.modeOfTravel.join(', ') : 'All Modes'})`
+                                        : 'No'}
+                                    {vendor.willingToTravel === 'Yes' && vendor.travelChargesPerKm > 0 && ` • ₹${vendor.travelChargesPerKm}/km`}
+                                </span>
+                            </div>
+                        )}
 
                         <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100/70">
                             <span className="font-medium text-slate-500">Avg. Response SLA</span>

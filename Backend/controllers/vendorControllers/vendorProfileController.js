@@ -171,6 +171,14 @@ const updateProfile = async (req, res) => {
       'gender',
       'designation',
       'address',
+      'district',
+      'state',
+      'serviceRadius',
+      'multipleStates',
+      'willingToTravel',
+      'modeOfTravel',
+      'travelChargesPerKm',
+      'serviceAreas',
       'educationalQualifications',
       'experience',
       'experienceDetails',
@@ -190,7 +198,7 @@ const updateProfile = async (req, res) => {
         let value = req.body[field];
 
         // Sanitize empty strings for enum fields
-        if ((field === 'bloodGroup' || field === 'gender' || field === 'designation') && value === '') {
+        if ((field === 'bloodGroup' || field === 'gender' || field === 'designation' || field === 'willingToTravel') && value === '') {
           value = null;
         }
 
@@ -201,12 +209,19 @@ const updateProfile = async (req, res) => {
           field === 'languages' ||
           field === 'availableServices' ||
           field === 'workingDays' ||
-          field === 'workingHours'
+          field === 'workingHours' ||
+          field === 'multipleStates' ||
+          field === 'modeOfTravel' ||
+          field === 'serviceAreas'
         )) {
           try {
             vendor[field] = JSON.parse(value);
           } catch (e) {
-            vendor[field] = value;
+            if (field === 'multipleStates' || field === 'modeOfTravel' || field === 'serviceAreas') {
+              vendor[field] = value.split(',').map(s => s.trim()).filter(Boolean);
+            } else {
+              vendor[field] = value;
+            }
           }
         } else {
           vendor[field] = value;
@@ -217,6 +232,9 @@ const updateProfile = async (req, res) => {
     vendor.markModified('workingDays');
     vendor.markModified('workingHours');
     vendor.markModified('address');
+    vendor.markModified('multipleStates');
+    vendor.markModified('modeOfTravel');
+    vendor.markModified('serviceAreas');
 
     await vendor.save();
 

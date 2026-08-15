@@ -36,6 +36,8 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
 import CustomDropdown from "../../shared/components/CustomDropdown";
+import MultipleStatesDropdown from "../../shared/components/MultipleStatesDropdown";
+import { getStatesList, getDistrictsList, findStateForDistrict } from "../../../utils/indianStatesDistricts";
 import logo from "@/assets/AppLogo.png";
 
 // Get API key at module level
@@ -273,7 +275,7 @@ export default function VendorSignup() {
             branchName: initialData?.branchName || d.branchName || "",
             cancelledCheque: initialData?.cancelledCheque || null,
 
-            // Address
+            // Address & Service Area
             address: initialData?.address || d.address || {},
             selectedPlace: initialData?.selectedPlace || d.selectedPlace || null,
             district: initialData?.district || d.district || "",
@@ -284,11 +286,23 @@ export default function VendorSignup() {
                 timeframe: false,
                 agreement: false
             },
-            serviceRadius: initialData?.serviceRadius || d.serviceRadius || "",
-            multipleStates: initialData?.multipleStates || d.multipleStates || "",
-            willingToTravel: initialData?.willingToTravel || d.willingToTravel || "",
-            modeOfTravel: initialData?.modeOfTravel || d.modeOfTravel || [],
-            travelChargesPerKm: initialData?.travelChargesPerKm || d.travelChargesPerKm || ""
+            serviceRadius: initialData?.serviceRadius || d.serviceRadius || "50 km",
+            multipleStates: Array.isArray(initialData?.multipleStates)
+                ? initialData.multipleStates
+                : (Array.isArray(d.multipleStates)
+                    ? d.multipleStates
+                    : (typeof d.multipleStates === 'string' && d.multipleStates
+                        ? d.multipleStates.split(',').map(s => s.trim()).filter(Boolean)
+                        : [])),
+            willingToTravel: initialData?.willingToTravel || d.willingToTravel || "Yes",
+            modeOfTravel: Array.isArray(initialData?.modeOfTravel)
+                ? initialData.modeOfTravel
+                : (Array.isArray(d.modeOfTravel)
+                    ? d.modeOfTravel
+                    : ['Car', 'Bike']),
+            travelChargesPerKm: initialData?.travelChargesPerKm !== undefined
+                ? initialData.travelChargesPerKm
+                : (d.travelChargesPerKm !== undefined ? d.travelChargesPerKm : "")
         };
     });
 
@@ -330,7 +344,14 @@ export default function VendorSignup() {
                 ifscCode: formData.ifscCode,
                 branchName: formData.branchName,
                 address: formData.address,
-                selectedPlace: formData.selectedPlace
+                selectedPlace: formData.selectedPlace,
+                district: formData.district,
+                state: formData.state,
+                serviceRadius: formData.serviceRadius,
+                multipleStates: formData.multipleStates,
+                willingToTravel: formData.willingToTravel,
+                modeOfTravel: formData.modeOfTravel,
+                travelChargesPerKm: formData.travelChargesPerKm
             };
             sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
                 formData: textFields,
@@ -477,9 +498,31 @@ export default function VendorSignup() {
         const selectedPlaceId = placeData.placeId || "";
         const selectedFormattedAddress = placeData.formattedAddress || "";
 
-        // Update form data with selected place information - only geoLocation
+        // Auto-extract state and district from Google address components
+        let autoState = "";
+        let autoDistrict = "";
+        const components = placeData.addressComponents || placeData.place?.address_components || [];
+        for (const comp of components) {
+            if (comp.types?.includes('administrative_area_level_1')) {
+                autoState = comp.long_name || comp.short_name || "";
+            }
+            if (comp.types?.includes('administrative_area_level_2')) {
+                autoDistrict = comp.long_name || comp.short_name || "";
+            }
+            if (!autoDistrict && comp.types?.includes('locality')) {
+                autoDistrict = comp.long_name || comp.short_name || "";
+            }
+        }
+        if (autoDistrict && !autoState) {
+            const matchedState = findStateForDistrict(autoDistrict);
+            if (matchedState) autoState = matchedState;
+        }
+
+        // Update form data with selected place information & auto-detected state/district
         setFormData(prev => ({
             ...prev,
+            district: autoDistrict || prev.district,
+            state: autoState || prev.state,
             address: {
                 coordinates: (selectedLat && selectedLng) ? {
                     lat: selectedLat,
@@ -491,7 +534,6 @@ export default function VendorSignup() {
                     geocodedAt: new Date()
                 } : prev.address.geoLocation
             },
-            // Coordinates are already stored in address.coordinates above
             // Store place info for backend
             selectedPlace: {
                 placeId: selectedPlaceId,
@@ -541,10 +583,29 @@ export default function VendorSignup() {
 
                         const data = await response.json();
 
+                        let autoDistrict = "";
+                        let autoState = "";
+
                         // Check for API errors
                         if (data.status === 'OK' && data.results && data.results.length > 0) {
                             const result = data.results[0];
                             formattedAddress = result.formatted_address || formattedAddress;
+                            const components = result.address_components || [];
+                            for (const comp of components) {
+                                if (comp.types?.includes('administrative_area_level_1')) {
+                                    autoState = comp.long_name || comp.short_name || "";
+                                }
+                                if (comp.types?.includes('administrative_area_level_2')) {
+                                    autoDistrict = comp.long_name || comp.short_name || "";
+                                }
+                                if (!autoDistrict && comp.types?.includes('locality')) {
+                                    autoDistrict = comp.long_name || comp.short_name || "";
+                                }
+                            }
+                            if (autoDistrict && !autoState) {
+                                const matchedState = findStateForDistrict(autoDistrict);
+                                if (matchedState) autoState = matchedState;
+                            }
                         } else {
                             // Geocoding failed - provide specific error messages
                             if (data.status === 'REQUEST_DENIED') {
@@ -568,6 +629,8 @@ export default function VendorSignup() {
                 // Update form data with coordinates and geoLocation in address
                 setFormData(prev => ({
                     ...prev,
+                    district: autoDistrict || prev.district,
+                    state: autoState || prev.state,
                     address: {
                         coordinates: {
                             lat: lat,
@@ -623,6 +686,8 @@ export default function VendorSignup() {
                             
                             setFormData(prev => ({
                                 ...prev,
+                                district: ipData.city || prev.district,
+                                state: ipData.region || prev.state,
                                 address: {
                                     coordinates: { lat, lng },
                                     geoLocation: {
@@ -732,10 +797,16 @@ export default function VendorSignup() {
         if (!formData.district) { toast.showError("District is required"); return false; }
         if (!formData.state) { toast.showError("State is required"); return false; }
         if (!formData.serviceRadius) { toast.showError("Service Radius is required"); return false; }
-        if (formData.serviceRadius === "Multiple states" && !formData.multipleStates) { toast.showError("Multiple States selection is required"); return false; }
+        if (formData.serviceRadius === "Multiple states" && (!formData.multipleStates || formData.multipleStates.length === 0)) {
+            toast.showError("Please select at least one State for Multiple States service");
+            return false;
+        }
         if (!formData.willingToTravel) { toast.showError("Willing to Travel option is required"); return false; }
         if (formData.willingToTravel === "Yes") {
-            if (formData.modeOfTravel.length === 0) { toast.showError("Please select at least one Mode of Travel"); return false; }
+            if (!formData.modeOfTravel || formData.modeOfTravel.length === 0) {
+                toast.showError("Please select at least one Mode of Travel");
+                return false;
+            }
         }
         if (!formData.declarations?.certifyTrue) { toast.showError("You must certify the information provided is true"); return false; }
         if (!formData.declarations?.responsibility) { toast.showError("You must acknowledge the responsibility of survey reports"); return false; }
@@ -1675,64 +1746,84 @@ export default function VendorSignup() {
                                 </div>
                             )}
 
-                            {/* Step 5: Address */}
+                            {/* Step 5: Service Area */}
                             {activeTab === "address" && (
                                 <div className="tab-snappy space-y-4">
                                     <h3 className="text-base font-extrabold text-slate-800 mb-3 flex items-center gap-2">
                                         <IoLocationOutline className="text-[#0A84FF] text-xl" />
-                                        Service Area Address
+                                        Service Area
                                     </h3>
 
-                                    <div className="p-4 bg-blue-50/80 border border-blue-100/80 rounded-2xl">
-                                        <label className="block text-xs font-extrabold text-blue-700 mb-2 px-1">
-                                            Search Service Center Location *
-                                        </label>
-                                        <div className="flex flex-col gap-2">
-                                            <div className="relative">
-                                                <IoSearchOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-blue-400 text-lg z-10" />
-                                                <PlaceAutocompleteInput
-                                                    onPlaceSelect={handleFullAddressSelect}
-                                                    placeholder="Enter colony, street or landmark..."
-                                                    value={fullAddress}
-                                                    onChange={(e) => setFullAddress(e.target.value)}
+                                    <div className="p-4 bg-blue-50/80 border border-blue-100/80 rounded-2xl space-y-4">
+                                        {/* Primary Service Location */}
+                                        <div>
+                                            <label className="block text-xs font-extrabold text-blue-700 mb-2 px-1">
+                                                Primary Service Location *
+                                            </label>
+                                            <div className="flex flex-col gap-2">
+                                                <div className="relative">
+                                                    <IoSearchOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-blue-400 text-lg z-10" />
+                                                    <PlaceAutocompleteInput
+                                                        onPlaceSelect={handleFullAddressSelect}
+                                                        placeholder="Enter colony, street, area or landmark..."
+                                                        value={fullAddress}
+                                                        onChange={(e) => setFullAddress(e.target.value)}
+                                                        disabled={loading || gettingLocation}
+                                                        className="w-full rounded-2xl border-blue-100 bg-white py-3.5 pl-11 pr-4 text-slate-800 shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 text-sm outline-none font-medium"
+                                                        countryRestriction="in"
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={getCurrentLocation}
                                                     disabled={loading || gettingLocation}
-                                                    className="w-full rounded-2xl border-blue-100 bg-white py-3.5 pl-11 pr-4 text-slate-800 shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 text-sm outline-none"
-                                                    countryRestriction="in"
+                                                    className="flex items-center justify-center gap-2 bg-white text-[#0A84FF] border border-blue-200 px-4 py-3 rounded-2xl text-xs sm:text-sm font-extrabold hover:bg-blue-50 transition-all shadow-2xs cursor-pointer"
+                                                >
+                                                    <IoLocationOutline className="text-lg" />
+                                                    {gettingLocation ? "Locating..." : "GPS Pin"}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* State & District Grid */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <SelectBox
+                                                    label="State *"
+                                                    name="state"
+                                                    options={[
+                                                        { value: "", label: "Select State / UT" },
+                                                        ...getStatesList().map(st => ({ value: st, label: st }))
+                                                    ]}
+                                                    value={formData.state}
+                                                    onChange={(e) => {
+                                                        const newState = e.target.value;
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            state: newState,
+                                                            district: getDistrictsList(newState).includes(prev.district) ? prev.district : ""
+                                                        }));
+                                                    }}
+                                                    disabled={loading}
                                                 />
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={getCurrentLocation}
-                                                disabled={loading || gettingLocation}
-                                                className="flex items-center justify-center gap-2 bg-white text-[#0A84FF] border border-blue-200 px-4 py-3 rounded-2xl text-xs sm:text-sm font-extrabold hover:bg-blue-50 transition-all shadow-2xs cursor-pointer"
-                                            >
-                                                <IoLocationOutline className="text-lg" />
-                                                {gettingLocation ? "Locating..." : "Pin to My Current GPS"}
-                                            </button>
+                                            <div>
+                                                <SelectBox
+                                                    label="District *"
+                                                    name="district"
+                                                    options={[
+                                                        { value: "", label: formData.state ? `Select District in ${formData.state}` : "Select District" },
+                                                        ...getDistrictsList(formData.state).map(d => ({ value: d, label: d }))
+                                                    ]}
+                                                    value={formData.district}
+                                                    onChange={handleInputChange}
+                                                    disabled={loading}
+                                                />
+                                            </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                                            <InputBox
-                                                label="District *"
-                                                name="district"
-                                                type="text"
-                                                placeholder="Enter District"
-                                                value={formData.district}
-                                                onChange={handleInputChange}
-                                                disabled={loading}
-                                            />
-                                            <InputBox
-                                                label="State *"
-                                                name="state"
-                                                type="text"
-                                                placeholder="Enter State"
-                                                value={formData.state}
-                                                onChange={handleInputChange}
-                                                disabled={loading}
-                                            />
-                                        </div>
-
-                                        <div className="mt-4">
+                                        {/* Service Radius */}
+                                        <div>
                                             <SelectBox
                                                 label="Service Radius *"
                                                 name="serviceRadius"
@@ -1754,56 +1845,98 @@ export default function VendorSignup() {
                                             />
                                         </div>
 
+                                        {/* Multiple States Dropdown (Shown when "Multiple states" is selected) */}
                                         {formData.serviceRadius === "Multiple states" && (
-                                            <div className="mt-4">
-                                                <InputBox
-                                                    label="Multiple States (Comma separated) *"
-                                                    name="multipleStates"
-                                                    type="text"
-                                                    placeholder="e.g. Maharashtra, Gujarat, Goa"
+                                            <div className="pt-1">
+                                                <MultipleStatesDropdown
+                                                    label="Multiple states drop down menu *"
                                                     value={formData.multipleStates}
-                                                    onChange={handleInputChange}
+                                                    onChange={(selected) => {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            multipleStates: selected
+                                                        }));
+                                                    }}
                                                     disabled={loading}
                                                 />
                                             </div>
                                         )}
 
-                                        <div className="mt-4">
-                                            <SelectBox
-                                                label="Willing to Travel? *"
-                                                name="willingToTravel"
-                                                options={[
-                                                    { value: "", label: "Select Option" },
-                                                    { value: "Yes", label: "Yes" },
-                                                    { value: "No", label: "No" }
-                                                ]}
-                                                value={formData.willingToTravel}
-                                                onChange={handleInputChange}
-                                                disabled={loading}
-                                            />
+                                        {/* Willing to Travel */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 px-1">
+                                                Willing to Travel? *
+                                            </label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {['Yes', 'No'].map((opt) => (
+                                                    <button
+                                                        key={opt}
+                                                        type="button"
+                                                        onClick={() => setFormData(prev => ({ ...prev, willingToTravel: opt }))}
+                                                        disabled={loading}
+                                                        className={`py-3 px-4 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                                                            formData.willingToTravel === opt
+                                                                ? 'bg-[#0A84FF] text-white border-[#0A84FF] shadow-md shadow-blue-500/20'
+                                                                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                                                        }`}
+                                                    >
+                                                        {formData.willingToTravel === opt && <IoCheckmarkOutline className="text-base" />}
+                                                        {opt}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
 
+                                        {/* Mode of travel & Travel Charges (Shown when Willing to Travel is Yes) */}
                                         {formData.willingToTravel === "Yes" && (
-                                            <>
-                                                <div className="mt-4">
-                                                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 block ml-1">Mode of Travel *</label>
-                                                    <div className="flex gap-4 flex-wrap">
-                                                        {['Bus', 'Car', 'Bike', 'Train'].map(mode => (
-                                                            <label key={mode} className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    className="rounded border-slate-300 text-[#0A84FF] focus:ring-[#0A84FF]"
-                                                                    checked={formData.modeOfTravel.includes(mode)}
-                                                                    onChange={() => handleModeOfTravelToggle(mode)}
-                                                                />
-                                                                {mode}
-                                                            </label>
-                                                        ))}
+                                            <div className="space-y-4 pt-2 border-t border-blue-100/80">
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-2 px-1">
+                                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                                            Mode of travel *
+                                                        </label>
+                                                        <span className="text-[11px] font-semibold text-slate-400">
+                                                            Select all that apply
+                                                        </span>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                                        {[
+                                                            { mode: 'Bus', icon: '🚌' },
+                                                            { mode: 'Car', icon: '🚗' },
+                                                            { mode: 'Bike', icon: '🏍️' },
+                                                            { mode: 'Train', icon: '🚆' }
+                                                        ].map(({ mode, icon }) => {
+                                                            const isChecked = formData.modeOfTravel.includes(mode);
+                                                            return (
+                                                                <button
+                                                                    key={mode}
+                                                                    type="button"
+                                                                    onClick={() => handleModeOfTravelToggle(mode)}
+                                                                    disabled={loading}
+                                                                    className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                                                                        isChecked
+                                                                            ? 'bg-blue-50 border-[#0A84FF] text-[#0A84FF] shadow-xs'
+                                                                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-lg">{icon}</span>
+                                                                        <span className="text-xs font-bold">{mode}</span>
+                                                                    </div>
+                                                                    <div className={`w-4 h-4 rounded-md border flex items-center justify-center ${
+                                                                        isChecked ? 'bg-[#0A84FF] border-[#0A84FF] text-white' : 'border-slate-300'
+                                                                    }`}>
+                                                                        {isChecked && <IoCheckmarkOutline className="text-xs stroke-[3]" />}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
-                                                <div className="mt-4">
-                                                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 block ml-1">
-                                                        Travel Charges after Free Radius (₹ per km)
+
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 px-1">
+                                                        Travel Charges after Free Radius
                                                     </label>
                                                     <div className="relative">
                                                         <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-500 font-extrabold text-sm">₹</span>
@@ -1816,20 +1949,24 @@ export default function VendorSignup() {
                                                             min="0"
                                                             step="0.01"
                                                             disabled={loading}
-                                                            className="w-full rounded-2xl border border-slate-200 bg-white p-3.5 pl-8 text-sm font-extrabold text-slate-800 focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
+                                                            className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-9 pr-16 text-sm font-extrabold text-slate-800 focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                                                         />
+                                                        <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-slate-400 font-bold text-xs">/ km</span>
                                                     </div>
+                                                    <p className="text-[11px] text-slate-500 font-medium mt-1.5 px-1">
+                                                        Applicable for client visits beyond your standard service radius.
+                                                    </p>
                                                 </div>
-                                            </>
+                                            </div>
                                         )}
                                     </div>
 
                                     {formData.address?.geoLocation?.formattedAddress && (
                                         <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3">
-                                            <IoCheckmarkCircleOutline className="text-emerald-500 text-xl mt-0.5" />
-                                            <div className="flex-1">
-                                                <p className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-tight">Verified Address</p>
-                                                <p className="text-xs sm:text-sm text-emerald-800 font-bold">{formData.address.geoLocation.formattedAddress}</p>
+                                            <IoCheckmarkCircleOutline className="text-emerald-500 text-xl mt-0.5 shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-tight">Verified Primary Address</p>
+                                                <p className="text-xs sm:text-sm text-emerald-800 font-bold break-words">{formData.address.geoLocation.formattedAddress}</p>
                                             </div>
                                         </div>
                                     )}

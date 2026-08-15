@@ -209,7 +209,10 @@ export default function VendorOTPVerification() {
             if (registrationData.state) formDataToSend.append('state', registrationData.state);
             if (registrationData.serviceRadius) formDataToSend.append('serviceRadius', registrationData.serviceRadius);
             if (registrationData.serviceRadius === "Multiple states" && registrationData.multipleStates) {
-                formDataToSend.append('multipleStates', registrationData.multipleStates);
+                const statesData = Array.isArray(registrationData.multipleStates)
+                    ? JSON.stringify(registrationData.multipleStates)
+                    : registrationData.multipleStates;
+                formDataToSend.append('multipleStates', statesData);
             }
             if (registrationData.willingToTravel) formDataToSend.append('willingToTravel', registrationData.willingToTravel);
             if (registrationData.willingToTravel === "Yes") {

@@ -980,7 +980,7 @@ const getNearbyVendors = async (req, res) => {
 
     // First, get all vendors with services populated (no status filter - show all services)
     const vendors = await Vendor.find(query)
-      .select('name email phone experience rating bookingStats serviceAreas designation address location services servicePrice workingDays workingHours aboutExpert languages availableServices instruments')
+      .select('name email phone experience rating bookingStats serviceAreas designation address location services servicePrice workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates')
       .populate({
         path: 'services',
         // Removed match filter - show all services regardless of status
@@ -1182,7 +1182,7 @@ const getVendorProfile = async (req, res) => {
     }
 
     const vendor = await Vendor.findById(vendorId)
-      .select('name email phone experience rating bookingStats serviceAreas address location services isActive isApproved gender designation educationalQualifications workingDays workingHours aboutExpert languages availableServices instruments')
+      .select('name email phone experience rating bookingStats serviceAreas address location services isActive isApproved gender designation educationalQualifications workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates')
       .populate({
         path: 'services',
         select: 'name category price description images status isActive machineType'

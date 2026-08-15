@@ -50,6 +50,9 @@ import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
+import CustomDropdown from "../../shared/components/CustomDropdown";
+import MultipleStatesDropdown from "../../shared/components/MultipleStatesDropdown";
+import { getStatesList, getDistrictsList, findStateForDistrict } from "../../../utils/indianStatesDistricts";
 import { useToast } from "../../../hooks/useToast";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 
@@ -130,6 +133,13 @@ export default function VendorProfile() {
         gender: "",
         designation: "",
         experience: "",
+        district: "",
+        state: "",
+        serviceRadius: "50 km",
+        multipleStates: [],
+        willingToTravel: "Yes",
+        modeOfTravel: ['Car', 'Bike'],
+        travelChargesPerKm: "",
         address: {
             coordinates: null,
             geoLocation: null
@@ -192,6 +202,23 @@ export default function VendorProfile() {
                     gender: vendorData.gender || "",
                     designation: vendorData.designation || "",
                     experience: vendorData.experience?.toString() || "",
+                    district: vendorData.district || vendorData.address?.district || "",
+                    state: vendorData.state || vendorData.address?.state || "",
+                    serviceRadius: vendorData.serviceRadius || "50 km",
+                    multipleStates: Array.isArray(vendorData.multipleStates)
+                        ? vendorData.multipleStates
+                        : (typeof vendorData.multipleStates === 'string' && vendorData.multipleStates
+                            ? vendorData.multipleStates.split(',').map(s => s.trim()).filter(Boolean)
+                            : []),
+                    willingToTravel: vendorData.willingToTravel || "Yes",
+                    modeOfTravel: Array.isArray(vendorData.modeOfTravel)
+                        ? vendorData.modeOfTravel
+                        : (typeof vendorData.modeOfTravel === 'string' && vendorData.modeOfTravel
+                            ? vendorData.modeOfTravel.split(',').map(s => s.trim()).filter(Boolean)
+                            : ['Car', 'Bike']),
+                    travelChargesPerKm: vendorData.travelChargesPerKm !== undefined && vendorData.travelChargesPerKm !== null
+                        ? vendorData.travelChargesPerKm.toString()
+                        : "",
                     address: address,
                     profilePicture:
                         vendorData.documents?.profilePicture?.url || null,
@@ -280,9 +307,31 @@ export default function VendorProfile() {
         const selectedLat = placeData.lat;
         const selectedLng = placeData.lng;
 
+        // Auto-extract state and district from Google address components
+        let autoState = "";
+        let autoDistrict = "";
+        const components = placeData.addressComponents || placeData.place?.address_components || [];
+        for (const comp of components) {
+            if (comp.types?.includes('administrative_area_level_1')) {
+                autoState = comp.long_name || comp.short_name || "";
+            }
+            if (comp.types?.includes('administrative_area_level_2')) {
+                autoDistrict = comp.long_name || comp.short_name || "";
+            }
+            if (!autoDistrict && comp.types?.includes('locality')) {
+                autoDistrict = comp.long_name || comp.short_name || "";
+            }
+        }
+        if (autoDistrict && !autoState) {
+            const matched = findStateForDistrict(autoDistrict);
+            if (matched) autoState = matched;
+        }
+
         // Store in registration format
         setProfileData(prev => ({
             ...prev,
+            district: autoDistrict || prev.district,
+            state: autoState || prev.state,
             address: {
                 coordinates: (selectedLat && selectedLng) ? {
                     lat: selectedLat,
@@ -411,6 +460,13 @@ export default function VendorProfile() {
                 gender: profileData.gender || null,
                 designation: profileData.designation || null,
                 experience: parseInt(profileData.experience, 10) || 0,
+                district: profileData.district || null,
+                state: profileData.state || null,
+                serviceRadius: profileData.serviceRadius || "50 km",
+                multipleStates: profileData.multipleStates || [],
+                willingToTravel: profileData.willingToTravel || "Yes",
+                modeOfTravel: profileData.modeOfTravel || [],
+                travelChargesPerKm: profileData.travelChargesPerKm ? parseFloat(profileData.travelChargesPerKm) : 0,
                 address: addressToSave, // Send as object, not stringified
                 workingDays: normalizeWorkingDays(profileData.workingDays),
                 workingHours: normalizeWorkingHours(profileData.workingHours),
@@ -970,48 +1026,272 @@ export default function VendorProfile() {
                         </div>
                     </div>
 
-                    {/* Section: Location and Address */}
+                    {/* Section: Location and Service Area */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
+                        <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <IoLocationOutline className="text-red-500" />
-                                Service Location
+                                <IoLocationOutline className="text-blue-500 text-xl" />
+                                Service Area &amp; Coverage
                             </h3>
+                            {isEditing && (
+                                <span className="text-xs font-bold text-[#0A84FF] bg-blue-50 px-2.5 py-1 rounded-full">
+                                    Editing Service Area
+                                </span>
+                            )}
                         </div>
                         <div className="p-6">
                             {isEditing ? (
                                 <div className="space-y-4">
-                                    <div className="relative">
-                                        <PlaceAutocompleteInput
-                                            onPlaceSelect={handleAddressSelect}
-                                            placeholder="Update your primary address..."
-                                            value={fullAddress}
-                                            onChange={(e) => setFullAddress(e.target.value)}
+                                    {/* Primary Service Location Search */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                            Primary Service Location *
+                                        </label>
+                                        <div className="relative">
+                                            <PlaceAutocompleteInput
+                                                onPlaceSelect={handleAddressSelect}
+                                                placeholder="Enter colony, street, area or landmark..."
+                                                value={fullAddress}
+                                                onChange={(e) => setFullAddress(e.target.value)}
+                                                disabled={saving || gettingLocation}
+                                                className="w-full rounded-xl border-gray-200 bg-gray-50 p-4 pl-12 focus:border-blue-500 focus:ring-blue-500 text-sm font-medium"
+                                                countryRestriction="in"
+                                            />
+                                            <IoLocationOutline className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-xl" />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={getCurrentLocation}
                                             disabled={saving || gettingLocation}
-                                            className="w-full rounded-xl border-gray-200 bg-gray-50 p-4 pl-12 focus:border-blue-500 focus:ring-blue-500"
-                                            countryRestriction="in"
-                                        />
-                                        <IoLocationOutline className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 text-xl" />
+                                            className="mt-2 w-full md:w-auto flex items-center justify-center gap-2 bg-blue-50 text-blue-600 px-5 py-2.5 rounded-xl text-xs font-extrabold hover:bg-blue-100 transition-colors cursor-pointer"
+                                        >
+                                            <IoLocationOutline className="text-base" />
+                                            {gettingLocation ? "Detecting location..." : "GPS Pin (Use My Current Location)"}
+                                        </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={getCurrentLocation}
-                                        disabled={saving || gettingLocation}
-                                        className="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-50 text-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-100 transition-colors"
-                                    >
-                                        <IoLocationOutline className="text-lg" />
-                                        {gettingLocation ? "Detecting location..." : "Use My Current GPS Location"}
-                                    </button>
+
+                                    {/* State & District Grid */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <CustomDropdown
+                                                label="State *"
+                                                name="state"
+                                                options={[
+                                                    { value: "", label: "Select State / UT" },
+                                                    ...getStatesList().map(st => ({ value: st, label: st }))
+                                                ]}
+                                                value={profileData.state}
+                                                onChange={(e) => {
+                                                    const newState = e.target.value;
+                                                    setProfileData(prev => ({
+                                                        ...prev,
+                                                        state: newState,
+                                                        district: getDistrictsList(newState).includes(prev.district) ? prev.district : ""
+                                                    }));
+                                                }}
+                                                disabled={saving}
+                                            />
+                                        </div>
+                                        <div>
+                                            <CustomDropdown
+                                                label="District *"
+                                                name="district"
+                                                options={[
+                                                    { value: "", label: profileData.state ? `Select District in ${profileData.state}` : "Select District" },
+                                                    ...getDistrictsList(profileData.state).map(d => ({ value: d, label: d }))
+                                                ]}
+                                                value={profileData.district}
+                                                onChange={(e) => setProfileData(prev => ({ ...prev, district: e.target.value }))}
+                                                disabled={saving}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Service Radius */}
+                                    <div>
+                                        <CustomDropdown
+                                            label="Service Radius *"
+                                            name="serviceRadius"
+                                            options={[
+                                                { value: "", label: "Select Service Radius" },
+                                                { value: "10 km", label: "10 km" },
+                                                { value: "20 km", label: "20 km" },
+                                                { value: "30 km", label: "30 km" },
+                                                { value: "50 km", label: "50 km" },
+                                                { value: "100 km", label: "100 km" },
+                                                { value: "200 km", label: "200 km" },
+                                                { value: "Entire District", label: "Entire District" },
+                                                { value: "Entire State", label: "Entire State" },
+                                                { value: "Multiple states", label: "Multiple states" }
+                                            ]}
+                                            value={profileData.serviceRadius}
+                                            onChange={(e) => setProfileData(prev => ({ ...prev, serviceRadius: e.target.value }))}
+                                            disabled={saving}
+                                        />
+                                    </div>
+
+                                    {/* Multiple States Multi-select (Shown when "Multiple states" is selected) */}
+                                    {profileData.serviceRadius === "Multiple states" && (
+                                        <div>
+                                            <MultipleStatesDropdown
+                                                label="Multiple states drop down menu *"
+                                                value={profileData.multipleStates}
+                                                onChange={(selected) => setProfileData(prev => ({ ...prev, multipleStates: selected }))}
+                                                disabled={saving}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Willing to Travel Toggle */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                            Willing to Travel? *
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-3 max-w-xs">
+                                            {['Yes', 'No'].map((opt) => (
+                                                <button
+                                                    key={opt}
+                                                    type="button"
+                                                    onClick={() => setProfileData(prev => ({ ...prev, willingToTravel: opt }))}
+                                                    disabled={saving}
+                                                    className={`py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                                                        profileData.willingToTravel === opt
+                                                            ? 'bg-[#0A84FF] text-white border-[#0A84FF] shadow-xs'
+                                                            : 'bg-gray-50 text-slate-700 border-gray-200 hover:border-gray-300'
+                                                    }`}
+                                                >
+                                                    {profileData.willingToTravel === opt && <IoCheckmarkOutline className="text-sm" />}
+                                                    {opt}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Mode of travel & Travel charges */}
+                                    {profileData.willingToTravel === "Yes" && (
+                                        <div className="space-y-4 pt-3 border-t border-gray-100">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                                    Mode of travel *
+                                                </label>
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                                    {[
+                                                        { mode: 'Bus', icon: '🚌' },
+                                                        { mode: 'Car', icon: '🚗' },
+                                                        { mode: 'Bike', icon: '🏍️' },
+                                                        { mode: 'Train', icon: '🚆' }
+                                                    ].map(({ mode, icon }) => {
+                                                        const isChecked = profileData.modeOfTravel?.includes(mode);
+                                                        return (
+                                                            <button
+                                                                key={mode}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setProfileData(prev => ({
+                                                                        ...prev,
+                                                                        modeOfTravel: isChecked
+                                                                            ? prev.modeOfTravel.filter(m => m !== mode)
+                                                                            : [...(prev.modeOfTravel || []), mode]
+                                                                    }));
+                                                                }}
+                                                                disabled={saving}
+                                                                className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                                                                    isChecked
+                                                                        ? 'bg-blue-50 border-[#0A84FF] text-[#0A84FF]'
+                                                                        : 'bg-gray-50 border-gray-200 text-slate-700 hover:border-gray-300'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-base">{icon}</span>
+                                                                    <span className="text-xs font-bold">{mode}</span>
+                                                                </div>
+                                                                <div className={`w-4 h-4 rounded-md border flex items-center justify-center ${
+                                                                    isChecked ? 'bg-[#0A84FF] border-[#0A84FF] text-white' : 'border-slate-300 bg-white'
+                                                                }`}>
+                                                                    {isChecked && <IoCheckmarkOutline className="text-xs stroke-[3]" />}
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                    Travel Charges after Free Radius (₹ per km)
+                                                </label>
+                                                <div className="relative max-w-xs">
+                                                    <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-500 font-extrabold text-sm">₹</span>
+                                                    <input
+                                                        type="number"
+                                                        value={profileData.travelChargesPerKm}
+                                                        onChange={(e) => setProfileData(prev => ({ ...prev, travelChargesPerKm: e.target.value }))}
+                                                        placeholder="0.00"
+                                                        min="0"
+                                                        step="0.01"
+                                                        disabled={saving}
+                                                        className="w-full rounded-xl border-gray-200 bg-gray-50 p-3 pl-9 pr-14 text-sm font-bold text-slate-800 focus:border-blue-500 focus:ring-blue-500 outline-none"
+                                                    />
+                                                    <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-slate-400 font-bold text-xs">/ km</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
-                                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
-                                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                                        <IoHomeOutline className="text-blue-600" />
+                                <div className="space-y-3">
+                                    <div className="flex items-start gap-3.5 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0 text-blue-600">
+                                            <IoHomeOutline className="text-lg" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Primary Operations Base</p>
+                                            <p className="text-sm font-bold text-gray-800 break-words">{fullAddress || "Address details not provided"}</p>
+                                            {(profileData.district || profileData.state) && (
+                                                <p className="text-xs font-semibold text-[#0A84FF] mt-0.5">
+                                                    {[profileData.district, profileData.state].filter(Boolean).join(', ')}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Primary Operations Base</p>
-                                        <p className="text-base font-semibold text-gray-800">{fullAddress || "Address details not provided"}</p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Service Radius</p>
+                                            <p className="text-sm font-extrabold text-slate-800">
+                                                {profileData.serviceRadius || "50 km"}
+                                            </p>
+                                        </div>
+                                        <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Willing to Travel</p>
+                                            <p className="text-sm font-extrabold text-slate-800">
+                                                {profileData.willingToTravel === 'Yes'
+                                                    ? `Yes (${profileData.modeOfTravel?.length > 0 ? profileData.modeOfTravel.join(', ') : 'All Modes'})`
+                                                    : 'No'}
+                                            </p>
+                                        </div>
+                                        <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Travel Rate</p>
+                                            <p className="text-sm font-extrabold text-emerald-600">
+                                                {profileData.willingToTravel === 'Yes' && parseFloat(profileData.travelChargesPerKm) > 0
+                                                    ? `₹${profileData.travelChargesPerKm} / km`
+                                                    : 'Standard Rates'}
+                                            </p>
+                                        </div>
                                     </div>
+
+                                    {profileData.serviceRadius === "Multiple states" && profileData.multipleStates?.length > 0 && (
+                                        <div className="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100/80">
+                                            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-1.5">Covered States</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {profileData.multipleStates.map((st) => (
+                                                    <span key={st} className="px-2.5 py-0.5 bg-white border border-blue-200 text-blue-700 text-xs font-bold rounded-lg shadow-2xs">
+                                                        {st}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
