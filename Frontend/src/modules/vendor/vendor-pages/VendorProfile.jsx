@@ -2590,8 +2590,10 @@ function StatItem({ icon, label, value, subValue, color, bgColor }) {
     );
 }
 
-function InfoField({ icon, label, value, isEditing, onChange, type = "text", options }) {
+function InfoField({ icon, label, value, isEditing, onChange, type = "text", options, placeholder = "Select Value" }) {
     const Icon = icon;
+    const formattedOptions = options ? options.map(opt => (typeof opt === 'object' ? opt : { value: opt, label: opt })) : [];
+
     return (
         <div className="space-y-2">
             <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -2600,19 +2602,15 @@ function InfoField({ icon, label, value, isEditing, onChange, type = "text", opt
             </label>
             {isEditing ? (
                 type === "select" ? (
-                    <div className="relative">
-                        <select
-                            value={value || ""}
-                            onChange={(e) => onChange(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all appearance-none"
-                        >
-                            <option value="">Select Value</option>
-                            {options.map((opt, i) => (
-                                <option key={i} value={opt}>{opt}</option>
-                            ))}
-                        </select>
-                        <IoChevronForwardOutline className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 rotate-90 pointer-events-none" />
-                    </div>
+                    <CustomDropdown
+                        options={formattedOptions}
+                        value={value || ""}
+                        onChange={(val) => {
+                            const selectedVal = typeof val === 'object' && val?.target ? val.target.value : val;
+                            onChange(selectedVal);
+                        }}
+                        placeholder={placeholder}
+                    />
                 ) : (
                     <input
                         type={type}

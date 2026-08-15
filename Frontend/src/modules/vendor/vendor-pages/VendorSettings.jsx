@@ -541,18 +541,20 @@ export default function VendorSettings() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-800">Payout Settlement Speed</label>
-                                <select
-                                    value={settings.payoutFrequency}
-                                    onChange={(e) => setSettings({ ...settings, payoutFrequency: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0A84FF] bg-white"
-                                >
-                                    <option value="INSTANT">Instant Settlement (Upon Report Approval)</option>
-                                    <option value="DAILY">Daily Batch Transfer (6:00 PM)</option>
-                                    <option value="WEEKLY">Weekly Transfer (Every Monday)</option>
-                                </select>
-                            </div>
+                            <CustomDropdown
+                                label="Payout Settlement Speed"
+                                name="payoutFrequency"
+                                options={[
+                                    { value: "INSTANT", label: "Instant Settlement (Upon Report Approval)" },
+                                    { value: "DAILY", label: "Daily Batch Transfer (6:00 PM)" },
+                                    { value: "WEEKLY", label: "Weekly Transfer (Every Monday)" }
+                                ]}
+                                value={settings.payoutFrequency || "INSTANT"}
+                                onChange={(val) => {
+                                    const value = typeof val === 'object' && val?.target ? val.target.value : val;
+                                    setSettings({ ...settings, payoutFrequency: value });
+                                }}
+                            />
                         </div>
                     </div>
                 )}
@@ -571,21 +573,23 @@ export default function VendorSettings() {
                         </div>
 
                         <div className="space-y-4 max-w-md">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-800">Portal Language</label>
-                                <select
-                                    value={settings.language}
-                                    onChange={(e) => setSettings({ ...settings, language: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0A84FF] bg-white"
-                                >
-                                    <option value="en">English</option>
-                                    <option value="hi">हिंदी (Hindi)</option>
-                                    <option value="kn">ಕನ್ನಡ (Kannada)</option>
-                                    <option value="te">తెలుగు (Telugu)</option>
-                                    <option value="ta">தமிழ் (Tamil)</option>
-                                    <option value="mr">मराठी (Marathi)</option>
-                                </select>
-                            </div>
+                            <CustomDropdown
+                                label="Portal Language"
+                                name="language"
+                                options={[
+                                    { value: "en", label: "English" },
+                                    { value: "hi", label: "हिंदी (Hindi)" },
+                                    { value: "kn", label: "ಕನ್ನಡ (Kannada)" },
+                                    { value: "te", label: "తెలుగు (Telugu)" },
+                                    { value: "ta", label: "தமிழ் (Tamil)" },
+                                    { value: "mr", label: "मराठी (Marathi)" }
+                                ]}
+                                value={settings.language || "en"}
+                                onChange={(val) => {
+                                    const value = typeof val === 'object' && val?.target ? val.target.value : val;
+                                    setSettings({ ...settings, language: value });
+                                }}
+                            />
                         </div>
                     </div>
                 )}
