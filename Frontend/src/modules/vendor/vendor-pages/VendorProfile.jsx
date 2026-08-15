@@ -140,6 +140,14 @@ export default function VendorProfile() {
         willingToTravel: "Yes",
         modeOfTravel: ['Car', 'Bike'],
         travelChargesPerKm: "",
+        bankDetails: {
+            accountHolderName: "",
+            accountNumber: "",
+            ifscCode: "",
+            bankName: "",
+            branchName: "",
+            isVerified: false
+        },
         address: {
             coordinates: null,
             geoLocation: null
@@ -219,6 +227,14 @@ export default function VendorProfile() {
                     travelChargesPerKm: vendorData.travelChargesPerKm !== undefined && vendorData.travelChargesPerKm !== null
                         ? vendorData.travelChargesPerKm.toString()
                         : "",
+                    bankDetails: {
+                        accountHolderName: vendorData.bankDetails?.accountHolderName || "",
+                        accountNumber: vendorData.bankDetails?.accountNumber || "",
+                        ifscCode: vendorData.bankDetails?.ifscCode || "",
+                        bankName: vendorData.bankDetails?.bankName || "",
+                        branchName: vendorData.bankDetails?.branchName || "",
+                        isVerified: vendorData.bankDetails?.isVerified || false
+                    },
                     address: address,
                     profilePicture:
                         vendorData.documents?.profilePicture?.url || null,
@@ -467,6 +483,13 @@ export default function VendorProfile() {
                 willingToTravel: profileData.willingToTravel || "Yes",
                 modeOfTravel: profileData.modeOfTravel || [],
                 travelChargesPerKm: profileData.travelChargesPerKm ? parseFloat(profileData.travelChargesPerKm) : 0,
+                bankDetails: profileData.bankDetails?.accountNumber ? {
+                    accountHolderName: profileData.bankDetails.accountHolderName || "",
+                    accountNumber: profileData.bankDetails.accountNumber || "",
+                    ifscCode: profileData.bankDetails.ifscCode ? profileData.bankDetails.ifscCode.toUpperCase() : "",
+                    bankName: profileData.bankDetails.bankName || "",
+                    branchName: profileData.bankDetails.branchName || ""
+                } : undefined,
                 address: addressToSave, // Send as object, not stringified
                 workingDays: normalizeWorkingDays(profileData.workingDays),
                 workingHours: normalizeWorkingHours(profileData.workingHours),
@@ -1629,26 +1652,131 @@ export default function VendorProfile() {
                         <div className="p-6 space-y-8">
                             {/* Bank Details */}
                             <div>
-                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Bank Information</h4>
-                                {vendor?.bankDetails ? (
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Bank Information</h4>
+                                    {!isEditing && !vendor?.bankDetails?.accountNumber && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditing(true)}
+                                            className="text-xs font-bold text-[#0A84FF] hover:underline flex items-center gap-1 cursor-pointer"
+                                        >
+                                            <IoPencilOutline /> Add Bank Details
+                                        </button>
+                                    )}
+                                </div>
+                                {isEditing ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                Account Holder Name *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={profileData.bankDetails?.accountHolderName || ""}
+                                                onChange={(e) => setProfileData(prev => ({
+                                                    ...prev,
+                                                    bankDetails: { ...prev.bankDetails, accountHolderName: e.target.value }
+                                                }))}
+                                                placeholder="Name as per bank passbook"
+                                                disabled={saving}
+                                                className="w-full rounded-xl border-gray-200 bg-white p-3 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:ring-blue-500 outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                Bank Name *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={profileData.bankDetails?.bankName || ""}
+                                                onChange={(e) => setProfileData(prev => ({
+                                                    ...prev,
+                                                    bankDetails: { ...prev.bankDetails, bankName: e.target.value }
+                                                }))}
+                                                placeholder="e.g. State Bank of India, HDFC Bank"
+                                                disabled={saving}
+                                                className="w-full rounded-xl border-gray-200 bg-white p-3 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:ring-blue-500 outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                Account Number *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={profileData.bankDetails?.accountNumber || ""}
+                                                onChange={(e) => setProfileData(prev => ({
+                                                    ...prev,
+                                                    bankDetails: { ...prev.bankDetails, accountNumber: e.target.value }
+                                                }))}
+                                                placeholder="Enter 9-18 digit account number"
+                                                disabled={saving}
+                                                className="w-full rounded-xl border-gray-200 bg-white p-3 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:ring-blue-500 outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                IFSC Code *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={profileData.bankDetails?.ifscCode || ""}
+                                                onChange={(e) => setProfileData(prev => ({
+                                                    ...prev,
+                                                    bankDetails: { ...prev.bankDetails, ifscCode: e.target.value.toUpperCase() }
+                                                }))}
+                                                placeholder="e.g. SBIN0001234"
+                                                maxLength={11}
+                                                disabled={saving}
+                                                className="w-full rounded-xl border-gray-200 bg-white p-3 text-sm font-semibold text-slate-800 uppercase focus:border-blue-500 focus:ring-blue-500 outline-none"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                Branch Name (Optional)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={profileData.bankDetails?.branchName || ""}
+                                                onChange={(e) => setProfileData(prev => ({
+                                                    ...prev,
+                                                    bankDetails: { ...prev.bankDetails, branchName: e.target.value }
+                                                }))}
+                                                placeholder="e.g. Indiranagar Branch, Bengaluru"
+                                                disabled={saving}
+                                                className="w-full rounded-xl border-gray-200 bg-white p-3 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:ring-blue-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (vendor?.bankDetails?.accountNumber || profileData.bankDetails?.accountNumber) ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <InfoBlock label="Account Holder" value={vendor.bankDetails.accountHolderName} />
-                                        <InfoBlock label="Bank Name" value={vendor.bankDetails.bankName} />
-                                        <InfoBlock label="Account Number" value={vendor.bankDetails.accountNumber || "N/A"} />
-                                        <InfoBlock label="IFSC Code" value={vendor.bankDetails.ifscCode} />
-                                        {vendor.bankDetails.branchName && (
-                                            <InfoBlock label="Branch" value={vendor.bankDetails.branchName} />
+                                        <InfoBlock label="Account Holder" value={vendor?.bankDetails?.accountHolderName || profileData.bankDetails?.accountHolderName} />
+                                        <InfoBlock label="Bank Name" value={vendor?.bankDetails?.bankName || profileData.bankDetails?.bankName} />
+                                        <InfoBlock label="Account Number" value={vendor?.bankDetails?.accountNumber || profileData.bankDetails?.accountNumber || "N/A"} />
+                                        <InfoBlock label="IFSC Code" value={vendor?.bankDetails?.ifscCode || profileData.bankDetails?.ifscCode} />
+                                        {(vendor?.bankDetails?.branchName || profileData.bankDetails?.branchName) && (
+                                            <InfoBlock label="Branch" value={vendor?.bankDetails?.branchName || profileData.bankDetails?.branchName} />
                                         )}
                                         <div className="md:col-span-2 mt-2">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${vendor.bankDetails.isVerified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                {vendor.bankDetails.isVerified ? <IoCheckmarkCircle /> : <IoAlertCircleOutline />}
-                                                {vendor.bankDetails.isVerified ? 'Verified Account' : 'Verification Pending'}
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${(vendor?.bankDetails?.isVerified || profileData.bankDetails?.isVerified) ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {(vendor?.bankDetails?.isVerified || profileData.bankDetails?.isVerified) ? <IoCheckmarkCircle /> : <IoAlertCircleOutline />}
+                                                {(vendor?.bankDetails?.isVerified || profileData.bankDetails?.isVerified) ? 'Verified Account' : 'Verification Pending'}
                                             </span>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100 text-center">
-                                        <p className="text-sm text-yellow-800 font-medium">No bank details added yet.</p>
+                                    <div className="p-5 bg-amber-50/70 rounded-2xl border border-amber-200/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                                        <div>
+                                            <p className="text-sm font-bold text-amber-900">No bank details added yet.</p>
+                                            <p className="text-xs text-amber-700 mt-0.5">Add your bank account details for payouts and settlements.</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditing(true)}
+                                            className="shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                                        >
+                                            + Add Bank Details
+                                        </button>
                                     </div>
                                 )}
                             </div>

@@ -502,8 +502,38 @@ const register = async (req, res) => {
     const vendor = await Vendor.create(vendorData);
 
     // Create bank details in separate collection
-    const parsedBankDetails = typeof bankDetails === 'string' ? JSON.parse(bankDetails) : bankDetails;
-    if (parsedBankDetails) {
+    let parsedBankDetails = null;
+    if (bankDetails) {
+      if (typeof bankDetails === 'string') {
+        try {
+          parsedBankDetails = JSON.parse(bankDetails);
+        } catch (e) {
+          parsedBankDetails = null;
+        }
+      } else if (typeof bankDetails === 'object') {
+        parsedBankDetails = bankDetails;
+      }
+    }
+
+    if (!parsedBankDetails) {
+      const accountHolder = req.body['bankDetails[accountHolderName]'] || req.body['bankDetails.accountHolderName'] || req.body.accountHolderName;
+      const accountNum = req.body['bankDetails[accountNumber]'] || req.body['bankDetails.accountNumber'] || req.body.accountNumber;
+      const ifsc = req.body['bankDetails[ifscCode]'] || req.body['bankDetails.ifscCode'] || req.body.ifscCode;
+      const bank = req.body['bankDetails[bankName]'] || req.body['bankDetails.bankName'] || req.body.bankName;
+      const branch = req.body['bankDetails[branchName]'] || req.body['bankDetails.branchName'] || req.body.branchName;
+
+      if (accountHolder && accountNum && ifsc && bank) {
+        parsedBankDetails = {
+          accountHolderName: accountHolder,
+          accountNumber: accountNum,
+          ifscCode: ifsc,
+          bankName: bank,
+          branchName: branch || null
+        };
+      }
+    }
+
+    if (parsedBankDetails && parsedBankDetails.accountNumber) {
       await VendorBankDetails.create({
         vendor: vendor._id,
         accountHolderName: parsedBankDetails.accountHolderName,

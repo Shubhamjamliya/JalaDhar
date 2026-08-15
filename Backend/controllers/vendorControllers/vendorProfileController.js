@@ -55,10 +55,17 @@ const getProfile = async (req, res) => {
     }
 
     // Get bank details and documents from separate collections
-    const [bankDetails, documents] = await Promise.all([
+    let [bankDetails, documents] = await Promise.all([
       VendorBankDetails.findOne({ vendor: req.userId, isActive: true }).lean(),
       VendorDocument.find({ vendor: req.userId, isActive: true }).lean()
     ]);
+
+    if (!bankDetails) {
+      bankDetails = await VendorBankDetails.findOne({ vendor: req.userId }).lean();
+    }
+    if (!bankDetails && vendor.bankDetails) {
+      bankDetails = vendor.bankDetails;
+    }
 
     // Format documents similar to old structure for backward compatibility
     const formattedDocuments = {};
@@ -239,40 +246,65 @@ const updateProfile = async (req, res) => {
     await vendor.save();
 
     // Handle bank details update separately
-    if (req.body.bankDetails !== undefined) {
-      const bankDetailsData = typeof req.body.bankDetails === 'string'
-        ? JSON.parse(req.body.bankDetails)
-        : req.body.bankDetails;
+    if (req.body.bankDetails !== undefined || req.body['bankDetails[accountHolderName]'] !== undefined || req.body.accountNumber !== undefined) {
+      let bankDetailsData = null;
+      if (typeof req.body.bankDetails === 'string') {
+        try {
+          bankDetailsData = JSON.parse(req.body.bankDetails);
+        } catch (e) {
+          bankDetailsData = null;
+        }
+      } else if (typeof req.body.bankDetails === 'object') {
+        bankDetailsData = req.body.bankDetails;
+      }
 
-      // Find existing bank details or create new
-      let bankDetails = await VendorBankDetails.findOne({ vendor: vendorId });
+      if (!bankDetailsData) {
+        const holder = req.body['bankDetails[accountHolderName]'] || req.body['bankDetails.accountHolderName'] || req.body.accountHolderName;
+        const num = req.body['bankDetails[accountNumber]'] || req.body['bankDetails.accountNumber'] || req.body.accountNumber;
+        const ifsc = req.body['bankDetails[ifscCode]'] || req.body['bankDetails.ifscCode'] || req.body.ifscCode;
+        const bank = req.body['bankDetails[bankName]'] || req.body['bankDetails.bankName'] || req.body.bankName;
+        const branch = req.body['bankDetails[branchName]'] || req.body['bankDetails.branchName'] || req.body.branchName;
+        if (holder && num && ifsc && bank) {
+          bankDetailsData = {
+            accountHolderName: holder,
+            accountNumber: num,
+            ifscCode: ifsc,
+            bankName: bank,
+            branchName: branch || null
+          };
+        }
+      }
 
-      if (bankDetails) {
-        // Store previous account number for audit
-        bankDetails.previousAccountNumber = bankDetails.accountNumber;
-        bankDetails.accountHolderName = bankDetailsData.accountHolderName;
-        bankDetails.accountNumber = bankDetailsData.accountNumber;
-        bankDetails.ifscCode = bankDetailsData.ifscCode;
-        bankDetails.bankName = bankDetailsData.bankName;
-        bankDetails.branchName = bankDetailsData.branchName || null;
-        bankDetails.isVerified = false; // Reset verification on update
-        bankDetails.verifiedBy = null;
-        bankDetails.verifiedAt = null;
-        bankDetails.updatedBy = vendorId;
-        await bankDetails.save();
-      } else {
-        // Create new bank details
-        bankDetails = await VendorBankDetails.create({
-          vendor: vendorId,
-          accountHolderName: bankDetailsData.accountHolderName,
-          accountNumber: bankDetailsData.accountNumber,
-          ifscCode: bankDetailsData.ifscCode,
-          bankName: bankDetailsData.bankName,
-          branchName: bankDetailsData.branchName || null,
-          isActive: true,
-          isVerified: false,
-          updatedBy: vendorId
-        });
+      if (bankDetailsData && bankDetailsData.accountNumber) {
+        // Find existing bank details or create new
+        let bankDetails = await VendorBankDetails.findOne({ vendor: vendorId });
+
+        if (bankDetails) {
+          // Store previous account number for audit
+          bankDetails.previousAccountNumber = bankDetails.accountNumber;
+          bankDetails.accountHolderName = bankDetailsData.accountHolderName;
+          bankDetails.accountNumber = bankDetailsData.accountNumber;
+          bankDetails.ifscCode = bankDetailsData.ifscCode ? bankDetailsData.ifscCode.toUpperCase() : bankDetails.ifscCode;
+          bankDetails.bankName = bankDetailsData.bankName;
+          bankDetails.branchName = bankDetailsData.branchName || null;
+          bankDetails.isActive = true;
+          bankDetails.updatedBy = vendorId;
+          await bankDetails.save();
+        } else {
+          // Create new bank details
+          bankDetails = await VendorBankDetails.create({
+            vendor: vendorId,
+            accountHolderName: bankDetailsData.accountHolderName,
+            accountNumber: bankDetailsData.accountNumber,
+            ifscCode: bankDetailsData.ifscCode ? bankDetailsData.ifscCode.toUpperCase() : '',
+            bankName: bankDetailsData.bankName,
+            branchName: bankDetailsData.branchName || null,
+            isActive: true,
+            isVerified: false,
+            updatedBy: vendorId
+          });
+        }
+        vendor.bankDetails = bankDetails;
       }
     }
 

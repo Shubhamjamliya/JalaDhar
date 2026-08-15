@@ -148,10 +148,18 @@ export default function VendorOTPVerification() {
             }
 
             // Bank details
-            formDataToSend.append('bankDetails[accountHolderName]', registrationData.accountHolderName);
-            formDataToSend.append('bankDetails[accountNumber]', registrationData.accountNumber);
-            formDataToSend.append('bankDetails[ifscCode]', registrationData.ifscCode);
-            formDataToSend.append('bankDetails[bankName]', registrationData.bankName);
+            const bankDetailsPayload = {
+                accountHolderName: registrationData.accountHolderName || '',
+                accountNumber: registrationData.accountNumber || '',
+                ifscCode: registrationData.ifscCode || '',
+                bankName: registrationData.bankName || '',
+                branchName: registrationData.branchName || ''
+            };
+            formDataToSend.append('bankDetails', JSON.stringify(bankDetailsPayload));
+            formDataToSend.append('bankDetails[accountHolderName]', registrationData.accountHolderName || '');
+            formDataToSend.append('bankDetails[accountNumber]', registrationData.accountNumber || '');
+            formDataToSend.append('bankDetails[ifscCode]', registrationData.ifscCode || '');
+            formDataToSend.append('bankDetails[bankName]', registrationData.bankName || '');
             formDataToSend.append('bankDetails[branchName]', registrationData.branchName || '');
 
             // Educational qualifications
