@@ -483,6 +483,77 @@ export default function AdminVendorDetails() {
                         </div>
                     </div>
 
+                    {/* Operational & Survey Capabilities */}
+                    <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] col-span-1 md:col-span-2">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <IoCheckmarkCircleOutline className="text-indigo-600" />
+                            Survey Capabilities & Operational Details
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                            {/* Equipment & Instruments */}
+                            <div className="space-y-2">
+                                <p className="text-xs font-bold text-gray-500 uppercase">Survey Equipment &amp; Instruments</p>
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {(() => {
+                                        const rawInst = vendor.instruments || [];
+                                        const list = Array.isArray(rawInst)
+                                            ? rawInst.map(i => typeof i === 'object' ? (i.name || i.category) : i).filter(Boolean)
+                                            : (typeof rawInst === 'string' && rawInst.trim() ? rawInst.split(',').map(s => s.trim()) : []);
+                                        return list.length > 0 ? (
+                                            list.map((item, idx) => (
+                                                <span key={idx} className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-lg border border-indigo-100">
+                                                    {item}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-gray-400 italic text-xs">No equipment specified</span>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+
+                            {/* Languages & GST */}
+                            <div className="space-y-3">
+                                <div>
+                                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">Languages Spoken</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {Array.isArray(vendor.languages) && vendor.languages.length > 0 ? (
+                                            vendor.languages.map((lang, idx) => (
+                                                <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 font-semibold text-xs rounded-md">
+                                                    {lang}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-gray-500 text-xs">English, Hindi</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="pt-2 border-t border-gray-100">
+                                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">Tax / GST Status</p>
+                                    <p className="text-xs font-semibold text-gray-800">
+                                        GST Registered: <span className="font-bold text-indigo-600">{vendor.isGstRegistered || (vendor.gstNumber ? "Yes" : "No")}</span>
+                                    </p>
+                                    {vendor.gstNumber && (
+                                        <p className="text-xs font-mono font-bold text-gray-700 mt-0.5">GSTIN: {vendor.gstNumber}</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Service Radius & Travel */}
+                            <div className="space-y-2">
+                                <p className="text-xs font-bold text-gray-500 uppercase">Coverage &amp; Travel</p>
+                                <div className="space-y-1 text-xs text-gray-700">
+                                    <p><span className="font-semibold text-gray-500">Service Radius:</span> <span className="font-bold">{vendor.serviceRadius || "50 km"}</span></p>
+                                    <p><span className="font-semibold text-gray-500">Willing to Travel:</span> <span className="font-bold">{vendor.willingToTravel || "Yes"}</span></p>
+                                    <p><span className="font-semibold text-gray-500">Mode of Travel:</span> <span className="font-bold">{Array.isArray(vendor.modeOfTravel) ? vendor.modeOfTravel.join(', ') : (vendor.modeOfTravel || "Car, Bike")}</span></p>
+                                    {vendor.travelChargesPerKm ? (
+                                        <p><span className="font-semibold text-gray-500">Rate / km:</span> <span className="font-bold text-green-600">₹{vendor.travelChargesPerKm}/km</span></p>
+                                    ) : null}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Service Setup */}
                     <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] col-span-1 md:col-span-2">
                         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">

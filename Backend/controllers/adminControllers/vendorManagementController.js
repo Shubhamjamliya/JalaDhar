@@ -146,18 +146,28 @@ const getVendorDetails = async (req, res) => {
     }
 
     // Get bank details and documents from separate collections
-    const [bankDetails, documents, totalServices, activeServices, totalBookings, completedBookings] = await Promise.all([
-      VendorBankDetails.findOne({ vendor: vendorId, isActive: true }).lean(),
-      VendorDocument.find({ vendor: vendorId, isActive: true }).lean(),
+    let [bankDetails, documents, totalServices, activeServices, totalBookings, completedBookings] = await Promise.all([
+      VendorBankDetails.findOne({ vendor: vendorId, isActive: { $ne: false } }).lean(),
+      VendorDocument.find({ vendor: vendorId, isActive: { $ne: false } }).lean(),
       Service.countDocuments({ vendor: vendorId }),
       Service.countDocuments({ vendor: vendorId, isActive: true, status: 'APPROVED' }),
       Booking.countDocuments({ vendor: vendorId }),
       Booking.countDocuments({ vendor: vendorId, status: 'COMPLETED' })
     ]);
 
+    if (!documents || documents.length === 0) {
+      documents = await VendorDocument.find({ vendor: vendorId }).lean();
+    }
+    if (!bankDetails) {
+      bankDetails = await VendorBankDetails.findOne({ vendor: vendorId }).lean();
+    }
+    if (!bankDetails && vendor.bankDetails) {
+      bankDetails = vendor.bankDetails;
+    }
+
     // Format documents similar to old structure for backward compatibility
     const formattedDocuments = {};
-    documents.forEach(doc => {
+    (documents || []).forEach(doc => {
       if (doc.documentType === 'PROFILE_PICTURE') {
         formattedDocuments.profilePicture = {
           url: doc.url,
@@ -166,12 +176,20 @@ const getVendorDetails = async (req, res) => {
           status: doc.status
         };
       } else if (doc.documentType === 'AADHAR') {
-        formattedDocuments.aadharCard = {
+        if (!formattedDocuments.aadharCards) {
+          formattedDocuments.aadharCards = [];
+        }
+        const aadharDoc = {
           url: doc.url,
           publicId: doc.publicId,
           uploadedAt: doc.uploadedAt,
+          name: doc.name || 'Aadhaar Card',
           status: doc.status
         };
+        formattedDocuments.aadharCards.push(aadharDoc);
+        if (!formattedDocuments.aadharCard) {
+          formattedDocuments.aadharCard = aadharDoc;
+        }
       } else if (doc.documentType === 'PAN') {
         formattedDocuments.panCard = {
           url: doc.url,
@@ -218,9 +236,33 @@ const getVendorDetails = async (req, res) => {
       }
     });
 
+    // Check embedded documents on vendor model (for legacy / signup fallback)
+    if (vendor.documents && typeof vendor.documents === 'object') {
+      ['profilePicture', 'aadharCard', 'panCard', 'cancelledCheque', 'groundwaterRegDetails', 'certificates', 'trainingCertificates'].forEach(k => {
+        if (!formattedDocuments[k] && vendor.documents[k]) {
+          formattedDocuments[k] = vendor.documents[k];
+        }
+      });
+    }
+
+    // Top-level field fallbacks on vendor document
+    if (!formattedDocuments.aadharCard && vendor.aadharCard) {
+      formattedDocuments.aadharCard = typeof vendor.aadharCard === 'string' ? { url: vendor.aadharCard } : vendor.aadharCard;
+    }
+    if (!formattedDocuments.panCard && vendor.panCard) {
+      formattedDocuments.panCard = typeof vendor.panCard === 'string' ? { url: vendor.panCard } : vendor.panCard;
+    }
+    if (!formattedDocuments.cancelledCheque && vendor.cancelledCheque) {
+      formattedDocuments.cancelledCheque = typeof vendor.cancelledCheque === 'string' ? { url: vendor.cancelledCheque } : vendor.cancelledCheque;
+    }
+    if (!formattedDocuments.groundwaterRegDetails && vendor.groundwaterRegDetails) {
+      formattedDocuments.groundwaterRegDetails = typeof vendor.groundwaterRegDetails === 'string' ? { url: vendor.groundwaterRegDetails } : vendor.groundwaterRegDetails;
+    }
+
     // Add bankDetails and documents to vendor object
     vendor.bankDetails = bankDetails || null;
     vendor.documents = formattedDocuments;
+    vendor.documentsList = documents || [];
 
     res.json({
       success: true,

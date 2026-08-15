@@ -56,9 +56,13 @@ const getProfile = async (req, res) => {
 
     // Get bank details and documents from separate collections
     let [bankDetails, documents] = await Promise.all([
-      VendorBankDetails.findOne({ vendor: req.userId, isActive: true }).lean(),
-      VendorDocument.find({ vendor: req.userId, isActive: true }).lean()
+      VendorBankDetails.findOne({ vendor: req.userId, isActive: { $ne: false } }).lean(),
+      VendorDocument.find({ vendor: req.userId, isActive: { $ne: false } }).lean()
     ]);
+
+    if (!documents || documents.length === 0) {
+      documents = await VendorDocument.find({ vendor: req.userId }).lean();
+    }
 
     if (!bankDetails) {
       bankDetails = await VendorBankDetails.findOne({ vendor: req.userId }).lean();
@@ -69,7 +73,7 @@ const getProfile = async (req, res) => {
 
     // Format documents similar to old structure for backward compatibility
     const formattedDocuments = {};
-    documents.forEach(doc => {
+    (documents || []).forEach(doc => {
       if (doc.documentType === 'PROFILE_PICTURE') {
         formattedDocuments.profilePicture = {
           url: doc.url,
@@ -131,10 +135,33 @@ const getProfile = async (req, res) => {
       }
     });
 
+    // Check embedded documents on vendor model (for legacy / signup fallback)
+    if (vendor.documents && typeof vendor.documents === 'object') {
+      ['profilePicture', 'aadharCard', 'panCard', 'cancelledCheque', 'groundwaterRegDetails', 'certificates', 'trainingCertificates'].forEach(k => {
+        if (!formattedDocuments[k] && vendor.documents[k]) {
+          formattedDocuments[k] = vendor.documents[k];
+        }
+      });
+    }
+
+    // Top-level field fallbacks on vendor document
+    if (!formattedDocuments.aadharCard && vendor.aadharCard) {
+      formattedDocuments.aadharCard = typeof vendor.aadharCard === 'string' ? { url: vendor.aadharCard } : vendor.aadharCard;
+    }
+    if (!formattedDocuments.panCard && vendor.panCard) {
+      formattedDocuments.panCard = typeof vendor.panCard === 'string' ? { url: vendor.panCard } : vendor.panCard;
+    }
+    if (!formattedDocuments.cancelledCheque && vendor.cancelledCheque) {
+      formattedDocuments.cancelledCheque = typeof vendor.cancelledCheque === 'string' ? { url: vendor.cancelledCheque } : vendor.cancelledCheque;
+    }
+    if (!formattedDocuments.groundwaterRegDetails && vendor.groundwaterRegDetails) {
+      formattedDocuments.groundwaterRegDetails = typeof vendor.groundwaterRegDetails === 'string' ? { url: vendor.groundwaterRegDetails } : vendor.groundwaterRegDetails;
+    }
+
     // Add bankDetails and documents to vendor object
     vendor.bankDetails = bankDetails || null;
     vendor.documents = formattedDocuments;
-    vendor.documentsList = documents;
+    vendor.documentsList = documents || [];
 
     if (!vendor.profilePicture && formattedDocuments.profilePicture?.url) {
       vendor.profilePicture = formattedDocuments.profilePicture.url;
