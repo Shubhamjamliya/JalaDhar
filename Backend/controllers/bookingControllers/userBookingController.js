@@ -243,36 +243,50 @@ const createBooking = async (req, res) => {
     const advancePercentage = settings.ADVANCE_PAYMENT_PERCENTAGE || 40;
     const remainingPercentage = settings.REMAINING_PAYMENT_PERCENTAGE || 60;
 
-    // Get vendor location
-    const vendorLat = vendor.address?.coordinates?.lat;
-    const vendorLng = vendor.address?.coordinates?.lng;
+    // Get vendor location (handles both object and GeoJSON array)
+    let vendorLat = vendor.address?.coordinates?.lat;
+    let vendorLng = vendor.address?.coordinates?.lng;
+    if (vendorLat === undefined && Array.isArray(vendor.address?.coordinates?.coordinates)) {
+      vendorLng = vendor.address.coordinates.coordinates[0];
+      vendorLat = vendor.address.coordinates.coordinates[1];
+    }
 
     // Get user booking location from address
-    const userLat = address.coordinates?.lat;
-    const userLng = address.coordinates?.lng;
+    let userLat = address.coordinates?.lat;
+    let userLng = address.coordinates?.lng;
+    if (userLat === undefined && Array.isArray(address.coordinates?.coordinates)) {
+      userLng = address.coordinates.coordinates[0];
+      userLat = address.coordinates.coordinates[1];
+    }
 
     // Calculate distance
     let distance = null;
     let travelCharges = 0;
-    if (vendorLat && vendorLng && userLat && userLng) {
-      distance = calculateDistance(vendorLat, vendorLng, userLat, userLng);
-      travelCharges = calculateTravelCharges(distance, baseRadius, travelChargePerKm);
+
+    const parsedUserLat = parseFloat(userLat);
+    const parsedUserLng = parseFloat(userLng);
+
+    if (vendorLat != null && vendorLng != null && !isNaN(parsedUserLat) && !isNaN(parsedUserLng)) {
+      distance = calculateDistance(Number(vendorLat), Number(vendorLng), parsedUserLat, parsedUserLng);
+      if (typeof distance === 'number' && !isNaN(distance)) {
+        travelCharges = calculateTravelCharges(distance, baseRadius, travelChargePerKm);
+      }
     }
 
-    // Calculate amounts according to correct formula:
+    // Calculate amounts according to standard formula:
     // 1. Base Service Fee
     // 2. GST (18% on Base Service Fee)
     // 3. Subtotal = Base Service Fee + GST
     // 4. Travel Charges
     // 5. Total Amount = Subtotal + Travel Charges
-    const baseServiceFee = service.price;
+    const baseServiceFee = service.price || 5000;
     const gst = calculateGST(baseServiceFee, gstPercentage);
     const subtotal = baseServiceFee + gst;
     const totalAmount = subtotal + travelCharges;
 
     // Calculate advance and remaining from configurable percentages
-    const advanceAmount = totalAmount * (advancePercentage / 100);
-    const remainingAmount = totalAmount - advanceAmount;
+    const advanceAmount = parseFloat((totalAmount * (advancePercentage / 100)).toFixed(2));
+    const remainingAmount = parseFloat((totalAmount - advanceAmount).toFixed(2));
 
     // Create Razorpay order for advance payment
     let razorpayOrder;
