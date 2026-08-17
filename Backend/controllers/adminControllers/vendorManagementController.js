@@ -87,7 +87,8 @@ const getPendingVendors = async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
 
     const query = {
-      isApproved: false
+      isApproved: false,
+      verificationStatus: { $in: ['APPLICATION_SUBMITTED', 'PENDING', 'MORE_DOCS_NEEDED'] }
     };
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -304,15 +305,16 @@ const approveVendor = async (req, res) => {
       });
     }
 
-    if (vendor.isApproved) {
+    if (vendor.isApproved && vendor.verificationStatus === 'ACTIVATED') {
       return res.status(400).json({
         success: false,
-        message: 'Vendor is already approved'
+        message: 'Vendor is already fully approved and activated'
       });
     }
 
     // Approve vendor documents & identity -> Move to VERIFIED_PENDING_AGREEMENT state
-    vendor.isApproved = true;
+    // isApproved will become true once the expert signs the digital agreement
+    vendor.isApproved = false;
     vendor.verificationStatus = 'VERIFIED_PENDING_AGREEMENT';
     vendor.approvedBy = adminId;
     vendor.approvedAt = new Date();
