@@ -26,7 +26,14 @@ export default function VendorSidebar({ isOpen, onClose }) {
     const { logout, vendor } = useVendorAuth();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-    // Body scroll lock & ESC key listener for accessibility
+    // Auto-close on route change
+    useEffect(() => {
+        if (isOpen) {
+            onClose();
+        }
+    }, [location.pathname, location.search]);
+
+    // Body & HTML scroll lock & ESC key listener for accessibility
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === "Escape" && isOpen) {
@@ -35,17 +42,24 @@ export default function VendorSidebar({ isOpen, onClose }) {
         };
 
         if (isOpen) {
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+            const originalTouchAction = document.body.style.touchAction;
+
             document.body.style.overflow = "hidden";
+            document.documentElement.style.overflow = "hidden";
+            document.body.style.touchAction = "none";
+
             closeRef.current?.focus();
             window.addEventListener("keydown", handleKeyDown);
-        } else {
-            document.body.style.overflow = "";
-        }
 
-        return () => {
-            document.body.style.overflow = "";
-            window.removeEventListener("keydown", handleKeyDown);
-        };
+            return () => {
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+                document.body.style.touchAction = originalTouchAction;
+                window.removeEventListener("keydown", handleKeyDown);
+            };
+        }
     }, [isOpen, onClose]);
 
     const handleLogoutClick = () => {
@@ -106,10 +120,11 @@ export default function VendorSidebar({ isOpen, onClose }) {
         <>
             {/* Backdrop Overlay */}
             <div
-                className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] transition-opacity duration-300 ${
+                className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] transition-opacity duration-300 touch-none ${
                     isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
                 }`}
                 onClick={onClose}
+                onTouchMove={(e) => e.preventDefault()}
                 aria-hidden="true"
             />
 
@@ -118,7 +133,7 @@ export default function VendorSidebar({ isOpen, onClose }) {
                 role="dialog"
                 aria-modal="true"
                 aria-label="Expert Menu"
-                className={`fixed right-0 top-0 h-full w-[300px] sm:w-[320px] bg-white z-[100] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
+                className={`fixed right-0 top-0 h-full w-[300px] sm:w-[320px] bg-white z-[100] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col overscroll-contain ${
                     isOpen ? "translate-x-0" : "translate-x-full"
                 }`}
             >
@@ -181,7 +196,7 @@ export default function VendorSidebar({ isOpen, onClose }) {
                 </div>
 
                 {/* Scrollable Navigation Menu Items */}
-                <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
+                <div className="flex-1 overflow-y-auto p-4 scrollbar-hide overscroll-contain">
                     <div className="flex flex-col gap-3.5 pb-4">
                         {menuGroups.map((group, groupIdx) => (
                             <div key={groupIdx} className="space-y-1.5">

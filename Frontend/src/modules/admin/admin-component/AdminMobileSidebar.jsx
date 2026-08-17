@@ -204,8 +204,38 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
 
     // Auto-close on navigate
     useEffect(() => {
-        onClose();
-    }, [location.pathname]);
+        if (isOpen) {
+            onClose();
+        }
+    }, [location.pathname, location.search]);
+
+    // Body & HTML scroll lock & ESC key listener
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape" && isOpen) {
+                onClose();
+            }
+        };
+
+        if (isOpen) {
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+            const originalTouchAction = document.body.style.touchAction;
+
+            document.body.style.overflow = "hidden";
+            document.documentElement.style.overflow = "hidden";
+            document.body.style.touchAction = "none";
+
+            window.addEventListener("keydown", handleKeyDown);
+
+            return () => {
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+                document.body.style.touchAction = originalTouchAction;
+                window.removeEventListener("keydown", handleKeyDown);
+            };
+        }
+    }, [isOpen, onClose]);
 
     const toggleExpand = (id) => {
         setExpandedItems(prev => ({ [id]: !prev[id] }));
@@ -238,7 +268,8 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99998] lg:hidden"
+                        onTouchMove={(e) => e.preventDefault()}
+                        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99998] lg:hidden touch-none"
                     />
                 )}
             </AnimatePresence>
@@ -251,7 +282,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                         animate={{ x: 0 }}
                         exit={{ x: "-100%" }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="fixed left-0 top-0 bottom-0 w-[280px] bg-slate-800 text-white z-[99999] lg:hidden shadow-2xl flex flex-col font-outfit"
+                        className="fixed left-0 top-0 bottom-0 w-[280px] bg-slate-800 text-white z-[99999] lg:hidden shadow-2xl flex flex-col font-outfit overscroll-contain"
                     >
                         {/* Header Section */}
                         <div className="px-5 py-6 border-b border-slate-700 bg-slate-900">
@@ -279,7 +310,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                         </div>
 
                         {/* Navigation Menu */}
-                        <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
+                        <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar overscroll-contain">
                             {navItems
                                 .filter(item => !item.roles || item.roles.includes(admin?.role))
                                 .map((item) => {

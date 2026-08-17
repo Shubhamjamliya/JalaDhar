@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   IoCloseOutline,
   IoLogOutOutline,
@@ -107,6 +107,7 @@ const menuSections = [
 
 export default function UserSidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const closeRef = useRef(null);
@@ -121,31 +122,60 @@ export default function UserSidebar({ isOpen, onClose }) {
     await logout();
   };
 
+  // Close sidebar on route change
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
-      closeRef.current?.focus();
-    } else {
-      document.body.style.overflow = "";
+      onClose();
     }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
+  }, [location.pathname, location.search]);
 
-  const overlay = `fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] transition-all duration-300 ${
+  // Lock document scroll & handle Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      const originalTouchAction = document.body.style.touchAction;
+
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+
+      closeRef.current?.focus();
+      window.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        document.body.style.overflow = originalBodyOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+        document.body.style.touchAction = originalTouchAction;
+        window.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, [isOpen, onClose]);
+
+  const overlay = `fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] transition-all duration-300 touch-none ${
     isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
   }`;
 
-  const panel = `fixed right-0 top-0 h-full w-4/5 max-w-xs bg-white z-[100] shadow-2xl p-5 transform transition-transform duration-300 flex flex-col ${
+  const panel = `fixed right-0 top-0 h-full w-4/5 max-w-xs bg-white z-[100] shadow-2xl p-5 transform transition-transform duration-300 flex flex-col overscroll-contain ${
     isOpen ? "translate-x-0" : "translate-x-full"
   }`;
 
   return (
     <>
-      <div className={overlay} onClick={onClose} />
+      <div 
+        className={overlay} 
+        onClick={onClose} 
+        onTouchMove={(e) => e.preventDefault()}
+        aria-hidden="true"
+      />
 
-      <aside className={panel}>
+      <aside className={panel} role="dialog" aria-modal="true" aria-label="Menu">
         {/* Top Bar Header */}
         <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
           <h2 className="text-lg font-black text-slate-800 tracking-tight">Menu</h2>
@@ -182,7 +212,7 @@ export default function UserSidebar({ isOpen, onClose }) {
         </div>
 
         {/* Sectional Menu Items */}
-        <nav className="flex-1 overflow-y-auto space-y-4 pr-1 py-2 text-sm font-medium custom-scrollbar">
+        <nav className="flex-1 overflow-y-auto space-y-4 pr-1 py-2 text-sm font-medium custom-scrollbar overscroll-contain">
           {menuSections.map((section, sectionIdx) => (
             <div key={sectionIdx} className="space-y-1">
               <span className="block px-2 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
