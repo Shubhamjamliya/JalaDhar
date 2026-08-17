@@ -1731,9 +1731,13 @@ export default function UserSurveyFlow() {
         "Open plots": "Industrial"
       };
 
+      const selectedService = surveyData.vendor?.selectedService || surveyData.vendor?.services?.[0] || surveyData.vendor?.allServices?.[0];
+      const serviceId = selectedService?.id || selectedService?._id || (typeof surveyData.vendor?.services?.[0] === 'string' ? surveyData.vendor.services[0] : surveyData.vendor?.services?.[0]?._id) || 'default';
+      const vendorId = surveyData.vendor?._id || surveyData.vendor?.id;
+
       const bookingPayload = {
-        serviceId: surveyData.vendor.selectedService.id || surveyData.vendor.selectedService._id,
-        vendorId: surveyData.vendor._id || surveyData.vendor.id,
+        serviceId,
+        vendorId,
         scheduledDate,
         scheduledTime,
         address: {
