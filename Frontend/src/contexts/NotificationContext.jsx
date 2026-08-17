@@ -100,12 +100,18 @@ export const NotificationProvider = ({ children }) => {
       return;
     }
 
-    // Connect to Socket.io server
-    // Socket.io connects to the base server URL (not the /api endpoint suffix)
-    const API_BASE_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-    // Remove trailing /api or /api/ safely from the end of the URL only
-    const socketUrl = API_BASE_URL.replace(/\/api\/?$/, '');
-    const newSocket = io(socketUrl, {
+    // Connect to Socket.io server using root origin to avoid invalid namespace errors
+    let socketOrigin = 'http://localhost:5000';
+    try {
+      const rawUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const parsed = new URL(rawUrl);
+      socketOrigin = parsed.origin;
+    } catch (e) {
+      socketOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
+    }
+
+    const newSocket = io(socketOrigin, {
+      path: '/socket.io',
       auth: { token },
       transports: ['polling', 'websocket'],
       reconnection: true,

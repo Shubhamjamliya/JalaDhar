@@ -34,8 +34,12 @@ const getAvailableVendors = async (req, res) => {
 
     // Find all active and approved vendors offering this service
     const vendors = await Vendor.find({
-      isActive: true,
-      isApproved: true,
+      isActive: { $ne: false },
+      $or: [
+        { isApproved: true },
+        { verificationStatus: { $in: ['APPROVED', 'ACTIVATED', 'VERIFIED'] } },
+        { isApproved: { $exists: false } }
+      ],
       services: serviceId
     }).select('name email phone experience rating address workingDays workingHours aboutExpert languages availableServices instruments');
 
@@ -1026,8 +1030,12 @@ const getNearbyVendors = async (req, res) => {
     }
 
     const query = {
-      isActive: true,
-      isApproved: true
+      isActive: { $ne: false },
+      $or: [
+        { isApproved: true },
+        { verificationStatus: { $in: ['APPROVED', 'ACTIVATED', 'VERIFIED'] } },
+        { isApproved: { $exists: false } }
+      ]
     };
 
     // First, get all vendors with services populated (no status filter - show all services)
