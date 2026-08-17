@@ -1170,7 +1170,7 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
           setVendorData(prev => ({
             ...prev,
             ...res.data.vendor,
-            selectedService: prev?.selectedService || res.data.vendor.services?.[0]
+            selectedService: surveyData.vendor?.selectedService || prev?.selectedService || res.data.vendor.services?.[0]
           }));
         }
       } catch (err) {
@@ -1180,45 +1180,76 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
     fetchLatestVendor();
   }, [surveyData.vendor?._id, surveyData.vendor?.id]);
 
-  useEffect(() => {
-    const fetchCharges = async () => {
-      const selectedService = (vendorData || surveyData.vendor)?.selectedService;
-      const currentVendor = vendorData || surveyData.vendor;
-      if (!currentVendor || !surveyData.location || !selectedService) {
+  const fetchCharges = async () => {
+    const currentVendor = vendorData || surveyData.vendor;
+    const selectedService = currentVendor?.selectedService || surveyData.vendor?.selectedService || currentVendor?.services?.[0] || currentVendor?.allServices?.[0];
+
+    if (!currentVendor) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const serviceId = selectedService?.id || selectedService?._id || (typeof currentVendor.services?.[0] === 'string' ? currentVendor.services[0] : currentVendor.services?.[0]?._id) || 'default';
+      const vendorId = currentVendor._id || currentVendor.id;
+
+      if (!vendorId) {
+        setError("Vendor details are missing. Please go back and select an expert.");
         return;
       }
 
-      setLoading(true);
-      setError(null);
-      try {
-        const serviceId = selectedService.id || selectedService._id;
-        const vendorId = currentVendor._id || currentVendor.id;
+      const userLat = surveyData.location?.lat || surveyData.location?.latitude || 0;
+      const userLng = surveyData.location?.lng || surveyData.location?.longitude || 0;
 
-        if (!serviceId || !vendorId) {
-          setError("Required information is missing");
-          return;
-        }
-
-        const res = await calculateBookingCharges(
-          serviceId,
-          vendorId,
-          surveyData.location.lat,
-          surveyData.location.lng
-        );
-        if (res.success) {
-          setCharges(res.data);
-        } else {
-          setError(res.message || "Failed to calculate charges");
-          toast.showError(res.message || "Failed to calculate charges");
-        }
-      } catch (err) {
-        console.error("Error calculating charges", err);
-        setError("Failed to connect to calculation service");
-        toast.showError("Failed to calculate charges. Check your connection.");
-      } finally {
-        setLoading(false);
+      const res = await calculateBookingCharges(
+        serviceId,
+        vendorId,
+        userLat,
+        userLng
+      );
+      if (res.success && res.data) {
+        setCharges(res.data);
+      } else {
+        throw new Error(res.message || "Failed to calculate charges");
       }
-    };
+    } catch (err) {
+      console.error("Error calculating charges", err);
+      const serverMsg = err.response?.data?.message || err.message;
+      
+      // Compute safe client-side estimate if backend call fails so booking isn't blocked with ₹0.00
+      const fallbackBaseFee = selectedService?.price || 5000;
+      const gst = fallbackBaseFee * 0.18;
+      const subtotal = fallbackBaseFee + gst;
+      const total = subtotal;
+      const advance = total * 0.40;
+      const remaining = total - advance;
+
+      setCharges(prev => prev || {
+        baseServiceFee: fallbackBaseFee,
+        distance: 0,
+        travelCharges: 0,
+        subtotal: subtotal,
+        gst: gst,
+        totalAmount: total,
+        advanceAmount: advance,
+        remainingAmount: remaining,
+        gstPercentage: 18,
+        advancePercentage: 40,
+        remainingPercentage: 60
+      });
+
+      if (err.response?.status === 401) {
+        setError("Session expired. Please re-login to ensure live rate verification.");
+      } else {
+        setError(serverMsg && !serverMsg.includes("Network Error") ? serverMsg : "Could not reach calculation service. Displaying standard pricing estimate.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCharges();
   }, [vendorData, surveyData.vendor, surveyData.location]);
 
@@ -1367,9 +1398,19 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-sm">
-            <IoInformationCircleOutline className="text-xl shrink-0" />
-            <p>{error}</p>
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200/80 rounded-xl flex items-center justify-between gap-3 text-amber-800 text-xs">
+            <div className="flex items-center gap-2">
+              <IoInformationCircleOutline className="text-lg shrink-0 text-amber-600" />
+              <p className="font-medium">{error}</p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchCharges}
+              disabled={loading}
+              className="px-2.5 py-1 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 transition-colors text-[11px] shrink-0 cursor-pointer disabled:opacity-50"
+            >
+              {loading ? "Calculating..." : "Retry"}
+            </button>
           </div>
         )}
 
