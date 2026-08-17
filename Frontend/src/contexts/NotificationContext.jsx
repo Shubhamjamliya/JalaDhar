@@ -101,16 +101,17 @@ export const NotificationProvider = ({ children }) => {
     }
 
     // Connect to Socket.io server
-    // Socket.io connects to the base server URL (not /api)
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-    // Remove /api if present since Socket.io connects to the root
-    const socketUrl = API_BASE_URL.replace('/api', '');
+    // Socket.io connects to the base server URL (not the /api endpoint suffix)
+    const API_BASE_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    // Remove trailing /api or /api/ safely from the end of the URL only
+    const socketUrl = API_BASE_URL.replace(/\/api\/?$/, '');
     const newSocket = io(socketUrl, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 10,
+      timeout: 15000
     });
 
     newSocket.on('connect', () => {
