@@ -144,9 +144,15 @@ export const NotificationProvider = ({ children }) => {
         currentUserRole
       });
 
-      // Match if recipient ID matches current user (and model matches if present)
-      const isRecipientMatch = notificationRecipientId === currentUserId &&
-        (!notificationRecipientModel || notificationRecipientModel.toLowerCase() === currentUserRole?.toLowerCase());
+      // Match if recipient ID matches current user (and model matches if present, normalizing Vendor/Expert)
+      const roleMatches = !notificationRecipientModel ||
+        notificationRecipientModel.toLowerCase() === currentUserRole?.toLowerCase() ||
+        (notificationRecipientModel.toLowerCase() === 'vendor' && (currentUserRole?.toLowerCase() === 'expert' || currentUserRole?.toLowerCase() === 'vendor')) ||
+        (notificationRecipientModel.toLowerCase() === 'expert' && (currentUserRole?.toLowerCase() === 'expert' || currentUserRole?.toLowerCase() === 'vendor')) ||
+        (notificationRecipientModel.toLowerCase() === 'user' && currentUserRole?.toLowerCase() === 'user') ||
+        (notificationRecipientModel.toLowerCase() === 'admin' && currentUserRole?.toLowerCase() === 'admin');
+
+      const isRecipientMatch = notificationRecipientId === currentUserId && roleMatches;
 
       if (isRecipientMatch) {
         console.log('[Socket] ✅ Adding notification to state & showing popup');

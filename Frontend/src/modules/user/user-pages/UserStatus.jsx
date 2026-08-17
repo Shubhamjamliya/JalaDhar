@@ -231,19 +231,30 @@ export default function UserStatus() {
                     notification.type === 'REPORT_UPLOADED' ||
                     notification.type === 'ADMIN_APPROVED' ||
                     notification.type === 'PAYMENT_RELEASE') {
-                    setTimeout(() => {
-                        if (loadCurrentBookingRef.current) {
-                            loadCurrentBookingRef.current();
-                        }
-                    }, 500);
+                    if (loadCurrentBookingRef.current) {
+                        loadCurrentBookingRef.current();
+                    }
                 }
             }
         };
 
+        const handleDirectBookingUpdate = (data) => {
+            console.log('[UserStatus] Direct booking update received via socket:', data);
+            if (loadCurrentBookingRef.current) {
+                loadCurrentBookingRef.current();
+            }
+        };
+
         socket.on('new_notification', handleNewNotification);
+        socket.on('booking_status_updated', handleDirectBookingUpdate);
+        socket.on('booking_updated', handleDirectBookingUpdate);
+        socket.on('booking_assigned', handleDirectBookingUpdate);
 
         return () => {
             socket.off('new_notification', handleNewNotification);
+            socket.off('booking_status_updated', handleDirectBookingUpdate);
+            socket.off('booking_updated', handleDirectBookingUpdate);
+            socket.off('booking_assigned', handleDirectBookingUpdate);
         };
     }, [socket, currentBooking]);
 

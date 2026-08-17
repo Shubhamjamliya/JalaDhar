@@ -369,6 +369,8 @@ export default function VendorRequests() {
                 setNewRequests(
                     newRequests.filter((req) => req._id !== bookingId)
                 );
+                // Immediately switch to the Ongoing / In-Progress tab so the expert sees it right away
+                setActiveTab('in-progress');
                 await loadAllRequests();
             } else {
                 toast.dismissToast(loadingToast);

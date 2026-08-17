@@ -93,10 +93,13 @@ const initializeSocket = (server) => {
   io.on('connection', (socket) => {
     console.log(`[Socket] User connected: ${socket.userId} (${socket.userRole})`);
 
-    // Join user-specific room for notifications
+    // Join user-specific room for notifications & updates (with all aliases)
     const room = getRoomName(socket.userModel, socket.userId);
     socket.join(room);
-    console.log(`[Socket] User ${socket.userId} joined room: ${room}`);
+    socket.join(socket.userId.toString());
+    socket.join(`${socket.userModel}_${socket.userId}`);
+    socket.join(`${socket.userModel.toLowerCase()}_${socket.userId}`);
+    console.log(`[Socket] User ${socket.userId} joined rooms: ${room}, ${socket.userId}, ${socket.userModel}_${socket.userId}`);
 
     // Handle joining booking tracking room
     socket.on('join_booking_tracking', (bookingId) => {

@@ -178,6 +178,35 @@ const verifyAdvancePayment = async (req, res) => {
         }
       }, io);
 
+      // Direct real-time socket broadcasts for instant UI updates without manual page refresh
+      if (io) {
+        try {
+          const vendorIdStr = booking.vendor._id.toString();
+          const userIdStr = booking.user._id.toString();
+          const bookingPayload = {
+            bookingId: booking._id.toString(),
+            status: booking.status,
+            userStatus: booking.userStatus,
+            vendorStatus: booking.vendorStatus,
+            scheduledDate: booking.scheduledDate,
+            scheduledTime: booking.scheduledTime,
+            booking
+          };
+
+          // Broadcast to vendor rooms
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_assigned', bookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('new_booking', bookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', bookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+
+          // Broadcast to user rooms
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', bookingPayload);
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+        } catch (sockEmitErr) {
+          console.error('Direct socket emit error on advance payment:', sockEmitErr);
+        }
+      }
+
       // Notify admin about payment
       try {
         const Admin = require('../../models/Admin');

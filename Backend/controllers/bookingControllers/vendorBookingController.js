@@ -163,6 +163,33 @@ const acceptBooking = async (req, res) => {
         }
       }, io);
       console.log(`[acceptBooking] Notification successfully saved & sent for user ${booking.user._id}`);
+
+      // Direct real-time socket broadcasts for instant UI updates across User and Vendor apps
+      if (io) {
+        try {
+          const vendorIdStr = booking.vendor._id?.toString() || booking.vendor.toString();
+          const userIdStr = booking.user._id?.toString() || booking.user.toString();
+          const bookingPayload = {
+            bookingId: booking._id.toString(),
+            status: booking.status,
+            userStatus: booking.userStatus,
+            vendorStatus: booking.vendorStatus,
+            scheduledDate: booking.scheduleDate || booking.scheduledDate,
+            scheduledTime: booking.scheduledTime,
+            booking
+          };
+
+          // Broadcast to user rooms
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', bookingPayload);
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+
+          // Broadcast to vendor rooms
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', bookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+        } catch (sockEmitErr) {
+          console.error('[acceptBooking] Socket broadcast error:', sockEmitErr);
+        }
+      }
     } catch (notifErr) {
       console.error('[acceptBooking] Error creating notification:', notifErr);
     }
