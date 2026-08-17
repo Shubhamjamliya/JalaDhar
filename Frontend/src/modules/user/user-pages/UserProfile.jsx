@@ -21,6 +21,7 @@ import {
 import { getUserProfile, updateUserProfile, uploadUserProfilePicture } from "../../../services/authApi";
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -162,8 +163,8 @@ export default function UserProfile() {
         : "Not provided";
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-32 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-12 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-            <div className="max-w-xl mx-auto space-y-4 px-1 py-1">
+        <PageContainer className="pb-32 max-w-xl mx-auto">
+            <div className="space-y-4 px-1 py-1">
 
                 {/* Profile Header Banner — Modern Hydro Gradient Card */}
                 <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0A84FF] via-blue-600 to-indigo-700 p-5 sm:p-6 shadow-xl shadow-blue-500/15 text-white">
@@ -459,7 +460,7 @@ export default function UserProfile() {
                 isOpen={showAboutModal}
                 onClose={() => setShowAboutModal(false)}
             />
-        </div>
+        </PageContainer>
     );
 }
 

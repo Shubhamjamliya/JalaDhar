@@ -33,6 +33,7 @@ import { getBookingDetails, downloadInvoice, cancelBooking, submitRating, getBoo
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import { maskPhone } from "../../../utils/phoneMasker";
@@ -515,7 +516,7 @@ export default function UserBookingDetails() {
 
     if (!booking) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+            <PageContainer className="py-12">
                 <div className="text-center py-12 bg-white rounded-2xl border border-slate-200/80 shadow-2xs max-w-md mx-auto my-12">
                     <p className="text-slate-600 font-semibold mb-3">Booking not found</p>
                     <button
@@ -525,12 +526,12 @@ export default function UserBookingDetails() {
                         Back to Bookings
                     </button>
                 </div>
-            </div>
+            </PageContainer>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+        <PageContainer className="pb-24 max-w-4xl mx-auto">
 
             {/* Header */}
             <div className="mb-5 max-w-4xl mx-auto">
@@ -1534,7 +1535,7 @@ export default function UserBookingDetails() {
                     typeof booking?.report?.waterFound === 'boolean'
                 )}
             />
-        </div>
+        </PageContainer>
     );
 }
 

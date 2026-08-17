@@ -76,7 +76,7 @@ export default function UserResetPassword() {
 
     if (success) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 px-4 py-8">
+            <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 px-4 py-8 overflow-x-hidden">
                 <div className="w-full max-w-md">
                     <div className="w-full rounded-3xl bg-white/95 backdrop-blur-md p-8 shadow-xl shadow-slate-200/60 border border-slate-200/80 text-center space-y-4">
                         <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto border border-emerald-100 shadow-2xs">
@@ -98,7 +98,7 @@ export default function UserResetPassword() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 px-4 py-8">
+        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 px-4 py-8 overflow-x-hidden">
             <div className="w-full max-w-md">
                 {/* Main Card */}
                 <div className="w-full rounded-3xl bg-white/95 backdrop-blur-md p-6 sm:p-8 shadow-xl shadow-slate-200/60 border border-slate-200/80">

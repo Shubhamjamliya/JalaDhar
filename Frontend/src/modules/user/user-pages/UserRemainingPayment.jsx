@@ -166,8 +166,7 @@ export default function UserRemainingPayment() {
                 setProcessing(false);
             }
         } catch (err) {
-            toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to initiate payment. Please try again.");
+            handleApiError(err, "Failed to process payment");
             setProcessing(false);
         }
     };
@@ -179,16 +178,15 @@ export default function UserRemainingPayment() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 flex items-center justify-center">
+            <PageContainer className="flex items-center justify-center min-h-[50vh]">
                 <LoadingSpinner message="Loading payment details..." />
-            </div>
+            </PageContainer>
         );
     }
 
-
     if (!booking) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+            <PageContainer className="py-12">
                 <div className="text-center py-8">
                     <p className="text-gray-600 mb-4">Booking not found</p>
                     <button
@@ -198,7 +196,7 @@ export default function UserRemainingPayment() {
                         Back to History
                     </button>
                 </div>
-            </div>
+            </PageContainer>
         );
     }
 
@@ -224,15 +222,12 @@ export default function UserRemainingPayment() {
     }
 
     const report = booking.report || {};
-    const advancePaid = booking.payment?.advancePaid || false;
     const remainingAmount = booking.payment?.remainingAmount || 0;
     const totalAmount = booking.payment?.totalAmount || 0;
 
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+        <PageContainer className="pb-28">
             <div className="max-w-2xl mx-auto">
-
-                {/* Back button removed - handled by UserNavbar */}
 
                 {/* Header */}
                 <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-6">
@@ -319,7 +314,7 @@ export default function UserRemainingPayment() {
                     </p>
                 </div>
             </div>
-        </div>
+        </PageContainer>
     );
 }
 

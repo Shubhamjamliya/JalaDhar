@@ -17,6 +17,7 @@ import {
     getVendorProfile,
 } from "../../../services/vendorApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 
@@ -212,14 +213,14 @@ export default function VendorDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 flex items-center justify-center">
+            <PageContainer className="flex items-center justify-center min-h-[60vh]">
                 <LoadingSpinner message="Loading dashboard..." />
-            </div>
+            </PageContainer>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 px-4 pt-24 pb-20 md:-mx-6 md:-mt-28 md:pt-28 md:pb-12 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+        <PageContainer className="w-full max-w-full overflow-x-hidden pb-12">
 
             {/* Profile Header — Senior SDE Expert Glassmorphism Banner */}
             <section className="relative my-3 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 p-6 shadow-xl text-white border border-slate-800/80">
@@ -291,7 +292,7 @@ export default function VendorDashboard() {
             </section>
 
             {/* Services Overview - Four Circular Icons */}
-            <section className="my-6 flex justify-around">
+            <section className="my-6 grid grid-cols-4 gap-2 text-center max-w-full">
                 {/* New Requests */}
                 <div
                     onClick={() => navigate("/vendor/requests")}
@@ -576,6 +577,6 @@ export default function VendorDashboard() {
                     </div>
                 )}
             </section>
-        </div>
+        </PageContainer>
     );
 }

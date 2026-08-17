@@ -267,7 +267,7 @@ export default function VendorWallet() {
         <>
         <PageContainer>
             {/* Horizontal Scroll Tab Navigations */}
-            <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-md py-3 mb-6 -mx-4 px-4 border-b border-gray-200/80 shadow-xs">
+            <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-md py-3 mb-6 border-b border-gray-200/80 shadow-xs w-full max-w-full">
                 <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide no-scrollbar py-0.5">
                     {navItems.map((item) => {
                         const Icon = item.icon;

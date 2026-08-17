@@ -4,6 +4,7 @@ import { IoCheckmarkCircleOutline, IoCalendarOutline, IoTimeOutline, IoLocationO
 import { getBookingDetails } from "../../../services/bookingApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
+import PageContainer from "../../shared/components/PageContainer";
 
 export default function UserBookingConfirmation() {
     const navigate = useNavigate();
@@ -32,6 +33,7 @@ export default function UserBookingConfirmation() {
     const loadBookingDetails = async () => {
         try {
             setLoading(true);
+            setError("");
             const response = await getBookingDetails(bookingId);
             if (response.success) {
                 setBooking(response.data.booking);
@@ -47,15 +49,15 @@ export default function UserBookingConfirmation() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 flex items-center justify-center">
+            <PageContainer className="flex items-center justify-center min-h-[50vh]">
                 <LoadingSpinner message="Loading booking details..." />
-            </div>
+            </PageContainer>
         );
     }
 
     if (error && !booking) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+            <PageContainer className="py-12">
                 <ErrorMessage message={error} />
                 <div className="mt-4">
                     <button
@@ -65,13 +67,13 @@ export default function UserBookingConfirmation() {
                         Back to Dashboard
                     </button>
                 </div>
-            </div>
+            </PageContainer>
         );
     }
 
     if (!booking) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+            <PageContainer className="py-12">
                 <ErrorMessage message="Booking not found" />
                 <div className="mt-4">
                     <button
@@ -81,12 +83,12 @@ export default function UserBookingConfirmation() {
                         Back to Dashboard
                     </button>
                 </div>
-            </div>
+            </PageContainer>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+        <PageContainer className="pb-16 max-w-2xl mx-auto">
             <div className="flex flex-col items-center justify-center mb-6">
                 <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-4">
                     <IoCheckmarkCircleOutline className="text-5xl text-green-600" />
@@ -98,45 +100,44 @@ export default function UserBookingConfirmation() {
             <div className="bg-white rounded-[12px] shadow-[0px_4px_10px_rgba(0,0,0,0.05)] p-6 mb-4">
                 <h2 className="text-lg font-bold text-gray-800 mb-4">Booking Details</h2>
                 <div className="space-y-4">
-                    <div className="flex justify-between pb-4 border-b">
+                    <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Booking ID</span>
-                        <span className="text-base font-bold text-gray-800 font-mono">{bookingId?.slice(-8).toUpperCase()}</span>
+                        <span className="font-mono font-bold text-[#0A84FF]">{booking._id?.slice(-8).toUpperCase() || booking.id}</span>
                     </div>
-                    <div className="flex items-start gap-3">
-                        <IoConstructOutline className="text-xl text-[#0A84FF] mt-1" />
-                        <div className="flex-1">
-                            <p className="text-sm text-gray-600 mb-1">Service</p>
-                            <p className="text-base font-semibold text-gray-800">{booking.service?.name || "N/A"}</p>
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Service</span>
+                        <span className="font-semibold text-gray-800">{booking.service?.name || "Groundwater Survey"}</span>
+                    </div>
+                    {booking.scheduledDate && (
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Date</span>
+                            <span className="font-semibold text-gray-800">{new Date(booking.scheduledDate).toLocaleDateString()}</span>
                         </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                        <IoPersonOutline className="text-xl text-[#0A84FF] mt-1" />
-                        <div className="flex-1">
-                            <p className="text-sm text-gray-600 mb-1">Expert</p>
-                            <p className="text-base font-semibold text-gray-800">{booking.vendor?.name || "N/A"}</p>
+                    )}
+                    {booking.scheduledTime && (
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Time</span>
+                            <span className="font-semibold text-gray-800">{booking.scheduledTime}</span>
                         </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                        <IoCalendarOutline className="text-xl text-[#0A84FF] mt-1" />
-                        <div className="flex-1">
-                            <p className="text-sm text-gray-600 mb-1">Date & Time</p>
-                            <p className="text-base font-semibold text-gray-800">
-                                {new Date(booking.scheduledDate).toLocaleDateString("en-IN", { weekday: 'long' })} {new Date(booking.scheduledDate).toLocaleDateString("en-IN")} &bull; {(!booking.scheduledTime || booking.scheduledTime === "TBD") ? "Time TBD by expert" : booking.scheduledTime}
-                            </p>
+                    )}
+                    {booking.address && (
+                        <div className="flex items-start justify-between">
+                            <span className="text-sm text-gray-600">Location</span>
+                            <span className="font-semibold text-gray-800 text-right max-w-xs">{booking.address.street || booking.address.city}</span>
                         </div>
-                    </div>
+                    )}
                     {booking.payment && (
-                        <div className="bg-green-50 rounded-[8px] p-3 space-y-2">
-                            <div className="flex justify-between">
-                                <span className="text-sm text-gray-700">Total Amount</span>
-                                <span className="text-base font-bold text-gray-800">₹{booking.payment.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</span>
+                        <div className="pt-4 border-t space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600">Total Amount</span>
+                                <span className="text-lg font-bold text-[#0A84FF]">₹{booking.payment.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</span>
                             </div>
-                            <div className="flex justify-between mb-1">
-                                <span className="text-sm text-gray-700">Advance Paid (40%)</span>
-                                <span className="text-base font-bold text-green-600">₹{booking.payment.advanceAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'} ✓</span>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Advance Paid (40%)</span>
+                                <span className="text-green-600 font-semibold">₹{booking.payment.advanceAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-sm text-gray-700">Remaining (60%)</span>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Remaining (60%)</span>
                                 <span className="text-base font-semibold text-gray-700">₹{booking.payment.remainingAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</span>
                             </div>
                         </div>
@@ -155,7 +156,6 @@ export default function UserBookingConfirmation() {
             <button onClick={() => navigate("/user/status", { state: { bookingId, refresh: true } })} className="w-full h-14 bg-[#0A84FF] text-white font-semibold rounded-[12px] hover:bg-[#005BBB] transition-colors text-lg flex items-center justify-center gap-2">
                 Go to Status
             </button>
-        </div>
+        </PageContainer>
     );
 }
-

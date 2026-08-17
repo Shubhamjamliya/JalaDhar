@@ -13,6 +13,7 @@ import { getMyRatings } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
+import PageContainer from "../../shared/components/PageContainer";
 
 export default function VendorReviews() {
     const navigate = useNavigate();
@@ -95,14 +96,14 @@ export default function VendorReviews() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 flex items-center justify-center">
+            <PageContainer className="flex items-center justify-center min-h-[50vh]">
                 <LoadingSpinner message="Loading reviews..." />
-            </div>
+            </PageContainer>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+        <PageContainer className="pb-16">
             <ErrorMessage message={error} />
 
             {/* Header */}
@@ -223,7 +224,7 @@ export default function VendorReviews() {
                     </button>
                 </div>
             )}
-        </div>
+        </PageContainer>
     );
 }
 

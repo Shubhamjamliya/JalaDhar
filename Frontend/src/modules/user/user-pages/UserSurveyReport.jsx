@@ -189,7 +189,7 @@ export default function UserSurveyReport() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 pt-6 -mx-4 sm:mx-0">
+    <div className="min-h-screen bg-gray-50 pb-20 pt-6 w-full max-w-full overflow-x-hidden">
       <div className="max-w-2xl mx-auto w-full px-2 sm:px-0">
         
         {/* Main Card */}

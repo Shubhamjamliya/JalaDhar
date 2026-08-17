@@ -291,7 +291,7 @@ export default function VendorOTPVerification() {
     }
 
     return (
-        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-4 py-6 overflow-y-auto">
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] p-4 py-6 overflow-y-auto overflow-x-hidden">
             <div className="w-full max-w-sm">
                 <div className="mt-4 mb-6 flex flex-col items-center">
                     <img

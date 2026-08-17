@@ -17,9 +17,12 @@
   --shadow-soft-button: 0 6px 15px rgba(26, 128, 229, 0.25);
 }
 
+html,
 body {
   font-family: "Inter", sans-serif;
   background-color: #F3F7FA;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 .icon-gradient {

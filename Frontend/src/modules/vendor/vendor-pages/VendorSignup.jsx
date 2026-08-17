@@ -1016,7 +1016,7 @@ export default function VendorSignup() {
 
 
     return (
-        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 p-4 py-8 overflow-y-auto">
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 p-4 py-8 overflow-y-auto overflow-x-hidden">
             {animationStyles}
             {/* Ambient Blurred Background Accents */}
             <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-400/10 rounded-full blur-3xl" />

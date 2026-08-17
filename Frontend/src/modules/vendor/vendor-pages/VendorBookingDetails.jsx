@@ -29,6 +29,7 @@ import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import { maskPhone } from "../../../utils/phoneMasker";
@@ -608,7 +609,7 @@ export default function VendorBookingDetails() {
 
     if (!booking) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+            <PageContainer className="py-12">
                 <div className="text-center py-8">
                     <p className="text-gray-600">Booking not found</p>
                     <button
@@ -618,12 +619,12 @@ export default function VendorBookingDetails() {
                         Back to Bookings
                     </button>
                 </div>
-            </div>
+            </PageContainer>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+        <PageContainer className="pb-24 max-w-4xl mx-auto">
 
             {/* Removed Back Button from here as it's now in VendorNavbar */}
 
@@ -2064,7 +2065,7 @@ export default function VendorBookingDetails() {
 
             {/* Inline Quick Actions Bar */}
             {booking && (
-                <div className="bg-white -mx-4 -mb-6 mt-2 pt-4 pb-6 border-t border-gray-100 flex items-center justify-around md:mx-0 md:mb-0 md:rounded-[24px] md:border md:shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                <div className="bg-white rounded-2xl p-4 border border-gray-100 flex items-center justify-around mt-4 shadow-sm">
                     <button
                         onClick={() => window.open(`tel:${booking.user?.phone || booking.phone}`)}
                         className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-[#0A84FF] transition-colors"
@@ -2329,6 +2330,6 @@ export default function VendorBookingDetails() {
                 submitText="Verify OTP"
                 isLoading={verifyingOTP}
             />
-        </div>
+        </PageContainer>
     );
 }

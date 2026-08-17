@@ -203,7 +203,7 @@ export default function UserInvoice() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20 w-full max-w-full overflow-x-hidden">
       {/* Header Controls - Sticky bar */}
       <div className="sticky top-14 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 mb-6 flex items-center justify-between shadow-sm print:hidden">
         <button

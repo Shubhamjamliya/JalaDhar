@@ -110,7 +110,7 @@ export default function UserLoginOTPVerification() {
 
     if (loginSuccess) {
         return (
-            <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] px-4 py-8 overflow-y-auto">
+            <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] px-4 py-8 overflow-y-auto overflow-x-hidden">
                 <div className="w-full max-w-md flex flex-col items-center">
                     <div className="mb-6 flex flex-col items-center text-center">
                         <img
@@ -136,7 +136,7 @@ export default function UserLoginOTPVerification() {
     }
 
     return (
-        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] px-4 py-8 overflow-y-auto">
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-[#F3F7FA] px-4 py-8 overflow-y-auto overflow-x-hidden">
             <div className="w-full max-w-md flex flex-col items-center">
                 {/* Logo & Subtitle */}
                 <div className="mb-6 flex flex-col items-center text-center">

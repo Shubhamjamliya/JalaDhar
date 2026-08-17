@@ -29,6 +29,7 @@ import { getUserBookings, uploadBorewellResult, getBookingDetails, cancelBooking
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { usePullToRefresh } from "../../../hooks/usePullToRefresh";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import PageContainer from "../../shared/components/PageContainer";
 import InputModal, { CANCELLATION_REASONS } from "../../shared/components/InputModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import CancellationPolicyModal from "../../shared/components/CancellationPolicyModal";
@@ -543,8 +544,8 @@ export default function UserStatus() {
     // Show nice message if no booking found
     if (!currentBooking) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
-                <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+            <PageContainer className="py-12">
+                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
                     {/* Empty State Illustration */}
                     <div className="mb-6 w-32 h-32 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
                         <IoCalendarOutline className="text-5xl text-blue-500" />
@@ -578,7 +579,7 @@ export default function UserStatus() {
                         </button>
                     </div>
                 </div>
-            </div>
+            </PageContainer>
         );
     }
 
@@ -595,7 +596,7 @@ export default function UserStatus() {
     return (
         <div
             ref={containerRef}
-            className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6 overflow-y-auto"
+            className="w-full max-w-7xl mx-auto overflow-y-auto pb-12"
             style={{
                 transform: pullDistance > 0 ? `translateY(${Math.min(pullDistance, 100)}px)` : 'none',
                 transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none',

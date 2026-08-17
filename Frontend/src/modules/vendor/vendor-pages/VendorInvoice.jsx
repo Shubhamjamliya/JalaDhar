@@ -227,7 +227,7 @@ export default function VendorInvoice() {
   const utrNo = `UTR-N${booking._id.slice(-10).toUpperCase()}`;
 
   return (
-    <div className="min-h-screen bg-[#F6F7F9] py-4 sm:py-8 px-2 sm:px-6">
+    <div className="min-h-screen bg-[#F6F7F9] py-4 sm:py-8 px-2 sm:px-6 w-full max-w-full overflow-x-hidden">
       {/* Control Action Bar */}
       <div className="max-w-4xl mx-auto mb-4 sm:mb-6 flex items-center justify-between print:hidden">
         <button

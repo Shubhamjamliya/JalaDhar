@@ -11,6 +11,7 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import LocationSelector from "../../../components/LocationSelector";
 import ExpertProfileCard from "../components/ExpertProfileCard";
+import PageContainer from "../../shared/components/PageContainer";
 
 
 export default function UserServiceProvider() {
@@ -29,45 +30,47 @@ export default function UserServiceProvider() {
     });
 
     useEffect(() => {
-        loadVendors();
-    }, [filters, userLocation, radius]);
+        // Try to get user's location from profile or browser
+        if (user?.address?.coordinates) {
+            setUserLocation({
+                lat: user.address.coordinates.coordinates[1],
+                lng: user.address.coordinates.coordinates[0],
+                address: user.address.street || user.address.city
+            });
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (userLocation.lat && userLocation.lng) {
+            loadVendors();
+        } else {
+            // Load all vendors if no location
+            loadVendors();
+        }
+    }, [userLocation, radius, filters]);
 
     const loadVendors = async () => {
         try {
             setLoading(true);
             setError("");
-            const params = { limit: 50 };
-
+            const params = {
+                radius,
+                ...filters
+            };
             if (userLocation.lat && userLocation.lng) {
                 params.lat = userLocation.lat;
                 params.lng = userLocation.lng;
-                params.radius = radius;
-            }
-
-            // Apply filters
-            if (filters.serviceType) {
-                params.serviceType = filters.serviceType;
-            }
-            if (filters.price) {
-                const [min, max] = filters.price.split("-").map(Number);
-                if (min) params.minPrice = min;
-                if (max) params.maxPrice = max;
-            }
-            if (filters.rating) {
-                params.minRating = parseFloat(filters.rating);
-            }
-            if (filters.experience) {
-                params.minExperience = parseFloat(filters.experience);
             }
 
             const response = await getNearbyVendors(params);
             if (response.success) {
                 setVendors(response.data.vendors || []);
             } else {
-                setError(response.message || "Failed to load vendors");
+                setError(response.message || "Failed to load experts");
             }
         } catch (err) {
-            setError("Failed to load vendors");
+            console.error("Load experts error:", err);
+            setError("Failed to load experts");
         } finally {
             setLoading(false);
         }
@@ -104,11 +107,11 @@ export default function UserServiceProvider() {
     }
 
     return (
-        <div className="min-h-screen bg-[#F3F7FA] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+        <PageContainer className="pb-28">
             <ErrorMessage message={error} />
 
             {/* Top Navigation Bar */}
-            <div className="sticky top-16 z-10 flex items-center bg-[#F3F7FA]/80 backdrop-blur-sm p-4 pb-3 -mx-4 md:-mx-6 justify-center mb-4">
+            <div className="flex items-center bg-[#F3F7FA] p-4 pb-3 justify-center mb-4">
                 {/* Back button removed - handled by UserNavbar */}
                 <h1 className="text-[#3A3A3A] text-lg font-bold leading-tight">Find an Expert</h1>
             </div>
@@ -141,6 +144,6 @@ export default function UserServiceProvider() {
                     ))
                 )}
             </div>
-        </div>
+        </PageContainer>
     );
 }

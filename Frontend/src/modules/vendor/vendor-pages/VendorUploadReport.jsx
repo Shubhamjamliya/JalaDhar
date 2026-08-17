@@ -21,6 +21,7 @@ import { getBookingDetails, uploadVisitReport } from "../../../services/vendorAp
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
+import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 
 const ROCK_SUGGESTIONS = [
@@ -374,7 +375,7 @@ export default function VendorUploadReport() {
 
     if (error && !booking) {
         return (
-            <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+            <PageContainer className="py-12">
                 <ErrorMessage message={error} />
                 <button
                     onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
@@ -383,12 +384,12 @@ export default function VendorUploadReport() {
                     <IoChevronBackOutline className="text-xl" />
                     <span>Back to Booking Details</span>
                 </button>
-            </div>
+            </PageContainer>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#F6F7F9] -mx-4 -mt-24 -mb-28 px-4 pt-24 pb-28 md:-mx-6 md:-mt-28 md:-mb-8 md:pt-28 md:pb-8 md:relative md:left-1/2 md:-ml-[50vw] md:w-screen md:px-6">
+        <PageContainer className="pb-16 max-w-4xl mx-auto">
             <ErrorMessage message={error} />
 
             {/* Header */}
@@ -798,7 +799,7 @@ export default function VendorUploadReport() {
                     </div>
                 </div>
             )}
-        </div>
+        </PageContainer>
     );
 }
 

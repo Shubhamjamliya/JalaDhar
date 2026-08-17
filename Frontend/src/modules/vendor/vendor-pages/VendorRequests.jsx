@@ -531,7 +531,7 @@ export default function VendorRequests() {
                     Your Booking
                 </h1>
 
-                <div className="flex bg-[#F6F7F9] sticky top-[52px] sm:top-[56px] md:top-[64px] z-30 -mx-4 px-4 py-3 mb-6 border-b border-gray-200/80 shadow-2xs overflow-x-auto no-scrollbar gap-2">
+                <div className="flex bg-[#F6F7F9] sticky top-[52px] sm:top-[56px] md:top-[64px] z-30 py-3 mb-6 border-b border-gray-200/80 shadow-2xs overflow-x-auto no-scrollbar gap-2 w-full max-w-full">
                     {[
                         { id: "New", label: "Requests", count: newRequests.length, icon: <IoNotificationsOutline /> },
                         { id: "In Progress", label: "In Progress", count: confirmedRequests.length, icon: <IoBriefcaseOutline /> },
