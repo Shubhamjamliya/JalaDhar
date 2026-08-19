@@ -92,8 +92,9 @@ const vendorSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['VENDOR'],
-    default: 'VENDOR'
+    enum: ['VENDOR', 'vendor'],
+    default: 'VENDOR',
+    set: v => v ? v.toUpperCase() : v
   },
   expertId: {
     type: String,
@@ -128,7 +129,7 @@ const vendorSchema = new mongoose.Schema({
   // Experience (in years)
   experience: {
     type: Number,
-    required: [true, 'Experience is required'],
+    default: 0,
     min: 0
   },
   experienceDetails: {

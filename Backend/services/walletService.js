@@ -74,7 +74,7 @@ const creditToVendorWallet = async (vendorId, amount, type, bookingId = null, me
     // Update vendor wallet
     vendor.paymentCollection.walletBalance = balanceAfter;
     vendor.paymentCollection.totalCredited = (vendor.paymentCollection.totalCredited || 0) + amount;
-    await vendor.save({ session });
+    await vendor.save({ session, validateModifiedOnly: true });
 
     // Create transaction record
     const transaction = await WalletTransaction.create([{
@@ -158,7 +158,7 @@ const deductPlatformFee = async (vendorId, amount, bookingId = null, description
 
     // Update vendor wallet
     vendor.paymentCollection.walletBalance = balanceAfter;
-    await vendor.save({ session });
+    await vendor.save({ session, validateModifiedOnly: true });
 
     // Create transaction record
     const transaction = await WalletTransaction.create([{
@@ -217,7 +217,7 @@ const debitFromVendorWallet = async (vendorId, amount, type, bookingId = null, m
     // Update vendor wallet
     vendor.paymentCollection.walletBalance = balanceAfter;
     vendor.paymentCollection.totalDeducted = (vendor.paymentCollection.totalDeducted || 0) + amount;
-    await vendor.save({ session });
+    await vendor.save({ session, validateModifiedOnly: true });
 
     // Create transaction record
     const transaction = await WalletTransaction.create([{

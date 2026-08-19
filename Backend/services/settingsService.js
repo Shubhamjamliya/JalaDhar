@@ -1,3 +1,5 @@
+const Settings = require('../models/Settings');
+
 const normalizeSettingValue = (val, type, defaultValue) => {
   if (val === undefined || val === null) return defaultValue;
   if (type === 'boolean' || typeof defaultValue === 'boolean') {
