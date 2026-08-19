@@ -463,6 +463,39 @@ const markAsEnRoute = async (req, res) => {
           vendorName: booking.vendor?.name || 'your expert'
         }).catch(err => console.error('[markAsEnRoute] Error dispatching Start Survey OTP:', err));
       }
+
+      // Broadcast Real-Time Socket Updates to all relevant rooms
+      if (io) {
+        const userIdStr = booking.user?._id?.toString() || booking.user?.toString();
+        const vendorIdStr = booking.vendor?._id?.toString() || booking.vendor?.toString();
+        const bookingPayload = {
+          bookingId: booking._id,
+          status: booking.status,
+          userStatus: booking.userStatus,
+          vendorStatus: booking.vendorStatus,
+          enRouteAt: booking.enRouteAt,
+          booking: booking
+        };
+
+        // Broadcast to booking tracking room
+        io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
+        io.to(`booking_${booking._id}`).emit('booking_status_updated', bookingPayload);
+
+        // Broadcast to user rooms
+        if (userIdStr) {
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', bookingPayload);
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+        }
+
+        // Broadcast to vendor rooms
+        if (vendorIdStr) {
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', bookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+        }
+
+        // Global fallback broadcast
+        io.emit('booking_status_updated', { bookingId: booking._id, status: booking.status });
+      }
     } catch (notifErr) {
       console.error('[markAsEnRoute] Error creating notification:', notifErr);
     }
@@ -704,15 +737,28 @@ const verifyStartSurveyOTP = async (req, res) => {
     }
 
     if (io) {
-      io.to(`booking_${booking._id}`).emit('booking_updated', {
+      const userIdStr = booking.user?._id?.toString() || booking.user?.toString();
+      const vendorIdStr = booking.vendor?._id?.toString() || booking.vendor?.toString();
+      const bookingPayload = {
         bookingId: booking._id,
         status: booking.status,
+        userStatus: booking.userStatus,
+        vendorStatus: booking.vendorStatus,
         booking: booking
-      });
-      io.emit('booking_status_updated', {
-        bookingId: booking._id,
-        status: booking.status
-      });
+      };
+
+      io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
+      io.to(`booking_${booking._id}`).emit('booking_status_updated', bookingPayload);
+
+      if (userIdStr) {
+        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', bookingPayload);
+        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+      }
+      if (vendorIdStr) {
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', bookingPayload);
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+      }
+      io.emit('booking_status_updated', { bookingId: booking._id, status: booking.status });
     }
 
     res.json({
@@ -801,15 +847,28 @@ const verifyEndSurveyOTP = async (req, res) => {
     }
 
     if (io) {
-      io.to(`booking_${booking._id}`).emit('booking_updated', {
+      const userIdStr = booking.user?._id?.toString() || booking.user?.toString();
+      const vendorIdStr = booking.vendor?._id?.toString() || booking.vendor?.toString();
+      const bookingPayload = {
         bookingId: booking._id,
         status: booking.status,
+        userStatus: booking.userStatus,
+        vendorStatus: booking.vendorStatus,
         booking: booking
-      });
-      io.emit('booking_status_updated', {
-        bookingId: booking._id,
-        status: booking.status
-      });
+      };
+
+      io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
+      io.to(`booking_${booking._id}`).emit('booking_status_updated', bookingPayload);
+
+      if (userIdStr) {
+        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', bookingPayload);
+        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+      }
+      if (vendorIdStr) {
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', bookingPayload);
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+      }
+      io.emit('booking_status_updated', { bookingId: booking._id, status: booking.status });
     }
 
     res.json({
@@ -1082,6 +1141,42 @@ const markVisitedAndUploadReport = async (req, res) => {
       }
     } catch (emailError) {
       console.error('Email notification error:', emailError);
+    }
+
+    // Broadcast Real-Time Socket Updates to all relevant rooms
+    try {
+      let io = null;
+      try {
+        const { getIO } = require('../../sockets');
+        io = getIO();
+      } catch (e) {}
+
+      if (io) {
+        const userIdStr = booking.user?._id?.toString() || booking.user?.toString();
+        const vendorIdStr = booking.vendor?._id?.toString() || booking.vendor?.toString();
+        const bookingPayload = {
+          bookingId: booking._id,
+          status: booking.status,
+          userStatus: booking.userStatus,
+          vendorStatus: booking.vendorStatus,
+          booking: booking
+        };
+
+        io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
+        io.to(`booking_${booking._id}`).emit('booking_status_updated', bookingPayload);
+
+        if (userIdStr) {
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', bookingPayload);
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+        }
+        if (vendorIdStr) {
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', bookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+        }
+        io.emit('booking_status_updated', { bookingId: booking._id, status: booking.status });
+      }
+    } catch (sockErr) {
+      console.error('[uploadSurveyReport] Socket emit error:', sockErr);
     }
 
     res.json({

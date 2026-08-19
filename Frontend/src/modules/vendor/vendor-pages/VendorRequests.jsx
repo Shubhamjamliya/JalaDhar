@@ -133,28 +133,28 @@ export default function VendorRequests() {
 
     const handleVerifyStartOTP = async (otpCode) => {
         if (!selectedBookingId) return;
+        const currentTargetId = selectedBookingId;
         try {
             setVerifyingOTP(true);
-            const response = await verifyStartOTP(selectedBookingId, otpCode);
+            const response = await verifyStartOTP(currentTargetId, otpCode);
             if (response.success) {
                 toast.showSuccess("Start Survey OTP verified successfully!");
                 setShowStartOTPModal(false);
                 const updated = response.data?.booking;
-                if (updated) {
-                    setConfirmedRequests(prev => prev.map(b => (b._id === updated._id || b.id === updated._id) ? {
-                        ...b,
-                        ...updated,
-                        status: "VISITED",
-                        vendorStatus: "VISITED",
-                        userStatus: "VISITED",
-                        otp: {
-                            ...b.otp,
-                            ...updated.otp,
-                            startSurvey: { ...b.otp?.startSurvey, ...updated.otp?.startSurvey, verified: true }
-                        },
-                        startSurveyVerifiedAt: new Date()
-                    } : b));
-                }
+                setConfirmedRequests(prev => prev.map(b => (b._id === currentTargetId || b.id === currentTargetId || (updated && (b._id === updated._id || b.id === updated._id))) ? {
+                    ...b,
+                    ...(updated || {}),
+                    status: "VISITED",
+                    vendorStatus: "VISITED",
+                    userStatus: "VISITED",
+                    visitedAt: new Date(),
+                    otp: {
+                        ...b.otp,
+                        ...(updated?.otp || {}),
+                        startSurvey: { ...b.otp?.startSurvey, ...(updated?.otp?.startSurvey || {}), verified: true }
+                    },
+                    startSurveyVerifiedAt: new Date()
+                } : b));
                 setSelectedBookingId(null);
                 await loadAllRequests(false);
             } else {
@@ -169,25 +169,24 @@ export default function VendorRequests() {
 
     const handleVerifyEndOTP = async (otpCode) => {
         if (!selectedBookingId) return;
+        const currentTargetId = selectedBookingId;
         try {
             setVerifyingOTP(true);
-            const response = await verifyEndOTP(selectedBookingId, otpCode);
+            const response = await verifyEndOTP(currentTargetId, otpCode);
             if (response.success) {
                 toast.showSuccess("End Survey OTP verified successfully!");
                 setShowEndOTPModal(false);
                 const updated = response.data?.booking;
-                if (updated) {
-                    setConfirmedRequests(prev => prev.map(b => (b._id === updated._id || b.id === updated._id) ? {
-                        ...b,
-                        ...updated,
-                        otp: {
-                            ...b.otp,
-                            ...updated.otp,
-                            endSurvey: { ...b.otp?.endSurvey, ...updated.otp?.endSurvey, verified: true }
-                        },
-                        endSurveyVerifiedAt: new Date()
-                    } : b));
-                }
+                setConfirmedRequests(prev => prev.map(b => (b._id === currentTargetId || b.id === currentTargetId || (updated && (b._id === updated._id || b.id === updated._id))) ? {
+                    ...b,
+                    ...(updated || {}),
+                    otp: {
+                        ...b.otp,
+                        ...(updated?.otp || {}),
+                        endSurvey: { ...b.otp?.endSurvey, ...(updated?.otp?.endSurvey || {}), verified: true }
+                    },
+                    endSurveyVerifiedAt: new Date()
+                } : b));
                 setSelectedBookingId(null);
                 await loadAllRequests(false);
             } else {
@@ -204,18 +203,39 @@ export default function VendorRequests() {
         const targetId = b._id || b.id;
         const loadingToast = toast.showLoading("Updating status to En Route...");
         try {
+            // Optimistically update card immediately!
+            setConfirmedRequests(prev => prev.map(item => (item._id === targetId || item.id === targetId) ? {
+                ...item,
+                status: "EN_ROUTE",
+                vendorStatus: "EN_ROUTE",
+                userStatus: "EN_ROUTE",
+                enRouteAt: new Date()
+            } : item));
+
             const response = await markEnRoute(targetId);
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Status updated to En Route! Customer notified.");
+                const updated = response.data?.booking;
+                if (updated) {
+                    setConfirmedRequests(prev => prev.map(item => (item._id === targetId || item.id === targetId) ? {
+                        ...item,
+                        ...updated,
+                        status: "EN_ROUTE",
+                        vendorStatus: "EN_ROUTE",
+                        userStatus: "EN_ROUTE"
+                    } : item));
+                }
                 await loadAllRequests(false);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to update status");
+                await loadAllRequests(false);
             }
         } catch (err) {
             toast.dismissToast(loadingToast);
             handleApiError(err, "Failed to update status to En Route");
+            await loadAllRequests(false);
         }
     };
 
@@ -285,7 +305,7 @@ export default function VendorRequests() {
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                loadAllRequests();
+                loadAllRequests(false);
             }
         };
         window.addEventListener('focus', handleVisibilityChange);
@@ -296,13 +316,13 @@ export default function VendorRequests() {
         };
     }, []);
 
-    // Background auto-polling (every 8 seconds) so new requests appear live without refresh
+    // Background auto-polling (every 5 seconds) so new requests appear live without refresh
     useEffect(() => {
         const interval = setInterval(() => {
             if (document.visibilityState === 'visible') {
-                loadAllRequestsRef.current?.();
+                loadAllRequestsRef.current?.(false);
             }
-        }, 8000);
+        }, 5000);
         return () => clearInterval(interval);
     }, []);
 
@@ -313,7 +333,7 @@ export default function VendorRequests() {
         const handleSocketNotification = (data) => {
             console.log('[VendorRequests] Real-time socket event received:', data);
             if (loadAllRequestsRef.current) {
-                loadAllRequestsRef.current();
+                loadAllRequestsRef.current(false);
             }
         };
 

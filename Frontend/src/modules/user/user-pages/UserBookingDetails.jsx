@@ -74,25 +74,47 @@ export default function UserBookingDetails() {
 
     // Listen to socket notifications for real-time status updates
     useEffect(() => {
-        if (!socket) return;
+        if (!socket || !bookingId) return;
+
+        // Join booking tracking room
+        socket.emit('join_booking_tracking', bookingId);
 
         const handleBookingUpdate = (data) => {
-            const updatedBookingId = data.bookingId || data.metadata?.bookingId || data.relatedEntity?.entityId;
+            const updatedBookingId = data?.bookingId?.toString() || data?.data?.bookingId?.toString() || data?.metadata?.bookingId?.toString() || data?.relatedEntity?.entityId?.toString();
+            const currentBookingId = bookingId?.toString();
 
-            if (updatedBookingId === bookingId) {
+            if (!updatedBookingId || updatedBookingId === currentBookingId) {
                 console.log("Received booking update via socket:", data);
-                loadBookingDetails();
+                if (data?.booking) {
+                    setBooking(prev => ({ ...prev, ...data.booking }));
+                }
+                loadBookingDetails(false);
             }
         };
 
         socket.on('booking_updated', handleBookingUpdate);
+        socket.on('booking_status_updated', handleBookingUpdate);
         socket.on('new_notification', handleBookingUpdate);
+        socket.on('newNotification', handleBookingUpdate);
 
         return () => {
             socket.off('booking_updated', handleBookingUpdate);
+            socket.off('booking_status_updated', handleBookingUpdate);
             socket.off('new_notification', handleBookingUpdate);
+            socket.off('newNotification', handleBookingUpdate);
         };
     }, [socket, bookingId]);
+
+    // Background polling every 5 seconds so status changes reflect live
+    useEffect(() => {
+        if (!bookingId) return;
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                loadBookingDetails(false);
+            }
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [bookingId]);
 
     // Load data on mount and when location/bookingId changes
     useEffect(() => {
@@ -108,34 +130,38 @@ export default function UserBookingDetails() {
     }, [location.state]);
 
     // Lock background scroll when any modal is open
-    const isAnyModalOpen = Boolean(showCancelConfirm || showCancellationInput || showBorewellModal || showWorkProof || showRatingModal || showPaymentPrompt);
     useEffect(() => {
+        const isAnyModalOpen =
+            showCancelConfirm || 
+            showCancellationInput ||
+            showBorewellModal || 
+            showWorkProof || 
+            showRatingModal || 
+            showPaymentPrompt;
+
         if (isAnyModalOpen) {
-            const originalBodyOverflow = document.body.style.overflow;
-            const originalHtmlOverflow = document.documentElement.style.overflow;
+            const originalStyle = window.getComputedStyle(document.body).overflow;
             document.body.style.overflow = "hidden";
-            document.documentElement.style.overflow = "hidden";
             return () => {
-                document.body.style.overflow = originalBodyOverflow;
-                document.documentElement.style.overflow = originalHtmlOverflow;
+                document.body.style.overflow = originalStyle;
             };
         }
-    }, [isAnyModalOpen]);
+    }, [showCancelConfirm, showCancellationInput, showBorewellModal, showWorkProof, showRatingModal, showPaymentPrompt]);
 
     // Refetch when page becomes visible
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                loadBookingDetails();
+                loadBookingDetails(false);
             }
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
-    const loadBookingDetails = async () => {
+    const loadBookingDetails = async (showLoading = true) => {
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
             const response = await getBookingDetails(bookingId);
             if (response.success) {
                 setBooking(response.data.booking);

@@ -144,36 +144,49 @@ export default function VendorBookingDetails() {
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
-    // Listen for real-time notifications via Socket.IO
+    // Listen for real-time notifications and status updates via Socket.IO
     useEffect(() => {
-        if (!socket) return;
+        if (!socket || !bookingId) return;
 
-        const handleNewNotification = (notification) => {
-            console.log('[VendorBookingDetails] New notification received:', notification);
+        // Join the booking tracking / updates room
+        socket.emit('join_booking_tracking', bookingId);
 
-            // Auto-refresh booking details for relevant notifications
-            if (notification.type === 'BOOKING_STATUS_UPDATED' ||
-                notification.type === 'PAYMENT_RECEIVED' ||
-                notification.type === 'BOOKING_ACCEPTED' ||
-                notification.type === 'BOOKING_REJECTED' ||
-                notification.type === 'BOOKING_CANCELLED') {
-                // Check if notification is for this specific booking
-                const notificationBookingId = notification.data?.bookingId?.toString() || notification.bookingId?.toString();
-                const currentBookingId = bookingId?.toString();
+        const handleBookingUpdate = (data) => {
+            const updatedBookingId = data?.bookingId?.toString() || data?.data?.bookingId?.toString() || data?.metadata?.bookingId?.toString() || data?.relatedEntity?.entityId?.toString();
+            const currentBookingId = bookingId?.toString();
 
-                if (notificationBookingId === currentBookingId) {
-                    console.log('[VendorBookingDetails] Refreshing booking details for this booking...');
-                    loadBookingDetails();
+            if (!updatedBookingId || updatedBookingId === currentBookingId) {
+                console.log('[VendorBookingDetails] Real-time booking update received via socket:', data);
+                if (data?.booking) {
+                    setBooking(prev => ({ ...prev, ...data.booking }));
                 }
+                loadBookingDetails(false);
             }
         };
 
-        socket.on('new_notification', handleNewNotification);
+        socket.on('booking_updated', handleBookingUpdate);
+        socket.on('booking_status_updated', handleBookingUpdate);
+        socket.on('new_notification', handleBookingUpdate);
+        socket.on('newNotification', handleBookingUpdate);
 
         return () => {
-            socket.off('new_notification', handleNewNotification);
+            socket.off('booking_updated', handleBookingUpdate);
+            socket.off('booking_status_updated', handleBookingUpdate);
+            socket.off('new_notification', handleBookingUpdate);
+            socket.off('newNotification', handleBookingUpdate);
         };
     }, [socket, bookingId]);
+
+    // Auto-polling every 5 seconds so status changes reflect live without manual refresh
+    useEffect(() => {
+        if (!bookingId) return;
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                loadBookingDetails(false);
+            }
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [bookingId]);
 
     const loadBookingDetails = async (showLoading = true) => {
         try {
@@ -284,18 +297,31 @@ export default function VendorBookingDetails() {
         const loadingToast = toast.showLoading("Updating status to En Route...");
         try {
             setActionLoading(true);
+            setBooking(prev => ({
+                ...prev,
+                status: "EN_ROUTE",
+                vendorStatus: "EN_ROUTE",
+                userStatus: "EN_ROUTE",
+                enRouteAt: new Date()
+            }));
             const response = await markBookingAsEnRoute(bookingId);
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Trip started! You are now marked En Route.");
-                await loadBookingDetails();
+                const updated = response.data?.booking;
+                if (updated) {
+                    setBooking(prev => ({ ...prev, ...updated, status: "EN_ROUTE", vendorStatus: "EN_ROUTE" }));
+                }
+                await loadBookingDetails(false);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to update status");
+                await loadBookingDetails(false);
             }
         } catch (err) {
             toast.dismissToast(loadingToast);
             handleApiError(err, "Failed to update status");
+            await loadBookingDetails(false);
         } finally {
             setActionLoading(false);
         }
