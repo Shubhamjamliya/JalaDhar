@@ -133,6 +133,8 @@ export default function AdminBookings() {
             FINAL_SETTLEMENT: "bg-amber-100 text-amber-800",
             COMPLETED: "bg-green-100 text-green-800",
             CANCELLED: "bg-red-100 text-red-800",
+            EXPERT_CANCELLED: "bg-amber-100 text-amber-900 font-bold border border-amber-300",
+            UNABLE_TO_COMPLETE: "bg-orange-100 text-orange-900 font-bold border border-orange-300",
         };
         return statusColors[status] || "bg-gray-100 text-gray-800";
     };
@@ -176,6 +178,8 @@ export default function AdminBookings() {
                     { id: 'visited', label: 'Site Visited', status: 'VISITED' },
                     { id: 'report_uploaded', label: 'Report Uploaded', status: 'REPORT_UPLOADED' },
                     { id: 'borewell_uploaded', label: 'Borewell Uploaded', status: 'BOREWELL_UPLOADED' },
+                    { id: 'expert_cancelled', label: 'Expert Cancelled', status: 'EXPERT_CANCELLED' },
+                    { id: 'unable_to_complete', label: 'Unable to Complete', status: 'UNABLE_TO_COMPLETE' },
                     { id: 'completed', label: 'Completed', status: 'COMPLETED' },
                     { id: 'cancelled', label: 'Cancelled', status: 'CANCELLED' },
                 ].map((tab) => {
@@ -580,6 +584,38 @@ export default function AdminBookings() {
                                                     {formatDateTime(selectedBooking.report.uploadedAt)}
                                                 </p>
                                             </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Cancellation & Audit Information */}
+                                {(selectedBooking.status === "EXPERT_CANCELLED" || selectedBooking.cancellationDetails?.cancelledBy || selectedBooking.status === "CANCELLED") && (
+                                    <div className="border border-amber-200 bg-amber-50/40 rounded-lg p-4">
+                                        <h3 className="text-base font-bold text-amber-900 mb-2 flex items-center gap-1.5">
+                                            <span>Cancellation & Audit Info</span>
+                                            {selectedBooking.cancellationDetails?.isSameDay && (
+                                                <span className="text-[10px] bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded-full uppercase">
+                                                    Same-Day
+                                                </span>
+                                            )}
+                                        </h3>
+                                        <div className="text-xs space-y-1.5 text-gray-700">
+                                            <p><span className="font-semibold text-gray-500">Cancelled By:</span> {selectedBooking.cancellationDetails?.cancelledBy || selectedBooking.cancelledBy || "N/A"}</p>
+                                            <p><span className="font-semibold text-gray-500">Reason:</span> {selectedBooking.cancellationDetails?.reason || selectedBooking.cancellationReason || "N/A"}</p>
+                                            {selectedBooking.cancellationDetails?.userResolution && (
+                                                <p><span className="font-semibold text-blue-600">Resolution Status:</span> {selectedBooking.cancellationDetails.userResolution.status}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* On-Site Infeasibility Information */}
+                                {(selectedBooking.status === "UNABLE_TO_COMPLETE" || selectedBooking.unableToCompleteDetails?.reported) && (
+                                    <div className="border border-orange-200 bg-orange-50/40 rounded-lg p-4">
+                                        <h3 className="text-base font-bold text-orange-900 mb-2">On-Site Infeasibility</h3>
+                                        <div className="text-xs space-y-1.5 text-gray-700">
+                                            <p><span className="font-semibold text-gray-500">Category:</span> {selectedBooking.unableToCompleteDetails?.reasonCategory || "N/A"}</p>
+                                            <p><span className="font-semibold text-gray-500">Description:</span> {selectedBooking.unableToCompleteDetails?.reasonDescription || "N/A"}</p>
                                         </div>
                                     </div>
                                 )}
