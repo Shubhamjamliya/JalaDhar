@@ -20,11 +20,12 @@ const processReportSLAApprovals = async () => {
 
     const cutoffDate = new Date(Date.now() - (slaHours * 60 * 60 * 1000));
 
-    // Find all bookings with uploaded reports older than the SLA threshold that haven't been credited/approved
+    // Find all bookings with uploaded reports older than the SLA threshold that haven't been credited/approved and NOT rejected
     const pendingBookings = await Booking.find({
       status: { $in: [BOOKING_STATUS.REPORT_UPLOADED, BOOKING_STATUS.AWAITING_PAYMENT, BOOKING_STATUS.VISITED] },
       reportUploadedAt: { $lte: cutoffDate, $ne: null },
       'report.approvedAt': null,
+      'report.rejectedAt': null,
       'payment.vendorWalletPayments.reportUploadPayment.credited': { $ne: true }
     }).populate('vendor', 'name email phone').populate('user', 'name email');
 

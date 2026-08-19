@@ -10,6 +10,7 @@ import {
 import { getBookingDetails, initiateRemainingPayment, verifyRemainingPayment } from "../../../services/bookingApi";
 import { loadRazorpay } from "../../../utils/razorpay";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 

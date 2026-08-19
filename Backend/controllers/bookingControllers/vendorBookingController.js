@@ -1051,13 +1051,20 @@ const markVisitedAndUploadReport = async (req, res) => {
       }
     }
 
-    // 4. Update booking with report data
+    // 4. Update booking with report data (preserve existing media on edits if not replaced)
+    const existingImages = booking.report?.images || [];
+    const finalImages = reportImages.length > 0 ? reportImages : existingImages;
+    const finalReportFile = reportFile || booking.report?.reportFile || null;
+
     booking.report = {
       ...reportData,
-      images: reportImages,
-      reportFile: reportFile,
+      images: finalImages,
+      reportFile: finalReportFile,
       uploadedAt: new Date(),
-      uploadedBy: vendorId
+      uploadedBy: vendorId,
+      rejectedAt: null,
+      rejectedBy: null,
+      rejectionReason: null
     };
     booking.reportUploadedAt = new Date();
     booking.status = BOOKING_STATUS.REPORT_UPLOADED;

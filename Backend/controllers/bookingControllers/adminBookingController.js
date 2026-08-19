@@ -958,8 +958,7 @@ const rejectReport = async (req, res) => {
       });
     }
 
-    // Add rejection fields to report (we can add rejectedAt, rejectedBy if needed)
-    // For now, we'll just update the booking status and add rejection reason
+    // Add rejection fields to report
     booking.report.rejectedAt = new Date();
     booking.report.rejectedBy = adminId;
     booking.report.rejectionReason = rejectionReason.trim();
@@ -968,6 +967,39 @@ const rejectReport = async (req, res) => {
     booking.vendorStatus = BOOKING_STATUS.REPORT_UPLOADED;
 
     await booking.save();
+
+    // Notify vendor about report revision requirement
+    try {
+      const io = getIO();
+      const vendorId = booking.vendor._id || booking.vendor;
+      await sendNotification({
+        recipient: vendorId,
+        recipientModel: 'Vendor',
+        type: 'REPORT_REJECTED',
+        title: 'Survey Report Needs Revision',
+        message: `Your technical survey report for booking #${booking._id.toString().slice(-6)} was rejected by Admin. Reason: ${rejectionReason.trim()}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          rejectionReason: rejectionReason.trim()
+        }
+      }, io);
+
+      if (io) {
+        const vendorIdStr = vendorId.toString();
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          vendorStatus: booking.vendorStatus,
+          rejectionReason: rejectionReason.trim()
+        });
+      }
+    } catch (notifError) {
+      console.error('[rejectReport] Notification error:', notifError);
+    }
 
     res.json({
       success: true,

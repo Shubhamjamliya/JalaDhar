@@ -621,6 +621,14 @@ export default function VendorBookingDetails() {
             CANCELLED: { color: "bg-gray-100 text-gray-700", label: "Cancelled" },
         };
 
+        if (booking?.report?.rejectedAt && !booking?.report?.approvedAt) {
+            return (
+                <span className="px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
+                    ⚠️ Report Revision Required
+                </span>
+            );
+        }
+
         if (status === 'VISITED' && booking?.otp?.endSurvey?.verified) {
             return (
                 <span className="px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800">
@@ -992,6 +1000,40 @@ export default function VendorBookingDetails() {
                             <IoCloseCircleOutline className="text-xl" />
                             Cancel Booking
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Report Rejection / Revision Required Alert Banner */}
+            {booking.report?.rejectedAt && !booking.report?.approvedAt && (
+                <div className="bg-gradient-to-r from-rose-50 to-red-50 border-2 border-rose-200 rounded-2xl p-5 mb-6 shadow-sm">
+                    <div className="flex items-start gap-3.5">
+                        <div className="p-2.5 bg-rose-100 text-rose-600 rounded-xl text-xl flex-shrink-0">
+                            ⚠️
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-2">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <h3 className="text-sm font-black text-rose-900">
+                                    Survey Report Needs Revision
+                                </h3>
+                                <span className="text-[10px] font-bold uppercase tracking-wider bg-rose-200/80 text-rose-800 px-2.5 py-0.5 rounded-full">
+                                    Action Required
+                                </span>
+                            </div>
+                            <div className="bg-white/80 rounded-xl p-3 border border-rose-100">
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">Admin Feedback / Reason:</p>
+                                <p className="text-xs font-bold text-rose-950 leading-relaxed">
+                                    {booking.report.rejectionReason || "Please review the technical parameters, clear images, and depth coordinates."}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => navigate(`/vendor/bookings/${booking._id || booking.id}/upload-report`)}
+                                className="w-full sm:w-auto px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl transition-all shadow-md shadow-rose-200 flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                <IoDocumentTextOutline className="text-base" />
+                                <span>Edit & Re-Upload Report</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

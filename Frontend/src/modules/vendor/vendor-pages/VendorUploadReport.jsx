@@ -149,15 +149,52 @@ export default function VendorUploadReport() {
                 }
             }
 
+            const report = booking.report || {};
             const initialValues = {
-                customerName: booking.user?.name || booking.customerName || "",
-                village: booking.village || booking.address?.village || booking.address?.city || "",
-                mandal: booking.mandal || booking.address?.mandal || booking.district || "",
-                district: booking.district || booking.address?.district || "",
-                state: booking.state || booking.address?.state || "",
-                landLocation: booking.address?.landmark || booking.address?.street || booking.landmark || "",
-                surveyNumber: extractedSurveyNo || "",
-                extent: booking.purposeExtent ? formatAcresGuntasDisplay(booking.purposeExtent) : (booking.extent || ""),
+                customerName: report.customerName || booking.user?.name || booking.customerName || "",
+                village: report.village || booking.village || booking.address?.village || booking.address?.city || "",
+                mandal: report.mandal || booking.mandal || booking.address?.mandal || booking.district || "",
+                district: report.district || booking.district || booking.address?.district || "",
+                state: report.state || booking.state || booking.address?.state || "",
+                landLocation: report.landLocation || booking.address?.landmark || booking.address?.street || booking.landmark || "",
+                surveyNumber: report.surveyNumber || extractedSurveyNo || "",
+                extent: report.extent || (booking.purposeExtent ? formatAcresGuntasDisplay(booking.purposeExtent) : (booking.extent || "")),
+                geologicalInfo: report.geologicalInfo || {
+                    rockType: "",
+                    soilType: "",
+                    terrainType: "",
+                    weatheredZone: "",
+                    groundwaterCondition: ""
+                },
+                existingBorewell: report.existingBorewell || {
+                    distance: "",
+                    depth: "",
+                    yield: "",
+                    status: ""
+                },
+                surveyRecommendations: report.surveyRecommendations || {
+                    pointsInvestigated: "",
+                    recommendedPointNumber: "",
+                    latitude: "",
+                    longitude: "",
+                    groundElevation: "",
+                    recommendedBoreDepth: "",
+                    recommendedCasingDepth: "",
+                    expectedFractureDepths: "",
+                    expectedYield: ""
+                },
+                drillingInstructions: report.drillingInstructions || {
+                    stopDrillingDepth: "",
+                    flushBorewell: false
+                },
+                confidenceLevel: report.confidenceLevel || "",
+                drillingRecommendation: report.drillingRecommendation || "",
+                notes: report.notes || "",
+                waterFound: report.waterFound !== undefined ? String(report.waterFound) : "",
+                declaration: report.declaration || {
+                    expertDeclaration: false,
+                    signature: ""
+                }
             };
 
             const savedDraftKey = `survey_report_draft_${bookingId}`;
