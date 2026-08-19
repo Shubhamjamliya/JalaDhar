@@ -1501,12 +1501,13 @@ const downloadInvoice = async (req, res) => {
 
 /**
  * Cancel booking by vendor (for unavoidable circumstances)
- * Reassigns the booking to another vendor
+ * Distinguishes Same-Day vs Advance cancellation, updates reliability stats,
+ * and sets status to EXPERT_CANCELLED to offer the customer 2 choices (Replacement vs 100% Refund).
  */
 const cancelBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { cancellationReason } = req.body;
+    const { cancellationReason, reasonCategory } = req.body;
     const vendorId = req.userId;
 
     if (!cancellationReason || cancellationReason.trim().length < 10) {
@@ -1528,8 +1529,16 @@ const cancelBooking = async (req, res) => {
       });
     }
 
-    // Check if status is cancellable (ONLY ACCEPTED, EN_ROUTE, VISITED - until he uploads the report)
-    const cancellableStatuses = [BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.EN_ROUTE, BOOKING_STATUS.VISITED];
+    // If the expert has already reached the site, block standard cancellation and require "Unable to Complete Survey"
+    if (booking.status === BOOKING_STATUS.VISITED || (booking.otp?.startSurvey?.verified)) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already arrived on-site. Please use the "Unable to Complete Survey" option to submit on-site evidence and protect your travel allowance.'
+      });
+    }
+
+    // Check if status is cancellable (ASSIGNED, ACCEPTED, EN_ROUTE)
+    const cancellableStatuses = [BOOKING_STATUS.ASSIGNED, BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.EN_ROUTE, BOOKING_STATUS.PENDING];
     if (!cancellableStatuses.includes(booking.status)) {
       return res.status(400).json({
         success: false,
@@ -1537,68 +1546,116 @@ const cancelBooking = async (req, res) => {
       });
     }
 
-    // Update terminal status temporarily
-    booking.status = BOOKING_STATUS.CANCELLED;
-    booking.vendorStatus = BOOKING_STATUS.CANCELLED;
-    booking.userStatus = BOOKING_STATUS.CANCELLED;
-    booking.rejectionReason = cancellationReason.trim(); // Reuse this field for audit
-    booking.cancelledBy = 'VENDOR';
-    booking.cancelledAt = new Date();
-    await booking.save();
-
-    // Process user refund if advance payment was made
-    try {
-      const Payment = require('../../models/Payment');
-      const { creditToUserWallet } = require('../../services/userWalletService');
-      
-      const isAdvancePaidOnBooking = booking.payment?.advancePaid && (booking.payment?.advanceAmount > 0);
-      const completedAdvancePayment = await Payment.findOne({
-        booking: booking._id,
-        paymentType: 'ADVANCE',
-        status: 'COMPLETED'
-      });
-
-      const refundAmount = isAdvancePaidOnBooking 
-        ? booking.payment.advanceAmount 
-        : (completedAdvancePayment ? completedAdvancePayment.amount : 0);
-
-      if (refundAmount > 0) {
-        await creditToUserWallet(
-          booking.user,
-          refundAmount,
-          booking._id,
-          `Refund for cancelled booking #${booking._id.toString().slice(-6).toUpperCase()}`
-        );
-
-        await Payment.create({
-          booking: booking._id,
-          user: booking.user,
-          vendor: vendorId,
-          paymentType: 'REFUND',
-          amount: refundAmount,
-          status: 'COMPLETED',
-          description: `Refund credited to user wallet for cancelled booking #${booking._id.toString().slice(-6).toUpperCase()}`,
-          completedAt: new Date()
-        });
-      }
-    } catch (refundErr) {
-      console.error('Error auto-refunding to user wallet on cancelBooking:', refundErr);
+    // Determine if cancellation is on the same day as the scheduled visit
+    let isSameDay = false;
+    if (booking.scheduledDate) {
+      const scheduledDateStr = new Date(booking.scheduledDate).toISOString().split('T')[0];
+      const todayStr = new Date().toISOString().split('T')[0];
+      isSameDay = (scheduledDateStr === todayStr);
     }
 
-    // Notify User
+    const cancellationType = isSameDay ? 'EXPERT_SAME_DAY' : 'EXPERT_ADVANCE';
+
+    // Update booking status to EXPERT_CANCELLED so user can choose replacement or 100% refund
+    booking.status = BOOKING_STATUS.EXPERT_CANCELLED;
+    booking.vendorStatus = BOOKING_STATUS.CANCELLED;
+    booking.userStatus = BOOKING_STATUS.EXPERT_CANCELLED;
+    booking.rejectionReason = cancellationReason.trim();
+    booking.cancelledBy = 'VENDOR';
+    booking.cancelledAt = new Date();
+
+    booking.cancellationDetails = {
+      cancelledBy: 'VENDOR',
+      cancellationType,
+      reason: cancellationReason.trim(),
+      reasonCategory: reasonCategory || 'OTHER',
+      isSameDay,
+      cancelledAt: new Date(),
+      cancellingVendor: vendorId,
+      userResolution: {
+        status: 'PENDING',
+        resolvedAt: null,
+        replacementVendor: null,
+        refundAmount: 0,
+        notes: null
+      }
+    };
+
+    // Add current vendor to rejected vendors list so they aren't re-assigned
+    if (!booking.rejectedVendors) {
+      booking.rejectedVendors = [];
+    }
+    if (!booking.rejectedVendors.includes(vendorId)) {
+      booking.rejectedVendors.push(vendorId);
+    }
+
+    await booking.save();
+
+    // Reverse pre-allocated travel allowance from vendor wallet if applicable
+    try {
+      const { debitFromVendorWallet } = require('../../services/vendorWalletService');
+      if (booking.payment?.travelCharges && booking.payment?.travelCharges > 0) {
+        await debitFromVendorWallet(
+          vendorId,
+          booking.payment.travelCharges,
+          booking._id,
+          `Travel allowance reversed due to ${isSameDay ? 'same-day' : 'advance'} cancellation of booking #${booking._id.toString().slice(-6).toUpperCase()}`
+        );
+      }
+    } catch (walletDebitErr) {
+      console.error('Error reversing vendor travel allowance on cancel:', walletDebitErr);
+    }
+
+    // Update Vendor Cancellation Analytics and Reliability Scorecard
+    try {
+      const Vendor = require('../../models/Vendor');
+      const vendor = await Vendor.findById(vendorId);
+      if (vendor) {
+        if (!vendor.cancellationStats) {
+          vendor.cancellationStats = {
+            totalCancellations: 0,
+            sameDayCancellations: 0,
+            advanceCancellations: 0,
+            warningCount: 0,
+            restrictionStatus: { isRestricted: false, restrictedUntil: null, reason: null }
+          };
+        }
+        vendor.cancellationStats.totalCancellations += 1;
+        if (isSameDay) {
+          vendor.cancellationStats.sameDayCancellations += 1;
+        } else {
+          vendor.cancellationStats.advanceCancellations += 1;
+        }
+        vendor.cancellationStats.lastCancellationDate = new Date();
+        await vendor.save();
+      }
+    } catch (vErr) {
+      console.error('Error updating vendor cancellation statistics:', vErr);
+    }
+
+    // Notify User with instant high-priority apology and resolution options
+    const io = getIO();
+    const shortBookingId = booking._id.toString().slice(-4).toUpperCase();
     await sendNotification({
       recipient: booking.user,
       recipientModel: 'User',
-      type: 'BOOKING_CANCELLED',
-      title: 'Booking Cancelled',
-      message: `Your booking was cancelled by the expert. Reason: ${cancellationReason.trim()}`,
+      type: 'EXPERT_CANCELLED',
+      title: isSameDay ? 'Expert Unable to Attend Today’s Survey' : 'Expert Unable to Attend Survey',
+      message: isSameDay
+        ? `Your assigned expert is unable to attend today's scheduled survey (#JALA${shortBookingId}). We apologise for the inconvenience. Please choose to reschedule with another expert (₹0 extra fee) or receive a 100% full refund.`
+        : `Your assigned expert is unable to attend the scheduled survey (#JALA${shortBookingId}). Please choose a replacement expert or request a 100% full refund.`,
       relatedEntity: {
         entityType: 'Booking',
         entityId: booking._id
+      },
+      metadata: {
+        isSameDay,
+        cancellationType,
+        cancellationReason: cancellationReason.trim()
       }
-    });
+    }, io);
 
-    // Notify Admins
+    // Notify Admins for Operations Auditing
     try {
       const Admin = require('../../models/Admin');
       const admins = await Admin.find({ isActive: true });
@@ -1606,14 +1663,14 @@ const cancelBooking = async (req, res) => {
         await sendNotification({
           recipient: admin._id,
           recipientModel: 'Admin',
-          type: 'BOOKING_CANCELLED',
-          title: 'Booking Cancelled',
-          message: `Booking #${booking._id.toString().slice(-6)} was cancelled by vendor. Reason: ${cancellationReason.trim()}`,
+          type: 'EXPERT_CANCELLED',
+          title: isSameDay ? '⚠️ Same-Day Expert Cancellation' : 'Expert Cancelled Booking',
+          message: `Booking #JALA${shortBookingId} was cancelled by expert. Type: ${cancellationType}. Reason: ${cancellationReason.trim()}`,
           relatedEntity: {
             entityType: 'Booking',
             entityId: booking._id
           }
-        });
+        }, io);
       }
     } catch (adminErr) {
       console.error('Error sending admin notification:', adminErr);
@@ -1621,10 +1678,13 @@ const cancelBooking = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Booking cancelled successfully and customer refunded if applicable.',
+      message: isSameDay
+        ? 'Booking cancelled. Recorded as Same-Day Cancellation and customer notified.'
+        : 'Booking cancelled successfully and customer notified with resolution options.',
       data: {
         bookingId: booking._id,
-        reassigned: false
+        isSameDay,
+        cancellationType
       }
     });
 
@@ -1638,11 +1698,151 @@ const cancelBooking = async (req, res) => {
   }
 };
 
+/**
+ * Report "Unable to Complete Survey" (On-Site Infeasibility)
+ * Used when expert reaches the site, but unforeseen on-site conditions prevent survey completion.
+ * Protects expert's travel allowance and records geotagged photo proof for Admin mediation.
+ */
+const reportUnableToComplete = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { reasonCategory, reasonDescription, lat, lng } = req.body;
+    const vendorId = req.userId;
+
+    if (!reasonCategory) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reason category is required (e.g. LAND_ACCESS_DENIED, EXTREME_WEATHER_FLOODING, BOUNDARY_DISPUTE, CUSTOMER_ABSENT)'
+      });
+    }
+
+    if (!reasonDescription || reasonDescription.trim().length < 15) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a detailed description (at least 15 characters) of on-site conditions.'
+      });
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      vendor: vendorId
+    }).populate('user', 'name phone email');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or you are not the assigned expert.'
+      });
+    }
+
+    // Upload on-site photo evidence
+    const evidencePhotos = [];
+    if (req.files && req.files.images && req.files.images.length > 0) {
+      for (const file of req.files.images) {
+        try {
+          const result = await uploadToCloudinary(file.buffer, 'booking-infeasible/evidence');
+          evidencePhotos.push({
+            url: result.secure_url,
+            publicId: result.public_id
+          });
+        } catch (cloudErr) {
+          console.error('[reportUnableToComplete] Cloudinary upload error:', cloudErr);
+          const base64Str = `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`;
+          evidencePhotos.push({
+            url: base64Str,
+            publicId: `local_${Date.now()}`
+          });
+        }
+      }
+    }
+
+    booking.status = BOOKING_STATUS.UNABLE_TO_COMPLETE;
+    booking.vendorStatus = BOOKING_STATUS.UNABLE_TO_COMPLETE;
+    booking.userStatus = BOOKING_STATUS.UNABLE_TO_COMPLETE;
+
+    booking.unableToCompleteDetails = {
+      reported: true,
+      reportedAt: new Date(),
+      reasonCategory,
+      reasonDescription: reasonDescription.trim(),
+      photos: evidencePhotos,
+      coordinates: {
+        lat: lat ? parseFloat(lat) : null,
+        lng: lng ? parseFloat(lng) : null
+      },
+      adminReview: {
+        status: 'PENDING',
+        reviewedBy: null,
+        reviewedAt: null,
+        notes: null,
+        travelFeePayableToVendor: true,
+        userRefundPercentage: 100
+      }
+    };
+
+    await booking.save();
+
+    // Send notifications to User and Admin
+    const io = getIO();
+    const shortBookingId = booking._id.toString().slice(-4).toUpperCase();
+
+    await sendNotification({
+      recipient: booking.user._id,
+      recipientModel: 'User',
+      type: 'UNABLE_TO_COMPLETE',
+      title: 'Survey Infeasible on Site',
+      message: `The expert arrived on site for booking #JALA${shortBookingId} but could not complete testing due to: ${reasonDescription.trim()}. Our support team will review and contact you.`,
+      relatedEntity: {
+        entityType: 'Booking',
+        entityId: booking._id
+      }
+    }, io);
+
+    try {
+      const Admin = require('../../models/Admin');
+      const admins = await Admin.find({ isActive: true });
+      for (const admin of admins) {
+        await sendNotification({
+          recipient: admin._id,
+          recipientModel: 'Admin',
+          type: 'UNABLE_TO_COMPLETE',
+          title: '🚨 On-Site Survey Infeasible',
+          message: `Expert arrived on site for #JALA${shortBookingId} but reported survey infeasible. Category: ${reasonCategory}. Review evidence.`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          }
+        }, io);
+      }
+    } catch (adminErr) {
+      console.error('Error notifying admins of infeasible survey:', adminErr);
+    }
+
+    res.json({
+      success: true,
+      message: 'On-site condition report submitted successfully. Admin will review the evidence and finalize settlements.',
+      data: {
+        bookingId: booking._id,
+        status: booking.status
+      }
+    });
+
+  } catch (error) {
+    console.error('reportUnableToComplete error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit on-site infeasibility report',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getVendorBookings,
   acceptBooking,
   rejectBooking,
   cancelBooking,
+  reportUnableToComplete,
   markAsEnRoute,
   verifyStartSurveyOTP,
   verifyEndSurveyOTP,

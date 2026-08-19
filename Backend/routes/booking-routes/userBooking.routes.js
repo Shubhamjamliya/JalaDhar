@@ -11,6 +11,9 @@ const {
   getUserBookings,
   getBookingDetails,
   cancelBooking,
+  getAvailableReplacementVendors,
+  reassignReplacementVendor,
+  claimFullRefundForExpertCancellation,
   initiateRemainingPayment,
   uploadBorewellResult,
   downloadInvoice,
@@ -61,6 +64,12 @@ router.get('/vendors/nearby', authenticate, isUser, getNearbyVendors);
 router.get('/vendors/:vendorId', authenticate, isUser, getVendorProfile);
 router.get('/services/:serviceId/vendors', authenticate, isUser, getAvailableVendors);
 router.post('/create', authenticate, isUser, createBookingValidation, createBooking);
+
+// Expert Cancellation Resolution Routes
+router.get('/:bookingId/available-replacements', authenticate, isUser, getAvailableReplacementVendors);
+router.post('/:bookingId/reassign-replacement', authenticate, isUser, reassignReplacementVendor);
+router.post('/:bookingId/claim-expert-cancel-refund', authenticate, isUser, claimFullRefundForExpertCancellation);
+
 router.get('/:bookingId', authenticate, isUser, getBookingDetails);
 router.patch('/:bookingId/cancel', authenticate, isUser, body('cancellationReason').optional().isLength({ max: 500 }), cancelBooking);
 router.post('/:bookingId/remaining-payment', authenticate, isUser, initiateRemainingPayment);

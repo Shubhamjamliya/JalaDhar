@@ -429,6 +429,19 @@ const vendorSchema = new mongoose.Schema({
     success: { type: Number, default: 0 }, // Based on borewell success
     failed: { type: Number, default: 0 }, // Based on borewell failure
     cancelled: { type: Number, default: 0 } // Cancelled or rejected
+  },
+  // Expert Reliability & Cancellation Analytics
+  cancellationStats: {
+    totalCancellations: { type: Number, default: 0 },
+    sameDayCancellations: { type: Number, default: 0 },
+    advanceCancellations: { type: Number, default: 0 },
+    lastCancellationDate: Date,
+    warningCount: { type: Number, default: 0 },
+    restrictionStatus: {
+      isRestricted: { type: Boolean, default: false },
+      restrictedUntil: Date,
+      reason: String
+    }
   }
 }, {
   timestamps: true

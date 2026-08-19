@@ -1821,6 +1821,384 @@ const submitReportFeedback = async (req, res) => {
   }
 };
 
+/**
+ * Get available replacement experts for an expert-cancelled booking
+ */
+const getAvailableReplacementVendors = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const userId = req.userId;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId
+    }).populate('service');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    if (booking.status !== BOOKING_STATUS.EXPERT_CANCELLED && booking.cancellationDetails?.cancelledBy !== 'VENDOR') {
+      return res.status(400).json({
+        success: false,
+        message: 'This booking is not pending replacement reassignment.'
+      });
+    }
+
+    // Exclude previously assigned / rejected vendors
+    const excludedVendors = [...(booking.rejectedVendors || [])];
+    if (booking.vendor && !excludedVendors.includes(booking.vendor)) {
+      excludedVendors.push(booking.vendor);
+    }
+    if (booking.cancellationDetails?.cancellingVendor && !excludedVendors.includes(booking.cancellationDetails.cancellingVendor)) {
+      excludedVendors.push(booking.cancellationDetails.cancellingVendor);
+    }
+
+    // Query active and approved vendors
+    const Vendor = require('../../models/Vendor');
+    const query = {
+      _id: { $nin: excludedVendors },
+      isApproved: true,
+      isActive: true
+    };
+
+    // Filter by district if available
+    if (booking.district || booking.address?.district) {
+      const targetDistrict = booking.district || booking.address?.district;
+      query.$or = [
+        { district: new RegExp(`^${targetDistrict}$`, 'i') },
+        { serviceDistricts: new RegExp(`^${targetDistrict}$`, 'i') },
+        { 'address.district': new RegExp(`^${targetDistrict}$`, 'i') }
+      ];
+    }
+
+    const availableVendors = await Vendor.find(query)
+      .select('name expertId designation email phone rating profilePicture experience workingDays workingHours specialization address machineType aboutExpert')
+      .sort({ 'rating.averageRating': -1, surveysCompleted: -1 })
+      .limit(10);
+
+    // Fallback: If no vendors found in the exact district, return top rated vendors in the state
+    let vendorsList = availableVendors;
+    if (vendorsList.length === 0) {
+      const fallbackQuery = {
+        _id: { $nin: excludedVendors },
+        isApproved: true,
+        isActive: true
+      };
+      vendorsList = await Vendor.find(fallbackQuery)
+        .select('name expertId designation email phone rating profilePicture experience workingDays workingHours specialization address machineType aboutExpert')
+        .sort({ 'rating.averageRating': -1, surveysCompleted: -1 })
+        .limit(10);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        bookingId: booking._id,
+        currentScheduledDate: booking.scheduledDate,
+        purpose: booking.purpose || booking.surveyCategory,
+        replacementVendors: vendorsList
+      }
+    });
+
+  } catch (error) {
+    console.error('getAvailableReplacementVendors error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch replacement experts',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Reassign booking to a replacement expert chosen by the customer (₹0 Extra Fee)
+ */
+const reassignReplacementVendor = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { vendorId, scheduledDate, scheduledTime } = req.body;
+    const userId = req.userId;
+
+    if (!vendorId || !scheduledDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vendor ID and scheduled date are required'
+      });
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId
+    }).populate('service user');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    if (booking.status !== BOOKING_STATUS.EXPERT_CANCELLED && booking.cancellationDetails?.cancelledBy !== 'VENDOR') {
+      return res.status(400).json({
+        success: false,
+        message: 'This booking is not eligible for replacement reassignment.'
+      });
+    }
+
+    const Vendor = require('../../models/Vendor');
+    const newVendor = await Vendor.findOne({
+      _id: vendorId,
+      isApproved: true,
+      isActive: true
+    });
+
+    if (!newVendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Selected replacement expert is not active or available'
+      });
+    }
+
+    // Keep the previous vendor in rejectedVendors
+    if (!booking.rejectedVendors) {
+      booking.rejectedVendors = [];
+    }
+    if (booking.vendor && !booking.rejectedVendors.includes(booking.vendor)) {
+      booking.rejectedVendors.push(booking.vendor);
+    }
+
+    // Reassign to new vendor with ₹0 extra fee
+    booking.vendor = newVendor._id;
+    booking.scheduledDate = new Date(scheduledDate);
+    booking.scheduledTime = scheduledTime || 'TBD';
+
+    // Reset status to ACCEPTED
+    booking.status = BOOKING_STATUS.ACCEPTED;
+    booking.userStatus = BOOKING_STATUS.ACCEPTED;
+    booking.vendorStatus = BOOKING_STATUS.ASSIGNED;
+    booking.acceptedAt = new Date();
+    booking.assignedAt = new Date();
+
+    // Generate fresh Start / End survey OTPs
+    const startOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const endOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    booking.otp = {
+      startSurvey: {
+        code: startOtpCode,
+        generatedAt: new Date(),
+        verified: false,
+        verifiedAt: null
+      },
+      endSurvey: {
+        code: endOtpCode,
+        generatedAt: new Date(),
+        verified: false,
+        verifiedAt: null
+      }
+    };
+
+    // Update cancellation resolution metadata
+    booking.cancellationDetails = {
+      ...booking.cancellationDetails,
+      userResolution: {
+        status: 'REASSIGNED',
+        resolvedAt: new Date(),
+        replacementVendor: newVendor._id,
+        refundAmount: 0,
+        notes: `Reassigned by customer to ${newVendor.name} at ₹0 extra fee`
+      }
+    };
+
+    await booking.save();
+
+    // Send notifications to the new vendor and user
+    const io = getIO();
+    const shortBookingId = booking._id.toString().slice(-4).toUpperCase();
+
+    // Notify New Expert
+    await sendNotification({
+      recipient: newVendor._id,
+      recipientModel: 'Vendor',
+      type: 'BOOKING_ASSIGNED',
+      title: 'Priority Job Assigned',
+      message: `You have been assigned as a priority expert for booking #JALA${shortBookingId} scheduled on ${new Date(scheduledDate).toLocaleDateString("en-IN")}.`,
+      relatedEntity: {
+        entityType: 'Booking',
+        entityId: booking._id
+      }
+    }, io);
+
+    // Notify User
+    await sendNotification({
+      recipient: userId,
+      recipientModel: 'User',
+      type: 'BOOKING_REASSIGNED',
+      title: 'Expert Reassigned Successfully',
+      message: `Your groundwater survey (#JALA${shortBookingId}) has been successfully reassigned to ${newVendor.name} for ${new Date(scheduledDate).toLocaleDateString("en-IN")} at ₹0 extra cost.`,
+      relatedEntity: {
+        entityType: 'Booking',
+        entityId: booking._id
+      }
+    }, io);
+
+    res.json({
+      success: true,
+      message: 'Survey successfully rescheduled with new expert at ₹0 extra cost.',
+      data: {
+        bookingId: booking._id,
+        status: booking.status,
+        vendor: {
+          id: newVendor._id,
+          name: newVendor.name,
+          phone: newVendor.phone
+        },
+        scheduledDate: booking.scheduledDate,
+        scheduledTime: booking.scheduledTime
+      }
+    });
+
+  } catch (error) {
+    console.error('reassignReplacementVendor error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reassign replacement expert',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Claim 100% Full Refund when Expert Cancels (Advance + Travel + GST)
+ */
+const claimFullRefundForExpertCancellation = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const userId = req.userId;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId
+    }).populate('user');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    if (booking.status !== BOOKING_STATUS.EXPERT_CANCELLED && booking.cancellationDetails?.cancelledBy !== 'VENDOR') {
+      return res.status(400).json({
+        success: false,
+        message: 'This booking is not pending cancellation resolution.'
+      });
+    }
+
+    const Payment = require('../../models/Payment');
+    const { creditToUserWallet } = require('../../services/userWalletService');
+
+    // Calculate 100% full refund of all amounts paid
+    const isAdvancePaidOnBooking = booking.payment?.advancePaid && (booking.payment?.advanceAmount > 0);
+    const completedAdvancePayment = await Payment.findOne({
+      booking: booking._id,
+      paymentType: 'ADVANCE',
+      status: 'COMPLETED'
+    });
+
+    let refundAmount = 0;
+    if (isAdvancePaidOnBooking) {
+      refundAmount = (booking.payment.advanceAmount || 0) + (booking.payment.travelCharges || 0);
+    } else if (completedAdvancePayment) {
+      refundAmount = completedAdvancePayment.amount;
+    } else if (booking.payment?.totalAmount && booking.payment?.advancePaid) {
+      refundAmount = booking.payment.totalAmount * 0.4;
+    }
+
+    // Credit 100% full refund to User Wallet
+    if (refundAmount > 0) {
+      await creditToUserWallet(
+        userId,
+        refundAmount,
+        booking._id,
+        `100% Full Refund for expert-cancelled booking #JALA${booking._id.toString().slice(-4).toUpperCase()}`
+      );
+
+      await Payment.create({
+        booking: booking._id,
+        user: userId,
+        vendor: booking.vendor,
+        paymentType: 'REFUND',
+        amount: refundAmount,
+        status: 'COMPLETED',
+        description: `100% Full Refund credited to wallet for expert-cancelled booking #JALA${booking._id.toString().slice(-4).toUpperCase()}`,
+        completedAt: new Date()
+      });
+    }
+
+    // Set terminal status to CANCELLED
+    booking.status = BOOKING_STATUS.CANCELLED;
+    booking.userStatus = BOOKING_STATUS.CANCELLED;
+    booking.vendorStatus = BOOKING_STATUS.CANCELLED;
+    booking.cancelledBy = 'VENDOR';
+    booking.cancelledAt = new Date();
+
+    if (booking.payment) {
+      booking.payment.refundStatus = 'COMPLETED';
+    }
+
+    booking.cancellationDetails = {
+      ...booking.cancellationDetails,
+      userResolution: {
+        status: 'REFUNDED',
+        resolvedAt: new Date(),
+        replacementVendor: null,
+        refundAmount: refundAmount,
+        notes: `100% Full refund of ₹${refundAmount} credited to user wallet`
+      }
+    };
+
+    await booking.save();
+
+    // Send notifications
+    const io = getIO();
+    const shortBookingId = booking._id.toString().slice(-4).toUpperCase();
+
+    await sendNotification({
+      recipient: userId,
+      recipientModel: 'User',
+      type: 'REFUND_PROCESSED',
+      title: '100% Full Refund Credited',
+      message: `A 100% full refund of ₹${refundAmount.toLocaleString("en-IN")} has been credited to your Jaladhaara Wallet for booking #JALA${shortBookingId}.`,
+      relatedEntity: {
+        entityType: 'Booking',
+        entityId: booking._id
+      }
+    }, io);
+
+    res.json({
+      success: true,
+      message: `100% full refund of ₹${refundAmount.toLocaleString("en-IN")} successfully credited to your wallet.`,
+      data: {
+        bookingId: booking._id,
+        status: booking.status,
+        refundAmount: refundAmount
+      }
+    });
+
+  } catch (error) {
+    console.error('claimFullRefundForExpertCancellation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process 100% full refund',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllServices,
   getAvailableVendors,
@@ -1830,6 +2208,9 @@ module.exports = {
   getUserBookings,
   getBookingDetails,
   cancelBooking,
+  getAvailableReplacementVendors,
+  reassignReplacementVendor,
+  claimFullRefundForExpertCancellation,
   initiateRemainingPayment,
   uploadBorewellResult,
   downloadInvoice,

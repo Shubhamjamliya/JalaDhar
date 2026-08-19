@@ -25,7 +25,15 @@ import {
     IoDownloadOutline,
 
 } from "react-icons/io5";
-import { getUserBookings, uploadBorewellResult, getBookingDetails, cancelBooking } from "../../../services/bookingApi";
+import {
+    getUserBookings,
+    uploadBorewellResult,
+    getBookingDetails,
+    cancelBooking,
+    getAvailableReplacementVendors,
+    reassignReplacementVendor,
+    claimFullRefundForExpertCancellation
+} from "../../../services/bookingApi";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { usePullToRefresh } from "../../../hooks/usePullToRefresh";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -55,6 +63,18 @@ export default function UserStatus() {
     const [showCancellationInput, setShowCancellationInput] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [cancellationReason, setCancellationReason] = useState("");
+    
+    // Expert Cancellation Resolution States
+    const [showReplacementModal, setShowReplacementModal] = useState(false);
+    const [replacementVendors, setReplacementVendors] = useState([]);
+    const [loadingReplacements, setLoadingReplacements] = useState(false);
+    const [selectedReplacementVendor, setSelectedReplacementVendor] = useState(null);
+    const [selectedNewDate, setSelectedNewDate] = useState("");
+    const [selectedNewTime, setSelectedNewTime] = useState("10:00 AM");
+    const [reassigning, setReassigning] = useState(false);
+    const [showRefundConfirmModal, setShowRefundConfirmModal] = useState(false);
+    const [claimingRefund, setClaimingRefund] = useState(false);
+
     const loadCurrentBookingRef = useRef(null);
     const lastActionTimeRef = useRef(0); // Track when user performed an action
     const ACTION_COOLDOWN = 2000; // 2 seconds - ignore socket updates right after user action
@@ -492,6 +512,85 @@ export default function UserStatus() {
         navigate("/user/disputes");
     };
 
+    // Expert Cancellation Handlers
+    const handleOpenReplacementModal = async () => {
+        const bookingId = currentBooking?.id || currentBooking?._id;
+        if (!bookingId) return;
+        try {
+            setLoadingReplacements(true);
+            setShowReplacementModal(true);
+            const res = await getAvailableReplacementVendors(bookingId);
+            if (res.success && res.data?.replacementVendors) {
+                setReplacementVendors(res.data.replacementVendors);
+                if (res.data.replacementVendors.length > 0) {
+                    setSelectedReplacementVendor(res.data.replacementVendors[0]);
+                }
+                // Pre-fill next day date if available
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                setSelectedNewDate(tomorrow.toISOString().split('T')[0]);
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to load replacement experts");
+        } finally {
+            setLoadingReplacements(false);
+        }
+    };
+
+    const handleConfirmReassign = async () => {
+        if (!selectedReplacementVendor) {
+            toast.showError("Please select a replacement expert");
+            return;
+        }
+        if (!selectedNewDate) {
+            toast.showError("Please choose a new survey date");
+            return;
+        }
+        const bookingId = currentBooking?.id || currentBooking?._id;
+        try {
+            setReassigning(true);
+            const res = await reassignReplacementVendor(bookingId, {
+                vendorId: selectedReplacementVendor._id || selectedReplacementVendor.id,
+                scheduledDate: selectedNewDate,
+                scheduledTime: selectedNewTime || "10:00 AM"
+            });
+            if (res.success) {
+                toast.showSuccess("Survey rescheduled with replacement expert at ₹0 extra fee!");
+                setShowReplacementModal(false);
+                if (loadCurrentBookingRef.current) {
+                    await loadCurrentBookingRef.current();
+                }
+            } else {
+                toast.showError(res.message || "Failed to reassign expert");
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to reassign expert");
+        } finally {
+            setReassigning(false);
+        }
+    };
+
+    const handleConfirmClaimRefund = async () => {
+        const bookingId = currentBooking?.id || currentBooking?._id;
+        try {
+            setClaimingRefund(true);
+            const res = await claimFullRefundForExpertCancellation(bookingId);
+            if (res.success) {
+                toast.showSuccess(res.message || "100% Full Refund credited to your wallet!");
+                setShowRefundConfirmModal(false);
+                if (loadCurrentBookingRef.current) {
+                    await loadCurrentBookingRef.current();
+                }
+            } else {
+                toast.showError(res.message || "Failed to claim refund");
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to process 100% refund");
+        } finally {
+            setClaimingRefund(false);
+        }
+    };
+
     const handleBorewellImageUpload = (e) => {
         const files = Array.from(e.target.files);
         const newImages = files.map((file) => ({
@@ -741,6 +840,79 @@ export default function UserStatus() {
                             <IoCallOutline className="text-sm" />
                             <span>Call Expert</span>
                         </a>
+                    </div>
+                </div>
+            )}
+
+            {/* Expert Cancellation Resolution Banner (Choice A: Reassign at ₹0 vs Choice B: 100% Full Refund) */}
+            {(status === "EXPERT_CANCELLED" || (currentBooking?.cancellationDetails?.cancelledBy === "VENDOR" && currentBooking?.cancellationDetails?.userResolution?.status === "PENDING")) && (
+                <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-blue-500/10 border-2 border-amber-400/80 shadow-md relative overflow-hidden">
+                    <div className="flex items-start gap-3 mb-3">
+                        <div className="p-2.5 rounded-xl bg-amber-500 text-white shadow-sm flex-shrink-0 mt-0.5">
+                            <IoAlertCircleOutline className="text-2xl" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-sm sm:text-base font-black text-slate-900">
+                                    {currentBooking?.cancellationDetails?.isSameDay ? "Expert Unable to Attend Today's Survey" : "Expert Unable to Attend Scheduled Survey"}
+                                </h3>
+                                {currentBooking?.cancellationDetails?.isSameDay && (
+                                    <span className="px-2 py-0.5 text-[9px] font-black rounded-full bg-rose-100 text-rose-700 border border-rose-200 uppercase">
+                                        Same-Day Notice
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                We sincerely apologise for the inconvenience. Your 40% advance deposit is completely protected. Please choose your preferred resolution:
+                            </p>
+                            {currentBooking?.cancellationDetails?.reason && (
+                                <div className="mt-2 text-[11px] bg-white/80 p-2 rounded-lg border border-amber-200/80 text-amber-900">
+                                    <strong>Expert Reason:</strong> {currentBooking.cancellationDetails.reason}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-amber-200/60">
+                        <button
+                            onClick={handleOpenReplacementModal}
+                            className="py-2.5 px-4 bg-[#0A84FF] hover:bg-[#0070E0] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                        >
+                            <IoPersonOutline className="text-base" />
+                            <span>Select Replacement Expert (₹0 Extra)</span>
+                        </button>
+                        <button
+                            onClick={() => setShowRefundConfirmModal(true)}
+                            className="py-2.5 px-4 bg-white hover:bg-rose-50 border border-rose-300 text-rose-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                        >
+                            <IoWalletOutline className="text-base text-rose-600" />
+                            <span>Cancel & 100% Full Refund</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* On-Site Infeasible Survey Banner */}
+            {status === "UNABLE_TO_COMPLETE" && (
+                <div className="mb-4 p-4 rounded-2xl bg-amber-50 border border-amber-300 shadow-xs">
+                    <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-xl bg-amber-500 text-white flex-shrink-0">
+                            <IoConstructOutline className="text-xl" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-bold text-amber-900">Survey Infeasible on Site</h3>
+                            <p className="text-xs text-amber-800 mt-0.5">
+                                The expert reached your land, but physical on-site conditions prevented completing the groundwater survey:
+                            </p>
+                            {currentBooking?.unableToCompleteDetails?.reasonDescription && (
+                                <p className="text-[11px] font-semibold text-slate-800 bg-white p-2 rounded-lg mt-1.5 border border-amber-200">
+                                    {currentBooking.unableToCompleteDetails.reasonDescription}
+                                </p>
+                            )}
+                            <p className="text-[11px] text-amber-700 mt-2">
+                                ℹ️ Our operations and quality review team has been notified to arbitrate and resolve your case.
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1249,6 +1421,217 @@ export default function UserStatus() {
                 reason={cancellationReason}
                 isLoading={cancelling}
             />
+
+            {/* Replacement Expert Selection Modal */}
+            {showReplacementModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+                    onClick={() => !reassigning && setShowReplacementModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
+                            <div>
+                                <h2 className="text-base font-extrabold flex items-center gap-1.5">
+                                    <IoPersonOutline className="text-lg" />
+                                    <span>Select Replacement Expert (₹0 Extra Fee)</span>
+                                </h2>
+                                <p className="text-xs text-blue-100 mt-0.5">
+                                    Your 40% advance deposit carries over seamlessly.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => !reassigning && setShowReplacementModal(false)}
+                                className="p-1.5 hover:bg-white/20 rounded-full transition-colors cursor-pointer text-white"
+                                disabled={reassigning}
+                            >
+                                <IoCloseOutline className="text-xl" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                            {loadingReplacements ? (
+                                <div className="py-12 text-center">
+                                    <LoadingSpinner message="Searching top verified experts in your area..." />
+                                </div>
+                            ) : replacementVendors.length === 0 ? (
+                                <div className="py-10 text-center bg-slate-50 rounded-xl border border-slate-200 p-4">
+                                    <p className="text-sm font-bold text-slate-700">No other available experts found in your exact area</p>
+                                    <p className="text-xs text-slate-500 mt-1">You can claim a 100% full refund to your wallet immediately.</p>
+                                    <button
+                                        onClick={() => {
+                                            setShowReplacementModal(false);
+                                            setShowRefundConfirmModal(true);
+                                        }}
+                                        className="mt-3 px-4 py-2 bg-rose-600 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                                    >
+                                        Claim 100% Full Refund
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                                        1. Choose Available Expert
+                                    </label>
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                        {replacementVendors.map((v) => {
+                                            const isSelected = (selectedReplacementVendor?._id || selectedReplacementVendor?.id) === (v._id || v.id);
+                                            return (
+                                                <div
+                                                    key={v._id || v.id}
+                                                    onClick={() => setSelectedReplacementVendor(v)}
+                                                    className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                                                        isSelected
+                                                            ? "border-[#0A84FF] bg-blue-50/50 shadow-xs"
+                                                            : "border-slate-200 hover:border-slate-300 bg-white"
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <img
+                                                            className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                                                            src={v.profilePicture?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.name || 'Expert')}&background=0A84FF&color=fff`}
+                                                            alt={v.name}
+                                                        />
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <h4 className="text-xs font-bold text-slate-900 truncate">{v.name}</h4>
+                                                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800">
+                                                                    Verified
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
+                                                                <span className="text-amber-500 font-bold">★ {v.rating?.averageRating?.toFixed(1) || "4.9"}</span>
+                                                                <span>• {v.surveysCompleted || 10}+ Surveys</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                                            isSelected ? "border-[#0A84FF] bg-[#0A84FF] text-white" : "border-slate-300"
+                                                        }`}>
+                                                            {isSelected && <IoCheckmarkCircleOutline className="text-xs" />}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Date & Time Selection */}
+                                    <div className="pt-3 border-t border-slate-200 space-y-3">
+                                        <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                                            2. Select Rescheduled Date & Slot
+                                        </label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div>
+                                                <span className="text-[11px] font-semibold text-slate-600 block mb-1">New Survey Date</span>
+                                                <input
+                                                    type="date"
+                                                    value={selectedNewDate}
+                                                    min={new Date().toISOString().split('T')[0]}
+                                                    onChange={(e) => setSelectedNewDate(e.target.value)}
+                                                    className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0A84FF]"
+                                                />
+                                            </div>
+                                            <div>
+                                                <span className="text-[11px] font-semibold text-slate-600 block mb-1">Preferred Time Window</span>
+                                                <select
+                                                    value={selectedNewTime}
+                                                    onChange={(e) => setSelectedNewTime(e.target.value)}
+                                                    className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0A84FF]"
+                                                >
+                                                    <option value="09:00 AM">09:00 AM - 11:00 AM (Morning)</option>
+                                                    <option value="11:00 AM">11:00 AM - 01:00 PM (Noon)</option>
+                                                    <option value="02:00 PM">02:00 PM - 04:00 PM (Afternoon)</option>
+                                                    <option value="04:00 PM">04:00 PM - 06:00 PM (Evening)</option>
+                                                    <option value="TBD">Time TBD by Expert</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border-t border-slate-200 flex gap-2.5">
+                            <button
+                                onClick={() => setShowReplacementModal(false)}
+                                disabled={reassigning}
+                                className="flex-1 py-2.5 bg-white border border-slate-300 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-100 transition-all cursor-pointer"
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={handleConfirmReassign}
+                                disabled={reassigning || replacementVendors.length === 0 || !selectedNewDate}
+                                className="flex-2 py-2.5 bg-[#0A84FF] hover:bg-[#0070E0] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                                {reassigning ? (
+                                    <span>Rescheduling...</span>
+                                ) : (
+                                    <>
+                                        <IoCheckmarkCircleOutline className="text-base" />
+                                        <span>Confirm Reschedule (₹0 Extra)</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 100% Full Refund Confirmation Modal */}
+            {showRefundConfirmModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+                    onClick={() => !claimingRefund && setShowRefundConfirmModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl w-full max-w-md p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-3">
+                            <IoWalletOutline className="text-2xl" />
+                        </div>
+                        <h3 className="text-base font-extrabold text-slate-900 mb-1">
+                            Claim 100% Full Refund
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                            Since the cancellation was caused by the expert, you are entitled to a <strong>100% full refund</strong> of all amounts paid (including 40% advance deposit and applicable travel charges).
+                        </p>
+
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl mb-4 text-xs space-y-1 font-medium text-slate-700">
+                            <div className="flex justify-between">
+                                <span>Refund Destination:</span>
+                                <strong className="text-emerald-700">Jaladhaara User Wallet</strong>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Refund Rate:</span>
+                                <strong className="text-emerald-700">100% (₹0 Cancellation Fee)</strong>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2.5">
+                            <button
+                                onClick={() => setShowRefundConfirmModal(false)}
+                                disabled={claimingRefund}
+                                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                            >
+                                Keep Booking
+                            </button>
+                            <button
+                                onClick={handleConfirmClaimRefund}
+                                disabled={claimingRefund}
+                                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                                {claimingRefund ? "Processing Refund..." : "Confirm 100% Refund"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Support Modal (For Desktop / Web) */}
             {showSupportModal && (

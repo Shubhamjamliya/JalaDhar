@@ -24,7 +24,7 @@ import {
     IoLogoWhatsapp,
     IoCameraOutline
 } from "react-icons/io5";
-import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice, verifyStartOTP, verifyEndOTP, resendSurveyOTP } from "../../../services/vendorApi";
+import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, reportUnableToComplete, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice, verifyStartOTP, verifyEndOTP, resendSurveyOTP } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -83,6 +83,13 @@ export default function VendorBookingDetails() {
         reason: ""
     });
     const [submittingTravelCharges, setSubmittingTravelCharges] = useState(false);
+
+    // Unable to Complete Survey (On-site Infeasibility) States
+    const [showUnableModal, setShowUnableModal] = useState(false);
+    const [unableCategory, setUnableCategory] = useState("LAND_ACCESS_DENIED");
+    const [unableDescription, setUnableDescription] = useState("");
+    const [unableImages, setUnableImages] = useState([]);
+    const [submittingUnable, setSubmittingUnable] = useState(false);
     const [showMapPicker, setShowMapPicker] = useState(false);
     const [showStartOTPModal, setShowStartOTPModal] = useState(false);
     const [showEndOTPModal, setShowEndOTPModal] = useState(false);
@@ -483,15 +490,15 @@ export default function VendorBookingDetails() {
         try {
             setActionLoading(true);
 
-            const response = await cancelBooking(bookingId, cancellationReason);
+            const response = await cancelBooking(bookingId, cancellationReason, cancellationReasonType || 'OTHER');
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Booking cancelled successfully.");
+                toast.showSuccess(response.message || "Booking cancelled successfully.");
                 setCancellationReason("");
                 setTimeout(() => {
                     navigate("/vendor/bookings");
-                }, 2000);
+                }, 1500);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to cancel booking");
@@ -501,6 +508,58 @@ export default function VendorBookingDetails() {
             handleApiError(err, "Failed to cancel booking");
         } finally {
             setActionLoading(false);
+        }
+    };
+
+    const handleUnableImageUpload = (e) => {
+        const files = Array.from(e.target.files);
+        const newImgs = files.map((file) => ({
+            file,
+            preview: URL.createObjectURL(file),
+        }));
+        setUnableImages((prev) => [...prev, ...newImgs]);
+    };
+
+    const handleRemoveUnableImage = (index) => {
+        setUnableImages((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleSubmitUnableToComplete = async () => {
+        if (!unableCategory) {
+            toast.showError("Please select an on-site condition category");
+            return;
+        }
+        if (!unableDescription || unableDescription.trim().length < 15) {
+            toast.showError("Please provide a detailed description (min 15 characters)");
+            return;
+        }
+        const loadingToast = toast.showLoading("Submitting on-site infeasibility report...");
+        try {
+            setSubmittingUnable(true);
+            const formData = new FormData();
+            formData.append('reasonCategory', unableCategory);
+            formData.append('reasonDescription', unableDescription.trim());
+            if (unableImages && unableImages.length > 0) {
+                unableImages.forEach((img) => formData.append('images', img.file));
+            }
+
+            const response = await reportUnableToComplete(bookingId, formData);
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess("On-site condition report submitted. Operations team will review and mediate.");
+                setShowUnableModal(false);
+                setUnableDescription("");
+                setUnableImages([]);
+                await fetchBookingDetails();
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to submit report");
+            }
+        } catch (err) {
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to submit on-site report");
+        } finally {
+            setSubmittingUnable(false);
         }
     };
 
@@ -992,14 +1051,24 @@ export default function VendorBookingDetails() {
                                 Upload Technical Report
                             </button>
                         )}
-                        <button
-                            onClick={handleCancel}
-                            disabled={actionLoading}
-                            className="w-full bg-red-50 text-red-600 font-bold py-3.5 rounded-2xl border-2 border-red-50 hover:bg-red-100 transition-all active:scale-95 flex items-center justify-center gap-2"
-                        >
-                            <IoCloseCircleOutline className="text-xl" />
-                            Cancel Booking
-                        </button>
+                        {booking.status === "VISITED" ? (
+                            <button
+                                onClick={() => setShowUnableModal(true)}
+                                className="w-full bg-amber-50 text-amber-800 font-bold py-3.5 rounded-2xl border-2 border-amber-200 hover:bg-amber-100 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                <IoAlertCircleOutline className="text-xl text-amber-600" />
+                                <span>Unable to Complete Survey (On-Site Infeasible)</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleCancel}
+                                disabled={actionLoading}
+                                className="w-full bg-red-50 text-red-600 font-bold py-3.5 rounded-2xl border-2 border-red-50 hover:bg-red-100 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                <IoCloseCircleOutline className="text-xl" />
+                                <span>Cancel Booking</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -2276,36 +2345,75 @@ export default function VendorBookingDetails() {
                     </div>
                 </div>
             )}
+            
             {/* Custom Cancellation Modal */}
             {showCancelInput && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white rounded-[24px] w-full max-w-md shadow-2xl transform transition-all">
-                        <div className="p-6">
-                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                                <IoCloseCircleOutline className="text-2xl text-red-600" />
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+                    onClick={() => {
+                        setShowCancelInput(false);
+                        setCancellationReasonType("");
+                        setCancellationRemarks("");
+                    }}
+                >
+                    <div 
+                        className="bg-white rounded-[24px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="px-6 py-5 bg-gradient-to-r from-red-600 to-rose-600 text-white flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                                    <IoCloseCircleOutline className="text-2xl text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black tracking-tight">Cancel Booking</h3>
+                                    <p className="text-xs text-red-100 font-medium">Please select a reason for cancellation</p>
+                                </div>
                             </div>
-                            <h3 className="text-xl font-black text-gray-900 mb-2">Cancel Booking</h3>
-                            <p className="text-sm text-gray-500 mb-6">
-                                Please select a reason for cancellation. This will be visible to the customer and admin.
-                            </p>
-                            
+                            <button 
+                                onClick={() => {
+                                    setShowCancelInput(false);
+                                    setCancellationReasonType("");
+                                    setCancellationRemarks("");
+                                }}
+                                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer text-white"
+                            >
+                                <IoCloseOutline className="text-xl" />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            {/* Same Day Cancellation Warning */}
+                            {booking?.scheduledDate && (new Date(booking.scheduledDate).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]) && (
+                                <div className="mb-4 p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl text-amber-900 text-xs flex items-start gap-2.5">
+                                    <IoAlertCircleOutline className="text-xl flex-shrink-0 text-amber-600 mt-0.5" />
+                                    <div>
+                                        <p className="font-extrabold">⚠️ Same-Day Cancellation Notice</p>
+                                        <p className="mt-0.5 text-amber-800">
+                                            Cancelling on the scheduled visit date impacts your Expert Reliability Score and is audited by Operations. The customer will be offered a priority replacement expert or a 100% full refund.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-4">
                                 <div className="relative">
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Cancellation Reason *</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                        Cancellation Reason <span className="text-red-500">*</span>
+                                    </label>
                                     <button
                                         type="button"
                                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                        className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl focus:ring-[#0A84FF] focus:border-[#0A84FF] flex items-center justify-between p-3.5 outline-none font-medium text-left"
+                                        className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl focus:ring-[#0A84FF] focus:border-[#0A84FF] flex items-center justify-between p-3.5 font-semibold transition-all hover:bg-gray-100/70 cursor-pointer"
                                     >
-                                        <span className={!cancellationReasonType ? "text-gray-400" : ""}>
+                                        <span className={cancellationReasonType ? "text-gray-900" : "text-gray-400 font-normal"}>
                                             {cancellationReasonType || "Select a reason..."}
                                         </span>
-                                        <svg className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        <IoChevronDownOutline className={`text-gray-400 text-lg transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`} />
                                     </button>
-                                    
+
                                     {isDropdownOpen && (
-                                        <div className="w-full mt-2 bg-gray-50 border border-gray-200 rounded-2xl shadow-inner max-h-[200px] overflow-y-auto custom-scrollbar p-2">
-                                            {CANCELLATION_REASONS.map(reason => (
+                                        <div className="absolute z-20 w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto p-1.5 custom-scrollbar">
+                                            {CANCELLATION_REASONS.map((reason) => (
                                                 <button
                                                     key={reason}
                                                     type="button"
@@ -2313,7 +2421,7 @@ export default function VendorBookingDetails() {
                                                         setCancellationReasonType(reason);
                                                         setIsDropdownOpen(false);
                                                     }}
-                                                    className={`w-full text-left px-4 py-3 text-sm font-bold transition-all rounded-xl flex items-center justify-between mb-1 last:mb-0 ${
+                                                    className={`w-full text-left px-4 py-3 text-sm font-bold transition-all rounded-xl flex items-center justify-between mb-1 last:mb-0 cursor-pointer ${
                                                         cancellationReasonType === reason 
                                                             ? "bg-blue-50 text-[#0A84FF] shadow-sm ring-1 ring-blue-100" 
                                                             : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
@@ -2329,20 +2437,18 @@ export default function VendorBookingDetails() {
                                     )}
                                 </div>
 
-                                {(cancellationReasonType === "Other" || cancellationReasonType !== "") && (
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                                            Remarks {cancellationReasonType === "Other" && <span className="text-red-500">*</span>}
-                                        </label>
-                                        <textarea
-                                            value={cancellationRemarks}
-                                            onChange={(e) => setCancellationRemarks(e.target.value)}
-                                            rows="3"
-                                            placeholder={cancellationReasonType === "Other" ? "Please specify your reason..." : "Additional details (optional)"}
-                                            className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl focus:ring-[#0A84FF] focus:border-[#0A84FF] block p-3.5 outline-none font-medium resize-none"
-                                        ></textarea>
-                                    </div>
-                                )}
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                        Remarks {cancellationReasonType === "Other" && <span className="text-red-500">*</span>}
+                                    </label>
+                                    <textarea
+                                        value={cancellationRemarks}
+                                        onChange={(e) => setCancellationRemarks(e.target.value)}
+                                        rows="3"
+                                        placeholder={cancellationReasonType === "Other" ? "Please specify detailed reason..." : "Additional details (optional)"}
+                                        className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl focus:ring-[#0A84FF] focus:border-[#0A84FF] block p-3.5 outline-none font-medium resize-none"
+                                    ></textarea>
+                                </div>
                             </div>
                         </div>
                         <div className="px-6 py-4 bg-gray-50 flex gap-3 rounded-b-[24px]">
@@ -2352,7 +2458,7 @@ export default function VendorBookingDetails() {
                                     setCancellationReasonType("");
                                     setCancellationRemarks("");
                                 }}
-                                className="flex-1 px-4 py-3 bg-white text-gray-700 text-sm font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all"
+                                className="flex-1 px-4 py-3 bg-white text-gray-700 text-sm font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer"
                             >
                                 Nevermind
                             </button>
@@ -2372,9 +2478,134 @@ export default function VendorBookingDetails() {
                                     
                                     handleCancelReasonSubmit(finalReason);
                                 }}
-                                className="flex-1 px-4 py-3 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-200"
+                                className="flex-1 px-4 py-3 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-200 cursor-pointer"
                             >
                                 Submit Reason
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Unable to Complete Survey (On-Site Infeasible) Modal */}
+            {showUnableModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+                    onClick={() => !submittingUnable && setShowUnableModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-[24px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="px-6 py-5 bg-gradient-to-r from-amber-600 to-orange-600 text-white flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                                    <IoAlertCircleOutline className="text-2xl text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black tracking-tight">Unable to Complete Survey</h3>
+                                    <p className="text-xs text-amber-100 font-medium">On-Site Infeasibility & Proof Submission</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => !submittingUnable && setShowUnableModal(false)}
+                                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer text-white"
+                                disabled={submittingUnable}
+                            >
+                                <IoCloseOutline className="text-xl" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900">
+                                ℹ️ <strong>Travel Protection:</strong> Since you arrived at the site, your travel allowance will be preserved upon admin review.
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                    Primary On-Site Obstruction <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={unableCategory}
+                                    onChange={(e) => setUnableCategory(e.target.value)}
+                                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 focus:ring-[#0A84FF] focus:border-[#0A84FF]"
+                                >
+                                    <option value="LAND_ACCESS_DENIED">Land Access Denied / Locked Gates</option>
+                                    <option value="EXTREME_WEATHER_FLOODING">Extreme Weather / Submerged Flooded Land</option>
+                                    <option value="BOUNDARY_DISPUTE">Boundary / Land Ownership Conflict</option>
+                                    <option value="CUSTOMER_ABSENT">Customer or Representative Absent</option>
+                                    <option value="DANGEROUS_TERRAIN">Hazardous / Inaccessible Terrain</option>
+                                    <option value="OTHER">Other Physical Constraint</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                    Detailed On-Site Description <span className="text-red-500">*</span>
+                                </label>
+                                <textarea
+                                    value={unableDescription}
+                                    onChange={(e) => setUnableDescription(e.target.value)}
+                                    rows="3"
+                                    placeholder="Describe why testing could not be conducted on site..."
+                                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none font-medium resize-none focus:border-[#0A84FF]"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                    Upload On-Site Geotagged Photos
+                                </label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleUnableImageUpload}
+                                    id="unable-photos-input"
+                                    className="hidden"
+                                />
+                                <label
+                                    htmlFor="unable-photos-input"
+                                    className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:border-amber-500 transition-colors bg-gray-50"
+                                >
+                                    <IoCameraOutline className="text-3xl text-gray-400 mb-1" />
+                                    <span className="text-xs font-bold text-gray-600">Click to upload on-site evidence photos</span>
+                                    <span className="text-[10px] text-gray-400">JPEG, PNG up to 10MB</span>
+                                </label>
+
+                                {unableImages.length > 0 && (
+                                    <div className="grid grid-cols-3 gap-2 mt-3">
+                                        {unableImages.map((img, idx) => (
+                                            <div key={idx} className="relative rounded-lg overflow-hidden border border-gray-200">
+                                                <img src={img.preview} alt="evidence" className="w-full h-20 object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveUnableImage(idx)}
+                                                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow-sm"
+                                                >
+                                                    <IoCloseOutline className="text-xs" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 bg-gray-50 flex gap-3 border-t border-gray-200">
+                            <button
+                                onClick={() => setShowUnableModal(false)}
+                                disabled={submittingUnable}
+                                className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSubmitUnableToComplete}
+                                disabled={submittingUnable}
+                                className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
+                            >
+                                {submittingUnable ? "Submitting Report..." : "Submit On-Site Report"}
                             </button>
                         </div>
                     </div>

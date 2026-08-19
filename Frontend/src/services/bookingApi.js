@@ -315,3 +315,65 @@ export const markVisitedAndUploadReport = async (bookingId, data) => {
   return response.data;
 };
 
+/**
+ * Get available replacement experts for an expert-cancelled booking
+ * @param {string} bookingId
+ * @returns {Promise}
+ */
+export const getAvailableReplacementVendors = async (bookingId) => {
+  const response = await api.get(`/bookings/${bookingId}/available-replacements`);
+  return response.data;
+};
+
+/**
+ * Reassign booking to chosen replacement expert at ₹0 extra fee
+ * @param {string} bookingId
+ * @param {Object} data - { vendorId, scheduledDate, scheduledTime }
+ * @returns {Promise}
+ */
+export const reassignReplacementVendor = async (bookingId, data) => {
+  const response = await api.post(`/bookings/${bookingId}/reassign-replacement`, data);
+  return response.data;
+};
+
+/**
+ * Claim 100% full refund when expert cancels
+ * @param {string} bookingId
+ * @returns {Promise}
+ */
+export const claimFullRefundForExpertCancellation = async (bookingId) => {
+  const response = await api.post(`/bookings/${bookingId}/claim-expert-cancel-refund`);
+  return response.data;
+};
+
+/**
+ * Report Unable to Complete Survey (On-site infeasibility)
+ * @param {string} bookingId
+ * @param {FormData} formData - reasonCategory, reasonDescription, lat, lng, images
+ * @returns {Promise}
+ */
+export const reportUnableToComplete = async (bookingId, formData) => {
+  const response = await api.post(`/vendors/bookings/${bookingId}/unable-to-complete`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+/**
+ * Cancel booking by vendor with structured reason and same-day impact tracking
+ * @param {string} bookingId
+ * @param {string} cancellationReason
+ * @param {string} reasonCategory
+ * @returns {Promise}
+ */
+export const cancelVendorBooking = async (bookingId, cancellationReason, reasonCategory = 'OTHER') => {
+  const response = await api.patch(`/vendors/bookings/${bookingId}/cancel`, {
+    cancellationReason,
+    reasonCategory,
+  });
+  return response.data;
+};
+
+

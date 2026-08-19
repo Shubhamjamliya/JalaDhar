@@ -7,6 +7,7 @@ const {
   acceptBooking,
   rejectBooking,
   cancelBooking,
+  reportUnableToComplete,
   markAsEnRoute,
   verifyStartSurveyOTP,
   verifyEndSurveyOTP,
@@ -88,6 +89,13 @@ router.patch('/:bookingId/accept', (req, res, next) => {
 
 router.patch('/:bookingId/reject', authenticate, isVendor, rejectBookingValidation, rejectBooking);
 router.patch('/:bookingId/cancel', authenticate, isVendor, cancelBooking);
+router.post(
+  '/:bookingId/unable-to-complete',
+  authenticate,
+  isVendor,
+  upload.fields([{ name: 'images', maxCount: 10 }]),
+  reportUnableToComplete
+);
 router.patch('/:bookingId/en-route', authenticate, isVendor, markAsEnRoute);
 router.post('/:bookingId/verify-start-otp', authenticate, isVendor, verifyStartSurveyOTP);
 router.post('/:bookingId/verify-end-otp', authenticate, isVendor, verifyEndSurveyOTP);

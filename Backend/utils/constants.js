@@ -76,7 +76,9 @@ const BOOKING_STATUS = {
 
   // Cancellation/Rejection
   REJECTED: 'REJECTED',                  // Vendor rejected the booking
-  CANCELLED: 'CANCELLED'                 // Booking cancelled by user/vendor/admin
+  CANCELLED: 'CANCELLED',                // Booking cancelled by user/vendor/admin
+  EXPERT_CANCELLED: 'EXPERT_CANCELLED',  // Expert cancelled booking (User action required: Reassign or 100% Refund)
+  UNABLE_TO_COMPLETE: 'UNABLE_TO_COMPLETE' // Expert arrived on-site but survey could not be completed (Infeasible conditions)
 };
 
 // Service status

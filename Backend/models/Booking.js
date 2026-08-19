@@ -547,6 +547,101 @@ const bookingSchema = new mongoose.Schema({
     publicId: String,
     generatedAt: Date
   },
+  // Cancellation & Expert Disruption Management
+  cancellationDetails: {
+    cancelledBy: {
+      type: String,
+      enum: ['USER', 'VENDOR', 'ADMIN', null],
+      default: null
+    },
+    cancellationType: {
+      type: String,
+      enum: ['EXPERT_SAME_DAY', 'EXPERT_ADVANCE', 'USER_VOLUNTARY', 'ADMIN_INTERVENTION', null],
+      default: null
+    },
+    reason: {
+      type: String,
+      default: null
+    },
+    reasonCategory: {
+      type: String,
+      default: null
+    },
+    isSameDay: {
+      type: Boolean,
+      default: false
+    },
+    cancelledAt: {
+      type: Date,
+      default: null
+    },
+    cancellingVendor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Vendor',
+      default: null
+    },
+    userResolution: {
+      status: {
+        type: String,
+        enum: ['PENDING', 'REASSIGNED', 'REFUNDED', null],
+        default: null
+      },
+      resolvedAt: Date,
+      replacementVendor: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Vendor',
+        default: null
+      },
+      refundAmount: {
+        type: Number,
+        default: 0
+      },
+      notes: String
+    }
+  },
+  // On-Site Survey Infeasibility (Expert arrived but survey could not be completed)
+  unableToCompleteDetails: {
+    reported: {
+      type: Boolean,
+      default: false
+    },
+    reportedAt: Date,
+    reasonCategory: {
+      type: String,
+      enum: ['LAND_ACCESS_DENIED', 'EXTREME_WEATHER_FLOODING', 'BOUNDARY_DISPUTE', 'CUSTOMER_ABSENT', 'DANGEROUS_TERRAIN', 'OTHER', null],
+      default: null
+    },
+    reasonDescription: String,
+    photos: [{
+      url: String,
+      publicId: String
+    }],
+    coordinates: {
+      lat: Number,
+      lng: Number
+    },
+    adminReview: {
+      status: {
+        type: String,
+        enum: ['PENDING', 'APPROVED', 'DISPUTED'],
+        default: 'PENDING'
+      },
+      reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Admin'
+      },
+      reviewedAt: Date,
+      notes: String,
+      travelFeePayableToVendor: {
+        type: Boolean,
+        default: true
+      },
+      userRefundPercentage: {
+        type: Number,
+        default: 100
+      }
+    }
+  },
   // Timestamps
   assignedAt: Date,
   acceptedAt: Date,

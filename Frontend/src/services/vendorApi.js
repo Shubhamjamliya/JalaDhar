@@ -94,9 +94,25 @@ export const rejectBooking = async (bookingId, rejectionReason) => {
  * @param {string} cancellationReason
  * @returns {Promise}
  */
-export const cancelBooking = async (bookingId, cancellationReason) => {
+export const cancelBooking = async (bookingId, cancellationReason, reasonCategory = 'OTHER') => {
   const response = await api.patch(`/vendors/bookings/${bookingId}/cancel`, {
-    cancellationReason
+    cancellationReason,
+    reasonCategory
+  });
+  return response.data;
+};
+
+/**
+ * Report Unable to Complete Survey (On-site infeasibility)
+ * @param {string} bookingId
+ * @param {FormData} formData
+ * @returns {Promise}
+ */
+export const reportUnableToComplete = async (bookingId, formData) => {
+  const response = await api.post(`/vendors/bookings/${bookingId}/unable-to-complete`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
   });
   return response.data;
 };

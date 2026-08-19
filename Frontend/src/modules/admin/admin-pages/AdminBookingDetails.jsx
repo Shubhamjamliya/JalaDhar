@@ -9,6 +9,11 @@ import {
     IoPersonOutline,
     IoConstructOutline,
     IoDocumentTextOutline,
+    IoAlertCircleOutline,
+    IoImageOutline,
+    IoCheckmarkCircleOutline,
+    IoCloseCircleOutline,
+    IoWalletOutline
 } from "react-icons/io5";
 import { getBookingDetails } from "../../../services/adminApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -84,6 +89,8 @@ export default function AdminBookingDetails() {
             ADMIN_APPROVED: "bg-teal-100 text-teal-700",
             COMPLETED: "bg-green-100 text-green-700",
             CANCELLED: "bg-red-100 text-red-700",
+            EXPERT_CANCELLED: "bg-amber-100 text-amber-800 font-bold border border-amber-300",
+            UNABLE_TO_COMPLETE: "bg-orange-100 text-orange-800 font-bold border border-orange-300",
         };
         return colors[status] || "bg-gray-100 text-gray-700";
     };
@@ -155,6 +162,126 @@ export default function AdminBookingDetails() {
                     </div>
                 </div>
             </div>
+
+            {/* Cancellation & Reliability Audit Card */}
+            {(booking.status === "EXPERT_CANCELLED" || booking.cancellationDetails?.cancelledBy || booking.status === "CANCELLED") && (
+                <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-amber-500">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <IoAlertCircleOutline className="text-amber-500 text-2xl" />
+                            <span>Cancellation & Reliability Audit</span>
+                        </h2>
+                        {booking.cancellationDetails?.isSameDay && (
+                            <span className="px-2.5 py-1 bg-red-100 text-red-800 text-xs font-black rounded-full uppercase tracking-wider">
+                                Same-Day Cancellation
+                            </span>
+                        )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm bg-amber-50/50 p-4 rounded-xl border border-amber-100">
+                        <div>
+                            <span className="text-xs font-semibold text-gray-500 uppercase block">Cancelled By</span>
+                            <span className="font-bold text-gray-900 mt-0.5 block">
+                                {booking.cancellationDetails?.cancelledBy === "VENDOR" ? "Expert / Service Partner" : "Customer / System"}
+                            </span>
+                        </div>
+                        <div>
+                            <span className="text-xs font-semibold text-gray-500 uppercase block">Cancellation Type</span>
+                            <span className="font-bold text-gray-900 mt-0.5 block">
+                                {booking.cancellationDetails?.cancellationType || "STANDARD"}
+                            </span>
+                        </div>
+                        <div className="md:col-span-2">
+                            <span className="text-xs font-semibold text-gray-500 uppercase block">Cancellation Reason</span>
+                            <span className="font-semibold text-slate-800 mt-0.5 block bg-white p-2.5 rounded-lg border border-amber-200">
+                                {booking.cancellationDetails?.reason || booking.cancellationReason || "No reason specified"}
+                            </span>
+                        </div>
+                        {booking.cancellationDetails?.userResolution && (
+                            <div className="md:col-span-2 p-3 bg-white rounded-lg border border-blue-200">
+                                <span className="text-xs font-bold text-[#0A84FF] uppercase block">Customer Resolution Status</span>
+                                <div className="flex items-center justify-between mt-1 text-xs">
+                                    <span className="font-bold text-slate-900">
+                                        Resolution: {booking.cancellationDetails.userResolution.status}
+                                    </span>
+                                    {booking.cancellationDetails.userResolution.refundAmount > 0 && (
+                                        <span className="font-bold text-emerald-700">
+                                            Refunded: {formatAmount(booking.cancellationDetails.userResolution.refundAmount)}
+                                        </span>
+                                    )}
+                                </div>
+                                {booking.cancellationDetails.userResolution.notes && (
+                                    <p className="text-[11px] text-gray-500 mt-1">{booking.cancellationDetails.userResolution.notes}</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Unable to Complete Survey (On-Site Infeasibility) Review Card */}
+            {(booking.status === "UNABLE_TO_COMPLETE" || booking.unableToCompleteDetails?.reported) && (
+                <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <IoConstructOutline className="text-orange-500 text-2xl" />
+                            <span>On-Site Infeasibility Report (Mediation Required)</span>
+                        </h2>
+                        <span className="px-2.5 py-1 bg-orange-100 text-orange-800 text-xs font-black rounded-full uppercase">
+                            Admin Review
+                        </span>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                            <div>
+                                <span className="text-xs font-semibold text-gray-500 uppercase block">Obstruction Category</span>
+                                <span className="font-bold text-orange-950 mt-0.5 block">
+                                    {booking.unableToCompleteDetails?.reasonCategory || "Physical Constraint"}
+                                </span>
+                            </div>
+                            <div>
+                                <span className="text-xs font-semibold text-gray-500 uppercase block">Reported At</span>
+                                <span className="font-bold text-gray-900 mt-0.5 block">
+                                    {formatDate(booking.unableToCompleteDetails?.reportedAt)}
+                                </span>
+                            </div>
+                            <div className="md:col-span-2">
+                                <span className="text-xs font-semibold text-gray-500 uppercase block">Expert Field Explanation</span>
+                                <p className="text-xs font-semibold text-slate-800 mt-0.5 bg-white p-3 rounded-lg border border-orange-200">
+                                    {booking.unableToCompleteDetails?.reasonDescription || "No detailed remarks provided"}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* On-Site Geotagged Evidence Photos */}
+                        {booking.unableToCompleteDetails?.photos && booking.unableToCompleteDetails.photos.length > 0 && (
+                            <div>
+                                <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1">
+                                    <IoImageOutline className="text-base" />
+                                    <span>On-Site Photographic Evidence ({booking.unableToCompleteDetails.photos.length})</span>
+                                </h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    {booking.unableToCompleteDetails.photos.map((photo, idx) => (
+                                        <a
+                                            key={idx}
+                                            href={photo.url || photo}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block rounded-xl overflow-hidden border border-gray-200 hover:opacity-90 shadow-2xs"
+                                        >
+                                            <img
+                                                src={photo.url || photo}
+                                                alt={`Evidence ${idx + 1}`}
+                                                className="w-full h-28 object-cover"
+                                            />
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Customer Details */}
             <div className="bg-white rounded-lg shadow-sm p-6">
