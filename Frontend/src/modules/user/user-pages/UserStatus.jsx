@@ -328,8 +328,8 @@ export default function UserStatus() {
                 id: "survey-started",
                 label: "Survey Started",
                 icon: IoConstructOutline,
-                active: ["IN_PROGRESS", "VISITED"].includes(status) && !currentBooking.reportUploadedAt,
-                completed: ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status) || !!currentBooking.reportUploadedAt,
+                active: ["IN_PROGRESS", "VISITED"].includes(status) && !currentBooking.otp?.endSurvey?.verified && !currentBooking.reportUploadedAt,
+                completed: !!currentBooking.otp?.endSurvey?.verified || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status) || !!currentBooking.reportUploadedAt,
                 description: "Groundwater survey is in progress.",
                 date: currentBooking.visitedAt,
             },
@@ -337,14 +337,18 @@ export default function UserStatus() {
                 id: "survey-completed",
                 label: "Survey Completed",
                 icon: IoDocumentTextOutline,
-                active: status === "REPORT_UPLOADED" && !currentBooking.payment?.remainingPaid,
+                active: (!!currentBooking.otp?.endSurvey?.verified || status === "REPORT_UPLOADED") && !currentBooking.payment?.remainingPaid,
                 completed: ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(status) || !!currentBooking.reportUploadedAt,
-                bullets: [
+                bullets: currentBooking.reportUploadedAt ? [
                     "Survey completed successfully.",
                     "Survey report securely uploaded by the expert.",
                     "Report will be available once final payment is completed."
+                ] : [
+                    "Site survey completed & verified with End OTP.",
+                    "Expert is currently compiling the technical survey report.",
+                    "Report will be available once uploaded."
                 ],
-                date: currentBooking.reportUploadedAt,
+                date: currentBooking.endSurveyVerifiedAt || currentBooking.otp?.endSurvey?.verifiedAt || currentBooking.reportUploadedAt,
             },
             {
                 id: "final-payment-pending",

@@ -471,13 +471,16 @@ export default function UserBookingDetails() {
         if (!address) return "Not provided";
         if (typeof address === 'string') return address;
 
+        const street = address.street || "";
         const parts = [];
-        if (address.street) parts.push(address.street);
-        if (address.village) parts.push(address.village);
-        if (address.city) parts.push(address.city);
-        if (address.district) parts.push(address.district);
-        if (address.state) parts.push(address.state);
-        if (address.pincode) parts.push(address.pincode);
+        if (street) parts.push(street);
+
+        const subParts = [address.village, address.mandal, address.city, address.district, address.state, address.pincode].filter(Boolean);
+        for (const part of subParts) {
+            if (!street.toLowerCase().includes(part.toLowerCase()) && !parts.includes(part)) {
+                parts.push(part);
+            }
+        }
         return parts.join(", ") || "Not provided";
     };
 
@@ -955,9 +958,13 @@ export default function UserBookingDetails() {
                                         </div>
                                         <div className="flex flex-col min-w-0">
                                             <span className="text-xs font-bold text-slate-800 truncate">Survey Report</span>
-                                            {!booking.payment?.remainingPaid && booking.report && (
+                                            {!booking.payment?.remainingPaid && booking.report && typeof booking.report.waterFound === 'boolean' ? (
                                                 <span className="text-[9px] text-amber-600 font-bold flex items-center gap-0.5">
                                                     <IoLockClosedOutline className="text-[10px]" /> PAY TO UNLOCK
+                                                </span>
+                                            ) : (
+                                                <span className="text-[9px] text-slate-400 font-medium">
+                                                    {booking.status === 'VISITED' ? 'Expert conducting survey' : (booking.status === 'REPORT_UPLOADED' ? 'Ready soon' : 'Available after survey')}
                                                 </span>
                                             )}
                                         </div>

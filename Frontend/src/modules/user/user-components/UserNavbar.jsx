@@ -305,7 +305,16 @@ export default function UserNavbar() {
                                 <p className="text-[11px] font-black uppercase tracking-wider text-emerald-400 truncate">
                                     {(() => {
                                         const currentStatus = (activeBooking.status || activeBooking.vendorStatus || "").toUpperCase();
+                                        const isEndOtpVerified = activeBooking.otp?.endSurvey?.verified || activeBooking.bookingData?.otp?.endSurvey?.verified;
+                                        const isReportUploaded = activeBooking.reportUploadedAt || (activeBooking.report && typeof activeBooking.report.waterFound === 'boolean') || currentStatus === "REPORT_UPLOADED";
                                         const isStartOtpVerified = activeBooking.otp?.startSurvey?.verified || activeBooking.bookingData?.otp?.startSurvey?.verified || ["VISITED", "IN_PROGRESS", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT", "COMPLETED"].includes(currentStatus);
+                                        
+                                        if (isReportUploaded || currentStatus === "REPORT_UPLOADED") {
+                                            return "Report Ready 📄";
+                                        }
+                                        if (isEndOtpVerified) {
+                                            return "Survey Completed 🚀";
+                                        }
                                         if (isStartOtpVerified || currentStatus === "VISITED" || currentStatus === "IN_PROGRESS") {
                                             return "Survey in Progress 📍";
                                         }

@@ -620,6 +620,15 @@ export default function VendorBookingDetails() {
             REJECTED: { color: "bg-red-100 text-red-700", label: "Rejected" },
             CANCELLED: { color: "bg-gray-100 text-gray-700", label: "Cancelled" },
         };
+
+        if (status === 'VISITED' && booking?.otp?.endSurvey?.verified) {
+            return (
+                <span className="px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800">
+                    Survey Completed • Upload Report
+                </span>
+            );
+        }
+
         const config = statusConfig[status] || { color: "bg-slate-100 text-slate-700", label: status };
         return (
             <span className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider ${config.color}`}>
@@ -702,12 +711,14 @@ export default function VendorBookingDetails() {
                             const hasFullPayment = (booking.payment?.remainingPaid === true) || rawStatus === "PAYMENT_SUCCESS" || rawStatus === "PAID_FIRST";
                             const hasReport = !!(booking.reportUploadedAt || (booking.report && (booking.report.uploadedAt || booking.report.waterFound !== undefined)));
 
-                            const isEarlyStage = ["ASSIGNED", "ACCEPTED", "EN_ROUTE", "VISITED", "AWAITING_ADVANCE"].includes(rawStatus);
+                            const isEndOtpVerified = !!booking.otp?.endSurvey?.verified;
+                            const isEarlyStage = ["ASSIGNED", "ACCEPTED", "EN_ROUTE", "AWAITING_ADVANCE"].includes(rawStatus) || (rawStatus === "VISITED" && !isEndOtpVerified);
 
                             const status = lateStatuses.includes(rawStatus) ? rawStatus
                                 : (!isEarlyStage && hasBorell) ? "BOREWELL_UPLOADED"
                                 : (!isEarlyStage && hasFullPayment) ? "PAYMENT_SUCCESS"
                                 : (!isEarlyStage && hasReport) ? "REPORT_UPLOADED"
+                                : (rawStatus === "VISITED" && isEndOtpVerified) ? "REPORT_UPLOADED"
                                 : rawStatus;
 
                             const timelineSteps = [
@@ -811,6 +822,12 @@ export default function VendorBookingDetails() {
                         <div className="flex justify-between items-center">
                             <span className="text-gray-500">Site Visited:</span>
                             <span className="text-gray-800 font-bold">{formatDate(booking.visitedAt)}</span>
+                        </div>
+                    )}
+                    {(booking.endSurveyVerifiedAt || booking.otp?.endSurvey?.verifiedAt) && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Survey Completed:</span>
+                            <span className="text-gray-800 font-bold">{formatDate(booking.endSurveyVerifiedAt || booking.otp?.endSurvey?.verifiedAt)}</span>
                         </div>
                     )}
                     {(booking.reportUploadedAt || booking.report?.uploadedAt) && (
