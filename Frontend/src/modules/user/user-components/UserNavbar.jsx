@@ -91,10 +91,30 @@ export default function UserNavbar() {
     const { language, setLanguage, t, supportedLanguages, isLanguageEnabled } = useLanguage();
     const currentLangObj = supportedLanguages.find(l => l.code === language) || supportedLanguages[0];
 
+    const langDropdownRef = useRef(null);
     const toggleRef = useRef(null);
     const { logout, user } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+
+    // Close language dropdown on outside click or touch
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (langDropdownRef.current && !langDropdownRef.current.contains(event.target)) {
+                setShowLangMenu(false);
+            }
+        };
+
+        if (showLangMenu) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
+    }, [showLangMenu]);
 
     const [activeBooking, setActiveBooking] = useState(null);
     const [dismissedBanner, setDismissedBanner] = useState(false);
@@ -212,7 +232,7 @@ export default function UserNavbar() {
 
                     {/* Language Switcher */}
                     {isLanguageEnabled && (
-                        <div className="relative">
+                        <div className="relative" ref={langDropdownRef}>
                             <button
                                 onClick={() => setShowLangMenu(!showLangMenu)}
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-gray-200/90 text-xs font-bold text-gray-700 hover:border-blue-300 transition-all cursor-pointer shadow-2xs"

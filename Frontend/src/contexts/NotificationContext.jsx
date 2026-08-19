@@ -132,6 +132,14 @@ export const NotificationProvider = ({ children }) => {
       console.error('[Socket] Connection error:', error);
     });
 
+    // Listen for live language configuration updates (Admin added/deleted language)
+    newSocket.on('LANGUAGE_CONFIG_UPDATED', (payload) => {
+      window.dispatchEvent(new CustomEvent('jaladhaara_language_config_updated', { detail: payload }));
+    });
+    newSocket.on('language_config_updated', (payload) => {
+      window.dispatchEvent(new CustomEvent('jaladhaara_language_config_updated', { detail: payload }));
+    });
+
     // Listen for new notifications
     newSocket.on('new_notification', (notification) => {
       console.log('[Socket] New notification received:', notification);

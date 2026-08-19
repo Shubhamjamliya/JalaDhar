@@ -16,13 +16,15 @@ dotenv.config();
 // Connect to database
 connectDB();
 
-// Initialize default settings after DB connection
+// Initialize default settings and language system after DB connection
 setTimeout(async () => {
   try {
     const { initializeDefaultSettings } = require('./services/settingsService');
     await initializeDefaultSettings();
+    const { initializeLanguageSystem } = require('./controllers/languageController');
+    await initializeLanguageSystem();
   } catch (err) {
-    console.error('Error initializing default settings:', err);
+    console.error('Error initializing default settings/languages:', err);
   }
 }, 2000); // Wait 2 seconds for DB to be ready
 
@@ -203,6 +205,9 @@ app.use('/api/ratings', require('./routes/rating-routes/rating.routes'));
 
 // Public settings route
 app.use('/api/settings', require('./routes/settings.routes'));
+
+// Language and translation routes
+app.use('/api/languages', require('./routes/language.routes'));
 
 // Notification routes
 app.use('/api/notifications', require('./routes/notification.routes'));

@@ -17,8 +17,10 @@ import {
     IoLogOutOutline,
     IoStarOutline,
     IoChevronBackOutline,
+    IoGlobeOutline
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import NotificationDropdown from "../../../components/NotificationDropdown";
 import logo from "@/assets/Header-logoo.png";
@@ -72,6 +74,30 @@ export default function VendorNavbar() {
     const { logout, vendor } = useVendorAuth();
     const location = useLocation();
     const navigate = useNavigate();
+
+    const [showLangMenu, setShowLangMenu] = useState(false);
+    const langDropdownRef = useRef(null);
+    const { language, setLanguage, supportedLanguages, isLanguageEnabled } = useLanguage();
+    const currentLangObj = supportedLanguages.find(l => l.code === language) || supportedLanguages[0];
+
+    // Close language dropdown on outside click or touch
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (langDropdownRef.current && !langDropdownRef.current.contains(event.target)) {
+                setShowLangMenu(false);
+            }
+        };
+
+        if (showLangMenu) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
+    }, [showLangMenu]);
 
     // Expert Agreement State
     const [showAgreementModal, setShowAgreementModal] = useState(false);
@@ -185,6 +211,40 @@ export default function VendorNavbar() {
                         <span className="hidden md:block text-sm font-medium text-gray-700">
                             {vendor.name}
                         </span>
+                    )}
+
+                    {/* Language Switcher */}
+                    {isLanguageEnabled && (
+                        <div className="relative" ref={langDropdownRef}>
+                            <button
+                                onClick={() => setShowLangMenu(!showLangMenu)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200/90 text-xs font-bold text-gray-700 hover:border-blue-300 transition-all cursor-pointer shadow-2xs"
+                                title="Change Language"
+                            >
+                                <IoGlobeOutline className="text-[#0A84FF] text-base" />
+                                <span className="hidden sm:inline">{currentLangObj.nativeName}</span>
+                            </button>
+
+                            {showLangMenu && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                                    {supportedLanguages.map((lang) => (
+                                        <button
+                                            key={lang.code}
+                                            onClick={() => {
+                                                setLanguage(lang.code);
+                                                setShowLangMenu(false);
+                                            }}
+                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left cursor-pointer ${
+                                                language === lang.code ? "bg-blue-50 text-[#0A84FF]" : "text-gray-700 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            <span>{lang.nativeName}</span>
+                                            <span className="text-[10px] text-gray-400 font-mono">{lang.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     <NotificationDropdown disablePopup={true} />

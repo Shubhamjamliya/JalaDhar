@@ -7,9 +7,11 @@ import {
     IoNotificationsOutline,
     IoShieldCheckmarkOutline,
     IoChevronForwardOutline,
-    IoKeyOutline
+    IoKeyOutline,
+    IoGlobeOutline
 } from "react-icons/io5";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import PageContainer from "../../shared/components/PageContainer";
 import PolicyModal from "../../shared/components/PolicyModal";
 import ChangePasswordModal from "../components/ChangePasswordModal";
@@ -19,6 +21,7 @@ import { useToast } from "../../../hooks/useToast";
 export default function UserSettingsPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { language, setLanguage, supportedLanguages, isLanguageEnabled, t } = useLanguage();
     const toast = useToast();
     const [activePolicy, setActivePolicy] = useState(null);
     const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -102,6 +105,61 @@ export default function UserSettingsPage() {
                     </div>
                 </div>
 
+                {/* Section 2: Language Preferences */}
+                {isLanguageEnabled && (
+                    <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                                <IoGlobeOutline className="text-[#0A84FF] text-xl" />
+                                {t("language", "Language")} & Regional Localization
+                            </h3>
+                            <span className="text-xs font-bold text-[#0A84FF] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+                                {supportedLanguages.find(l => l.code === language)?.nativeName || "English"}
+                            </span>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            Choose your preferred language. The entire application interface will adapt immediately.
+                        </p>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
+                            {supportedLanguages.map((lang) => {
+                                const isSelected = language === lang.code;
+                                return (
+                                    <button
+                                        key={lang.code}
+                                        type="button"
+                                        onClick={() => {
+                                            setLanguage(lang.code);
+                                            toast.showSuccess(`Language changed to ${lang.nativeName}`);
+                                        }}
+                                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1 ${
+                                            isSelected
+                                                ? "bg-blue-50/80 border-[#0A84FF] ring-2 ring-blue-500/20 shadow-2xs"
+                                                : "bg-gray-50/60 border-gray-100 hover:bg-gray-100/70 text-gray-700"
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between w-full">
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isSelected ? "bg-[#0A84FF] text-white" : "bg-gray-200/80 text-gray-600"}`}>
+                                                {lang.badge || lang.code.toUpperCase()}
+                                            </span>
+                                            {isSelected && (
+                                                <span className="w-2 h-2 rounded-full bg-[#0A84FF]" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <span className={`text-xs font-bold block ${isSelected ? "text-blue-900" : "text-gray-900"}`}>
+                                                {lang.nativeName}
+                                            </span>
+                                            <span className="text-[10px] text-gray-400 font-medium">
+                                                {lang.name}
+                                            </span>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 {/* Section 3: Notification Preferences */}
                 <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">

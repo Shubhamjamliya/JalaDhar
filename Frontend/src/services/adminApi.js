@@ -793,3 +793,96 @@ export const addDisputeComment = async (disputeId, data = {}) => {
   return response.data;
 };
 
+/**
+ * Language & AI Translation API
+ */
+
+/**
+ * Get language configuration
+ */
+export const getLanguageConfig = async () => {
+  const response = await api.get('/languages/config');
+  return response.data;
+};
+
+/**
+ * Update language configuration (Admin)
+ */
+export const updateLanguageConfig = async (data) => {
+  const response = await api.post('/languages/admin/config', data);
+  return response.data;
+};
+
+/**
+ * Get full admin translation dictionary
+ */
+export const getAdminLanguageDictionary = async (params = {}) => {
+  const response = await api.get('/languages/admin/dictionary', { params });
+  return response.data;
+};
+
+/**
+ * Test Google Translation API credentials
+ */
+export const testGoogleLanguageApi = async (data = {}) => {
+  const response = await api.post('/languages/admin/test-google-api', data);
+  return response.data;
+};
+
+/**
+ * Auto-translate entire language dictionary using Google API
+ */
+export const autoTranslateLanguageApi = async (data) => {
+  const response = await api.post('/languages/admin/auto-translate-language', data);
+  return response.data;
+};
+
+/**
+ * Upsert single dictionary key
+ */
+export const upsertTranslationKey = async (data) => {
+  const response = await api.post('/languages/admin/upsert-key', data);
+  return response.data;
+};
+
+/**
+ * Bulk update translations
+ */
+export const bulkUpdateTranslations = async (data) => {
+  const response = await api.post('/languages/admin/bulk-update', data);
+  return response.data;
+};
+
+/**
+ * Re-seed default core translations
+ */
+export const seedDefaultTranslations = async () => {
+  const response = await api.post('/languages/admin/seed-defaults');
+  return response.data;
+};
+
+/**
+ * Add a new supported Indian/regional language
+ */
+export const addLanguageApi = async (data) => {
+  const response = await api.post('/languages/admin/add-language', data);
+  return response.data;
+};
+
+/**
+ * Delete a supported language
+ */
+export const deleteLanguageApi = async (code) => {
+  const response = await api.delete(`/languages/admin/delete-language/${code}`);
+  return response.data;
+};
+
+/**
+ * Translate dynamic runtime text
+ */
+export const translateDynamicText = async (text, targetLang, sourceLang = 'en') => {
+  const response = await api.post('/languages/translate-text', { text, targetLang, sourceLang });
+  return response.data;
+};
+
+

@@ -1063,6 +1063,14 @@ function App() {
                                                                         }
                                                                     />
                                                                     <Route
+                                                                        path="/settings/languages"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminSettings defaultTab="languages" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
                                                                         path="/settings/register"
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>

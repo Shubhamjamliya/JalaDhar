@@ -864,9 +864,9 @@ export default function UserDashboard() {
             <div className="px-1 pt-6 pb-2 flex items-center justify-between">
                 <div>
                     <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
-                        Top &quot;Verified&quot; Groundwater Experts Near You 👨‍🔧
+                        {t('topExpertsNearYou', 'Top "Verified" Groundwater Experts Near You')} 👨‍🔧
                     </h2>
-                    <p className="text-xs text-gray-500 font-semibold mt-0.5">Certified groundwater survey specialists available for dispatch.</p>
+                    <p className="text-xs text-gray-500 font-semibold mt-0.5">{t('certifiedSpecialists', 'Certified groundwater survey specialists available for dispatch.')}</p>
                 </div>
             </div>
 
@@ -877,7 +877,7 @@ export default function UserDashboard() {
                     <IoSearchOutline className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg z-10" />
                     <PlaceAutocompleteInput
                         onPlaceSelect={handlePlaceSelect}
-                        placeholder="Search address to filter nearby experts..."
+                        placeholder={t('searchAddressPlaceholder', 'Search address to filter nearby experts...')}
                         value={searchAddress}
                         onChange={(e) => setSearchAddress(e.target.value)}
                         disabled={false}
@@ -902,14 +902,14 @@ export default function UserDashboard() {
             <div className="flex flex-col gap-3.5 mb-8 px-1">
                 {vendors.length === 0 ? (
                     <div className="bg-white rounded-2xl p-8 text-center shadow-xs border border-gray-100">
-                        <p className="text-gray-500 text-sm font-semibold">No groundwater experts available nearby</p>
+                        <p className="text-gray-500 text-sm font-semibold">{t('noExpertsNearby', 'No groundwater experts available nearby')}</p>
                     </div>
                 ) : (
                     vendors.slice(0, 5).map((vendor) => (
                         <ExpertProfileCard
                             key={vendor._id}
                             expert={vendor}
-                            actionLabel="View Profile"
+                            actionLabel={t('viewProfile', 'View Profile')}
                             onSelect={() => navigate(`/user/vendor-profile/${vendor._id}`)}
                         />
                     ))

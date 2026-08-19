@@ -173,6 +173,7 @@ const navSections = [
                     { label: "General & App Info", to: "/admin/settings/general" },
                     { label: "Pricing & Quality Gate", to: "/admin/settings/pricing" },
                     { label: "Billing & GST Declarations", to: "/admin/settings/billing" },
+                    { label: "Languages", to: "/admin/settings/languages" },
                     { label: "Security & Integrations", to: "/admin/settings/security" }
                 ]
             },

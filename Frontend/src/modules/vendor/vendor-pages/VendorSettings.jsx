@@ -15,6 +15,7 @@ import {
     IoLogoWhatsapp
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import ExpertAgreementDocViewer from "../vendor-components/ExpertAgreementDocViewer";
 import CustomDropdown from "../../shared/components/CustomDropdown";
 import {
@@ -56,6 +57,7 @@ function ToggleSwitch({ checked, onChange, activeColor = "bg-[#0A84FF]", ariaLab
 export default function VendorSettings() {
     const navigate = useNavigate();
     const toast = useToast();
+    const { language: currentLang, setLanguage, supportedLanguages } = useLanguage();
     const [saving, setSaving] = useState(false);
     const [showDocViewer, setShowDocViewer] = useState(false);
 
@@ -576,18 +578,16 @@ export default function VendorSettings() {
                             <CustomDropdown
                                 label="Portal Language"
                                 name="language"
-                                options={[
-                                    { value: "en", label: "English" },
-                                    { value: "hi", label: "हिंदी (Hindi)" },
-                                    { value: "kn", label: "ಕನ್ನಡ (Kannada)" },
-                                    { value: "te", label: "తెలుగు (Telugu)" },
-                                    { value: "ta", label: "தமிழ் (Tamil)" },
-                                    { value: "mr", label: "मराठी (Marathi)" }
-                                ]}
-                                value={settings.language || "en"}
+                                options={(supportedLanguages || []).map(l => ({
+                                    value: l.code,
+                                    label: `${l.name} (${l.nativeName})`
+                                }))}
+                                value={settings.language || currentLang || "en"}
                                 onChange={(val) => {
                                     const value = typeof val === 'object' && val?.target ? val.target.value : val;
                                     setSettings({ ...settings, language: value });
+                                    setLanguage(value);
+                                    toast.showSuccess("Language preference updated");
                                 }}
                             />
                         </div>
