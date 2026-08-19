@@ -237,8 +237,18 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
         }
     }, [isOpen, onClose]);
 
-    const toggleExpand = (id) => {
-        setExpandedItems(prev => ({ [id]: !prev[id] }));
+    const toggleExpand = (id, e) => {
+        setExpandedItems(prev => {
+            const isNowExpanded = !prev[id];
+            if (isNowExpanded && e?.currentTarget) {
+                const buttonEl = e.currentTarget;
+                const containerEl = buttonEl.parentElement;
+                setTimeout(() => {
+                    containerEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 120);
+            }
+            return { [id]: isNowExpanded };
+        });
     };
 
     const renderBadge = (id) => {
@@ -310,7 +320,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                         </div>
 
                         {/* Navigation Menu */}
-                        <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar overscroll-contain">
+                        <nav className="flex-1 overflow-y-auto p-4 pb-32 space-y-1 custom-scrollbar overscroll-contain">
                             {navItems
                                 .filter(item => !item.roles || item.roles.includes(admin?.role))
                                 .map((item) => {
@@ -323,7 +333,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                         <div key={item.id} className="flex flex-col">
                                             {hasChildren ? (
                                                 <button
-                                                    onClick={() => toggleExpand(item.id)}
+                                                    onClick={(e) => toggleExpand(item.id, e)}
                                                     className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group w-full ${isActive
                                                         ? "bg-blue-600/10 text-blue-400 font-bold"
                                                         : "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
