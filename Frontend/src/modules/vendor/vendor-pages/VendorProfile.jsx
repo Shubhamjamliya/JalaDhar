@@ -1548,6 +1548,7 @@ export default function VendorProfile() {
                                                         type="number"
                                                         value={profileData.travelChargesPerKm}
                                                         onChange={(e) => setProfileData(prev => ({ ...prev, travelChargesPerKm: e.target.value }))}
+                                                        onWheel={(e) => e.target.blur()}
                                                         placeholder="0.00"
                                                         min="0"
                                                         step="0.01"
@@ -2791,6 +2792,7 @@ export default function VendorProfile() {
                                                         price: e.target.value,
                                                     })
                                                 }
+                                                onWheel={(e) => e.target.blur()}
                                                 placeholder="0.00"
                                                 min="0"
                                                 step="0.01"
@@ -3526,6 +3528,7 @@ function InfoField({ icon, label, value, isEditing, onChange, type = "text", opt
                         value={value || ""}
                         maxLength={maxLength}
                         onChange={(e) => onChange(e.target.value)}
+                        onWheel={(e) => type === "number" && e.target.blur()}
                         className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all"
                     />
                 )
@@ -3562,6 +3565,7 @@ function InfoRow({
                         type={type}
                         value={value || ""}
                         onChange={onChange}
+                        onWheel={(e) => type === "number" && e.target.blur()}
                         disabled={disabled}
                         className="w-full mt-1 text-sm font-bold text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"
                     />

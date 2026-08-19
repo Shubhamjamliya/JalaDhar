@@ -2120,6 +2120,7 @@ function InputBox({ label, name, type, placeholder, value, onChange, disabled, m
                     placeholder={placeholder}
                     value={value}
                     onChange={onChange}
+                    onWheel={(e) => type === "number" && e.target.blur()}
                     max={max}
                     min={min}
                     maxLength={maxLength || (name === "phone" ? 10 : undefined)}

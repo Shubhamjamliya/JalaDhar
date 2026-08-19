@@ -5,8 +5,12 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-// Service worker is automatically registered by vite-plugin-pwa
-// No manual registration needed
+// Prevent mouse wheel from inadvertently changing values in number inputs while scrolling
+document.addEventListener('wheel', () => {
+  if (document.activeElement && document.activeElement.type === 'number') {
+    document.activeElement.blur();
+  }
+}, { passive: true });
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
