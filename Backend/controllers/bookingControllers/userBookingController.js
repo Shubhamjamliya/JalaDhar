@@ -278,11 +278,25 @@ const createBooking = async (req, res) => {
 
     // Get settings
     const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'ADVANCE_PAYMENT_PERCENTAGE', 'REMAINING_PAYMENT_PERCENTAGE']);
-    const travelChargePerKm = settings.TRAVEL_CHARGE_PER_KM || 10;
-    const baseRadius = settings.BASE_RADIUS_KM || 30;
-    const gstPercentage = settings.GST_PERCENTAGE || 18;
-    const advancePercentage = settings.ADVANCE_PAYMENT_PERCENTAGE || 40;
-    const remainingPercentage = settings.REMAINING_PAYMENT_PERCENTAGE || 60;
+    const adminTravelChargePerKm = Number(settings.TRAVEL_CHARGE_PER_KM) || 10;
+    const adminBaseRadius = Number(settings.BASE_RADIUS_KM) || 30;
+    const gstPercentage = Number(settings.GST_PERCENTAGE) || 18;
+    const advancePercentage = Number(settings.ADVANCE_PAYMENT_PERCENTAGE) || 40;
+    const remainingPercentage = Number(settings.REMAINING_PAYMENT_PERCENTAGE) || 60;
+
+    // Resolve effective base radius & travel rate (vendor custom settings take priority, admin acts as platform default)
+    let baseRadius = adminBaseRadius;
+    if (vendor.serviceRadius) {
+      const parsedRadius = parseInt(vendor.serviceRadius, 10);
+      if (!isNaN(parsedRadius) && parsedRadius > 0) {
+        baseRadius = parsedRadius;
+      }
+    }
+
+    let travelChargePerKm = adminTravelChargePerKm;
+    if (typeof vendor.travelChargesPerKm === 'number' && vendor.travelChargesPerKm > 0) {
+      travelChargePerKm = vendor.travelChargesPerKm;
+    }
 
     // Get vendor location (handles both object and GeoJSON array)
     let vendorLat = vendor.address?.coordinates?.lat;
@@ -323,9 +337,10 @@ const createBooking = async (req, res) => {
     const baseServiceFee = (typeof vendor.servicePrice === 'number' && vendor.servicePrice > 0)
       ? vendor.servicePrice
       : (service && typeof service.price === 'number' && service.price > 0 ? service.price : 3500);
-    const gst = calculateGST(baseServiceFee, gstPercentage);
-    const subtotal = baseServiceFee + gst;
-    const totalAmount = subtotal + travelCharges;
+    const gst = parseFloat(calculateGST(baseServiceFee, gstPercentage).toFixed(2));
+    const subtotal = parseFloat((baseServiceFee + gst).toFixed(2));
+    const travelChargesRounded = parseFloat(travelCharges.toFixed(2));
+    const totalAmount = parseFloat((subtotal + travelChargesRounded).toFixed(2));
 
     // Calculate advance and remaining from configurable percentages
     const advanceAmount = parseFloat((totalAmount * (advancePercentage / 100)).toFixed(2));
@@ -365,7 +380,7 @@ const createBooking = async (req, res) => {
       vendorStatus: BOOKING_STATUS.AWAITING_ADVANCE,
       userStatus: BOOKING_STATUS.AWAITING_ADVANCE,
       scheduledDate: new Date(scheduledDate),
-      scheduledTime: 'TBD', // Expert sets the actual time upon acceptance
+      scheduledTime: scheduledTime || 'TBD', // Expert sets the actual time upon acceptance
       address: {
         street: address.street,
         city: address.city,
@@ -394,9 +409,9 @@ const createBooking = async (req, res) => {
       supportingDocuments: Array.isArray(supportingDocuments) && supportingDocuments.length > 0 ? supportingDocuments : (Array.isArray(documents) && documents.length > 0 ? documents.map(doc => typeof doc === 'string' ? { url: doc, name: 'Attachment' } : doc) : []),
       surveyNumber: surveyNumber || undefined,
       payment: {
-        baseServiceFee,
-        distance: distance || null,
-        travelCharges,
+        baseServiceFee: parseFloat(baseServiceFee.toFixed(2)),
+        distance: (distance !== null && !isNaN(distance)) ? parseFloat(distance.toFixed(2)) : null,
+        travelCharges: travelChargesRounded,
         subtotal,
         gst,
         totalAmount,
@@ -1681,11 +1696,25 @@ const calculateBookingCharges = async (req, res) => {
       console.warn('Could not fetch settings for booking calculation, using safe defaults', sErr);
     }
 
-    const travelChargePerKm = Number(settings.TRAVEL_CHARGE_PER_KM) || 10;
-    const baseRadius = Number(settings.BASE_RADIUS_KM) || 30;
+    const adminTravelChargePerKm = Number(settings.TRAVEL_CHARGE_PER_KM) || 10;
+    const adminBaseRadius = Number(settings.BASE_RADIUS_KM) || 30;
     const gstPercentage = Number(settings.GST_PERCENTAGE) || 18;
     const advancePercentage = Number(settings.ADVANCE_PAYMENT_PERCENTAGE) || 40;
     const remainingPercentage = Number(settings.REMAINING_PAYMENT_PERCENTAGE) || 60;
+
+    // Resolve effective base radius & travel rate (vendor custom settings take priority, admin acts as platform default)
+    let baseRadius = adminBaseRadius;
+    if (vendor.serviceRadius) {
+      const parsedRadius = parseInt(vendor.serviceRadius, 10);
+      if (!isNaN(parsedRadius) && parsedRadius > 0) {
+        baseRadius = parsedRadius;
+      }
+    }
+
+    let travelChargePerKm = adminTravelChargePerKm;
+    if (typeof vendor.travelChargesPerKm === 'number' && vendor.travelChargesPerKm > 0) {
+      travelChargePerKm = vendor.travelChargesPerKm;
+    }
 
     // Extract vendor coordinates safely (handles both object and GeoJSON array)
     let vendorLat = vendor.address?.coordinates?.lat;

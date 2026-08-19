@@ -667,8 +667,13 @@ export default function UserStatus() {
                             <div className="text-right flex-shrink-0">
                                 <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Total Fee</span>
                                 <span className="text-base sm:text-lg font-extrabold text-emerald-600 font-mono">
-                                    ₹{currentBooking.payment.totalAmount.toLocaleString('en-IN')}
+                                    ₹{Number(currentBooking.payment.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
+                                {currentBooking.payment?.advancePaid && !currentBooking.payment?.remainingPaid && (
+                                    <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
+                                        Adv. Paid (₹{Number(currentBooking.payment.advanceAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                    </span>
+                                )}
                             </div>
                         )}
                     </div>
