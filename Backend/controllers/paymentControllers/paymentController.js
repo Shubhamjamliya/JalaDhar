@@ -353,6 +353,41 @@ const verifyRemainingPayment = async (req, res) => {
       // Continue even if invoice generation fails
     }
 
+    // Credit 2nd installment to vendor wallet if report is approved (or if gate is disabled) and not yet credited
+    try {
+      const { getSetting } = require('../../services/settingsService');
+      const requireApproval = await getSetting('REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', true);
+      const isReportApproved = !!(booking.report?.approvedAt || !requireApproval);
+
+      if (isReportApproved &&
+          booking.payment?.vendorWalletPayments?.reportUploadPayment &&
+          !booking.payment.vendorWalletPayments.reportUploadPayment.credited) {
+        const { creditToVendorWallet } = require('../../services/walletService');
+        const paymentAmount = booking.payment.vendorWalletPayments.reportUploadPayment.amount || 0;
+        const vendorId = booking.vendor?._id || booking.vendor;
+
+        if (paymentAmount > 0 && vendorId) {
+          const creditResult = await creditToVendorWallet(
+            vendorId,
+            paymentAmount,
+            'REPORT_UPLOAD',
+            booking._id,
+            { description: `Second installment (50%) for booking #${booking._id.toString().slice(-6)} on remaining payment completion` }
+          );
+          if (creditResult.success) {
+            booking.payment.vendorWalletPayments.reportUploadPayment.credited = true;
+            booking.payment.vendorWalletPayments.reportUploadPayment.creditedAt = new Date();
+            booking.payment.vendorWalletPayments.reportUploadPayment.transactionId = creditResult.transaction._id;
+            booking.payment.vendorWalletPayments.totalCredited =
+              (booking.payment.vendorWalletPayments.totalCredited || 0) + paymentAmount;
+            await booking.save();
+          }
+        }
+      }
+    } catch (walletErr) {
+      console.error('[verifyRemainingPayment] Wallet credit error:', walletErr);
+    }
+
     // Send confirmation email
     try {
       await sendPaymentConfirmationEmail({

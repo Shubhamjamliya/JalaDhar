@@ -1,4 +1,17 @@
-const Settings = require('../models/Settings');
+const normalizeSettingValue = (val, type, defaultValue) => {
+  if (val === undefined || val === null) return defaultValue;
+  if (type === 'boolean' || typeof defaultValue === 'boolean') {
+    if (typeof val === 'string') {
+      return val.toLowerCase() === 'true' || val === '1';
+    }
+    return Boolean(val);
+  }
+  if (type === 'number' || typeof defaultValue === 'number') {
+    const n = Number(val);
+    return isNaN(n) ? defaultValue : n;
+  }
+  return val;
+};
 
 /**
  * Get setting value by key
@@ -9,7 +22,7 @@ const getSetting = async (key, defaultValue = null) => {
     if (!setting) {
       return defaultValue;
     }
-    return setting.value;
+    return normalizeSettingValue(setting.value, setting.type, defaultValue);
   } catch (error) {
     console.error(`Error getting setting ${key}:`, error);
     return defaultValue;
@@ -25,7 +38,7 @@ const getSettings = async (keys = []) => {
     const result = {};
     keys.forEach(key => {
       const setting = settings.find(s => s.key === key);
-      result[key] = setting ? setting.value : null;
+      result[key] = setting ? normalizeSettingValue(setting.value, setting.type, null) : null;
     });
     return result;
   } catch (error) {
@@ -46,7 +59,7 @@ const setSetting = async (key, value, label, description, type = 'string', categ
     if (!finalCategory || finalCategory === 'general') {
       if (key.startsWith('BILLING_')) {
         finalCategory = 'billing';
-      } else if (['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'ADVANCE_PAYMENT_PERCENTAGE', 'REMAINING_PAYMENT_PERCENTAGE', 'REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT'].includes(key)) {
+      } else if (['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'ADVANCE_PAYMENT_PERCENTAGE', 'REMAINING_PAYMENT_PERCENTAGE', 'REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', 'ENABLE_AUTO_APPROVE_REPORT_SLA', 'AUTO_APPROVE_REPORT_SLA_HOURS'].includes(key)) {
         finalCategory = 'pricing';
       } else if (existing && existing.category) {
         finalCategory = existing.category;
@@ -60,13 +73,31 @@ const setSetting = async (key, value, label, description, type = 'string', categ
     const finalLabel = label || (existing ? existing.label : key);
     const finalDescription = description !== undefined ? description : (existing ? existing.description : '');
 
+    let finalType = type;
+    if (!finalType || finalType === 'string') {
+      if (typeof value === 'boolean' || value === 'true' || value === 'false') {
+        finalType = 'boolean';
+      } else if (typeof value === 'number') {
+        finalType = 'number';
+      } else if (existing && existing.type) {
+        finalType = existing.type;
+      }
+    }
+
+    let finalValue = value;
+    if (finalType === 'boolean') {
+      finalValue = (value === true || value === 'true' || value === 1 || value === '1');
+    } else if (finalType === 'number') {
+      finalValue = Number(value);
+    }
+
     const setting = await Settings.findOneAndUpdate(
       { key },
       {
-        value,
+        value: finalValue,
         label: finalLabel,
         description: finalDescription,
-        type: type || (existing ? existing.type : 'string'),
+        type: finalType,
         category: finalCategory,
         updatedBy
       },
@@ -130,6 +161,22 @@ const initializeDefaultSettings = async () => {
       label: 'Require Admin Approval for 2nd Installment Payout',
       description: 'When enabled, the 2nd installment (50%) is held in escrow until an Admin reviews and approves the technical survey report in Admin Approvals. When disabled, payout is credited automatically to the vendor upon report upload.',
       type: 'boolean',
+      category: 'pricing'
+    },
+    {
+      key: 'ENABLE_AUTO_APPROVE_REPORT_SLA',
+      value: true,
+      label: 'Enable Auto-Approve SLA Timer',
+      description: 'Automatically release the 2nd installment to the vendor if Admin takes no action within the configured SLA hours.',
+      type: 'boolean',
+      category: 'pricing'
+    },
+    {
+      key: 'AUTO_APPROVE_REPORT_SLA_HOURS',
+      value: 48,
+      label: 'Auto-Approve SLA Grace Period (Hours)',
+      description: 'Hours after report upload before payout is automatically released if no dispute is open (e.g. 24, 48, 72).',
+      type: 'number',
       category: 'pricing'
     },
     {

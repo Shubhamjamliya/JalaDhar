@@ -256,6 +256,14 @@ if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
   const { initializeSocket } = require('./sockets');
   initializeSocket(server);
 
+  // Initialize Background Report Auto-Approval SLA Worker
+  try {
+    const { startAutoApprovalCron } = require('./services/reportAutoApprovalService');
+    startAutoApprovalCron();
+  } catch (slaErr) {
+    console.error('Failed to start SLA auto-approval worker:', slaErr);
+  }
+
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (err) => {
     console.error('Unhandled Promise Rejection:', err);
