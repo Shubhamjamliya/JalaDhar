@@ -31,6 +31,9 @@ setTimeout(async () => {
 // Initialize Express app
 const app = express();
 
+// Trust proxy for secure IP rate limiting behind reverse proxies (Vercel, Nginx, Cloudflare)
+app.set('trust proxy', 1);
+
 // CORS configuration
 const allowedOrigins = [
   "https://jaladhaaraapp.in",

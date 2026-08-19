@@ -16,7 +16,7 @@ const {
 } = require('../../controllers/adminControllers/adminAuthController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isAdmin, isSuperAdmin } = require('../../middleware/roleMiddleware');
-const { adminRegistrationRateLimiter } = require('../../middleware/rateLimiter');
+const { authRateLimiter, otpRateLimiter } = require('../../middleware/rateLimiter');
 
 // Validation rules
 const registerValidation = [
@@ -55,16 +55,16 @@ const registerAdminWithOTPValidation = [
 ];
 
 // Routes
-router.post('/register', adminRegistrationRateLimiter, registerValidation, register);
-router.post('/login', loginValidation, login);
+router.post('/register', authRateLimiter, registerValidation, register);
+router.post('/login', authRateLimiter, loginValidation, login);
 router.post('/logout', authenticate, isAdmin, logout);
 router.get('/profile', authenticate, isAdmin, getProfile);
-router.post('/forgot-password', forgotPasswordValidation, forgotPassword);
-router.post('/reset-password', resetPasswordValidation, resetPassword);
+router.post('/forgot-password', otpRateLimiter, forgotPasswordValidation, forgotPassword);
+router.post('/reset-password', authRateLimiter, resetPasswordValidation, resetPassword);
 
 // Admin-to-admin registration with OTP (managed by Super Admin ONLY)
-router.post('/register/send-otp', authenticate, isSuperAdmin, adminRegistrationOTPValidation, sendAdminRegistrationOTP);
-router.post('/register/verify-otp', authenticate, isSuperAdmin, registerAdminWithOTPValidation, registerAdminWithOTP);
+router.post('/register/send-otp', authenticate, isSuperAdmin, otpRateLimiter, adminRegistrationOTPValidation, sendAdminRegistrationOTP);
+router.post('/register/verify-otp', authenticate, isSuperAdmin, authRateLimiter, registerAdminWithOTPValidation, registerAdminWithOTP);
 
 // Admin Management (Super Admin only)
 router.get('/manage/all', authenticate, isSuperAdmin, getAllAdmins);

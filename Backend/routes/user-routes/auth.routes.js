@@ -16,6 +16,7 @@ const {
 } = require('../../controllers/userControllers/userAuthController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isUser } = require('../../middleware/roleMiddleware');
+const { authRateLimiter, otpRateLimiter } = require('../../middleware/rateLimiter');
 
 // Validation rules
 const registerValidation = [
@@ -67,16 +68,16 @@ const registerWithOTPValidation = [
 ];
 
 // Routes
-router.post('/register/send-otp', sendOTPValidation, sendRegistrationOTP);
-router.post('/register', registerWithOTPValidation, register);
-router.post('/login', loginValidation, login);
-router.post('/login/send-otp', sendLoginOTP);
-router.post('/login/verify-otp', verifyLoginOTP);
-router.post('/forgot-password', forgotPasswordValidation, forgotPassword);
-router.post('/verify-reset-otp', verifyResetOTP);
-router.post('/reset-password', resetPasswordValidation, resetPassword);
-router.post('/verify-email', verifyEmailValidation, verifyEmail);
-router.post('/resend-email-verification', resendEmailValidation, resendEmailVerification);
+router.post('/register/send-otp', otpRateLimiter, sendOTPValidation, sendRegistrationOTP);
+router.post('/register', authRateLimiter, registerWithOTPValidation, register);
+router.post('/login', authRateLimiter, loginValidation, login);
+router.post('/login/send-otp', otpRateLimiter, sendLoginOTP);
+router.post('/login/verify-otp', authRateLimiter, verifyLoginOTP);
+router.post('/forgot-password', otpRateLimiter, forgotPasswordValidation, forgotPassword);
+router.post('/verify-reset-otp', authRateLimiter, verifyResetOTP);
+router.post('/reset-password', authRateLimiter, resetPasswordValidation, resetPassword);
+router.post('/verify-email', authRateLimiter, verifyEmailValidation, verifyEmail);
+router.post('/resend-email-verification', otpRateLimiter, resendEmailValidation, resendEmailVerification);
 router.post('/logout', authenticate, isUser, logout);
 
 module.exports = router;
