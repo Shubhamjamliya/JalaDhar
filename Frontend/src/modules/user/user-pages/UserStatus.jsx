@@ -953,13 +953,22 @@ export default function UserStatus() {
 
                                             {/* Action Buttons Based on Status Table Specification */}
                                             {step.id === "booking-requested" && isActive && (
-                                                <div className="mt-3">
+                                                <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                                                    {!currentBooking.payment?.advancePaid && (
+                                                        <button
+                                                            onClick={() => navigate(`/user/booking/${currentBooking.id || currentBooking._id}/advance-payment`)}
+                                                            className="flex-1 py-2 bg-[#0A84FF] hover:bg-[#0070E0] text-white text-xs font-bold rounded-lg shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <IoWalletOutline className="text-base" />
+                                                            Complete Advance Payment (40%)
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={handleCancelBooking}
-                                                        className="w-full py-2 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        className="py-2 px-3 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                                                     >
                                                         <IoCloseCircleOutline className="text-base" />
-                                                        Cancel Booking
+                                                        Cancel
                                                     </button>
                                                 </div>
                                             )}
