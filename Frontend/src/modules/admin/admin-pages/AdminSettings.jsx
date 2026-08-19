@@ -917,23 +917,23 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                         </p>
                                     </div>
 
-                                    {/* 2nd Installment Payout Quality Review Gate & SLA Timer Settings */}
-                                    <div className="p-5 bg-gradient-to-br from-blue-50/70 via-indigo-50/40 to-slate-50 rounded-2xl border border-blue-100/90 shadow-2xs space-y-4">
+                                    {/* 2nd Installment Payout Quality Review Gate & SLA Timer Settings (Compact Layout) */}
+                                    <div className="p-4 bg-gradient-to-br from-blue-50/60 via-indigo-50/30 to-slate-50 rounded-xl border border-blue-100 shadow-2xs space-y-3">
                                         {/* Master Gate Toggle */}
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="space-y-1.5 flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="space-y-0.5 flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="text-sm font-bold text-gray-900">
-                                                        Quality Review Gate: Require Admin Approval for 2nd Installment Payout
+                                                    <span className="text-xs sm:text-sm font-bold text-gray-900">
+                                                        2nd Installment Payout Quality Review Gate
                                                     </span>
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT ? 'bg-emerald-100 text-emerald-800 border border-emerald-300/60' : 'bg-amber-100 text-amber-800 border border-amber-300/60'}`}>
-                                                        {pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT ? '🛡️ Escrow Safeguard Active' : '⚡ Instant Auto-Release'}
+                                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT ? 'bg-emerald-100 text-emerald-800 border border-emerald-300/60' : 'bg-amber-100 text-amber-800 border border-amber-300/60'}`}>
+                                                        {pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT ? '🛡️ Escrow Active' : '⚡ Instant Auto-Release'}
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-gray-600 leading-relaxed">
+                                                <p className="text-[11px] text-gray-600 leading-snug">
                                                     {pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT
-                                                        ? 'When enabled (Recommended SDE Standard), the 2nd installment (50% of vendor payout) is held in escrow until an Admin reviews and approves the technical survey report in Admin Approvals. Protects customer satisfaction and prevents payments for incomplete reports.'
-                                                        : 'When disabled, the 2nd installment (50%) is automatically and immediately credited to the vendor wallet upon report submission, without waiting for Admin review.'}
+                                                        ? '2nd installment (50%) is held in escrow until Admin reviews & approves report in Approvals.'
+                                                        : '2nd installment (50%) is auto-released to vendor immediately upon report upload.'}
                                                 </p>
                                             </div>
 
@@ -948,29 +948,29 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT: !prev.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT
                                                     }))
                                                 }
-                                                className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:ring-offset-2 ${
+                                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                                                     pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT ? 'bg-[#0A84FF]' : 'bg-slate-300'
                                                 }`}
                                             >
                                                 <span
-                                                    className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
                                                         pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT ? 'translate-x-5' : 'translate-x-0'
                                                     }`}
                                                 />
                                             </button>
                                         </div>
 
-                                        {/* SLA Grace Period Section (Only when Gate is active) */}
+                                        {/* SLA Grace Period Section */}
                                         {pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT && (
-                                            <div className="pt-4 border-t border-blue-200/60 space-y-3">
+                                            <div className="pt-2.5 border-t border-blue-200/50 space-y-2.5">
                                                 <div className="flex items-center justify-between gap-3">
-                                                    <div>
-                                                        <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                                                            ⏱️ SLA Auto-Release Timer (Grace Period)
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className="text-xs font-bold text-gray-800 flex items-center gap-1">
+                                                            ⏱️ SLA Auto-Release Timer:
                                                         </span>
-                                                        <p className="text-[11px] text-gray-500">
-                                                            Automatically release the 2nd installment if no Admin review or user dispute occurs within the set time.
-                                                        </p>
+                                                        <span className="text-[11px] text-gray-500">
+                                                            Auto-releases if no dispute within duration
+                                                        </span>
                                                     </div>
 
                                                     <button
@@ -983,12 +983,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                                 ENABLE_AUTO_APPROVE_REPORT_SLA: !prev.ENABLE_AUTO_APPROVE_REPORT_SLA
                                                             }))
                                                         }
-                                                        className={`relative inline-flex h-6 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                                        className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                                                             pricingSettings.ENABLE_AUTO_APPROVE_REPORT_SLA ? 'bg-emerald-600' : 'bg-slate-300'
                                                         }`}
                                                     >
                                                         <span
-                                                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
                                                                 pricingSettings.ENABLE_AUTO_APPROVE_REPORT_SLA ? 'translate-x-4' : 'translate-x-0'
                                                             }`}
                                                         />
@@ -996,68 +996,48 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 </div>
 
                                                 {pricingSettings.ENABLE_AUTO_APPROVE_REPORT_SLA && (
-                                                    <div className="bg-white/80 rounded-xl p-3.5 border border-blue-100 space-y-2.5">
-                                                        <div className="flex items-center justify-between gap-4 flex-wrap">
-                                                            <div className="flex-1 min-w-[200px]">
-                                                                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                                                                    SLA Release Duration (Hours)
-                                                                </label>
-                                                                <div className="flex items-center gap-2">
-                                                                    <input
-                                                                        type="number"
-                                                                        min="1"
-                                                                        max="336"
-                                                                        value={pricingSettings.AUTO_APPROVE_REPORT_SLA_HOURS}
-                                                                        onChange={(e) =>
-                                                                            setPricingSettings({
-                                                                                ...pricingSettings,
-                                                                                AUTO_APPROVE_REPORT_SLA_HOURS: e.target.value
-                                                                            })
-                                                                        }
-                                                                        className="w-28 px-3 py-1.5 text-xs font-bold border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF]"
-                                                                    />
-                                                                    <span className="text-xs text-gray-500 font-medium">
-                                                                        {(() => {
-                                                                            const h = Number(pricingSettings.AUTO_APPROVE_REPORT_SLA_HOURS) || 48;
-                                                                            const d = (h / 24).toFixed(1).replace(/\.0$/, '');
-                                                                            return `≈ ${d} day${d === '1' ? '' : 's'}`;
-                                                                        })()}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Quick Presets */}
-                                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Presets:</span>
-                                                                {[24, 48, 72, 120].map((hours) => (
-                                                                    <button
-                                                                        key={hours}
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            setPricingSettings(prev => ({
-                                                                                ...prev,
-                                                                                AUTO_APPROVE_REPORT_SLA_HOURS: hours
-                                                                            }))
-                                                                        }
-                                                                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
-                                                                            Number(pricingSettings.AUTO_APPROVE_REPORT_SLA_HOURS) === hours
-                                                                                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                                                                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                                                        }`}
-                                                                    >
-                                                                        {hours}h ({hours / 24}d)
-                                                                    </button>
-                                                                ))}
-                                                            </div>
+                                                    <div className="bg-white/80 rounded-lg p-2.5 border border-blue-100 flex items-center justify-between gap-3 flex-wrap">
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                max="336"
+                                                                value={pricingSettings.AUTO_APPROVE_REPORT_SLA_HOURS}
+                                                                onChange={(e) =>
+                                                                    setPricingSettings({
+                                                                        ...pricingSettings,
+                                                                        AUTO_APPROVE_REPORT_SLA_HOURS: e.target.value
+                                                                    })
+                                                                }
+                                                                className="w-20 px-2 py-1 text-xs font-bold border border-gray-300 rounded-md focus:ring-1 focus:ring-[#0A84FF]"
+                                                            />
+                                                            <span className="text-xs text-gray-600 font-semibold">
+                                                                hrs ({((Number(pricingSettings.AUTO_APPROVE_REPORT_SLA_HOURS) || 48) / 24).toFixed(1).replace(/\.0$/, '')}d)
+                                                            </span>
                                                         </div>
-                                                        <p className="text-[10px] text-gray-500 italic">
-                                                            📌 Example: If an expert uploads a report on Monday at 10:00 AM, the payout will auto-release on {(() => {
-                                                                const h = Number(pricingSettings.AUTO_APPROVE_REPORT_SLA_HOURS) || 48;
-                                                                const d = Math.round(h / 24);
-                                                                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-                                                                return `${days[(0 + d) % 7]} at 10:00 AM (${h}h later)`;
-                                                            })()} unless an admin raises revision notes or a dispute is filed.
-                                                        </p>
+
+                                                        {/* Compact Presets */}
+                                                        <div className="flex items-center gap-1">
+                                                            {[24, 48, 72, 120].map((hours) => (
+                                                                <button
+                                                                    key={hours}
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setPricingSettings(prev => ({
+                                                                            ...prev,
+                                                                            AUTO_APPROVE_REPORT_SLA_HOURS: hours
+                                                                        }))
+                                                                    }
+                                                                    className={`px-2 py-0.5 text-[10px] font-bold rounded-md border transition-all cursor-pointer ${
+                                                                        Number(pricingSettings.AUTO_APPROVE_REPORT_SLA_HOURS) === hours
+                                                                            ? 'bg-[#0A84FF] text-white border-[#0A84FF]'
+                                                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                                    }`}
+                                                                >
+                                                                    {hours}h
+                                                                </button>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
