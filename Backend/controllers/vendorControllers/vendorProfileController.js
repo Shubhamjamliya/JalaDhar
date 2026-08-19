@@ -328,20 +328,32 @@ const updateProfile = async (req, res) => {
     vendor.markModified('multipleStates');
     vendor.markModified('modeOfTravel');
     vendor.markModified('serviceAreas');
+    vendor.markModified('instruments');
+    vendor.markModified('educationalQualifications');
 
     await vendor.save();
 
-    // Sync vendor's updated service price to any referenced Service records
-    if (vendor.servicePrice !== undefined && vendor.servicePrice !== null) {
-      try {
-        const Service = require('../../models/Service');
+    // Sync vendor's updated service price, machineType, category to any referenced Service records
+    try {
+      const Service = require('../../models/Service');
+      const serviceUpdates = {};
+      if (vendor.servicePrice !== undefined && vendor.servicePrice !== null) {
+        serviceUpdates.price = vendor.servicePrice;
+      }
+      if (vendor.machineType) {
+        serviceUpdates.machineType = vendor.machineType;
+      }
+      if (vendor.designation) {
+        serviceUpdates.category = vendor.designation;
+      }
+      if (Object.keys(serviceUpdates).length > 0) {
         await Service.updateMany(
           { vendor: vendor._id },
-          { $set: { price: vendor.servicePrice } }
+          { $set: serviceUpdates }
         );
-      } catch (syncErr) {
-        console.warn('Could not sync Service collection prices with vendor.servicePrice:', syncErr.message);
       }
+    } catch (syncErr) {
+      console.warn('Could not sync Service collection with vendor profile:', syncErr.message);
     }
 
     // Handle bank details update separately

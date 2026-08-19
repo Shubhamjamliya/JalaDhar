@@ -1042,11 +1042,11 @@ const getNearbyVendors = async (req, res) => {
 
     // First, get all vendors with services populated (no status filter - show all services)
     const vendors = await Vendor.find(query)
-      .select('name email phone experience rating bookingStats serviceAreas designation address location services servicePrice workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates')
+      .select('name email phone experience experienceDetails designation education institution graduationYear specialization surveysCompleted rating bookingStats serviceAreas designation address location services servicePrice machineType workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates')
       .populate({
         path: 'services',
         // Removed match filter - show all services regardless of status
-        select: 'name category price description images status isActive'
+        select: 'name category price description images status isActive machineType'
       })
       .limit(parseInt(limit))
       .lean(); // Use lean() for better performance
@@ -1116,10 +1116,10 @@ const getNearbyVendors = async (req, res) => {
       const serviceCategory = primaryService?.category || vendor.designation || 'Groundwater Survey';
 
       // Enhanced Expert Profile Stats calculation
-      const successfulSurveys = vendor.rating?.successCount ?? vendor.bookingStats?.success ?? 0;
+      const successfulSurveys = vendor.rating?.successCount ?? vendor.bookingStats?.success ?? (typeof vendor.surveysCompleted === 'number' ? vendor.surveysCompleted : 0);
       const failedSurveys = vendor.rating?.failureCount ?? vendor.bookingStats?.failed ?? 0;
       const totalSurveys = successfulSurveys + failedSurveys;
-      const successRate = vendor.rating?.successRatio ?? (totalSurveys > 0 ? Math.round((successfulSurveys / totalSurveys) * 100) : 0);
+      const successRate = vendor.rating?.successRatio ?? (totalSurveys > 0 ? Math.round((successfulSurveys / totalSurveys) * 100) : (successfulSurveys > 0 ? 100 : 0));
 
       const serviceAreas = (Array.isArray(vendor.serviceAreas) && vendor.serviceAreas.length > 0)
         ? vendor.serviceAreas
@@ -1133,6 +1133,10 @@ const getNearbyVendors = async (req, res) => {
         distance,
         profilePicture: profilePicMap[vendor._id.toString()] || null,
         experience: vendor.experience || 0,
+        experienceDetails: vendor.experienceDetails || null,
+        designation: vendor.designation || null,
+        machineType: vendor.machineType || primaryService?.machineType || null,
+        surveysCompleted: vendor.surveysCompleted || successfulSurveys,
         averageRating: vendor.rating?.averageRating || 0,
         totalRatings: vendor.rating?.totalRatings || 0,
         successfulSurveys,
@@ -1151,14 +1155,16 @@ const getNearbyVendors = async (req, res) => {
           category: s.category,
           price: (typeof vendor.servicePrice === 'number' && vendor.servicePrice > 0) ? vendor.servicePrice : (s.price || minPrice),
           description: s.description,
-          images: s.images
+          images: s.images,
+          machineType: s.machineType || vendor.machineType || null
         })) : [{
           id: vendor._id,
           name: `${serviceCategory} Service`,
           category: serviceCategory,
           price: minPrice,
           description: 'Geoscientific groundwater survey & borewell point detection service.',
-          images: []
+          images: [],
+          machineType: vendor.machineType || null
         }]
       };
     });
@@ -1247,7 +1253,7 @@ const getVendorProfile = async (req, res) => {
     }
 
     const vendor = await Vendor.findById(vendorId)
-      .select('name email phone experience rating bookingStats serviceAreas address location services servicePrice isActive isApproved gender designation educationalQualifications workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates')
+      .select('name email phone experience experienceDetails designation education institution graduationYear specialization surveysCompleted machineType rating bookingStats serviceAreas address location services servicePrice isActive isApproved gender educationalQualifications workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates panNo isGstRegistered gstNumber')
       .populate({
         path: 'services',
         select: 'name category price description images status isActive machineType'
@@ -1294,10 +1300,10 @@ const getVendorProfile = async (req, res) => {
     }
 
     // Enhanced Expert Profile Stats calculation
-    const successfulSurveys = vendor.rating?.successCount ?? vendor.bookingStats?.success ?? 0;
+    const successfulSurveys = vendor.rating?.successCount ?? vendor.bookingStats?.success ?? (typeof vendor.surveysCompleted === 'number' ? vendor.surveysCompleted : 0);
     const failedSurveys = vendor.rating?.failureCount ?? vendor.bookingStats?.failed ?? 0;
     const totalSurveys = successfulSurveys + failedSurveys;
-    const successRate = vendor.rating?.successRatio ?? (totalSurveys > 0 ? Math.round((successfulSurveys / totalSurveys) * 100) : 0);
+    const successRate = vendor.rating?.successRatio ?? (totalSurveys > 0 ? Math.round((successfulSurveys / totalSurveys) * 100) : (successfulSurveys > 0 ? 100 : 0));
 
     const serviceAreas = (Array.isArray(vendor.serviceAreas) && vendor.serviceAreas.length > 0)
       ? vendor.serviceAreas
@@ -1309,14 +1315,28 @@ const getVendorProfile = async (req, res) => {
       ? vendor.servicePrice
       : (vendor.services?.[0]?.price || 3500);
 
+    const qualifications = (Array.isArray(vendor.educationalQualifications) && vendor.educationalQualifications.length > 0)
+      ? vendor.educationalQualifications
+      : (vendor.education ? [{
+          degree: vendor.education,
+          institution: vendor.institution || 'Verified on File',
+          year: vendor.graduationYear || '',
+          specialization: vendor.specialization || ''
+        }] : []);
+
     // Format vendor data
     const formattedVendor = {
       ...vendor,
       expertId: vendor.expertId || `EXP-${vendor._id.toString().slice(-6).toUpperCase()}`,
       distance,
       profilePicture: profilePicDoc ? profilePicDoc.url : null,
-      education: vendor.educationalQualifications, // Map for frontend compatibility
+      education: qualifications, // Map for frontend compatibility
+      educationalQualifications: qualifications,
+      degree: vendor.education || qualifications[0]?.degree || null,
       experience: vendor.experience || 0,
+      experienceDetails: vendor.experienceDetails || null,
+      machineType: vendor.machineType || vendor.services?.[0]?.machineType || null,
+      surveysCompleted: vendor.surveysCompleted || successfulSurveys,
       servicePrice: expertPrice,
       averageRating: vendor.rating?.averageRating || 0,
       totalRatings: vendor.rating?.totalRatings || 0,
@@ -1339,7 +1359,7 @@ const getVendorProfile = async (req, res) => {
             images: s.images,
             status: s.status,
             isActive: s.isActive,
-            machineType: s.machineType
+            machineType: s.machineType || vendor.machineType || null
           }))
         : [{
             id: vendor._id,

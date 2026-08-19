@@ -33,7 +33,9 @@ const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "S
 
   const successfulSurveys = typeof expert.successfulSurveys === "number"
     ? expert.successfulSurveys
-    : (typeof expert.successCount === "number" ? expert.successCount : 0);
+    : (typeof expert.surveysCompleted === "number"
+        ? expert.surveysCompleted
+        : (typeof expert.successCount === "number" ? expert.successCount : 0));
 
   const failedSurveys = typeof expert.failedSurveys === "number"
     ? expert.failedSurveys
@@ -49,6 +51,8 @@ const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "S
     successRate = expert.successRatio;
   } else if (totalSurveys > 0) {
     successRate = Math.round((successfulSurveys / totalSurveys) * 100);
+  } else if (successfulSurveys > 0 && failedSurveys === 0) {
+    successRate = 100;
   }
 
   const successRateText = successRate !== null && totalSurveys > 0 ? `${successRate}%` : "N/A";

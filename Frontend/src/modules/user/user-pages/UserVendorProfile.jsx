@@ -187,14 +187,14 @@ export default function UserVendorProfile() {
                     {/* Modern Stats Cards */}
                     {/* Stats Cards - Experience, Success %, Successful, Failed */}
                     {(() => {
-                        const succ = vendorData.successfulSurveys ?? vendorData.successCount ?? 0;
+                        const succ = vendorData.successfulSurveys ?? vendorData.surveysCompleted ?? vendorData.successCount ?? 0;
                         const fail = vendorData.failedSurveys ?? vendorData.failureCount ?? 0;
                         const total = succ + fail;
                         let sRate = vendorData.successRate ?? vendorData.successRatio;
                         if (sRate === undefined || sRate === null) {
-                            sRate = total > 0 ? Math.round((succ / total) * 100) : null;
+                            sRate = total > 0 ? Math.round((succ / total) * 100) : (succ > 0 ? 100 : null);
                         }
-                        const rateText = sRate !== null && total > 0 ? `${sRate}%` : "N/A";
+                        const rateText = sRate !== null && (total > 0 || succ > 0) ? `${sRate}%` : "N/A";
 
                         return (
                             <div className="grid grid-cols-4 gap-2 w-full mb-6">
@@ -242,6 +242,14 @@ export default function UserVendorProfile() {
                             value={vendorData.designation || 'Not specified'}
                             color="bg-purple-500"
                         />
+                        {vendorData.experienceDetails && (
+                            <InfoRow
+                                icon={IoConstructOutline}
+                                label="Area of Expertise"
+                                value={vendorData.experienceDetails}
+                                color="bg-amber-500"
+                            />
+                        )}
                         <InfoRow
                             icon={IoPersonOutline}
                             label="Gender"

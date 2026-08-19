@@ -130,8 +130,14 @@ const addService = async (req, res) => {
 
     const service = await Service.create(serviceData);
 
-    // Add service to vendor's services array
+    // Add service to vendor's services array and sync servicePrice / machineType
     vendor.services.push(service._id);
+    if (price && parseFloat(price) > 0) {
+      vendor.servicePrice = parseFloat(price);
+    }
+    if (machineType) {
+      vendor.machineType = machineType.trim();
+    }
     await vendor.save();
 
     res.status(201).json({
@@ -353,6 +359,22 @@ const updateService = async (req, res) => {
     }
 
     await service.save();
+
+    // Sync updated service price and machineType to Vendor document
+    try {
+      const vendorUpdate = {};
+      if (service.price && service.price > 0) {
+        vendorUpdate.servicePrice = service.price;
+      }
+      if (service.machineType) {
+        vendorUpdate.machineType = service.machineType;
+      }
+      if (Object.keys(vendorUpdate).length > 0) {
+        await Vendor.findByIdAndUpdate(vendorId, { $set: vendorUpdate });
+      }
+    } catch (vErr) {
+      console.warn('Could not sync vendor document from service update:', vErr.message);
+    }
 
     res.json({
       success: true,

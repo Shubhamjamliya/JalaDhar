@@ -673,6 +673,9 @@ export default function VendorProfile() {
                 graduationYear: profileData.graduationYear || null,
                 experienceDetails: profileData.experienceDetails || null,
                 servicePrice: profileData.servicePrice ? parseFloat(profileData.servicePrice) : null,
+                machineType: (selectedMachines && selectedMachines.length > 0)
+                    ? selectedMachines.join(', ')
+                    : (profileData.machineType || null),
                 instruments: profileData.instruments?.length > 0
                     ? profileData.instruments.map(inst => typeof inst === 'object' ? inst : { name: inst, category: inst })
                     : [],
@@ -686,6 +689,11 @@ export default function VendorProfile() {
                 state: profileData.state || null,
                 serviceRadius: profileData.serviceRadius || "50 km",
                 multipleStates: profileData.multipleStates || [],
+                serviceAreas: (profileData.serviceAreas && profileData.serviceAreas.length > 0)
+                    ? profileData.serviceAreas
+                    : (profileData.multipleStates?.length > 0
+                        ? profileData.multipleStates
+                        : [profileData.district, profileData.state].filter(Boolean)),
                 willingToTravel: profileData.willingToTravel || "Yes",
                 modeOfTravel: profileData.modeOfTravel || [],
                 travelChargesPerKm: profileData.travelChargesPerKm ? parseFloat(profileData.travelChargesPerKm) : 0,
