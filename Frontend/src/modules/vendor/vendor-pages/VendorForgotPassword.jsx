@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { vendorForgotPassword, vendorVerifyResetOTP } from "../../../services/vendorAuthApi";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
-import { IoMailOutline, IoShieldCheckmarkOutline, IoArrowBackOutline } from "react-icons/io5";
+import { IoMailOutline, IoCallOutline, IoShieldCheckmarkOutline, IoArrowBackOutline } from "react-icons/io5";
 import logo from "@/assets/AppLogo.png";
 
 export default function VendorForgotPassword() {
@@ -14,12 +14,28 @@ export default function VendorForgotPassword() {
     const navigate = useNavigate();
     const toast = useToast();
 
+    const handleIdentifierChange = (e) => {
+        const val = e.target.value;
+        if (/^\d+$/.test(val)) {
+            setIdentifier(val.slice(0, 10));
+            return;
+        }
+        setIdentifier(val);
+    };
+
     // Step 1: Send OTP
     const handleSendOTP = async (e) => {
         e?.preventDefault();
 
-        if (!identifier.trim()) {
+        const cleanInput = identifier.trim();
+
+        if (!cleanInput) {
             toast.showError("Please enter your mobile number or email address");
+            return;
+        }
+
+        if (/^\d+$/.test(cleanInput) && cleanInput.length !== 10) {
+            toast.showError("Please enter a valid 10-digit Mobile Number");
             return;
         }
 
@@ -27,7 +43,7 @@ export default function VendorForgotPassword() {
         const loadingToast = toast.showLoading("Sending OTP...");
 
         try {
-            const response = await vendorForgotPassword({ email: identifier.trim() });
+            const response = await vendorForgotPassword({ email: cleanInput });
             toast.dismissToast(loadingToast);
 
             if (response.success) {
@@ -108,12 +124,17 @@ export default function VendorForgotPassword() {
                             </p>
 
                             <div className="relative">
-                                <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
+                                {/^\d+$/.test(identifier) && identifier.length > 0 ? (
+                                    <IoCallOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
+                                ) : (
+                                    <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
+                                )}
                                 <input
                                     type="text"
                                     placeholder="Mobile Number or Email"
                                     value={identifier}
-                                    onChange={(e) => setIdentifier(e.target.value)}
+                                    onChange={handleIdentifierChange}
+                                    maxLength={/^\d+$/.test(identifier) ? 10 : 100}
                                     className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 text-sm font-medium focus:outline-none focus:border-[#0A84FF] focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all"
                                     disabled={loading}
                                     required

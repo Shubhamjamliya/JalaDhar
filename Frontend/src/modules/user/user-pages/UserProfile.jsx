@@ -102,13 +102,30 @@ export default function UserProfile() {
 
     const handleSave = async () => {
         try {
+            if (!profileData.name?.trim()) {
+                toast.showError("Name is required");
+                return;
+            }
+
+            const cleanPhone = (profileData.phone || '').replace(/\D/g, '');
+            if (!cleanPhone || cleanPhone.length !== 10) {
+                toast.showError("Please enter a valid 10-digit Phone Number");
+                return;
+            }
+
+            const cleanAltPhone = (profileData.alternatePhone || '').replace(/\D/g, '');
+            if (profileData.alternatePhone && cleanAltPhone.length !== 10) {
+                toast.showError("Alternate phone number must be 10 digits");
+                return;
+            }
+
             setSaving(true);
             const loadingToast = toast.showLoading("Updating profile...");
 
             const response = await updateUserProfile({
-                name: profileData.name,
-                phone: profileData.phone,
-                alternatePhone: profileData.alternatePhone,
+                name: profileData.name.trim(),
+                phone: cleanPhone,
+                alternatePhone: cleanAltPhone || undefined,
                 address: profileData.address,
             });
 
@@ -266,10 +283,11 @@ export default function UserProfile() {
                             label="Phone Number"
                             value={profileData.phone}
                             isEditing={isEditing}
+                            maxLength={10}
                             onChange={(e) =>
                                 setProfileData({
                                     ...profileData,
-                                    phone: e.target.value,
+                                    phone: e.target.value.replace(/\D/g, '').slice(0, 10),
                                 })
                             }
                             disabled={saving}
@@ -283,10 +301,11 @@ export default function UserProfile() {
                             value={profileData.alternatePhone || ""}
                             placeholder="Optional alternate mobile number"
                             isEditing={isEditing}
+                            maxLength={10}
                             onChange={(e) =>
                                 setProfileData({
                                     ...profileData,
-                                    alternatePhone: e.target.value,
+                                    alternatePhone: e.target.value.replace(/\D/g, '').slice(0, 10),
                                 })
                             }
                             disabled={saving}
@@ -466,7 +485,7 @@ export default function UserProfile() {
 
 /* -------------------- REUSABLE COMPONENTS -------------------- */
 
-function InfoRow({ icon: IconComponent, iconBg, label, value, isEditing, onChange, disabled }) {
+function InfoRow({ icon: IconComponent, iconBg, label, value, isEditing, onChange, disabled, maxLength }) {
     return (
         <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/70 border border-slate-100 transition-colors">
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl shrink-0 shadow-2xs ${iconBg}`}>
@@ -482,6 +501,7 @@ function InfoRow({ icon: IconComponent, iconBg, label, value, isEditing, onChang
                         value={value || ""}
                         onChange={onChange}
                         disabled={disabled}
+                        maxLength={maxLength}
                         className="mt-0.5 w-full text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1 focus:outline-none focus:border-[#0A84FF] focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                 ) : (

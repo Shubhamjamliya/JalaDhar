@@ -648,9 +648,15 @@ export default function VendorProfile() {
                 };
             }
 
+            const cleanPhone = (profileData.phone || vendor?.phone || '').replace(/\D/g, '');
+            if (cleanPhone && cleanPhone.length !== 10) {
+                toast.showError("Phone number must be exactly 10 digits");
+                return;
+            }
+
             const updateData = {
                 name: profileData.name || vendor?.name,
-                phone: profileData.phone || vendor?.phone,
+                phone: cleanPhone || profileData.phone || vendor?.phone,
                 dob: profileData.dob || null,
                 bloodGroup: profileData.bloodGroup || null,
                 gender: profileData.gender || null,
@@ -1208,7 +1214,8 @@ export default function VendorProfile() {
                                     label="Phone Number"
                                     value={profileData.phone}
                                     isEditing={isEditing}
-                                    onChange={(val) => setProfileData({ ...profileData, phone: val })}
+                                    maxLength={10}
+                                    onChange={(val) => setProfileData({ ...profileData, phone: val.replace(/\D/g, '').slice(0, 10) })}
                                     icon={IoCallOutline}
                                 />
                                 <InfoField
@@ -3492,7 +3499,7 @@ function StatItem({ icon, label, value, subValue, color, bgColor }) {
     );
 }
 
-function InfoField({ icon, label, value, isEditing, onChange, type = "text", options, placeholder = "Select Value" }) {
+function InfoField({ icon, label, value, isEditing, onChange, type = "text", options, placeholder = "Select Value", maxLength }) {
     const Icon = icon;
     const formattedOptions = options ? options.map(opt => (typeof opt === 'object' ? opt : { value: opt, label: opt })) : [];
 
@@ -3517,6 +3524,7 @@ function InfoField({ icon, label, value, isEditing, onChange, type = "text", opt
                     <input
                         type={type}
                         value={value || ""}
+                        maxLength={maxLength}
                         onChange={(e) => onChange(e.target.value)}
                         className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all"
                     />

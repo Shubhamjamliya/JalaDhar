@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
     IoMailOutline,
+    IoCallOutline,
     IoLockClosedOutline,
     IoEyeOutline,
     IoEyeOffOutline,
@@ -27,13 +28,32 @@ export default function VendorLogin() {
         window.scrollTo(0, 0);
     }, []);
 
+    const handleIdentifierChange = (e) => {
+        const val = e.target.value;
+        // If input contains only digits (phone number), cap at 10 digits
+        if (/^\d+$/.test(val)) {
+            setEmail(val.slice(0, 10));
+            return;
+        }
+        setEmail(val);
+    };
+
     const handleVendorLogin = async (e) => {
         e?.preventDefault();
         setLoading(true);
 
+        const cleanInput = email.trim();
+
         // Basic validation
-        if (!email || !password) {
+        if (!cleanInput || !password) {
             toast.showError("Please fill in all fields");
+            setLoading(false);
+            return;
+        }
+
+        // Validate 10-digit phone number if numeric
+        if (/^\d+$/.test(cleanInput) && cleanInput.length !== 10) {
+            toast.showError("Please enter a valid 10-digit Mobile Number");
             setLoading(false);
             return;
         }
@@ -41,7 +61,7 @@ export default function VendorLogin() {
         const loadingToast = toast.showLoading("Logging in...");
 
         try {
-            const result = await login({ email, password });
+            const result = await login({ email: cleanInput, password });
 
             if (result.success) {
                 toast.dismissToast(loadingToast);
@@ -60,6 +80,8 @@ export default function VendorLogin() {
             setLoading(false);
         }
     };
+
+    const isPhoneInput = /^\d+$/.test(email) && email.length > 0;
 
     return (
         <div className="relative flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 px-4 py-8 overflow-y-auto overflow-x-hidden">
@@ -96,13 +118,18 @@ export default function VendorLogin() {
 
                         {/* Email / Phone Input */}
                         <div className="relative">
-                            <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
+                            {isPhoneInput ? (
+                                <IoCallOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
+                            ) : (
+                                <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
+                            )}
                             <input
                                 className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                                 placeholder="Email or Phone"
                                 type="text"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={handleIdentifierChange}
+                                maxLength={/^\d+$/.test(email) ? 10 : 100}
                                 disabled={loading}
                                 autoComplete="off"
                                 required

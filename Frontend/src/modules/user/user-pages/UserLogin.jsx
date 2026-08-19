@@ -33,7 +33,8 @@ export default function UserLogin() {
     const handleSendLoginOTP = async (e) => {
         e?.preventDefault();
 
-        if (!phone || phone.trim().length < 10) {
+        const cleanPhone = phone.replace(/\D/g, '');
+        if (!cleanPhone || cleanPhone.length !== 10) {
             toast.showError("Please enter a valid 10-digit Mobile Number");
             return;
         }
@@ -149,7 +150,8 @@ export default function UserLogin() {
                                 placeholder={`${t('mobileNumber', 'Mobile Number')} *`}
                                 type="tel"
                                 value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
+                                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                maxLength={10}
                                 disabled={loading}
                                 required
                                 autoFocus

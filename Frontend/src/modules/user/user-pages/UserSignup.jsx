@@ -64,6 +64,14 @@ export default function UserSignup() {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        if (name === "phone") {
+            const onlyNums = value.replace(/\D/g, '').slice(0, 10);
+            setFormData((prev) => ({
+                ...prev,
+                [name]: onlyNums,
+            }));
+            return;
+        }
         setFormData((prev) => ({
             ...prev,
             [name]: value,
@@ -84,6 +92,12 @@ export default function UserSignup() {
         // Validation
         if (!formData.name || !formData.phone) {
             toast.showError("Please fill in Full Name and Mobile Number");
+            return;
+        }
+
+        const cleanPhone = formData.phone.replace(/\D/g, '');
+        if (cleanPhone.length !== 10) {
+            toast.showError("Please enter a valid 10-digit Mobile Number");
             return;
         }
 
@@ -241,6 +255,7 @@ export default function UserSignup() {
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleInputChange}
+                                maxLength={10}
                                 disabled={loading}
                                 required
                             />

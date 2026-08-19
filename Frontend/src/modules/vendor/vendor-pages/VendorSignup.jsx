@@ -468,8 +468,7 @@ export default function VendorSignup() {
         }
 
         if (name === "phone") {
-             const onlyNums = value.replace(/[^0-9]/g, '');
-             if (onlyNums.length > 10) return;
+             const onlyNums = value.replace(/[^0-9]/g, '').slice(0, 10);
              setFormData(prev => ({ ...prev, [name]: onlyNums }));
              return;
         }
@@ -2094,7 +2093,7 @@ function ProfileImageUpload({ file, onChange }) {
     );
 }
 
-function InputBox({ label, name, type, placeholder, value, onChange, disabled, max, min }) {
+function InputBox({ label, name, type, placeholder, value, onChange, disabled, max, min, maxLength }) {
     const renderIcon = () => {
         if (name === "name" || name.includes("Holder")) return <IoPersonOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
         if (name === "email") return <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />;
@@ -2123,6 +2122,7 @@ function InputBox({ label, name, type, placeholder, value, onChange, disabled, m
                     onChange={onChange}
                     max={max}
                     min={min}
+                    maxLength={maxLength || (name === "phone" ? 10 : undefined)}
                     className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                     disabled={disabled}
                 />
