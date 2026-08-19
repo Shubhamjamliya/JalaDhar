@@ -11,6 +11,7 @@ const {
   getUserBookings,
   getBookingDetails,
   cancelBooking,
+  rescheduleBooking,
   getAvailableReplacementVendors,
   reassignReplacementVendor,
   claimFullRefundForExpertCancellation,
@@ -72,6 +73,9 @@ router.post('/:bookingId/claim-expert-cancel-refund', authenticate, isUser, clai
 
 router.get('/:bookingId', authenticate, isUser, getBookingDetails);
 router.patch('/:bookingId/cancel', authenticate, isUser, body('cancellationReason').optional().isLength({ max: 500 }), cancelBooking);
+router.post('/:bookingId/reschedule', authenticate, isUser, [
+  body('scheduledDate').notEmpty().withMessage('New scheduled date is required')
+], rescheduleBooking);
 router.post('/:bookingId/remaining-payment', authenticate, isUser, initiateRemainingPayment);
 router.post('/:bookingId/borewell-result', authenticate, isUser, upload.fields([{ name: 'images', maxCount: 10 }]), uploadBorewellResultValidation, uploadBorewellResult);
 router.post('/:bookingId/report-feedback', authenticate, isUser, submitReportFeedback);

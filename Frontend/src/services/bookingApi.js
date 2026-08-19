@@ -362,6 +362,17 @@ export const reportUnableToComplete = async (bookingId, formData) => {
 };
 
 /**
+ * Reschedule booking by customer (Voluntary date/time change)
+ * @param {string} bookingId
+ * @param {Object} data - { scheduledDate, scheduledTime, reason }
+ * @returns {Promise}
+ */
+export const rescheduleBooking = async (bookingId, data) => {
+  const response = await api.post(`/bookings/${bookingId}/reschedule`, data);
+  return response.data;
+};
+
+/**
  * Cancel booking by vendor with structured reason and same-day impact tracking
  * @param {string} bookingId
  * @param {string} cancellationReason
@@ -375,5 +386,6 @@ export const cancelVendorBooking = async (bookingId, cancellationReason, reasonC
   });
   return response.data;
 };
+
 
 

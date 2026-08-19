@@ -1347,10 +1347,17 @@ export default function VendorBookingDetails() {
 
                         {/* Preferred Survey Date & Time */}
                         <div className="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-1">
-                            <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
-                                <IoTimeOutline className="text-sm text-emerald-600" />
-                                <span>Preferred Survey Date & Time</span>
-                            </p>
+                            <div className="flex items-center justify-between gap-2">
+                                <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+                                    <IoTimeOutline className="text-sm text-emerald-600" />
+                                    <span>Scheduled Survey Date & Time</span>
+                                </p>
+                                {booking.rescheduleCount > 0 && (
+                                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-[#0A84FF] text-[10px] font-extrabold border border-blue-200">
+                                        Rescheduled
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-sm font-extrabold text-emerald-950">
                                 {booking.scheduledDate
                                     ? new Date(booking.scheduledDate).toLocaleDateString("en-IN", {
@@ -1361,6 +1368,11 @@ export default function VendorBookingDetails() {
                                     : "N/A"
                                 } at {booking.scheduledTime || "TBD"}
                             </p>
+                            {booking.rescheduleHistory && booking.rescheduleHistory.length > 0 && (
+                                <p className="text-[11px] text-slate-600 font-medium pt-1 border-t border-emerald-100/80">
+                                    Note: {booking.rescheduleHistory[booking.rescheduleHistory.length - 1].reason || "Customer moved survey slot"}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>

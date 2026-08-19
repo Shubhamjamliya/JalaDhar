@@ -642,6 +642,58 @@ const bookingSchema = new mongoose.Schema({
       }
     }
   },
+  // Reschedule Management
+  rescheduleCount: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 10
+  },
+  rescheduleHistory: [{
+    requestedBy: {
+      type: String,
+      enum: ['USER', 'VENDOR', 'ADMIN'],
+      required: true
+    },
+    requesterId: {
+      type: mongoose.Schema.Types.ObjectId,
+      refPath: 'rescheduleHistory.requesterModel'
+    },
+    requesterModel: {
+      type: String,
+      enum: ['User', 'Vendor', 'Admin'],
+      default: 'User'
+    },
+    previousDate: {
+      type: Date,
+      required: true
+    },
+    previousTime: {
+      type: String,
+      required: true
+    },
+    newDate: {
+      type: Date,
+      required: true
+    },
+    newTime: {
+      type: String,
+      required: true
+    },
+    reason: {
+      type: String,
+      trim: true
+    },
+    status: {
+      type: String,
+      enum: ['APPLIED', 'PENDING_CONFIRMATION', 'ACCEPTED', 'REJECTED', 'CANCELLED'],
+      default: 'APPLIED'
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   // Timestamps
   assignedAt: Date,
   acceptedAt: Date,

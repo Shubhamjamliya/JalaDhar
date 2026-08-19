@@ -29,7 +29,7 @@ import {
     IoArrowBackOutline,
     IoCarOutline
 } from "react-icons/io5";
-import { getBookingDetails, downloadInvoice, cancelBooking, submitRating, getBookingRating, uploadBorewellResult } from "../../../services/bookingApi";
+import { getBookingDetails, downloadInvoice, cancelBooking, rescheduleBooking, submitRating, getBookingRating, uploadBorewellResult } from "../../../services/bookingApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -38,6 +38,7 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import { maskPhone } from "../../../utils/phoneMasker";
 import ConfirmModal from "../../shared/components/ConfirmModal";
+import RescheduleModal from "../../shared/components/RescheduleModal";
 import InputModal, { CANCELLATION_REASONS } from "../../shared/components/InputModal";
 import CancellationPolicyModal from "../../shared/components/CancellationPolicyModal";
 import RatingModal from "../../shared/components/RatingModal";
@@ -70,6 +71,8 @@ export default function UserBookingDetails() {
     });
     const [uploadingBorewell, setUploadingBorewell] = useState(false);
     const [showPaymentPrompt, setShowPaymentPrompt] = useState(false);
+    const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+    const [rescheduling, setRescheduling] = useState(false);
     const { socket } = useNotifications();
 
     // Listen to socket notifications for real-time status updates
@@ -218,6 +221,34 @@ export default function UserBookingDetails() {
             setShowPaymentPrompt(true);
         } else {
             navigate(`/user/booking/${bookingId}/report`);
+        }
+    };
+
+    const handleReschedule = () => {
+        if (!booking) return;
+        const count = booking.rescheduleCount || 0;
+        if (count >= 2) {
+            toast.showError("Maximum limit of 2 reschedules reached for this booking. Please contact support.");
+            return;
+        }
+        setShowRescheduleModal(true);
+    };
+
+    const handleConfirmReschedule = async ({ scheduledDate, scheduledTime, reason }) => {
+        try {
+            setRescheduling(true);
+            const res = await rescheduleBooking(bookingId, { scheduledDate, scheduledTime, reason });
+            if (res.success) {
+                toast.showSuccess(res.message || "Survey appointment rescheduled successfully!");
+                setShowRescheduleModal(false);
+                await loadBookingDetails();
+            } else {
+                toast.showError(res.message || "Failed to reschedule appointment");
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to reschedule appointment. Please try again.");
+        } finally {
+            setRescheduling(false);
         }
     };
 
@@ -841,13 +872,22 @@ export default function UserBookingDetails() {
                         })()}
 
                         {["AWAITING_ADVANCE", "PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.status) && (
-                            <button
-                                onClick={handleCancelBooking}
-                                className="w-full flex items-center justify-center gap-1.5 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100/80 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer"
-                            >
-                                <IoCloseCircleOutline className="text-base" />
-                                Cancel Booking
-                            </button>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <button
+                                    onClick={handleReschedule}
+                                    className="w-full flex items-center justify-center gap-1.5 bg-blue-50 text-[#0A84FF] border border-blue-200 hover:bg-blue-100/80 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer"
+                                >
+                                    <IoCalendarOutline className="text-base" />
+                                    Reschedule Survey
+                                </button>
+                                <button
+                                    onClick={handleCancelBooking}
+                                    className="w-full flex items-center justify-center gap-1.5 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100/80 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer"
+                                >
+                                    <IoCloseCircleOutline className="text-base" />
+                                    Cancel Booking
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -1567,6 +1607,15 @@ export default function UserBookingDetails() {
                     ["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(booking?.status) &&
                     typeof booking?.report?.waterFound === 'boolean'
                 )}
+            />
+
+            {/* Customer Reschedule Modal */}
+            <RescheduleModal
+                isOpen={showRescheduleModal}
+                onClose={() => setShowRescheduleModal(false)}
+                onReschedule={handleConfirmReschedule}
+                currentBooking={booking}
+                isLoading={rescheduling}
             />
         </PageContainer>
     );

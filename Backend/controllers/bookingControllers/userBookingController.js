@@ -2199,6 +2199,189 @@ const claimFullRefundForExpertCancellation = async (req, res) => {
   }
 };
 
+/**
+ * Reschedule booking by Customer (Voluntary date/time change)
+ * Guardrails: Max 2 reschedules, allowed in PENDING, ASSIGNED, ACCEPTED, AWAITING_ADVANCE
+ */
+const rescheduleBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { scheduledDate, scheduledTime, reason } = req.body;
+    const userId = req.userId;
+
+    if (!scheduledDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'New scheduled date is required'
+      });
+    }
+
+    const requestedDate = new Date(scheduledDate);
+    if (isNaN(requestedDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid scheduled date format'
+      });
+    }
+
+    // Check date is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(requestedDate);
+    checkDate.setHours(0, 0, 0, 0);
+
+    if (checkDate < today) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rescheduled date cannot be in the past'
+      });
+    }
+
+    // Max 30 days into the future
+    const maxFutureDate = new Date();
+    maxFutureDate.setDate(maxFutureDate.getDate() + 30);
+    if (checkDate > maxFutureDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rescheduled date must be within the next 30 days'
+      });
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId
+    }).populate('vendor user service');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Status check
+    const allowedStatuses = [
+      BOOKING_STATUS.AWAITING_ADVANCE,
+      BOOKING_STATUS.PENDING,
+      BOOKING_STATUS.ASSIGNED,
+      BOOKING_STATUS.ACCEPTED
+    ];
+
+    if (!allowedStatuses.includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Booking cannot be rescheduled in status: ${booking.status}. Once the expert is en route or survey has begun, rescheduling is locked.`
+      });
+    }
+
+    // Check max reschedules limit (Max 2 free reschedules)
+    const currentCount = booking.rescheduleCount || 0;
+    if (currentCount >= 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum limit of 2 reschedules has been reached for this booking. Please contact customer support for further assistance.'
+      });
+    }
+
+    const previousDate = booking.scheduledDate;
+    const previousTime = booking.scheduledTime || 'TBD';
+    const newFormattedTime = scheduledTime || booking.scheduledTime || '09:00 AM - 11:00 AM';
+
+    // Update booking schedule
+    booking.scheduledDate = requestedDate;
+    booking.scheduledTime = newFormattedTime;
+    booking.rescheduleCount = currentCount + 1;
+
+    if (!booking.rescheduleHistory) {
+      booking.rescheduleHistory = [];
+    }
+
+    booking.rescheduleHistory.push({
+      requestedBy: 'USER',
+      requesterId: userId,
+      requesterModel: 'User',
+      previousDate: previousDate,
+      previousTime: previousTime,
+      newDate: requestedDate,
+      newTime: newFormattedTime,
+      reason: reason ? reason.trim() : 'Customer voluntary date/time reschedule',
+      status: 'APPLIED',
+      createdAt: new Date()
+    });
+
+    await booking.save();
+
+    // Send notifications to Vendor and User
+    const shortBookingId = booking._id.toString().slice(-4).toUpperCase();
+    const formattedNewDate = requestedDate.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+
+    const io = getIO();
+
+    // Notify Assigned Expert
+    if (booking.vendor) {
+      await sendNotification({
+        recipient: booking.vendor._id || booking.vendor,
+        recipientModel: 'Vendor',
+        type: 'BOOKING_RESCHEDULED',
+        title: 'Survey Appointment Rescheduled 🗓️',
+        message: `Customer rescheduled booking #JALA${shortBookingId} to ${formattedNewDate} (${newFormattedTime}). Reason: ${reason ? reason.trim() : 'Customer requested date change'}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          newDate: requestedDate,
+          newTime: newFormattedTime
+        }
+      }, io);
+    }
+
+    // Notify User
+    await sendNotification({
+      recipient: userId,
+      recipientModel: 'User',
+      type: 'BOOKING_RESCHEDULED',
+      title: 'Survey Rescheduled Successfully ✅',
+      message: `Your groundwater survey (#JALA${shortBookingId}) has been successfully moved to ${formattedNewDate} (${newFormattedTime}). (Reschedule ${currentCount + 1} of 2 used)`,
+      relatedEntity: {
+        entityType: 'Booking',
+        entityId: booking._id
+      },
+      metadata: {
+        bookingId: booking._id.toString(),
+        newDate: requestedDate,
+        newTime: newFormattedTime
+      }
+    }, io);
+
+    res.json({
+      success: true,
+      message: `Survey appointment rescheduled to ${formattedNewDate} successfully. (${2 - (currentCount + 1)} reschedules remaining)`,
+      data: {
+        bookingId: booking._id,
+        scheduledDate: booking.scheduledDate,
+        scheduledTime: booking.scheduledTime,
+        rescheduleCount: booking.rescheduleCount,
+        reschedulesRemaining: Math.max(0, 2 - booking.rescheduleCount),
+        rescheduleHistory: booking.rescheduleHistory
+      }
+    });
+
+  } catch (error) {
+    console.error('rescheduleBooking error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reschedule booking',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllServices,
   getAvailableVendors,
@@ -2208,6 +2391,7 @@ module.exports = {
   getUserBookings,
   getBookingDetails,
   cancelBooking,
+  rescheduleBooking,
   getAvailableReplacementVendors,
   reassignReplacementVendor,
   claimFullRefundForExpertCancellation,
@@ -2218,4 +2402,5 @@ module.exports = {
   calculateBookingCharges,
   submitReportFeedback
 };
+
 

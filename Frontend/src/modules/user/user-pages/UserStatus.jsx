@@ -30,6 +30,7 @@ import {
     uploadBorewellResult,
     getBookingDetails,
     cancelBooking,
+    rescheduleBooking,
     getAvailableReplacementVendors,
     reassignReplacementVendor,
     claimFullRefundForExpertCancellation
@@ -40,6 +41,7 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import PageContainer from "../../shared/components/PageContainer";
 import InputModal, { CANCELLATION_REASONS } from "../../shared/components/InputModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
+import RescheduleModal from "../../shared/components/RescheduleModal";
 import CancellationPolicyModal from "../../shared/components/CancellationPolicyModal";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
@@ -74,6 +76,10 @@ export default function UserStatus() {
     const [reassigning, setReassigning] = useState(false);
     const [showRefundConfirmModal, setShowRefundConfirmModal] = useState(false);
     const [claimingRefund, setClaimingRefund] = useState(false);
+
+    // Voluntary Reschedule States
+    const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+    const [rescheduling, setRescheduling] = useState(false);
 
     const loadCurrentBookingRef = useRef(null);
     const lastActionTimeRef = useRef(0); // Track when user performed an action
@@ -462,7 +468,35 @@ export default function UserStatus() {
     };
 
     const handleReschedule = () => {
-        toast.showInfo("To reschedule your survey appointment, please contact support.");
+        if (!currentBooking) return;
+        const count = currentBooking.rescheduleCount || 0;
+        if (count >= 2) {
+            toast.showError("Maximum limit of 2 reschedules reached for this booking. Please contact support.");
+            return;
+        }
+        setShowRescheduleModal(true);
+    };
+
+    const handleConfirmReschedule = async ({ scheduledDate, scheduledTime, reason }) => {
+        const bookingId = currentBooking?.id || currentBooking?._id;
+        if (!bookingId) return;
+        try {
+            setRescheduling(true);
+            const res = await rescheduleBooking(bookingId, { scheduledDate, scheduledTime, reason });
+            if (res.success) {
+                toast.showSuccess(res.message || "Survey appointment rescheduled successfully!");
+                setShowRescheduleModal(false);
+                if (loadCurrentBookingRef.current) {
+                    await loadCurrentBookingRef.current();
+                }
+            } else {
+                toast.showError(res.message || "Failed to reschedule appointment");
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to reschedule appointment. Please try again.");
+        } finally {
+            setRescheduling(false);
+        }
     };
 
     const handleCancelBooking = () => {
@@ -1136,6 +1170,13 @@ export default function UserStatus() {
                                                         </button>
                                                     )}
                                                     <button
+                                                        onClick={handleReschedule}
+                                                        className="py-2 px-3 bg-blue-50 text-[#0A84FF] border border-blue-200 hover:bg-blue-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                                    >
+                                                        <IoCalendarOutline className="text-base" />
+                                                        Reschedule
+                                                    </button>
+                                                    <button
                                                         onClick={handleCancelBooking}
                                                         className="py-2 px-3 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                                                     >
@@ -1146,7 +1187,14 @@ export default function UserStatus() {
                                             )}
 
                                             {step.id === "booking-confirmed" && isActive && (
-                                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                                <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                    <button
+                                                        onClick={handleReschedule}
+                                                        className="py-2 bg-blue-50 text-[#0A84FF] border border-blue-200 hover:bg-blue-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                                    >
+                                                        <IoCalendarOutline className="text-sm" />
+                                                        Reschedule
+                                                    </button>
                                                     <button
                                                         onClick={handleCancelBooking}
                                                         className="py-2 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
@@ -1687,6 +1735,15 @@ export default function UserStatus() {
                     </div>
                 </div>
             )}
+
+            {/* Voluntary Customer Reschedule Modal */}
+            <RescheduleModal
+                isOpen={showRescheduleModal}
+                onClose={() => setShowRescheduleModal(false)}
+                onReschedule={handleConfirmReschedule}
+                currentBooking={currentBooking}
+                isLoading={rescheduling}
+            />
         </div>
     );
 }
