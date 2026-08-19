@@ -92,10 +92,17 @@ export default function UserVendorProfile() {
     };
 
     const handleBookService = (service) => {
+        const dynamicPrice = vendorData.servicePrice || service?.price || 3500;
         navigate("/user/survey", {
             state: {
-                service: service,
-                vendor: vendorData,
+                service: {
+                    ...service,
+                    price: dynamicPrice
+                },
+                vendor: {
+                    ...vendorData,
+                    servicePrice: dynamicPrice
+                },
             }
         });
     };
@@ -338,58 +345,60 @@ export default function UserVendorProfile() {
             </section>
 
             {/* Service & Machines Section */}
-            {vendorData.services && vendorData.services.length > 0 && (
-                <section className="bg-white rounded-3xl p-6 shadow-sm space-y-6">
-                    {/* Main Service Card - Since single service per vendor */}
-                    <div>
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-3 bg-blue-50 rounded-2xl text-blue-600">
-                                <IoBriefcaseOutline className="text-2xl" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-gray-900">
-                                    {vendorData.services[0].name}
-                                </h2>
-                                <p className="text-sm font-bold text-blue-600">
-                                    ₹{vendorData.services[0].price?.toLocaleString()} <span className="text-gray-400 font-normal">/ visit</span>
-                                </p>
+            <section className="bg-white rounded-3xl p-6 shadow-sm space-y-6">
+                {/* Main Service Card - Single service per vendor */}
+                <div>
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-blue-50 rounded-2xl text-blue-600">
+                            <IoBriefcaseOutline className="text-2xl" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-900">
+                                {vendorData.services?.[0]?.name || `${vendorData.designation || 'Groundwater Survey'} Service`}
+                            </h2>
+                            <p className="text-sm font-bold text-blue-600">
+                                ₹{(vendorData.servicePrice || vendorData.services?.[0]?.price || 3500)?.toLocaleString()} <span className="text-gray-400 font-normal">/ visit</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Machines List */}
+                    {(vendorData.services?.[0]?.machineType || vendorData.machineType) && (
+                        <div className="mb-6">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 block">
+                                Equipment & Machines
+                            </label>
+                            <div className="grid grid-cols-1 gap-3">
+                                {(vendorData.services?.[0]?.machineType || vendorData.machineType).split(',').map((machine, index) => (
+                                    <div
+                                        key={index}
+                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100"
+                                    >
+                                        <div className="bg-white p-2 rounded-xl shadow-sm text-[#0A84FF]">
+                                            <IoConstructOutline className="text-lg" />
+                                        </div>
+                                        <span className="text-sm font-bold text-gray-700">
+                                            {machine.trim()}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
+                    )}
 
-                        {/* Machines List */}
-                        {vendorData.services[0].machineType && (
-                            <div className="mb-6">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 block">
-                                    Equipment & Machines
-                                </label>
-                                <div className="grid grid-cols-1 gap-3">
-                                    {vendorData.services[0].machineType.split(',').map((machine, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100"
-                                        >
-                                            <div className="bg-white p-2 rounded-xl shadow-sm text-[#0A84FF]">
-                                                <IoConstructOutline className="text-lg" />
-                                            </div>
-                                            <span className="text-sm font-bold text-gray-700">
-                                                {machine.trim()}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        <button
-                            onClick={() => handleBookService(vendorData.services[0])}
-                            className="w-full bg-[#0A84FF] text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                        >
-                            <span>Book Now</span>
-                            <span className="material-symbols-outlined text-lg">arrow_forward</span>
-                        </button>
-                    </div>
-                </section>
-            )}
+                    <button
+                        onClick={() => handleBookService(vendorData.services?.[0] || {
+                            id: vendorData._id,
+                            name: `${vendorData.designation || 'Groundwater Survey'} Service`,
+                            price: vendorData.servicePrice || 3500
+                        })}
+                        className="w-full bg-[#0A84FF] hover:bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                        <span>Book Now</span>
+                        <span className="text-lg font-bold">→</span>
+                    </button>
+                </div>
+            </section>
 
             {/* Groundwater Survey FAQs & Official Disclaimer */}
             <GroundwaterSurveyFAQSection />

@@ -1116,11 +1116,21 @@ const ExpertSelection = ({ location, category, onSelect, onBack }) => {
         <div className="flex-1 overflow-y-auto space-y-4 pr-1 pb-4">
           {experts.map(expert => {
             // Find the relevant service details for pricing
-            const surveyService = expert.allServices?.find(s =>
+            const rawService = expert.allServices?.find(s =>
               s.name.toLowerCase().includes('survey') ||
               s.category?.toLowerCase().includes('survey') ||
               true
             ) || expert.allServices?.[0];
+
+            const surveyService = rawService ? {
+              ...rawService,
+              price: expert.servicePrice || expert.minPrice || rawService.price || 3500
+            } : {
+              id: expert._id,
+              name: 'Groundwater Survey',
+              category: 'Groundwater Survey',
+              price: expert.servicePrice || expert.minPrice || 3500
+            };
 
             return (
               <ExpertProfileCard
@@ -1218,7 +1228,7 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
       const serverMsg = err.response?.data?.message || err.message;
       
       // Compute safe client-side estimate if backend call fails so booking isn't blocked with ₹0.00
-      const fallbackBaseFee = selectedService?.price || 5000;
+      const fallbackBaseFee = currentVendor?.servicePrice || currentVendor?.minPrice || selectedService?.price || 3500;
       const gst = fallbackBaseFee * 0.18;
       const subtotal = fallbackBaseFee + gst;
       const total = subtotal;

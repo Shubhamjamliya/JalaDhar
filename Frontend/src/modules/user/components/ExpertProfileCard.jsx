@@ -64,7 +64,7 @@ const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "S
     ? expert.serviceAreas
     : (expert.address?.city ? [expert.address.city, expert.address.state].filter(Boolean) : ["Local Region"]);
 
-  const price = selectedService?.price || expert.minPrice || expert.servicePrice;
+  const price = expert.servicePrice || expert.minPrice || selectedService?.price || 3500;
   const expertId = expert.expertId || (expert._id ? `EXP-${expert._id.toString().slice(-6).toUpperCase()}` : null);
 
   return (

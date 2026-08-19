@@ -314,6 +314,8 @@ const updateProfile = async (req, res) => {
               vendor[field] = value;
             }
           }
+        } else if (field === 'servicePrice') {
+          vendor.servicePrice = (value !== null && value !== '' && value !== undefined) ? parseFloat(value) : null;
         } else {
           vendor[field] = value;
         }
@@ -328,6 +330,19 @@ const updateProfile = async (req, res) => {
     vendor.markModified('serviceAreas');
 
     await vendor.save();
+
+    // Sync vendor's updated service price to any referenced Service records
+    if (vendor.servicePrice !== undefined && vendor.servicePrice !== null) {
+      try {
+        const Service = require('../../models/Service');
+        await Service.updateMany(
+          { vendor: vendor._id },
+          { $set: { price: vendor.servicePrice } }
+        );
+      } catch (syncErr) {
+        console.warn('Could not sync Service collection prices with vendor.servicePrice:', syncErr.message);
+      }
+    }
 
     // Handle bank details update separately
     if (req.body.bankDetails !== undefined || req.body['bankDetails[accountHolderName]'] !== undefined || req.body.accountNumber !== undefined) {

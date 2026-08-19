@@ -148,7 +148,9 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
     // 4. Travel Charges
     // 5. Total Amount = Subtotal + Travel Charges
     const travelCharges = calculateTravelCharges(newDistance, baseRadius, travelChargePerKm);
-    const baseServiceFee = newService.price;
+    const baseServiceFee = (typeof newVendor.servicePrice === 'number' && newVendor.servicePrice > 0)
+      ? newVendor.servicePrice
+      : (newService?.price || 3500);
     const gst = calculateGST(baseServiceFee, gstPercentage);
     const subtotal = baseServiceFee + gst;
     const totalAmount = subtotal + travelCharges;

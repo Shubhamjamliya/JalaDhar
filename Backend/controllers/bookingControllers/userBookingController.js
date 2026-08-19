@@ -315,12 +315,14 @@ const createBooking = async (req, res) => {
     }
 
     // Calculate amounts according to standard formula:
-    // 1. Base Service Fee
+    // 1. Base Service Fee - Dynamic based on vendor's set servicePrice, or service price, or default
     // 2. GST (18% on Base Service Fee)
     // 3. Subtotal = Base Service Fee + GST
     // 4. Travel Charges
     // 5. Total Amount = Subtotal + Travel Charges
-    const baseServiceFee = service.price || 5000;
+    const baseServiceFee = (typeof vendor.servicePrice === 'number' && vendor.servicePrice > 0)
+      ? vendor.servicePrice
+      : (service && typeof service.price === 'number' && service.price > 0 ? service.price : 3500);
     const gst = calculateGST(baseServiceFee, gstPercentage);
     const subtotal = baseServiceFee + gst;
     const totalAmount = subtotal + travelCharges;
@@ -1105,9 +1107,11 @@ const getNearbyVendors = async (req, res) => {
         ? vendor.services[0]
         : null;
 
-      // Get minimum price from all services or vendor's base servicePrice
+      // Get vendor's dynamic servicePrice (or minimum price from services)
       const prices = (vendor.services || []).map(s => s.price).filter(p => p > 0);
-      const minPrice = prices.length > 0 ? Math.min(...prices) : (vendor.servicePrice || 3500);
+      const minPrice = (typeof vendor.servicePrice === 'number' && vendor.servicePrice > 0)
+        ? vendor.servicePrice
+        : (prices.length > 0 ? Math.min(...prices) : 3500);
 
       const serviceCategory = primaryService?.category || vendor.designation || 'Groundwater Survey';
 
@@ -1136,6 +1140,7 @@ const getNearbyVendors = async (req, res) => {
         successRate,
         serviceAreas,
         category: serviceCategory,
+        servicePrice: vendor.servicePrice || minPrice,
         minPrice,
         serviceTags: (vendor.services && vendor.services.length > 0)
           ? vendor.services.map(s => s.category || s.name).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3)
@@ -1144,7 +1149,7 @@ const getNearbyVendors = async (req, res) => {
           id: s._id,
           name: s.name,
           category: s.category,
-          price: s.price,
+          price: (typeof vendor.servicePrice === 'number' && vendor.servicePrice > 0) ? vendor.servicePrice : (s.price || minPrice),
           description: s.description,
           images: s.images
         })) : [{
@@ -1242,7 +1247,7 @@ const getVendorProfile = async (req, res) => {
     }
 
     const vendor = await Vendor.findById(vendorId)
-      .select('name email phone experience rating bookingStats serviceAreas address location services isActive isApproved gender designation educationalQualifications workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates')
+      .select('name email phone experience rating bookingStats serviceAreas address location services servicePrice isActive isApproved gender designation educationalQualifications workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates')
       .populate({
         path: 'services',
         select: 'name category price description images status isActive machineType'
@@ -1300,6 +1305,10 @@ const getVendorProfile = async (req, res) => {
         ? [vendor.address.city, vendor.address.state].filter(Boolean)
         : ['Local Region']);
 
+    const expertPrice = (typeof vendor.servicePrice === 'number' && vendor.servicePrice > 0)
+      ? vendor.servicePrice
+      : (vendor.services?.[0]?.price || 3500);
+
     // Format vendor data
     const formattedVendor = {
       ...vendor,
@@ -1308,6 +1317,7 @@ const getVendorProfile = async (req, res) => {
       profilePicture: profilePicDoc ? profilePicDoc.url : null,
       education: vendor.educationalQualifications, // Map for frontend compatibility
       experience: vendor.experience || 0,
+      servicePrice: expertPrice,
       averageRating: vendor.rating?.averageRating || 0,
       totalRatings: vendor.rating?.totalRatings || 0,
       successCount: successfulSurveys,
@@ -1319,17 +1329,29 @@ const getVendorProfile = async (req, res) => {
       serviceAreas,
       degreeCertificates,
       trainingCertificates,
-      services: (vendor.services || []).filter(s => s !== null && s !== undefined).map(s => ({
-        id: s._id,
-        name: s.name,
-        category: s.category,
-        price: s.price,
-        description: s.description,
-        images: s.images,
-        status: s.status,
-        isActive: s.isActive,
-        machineType: s.machineType
-      }))
+      services: (vendor.services && vendor.services.length > 0)
+        ? vendor.services.filter(s => s !== null && s !== undefined).map(s => ({
+            id: s._id,
+            name: s.name,
+            category: s.category,
+            price: (typeof vendor.servicePrice === 'number' && vendor.servicePrice > 0) ? vendor.servicePrice : (s.price || 3500),
+            description: s.description,
+            images: s.images,
+            status: s.status,
+            isActive: s.isActive,
+            machineType: s.machineType
+          }))
+        : [{
+            id: vendor._id,
+            name: `${vendor.designation || 'Groundwater Survey'} Service`,
+            category: vendor.designation || 'Groundwater Survey',
+            price: expertPrice,
+            description: 'Geoscientific groundwater survey & borewell point detection service.',
+            images: [],
+            status: 'ACTIVE',
+            isActive: true,
+            machineType: vendor.machineType || null
+          }]
     };
 
     res.json({
@@ -1626,8 +1648,10 @@ const calculateBookingCharges = async (req, res) => {
       service = await Service.findOne({ status: 'ACTIVE', isActive: { $ne: false } }) || await Service.findOne();
     }
 
-    // Fallback base price if no Service entry exists in DB
-    const baseServiceFee = service && typeof service.price === 'number' ? service.price : 5000;
+    // Dynamic base price: prioritize vendor's configured servicePrice
+    const baseServiceFee = (typeof vendor.servicePrice === 'number' && vendor.servicePrice > 0)
+      ? vendor.servicePrice
+      : (service && typeof service.price === 'number' && service.price > 0 ? service.price : 3500);
 
     // Get settings with bulletproof defaults
     let settings = {};

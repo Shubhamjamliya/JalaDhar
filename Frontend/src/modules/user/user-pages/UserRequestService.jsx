@@ -769,7 +769,7 @@ const ReviewAndBook = ({ surveyData, service, vendor, onConfirm, onBack }) => {
             <div className="bg-gray-50 p-5 rounded-xl space-y-3 text-sm">
                 <div className="flex justify-between text-gray-600">
                     <span>Base Service Fee</span>
-                    <span className="font-semibold text-gray-800">₹{charges?.baseServiceFee || service?.price}</span>
+                    <span className="font-semibold text-gray-800">₹{charges?.baseServiceFee || vendor?.servicePrice || service?.price || 3500}</span>
                 </div>
                 <div className="flex justify-between text-gray-600 text-xs">
                     <span>GST ({charges?.gstPercentage || 18}% on Base Fee)</span>
