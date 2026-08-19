@@ -46,6 +46,8 @@ const setSetting = async (key, value, label, description, type = 'string', categ
     if (!finalCategory || finalCategory === 'general') {
       if (key.startsWith('BILLING_')) {
         finalCategory = 'billing';
+      } else if (['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'ADVANCE_PAYMENT_PERCENTAGE', 'REMAINING_PAYMENT_PERCENTAGE', 'REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT'].includes(key)) {
+        finalCategory = 'pricing';
       } else if (existing && existing.category) {
         finalCategory = existing.category;
       } else if (key.includes('policy')) {
@@ -120,6 +122,14 @@ const initializeDefaultSettings = async () => {
       label: 'Remaining Payment Percentage (%)',
       description: 'Percentage of total amount required as remaining payment',
       type: 'number',
+      category: 'pricing'
+    },
+    {
+      key: 'REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT',
+      value: true,
+      label: 'Require Admin Approval for 2nd Installment Payout',
+      description: 'When enabled, the 2nd installment (50%) is held in escrow until an Admin reviews and approves the technical survey report in Admin Approvals. When disabled, payout is credited automatically to the vendor upon report upload.',
+      type: 'boolean',
       category: 'pricing'
     },
     {

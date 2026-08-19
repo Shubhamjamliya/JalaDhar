@@ -56,6 +56,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
         TRAVEL_CHARGE_PER_KM: 10,
         BASE_RADIUS_KM: 30,
         GST_PERCENTAGE: 18,
+        REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT: true,
     });
     const [pricingLoading, setPricingLoading] = useState(false);
 
@@ -385,6 +386,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 { key: 'TRAVEL_CHARGE_PER_KM', value: Number(pricingSettings.TRAVEL_CHARGE_PER_KM) },
                 { key: 'BASE_RADIUS_KM', value: Number(pricingSettings.BASE_RADIUS_KM) },
                 { key: 'GST_PERCENTAGE', value: Number(pricingSettings.GST_PERCENTAGE) },
+                { key: 'REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', value: Boolean(pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT) },
             ];
 
             const response = await updateMultipleSettings(settings);
@@ -910,6 +912,50 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             GST percentage applied on total amount (subtotal + travel charges)
                                         </p>
                                     </div>
+
+                                    {/* 2nd Installment Payout Quality Review Gate Toggle */}
+                                    <div className="p-5 bg-gradient-to-br from-blue-50/70 via-indigo-50/40 to-slate-50 rounded-2xl border border-blue-100/90 shadow-2xs">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="space-y-1.5 flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-sm font-bold text-gray-900">
+                                                        Quality Review Gate: Require Admin Approval for 2nd Installment Payout
+                                                    </span>
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT ? 'bg-emerald-100 text-emerald-800 border border-emerald-300/60' : 'bg-amber-100 text-amber-800 border border-amber-300/60'}`}>
+                                                        {pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT ? '🛡️ Escrow Safeguard Active' : '⚡ Instant Auto-Release'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-600 leading-relaxed">
+                                                    {pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT
+                                                        ? 'When enabled (Recommended SDE Standard), the 2nd installment (50% of vendor payout) is held in escrow until an Admin reviews and approves the technical survey report in Admin Approvals. Protects customer satisfaction and prevents payments for incomplete reports.'
+                                                        : 'When disabled, the 2nd installment (50%) is automatically and immediately credited to the vendor wallet upon report submission, without waiting for Admin review.'}
+                                                </p>
+                                            </div>
+
+                                            {/* Toggle Switch */}
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={Boolean(pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT)}
+                                                onClick={() =>
+                                                    setPricingSettings(prev => ({
+                                                        ...prev,
+                                                        REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT: !prev.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT
+                                                    }))
+                                                }
+                                                className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:ring-offset-2 ${
+                                                    pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT ? 'bg-[#0A84FF]' : 'bg-slate-300'
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                                        pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT ? 'translate-x-5' : 'translate-x-0'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     <div className="flex justify-end">
                                         <button
                                             type="submit"

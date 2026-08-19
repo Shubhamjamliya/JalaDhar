@@ -1064,6 +1064,42 @@ const markVisitedAndUploadReport = async (req, res) => {
     booking.vendorStatus = BOOKING_STATUS.REPORT_UPLOADED;
     booking.userStatus = BOOKING_STATUS.AWAITING_PAYMENT;
 
+    // Check dynamic platform setting for Admin Approval on 2nd installment
+    try {
+      const { getSetting } = require('../../services/settingsService');
+      const requireApproval = await getSetting('REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', true);
+
+      if (!requireApproval) {
+        // Auto-approve and credit 2nd installment immediately
+        const { creditToVendorWallet } = require('../../services/walletService');
+        booking.report.approvedAt = new Date();
+        booking.report.approvedBy = 'SYSTEM_AUTO_APPROVED';
+        
+        if (booking.payment?.vendorWalletPayments?.reportUploadPayment &&
+          !booking.payment.vendorWalletPayments.reportUploadPayment.credited) {
+          const paymentAmount = booking.payment.vendorWalletPayments.reportUploadPayment.amount;
+          if (paymentAmount > 0) {
+            const creditResult = await creditToVendorWallet(
+              booking.vendor._id || booking.vendor,
+              paymentAmount,
+              'REPORT_UPLOAD',
+              booking._id,
+              { description: `Second installment (50%) for booking #${booking._id.toString().slice(-6)} (Auto-Approved on Report Upload)` }
+            );
+            if (creditResult.success) {
+              booking.payment.vendorWalletPayments.reportUploadPayment.credited = true;
+              booking.payment.vendorWalletPayments.reportUploadPayment.creditedAt = new Date();
+              booking.payment.vendorWalletPayments.reportUploadPayment.transactionId = creditResult.transaction._id;
+              booking.payment.vendorWalletPayments.totalCredited =
+                (booking.payment.vendorWalletPayments.totalCredited || 0) + paymentAmount;
+            }
+          }
+        }
+      }
+    } catch (settingErr) {
+      console.error('[uploadSurveyReport] Error checking approval setting:', settingErr);
+    }
+
     await booking.save();
 
     // Send notification to user and admin
