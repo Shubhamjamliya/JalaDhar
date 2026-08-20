@@ -826,6 +826,22 @@ export default function VendorBookingDetails() {
                         {getStatusBadge(booking.status)}
                     </div>
                 </div>
+
+                {/* Rescheduled / Reassigned Banner */}
+                {((booking.isRescheduled || (booking.rescheduleHistory && booking.rescheduleHistory.length > 0) || (booking.rescheduleCount > 0)) && (booking.vendorStatus === "ASSIGNED" || booking.status === "ASSIGNED")) && (
+                    <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold text-[#0A84FF] shadow-xs">
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">🗓️</span>
+                            <div>
+                                <span className="font-extrabold text-blue-900">Customer Rescheduled & Reassigned:</span>
+                                <span className="ml-1 text-slate-600 font-medium">Customer requested a date change and selected you as the expert.</span>
+                            </div>
+                        </div>
+                        <span className="self-start sm:self-auto shrink-0 text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-black border border-emerald-200">
+                            Advance Paid (₹0 Extra Fee)
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* Visual Status Timeline */}

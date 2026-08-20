@@ -662,6 +662,19 @@ export default function VendorRequests() {
                                     onClick={() => navigate(`/vendor/bookings/${request._id}`)}
                                     className="rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-pointer hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)] transition-all"
                                 >
+                                    {/* Rescheduled / Reassigned Badge */}
+                                    {((request.isRescheduled || (request.rescheduleHistory && request.rescheduleHistory.length > 0) || request.rescheduleCount > 0) && (request.vendorStatus === "ASSIGNED" || request.status === "ASSIGNED")) && (
+                                        <div className="mb-3 p-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 flex items-center justify-between text-xs font-bold text-[#0A84FF] shadow-2xs">
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                <span className="text-base">🗓️</span>
+                                                <span className="truncate">Customer Rescheduled & Reassigned</span>
+                                            </div>
+                                            <span className="shrink-0 text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-black border border-emerald-200">
+                                                Advance Paid • ₹0 Extra Fee
+                                            </span>
+                                        </div>
+                                    )}
+
                                 {/* Customer Info Header */}
                                 <div className="flex items-center gap-4">
                                     {/* Profile Picture */}

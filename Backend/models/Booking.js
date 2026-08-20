@@ -643,6 +643,10 @@ const bookingSchema = new mongoose.Schema({
     }
   },
   // Reschedule Management
+  isRescheduled: {
+    type: Boolean,
+    default: false
+  },
   rescheduleCount: {
     type: Number,
     default: 0,

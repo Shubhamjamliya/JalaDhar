@@ -2573,9 +2573,22 @@ const rescheduleBooking = async (req, res) => {
     const newFormattedTime = "Time TBD by Expert";
     booking.scheduledTime = newFormattedTime;
     booking.rescheduleCount = currentCount + 1;
+    booking.isRescheduled = true;
 
     // Set vendor as ObjectId for clean save
     booking.vendor = isReassigned ? newVendor._id : previousVendorId;
+
+    if (isReassigned) {
+      booking.status = BOOKING_STATUS.ASSIGNED;
+      booking.vendorStatus = BOOKING_STATUS.ASSIGNED;
+      booking.userStatus = BOOKING_STATUS.ASSIGNED;
+      booking.assignedAt = new Date();
+      booking.acceptedAt = null;
+    }
+
+    if (!booking.rescheduleHistory) {
+      booking.rescheduleHistory = [];
+    }
 
     booking.rescheduleHistory.push({
       requestedBy: 'USER',
@@ -2617,6 +2630,8 @@ const rescheduleBooking = async (req, res) => {
         maxReschedules: maxReschedules,
         rescheduleHistory: booking.rescheduleHistory,
         status: booking.status,
+        vendorStatus: booking.vendorStatus,
+        userStatus: booking.userStatus,
         vendor: booking.vendor,
         booking: {
           _id: booking._id,
@@ -2626,6 +2641,8 @@ const rescheduleBooking = async (req, res) => {
           rescheduleCount: booking.rescheduleCount,
           rescheduleHistory: booking.rescheduleHistory,
           status: booking.status,
+          vendorStatus: booking.vendorStatus,
+          userStatus: booking.userStatus,
           vendor: booking.vendor
         }
       };
@@ -2648,6 +2665,7 @@ const rescheduleBooking = async (req, res) => {
         const newRooms = [`vendor:${newVendorIdStr}`, `Vendor_${newVendorIdStr}`, `vendor_${newVendorIdStr}`, newVendorIdStr];
         newRooms.forEach(room => {
           io.to(room).emit('BOOKING_ASSIGNED', bookingPayload);
+          io.to(room).emit('new_request', bookingPayload);
           io.to(room).emit('booking_updated', bookingPayload);
           io.to(room).emit('BOOKING_RESCHEDULED', bookingPayload);
         });
@@ -2678,21 +2696,26 @@ const rescheduleBooking = async (req, res) => {
         relatedEntity: {
           entityType: 'Booking',
           entityId: booking._id
+        },
+        metadata: {
+          link: '/vendor/bookings',
+          bookingId: booking._id.toString()
         }
       }, io);
 
-      // Notify New Expert
+      // Notify New Expert (New Request in Requests Tab)
       await sendNotification({
         recipient: newVendor._id,
         recipientModel: 'Vendor',
         type: 'BOOKING_ASSIGNED',
-        title: 'New Booking Assigned 📋',
-        message: `You have been assigned to groundwater survey #JALA${shortBookingId} on ${formattedNewDate}. Please set your arrival time slot.`,
+        title: 'New Rescheduled Survey Request 📋',
+        message: `New survey request #JALA${shortBookingId} for ${formattedNewDate} (Advance Paid). Please open your Requests tab to review and accept.`,
         relatedEntity: {
           entityType: 'Booking',
           entityId: booking._id
         },
         metadata: {
+          link: '/vendor/requests?tab=new',
           bookingId: booking._id.toString(),
           newDate: requestedDate,
           newTime: newFormattedTime
@@ -2701,7 +2724,7 @@ const rescheduleBooking = async (req, res) => {
     } else if (booking.vendor) {
       // Notify same expert
       await sendNotification({
-        recipient: booking.vendor._id || booking.vendor,
+        recipient: booking.vendor,
         recipientModel: 'Vendor',
         type: 'BOOKING_RESCHEDULED',
         title: 'Survey Appointment Rescheduled 🗓️',
@@ -2711,6 +2734,7 @@ const rescheduleBooking = async (req, res) => {
           entityId: booking._id
         },
         metadata: {
+          link: '/vendor/bookings',
           bookingId: booking._id.toString(),
           newDate: requestedDate,
           newTime: newFormattedTime
@@ -2724,12 +2748,13 @@ const rescheduleBooking = async (req, res) => {
       recipientModel: 'User',
       type: 'BOOKING_RESCHEDULED',
       title: 'Survey Rescheduled Successfully ✅',
-      message: `Your groundwater survey (#JALA${shortBookingId}) has been successfully moved to ${formattedNewDate} (${newFormattedTime})${isReassigned ? ` with expert ${newVendor?.name}` : ''}. (Reschedule ${currentCount + 1} of ${maxReschedules} used)`,
+      message: `Your groundwater survey (#JALA${shortBookingId}) has been successfully moved to ${formattedNewDate}${isReassigned ? ` and assigned to expert ${newVendor?.name}. Waiting for expert arrival time confirmation.` : ' (Time TBD by expert).'}. (Reschedule ${currentCount + 1} of ${maxReschedules} used)`,
       relatedEntity: {
         entityType: 'Booking',
         entityId: booking._id
       },
       metadata: {
+        link: `/user/booking/${booking._id}`,
         bookingId: booking._id.toString(),
         newDate: requestedDate,
         newTime: newFormattedTime,
