@@ -22,6 +22,14 @@ const bookingSchema = new mongoose.Schema({
     ref: 'Service',
     required: [true, 'Service is required']
   },
+  // Operations Admin assigned to oversee booking lifecycle
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin',
+    default: null
+  },
+  // Immutable Audit Trail for Booking Operations
+  assignmentHistory: [assignmentHistoryRecordSchema],
   status: {
     type: String,
     enum: Object.values(BOOKING_STATUS),
@@ -473,6 +481,14 @@ const bookingSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Vendor'
     },
+    // Quality Control Admin assigned for report verification
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
+      default: null
+    },
+    // Immutable Audit Trail for Survey Report Quality Control
+    assignmentHistory: [assignmentHistoryRecordSchema],
     approvedAt: Date,
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,

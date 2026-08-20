@@ -463,6 +463,28 @@ export const rejectReport = async (bookingId, data) => {
 };
 
 /**
+ * Assign / Reassign Survey Report QA to a Quality Control Admin
+ * @param {string} bookingId
+ * @param {Object} data - { assignedTo, reason, notes }
+ * @returns {Promise}
+ */
+export const assignReportQAApi = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/assign-report-qa`, data);
+  return response.data;
+};
+
+/**
+ * Assign / Reassign Booking Operations to an Operations Admin
+ * @param {string} bookingId
+ * @param {Object} data - { assignedTo, reason, notes }
+ * @returns {Promise}
+ */
+export const assignBookingOperationsApi = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/assign-operations`, data);
+  return response.data;
+};
+
+/**
  * Approve borewell result
  * @param {string} bookingId
  * @param {Object} data - { approved: true/false }

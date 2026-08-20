@@ -12,19 +12,25 @@ import {
     IoCheckmarkCircleOutline,
     IoCloseCircleOutline,
     IoInformationCircleOutline,
+    IoSwapHorizontalOutline
 } from "react-icons/io5";
-import { getAllBookings } from "../../../services/adminApi";
+import { getAllBookings, assignBookingOperationsApi, getAllAdmins } from "../../../services/adminApi";
+import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import AssignmentHistoryModal from "../admin-component/AssignmentHistoryModal";
 import api from "../../../services/api";
 
 export default function AdminBookings() {
     const navigate = useNavigate();
+    const { admin: currentAdmin } = useAdminAuth();
     const [bookings, setBookings] = useState([]);
+    const [availableOpsAdmins, setAvailableOpsAdmins] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [showAssignmentModal, setShowAssignmentModal] = useState(false);
     const [detailsLoading, setDetailsLoading] = useState(false);
     const toast = useToast();
     const [filters, setFilters] = useState({
@@ -39,9 +45,48 @@ export default function AdminBookings() {
         totalBookings: 0,
     });
 
+    const isSuperAdmin = currentAdmin?.role === "SUPER_ADMIN";
+
     useEffect(() => {
         loadBookings();
+        loadAvailableOpsAdmins();
     }, [filters.page, filters.status, filters.search]);
+
+    const loadAvailableOpsAdmins = async () => {
+        try {
+            const res = await getAllAdmins();
+            if (res.success && res.data?.admins) {
+                const opsAdmins = res.data.admins.filter(a =>
+                    a.isActive && ['OPERATIONS_ADMIN', 'SUPER_ADMIN'].includes(a.role)
+                );
+                setAvailableOpsAdmins(opsAdmins);
+            }
+        } catch (err) {
+            console.error("Failed to load operations admins:", err);
+        }
+    };
+
+    const handleReassignBooking = async (newAdminId, reason, notesText) => {
+        if (!selectedBooking) return;
+        try {
+            const res = await assignBookingOperationsApi(selectedBooking._id, {
+                assignedTo: newAdminId,
+                reason,
+                notes: notesText
+            });
+            if (res.success) {
+                toast.showSuccess("Booking operations reassigned successfully!");
+                setShowAssignmentModal(false);
+                setSelectedBooking(null);
+                await loadBookings();
+            } else {
+                toast.showError(res.message || "Failed to reassign booking");
+            }
+        } catch (err) {
+            console.error("Reassign error:", err);
+            toast.showError("Failed to reassign booking");
+        }
+    };
 
     const loadBookings = async () => {
         try {
@@ -256,6 +301,9 @@ export default function AdminBookings() {
                                         Status
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Assigned Operations
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Amount
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -314,6 +362,21 @@ export default function AdminBookings() {
                                             >
                                                 {booking.status || "N/A"}
                                             </span>
+                                        </td>
+                                        {/* Assigned Operations Admin Chip */}
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedBooking(booking);
+                                                    setShowAssignmentModal(true);
+                                                }}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition-colors cursor-pointer"
+                                            >
+                                                <IoPersonOutline className="text-xs" />
+                                                {booking.assignedTo?.name || "Auto-Assigned"}
+                                                {isSuperAdmin && <IoSwapHorizontalOutline className="text-xs ml-1 text-indigo-500" />}
+                                            </button>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-medium text-gray-900">
@@ -692,6 +755,21 @@ export default function AdminBookings() {
                     </div>
                 </div>
             )}
+
+            {/* Universal Assignment History Modal for Operations */}
+            <AssignmentHistoryModal
+                isOpen={showAssignmentModal}
+                onClose={() => {
+                    setShowAssignmentModal(false);
+                    setSelectedBooking(null);
+                }}
+                entityTitle={`Booking #${selectedBooking?._id?.toString().slice(-8).toUpperCase()}`}
+                assignedTo={selectedBooking?.assignedTo}
+                assignmentHistory={selectedBooking?.assignmentHistory || []}
+                availableAdmins={availableOpsAdmins}
+                onReassign={handleReassignBooking}
+                isSuperAdmin={isSuperAdmin}
+            />
         </div>
     );
 }

@@ -29,7 +29,9 @@ const {
   processUserFinalSettlement,
   getBookingDetails,
   resolveInfeasibleBooking,
-  assignBorewellQA
+  assignBorewellQA,
+  assignReportQA,
+  assignBookingOperations
 } = require('../../controllers/bookingControllers/adminBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isAdmin, isSuperAdmin } = require('../../middleware/roleMiddleware');
@@ -50,7 +52,7 @@ const rejectTravelChargesValidation = [
 
 // Routes
 router.get('/bookings', authenticate, isAdmin, getAllBookings);
-router.get('/bookings', authenticate, isAdmin, getAllBookings);
+router.patch('/bookings/:bookingId/assign-operations', authenticate, isSuperAdmin, assignBookingOperations);
 // Moved generic /bookings/:bookingId to end to avoid masking other routes
 router.get('/statistics', authenticate, isAdmin, getBookingStatistics);
 router.get('/travel-charges', authenticate, isAdmin, getTravelChargesRequests);
@@ -62,6 +64,7 @@ router.patch('/bookings/:bookingId/travel-charges/pay', authenticate, isAdmin, p
 router.patch('/bookings/:bookingId/first-installment/pay', authenticate, isAdmin, payFirstInstallment);
 router.patch('/bookings/:bookingId/second-installment/pay', authenticate, isAdmin, paySecondInstallment);
 router.get('/bookings/report-pending', authenticate, isAdmin, getReportPendingApprovals);
+router.patch('/bookings/:bookingId/assign-report-qa', authenticate, isSuperAdmin, assignReportQA);
 router.patch('/bookings/:bookingId/approve-report', authenticate, isAdmin, approveReport);
 router.patch('/bookings/:bookingId/reject-report', authenticate, isAdmin, rejectTravelChargesValidation, rejectReport);
 router.get('/bookings/borewell-pending', authenticate, isAdmin, getBorewellPendingApprovals);

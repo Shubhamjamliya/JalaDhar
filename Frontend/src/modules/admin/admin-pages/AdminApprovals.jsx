@@ -21,23 +21,30 @@ import {
     getReportPendingApprovals,
     approveReport,
     rejectReport,
+    assignReportQAApi,
+    getAllAdmins
 } from "../../../services/adminApi";
+import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useTheme } from "../../../contexts/ThemeContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
+import AssignmentHistoryModal from "../admin-component/AssignmentHistoryModal";
 
 export default function AdminApprovals() {
     const { theme, themeColors } = useTheme();
     const currentTheme = themeColors[theme] || themeColors.default;
+    const { admin: currentAdmin } = useAdminAuth();
     const [loading, setLoading] = useState(true);
     const [activeApprovalType, setActiveApprovalType] = useState("report"); // report, borewell
     const [reportBookings, setReportBookings] = useState([]);
     const [borewellBookings, setBorewellBookings] = useState([]);
+    const [availableQCAdmins, setAvailableQCAdmins] = useState([]);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const toast = useToast();
     const [showModal, setShowModal] = useState(false);
+    const [showAssignmentModal, setShowAssignmentModal] = useState(false);
     const [modalType, setModalType] = useState(""); // approve, reject, pay, etc.
     const [rejectionReason, setRejectionReason] = useState("");
     const [error, setError] = useState("");
@@ -46,6 +53,8 @@ export default function AdminApprovals() {
     const [selectedBookingId, setSelectedBookingId] = useState(null);
     const [viewingReportBooking, setViewingReportBooking] = useState(null);
     const [previewImage, setPreviewImage] = useState(null);
+
+    const isSuperAdmin = currentAdmin?.role === "SUPER_ADMIN";
 
     // Pagination
     const [reportPagination, setReportPagination] = useState({
@@ -61,7 +70,44 @@ export default function AdminApprovals() {
 
     useEffect(() => {
         loadData();
+        loadAvailableQCAdmins();
     }, [activeApprovalType]);
+
+    const loadAvailableQCAdmins = async () => {
+        try {
+            const res = await getAllAdmins();
+            if (res.success && res.data?.admins) {
+                const qcAdmins = res.data.admins.filter(a =>
+                    a.isActive && ['QC_ADMIN', 'SUPER_ADMIN'].includes(a.role)
+                );
+                setAvailableQCAdmins(qcAdmins);
+            }
+        } catch (err) {
+            console.error("Failed to load QC admins:", err);
+        }
+    };
+
+    const handleReassignReportQA = async (newAdminId, reason, notesText) => {
+        if (!selectedBooking) return;
+        try {
+            const res = await assignReportQAApi(selectedBooking._id, {
+                assignedTo: newAdminId,
+                reason,
+                notes: notesText
+            });
+            if (res.success) {
+                toast.showSuccess("Survey report QA review reassigned successfully!");
+                setShowAssignmentModal(false);
+                setSelectedBooking(null);
+                await loadData();
+            } else {
+                toast.showError(res.message || "Failed to reassign survey report review");
+            }
+        } catch (err) {
+            console.error("Reassign error:", err);
+            toast.showError("Failed to reassign survey report review");
+        }
+    };
 
     // Prevent background body scrolling when any modal is active
     useEffect(() => {
@@ -368,6 +414,19 @@ export default function AdminApprovals() {
                                                         <span className="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
                                                             Report Pending
                                                         </span>
+                                                        {/* Assigned QC Admin Chip */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedBooking(booking);
+                                                                setShowAssignmentModal(true);
+                                                            }}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100 transition-colors cursor-pointer"
+                                                        >
+                                                            <IoPersonOutline className="text-xs" />
+                                                            QC: {booking.report?.assignedTo?.name || "Auto-Assigned"}
+                                                            {isSuperAdmin && <span className="text-[10px] ml-1 text-purple-500 font-bold">⇄</span>}
+                                                        </button>
                                                     </div>
                                                     <p className="text-xs sm:text-sm text-slate-500 font-semibold mt-0.5 flex items-center gap-1.5">
                                                         <span>{booking.vendor?.name || "Expert"}</span>
@@ -948,6 +1007,21 @@ export default function AdminApprovals() {
                     </div>
                 </div>
             )}
+
+            {/* Assignment History Modal for Survey Reports */}
+            <AssignmentHistoryModal
+                isOpen={showAssignmentModal}
+                onClose={() => {
+                    setShowAssignmentModal(false);
+                    setSelectedBooking(null);
+                }}
+                entityTitle={`Survey Report #${selectedBooking?._id?.toString().slice(-8).toUpperCase()}`}
+                assignedTo={selectedBooking?.report?.assignedTo}
+                assignmentHistory={selectedBooking?.report?.assignmentHistory || []}
+                availableAdmins={availableQCAdmins}
+                onReassign={handleReassignReportQA}
+                isSuperAdmin={isSuperAdmin}
+            />
         </>);
 }
 

@@ -1142,12 +1142,22 @@ const markVisitedAndUploadReport = async (req, res) => {
       reportData.drillingRecommendation = '';
     }
 
+    // Auto-assign to available Quality Control Admin using Least-Active-Load engine
+    const { autoAssignRequest } = require('../../services/workloadDistributionService');
+    const qcAssignment = await autoAssignRequest({
+      department: 'QUALITY_CONTROL',
+      statusAtAssignment: 'PENDING',
+      notes: 'Auto-assigned survey report quality review'
+    });
+
     booking.report = {
       ...reportData,
       waterFound: isWaterFound,
       images: finalImages,
       uploadedAt: new Date(),
       uploadedBy: vendorId,
+      assignedTo: qcAssignment.assignedTo || null,
+      assignmentHistory: qcAssignment.auditRecord ? [qcAssignment.auditRecord] : [],
       rejectedAt: null,
       rejectedBy: null,
       rejectionReason: null

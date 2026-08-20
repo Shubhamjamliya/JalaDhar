@@ -83,6 +83,7 @@ const getAllBookings = async (req, res) => {
         .populate('user', 'name email phone')
         .populate('vendor', 'name email phone')
         .populate('service', 'name price')
+        .populate('assignedTo', 'name email role')
         .sort(sort)
         .skip(skip)
         .limit(parseInt(limit)),
@@ -848,6 +849,12 @@ const approveReport = async (req, res) => {
 
     await booking.save();
 
+    // Decrement assigned QC Admin active workload
+    if (booking.report?.assignedTo) {
+      const { decrementActiveWorkload } = require('../../services/workloadDistributionService');
+      await decrementActiveWorkload(booking.report.assignedTo);
+    }
+
     // Send notifications to user and vendor
     try {
       const io = getIO();
@@ -973,6 +980,12 @@ const rejectReport = async (req, res) => {
     booking.vendorStatus = BOOKING_STATUS.REPORT_UPLOADED;
 
     await booking.save();
+
+    // Decrement assigned QC Admin active workload
+    if (booking.report?.assignedTo) {
+      const { decrementActiveWorkload } = require('../../services/workloadDistributionService');
+      await decrementActiveWorkload(booking.report.assignedTo);
+    }
 
     // Notify vendor about report revision requirement
     try {
@@ -1410,6 +1423,7 @@ const getReportPendingApprovals = async (req, res) => {
         .populate('user', 'name email phone')
         .populate('vendor', 'name email phone')
         .populate('service', 'name price')
+        .populate('report.assignedTo', 'name email role')
         .sort({ 'report.uploadedAt': -1 })
         .skip(skip)
         .limit(parseInt(limit))
@@ -3113,6 +3127,125 @@ const assignBorewellQA = async (req, res) => {
   }
 };
 
+/**
+ * Reassign Survey Report QA to a Quality Control Admin (Super Admin only)
+ */
+const assignReportQA = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { assignedTo, reason, notes } = req.body;
+    const adminId = req.userId;
+    const adminUser = req.user;
+
+    const Admin = require('../../models/Admin');
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    const newAdmin = await Admin.findById(assignedTo || adminId);
+    if (!newAdmin || !newAdmin.isActive) {
+      return res.status(404).json({
+        success: false,
+        message: 'Target QC admin not found or is inactive'
+      });
+    }
+
+    const oldAdminId = booking.report?.assignedTo;
+
+    const auditRecord = {
+      assignedTo: newAdmin._id,
+      assignedToName: newAdmin.name,
+      assignedToRole: newAdmin.role,
+      assignedAt: new Date(),
+      reassignedBy: adminUser?._id || adminId,
+      reassignedByName: adminUser?.name || 'Super Admin',
+      reassignmentReason: reason || 'Manual Survey Report QA reassignment by Super Admin',
+      statusAtAssignment: booking.vendorStatus || 'REPORT_UPLOADED',
+      notes: notes || ''
+    };
+
+    if (!booking.report) {
+      booking.report = {};
+    }
+    booking.report.assignedTo = newAdmin._id;
+    if (!booking.report.assignmentHistory) {
+      booking.report.assignmentHistory = [];
+    }
+    booking.report.assignmentHistory.push(auditRecord);
+    await booking.save();
+
+    // Adjust load counters
+    const { decrementActiveWorkload } = require('../../services/workloadDistributionService');
+    if (oldAdminId && oldAdminId.toString() !== newAdmin._id.toString()) {
+      await decrementActiveWorkload(oldAdminId);
+    }
+    await Admin.findByIdAndUpdate(newAdmin._id, {
+      $inc: { activeTicketsCount: 1 },
+      $set: { lastAssignedAt: new Date() }
+    });
+
+    res.json({
+      success: true,
+      message: `Survey Report QA review reassigned to ${newAdmin.name}`,
+      data: {
+        booking,
+        auditRecord
+      }
+    });
+  } catch (error) {
+    console.error('Assign report QA error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to assign report QA review',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Reassign Booking Lifecycle to an Operations Admin (Super Admin only)
+ */
+const assignBookingOperations = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { assignedTo, reason, notes } = req.body;
+    const adminId = req.userId;
+    const adminUser = req.user;
+
+    const targetAdminId = assignedTo || adminId;
+    const { manualReassign } = require('../../services/workloadDistributionService');
+
+    const result = await manualReassign({
+      model: Booking,
+      entityId: bookingId,
+      newAdminId: targetAdminId,
+      reassignedByAdmin: adminUser || { _id: adminId, name: 'Admin' },
+      reason: reason || 'Manual Booking operations reassignment by Super Admin',
+      notes: notes || ''
+    });
+
+    res.json({
+      success: true,
+      message: result.message,
+      data: {
+        booking: result.entity,
+        auditRecord: result.auditRecord
+      }
+    });
+  } catch (error) {
+    console.error('Assign booking operations error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to assign booking operations',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllBookings,
   getPendingFirstPaymentReleases,
@@ -3141,6 +3274,8 @@ module.exports = {
   processUserFinalSettlement,
   getBookingDetails,
   resolveInfeasibleBooking,
-  assignBorewellQA
+  assignBorewellQA,
+  assignReportQA,
+  assignBookingOperations
 };
 

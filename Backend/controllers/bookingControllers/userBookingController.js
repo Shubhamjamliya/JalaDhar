@@ -371,11 +371,21 @@ const createBooking = async (req, res) => {
       });
     }
 
+    // Auto-assign to available Operations Admin using Least-Active-Load engine
+    const { autoAssignRequest } = require('../../services/workloadDistributionService');
+    const opsAssignment = await autoAssignRequest({
+      department: 'OPERATIONS',
+      statusAtAssignment: BOOKING_STATUS.AWAITING_ADVANCE,
+      notes: 'Auto-assigned booking operations lifecycle'
+    });
+
     // Create booking in PENDING status - will be set to ASSIGNED only after payment verification
     const booking = await Booking.create({
       user: userId,
       vendor: vendor._id,
       service: service._id,
+      assignedTo: opsAssignment.assignedTo || null,
+      assignmentHistory: opsAssignment.auditRecord ? [opsAssignment.auditRecord] : [],
       status: BOOKING_STATUS.AWAITING_ADVANCE,
       vendorStatus: BOOKING_STATUS.AWAITING_ADVANCE,
       userStatus: BOOKING_STATUS.AWAITING_ADVANCE,
