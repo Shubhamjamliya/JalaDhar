@@ -393,13 +393,17 @@ export default function VendorUploadReport() {
                 setShowPreviewModal(false);
                 setTimeout(() => {
                     navigate(`/vendor/bookings/${bookingId}`);
-                }, 2000);
+                }, 1500);
             } else {
-                setError(response.message || "Failed to upload report");
+                const msg = response.message || "Failed to upload report";
+                setError(msg);
+                toast.showError(msg);
                 setShowPreviewModal(false);
             }
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to upload report. Please try again.");
+            const msg = err.response?.data?.message || err.message || "Failed to upload report. Please try again.";
+            setError(msg);
+            toast.showError(msg);
             setShowPreviewModal(false);
         } finally {
             setSubmitting(false);

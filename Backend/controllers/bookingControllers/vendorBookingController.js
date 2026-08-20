@@ -1032,25 +1032,28 @@ const markVisitedAndUploadReport = async (req, res) => {
       // Upload images safely
       if (req.files.images && req.files.images.length > 0) {
         for (const file of req.files.images) {
+          if (!file || !file.buffer) continue;
           try {
             const result = await uploadToCloudinary(file.buffer, 'booking-reports/images');
             reportImages.push({
               url: result.secure_url,
               publicId: result.public_id,
               geoTag: {
-                lat: req.body[`image_${file.fieldname}_lat`] || null,
-                lng: req.body[`image_${file.fieldname}_lng`] || null
+                lat: parseNum(req.body[`image_${file.fieldname}_lat`]) || null,
+                lng: parseNum(req.body[`image_${file.fieldname}_lng`]) || null
               },
               uploadedAt: new Date()
             });
           } catch (cloudErr) {
             console.error('[markVisitedAndUploadReport] Image Cloudinary upload error:', cloudErr);
-            const base64Str = `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`;
-            reportImages.push({
-              url: base64Str,
-              publicId: `local_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-              uploadedAt: new Date()
-            });
+            const base64Str = file.buffer ? `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}` : '';
+            if (base64Str) {
+              reportImages.push({
+                url: base64Str,
+                publicId: `local_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+                uploadedAt: new Date()
+              });
+            }
           }
         }
       }
@@ -1058,24 +1061,26 @@ const markVisitedAndUploadReport = async (req, res) => {
       // Upload report file (PDF) safely
       if (req.files.reportFile && req.files.reportFile[0]) {
         const file = req.files.reportFile[0];
-        try {
-          const result = await uploadToCloudinary(file.buffer, 'booking-reports/files', {
-            resource_type: 'raw',
-            format: 'pdf'
-          });
-          reportFile = {
-            url: result.secure_url,
-            publicId: result.public_id,
-            uploadedAt: new Date()
-          };
-        } catch (cloudErr) {
-          console.error('[markVisitedAndUploadReport] PDF Cloudinary upload error:', cloudErr);
-          const base64Str = `data:application/pdf;base64,${file.buffer.toString('base64')}`;
-          reportFile = {
-            url: base64Str,
-            publicId: `local_pdf_${Date.now()}`,
-            uploadedAt: new Date()
-          };
+        if (file && file.buffer) {
+          try {
+            const result = await uploadToCloudinary(file.buffer, 'booking-reports/files', {
+              resource_type: 'raw',
+              format: 'pdf'
+            });
+            reportFile = {
+              url: result.secure_url,
+              publicId: result.public_id,
+              uploadedAt: new Date()
+            };
+          } catch (cloudErr) {
+            console.error('[markVisitedAndUploadReport] PDF Cloudinary upload error:', cloudErr);
+            const base64Str = `data:application/pdf;base64,${file.buffer.toString('base64')}`;
+            reportFile = {
+              url: base64Str,
+              publicId: `local_pdf_${Date.now()}`,
+              uploadedAt: new Date()
+            };
+          }
         }
       }
     }
@@ -1093,6 +1098,16 @@ const markVisitedAndUploadReport = async (req, res) => {
       reportData.existingBorewell.distance = parseNum(reportData.existingBorewell.distance);
       reportData.existingBorewell.depth = parseNum(reportData.existingBorewell.depth);
       reportData.existingBorewell.yield = parseNum(reportData.existingBorewell.yield);
+      const validBorewellStatus = ['Working', 'Seasonal', 'Dry', 'Failed', ''];
+      if (!validBorewellStatus.includes(reportData.existingBorewell.status)) {
+        reportData.existingBorewell.status = '';
+      }
+    }
+    if (reportData.geologicalInfo) {
+      const validGroundwater = ['Poor', 'Moderate', 'Good', 'Excellent', ''];
+      if (!validGroundwater.includes(reportData.geologicalInfo.groundwaterCondition)) {
+        reportData.geologicalInfo.groundwaterCondition = '';
+      }
     }
     if (reportData.surveyRecommendations) {
       reportData.surveyRecommendations.pointsInvestigated = parseNum(reportData.surveyRecommendations.pointsInvestigated);
@@ -1102,6 +1117,20 @@ const markVisitedAndUploadReport = async (req, res) => {
     }
     if (reportData.drillingInstructions) {
       reportData.drillingInstructions.stopDrillingDepth = parseNum(reportData.drillingInstructions.stopDrillingDepth);
+    }
+    if (reportData.evidence?.gpsLocation) {
+      reportData.evidence.gpsLocation.lat = parseNum(reportData.evidence.gpsLocation.lat) || null;
+      reportData.evidence.gpsLocation.lng = parseNum(reportData.evidence.gpsLocation.lng) || null;
+    }
+
+    const validConfidence = ['High', 'Medium', 'Low', ''];
+    if (!validConfidence.includes(reportData.confidenceLevel)) {
+      reportData.confidenceLevel = '';
+    }
+
+    const validDrilling = ['Proceed Immediately', 'Suitable After Monsoon', 'Proceed With Caution', 'Not Recommended', ''];
+    if (!validDrilling.includes(reportData.drillingRecommendation)) {
+      reportData.drillingRecommendation = '';
     }
 
     booking.report = {
