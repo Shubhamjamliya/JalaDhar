@@ -9,7 +9,7 @@ const fcmTokenSchema = new mongoose.Schema({
   userModel: {
     type: String,
     required: true,
-    enum: ['User', 'Vendor']
+    enum: ['User', 'Vendor', 'Admin']
   },
   token: {
     type: String,

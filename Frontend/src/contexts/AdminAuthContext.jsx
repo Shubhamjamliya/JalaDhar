@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { adminLogin, adminLogout, adminRegister } from '../services/adminApi';
+import { registerFCMToken, unregisterFCMToken } from '../services/pushNotificationService';
 
 const AdminAuthContext = createContext(null);
 
@@ -25,6 +26,8 @@ export const AdminAuthProvider = ({ children }) => {
       try {
         setToken(storedToken);
         setAdmin(JSON.parse(storedAdmin));
+        // Register push token if authenticated
+        registerFCMToken('admin');
       } catch (error) {
         console.error('Error parsing stored admin:', error);
         localStorage.removeItem('adminAccessToken');
@@ -83,6 +86,9 @@ export const AdminAuthProvider = ({ children }) => {
         setToken(tokens.accessToken);
         setAdmin(adminData);
         
+        // Register push token
+        registerFCMToken('admin');
+
         return {
           success: true,
           message: response.message || 'Login successful',
@@ -112,6 +118,9 @@ export const AdminAuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
+      // Unregister push token before clearing auth
+      await unregisterFCMToken('admin');
+
       // Clear local storage
       localStorage.removeItem('adminAccessToken');
       localStorage.removeItem('adminRefreshToken');

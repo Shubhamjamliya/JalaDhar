@@ -1,5 +1,6 @@
 const Notification = require('../models/Notification');
 const FCMToken = require('../models/FCMToken');
+const NotificationLog = require('../models/NotificationLog');
 const { sendPushNotification } = require('./firebaseAdmin');
 
 /**
@@ -16,13 +17,90 @@ const createNotification = async (notificationData) => {
 };
 
 /**
- * Send notification (create in DB and emit via Socket.io)
+ * Send push notification to a specific user/vendor/admin with duplicate prevention (SOP v3.0)
+ * @param {string} recipientId - User ID
+ * @param {string} recipientModel - 'User', 'Vendor', or 'Admin'
+ * @param {Object} payload - { title, body, data, notificationId }
+ */
+const sendPushNotificationToUser = async (recipientId, recipientModel, payload) => {
+  try {
+    if (!recipientId || !recipientModel) return null;
+
+    const normalizedModel = recipientModel === 'Expert' ? 'Vendor' : recipientModel;
+    const strRecipientId = recipientId.toString();
+
+    // 1. Generate Idempotency Key (notificationId)
+    const notificationId = payload.notificationId ||
+      `${strRecipientId}_${payload.data?.type || 'general'}_${payload.data?.id || payload.data?.relatedEntityId || Date.now()}`;
+
+    // 2. Prevent Duplicate Delivery (Backend Deduplication Layer 1)
+    const existingLog = await NotificationLog.findOne({ notificationId });
+    if (existingLog) {
+      console.log(`[FCM] Notification ${notificationId} already logged/sent. Skipping duplicate.`);
+      return { skipped: true, reason: 'DUPLICATE', notificationId };
+    }
+
+    // 3. Fetch device tokens
+    const fcmTokens = await FCMToken.getTokensForUser(strRecipientId, normalizedModel);
+    const uniqueTokens = [...new Set(fcmTokens || [])];
+
+    if (!uniqueTokens || uniqueTokens.length === 0) {
+      // Record log as NO_TOKENS so future duplicate triggers within 24h are also ignored
+      await NotificationLog.create({
+        notificationId,
+        userId: strRecipientId,
+        userModel: normalizedModel,
+        title: payload.title,
+        tokens: [],
+        status: 'NO_TOKENS'
+      }).catch(err => {
+        if (err.code !== 11000) console.error('[FCM] NotificationLog save error:', err.message);
+      });
+      return { successCount: 0, failureCount: 0, reason: 'NO_TOKENS', notificationId };
+    }
+
+    // 4. Send Multicast Notification via Firebase Admin SDK
+    const pushResult = await sendPushNotification(uniqueTokens, {
+      title: payload.title,
+      body: payload.body,
+      data: {
+        ...(payload.data || {}),
+        notificationId
+      }
+    });
+
+    // 5. Cleanup Invalid / Expired Tokens from Database
+    if (pushResult.invalidTokens && pushResult.invalidTokens.length > 0) {
+      await FCMToken.removeInvalidTokens(pushResult.invalidTokens);
+    }
+
+    // 6. Save NotificationLog (Idempotency Lock)
+    await NotificationLog.create({
+      notificationId,
+      userId: strRecipientId,
+      userModel: normalizedModel,
+      title: payload.title,
+      tokens: uniqueTokens,
+      status: pushResult.successCount > 0 ? 'SENT' : 'FAILED'
+    }).catch(err => {
+      if (err.code !== 11000) console.error('[FCM] NotificationLog save error:', err.message);
+    });
+
+    return pushResult;
+  } catch (error) {
+    console.error('[FCM] Error in sendPushNotificationToUser:', error);
+    return { error: error.message };
+  }
+};
+
+/**
+ * Send notification (create in DB, emit via Socket.io, and send push notification)
  * @param {Object} notificationData - Notification data
  * @param {Object} io - Socket.io instance (optional, for real-time emission)
  */
 const sendNotification = async (notificationData, io = null) => {
   try {
-    // Create notification in database
+    // 1. Create notification in database
     const notification = await createNotification(notificationData);
 
     // 2. Emit via Socket.io if available
@@ -46,37 +124,30 @@ const sendNotification = async (notificationData, io = null) => {
       }
     }
 
-    // 3. Send Push Notification via FCM
+    // 3. Send Push Notification via FCM (Duplicate-Safe)
     try {
       const recipientId = notificationData.recipient.toString();
-      const recipientModel = notificationData.recipientModel; // 'User' or 'Vendor'
+      const recipientModel = notificationData.recipientModel; // 'User', 'Vendor', 'Admin'
 
-      // Only Users and Vendors support push notifications currently
-      if (recipientModel === 'User' || recipientModel === 'Vendor') {
-        const fcmTokens = await FCMToken.getTokensForUser(recipientId, recipientModel);
+      if (['User', 'Vendor', 'Admin', 'Expert'].includes(recipientModel)) {
+        const notificationId = `${recipientId}_${notification.type || 'alert'}_${notification._id}`;
 
-        if (fcmTokens && fcmTokens.length > 0) {
-          const pushResult = await sendPushNotification(fcmTokens, {
-            title: notification.title,
-            body: notification.message,
-            data: {
-              id: notification._id.toString(),
-              type: notification.type,
-              relatedEntityType: notification.relatedEntity?.entityType || '',
-              relatedEntityId: notification.relatedEntity?.entityId?.toString() || '',
-              link: notification.metadata?.link || '/'
-            }
-          });
-
-          // Cleanup invalid tokens if any
-          if (pushResult.invalidTokens && pushResult.invalidTokens.length > 0) {
-            await FCMToken.removeInvalidTokens(pushResult.invalidTokens);
+        await sendPushNotificationToUser(recipientId, recipientModel, {
+          notificationId,
+          title: notification.title,
+          body: notification.message,
+          data: {
+            id: notification._id.toString(),
+            type: notification.type,
+            relatedEntityType: notification.relatedEntity?.entityType || '',
+            relatedEntityId: notification.relatedEntity?.entityId?.toString() || '',
+            link: notification.metadata?.link || '/'
           }
-        }
+        });
       }
     } catch (pushError) {
       console.error('Push notification sending error:', pushError);
-      // Non-critical error, don't fail the whole process
+      // Non-critical error, don't fail the whole notification process
     }
 
     return notification;
@@ -90,7 +161,7 @@ const sendNotification = async (notificationData, io = null) => {
  * Get room name for Socket.io
  */
 const getRoomName = (recipientModel, recipientId) => {
-  const modelPrefix = recipientModel.toLowerCase();
+  const modelPrefix = (recipientModel || 'user').toLowerCase();
   return `${modelPrefix}:${recipientId}`;
 };
 
@@ -107,7 +178,7 @@ const getUserNotifications = async (recipientId, recipientModel, options = {}) =
 
     const query = {
       recipient: recipientId,
-      recipientModel: recipientModel
+      recipientModel: recipientModel === 'Expert' ? 'Vendor' : recipientModel
     };
 
     if (isRead !== null) {
@@ -146,7 +217,7 @@ const markAsRead = async (notificationId, recipientId, recipientModel) => {
     const notification = await Notification.findOne({
       _id: notificationId,
       recipient: recipientId,
-      recipientModel: recipientModel
+      recipientModel: recipientModel === 'Expert' ? 'Vendor' : recipientModel
     });
 
     if (!notification) {
@@ -174,7 +245,7 @@ const markAllAsRead = async (recipientId, recipientModel) => {
     const result = await Notification.updateMany(
       {
         recipient: recipientId,
-        recipientModel: recipientModel,
+        recipientModel: recipientModel === 'Expert' ? 'Vendor' : recipientModel,
         isRead: false
       },
       {
@@ -199,7 +270,7 @@ const getUnreadCount = async (recipientId, recipientModel) => {
   try {
     const count = await Notification.countDocuments({
       recipient: recipientId,
-      recipientModel: recipientModel,
+      recipientModel: recipientModel === 'Expert' ? 'Vendor' : recipientModel,
       isRead: false
     });
 
@@ -218,7 +289,7 @@ const deleteNotification = async (notificationId, recipientId, recipientModel) =
     const deleted = await Notification.findOneAndDelete({
       _id: notificationId,
       recipient: recipientId,
-      recipientModel: recipientModel
+      recipientModel: recipientModel === 'Expert' ? 'Vendor' : recipientModel
     });
     return deleted;
   } catch (error) {
@@ -234,7 +305,7 @@ const clearAllNotifications = async (recipientId, recipientModel) => {
   try {
     const result = await Notification.deleteMany({
       recipient: recipientId,
-      recipientModel: recipientModel
+      recipientModel: recipientModel === 'Expert' ? 'Vendor' : recipientModel
     });
     return result;
   } catch (error) {
@@ -246,6 +317,7 @@ const clearAllNotifications = async (recipientId, recipientModel) => {
 module.exports = {
   createNotification,
   sendNotification,
+  sendPushNotificationToUser,
   getUserNotifications,
   markAsRead,
   markAllAsRead,
@@ -254,4 +326,3 @@ module.exports = {
   clearAllNotifications,
   getRoomName
 };
-

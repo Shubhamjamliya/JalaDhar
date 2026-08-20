@@ -5,12 +5,27 @@ const FCMToken = require('../models/FCMToken');
 const { sendPushNotification, isFirebaseReady } = require('../services/firebaseAdmin');
 
 /**
+ * Helper to map request role to Mongoose model name
+ */
+const getModelFromRole = (role) => {
+  if (!role) return null;
+  const upperRole = role.toUpperCase();
+  const roleToModel = {
+    'USER': 'User',
+    'VENDOR': 'Vendor',
+    'EXPERT': 'Vendor',
+    'ADMIN': 'Admin'
+  };
+  return roleToModel[upperRole] || null;
+};
+
+/**
  * POST /api/fcm-tokens/save
- * Save an FCM token for the authenticated user
+ * Save an FCM token for the authenticated user/vendor/admin
  */
 router.post('/save', authenticate, async (req, res) => {
   try {
-    const { token, platform = 'app' } = req.body;
+    const { token, platform = 'web' } = req.body;
 
     if (!token || typeof token !== 'string' || token.trim().length === 0) {
       return res.status(400).json({
@@ -20,12 +35,7 @@ router.post('/save', authenticate, async (req, res) => {
     }
 
     const userId = req.userId;
-    // Map the role to the correct model name
-    const roleToModel = {
-      'USER': 'User',
-      'VENDOR': 'Vendor'
-    };
-    const userModel = roleToModel[req.userRole];
+    const userModel = getModelFromRole(req.userRole);
 
     if (!userModel) {
       return res.status(400).json({
@@ -53,11 +63,11 @@ router.post('/save', authenticate, async (req, res) => {
 
 /**
  * DELETE /api/fcm-tokens/remove
- * Remove an FCM token for the authenticated user
+ * Remove an FCM token for the authenticated user/vendor/admin
  */
 router.delete('/remove', authenticate, async (req, res) => {
   try {
-    const { token, platform = 'app' } = req.body;
+    const { token } = req.body;
 
     if (!token) {
       return res.status(400).json({
@@ -67,11 +77,7 @@ router.delete('/remove', authenticate, async (req, res) => {
     }
 
     const userId = req.userId;
-    const roleToModel = {
-      'USER': 'User',
-      'VENDOR': 'Vendor'
-    };
-    const userModel = roleToModel[req.userRole];
+    const userModel = getModelFromRole(req.userRole);
 
     if (!userModel) {
       return res.status(400).json({
@@ -80,9 +86,8 @@ router.delete('/remove', authenticate, async (req, res) => {
       });
     }
 
-    await FCMToken.removeToken(userId, userModel, token);
+    await FCMToken.removeToken(userId, userModel, token.trim());
 
-    // Also clear from localStorage key tracking on client side
     console.log(`[FCMToken] Token removed for ${userModel}:${userId}`);
 
     res.json({
@@ -107,16 +112,12 @@ router.post('/test', authenticate, async (req, res) => {
     if (!isFirebaseReady()) {
       return res.status(503).json({
         success: false,
-        message: 'Firebase is not configured'
+        message: 'Firebase is not configured. Please add FIREBASE_* credentials to backend environment.'
       });
     }
 
     const userId = req.userId;
-    const roleToModel = {
-      'USER': 'User',
-      'VENDOR': 'Vendor'
-    };
-    const userModel = roleToModel[req.userRole];
+    const userModel = getModelFromRole(req.userRole);
 
     if (!userModel) {
       return res.status(400).json({
@@ -127,24 +128,26 @@ router.post('/test', authenticate, async (req, res) => {
 
     const tokens = await FCMToken.getTokensForUser(userId, userModel);
 
-    if (tokens.length === 0) {
+    if (!tokens || tokens.length === 0) {
       return res.json({
         success: false,
-        message: 'No FCM tokens found for this user. Please allow notifications first.'
+        message: 'No active FCM tokens found for this account. Please enable browser notifications first.'
       });
     }
 
+    const testId = `test_${userId}_${Date.now()}`;
     const result = await sendPushNotification(tokens, {
       title: '🔔 Test Notification',
-      body: 'Push notifications are working! This is a test from JalaDhaar.',
+      body: 'Push notifications are working! This is a test from JalaDhar.',
       data: {
         type: 'test',
+        id: testId,
         link: '/'
       }
     });
 
-    // Cleanup invalid tokens
-    if (result.invalidTokens.length > 0) {
+    // Cleanup invalid tokens if reported
+    if (result.invalidTokens && result.invalidTokens.length > 0) {
       await FCMToken.removeInvalidTokens(result.invalidTokens);
     }
 
@@ -154,7 +157,8 @@ router.post('/test', authenticate, async (req, res) => {
       data: {
         tokensFound: tokens.length,
         successCount: result.successCount,
-        failureCount: result.failureCount
+        failureCount: result.failureCount,
+        invalidTokensCleaned: result.invalidTokens?.length || 0
       }
     });
   } catch (error) {
