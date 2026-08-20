@@ -47,6 +47,8 @@ export default function VendorOngoingBookingCard({
     const navigate = useNavigate();
     const toast = useToast();
     const { socket } = useNotifications();
+    const gpsWatchIdRef = useRef(null);
+
     const [localOverride, setLocalOverride] = useState(null);
     const [showTimePickerModal, setShowTimePickerModal] = useState(false);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState("09:00 AM - 10:00 AM");
