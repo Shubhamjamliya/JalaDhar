@@ -34,10 +34,14 @@ export default function RescheduleModal({
     onClose,
     onReschedule,
     currentBooking,
-    isLoading = false
+    isLoading = false,
+    maxReschedules: propMaxReschedules
 }) {
+    const maxReschedules = propMaxReschedules !== undefined 
+        ? Number(propMaxReschedules)
+        : (currentBooking?.maxReschedules !== undefined ? Number(currentBooking.maxReschedules) : 2);
     const rescheduleCount = currentBooking?.rescheduleCount || 0;
-    const reschedulesRemaining = Math.max(0, 2 - rescheduleCount);
+    const reschedulesRemaining = Math.max(0, maxReschedules - rescheduleCount);
     const expert = currentBooking?.vendor;
 
     const expertScheduleText = useMemo(() => {
@@ -46,7 +50,8 @@ export default function RescheduleModal({
 
     const getMaxDate = () => {
         const d = new Date();
-        d.setDate(d.getDate() + 30);
+        const windowDays = currentBooking?.rescheduleWindowDays || 30;
+        d.setDate(d.getDate() + windowDays);
         return d.toISOString().split("T")[0];
     };
 
@@ -312,7 +317,7 @@ export default function RescheduleModal({
                             <span>Free Reschedules Remaining:</span>
                         </div>
                         <span className="px-2.5 py-0.5 rounded-full bg-[#0A84FF] text-white font-black text-[11px] shadow-2xs">
-                            {reschedulesRemaining} of 2 Left
+                            {reschedulesRemaining} of {maxReschedules} Left
                         </span>
                     </div>
 

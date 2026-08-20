@@ -383,6 +383,30 @@ const initializeDefaultSettings = async () => {
       description: 'Text explanation for refund processing timeframe',
       type: 'string',
       category: 'policy'
+    },
+    {
+      key: 'ALLOW_CUSTOMER_RESCHEDULE',
+      value: true,
+      label: 'Allow Customer Rescheduling',
+      description: 'Toggle voluntary survey rescheduling on or off for customers platform-wide',
+      type: 'boolean',
+      category: 'policy'
+    },
+    {
+      key: 'MAX_FREE_RESCHEDULES',
+      value: 2,
+      label: 'Max Free Reschedules',
+      description: 'Maximum number of voluntary reschedules permitted per booking',
+      type: 'number',
+      category: 'policy'
+    },
+    {
+      key: 'RESCHEDULE_WINDOW_DAYS',
+      value: 30,
+      label: 'Reschedule Window (Days)',
+      description: 'Maximum days in the future a booking can be rescheduled to',
+      type: 'number',
+      category: 'policy'
     }
   ];
 

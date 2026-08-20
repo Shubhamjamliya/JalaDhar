@@ -25,7 +25,9 @@ import {
     IoEyeOffOutline,
     IoPlayOutline,
     IoTrashOutline,
-    IoChevronDownOutline
+    IoChevronDownOutline,
+    IoCalendarOutline,
+    IoTimeOutline
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import {
@@ -70,11 +72,20 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
     const settingsTabs = [
         { id: "general", label: "General", icon: IoSettingsOutline },
+        { id: "reschedule", label: "Reschedule Policy", icon: IoCalendarOutline },
         { id: "pricing", label: "Pricing", icon: IoCashOutline },
         { id: "billing", label: "Billing Info", icon: IoBusinessOutline },
         { id: "languages", label: "Languages", icon: IoGlobeOutline },
         { id: "security", label: "Security", icon: IoLockClosedOutline },
     ];
+
+    // Reschedule Policy Settings State
+    const [rescheduleSettings, setRescheduleSettings] = useState({
+        ALLOW_CUSTOMER_RESCHEDULE: true,
+        MAX_FREE_RESCHEDULES: 2,
+        RESCHEDULE_WINDOW_DAYS: 30,
+    });
+    const [rescheduleLoading, setRescheduleLoading] = useState(false);
 
     // Pricing Settings State
     const [pricingSettings, setPricingSettings] = useState({
@@ -370,6 +381,34 @@ export default function AdminSettings({ defaultTab = "general" }) {
             setOtpData({ ...otpData, otp: "" });
         };
 
+        // Load reschedule policy settings
+        useEffect(() => {
+            const loadRescheduleSettings = async () => {
+                try {
+                    const response = await getAllSettings('policy');
+                    if (response.success && response.data?.settings) {
+                        const settingsObj = {};
+                        response.data.settings.forEach(setting => {
+                            if (setting.key === 'ALLOW_CUSTOMER_RESCHEDULE') {
+                                settingsObj[setting.key] = setting.value === true || setting.value === 'true' || setting.value === 1;
+                            } else if (setting.key === 'MAX_FREE_RESCHEDULES' || setting.key === 'RESCHEDULE_WINDOW_DAYS') {
+                                settingsObj[setting.key] = Number(setting.value);
+                            }
+                        });
+                        setRescheduleSettings(prev => ({
+                            ...prev,
+                            ...settingsObj
+                        }));
+                    }
+                } catch (err) {
+                    console.error('Error loading reschedule settings:', err);
+                }
+            };
+            if (activeTab === 'reschedule') {
+                loadRescheduleSettings();
+            }
+        }, [activeTab]);
+
         // Load pricing settings
         useEffect(() => {
             const loadPricingSettings = async () => {
@@ -607,6 +646,33 @@ export default function AdminSettings({ defaultTab = "general" }) {
             }
         };
 
+        // Handle reschedule settings update
+        const handleRescheduleSettingsUpdate = async (e) => {
+            e.preventDefault();
+            setError("");
+            setRescheduleLoading(true);
+
+            try {
+                const settings = [
+                    { key: 'ALLOW_CUSTOMER_RESCHEDULE', value: Boolean(rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE), category: 'policy' },
+                    { key: 'MAX_FREE_RESCHEDULES', value: Math.max(0, parseInt(rescheduleSettings.MAX_FREE_RESCHEDULES, 10) || 0), category: 'policy' },
+                    { key: 'RESCHEDULE_WINDOW_DAYS', value: Math.max(1, parseInt(rescheduleSettings.RESCHEDULE_WINDOW_DAYS, 10) || 30), category: 'policy' },
+                ];
+
+                const response = await updateMultipleSettings(settings);
+                if (response.success) {
+                    toast.showSuccess("Reschedule policy updated successfully!");
+                } else {
+                    setError(response.message || "Failed to update reschedule policy settings");
+                }
+            } catch (err) {
+                console.error("Update reschedule settings error:", err);
+                setError(err.response?.data?.message || "Failed to update reschedule policy. Please try again.");
+            } finally {
+                setRescheduleLoading(false);
+            }
+        };
+
         // Handle pricing settings update
         const handlePricingSettingsUpdate = async (e) => {
             e.preventDefault();
@@ -831,6 +897,218 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            )}
+
+                            {activeTab === "reschedule" && (
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                                        <div>
+                                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                                <IoCalendarOutline className="text-blue-600" />
+                                                <span>Customer Reschedule Policy</span>
+                                            </h2>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Configure platform-wide rules for voluntary survey date rescheduling by customers.
+                                            </p>
+                                        </div>
+                                        <span className={`px-3 py-1 text-xs font-black rounded-full border ${
+                                            rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                : "bg-red-50 text-red-700 border-red-200"
+                                        }`}>
+                                            {rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE ? "● Reschedule Active" : "○ Reschedule Disabled"}
+                                        </span>
+                                    </div>
+
+                                    <form onSubmit={handleRescheduleSettingsUpdate} className="space-y-6">
+                                        {/* Master Toggle Card */}
+                                        <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                                            rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE
+                                                ? "bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-white border-blue-200"
+                                                : "bg-slate-50 border-slate-200"
+                                        }`}>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="space-y-1">
+                                                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                                        <span>Allow Customer Rescheduling</span>
+                                                    </h3>
+                                                    <p className="text-xs text-gray-500 leading-relaxed">
+                                                        When enabled, customers can voluntarily move their survey date to an upcoming available day before the expert departs.
+                                                    </p>
+                                                </div>
+
+                                                {/* Toggle Switch */}
+                                                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE}
+                                                        onChange={(e) =>
+                                                            setRescheduleSettings(prev => ({
+                                                                ...prev,
+                                                                ALLOW_CUSTOMER_RESCHEDULE: e.target.checked
+                                                            }))
+                                                        }
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-12 h-6.5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0A84FF]"></div>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        {/* Configuration Fields */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Max Free Reschedules */}
+                                            <div className="p-4.5 bg-white rounded-xl border border-gray-200 space-y-3 shadow-2xs">
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-800 mb-1">
+                                                        Max Allowed Reschedules Per Booking
+                                                    </label>
+                                                    <p className="text-xs text-gray-500">
+                                                        Number of voluntary date changes permitted before rescheduling is locked.
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max="10"
+                                                        value={rescheduleSettings.MAX_FREE_RESCHEDULES}
+                                                        onChange={(e) =>
+                                                            setRescheduleSettings(prev => ({
+                                                                ...prev,
+                                                                MAX_FREE_RESCHEDULES: e.target.value
+                                                            }))
+                                                        }
+                                                        disabled={!rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE}
+                                                        className="w-24 px-3.5 py-2.5 text-sm font-bold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] disabled:bg-gray-100 disabled:text-gray-400"
+                                                    />
+                                                    <span className="text-xs font-semibold text-gray-600">
+                                                        reschedules per booking
+                                                    </span>
+                                                </div>
+
+                                                {/* Presets */}
+                                                <div className="flex items-center gap-1.5 pt-1">
+                                                    <span className="text-[11px] font-bold text-gray-400 mr-1">Presets:</span>
+                                                    {[0, 1, 2, 3, 5].map((count) => (
+                                                        <button
+                                                            key={count}
+                                                            type="button"
+                                                            disabled={!rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE}
+                                                            onClick={() =>
+                                                                setRescheduleSettings(prev => ({
+                                                                    ...prev,
+                                                                    MAX_FREE_RESCHEDULES: count
+                                                                }))
+                                                            }
+                                                            className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                                                                Number(rescheduleSettings.MAX_FREE_RESCHEDULES) === count
+                                                                    ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
+                                                                    : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 disabled:opacity-50"
+                                                            }`}
+                                                        >
+                                                            {count === 0 ? "0 (Disabled)" : `${count} Free`}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Reschedule Window Days */}
+                                            <div className="p-4.5 bg-white rounded-xl border border-gray-200 space-y-3 shadow-2xs">
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-800 mb-1">
+                                                        Reschedule Advance Window (Days)
+                                                    </label>
+                                                    <p className="text-xs text-gray-500">
+                                                        Maximum days into the future a customer is allowed to pick a new date.
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="180"
+                                                        value={rescheduleSettings.RESCHEDULE_WINDOW_DAYS}
+                                                        onChange={(e) =>
+                                                            setRescheduleSettings(prev => ({
+                                                                ...prev,
+                                                                RESCHEDULE_WINDOW_DAYS: e.target.value
+                                                            }))
+                                                        }
+                                                        disabled={!rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE}
+                                                        className="w-24 px-3.5 py-2.5 text-sm font-bold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] disabled:bg-gray-100 disabled:text-gray-400"
+                                                    />
+                                                    <span className="text-xs font-semibold text-gray-600">
+                                                        days in advance
+                                                    </span>
+                                                </div>
+
+                                                {/* Presets */}
+                                                <div className="flex items-center gap-1.5 pt-1">
+                                                    <span className="text-[11px] font-bold text-gray-400 mr-1">Presets:</span>
+                                                    {[15, 30, 45, 60, 90].map((days) => (
+                                                        <button
+                                                            key={days}
+                                                            type="button"
+                                                            disabled={!rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE}
+                                                            onClick={() =>
+                                                                setRescheduleSettings(prev => ({
+                                                                    ...prev,
+                                                                    RESCHEDULE_WINDOW_DAYS: days
+                                                                }))
+                                                            }
+                                                            className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                                                                Number(rescheduleSettings.RESCHEDULE_WINDOW_DAYS) === days
+                                                                    ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
+                                                                    : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 disabled:opacity-50"
+                                                            }`}
+                                                        >
+                                                            {days}d
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Customer Experience Preview Card */}
+                                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+                                            <span className="font-bold text-slate-700 uppercase tracking-wider block text-[10.5px]">
+                                                Customer App Preview:
+                                            </span>
+                                            {rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE && Number(rescheduleSettings.MAX_FREE_RESCHEDULES) > 0 ? (
+                                                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50/80 border border-blue-200 text-blue-950 font-bold">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <IoCalendarOutline className="text-[#0A84FF] text-base" />
+                                                        <span>Free Reschedules Remaining:</span>
+                                                    </span>
+                                                    <span className="px-2.5 py-0.5 rounded-full bg-[#0A84FF] text-white text-[11px] font-black">
+                                                        {rescheduleSettings.MAX_FREE_RESCHEDULES} of {rescheduleSettings.MAX_FREE_RESCHEDULES} Left
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 font-semibold">
+                                                    ⚠️ Rescheduling is locked. Customers will see: "Rescheduling is currently disabled by platform policy."
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Submit Button */}
+                                        <div className="flex justify-end pt-2">
+                                            <button
+                                                type="submit"
+                                                disabled={rescheduleLoading}
+                                                className="px-6 py-3 bg-[#0A84FF] hover:bg-[#005BBB] text-white font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                            >
+                                                {rescheduleLoading && (
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                )}
+                                                {rescheduleLoading ? "Saving Policy..." : "Save Reschedule Policy"}
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                             )}
 

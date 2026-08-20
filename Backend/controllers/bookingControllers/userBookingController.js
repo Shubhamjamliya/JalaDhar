@@ -2224,6 +2224,28 @@ const rescheduleBooking = async (req, res) => {
       });
     }
 
+    // Fetch dynamic reschedule policy settings
+    const rescheduleSettings = await getSettings([
+      'ALLOW_CUSTOMER_RESCHEDULE',
+      'MAX_FREE_RESCHEDULES',
+      'RESCHEDULE_WINDOW_DAYS'
+    ]);
+
+    const allowReschedule = rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE !== false && rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE !== 'false';
+    const maxReschedules = typeof rescheduleSettings.MAX_FREE_RESCHEDULES === 'number'
+      ? rescheduleSettings.MAX_FREE_RESCHEDULES
+      : (parseInt(rescheduleSettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(rescheduleSettings.MAX_FREE_RESCHEDULES, 10) : 2);
+    const windowDays = typeof rescheduleSettings.RESCHEDULE_WINDOW_DAYS === 'number'
+      ? rescheduleSettings.RESCHEDULE_WINDOW_DAYS
+      : (parseInt(rescheduleSettings.RESCHEDULE_WINDOW_DAYS, 10) || 30);
+
+    if (!allowReschedule) {
+      return res.status(403).json({
+        success: false,
+        message: 'Voluntary rescheduling is currently disabled by platform policy. Please contact customer support for assistance.'
+      });
+    }
+
     // Check date is not in the past
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -2237,13 +2259,13 @@ const rescheduleBooking = async (req, res) => {
       });
     }
 
-    // Max 30 days into the future
+    // Dynamic days into the future check
     const maxFutureDate = new Date();
-    maxFutureDate.setDate(maxFutureDate.getDate() + 30);
+    maxFutureDate.setDate(maxFutureDate.getDate() + windowDays);
     if (checkDate > maxFutureDate) {
       return res.status(400).json({
         success: false,
-        message: 'Rescheduled date must be within the next 30 days'
+        message: `Rescheduled date must be within the next ${windowDays} days`
       });
     }
 
@@ -2274,12 +2296,12 @@ const rescheduleBooking = async (req, res) => {
       });
     }
 
-    // Check max reschedules limit (Max 2 free reschedules)
+    // Check max reschedules limit dynamically
     const currentCount = booking.rescheduleCount || 0;
-    if (currentCount >= 2) {
+    if (currentCount >= maxReschedules) {
       return res.status(400).json({
         success: false,
-        message: 'Maximum limit of 2 reschedules has been reached for this booking. Please contact customer support for further assistance.'
+        message: `Maximum limit of ${maxReschedules} reschedule${maxReschedules === 1 ? '' : 's'} has been reached for this booking. Please contact customer support for further assistance.`
       });
     }
 
@@ -2290,6 +2312,10 @@ const rescheduleBooking = async (req, res) => {
       const rawDays = booking.vendor.workingDays;
       if (Array.isArray(rawDays)) {
         activeDays = rawDays;
+      } else if (typeof rawDays === 'object') {
+        activeDays = Object.entries(rawDays)
+          .filter(([, active]) => Boolean(active))
+          .map(([day]) => day);
       } else if (typeof rawDays === 'string') {
         const trimmed = rawDays.trim().toLowerCase();
         if (trimmed === 'all days' || trimmed === 'everyday' || trimmed === 'all' || trimmed === 'monday - sunday' || trimmed === 'monday to sunday') {
@@ -2305,20 +2331,24 @@ const rescheduleBooking = async (req, res) => {
         }
       }
 
-      if (activeDays.length > 0 && !activeDays.some(d => d.toLowerCase() === dayOfWeek.toLowerCase())) {
-        return res.status(400).json({
-          success: false,
-          message: `The assigned expert is not available on ${dayOfWeek}s. Active schedule: ${activeDays.join(', ')}.`
-        });
+      if (activeDays.length > 0) {
+        const isAvailable = activeDays.some(d => d.toLowerCase() === dayOfWeek.toLowerCase());
+        if (!isAvailable) {
+          return res.status(400).json({
+            success: false,
+            message: `The assigned expert is not available on ${dayOfWeek}s. Please select an available working day.`
+          });
+        }
       }
     }
 
-    const previousDate = booking.scheduledDate || new Date();
-    const previousTime = booking.scheduledTime || 'Time TBD by Expert';
-    const newFormattedTime = scheduledTime || 'Time TBD by Expert';
+    // Record previous schedule in history
+    const previousDate = booking.scheduledDate;
+    const previousTime = booking.scheduledTime;
 
-    // Update booking schedule
     booking.scheduledDate = requestedDate;
+    // Reschedule defaults to expert time confirmation (TBD)
+    const newFormattedTime = "Time TBD by Expert";
     booking.scheduledTime = newFormattedTime;
     booking.rescheduleCount = currentCount + 1;
 
@@ -2359,7 +2389,8 @@ const rescheduleBooking = async (req, res) => {
         scheduledDate: booking.scheduledDate,
         scheduledTime: booking.scheduledTime,
         rescheduleCount: booking.rescheduleCount,
-        reschedulesRemaining: Math.max(0, 2 - booking.rescheduleCount),
+        reschedulesRemaining: Math.max(0, maxReschedules - booking.rescheduleCount),
+        maxReschedules: maxReschedules,
         rescheduleHistory: booking.rescheduleHistory,
         status: booking.status,
         booking: {
@@ -2419,7 +2450,7 @@ const rescheduleBooking = async (req, res) => {
       recipientModel: 'User',
       type: 'BOOKING_RESCHEDULED',
       title: 'Survey Rescheduled Successfully ✅',
-      message: `Your groundwater survey (#JALA${shortBookingId}) has been successfully moved to ${formattedNewDate} (${newFormattedTime}). (Reschedule ${currentCount + 1} of 2 used)`,
+      message: `Your groundwater survey (#JALA${shortBookingId}) has been successfully moved to ${formattedNewDate} (${newFormattedTime}). (Reschedule ${currentCount + 1} of ${maxReschedules} used)`,
       relatedEntity: {
         entityType: 'Booking',
         entityId: booking._id
@@ -2433,13 +2464,14 @@ const rescheduleBooking = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Survey appointment rescheduled to ${formattedNewDate} successfully. (${2 - (currentCount + 1)} reschedules remaining)`,
+      message: `Survey appointment rescheduled to ${formattedNewDate} successfully. (${Math.max(0, maxReschedules - (currentCount + 1))} reschedules remaining)`,
       data: {
         bookingId: booking._id,
         scheduledDate: booking.scheduledDate,
         scheduledTime: booking.scheduledTime,
         rescheduleCount: booking.rescheduleCount,
-        reschedulesRemaining: Math.max(0, 2 - booking.rescheduleCount),
+        reschedulesRemaining: Math.max(0, maxReschedules - booking.rescheduleCount),
+        maxReschedules: maxReschedules,
         rescheduleHistory: booking.rescheduleHistory
       }
     });
