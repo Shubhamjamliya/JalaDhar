@@ -1911,12 +1911,14 @@ const getAvailableReplacementVendors = async (req, res) => {
       excludedVendors.push(booking.cancellationDetails.cancellingVendor);
     }
 
-    // Query active and approved vendors
+    // Query active and approved vendors (excluding test accounts)
     const Vendor = require('../../models/Vendor');
     const query = {
       _id: { $nin: excludedVendors },
       isApproved: true,
-      isActive: true
+      isActive: true,
+      name: { $not: /^test\b/i },
+      email: { $not: /@example\.com$/i }
     };
 
     // Filter by district if available
@@ -1940,7 +1942,9 @@ const getAvailableReplacementVendors = async (req, res) => {
       const fallbackQuery = {
         _id: { $nin: excludedVendors },
         isApproved: true,
-        isActive: true
+        isActive: true,
+        name: { $not: /^test\b/i },
+        email: { $not: /@example\.com$/i }
       };
       vendorsList = await Vendor.find(fallbackQuery)
         .select('name expertId designation email phone rating profilePicture experience workingDays workingHours specialization address machineType aboutExpert')
@@ -2324,12 +2328,15 @@ const getAvailableRescheduleExperts = async (req, res) => {
 
     // Find other available verified experts
     const Vendor = require('../../models/Vendor');
-    const excludedVendors = [booking.vendor?._id].filter(Boolean);
+    const currentVendorId = booking.vendor ? (booking.vendor._id || booking.vendor) : null;
+    const excludedVendors = [currentVendorId].filter(Boolean);
 
     const query = {
       _id: { $nin: excludedVendors },
       isApproved: true,
-      isActive: true
+      isActive: true,
+      name: { $not: /^test\b/i },
+      email: { $not: /@example\.com$/i }
     };
 
     // Filter by district if available
@@ -2352,7 +2359,9 @@ const getAvailableRescheduleExperts = async (req, res) => {
       candidateVendors = await Vendor.find({
         _id: { $nin: excludedVendors },
         isApproved: true,
-        isActive: true
+        isActive: true,
+        name: { $not: /^test\b/i },
+        email: { $not: /@example\.com$/i }
       })
         .select('name expertId designation email phone rating profilePicture experience workingDays workingHours specialization address machineType aboutExpert')
         .sort({ 'rating.averageRating': -1, surveysCompleted: -1 })
@@ -2565,9 +2574,8 @@ const rescheduleBooking = async (req, res) => {
     booking.scheduledTime = newFormattedTime;
     booking.rescheduleCount = currentCount + 1;
 
-    if (!booking.rescheduleHistory) {
-      booking.rescheduleHistory = [];
-    }
+    // Set vendor as ObjectId for clean save
+    booking.vendor = isReassigned ? newVendor._id : previousVendorId;
 
     booking.rescheduleHistory.push({
       requestedBy: 'USER',

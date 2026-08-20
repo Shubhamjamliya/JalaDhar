@@ -255,8 +255,17 @@ export default function RescheduleModal({
     ];
 
     const currentExpertId = expert?._id || expert?.id;
-    const isKeepingCurrentExpert = selectedVendorId === currentExpertId;
-    const selectedReplacementExpert = availableAlternativeExperts.find(v => v._id === selectedVendorId);
+    const currentExpertIdStr = (currentExpertId?._id || currentExpertId || "")?.toString();
+
+    const filteredAlternativeExperts = useMemo(() => {
+        return (availableAlternativeExperts || []).filter(alt => {
+            const altId = (alt?._id || alt?.id || "")?.toString();
+            return altId && altId !== currentExpertIdStr;
+        });
+    }, [availableAlternativeExperts, currentExpertIdStr]);
+
+    const isKeepingCurrentExpert = !selectedVendorId || selectedVendorId.toString() === currentExpertIdStr;
+    const selectedReplacementExpert = filteredAlternativeExperts.find(v => (v._id || v.id)?.toString() === selectedVendorId?.toString());
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -575,7 +584,7 @@ export default function RescheduleModal({
                                         Switch to another verified expert
                                     </span>
                                     <span className="px-2 py-0.5 rounded-full bg-blue-100 text-[#0A84FF] font-black text-[10px]">
-                                        {availableAlternativeExperts.length} Available
+                                        {filteredAlternativeExperts.length} Available
                                     </span>
                                 </div>
                                 <IoChevronDownOutline className={`text-slate-400 text-xs transition-transform duration-200 ${
@@ -586,12 +595,12 @@ export default function RescheduleModal({
                             {/* Collapsible List of Alternative Experts */}
                             {showAlternativeExperts && (
                                 <div className="p-2 pt-0 space-y-2 border-t border-slate-200/60 animate-in fade-in">
-                                    {availableAlternativeExperts.length === 0 ? (
+                                    {filteredAlternativeExperts.length === 0 ? (
                                         <div className="p-3 text-center text-xs text-slate-500 font-medium bg-white rounded-lg border border-slate-100">
-                                            No alternative experts found for this specific date in your district.
+                                            No other alternative experts available on this specific date in your district.
                                         </div>
                                     ) : (
-                                        availableAlternativeExperts.map((altExpert) => {
+                                        filteredAlternativeExperts.map((altExpert) => {
                                             const isSelected = selectedVendorId === altExpert._id;
                                             const ratingVal = typeof altExpert.rating?.averageRating === 'number' 
                                                 ? altExpert.rating.averageRating.toFixed(1) 

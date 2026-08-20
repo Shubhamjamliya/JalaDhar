@@ -684,6 +684,18 @@ const bookingSchema = new mongoose.Schema({
       type: String,
       trim: true
     },
+    previousVendor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Vendor'
+    },
+    newVendor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Vendor'
+    },
+    vendorReassigned: {
+      type: Boolean,
+      default: false
+    },
     status: {
       type: String,
       enum: ['APPLIED', 'PENDING_CONFIRMATION', 'ACCEPTED', 'REJECTED', 'CANCELLED'],
