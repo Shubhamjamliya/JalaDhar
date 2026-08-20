@@ -233,47 +233,6 @@ export const NotificationProvider = ({ children }) => {
     };
   }, [isAuthenticated, userRole]); // Re-run if auth state or role changes
 
-  // Initialize FCM Foreground Handler
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    let cleanup = null;
-    let isMounted = true;
-
-    setupForegroundHandler((payload) => {
-      console.log('[FCM] Foreground push message received:', payload);
-      // Refresh notifications list to ensure state is up-to-date
-      refreshNotifications();
-    }).then((unsubscribe) => {
-      if (isMounted) {
-        cleanup = unsubscribe;
-      } else if (unsubscribe && typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      if (cleanup && typeof cleanup === 'function') {
-        cleanup();
-      }
-    };
-  }, [isAuthenticated, refreshNotifications]);
-
-
-  // Load notifications on mount and when user changes
-  useEffect(() => {
-    const isPublicAuthRoute = pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
-
-    if (isAuthenticated && currentUser && !isPublicAuthRoute) {
-      loadNotifications();
-      loadUnreadCount();
-    } else {
-      setNotifications([]);
-      setUnreadCount(0);
-    }
-  }, [isAuthenticated, currentUser, pathname]);
-
   // Load notifications
   const loadNotifications = useCallback(async () => {
     try {
@@ -300,6 +259,12 @@ export const NotificationProvider = ({ children }) => {
       console.error('Load unread count error:', error);
     }
   }, []);
+
+  // Refresh notifications
+  const refreshNotifications = useCallback(() => {
+    loadNotifications();
+    loadUnreadCount();
+  }, [loadNotifications, loadUnreadCount]);
 
   // Mark notification as read
   const markNotificationAsRead = useCallback(async (notificationId) => {
@@ -366,11 +331,45 @@ export const NotificationProvider = ({ children }) => {
     }
   }, []);
 
-  // Refresh notifications
-  const refreshNotifications = useCallback(() => {
-    loadNotifications();
-    loadUnreadCount();
-  }, [loadNotifications, loadUnreadCount]);
+  // Initialize FCM Foreground Handler
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let cleanup = null;
+    let isMounted = true;
+
+    setupForegroundHandler((payload) => {
+      console.log('[FCM] Foreground push message received:', payload);
+      // Refresh notifications list to ensure state is up-to-date
+      refreshNotifications();
+    }).then((unsubscribe) => {
+      if (isMounted) {
+        cleanup = unsubscribe;
+      } else if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      if (cleanup && typeof cleanup === 'function') {
+        cleanup();
+      }
+    };
+  }, [isAuthenticated, refreshNotifications]);
+
+  // Load notifications on mount and when user changes
+  useEffect(() => {
+    const isPublicAuthRoute = pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
+
+    if (isAuthenticated && currentUser && !isPublicAuthRoute) {
+      loadNotifications();
+      loadUnreadCount();
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [isAuthenticated, currentUser, pathname, loadNotifications, loadUnreadCount]);
 
   const value = {
     notifications,
