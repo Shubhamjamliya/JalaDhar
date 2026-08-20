@@ -886,12 +886,22 @@ const uploadBorewellResult = async (req, res) => {
       }
     }
 
+    // Auto-assign to available Quality Control Admin using Least-Active-Load engine
+    const { autoAssignRequest } = require('../../services/workloadDistributionService');
+    const assignment = await autoAssignRequest({
+      department: 'QUALITY_CONTROL',
+      statusAtAssignment: 'PENDING',
+      notes: `Auto-assigned borewell ${status} result verification`
+    });
+
     // Update borewell result
     booking.borewellResult = {
       status,
       images: borewellImages,
       uploadedAt: new Date(),
-      uploadedBy: userId
+      uploadedBy: userId,
+      assignedTo: assignment.assignedTo || null,
+      assignmentHistory: assignment.auditRecord ? [assignment.auditRecord] : []
     };
 
     // When user uploads borewell result:

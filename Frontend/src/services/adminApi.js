@@ -474,6 +474,17 @@ export const approveBorewellResult = async (bookingId, data) => {
 };
 
 /**
+ * Assign / Reassign Borewell QA review to a Quality Control Admin
+ * @param {string} bookingId
+ * @param {Object} data - { assignedTo, reason, notes }
+ * @returns {Promise}
+ */
+export const assignBorewellQAApi = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/assign-borewell-qa`, data);
+  return response.data;
+};
+
+/**
  * Get bookings with pending user refunds (failed borewell)
  * @param {Object} params - { page, limit }
  * @returns {Promise}

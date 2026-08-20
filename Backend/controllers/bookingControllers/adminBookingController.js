@@ -145,6 +145,12 @@ const approveBorewellResult = async (req, res) => {
     // Update booking
     booking.borewellResult.approvedAt = new Date();
     booking.borewellResult.approvedBy = adminId;
+
+    // Decrement assigned Quality Control Admin active workload
+    if (booking.borewellResult?.assignedTo) {
+      const { decrementActiveWorkload } = require('../../services/workloadDistributionService');
+      await decrementActiveWorkload(booking.borewellResult.assignedTo);
+    }
     // When admin approves borewell result:
     // - SUCCESS: User is done (no refund/settlement needed for user). Mark as COMPLETED for user.
     // - FAILED: User waiting for final settlement/refund. Mark as ADMIN_APPROVED.
@@ -1476,6 +1482,7 @@ const getBorewellPendingApprovals = async (req, res) => {
         .populate('user', 'name email phone')
         .populate('vendor', 'name email phone')
         .populate('service', 'name price')
+        .populate('borewellResult.assignedTo', 'name email role')
         .sort({ 'borewellResult.uploadedAt': -1 })
         .skip(skip)
         .limit(parseInt(limit)),
@@ -3027,6 +3034,85 @@ const resolveInfeasibleBooking = async (req, res) => {
   }
 };
 
+/**
+ * Reassign Borewell QA Review to a Quality Control Admin (Super Admin only)
+ */
+const assignBorewellQA = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { assignedTo, reason, notes } = req.body;
+    const adminId = req.userId;
+    const adminUser = req.user;
+
+    const Admin = require('../../models/Admin');
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    const newAdmin = await Admin.findById(assignedTo || adminId);
+    if (!newAdmin || !newAdmin.isActive) {
+      return res.status(404).json({
+        success: false,
+        message: 'Target QC admin not found or is inactive'
+      });
+    }
+
+    const oldAdminId = booking.borewellResult?.assignedTo;
+
+    const auditRecord = {
+      assignedTo: newAdmin._id,
+      assignedToName: newAdmin.name,
+      assignedToRole: newAdmin.role,
+      assignedAt: new Date(),
+      reassignedBy: adminUser?._id || adminId,
+      reassignedByName: adminUser?.name || 'Super Admin',
+      reassignmentReason: reason || 'Manual QC reassignment by Super Admin',
+      statusAtAssignment: booking.borewellResult?.status || 'PENDING',
+      notes: notes || ''
+    };
+
+    if (!booking.borewellResult) {
+      booking.borewellResult = {};
+    }
+    booking.borewellResult.assignedTo = newAdmin._id;
+    if (!booking.borewellResult.assignmentHistory) {
+      booking.borewellResult.assignmentHistory = [];
+    }
+    booking.borewellResult.assignmentHistory.push(auditRecord);
+    await booking.save();
+
+    // Adjust load counters
+    const { decrementActiveWorkload } = require('../../services/workloadDistributionService');
+    if (oldAdminId && oldAdminId.toString() !== newAdmin._id.toString()) {
+      await decrementActiveWorkload(oldAdminId);
+    }
+    await Admin.findByIdAndUpdate(newAdmin._id, {
+      $inc: { activeTicketsCount: 1 },
+      $set: { lastAssignedAt: new Date() }
+    });
+
+    res.json({
+      success: true,
+      message: `Borewell QA review reassigned to ${newAdmin.name}`,
+      data: {
+        booking,
+        auditRecord
+      }
+    });
+  } catch (error) {
+    console.error('Assign borewell QA error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to assign borewell QA review',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllBookings,
   getPendingFirstPaymentReleases,
@@ -3054,6 +3140,7 @@ module.exports = {
   processNewFinalSettlement,
   processUserFinalSettlement,
   getBookingDetails,
-  resolveInfeasibleBooking
+  resolveInfeasibleBooking,
+  assignBorewellQA
 };
 

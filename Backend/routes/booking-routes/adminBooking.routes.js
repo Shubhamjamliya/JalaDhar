@@ -28,10 +28,11 @@ const {
   processNewFinalSettlement,
   processUserFinalSettlement,
   getBookingDetails,
-  resolveInfeasibleBooking
+  resolveInfeasibleBooking,
+  assignBorewellQA
 } = require('../../controllers/bookingControllers/adminBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin } = require('../../middleware/roleMiddleware');
+const { isAdmin, isSuperAdmin } = require('../../middleware/roleMiddleware');
 
 // Validation rules
 const approveBorewellResultValidation = [
@@ -64,6 +65,7 @@ router.get('/bookings/report-pending', authenticate, isAdmin, getReportPendingAp
 router.patch('/bookings/:bookingId/approve-report', authenticate, isAdmin, approveReport);
 router.patch('/bookings/:bookingId/reject-report', authenticate, isAdmin, rejectTravelChargesValidation, rejectReport);
 router.get('/bookings/borewell-pending', authenticate, isAdmin, getBorewellPendingApprovals);
+router.patch('/bookings/:bookingId/assign-borewell-qa', authenticate, isSuperAdmin, assignBorewellQA);
 router.get('/bookings/pending-user-refunds', authenticate, isAdmin, getPendingUserRefunds);
 router.patch('/bookings/:bookingId/user-refund', authenticate, isAdmin, processUserRefund);
 router.patch('/bookings/:bookingId/final-settlement', authenticate, isAdmin, processFinalSettlement);

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../utils/constants');
+const assignmentHistoryRecordSchema = require('./schemas/assignmentHistorySchema');
 
 const bookingSchema = new mongoose.Schema({
   user: {
@@ -501,6 +502,14 @@ const bookingSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
+    // Quality Control Admin assigned for review
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
+      default: null
+    },
+    // Immutable Audit Trail for Quality Control
+    assignmentHistory: [assignmentHistoryRecordSchema],
     approvedAt: Date,
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,

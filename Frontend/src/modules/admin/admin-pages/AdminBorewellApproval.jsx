@@ -10,19 +10,24 @@ import {
     IoCalendarOutline,
     IoSearchOutline,
     IoRefreshOutline,
+    IoSwapHorizontalOutline
 } from "react-icons/io5";
-import { getBorewellPendingApprovals, approveBorewellResult, processFinalSettlement } from "../../../services/adminApi";
+import { getBorewellPendingApprovals, approveBorewellResult, processFinalSettlement, assignBorewellQAApi, getAllAdmins } from "../../../services/adminApi";
+import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useTheme } from "../../../contexts/ThemeContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
+import AssignmentHistoryModal from "../admin-component/AssignmentHistoryModal";
 
 export default function AdminBorewellApproval() {
     const { theme, themeColors } = useTheme();
     const currentTheme = themeColors[theme] || themeColors.default;
     const toast = useToast();
+    const { admin: currentAdmin } = useAdminAuth();
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("pending"); // pending, approved, completed
     const [bookings, setBookings] = useState([]);
+    const [availableQCAdmins, setAvailableQCAdmins] = useState([]);
     const [pagination, setPagination] = useState({
         currentPage: 1,
         totalPages: 1,
@@ -32,15 +37,55 @@ export default function AdminBorewellApproval() {
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [showSettlementModal, setShowSettlementModal] = useState(false);
+    const [showAssignmentModal, setShowAssignmentModal] = useState(false);
     const [settlementData, setSettlementData] = useState({
         incentive: 0,
         penalty: 0,
         refundAmount: 0,
     });
 
+    const isSuperAdmin = currentAdmin?.role === "SUPER_ADMIN";
+
     useEffect(() => {
         loadBookings();
+        loadAvailableQCAdmins();
     }, [activeTab, pagination.currentPage]);
+
+    const loadAvailableQCAdmins = async () => {
+        try {
+            const res = await getAllAdmins();
+            if (res.success && res.data?.admins) {
+                const qcAdmins = res.data.admins.filter(a =>
+                    a.isActive && ['QC_ADMIN', 'SUPER_ADMIN'].includes(a.role)
+                );
+                setAvailableQCAdmins(qcAdmins);
+            }
+        } catch (err) {
+            console.error("Failed to load QC admins:", err);
+        }
+    };
+
+    const handleReassignBorewellQA = async (newAdminId, reason, notesText) => {
+        if (!selectedBooking) return;
+        try {
+            const res = await assignBorewellQAApi(selectedBooking._id, {
+                assignedTo: newAdminId,
+                reason,
+                notes: notesText
+            });
+            if (res.success) {
+                toast.showSuccess("Borewell QA review reassigned successfully!");
+                setShowAssignmentModal(false);
+                setSelectedBooking(null);
+                await loadBookings();
+            } else {
+                toast.showError(res.message || "Failed to reassign QA review");
+            }
+        } catch (err) {
+            console.error("Reassign error:", err);
+            toast.showError("Failed to reassign QA review");
+        }
+    };
 
     const loadBookings = async () => {
         try {
@@ -269,6 +314,19 @@ export default function AdminBorewellApproval() {
                                                 Approved
                                             </span>
                                         )}
+                                        {/* Assigned QC Admin Chip */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedBooking(booking);
+                                                setShowAssignmentModal(true);
+                                            }}
+                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100 transition-colors cursor-pointer"
+                                        >
+                                            <IoPersonOutline className="text-xs" />
+                                            QC: {booking.borewellResult?.assignedTo?.name || "Auto-Assigned"}
+                                            {isSuperAdmin && <IoSwapHorizontalOutline className="text-xs ml-1 text-purple-500" />}
+                                        </button>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                         <div>
@@ -592,6 +650,21 @@ export default function AdminBorewellApproval() {
                     </div>
                 </div>
             )}
+
+            {/* Assignment History Modal */}
+            <AssignmentHistoryModal
+                isOpen={showAssignmentModal}
+                onClose={() => {
+                    setShowAssignmentModal(false);
+                    setSelectedBooking(null);
+                }}
+                entityTitle={`Borewell QA #${selectedBooking?._id?.toString().slice(-8)}`}
+                assignedTo={selectedBooking?.borewellResult?.assignedTo}
+                assignmentHistory={selectedBooking?.borewellResult?.assignmentHistory || []}
+                availableAdmins={availableQCAdmins}
+                onReassign={handleReassignBorewellQA}
+                isSuperAdmin={isSuperAdmin}
+            />
         </div>
     );
 }
