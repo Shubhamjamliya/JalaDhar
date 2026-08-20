@@ -214,6 +214,17 @@ export const rejectVendor = async (vendorId, rejectionReason) => {
 };
 
 /**
+ * Assign / Reassign vendor KYC to an Expert Verification Admin
+ * @param {string} vendorId
+ * @param {Object} data - { assignedTo, reason, notes }
+ * @returns {Promise}
+ */
+export const assignVendorKYCApi = async (vendorId, data) => {
+  const response = await api.patch(`/admin/vendors/${vendorId}/assign`, data);
+  return response.data;
+};
+
+/**
  * Deactivate vendor
  * @param {string} vendorId
  * @returns {Promise}

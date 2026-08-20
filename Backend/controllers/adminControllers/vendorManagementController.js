@@ -49,6 +49,7 @@ const getAllVendors = async (req, res) => {
       Vendor.find(query)
         .select('-password -emailVerificationOTP -emailVerificationOTPExpiry')
         .populate('approvedBy', 'name email')
+        .populate('assignedTo', 'name email role')
         .sort(sort)
         .skip(skip)
         .limit(parseInt(limit)),
@@ -96,6 +97,7 @@ const getPendingVendors = async (req, res) => {
     const [vendors, total] = await Promise.all([
       Vendor.find(query)
         .select('-password -emailVerificationOTP -emailVerificationOTPExpiry')
+        .populate('assignedTo', 'name email role')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit)),
@@ -321,6 +323,12 @@ const approveVendor = async (req, res) => {
     vendor.rejectionReason = null;
     await vendor.save();
 
+    // Decrement assigned admin's active KYC workload
+    if (vendor.assignedTo) {
+      const { decrementActiveWorkload } = require('../../services/workloadDistributionService');
+      await decrementActiveWorkload(vendor.assignedTo);
+    }
+
     // Approve all pending services
     await Service.updateMany(
       { vendor: vendor._id, status: 'PENDING' },
@@ -440,6 +448,12 @@ const rejectVendor = async (req, res) => {
     vendor.approvedBy = null;
     vendor.approvedAt = null;
     await vendor.save();
+
+    // Decrement assigned admin's active KYC workload
+    if (vendor.assignedTo) {
+      const { decrementActiveWorkload } = require('../../services/workloadDistributionService');
+      await decrementActiveWorkload(vendor.assignedTo);
+    }
 
     // Send rejection email
     await sendVendorRejectionEmail({
@@ -599,6 +613,46 @@ const activateVendor = async (req, res) => {
   }
 };
 
+/**
+ * Reassign Vendor KYC to an Expert Verification Admin (Super Admin only)
+ */
+const assignVendorKYC = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    const { assignedTo, reason, notes } = req.body;
+    const adminId = req.userId;
+    const adminUser = req.user;
+
+    const targetAdminId = assignedTo || adminId;
+    const { manualReassign } = require('../../services/workloadDistributionService');
+
+    const result = await manualReassign({
+      model: Vendor,
+      entityId: vendorId,
+      newAdminId: targetAdminId,
+      reassignedByAdmin: adminUser || { _id: adminId, name: 'Admin' },
+      reason: reason || 'Manual KYC reassignment by Super Admin',
+      notes: notes || ''
+    });
+
+    res.json({
+      success: true,
+      message: result.message,
+      data: {
+        vendor: result.entity,
+        auditRecord: result.auditRecord
+      }
+    });
+  } catch (error) {
+    console.error('Assign vendor KYC error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to assign vendor KYC',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllVendors,
   getPendingVendors,
@@ -606,6 +660,7 @@ module.exports = {
   approveVendor,
   rejectVendor,
   deactivateVendor,
-  activateVendor
+  activateVendor,
+  assignVendorKYC
 };
 

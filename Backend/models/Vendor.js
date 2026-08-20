@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const assignmentHistoryRecordSchema = require('./schemas/assignmentHistorySchema');
 
 const vendorSchema = new mongoose.Schema({
   name: {
@@ -168,6 +169,14 @@ const vendorSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  // Admin assigned for KYC and verification review
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin',
+    default: null
+  },
+  // Immutable Audit Trail for Expert KYC Verification
+  assignmentHistory: [assignmentHistoryRecordSchema],
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin',

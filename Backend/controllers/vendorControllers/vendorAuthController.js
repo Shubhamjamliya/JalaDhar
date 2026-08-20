@@ -540,6 +540,19 @@ const register = async (req, res) => {
       vendorData.profilePicture = documents.profilePicture.url;
     }
 
+    // Auto-assign to available Expert Verification Admin using Least-Active-Load engine
+    const { autoAssignRequest } = require('../../services/workloadDistributionService');
+    const assignment = await autoAssignRequest({
+      department: 'VERIFICATION',
+      statusAtAssignment: 'APPLICATION_SUBMITTED',
+      notes: 'Auto-assigned upon expert KYC application'
+    });
+
+    if (assignment.assignedTo) {
+      vendorData.assignedTo = assignment.assignedTo;
+      vendorData.assignmentHistory = [assignment.auditRecord];
+    }
+
     const vendor = await Vendor.create(vendorData);
 
     // Create bank details in separate collection

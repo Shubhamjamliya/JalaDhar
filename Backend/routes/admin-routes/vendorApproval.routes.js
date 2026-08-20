@@ -8,10 +8,11 @@ const {
   approveVendor,
   rejectVendor,
   deactivateVendor,
-  activateVendor
+  activateVendor,
+  assignVendorKYC
 } = require('../../controllers/adminControllers/vendorManagementController');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin } = require('../../middleware/roleMiddleware');
+const { isAdmin, isSuperAdmin } = require('../../middleware/roleMiddleware');
 
 // Validation rules
 const rejectVendorValidation = [
@@ -32,6 +33,9 @@ router.get('/vendors/pending', authenticate, isAdmin, getPendingVendors);
 
 // Get vendor details
 router.get('/vendors/:vendorId', authenticate, isAdmin, getVendorDetails);
+
+// Assign / Reassign vendor KYC
+router.patch('/vendors/:vendorId/assign', authenticate, isSuperAdmin, assignVendorKYC);
 
 // Approve vendor
 router.patch('/vendors/:vendorId/approve', authenticate, isAdmin, approveVendor);
