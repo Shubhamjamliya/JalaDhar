@@ -1086,9 +1086,18 @@ const markVisitedAndUploadReport = async (req, res) => {
     }
 
     // 4. Update booking with report data (preserve existing media on edits if not replaced)
-    const existingImages = booking.report?.images || [];
+    const existingImages = Array.isArray(booking.report?.images) ? booking.report.images : [];
     const finalImages = reportImages.length > 0 ? reportImages : existingImages;
-    const finalReportFile = reportFile || booking.report?.reportFile || null;
+    let finalReportFile = null;
+    if (reportFile && typeof reportFile === 'object' && reportFile.url) {
+      finalReportFile = reportFile;
+    } else if (booking.report?.reportFile && typeof booking.report.reportFile === 'object' && booking.report.reportFile.url) {
+      finalReportFile = booking.report.reportFile;
+    }
+
+    // Clean reportData to prevent any invalid subdocument casting
+    delete reportData.reportFile;
+    delete reportData.images;
 
     const isWaterFound = typeof reportData.waterFound === 'boolean'
       ? reportData.waterFound
@@ -1137,13 +1146,18 @@ const markVisitedAndUploadReport = async (req, res) => {
       ...reportData,
       waterFound: isWaterFound,
       images: finalImages,
-      reportFile: finalReportFile,
       uploadedAt: new Date(),
       uploadedBy: vendorId,
       rejectedAt: null,
       rejectedBy: null,
       rejectionReason: null
     };
+
+    if (finalReportFile) {
+      booking.report.reportFile = finalReportFile;
+    } else {
+      booking.report.reportFile = undefined;
+    }
     booking.reportUploadedAt = new Date();
     booking.status = BOOKING_STATUS.REPORT_UPLOADED;
     booking.vendorStatus = BOOKING_STATUS.REPORT_UPLOADED;

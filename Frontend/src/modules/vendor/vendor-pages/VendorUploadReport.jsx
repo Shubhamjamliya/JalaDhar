@@ -371,15 +371,21 @@ export default function VendorUploadReport() {
         try {
             setSubmitting(true);
 
-            const reportFormData = new FormData();
-            
             // Create a payload without the files
             const { images, reportFile, ...dataPayload } = formData;
+            delete dataPayload.reportFile;
+            delete dataPayload.images;
+
+            const reportFormData = new FormData();
             reportFormData.append("reportData", JSON.stringify(dataPayload));
 
-            formData.images.forEach((image) => {
-                reportFormData.append("images", image);
-            });
+            if (formData.images && Array.isArray(formData.images)) {
+                formData.images.forEach((image) => {
+                    if (image) {
+                        reportFormData.append("images", image);
+                    }
+                });
+            }
 
             if (formData.reportFile) {
                 reportFormData.append("reportFile", formData.reportFile);
