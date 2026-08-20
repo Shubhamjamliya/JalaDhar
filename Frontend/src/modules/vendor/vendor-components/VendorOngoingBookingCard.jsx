@@ -173,21 +173,27 @@ export default function VendorOngoingBookingCard({
     const isTimeTBD = !currentBooking.scheduledTime || currentBooking.scheduledTime === "Time TBD by Expert" || currentBooking.scheduledTime === "TBD";
 
     // Status Resolution (status is already declared above for GPS streaming)
-    const isStartOtpVerified = Boolean(currentBooking.otp?.startSurvey?.verified || currentBooking.startSurveyVerifiedAt || ["VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
-    const isEndOtpVerified = Boolean(currentBooking.otp?.endSurvey?.verified || currentBooking.endSurveyVerifiedAt || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
-    const isReportUploaded = Boolean(currentBooking.visitReport || currentBooking.reportUploadedAt || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
-    const isRemainingPaid = Boolean(currentBooking.payment?.remainingPaid || currentBooking.remainingPaid || status === "COMPLETED");
+    const isStartOtpVerified = Boolean(currentBooking.otp?.startSurvey?.verified || currentBooking.startSurveyVerifiedAt || ["VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"].includes(status));
+    const isEndOtpVerified = Boolean(currentBooking.otp?.endSurvey?.verified || currentBooking.endSurveyVerifiedAt || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"].includes(status));
+    const isReportUploaded = Boolean(currentBooking.visitReport || currentBooking.reportUploadedAt || currentBooking.report?.uploadedAt || (currentBooking.report && (currentBooking.report.waterFound !== undefined && currentBooking.report.waterFound !== null)) || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "APPROVED", "FINAL_SETTLEMENT", "FINAL_SETTLEMENT_COMPLETE", "COMPLETED"].includes(status));
+    const isRemainingPaid = Boolean(currentBooking.payment?.remainingPaid || currentBooking.remainingPaid || status === "COMPLETED" || status === "PAYMENT_SUCCESS");
 
     // Status Pill Configuration
     const getStatusConfig = () => {
-        if (isRemainingPaid || status === "COMPLETED") {
-            return { label: "Survey Completed", bg: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: <IoCheckmarkCircleOutline /> };
+        if (currentBooking.report?.rejectedAt && !currentBooking.report?.approvedAt) {
+            return { label: "Report Revision Required", bg: "bg-rose-50 text-rose-700 border-rose-200", icon: <IoAlertCircleOutline /> };
+        }
+        if (status === "COMPLETED" || status === "FINAL_SETTLEMENT_COMPLETE" || status === "APPROVED" || status === "ADMIN_APPROVED") {
+            return { label: "Completed", bg: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: <IoCheckmarkCircleOutline /> };
+        }
+        if (isRemainingPaid || status === "PAYMENT_SUCCESS" || status === "PAID_FIRST") {
+            return { label: "Payment Received", bg: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: <IoCheckmarkCircleOutline /> };
         }
         if (isReportUploaded || status === "AWAITING_PAYMENT" || status === "REPORT_UPLOADED") {
-            return { label: "Awaiting Final Payment", bg: "bg-amber-50 text-amber-700 border-amber-200", icon: <IoAlertCircleOutline /> };
+            return { label: "Report Uploaded • Awaiting Payment", bg: "bg-amber-50 text-amber-700 border-amber-200", icon: <IoAlertCircleOutline /> };
         }
         if (isEndOtpVerified) {
-            return { label: "Survey Completed", bg: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: <IoCheckmarkCircleOutline /> };
+            return { label: "Survey Completed • Upload Report", bg: "bg-blue-50 text-blue-700 border-blue-200", icon: <IoCheckmarkCircleOutline /> };
         }
         if (isStartOtpVerified) {
             return { label: "Survey Started", bg: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: <IoConstructOutline /> };
@@ -484,6 +490,30 @@ export default function VendorOngoingBookingCard({
                             >
                                 <IoKeyOutline className="text-base" />
                                 <span>Verify End OTP</span>
+                            </button>
+                        ) : (currentBooking.report?.rejectedAt && !currentBooking.report?.approvedAt) ? (
+                            /* Report Needs Revision */
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/vendor/bookings/${currentBooking._id}/upload-report`);
+                                }}
+                                className="w-full py-2.5 px-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <IoDocumentTextOutline className="text-base" />
+                                <span>Edit & Re-Upload Report</span>
+                            </button>
+                        ) : isReportUploaded ? (
+                            /* Report Already Uploaded -> View Survey Report */
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/vendor/bookings/${currentBooking._id}`);
+                                }}
+                                className="w-full py-2.5 px-3 bg-[#E7F0FB] hover:bg-[#D0E1F7] text-[#0A84FF] font-bold text-xs rounded-xl shadow-xs border border-[#D0E1F7] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <IoDocumentTextOutline className="text-base text-[#0A84FF]" />
+                                <span>View Survey Report</span>
                             </button>
                         ) : (
                             /* Upload Survey Report */
