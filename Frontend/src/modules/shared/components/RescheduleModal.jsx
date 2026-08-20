@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
     IoCalendarOutline,
     IoTimeOutline,
@@ -9,25 +9,31 @@ import {
     IoInformationCircleOutline,
     IoShieldCheckmarkOutline,
     IoChevronDownOutline,
-    IoSparklesOutline
+    IoSparklesOutline,
+    IoStar,
+    IoSwapHorizontalOutline,
+    IoCheckmarkOutline,
+    IoReloadOutline,
+    IoBuildOutline
 } from "react-icons/io5";
 import {
     isExpertAvailableOnDate,
     getNextAvailableDates,
-    formatWorkingDays,
-    normalizeWorkingDays
+    formatWorkingDays
 } from "../../../utils/availabilityUtils";
+import { getAvailableRescheduleExperts } from "../../../services/bookingApi";
 
 /**
  * RescheduleModal Component
  * Ultra-modern, responsive modal for rescheduling groundwater survey appointments.
- * Compact zero-scroll layout on mobile with expert working-day enforcement.
+ * Supports keeping the current expert or voluntarily switching to another verified expert on that date.
  * 
  * @param {boolean} isOpen - Controls modal visibility
  * @param {function} onClose - Closes the modal
- * @param {function} onReschedule - Callback receiving { scheduledDate, scheduledTime, reason }
+ * @param {function} onReschedule - Callback receiving { scheduledDate, scheduledTime, reason, newVendorId }
  * @param {object} currentBooking - Current booking details
  * @param {boolean} isLoading - Loading state during submission
+ * @param {number} maxReschedules - Platform max reschedules limit
  */
 export default function RescheduleModal({
     isOpen,
@@ -43,6 +49,7 @@ export default function RescheduleModal({
     const rescheduleCount = currentBooking?.rescheduleCount || 0;
     const reschedulesRemaining = Math.max(0, maxReschedules - rescheduleCount);
     const expert = currentBooking?.vendor;
+    const bookingId = currentBooking?._id || currentBooking?.id;
 
     const expertScheduleText = useMemo(() => {
         return formatWorkingDays(expert?.workingDays);
@@ -56,6 +63,12 @@ export default function RescheduleModal({
     };
 
     const [selectedDate, setSelectedDate] = useState("");
+    const [selectedVendorId, setSelectedVendorId] = useState(null);
+    const [availableAlternativeExperts, setAvailableAlternativeExperts] = useState([]);
+    const [isFetchingExperts, setIsFetchingExperts] = useState(false);
+    const [showAlternativeExperts, setShowAlternativeExperts] = useState(false);
+    const [isCurrentExpertAvailableOnDate, setIsCurrentExpertAvailableOnDate] = useState(true);
+
     const [reasonCategory, setReasonCategory] = useState("Personal / Family emergency");
     const [customReason, setCustomReason] = useState("");
     const [formError, setFormError] = useState("");
@@ -75,7 +88,7 @@ export default function RescheduleModal({
         return isoDate;
     };
 
-    // Calculate next available working dates for this expert
+    // Calculate next available working dates for current expert
     const availableQuickDates = useMemo(() => {
         const upcoming = getNextAvailableDates(expert, 4);
         if (upcoming && upcoming.length > 0) {
@@ -100,6 +113,43 @@ export default function RescheduleModal({
         return fallback;
     }, [expert?.workingDays]);
 
+    // Fetch available alternative experts whenever date changes
+    const fetchAvailableExperts = useCallback(async (dateToQuery) => {
+        if (!bookingId || !dateToQuery) return;
+        try {
+            setIsFetchingExperts(true);
+            const res = await getAvailableRescheduleExperts(bookingId, dateToQuery);
+            if (res.success && res.data) {
+                const isCurrentAvail = res.data.currentVendor?.isAvailableOnDate ?? isExpertAvailableOnDate(expert, dateToQuery);
+                setIsCurrentExpertAvailableOnDate(isCurrentAvail);
+                setAvailableAlternativeExperts(res.data.availableVendors || []);
+
+                // If current expert is NOT available on this date, auto-expand alternatives
+                if (!isCurrentAvail) {
+                    setShowAlternativeExperts(true);
+                    if (res.data.availableVendors && res.data.availableVendors.length > 0) {
+                        setSelectedVendorId(res.data.availableVendors[0]._id);
+                    } else {
+                        setSelectedVendorId(null);
+                    }
+                } else {
+                    // Current expert is available, default to current expert
+                    setSelectedVendorId(expert?._id || expert?.id);
+                }
+            }
+        } catch (err) {
+            console.error("Failed to fetch available reschedule experts:", err);
+            // Fallback to local availability check
+            const isAvail = isExpertAvailableOnDate(expert, dateToQuery);
+            setIsCurrentExpertAvailableOnDate(isAvail);
+            if (isAvail) {
+                setSelectedVendorId(expert?._id || expert?.id);
+            }
+        } finally {
+            setIsFetchingExperts(false);
+        }
+    }, [bookingId, expert]);
+
     // Lock body scroll and set default available date ONLY when modal opens
     useEffect(() => {
         if (isOpen) {
@@ -112,10 +162,13 @@ export default function RescheduleModal({
                 })();
 
                 setSelectedDate(firstAvailable);
+                setSelectedVendorId(expert?._id || expert?.id);
+                setShowAlternativeExperts(false);
                 setReasonCategory("Personal / Family emergency");
                 setCustomReason("");
                 setFormError("");
                 setIsReasonDropdownOpen(false);
+                fetchAvailableExperts(firstAvailable);
             }
 
             const originalBodyOverflow = document.body.style.overflow;
@@ -130,7 +183,7 @@ export default function RescheduleModal({
                 document.body.style.touchAction = originalBodyTouchAction;
             };
         }
-    }, [isOpen, expert]);
+    }, [isOpen, expert, fetchAvailableExperts]);
 
     useEffect(() => {
         prevIsOpenRef.current = isOpen;
@@ -154,13 +207,9 @@ export default function RescheduleModal({
         };
     }, [isReasonDropdownOpen]);
 
-    const isCurrentDateAvailable = useMemo(() => {
-        if (!selectedDate) return false;
-        return isExpertAvailableOnDate(expert, selectedDate);
-    }, [expert, selectedDate]);
-
     const handleDateChange = (newDateVal) => {
         setSelectedDate(newDateVal);
+        setFormError("");
         if (!newDateVal) {
             setFormError("Please select a valid date.");
             return;
@@ -175,20 +224,7 @@ export default function RescheduleModal({
             return;
         }
 
-        const available = isExpertAvailableOnDate(expert, newDateVal);
-        if (!available) {
-            let dayName = "that day";
-            try {
-                const parts = newDateVal.split("-");
-                if (parts.length === 3) {
-                    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-                    dayName = d.toLocaleDateString("en-US", { weekday: "long" }) + "s";
-                }
-            } catch {}
-            setFormError(`Expert not available on ${dayName}. Schedule: ${expertScheduleText}.`);
-        } else {
-            setFormError("");
-        }
+        fetchAvailableExperts(newDateVal);
     };
 
     const formattedSelectedDatePreview = useMemo(() => {
@@ -209,8 +245,6 @@ export default function RescheduleModal({
         return "";
     }, [selectedDate]);
 
-    if (!isOpen) return null;
-
     const reasonOptions = [
         { label: "Personal / Family emergency", icon: "🚨", desc: "Urgent personal or family matter" },
         { label: "Site / Land preparation pending", icon: "🚜", desc: "Clearing or groundwork not ready" },
@@ -219,6 +253,10 @@ export default function RescheduleModal({
         { label: "Laborer / Drilling rig availability issue", icon: "👷", desc: "Team or machinery schedule conflict" },
         { label: "Other reason", icon: "📝", desc: "Provide details in note below" }
     ];
+
+    const currentExpertId = expert?._id || expert?.id;
+    const isKeepingCurrentExpert = selectedVendorId === currentExpertId;
+    const selectedReplacementExpert = availableAlternativeExperts.find(v => v._id === selectedVendorId);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -238,16 +276,14 @@ export default function RescheduleModal({
             return;
         }
 
-        if (!isExpertAvailableOnDate(expert, selectedDate)) {
-            let dayName = "that day";
-            try {
-                const parts = selectedDate.split("-");
-                if (parts.length === 3) {
-                    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-                    dayName = d.toLocaleDateString("en-US", { weekday: "long" }) + "s";
-                }
-            } catch {}
-            setFormError(`The assigned expert is not available on ${dayName}. Active schedule: ${expertScheduleText}.`);
+        if (isKeepingCurrentExpert && !isCurrentExpertAvailableOnDate) {
+            setFormError(`The assigned expert is not available on this date. Please switch to an available expert below or choose another date.`);
+            setShowAlternativeExperts(true);
+            return;
+        }
+
+        if (!selectedVendorId) {
+            setFormError("Please select an expert for this survey appointment.");
             return;
         }
 
@@ -258,9 +294,12 @@ export default function RescheduleModal({
         onReschedule({
             scheduledDate: selectedDate,
             scheduledTime: "Time TBD by Expert",
-            reason: fullReason
+            reason: fullReason,
+            newVendorId: !isKeepingCurrentExpert ? selectedVendorId : undefined
         });
     };
+
+    if (!isOpen) return null;
 
     const currentExpertName = expert?.name || "Assigned Expert Hydrogeologist";
     const currentFormattedDate = currentBooking?.scheduledDate
@@ -294,7 +333,7 @@ export default function RescheduleModal({
                                 <IoSparklesOutline className="text-amber-500 text-xs hidden sm:inline" />
                             </h3>
                             <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-none mt-0.5">
-                                Choose a new date for your groundwater survey
+                                Pick a new date or switch to another verified expert
                             </p>
                         </div>
                     </div>
@@ -364,13 +403,15 @@ export default function RescheduleModal({
                         {/* Custom Date Input Display */}
                         <div className="relative group">
                             <div className={`w-full py-2.5 px-3.5 rounded-xl border bg-white shadow-2xs flex items-center justify-between transition-all ${
-                                !isCurrentDateAvailable
-                                    ? "border-rose-400 ring-1 ring-rose-200"
+                                !isCurrentExpertAvailableOnDate && isKeepingCurrentExpert
+                                    ? "border-amber-400 ring-1 ring-amber-200"
                                     : "border-slate-300 group-hover:border-blue-400"
                             }`}>
                                 <div className="flex items-center gap-2.5">
                                     <div className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 ${
-                                        !isCurrentDateAvailable ? "bg-rose-50 text-rose-600" : "bg-blue-50 text-[#0A84FF]"
+                                        !isCurrentExpertAvailableOnDate && isKeepingCurrentExpert
+                                            ? "bg-amber-50 text-amber-600"
+                                            : "bg-blue-50 text-[#0A84FF]"
                                     }`}>
                                         <IoCalendarOutline className="text-base" />
                                     </div>
@@ -380,9 +421,9 @@ export default function RescheduleModal({
                                         </span>
                                         {formattedSelectedDatePreview && (
                                             <span className={`inline ml-2 text-[11px] font-semibold ${
-                                                !isCurrentDateAvailable ? "text-rose-600" : "text-[#0A84FF]"
+                                                !isCurrentExpertAvailableOnDate && isKeepingCurrentExpert ? "text-amber-600" : "text-[#0A84FF]"
                                             }`}>
-                                                ({formattedSelectedDatePreview}) {!isCurrentDateAvailable && "• Unavailable"}
+                                                ({formattedSelectedDatePreview})
                                             </span>
                                         )}
                                     </div>
@@ -426,10 +467,206 @@ export default function RescheduleModal({
                         </div>
                     </div>
 
-                    {/* Step 2: Reason for Rescheduling */}
-                    <div className="space-y-2" ref={reasonDropdownRef}>
+                    {/* Step 2: Expert Selection (Keep Current or Switch) */}
+                    <div className="space-y-2 pt-1">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="w-4.5 h-4.5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[10.5px] font-black">2</span>
+                                <span>Choose Expert</span>
+                            </label>
+                            {isFetchingExperts && (
+                                <span className="flex items-center gap-1 text-[10.5px] font-semibold text-blue-600">
+                                    <IoReloadOutline className="animate-spin text-xs" />
+                                    Checking experts...
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Option A: Keep Current Expert */}
+                        <div
+                            onClick={() => {
+                                if (isCurrentExpertAvailableOnDate) {
+                                    setSelectedVendorId(currentExpertId);
+                                    setFormError("");
+                                }
+                            }}
+                            className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                                isKeepingCurrentExpert
+                                    ? "bg-blue-50/70 border-blue-500 ring-2 ring-blue-500/20 shadow-2xs"
+                                    : "bg-white border-slate-200 hover:border-slate-300"
+                            } ${!isCurrentExpertAvailableOnDate ? "opacity-90 bg-amber-50/30 border-amber-200" : ""}`}
+                        >
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0 text-xs font-bold overflow-hidden">
+                                        {expert?.profilePicture ? (
+                                            <img src={expert.profilePicture} alt={expert.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <IoPersonOutline className="text-sm text-slate-500" />
+                                        )}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-xs font-black text-slate-900 truncate">
+                                                {currentExpertName}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">
+                                                Current Expert
+                                            </span>
+                                        </div>
+                                        <p className="text-[10.5px] text-slate-500 truncate mt-0.5">
+                                            {expert?.designation || "Senior Hydrogeologist"}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="shrink-0 flex items-center gap-1.5">
+                                    {isCurrentExpertAvailableOnDate ? (
+                                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] flex items-center gap-1">
+                                            <IoCheckmarkCircleOutline className="text-xs" />
+                                            Available
+                                        </span>
+                                    ) : (
+                                        <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] flex items-center gap-1">
+                                            <IoAlertCircleOutline className="text-xs" />
+                                            Off on this day
+                                        </span>
+                                    )}
+
+                                    <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center ${
+                                        isKeepingCurrentExpert
+                                            ? "border-[#0A84FF] bg-[#0A84FF] text-white"
+                                            : "border-slate-300 bg-white"
+                                    }`}>
+                                        {isKeepingCurrentExpert && <IoCheckmarkOutline className="text-xs font-bold" />}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Warning if current expert is off on this date */}
+                            {!isCurrentExpertAvailableOnDate && (
+                                <div className="mt-2.5 pt-2 border-t border-amber-200/60 flex items-center justify-between text-[11px] text-amber-900 font-medium">
+                                    <span>{currentExpertName.split(" ")[0]} is not scheduled on this day.</span>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowAlternativeExperts(true);
+                                        }}
+                                        className="text-[#0A84FF] font-bold hover:underline cursor-pointer flex items-center gap-0.5 text-[11px]"
+                                    >
+                                        <IoSwapHorizontalOutline />
+                                        Switch Expert
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Option B: Switch Expert Accordion / Trigger */}
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/70 overflow-hidden transition-all">
+                            <button
+                                type="button"
+                                onClick={() => setShowAlternativeExperts(prev => !prev)}
+                                className="w-full p-2.5 px-3 flex items-center justify-between text-left hover:bg-slate-100/80 transition-colors cursor-pointer"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <IoSwapHorizontalOutline className="text-[#0A84FF] text-sm shrink-0" />
+                                    <span className="text-xs font-bold text-slate-800">
+                                        Switch to another verified expert
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-[#0A84FF] font-black text-[10px]">
+                                        {availableAlternativeExperts.length} Available
+                                    </span>
+                                </div>
+                                <IoChevronDownOutline className={`text-slate-400 text-xs transition-transform duration-200 ${
+                                    showAlternativeExperts ? "rotate-180 text-[#0A84FF]" : ""
+                                }`} />
+                            </button>
+
+                            {/* Collapsible List of Alternative Experts */}
+                            {showAlternativeExperts && (
+                                <div className="p-2 pt-0 space-y-2 border-t border-slate-200/60 animate-in fade-in">
+                                    {availableAlternativeExperts.length === 0 ? (
+                                        <div className="p-3 text-center text-xs text-slate-500 font-medium bg-white rounded-lg border border-slate-100">
+                                            No alternative experts found for this specific date in your district.
+                                        </div>
+                                    ) : (
+                                        availableAlternativeExperts.map((altExpert) => {
+                                            const isSelected = selectedVendorId === altExpert._id;
+                                            const ratingVal = typeof altExpert.rating?.averageRating === 'number' 
+                                                ? altExpert.rating.averageRating.toFixed(1) 
+                                                : "4.9";
+                                            return (
+                                                <div
+                                                    key={altExpert._id}
+                                                    onClick={() => {
+                                                        setSelectedVendorId(altExpert._id);
+                                                        setFormError("");
+                                                    }}
+                                                    className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-2xs"
+                                                            : "bg-white border-slate-200/80 hover:border-slate-300"
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0 text-xs font-bold overflow-hidden">
+                                                                {altExpert.profilePicture ? (
+                                                                    <img src={altExpert.profilePicture} alt={altExpert.name} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <IoPersonOutline className="text-sm text-slate-500" />
+                                                                )}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-xs font-black text-slate-900 truncate">
+                                                                        {altExpert.name}
+                                                                    </span>
+                                                                    <span className="flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 font-black text-[10px] border border-amber-200">
+                                                                        <IoStar className="text-amber-500 text-[10px]" />
+                                                                        {ratingVal}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-[10.5px] text-slate-500 truncate mt-0.5">
+                                                                    {altExpert.designation || "Certified Hydrogeologist"} {altExpert.experience ? `• ${altExpert.experience} yrs exp` : ""}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="shrink-0 flex items-center gap-2">
+                                                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                                                ₹0 Extra Fee
+                                                            </span>
+                                                            <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center ${
+                                                                isSelected
+                                                                    ? "border-[#0A84FF] bg-[#0A84FF] text-white"
+                                                                    : "border-slate-300 bg-white"
+                                                            }`}>
+                                                                {isSelected && <IoCheckmarkOutline className="text-xs font-bold" />}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {altExpert.machineType && (
+                                                        <div className="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center gap-1 text-[10px] text-slate-600 font-medium">
+                                                            <IoBuildOutline className="text-slate-400 text-xs shrink-0" />
+                                                            <span className="truncate">Equipment: {altExpert.machineType}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Step 3: Reason for Rescheduling */}
+                    <div className="space-y-2 pt-1" ref={reasonDropdownRef}>
                         <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-4.5 h-4.5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[10.5px] font-black">2</span>
+                            <span className="w-4.5 h-4.5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[10.5px] font-black">3</span>
                             <span>Reason for Reschedule</span>
                         </label>
 
@@ -521,7 +758,7 @@ export default function RescheduleModal({
                     <button
                         type="submit"
                         form="reschedule-form"
-                        disabled={isLoading || !isCurrentDateAvailable}
+                        disabled={isLoading || (!selectedVendorId) || (isKeepingCurrentExpert && !isCurrentExpertAvailableOnDate)}
                         className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#0A84FF] to-blue-700 hover:from-[#0070DF] hover:to-blue-800 text-white font-extrabold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-98"
                     >
                         {isLoading ? (
@@ -529,7 +766,11 @@ export default function RescheduleModal({
                         ) : (
                             <>
                                 <IoCheckmarkCircleOutline className="text-lg" />
-                                <span>Confirm Reschedule</span>
+                                <span>
+                                    {!isKeepingCurrentExpert && selectedReplacementExpert
+                                        ? `Confirm Reschedule with ${selectedReplacementExpert.name.split(" ")[0]}`
+                                        : "Confirm Reschedule"}
+                                </span>
                             </>
                         )}
                     </button>

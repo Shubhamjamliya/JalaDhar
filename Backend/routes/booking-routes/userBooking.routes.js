@@ -12,6 +12,7 @@ const {
   getBookingDetails,
   cancelBooking,
   rescheduleBooking,
+  getAvailableRescheduleExperts,
   getAvailableReplacementVendors,
   reassignReplacementVendor,
   claimFullRefundForExpertCancellation,
@@ -66,7 +67,8 @@ router.get('/vendors/:vendorId', authenticate, isUser, getVendorProfile);
 router.get('/services/:serviceId/vendors', authenticate, isUser, getAvailableVendors);
 router.post('/create', authenticate, isUser, createBookingValidation, createBooking);
 
-// Expert Cancellation Resolution Routes
+// Expert Cancellation & Reschedule Routes
+router.get('/:bookingId/reschedule-experts', authenticate, isUser, getAvailableRescheduleExperts);
 router.get('/:bookingId/available-replacements', authenticate, isUser, getAvailableReplacementVendors);
 router.post('/:bookingId/reassign-replacement', authenticate, isUser, reassignReplacementVendor);
 router.post('/:bookingId/claim-expert-cancel-refund', authenticate, isUser, claimFullRefundForExpertCancellation);

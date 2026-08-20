@@ -375,6 +375,8 @@ export default function VendorRequests() {
         socket.on('booking_status_updated', handleSocketNotification);
         socket.on('BOOKING_RESCHEDULED', handleSocketNotification);
         socket.on('booking_rescheduled', handleSocketNotification);
+        socket.on('BOOKING_REASSIGNED_AWAY', handleSocketNotification);
+        socket.on('booking_reassigned_away', handleSocketNotification);
 
         return () => {
             socket.off('new_notification', handleSocketNotification);
@@ -385,6 +387,8 @@ export default function VendorRequests() {
             socket.off('booking_status_updated', handleSocketNotification);
             socket.off('BOOKING_RESCHEDULED', handleSocketNotification);
             socket.off('booking_rescheduled', handleSocketNotification);
+            socket.off('BOOKING_REASSIGNED_AWAY', handleSocketNotification);
+            socket.off('booking_reassigned_away', handleSocketNotification);
         };
     }, [socket]);
 

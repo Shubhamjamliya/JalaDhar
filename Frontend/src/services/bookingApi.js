@@ -362,9 +362,22 @@ export const reportUnableToComplete = async (bookingId, formData) => {
 };
 
 /**
+ * Get available experts for voluntary customer rescheduling on a specific date
+ * @param {string} bookingId
+ * @param {string} date - YYYY-MM-DD
+ * @returns {Promise}
+ */
+export const getAvailableRescheduleExperts = async (bookingId, date) => {
+  const response = await api.get(`/bookings/${bookingId}/reschedule-experts`, {
+    params: { date }
+  });
+  return response.data;
+};
+
+/**
  * Reschedule booking by customer (Voluntary date/time change)
  * @param {string} bookingId
- * @param {Object} data - { scheduledDate, scheduledTime, reason }
+ * @param {Object} data - { scheduledDate, scheduledTime, reason, newVendorId }
  * @returns {Promise}
  */
 export const rescheduleBooking = async (bookingId, data) => {

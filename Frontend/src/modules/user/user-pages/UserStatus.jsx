@@ -482,12 +482,12 @@ export default function UserStatus() {
         setShowRescheduleModal(true);
     };
 
-    const handleConfirmReschedule = async ({ scheduledDate, scheduledTime, reason }) => {
+    const handleConfirmReschedule = async ({ scheduledDate, scheduledTime, reason, newVendorId }) => {
         const bookingId = currentBooking?.id || currentBooking?._id;
         if (!bookingId) return;
         try {
             setRescheduling(true);
-            const res = await rescheduleBooking(bookingId, { scheduledDate, scheduledTime, reason });
+            const res = await rescheduleBooking(bookingId, { scheduledDate, scheduledTime, reason, newVendorId });
             if (res.success) {
                 toast.showSuccess(res.message || "Survey appointment rescheduled successfully!");
                 setShowRescheduleModal(false);

@@ -2254,13 +2254,149 @@ const claimFullRefundForExpertCancellation = async (req, res) => {
 };
 
 /**
- * Reschedule booking by Customer (Voluntary date/time change)
+ * Helper to check vendor availability for a day
+ */
+const checkVendorDayAvailability = (workingDays, dayName) => {
+  if (!workingDays) return true;
+  let activeDays = [];
+  if (Array.isArray(workingDays)) {
+    activeDays = workingDays;
+  } else if (typeof workingDays === 'object') {
+    activeDays = Object.entries(workingDays)
+      .filter(([, active]) => Boolean(active))
+      .map(([d]) => d);
+  } else if (typeof workingDays === 'string') {
+    const trimmed = workingDays.trim().toLowerCase();
+    if (['all days', 'everyday', 'all', 'monday - sunday', 'monday to sunday'].includes(trimmed)) {
+      return true;
+    }
+    if (['weekdays', 'monday - friday', 'monday to friday'].includes(trimmed)) {
+      activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    } else if (['weekends', 'weekends only', 'saturday & sunday', 'saturday - sunday'].includes(trimmed)) {
+      activeDays = ['Saturday', 'Sunday'];
+    } else if (['monday - saturday', 'monday to saturday'].includes(trimmed)) {
+      activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    } else if (workingDays.includes(',')) {
+      activeDays = workingDays.split(',').map(d => d.trim());
+    }
+  }
+  return activeDays.length === 0 || activeDays.some(d => d.toLowerCase() === dayName.toLowerCase());
+};
+
+/**
+ * Get available experts for voluntary customer rescheduling on a specific date
+ */
+const getAvailableRescheduleExperts = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { date } = req.query;
+    const userId = req.userId;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId
+    }).populate('vendor service');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    const targetDate = date ? new Date(date) : new Date(booking.scheduledDate);
+    const dayOfWeek = isNaN(targetDate.getTime())
+      ? new Date().toLocaleDateString('en-US', { weekday: 'long' })
+      : targetDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+    const currentVendor = booking.vendor ? {
+      _id: booking.vendor._id,
+      name: booking.vendor.name,
+      expertId: booking.vendor.expertId,
+      designation: booking.vendor.designation,
+      rating: booking.vendor.rating,
+      profilePicture: booking.vendor.profilePicture,
+      experience: booking.vendor.experience,
+      workingDays: booking.vendor.workingDays,
+      machineType: booking.vendor.machineType,
+      isAvailableOnDate: checkVendorDayAvailability(booking.vendor.workingDays, dayOfWeek)
+    } : null;
+
+    // Find other available verified experts
+    const Vendor = require('../../models/Vendor');
+    const excludedVendors = [booking.vendor?._id].filter(Boolean);
+
+    const query = {
+      _id: { $nin: excludedVendors },
+      isApproved: true,
+      isActive: true
+    };
+
+    // Filter by district if available
+    const targetDistrict = booking.district || booking.address?.district;
+    if (targetDistrict) {
+      query.$or = [
+        { district: new RegExp(`^${targetDistrict}$`, 'i') },
+        { serviceDistricts: new RegExp(`^${targetDistrict}$`, 'i') },
+        { 'address.district': new RegExp(`^${targetDistrict}$`, 'i') }
+      ];
+    }
+
+    let candidateVendors = await Vendor.find(query)
+      .select('name expertId designation email phone rating profilePicture experience workingDays workingHours specialization address machineType aboutExpert')
+      .sort({ 'rating.averageRating': -1, surveysCompleted: -1 })
+      .limit(20);
+
+    // Fallback: If no vendors in exact district, search statewide
+    if (candidateVendors.length === 0) {
+      candidateVendors = await Vendor.find({
+        _id: { $nin: excludedVendors },
+        isApproved: true,
+        isActive: true
+      })
+        .select('name expertId designation email phone rating profilePicture experience workingDays workingHours specialization address machineType aboutExpert')
+        .sort({ 'rating.averageRating': -1, surveysCompleted: -1 })
+        .limit(20);
+    }
+
+    // Filter candidates by availability on the target day
+    const availableVendors = candidateVendors
+      .map(v => {
+        const vObj = v.toObject ? v.toObject() : { ...v };
+        vObj.isAvailableOnDate = checkVendorDayAvailability(v.workingDays, dayOfWeek);
+        return vObj;
+      })
+      .filter(v => v.isAvailableOnDate);
+
+    res.json({
+      success: true,
+      data: {
+        bookingId: booking._id,
+        targetDate: targetDate.toISOString(),
+        dayOfWeek,
+        currentVendor,
+        availableVendors
+      }
+    });
+
+  } catch (error) {
+    console.error('getAvailableRescheduleExperts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch available reschedule experts',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Reschedule booking by Customer (Voluntary date/time change + optional Expert change)
  * Guardrails: Max 2 reschedules, allowed in PENDING, ASSIGNED, ACCEPTED, AWAITING_ADVANCE
  */
 const rescheduleBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { scheduledDate, scheduledTime, reason } = req.body;
+    const { scheduledDate, scheduledTime, reason, newVendorId } = req.body;
     const userId = req.userId;
 
     if (!scheduledDate) {
@@ -2359,38 +2495,61 @@ const rescheduleBooking = async (req, res) => {
       });
     }
 
-    // Validate vendor working day availability
-    if (booking.vendor && booking.vendor.workingDays) {
-      const dayOfWeek = checkDate.toLocaleDateString('en-US', { weekday: 'long' });
-      let activeDays = [];
-      const rawDays = booking.vendor.workingDays;
-      if (Array.isArray(rawDays)) {
-        activeDays = rawDays;
-      } else if (typeof rawDays === 'object') {
-        activeDays = Object.entries(rawDays)
-          .filter(([, active]) => Boolean(active))
-          .map(([day]) => day);
-      } else if (typeof rawDays === 'string') {
-        const trimmed = rawDays.trim().toLowerCase();
-        if (trimmed === 'all days' || trimmed === 'everyday' || trimmed === 'all' || trimmed === 'monday - sunday' || trimmed === 'monday to sunday') {
-          activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        } else if (trimmed === 'weekdays' || trimmed === 'monday - friday' || trimmed === 'monday to friday') {
-          activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-        } else if (trimmed === 'weekends' || trimmed === 'weekends only' || trimmed === 'saturday & sunday' || trimmed === 'saturday - sunday') {
-          activeDays = ['Saturday', 'Sunday'];
-        } else if (trimmed === 'monday - saturday' || trimmed === 'monday to saturday') {
-          activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        } else if (rawDays.includes(',')) {
-          activeDays = rawDays.split(',').map(d => d.trim());
-        }
+    const previousVendorId = booking.vendor ? (booking.vendor._id || booking.vendor) : null;
+    let newVendor = null;
+    let isReassigned = false;
+
+    // Check if customer chose to switch to another expert
+    if (newVendorId && previousVendorId && newVendorId.toString() !== previousVendorId.toString()) {
+      const Vendor = require('../../models/Vendor');
+      newVendor = await Vendor.findOne({
+        _id: newVendorId,
+        isApproved: true,
+        isActive: true
+      });
+
+      if (!newVendor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Selected replacement expert is not active or available'
+        });
       }
 
-      if (activeDays.length > 0) {
-        const isAvailable = activeDays.some(d => d.toLowerCase() === dayOfWeek.toLowerCase());
-        if (!isAvailable) {
+      // Check working days availability of new vendor
+      const dayOfWeek = checkDate.toLocaleDateString('en-US', { weekday: 'long' });
+      if (!checkVendorDayAvailability(newVendor.workingDays, dayOfWeek)) {
+        return res.status(400).json({
+          success: false,
+          message: `${newVendor.name} is not available on ${dayOfWeek}s. Please select an available working day.`
+        });
+      }
+
+      booking.vendor = newVendor._id;
+      isReassigned = true;
+
+      // Keep previous vendor in rejectedVendors
+      if (!booking.rejectedVendors) {
+        booking.rejectedVendors = [];
+      }
+      if (!booking.rejectedVendors.includes(previousVendorId)) {
+        booking.rejectedVendors.push(previousVendorId);
+      }
+
+      // Generate fresh Start / End survey OTPs for security with new expert
+      const startOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const endOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      booking.otp = {
+        startSurvey: { code: startOtpCode, generatedAt: new Date(), verified: false, verifiedAt: null },
+        endSurvey: { code: endOtpCode, generatedAt: new Date(), verified: false, verifiedAt: null }
+      };
+    } else {
+      // Validate current vendor working day availability
+      if (booking.vendor && booking.vendor.workingDays) {
+        const dayOfWeek = checkDate.toLocaleDateString('en-US', { weekday: 'long' });
+        if (!checkVendorDayAvailability(booking.vendor.workingDays, dayOfWeek)) {
           return res.status(400).json({
             success: false,
-            message: `The assigned expert is not available on ${dayOfWeek}s. Please select an available working day.`
+            message: `The assigned expert is not available on ${dayOfWeek}s. Please select an available working day or switch to an available expert.`
           });
         }
       }
@@ -2416,9 +2575,12 @@ const rescheduleBooking = async (req, res) => {
       requesterModel: 'User',
       previousDate: previousDate,
       previousTime: previousTime,
+      previousVendor: previousVendorId,
       newDate: requestedDate,
       newTime: newFormattedTime,
-      reason: reason ? reason.trim() : 'Customer voluntary date reschedule',
+      newVendor: booking.vendor,
+      vendorReassigned: isReassigned,
+      reason: reason ? reason.trim() : (isReassigned ? `Rescheduled and reassigned to ${newVendor?.name || 'new expert'}` : 'Customer voluntary date reschedule'),
       status: 'APPLIED',
       createdAt: new Date()
     });
@@ -2447,6 +2609,7 @@ const rescheduleBooking = async (req, res) => {
         maxReschedules: maxReschedules,
         rescheduleHistory: booking.rescheduleHistory,
         status: booking.status,
+        vendor: booking.vendor,
         booking: {
           _id: booking._id,
           bookingId: booking.bookingId || booking._id,
@@ -2454,7 +2617,8 @@ const rescheduleBooking = async (req, res) => {
           scheduledTime: booking.scheduledTime,
           rescheduleCount: booking.rescheduleCount,
           rescheduleHistory: booking.rescheduleHistory,
-          status: booking.status
+          status: booking.status,
+          vendor: booking.vendor
         }
       };
       const userIdStr = userId.toString();
@@ -2462,7 +2626,24 @@ const rescheduleBooking = async (req, res) => {
       io.to(`booking_${booking._id}`).emit('BOOKING_RESCHEDULED', bookingPayload);
       io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
       io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('BOOKING_RESCHEDULED', bookingPayload);
-      if (booking.vendor) {
+
+      // If reassigned to a new expert
+      if (isReassigned && previousVendorId) {
+        const prevVendorIdStr = previousVendorId.toString();
+        const prevRooms = [`vendor:${prevVendorIdStr}`, `Vendor_${prevVendorIdStr}`, `vendor_${prevVendorIdStr}`, prevVendorIdStr];
+        prevRooms.forEach(room => {
+          io.to(room).emit('BOOKING_REASSIGNED_AWAY', { bookingId: booking._id.toString() });
+          io.to(room).emit('booking_updated', { bookingId: booking._id.toString(), reassignedAway: true });
+        });
+
+        const newVendorIdStr = newVendor._id.toString();
+        const newRooms = [`vendor:${newVendorIdStr}`, `Vendor_${newVendorIdStr}`, `vendor_${newVendorIdStr}`, newVendorIdStr];
+        newRooms.forEach(room => {
+          io.to(room).emit('BOOKING_ASSIGNED', bookingPayload);
+          io.to(room).emit('booking_updated', bookingPayload);
+          io.to(room).emit('BOOKING_RESCHEDULED', bookingPayload);
+        });
+      } else if (booking.vendor) {
         const vendorIdStr = (booking.vendor._id || booking.vendor).toString();
         const vendorRooms = [
           `vendor:${vendorIdStr}`,
@@ -2478,8 +2659,39 @@ const rescheduleBooking = async (req, res) => {
       }
     }
 
-    // Notify Assigned Expert
-    if (booking.vendor) {
+    // Notify Previous Expert if reassigned
+    if (isReassigned && previousVendorId) {
+      await sendNotification({
+        recipient: previousVendorId,
+        recipientModel: 'Vendor',
+        type: 'BOOKING_REASSIGNED_AWAY',
+        title: 'Booking Rescheduled to Another Expert ℹ️',
+        message: `Booking #JALA${shortBookingId} was rescheduled by customer to ${formattedNewDate} and reassigned to another available expert. Your calendar slot is now free.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        }
+      }, io);
+
+      // Notify New Expert
+      await sendNotification({
+        recipient: newVendor._id,
+        recipientModel: 'Vendor',
+        type: 'BOOKING_ASSIGNED',
+        title: 'New Booking Assigned 📋',
+        message: `You have been assigned to groundwater survey #JALA${shortBookingId} on ${formattedNewDate}. Please set your arrival time slot.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          newDate: requestedDate,
+          newTime: newFormattedTime
+        }
+      }, io);
+    } else if (booking.vendor) {
+      // Notify same expert
       await sendNotification({
         recipient: booking.vendor._id || booking.vendor,
         recipientModel: 'Vendor',
@@ -2504,7 +2716,7 @@ const rescheduleBooking = async (req, res) => {
       recipientModel: 'User',
       type: 'BOOKING_RESCHEDULED',
       title: 'Survey Rescheduled Successfully ✅',
-      message: `Your groundwater survey (#JALA${shortBookingId}) has been successfully moved to ${formattedNewDate} (${newFormattedTime}). (Reschedule ${currentCount + 1} of ${maxReschedules} used)`,
+      message: `Your groundwater survey (#JALA${shortBookingId}) has been successfully moved to ${formattedNewDate} (${newFormattedTime})${isReassigned ? ` with expert ${newVendor?.name}` : ''}. (Reschedule ${currentCount + 1} of ${maxReschedules} used)`,
       relatedEntity: {
         entityType: 'Booking',
         entityId: booking._id
@@ -2512,13 +2724,14 @@ const rescheduleBooking = async (req, res) => {
       metadata: {
         bookingId: booking._id.toString(),
         newDate: requestedDate,
-        newTime: newFormattedTime
+        newTime: newFormattedTime,
+        vendorId: booking.vendor?.toString()
       }
     }, io);
 
     res.json({
       success: true,
-      message: `Survey appointment rescheduled to ${formattedNewDate} successfully. (${Math.max(0, maxReschedules - (currentCount + 1))} reschedules remaining)`,
+      message: `Survey appointment rescheduled to ${formattedNewDate} successfully.${isReassigned ? ` Reassigned to ${newVendor?.name}.` : ''} (${Math.max(0, maxReschedules - (currentCount + 1))} reschedules remaining)`,
       data: {
         bookingId: booking._id,
         scheduledDate: booking.scheduledDate,
@@ -2526,6 +2739,7 @@ const rescheduleBooking = async (req, res) => {
         rescheduleCount: booking.rescheduleCount,
         reschedulesRemaining: Math.max(0, maxReschedules - booking.rescheduleCount),
         maxReschedules: maxReschedules,
+        vendor: booking.vendor,
         rescheduleHistory: booking.rescheduleHistory
       }
     });
@@ -2550,6 +2764,7 @@ module.exports = {
   getBookingDetails,
   cancelBooking,
   rescheduleBooking,
+  getAvailableRescheduleExperts,
   getAvailableReplacementVendors,
   reassignReplacementVendor,
   claimFullRefundForExpertCancellation,
