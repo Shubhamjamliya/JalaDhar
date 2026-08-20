@@ -21,8 +21,7 @@ import {
 /**
  * RescheduleModal Component
  * Ultra-modern, responsive modal for rescheduling groundwater survey appointments.
- * Follows the standard 2-step flow (Date + Reason) matching normal booking,
- * where the expert confirms the visit arrival slot.
+ * Compact zero-scroll layout on mobile with expert working-day enforcement.
  * 
  * @param {boolean} isOpen - Controls modal visibility
  * @param {function} onClose - Closes the modal
@@ -178,7 +177,7 @@ export default function RescheduleModal({
                     dayName = d.toLocaleDateString("en-US", { weekday: "long" }) + "s";
                 }
             } catch {}
-            setFormError(`The assigned expert is not available on ${dayName}. Active schedule: ${expertScheduleText}. Please choose an available working day.`);
+            setFormError(`Expert not available on ${dayName}. Schedule: ${expertScheduleText}.`);
         } else {
             setFormError("");
         }
@@ -191,10 +190,9 @@ export default function RescheduleModal({
             if (parts.length === 3) {
                 const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
                 return d.toLocaleDateString("en-IN", {
-                    weekday: "long",
+                    weekday: "short",
                     day: "numeric",
-                    month: "long",
-                    year: "numeric"
+                    month: "short"
                 });
             }
         } catch {
@@ -267,27 +265,27 @@ export default function RescheduleModal({
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-950/65 backdrop-blur-sm p-0 sm:p-4 transition-all duration-300 animate-in fade-in"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-sm p-0 sm:p-4 transition-all duration-300 animate-in fade-in"
             onClick={(e) => {
                 if (e.target === e.currentTarget && !isLoading) onClose();
             }}
         >
             <div
-                className="bg-white rounded-t-[28px] sm:rounded-[24px] shadow-2xl max-w-lg w-full mx-auto flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden transform transition-all animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 border border-slate-100"
+                className="bg-white w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-lg rounded-none sm:rounded-[24px] shadow-2xl flex flex-col overflow-hidden transform transition-all animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 border-0 sm:border sm:border-slate-100"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* ── 1. STICKY MODAL HEADER ── */}
-                <div className="px-5 py-4 sm:px-6 sm:py-4.5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50/70 via-white to-sky-50/40 shrink-0">
+                {/* ── 1. HEADER ── */}
+                <div className="px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50/70 via-white to-sky-50/40 shrink-0 pt-[max(0.85rem,env(safe-area-inset-top))] sm:pt-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
-                            <IoCalendarOutline className="text-xl sm:text-2xl" />
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                            <IoCalendarOutline className="text-lg sm:text-xl" />
                         </div>
                         <div>
-                            <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight flex items-center gap-1.5">
+                            <h3 className="text-base font-black text-slate-900 leading-tight flex items-center gap-1">
                                 <span>Reschedule Survey</span>
-                                <IoSparklesOutline className="text-amber-500 text-sm hidden sm:inline" />
+                                <IoSparklesOutline className="text-amber-500 text-xs hidden sm:inline" />
                             </h3>
-                            <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
+                            <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-none mt-0.5">
                                 Choose a new date for your groundwater survey
                             </p>
                         </div>
@@ -296,69 +294,49 @@ export default function RescheduleModal({
                         type="button"
                         onClick={onClose}
                         disabled={isLoading}
-                        className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                        className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50 shrink-0"
                     >
-                        <IoCloseOutline className="text-lg sm:text-xl" />
+                        <IoCloseOutline className="text-lg" />
                     </button>
                 </div>
 
-                {/* ── 2. SCROLLABLE FORM BODY ── */}
-                <form id="reschedule-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4.5 overscroll-contain">
+                {/* ── 2. FORM BODY ── */}
+                <form id="reschedule-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 overscroll-contain">
                     {/* Remaining Reschedules Banner */}
-                    <div className="flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50/60 border border-blue-200/80 shadow-2xs text-xs">
-                        <div className="flex items-center gap-2 text-blue-950 font-bold">
-                            <div className="w-6 h-6 rounded-full bg-blue-600/10 text-[#0A84FF] flex items-center justify-center shrink-0">
-                                <IoInformationCircleOutline className="text-base" />
-                            </div>
+                    <div className="flex items-center justify-between py-2 px-3.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50/60 border border-blue-200/70 shadow-2xs text-xs">
+                        <div className="flex items-center gap-1.5 text-blue-950 font-bold">
+                            <IoInformationCircleOutline className="text-base text-[#0A84FF] shrink-0" />
                             <span>Free Reschedules Remaining:</span>
                         </div>
-                        <span className="px-3 py-1 rounded-full bg-[#0A84FF] text-white font-black text-[11px] shadow-xs tracking-wide">
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#0A84FF] text-white font-black text-[11px] shadow-2xs">
                             {reschedulesRemaining} of 2 Left
                         </span>
                     </div>
 
-                    {/* Current Appointment Snapshot & Expert Schedule */}
-                    <div className="p-4 rounded-2xl bg-slate-50/90 border border-slate-200/80 space-y-2.5 text-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                                Current Schedule
+                    {/* Current Appointment Snapshot */}
+                    <div className="p-3 rounded-xl bg-slate-50/90 border border-slate-200/70 space-y-2 text-xs">
+                        <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-slate-600">
+                                Current: <strong className="text-slate-900">{currentFormattedDate}</strong> ({currentBooking?.scheduledTime || "TBD"})
                             </span>
-                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                            <span className="font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded text-[10.5px]">
                                 Confirmed
                             </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 pt-0.5">
-                            <div className="bg-white p-2.5 rounded-xl border border-slate-200/60">
-                                <span className="text-slate-500 block text-[10.5px] font-medium">Scheduled Date</span>
-                                <strong className="text-slate-900 font-extrabold text-xs mt-0.5 block">{currentFormattedDate}</strong>
-                            </div>
-                            <div className="bg-white p-2.5 rounded-xl border border-slate-200/60">
-                                <span className="text-slate-500 block text-[10.5px] font-medium">Current Time</span>
-                                <strong className="text-slate-900 font-extrabold text-xs mt-0.5 block">{currentBooking?.scheduledTime || "TBD"}</strong>
-                            </div>
-                        </div>
-
-                        {/* Expert Info & Working Days Schedule */}
-                        <div className="pt-2 border-t border-slate-200/60 space-y-1.5 text-slate-700">
-                            <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center shrink-0 text-xs font-bold">
-                                    <IoPersonOutline className="text-xs" />
-                                </div>
-                                <span className="truncate">
-                                    Expert: <strong className="text-slate-900">{currentExpertName}</strong>
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-[11px] text-blue-800 bg-blue-50/80 px-2.5 py-1 rounded-lg border border-blue-200/60 font-semibold">
-                                <IoCalendarOutline className="text-xs text-[#0A84FF] shrink-0" />
-                                <span>Expert Working Schedule: <strong>{expertScheduleText}</strong></span>
-                            </div>
+                        <div className="flex items-center justify-between gap-1 text-[11px] pt-1.5 border-t border-slate-200/60 text-slate-600">
+                            <span className="truncate">
+                                Expert: <strong className="text-slate-800">{currentExpertName.split(" ")[0]}</strong>
+                            </span>
+                            <span className="text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded border border-blue-100 truncate text-[10.5px]">
+                                Days: {expertScheduleText}
+                            </span>
                         </div>
                     </div>
 
                     {/* Error Banner if any */}
                     {formError && (
-                        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-xs text-rose-700 font-semibold animate-in fade-in">
-                            <IoAlertCircleOutline className="text-lg shrink-0 mt-0.5" />
+                        <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2 text-xs text-rose-700 font-semibold animate-in fade-in">
+                            <IoAlertCircleOutline className="text-base shrink-0 mt-0.5" />
                             <span>{formError}</span>
                         </div>
                     )}
@@ -367,43 +345,41 @@ export default function RescheduleModal({
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                                <span className="w-5 h-5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[11px] font-black">1</span>
+                                <span className="w-4.5 h-4.5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[10.5px] font-black">1</span>
                                 <span>Select New Date</span>
                             </label>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-md">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">
                                 DD/MM/YYYY
                             </span>
                         </div>
 
-                        {/* Custom Date Input Display with Overlay Native Picker */}
+                        {/* Custom Date Input Display */}
                         <div className="relative group">
-                            <div className={`w-full py-3 px-4 rounded-xl border bg-white shadow-2xs flex items-center justify-between transition-all ${
+                            <div className={`w-full py-2.5 px-3.5 rounded-xl border bg-white shadow-2xs flex items-center justify-between transition-all ${
                                 !isCurrentDateAvailable
-                                    ? "border-rose-400 ring-2 ring-rose-200"
+                                    ? "border-rose-400 ring-1 ring-rose-200"
                                     : "border-slate-300 group-hover:border-blue-400"
                             }`}>
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                <div className="flex items-center gap-2.5">
+                                    <div className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 ${
                                         !isCurrentDateAvailable ? "bg-rose-50 text-rose-600" : "bg-blue-50 text-[#0A84FF]"
                                     }`}>
-                                        <IoCalendarOutline className="text-lg" />
+                                        <IoCalendarOutline className="text-base" />
                                     </div>
                                     <div>
-                                        <span className="text-base font-black text-slate-900 tracking-wider">
+                                        <span className="text-sm font-black text-slate-900 tracking-wider">
                                             {formatToDDMMYYYY(selectedDate) || "DD/MM/YYYY"}
                                         </span>
                                         {formattedSelectedDatePreview && (
-                                            <span className={`block text-[11px] font-semibold ${
+                                            <span className={`inline ml-2 text-[11px] font-semibold ${
                                                 !isCurrentDateAvailable ? "text-rose-600" : "text-[#0A84FF]"
                                             }`}>
-                                                {formattedSelectedDatePreview} {!isCurrentDateAvailable && "(Expert Unavailable)"}
+                                                ({formattedSelectedDatePreview}) {!isCurrentDateAvailable && "• Unavailable"}
                                             </span>
                                         )}
                                     </div>
                                 </div>
-                                <div className="text-slate-400 group-hover:text-[#0A84FF] transition-colors pr-1">
-                                    <IoCalendarOutline className="text-xl" />
-                                </div>
+                                <IoCalendarOutline className="text-slate-400 text-base" />
                             </div>
 
                             {/* Transparent Native Date Picker Overlay */}
@@ -420,37 +396,32 @@ export default function RescheduleModal({
                             />
                         </div>
 
-                        {/* Quick Selection Chips - Filtered to Expert Available Working Days */}
-                        <div className="space-y-1 pt-1">
-                            <span className="text-[10.5px] text-slate-500 font-medium block">
-                                Available dates for {currentExpertName.split(" ")[0]}:
-                            </span>
-                            <div className="flex flex-wrap gap-1.5">
-                                {availableQuickDates.map((chip) => {
-                                    const isActive = selectedDate === chip.date;
-                                    return (
-                                        <button
-                                            type="button"
-                                            key={chip.date}
-                                            onClick={() => handleDateChange(chip.date)}
-                                            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
-                                                isActive
-                                                    ? "bg-blue-600 text-white border-blue-600 shadow-xs scale-102"
-                                                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200/60"
-                                            }`}
-                                        >
-                                            {chip.formattedDisplay} ({formatToDDMMYYYY(chip.date)})
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                        {/* Quick Selection Chips */}
+                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                            {availableQuickDates.map((chip) => {
+                                const isActive = selectedDate === chip.date;
+                                return (
+                                    <button
+                                        type="button"
+                                        key={chip.date}
+                                        onClick={() => handleDateChange(chip.date)}
+                                        className={`px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer border ${
+                                            isActive
+                                                ? "bg-blue-600 text-white border-blue-600 shadow-2xs scale-102"
+                                                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200/60"
+                                        }`}
+                                    >
+                                        {chip.formattedDisplay} ({formatToDDMMYYYY(chip.date)})
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    {/* Step 2: Reason for Rescheduling (Custom Dropdown) */}
+                    {/* Step 2: Reason for Rescheduling */}
                     <div className="space-y-2" ref={reasonDropdownRef}>
                         <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[11px] font-black">2</span>
+                            <span className="w-4.5 h-4.5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[10.5px] font-black">2</span>
                             <span>Reason for Reschedule</span>
                         </label>
 
@@ -458,13 +429,13 @@ export default function RescheduleModal({
                             <button
                                 type="button"
                                 onClick={() => setIsReasonDropdownOpen(prev => !prev)}
-                                className={`w-full py-3 px-4 rounded-xl border text-left transition-all flex items-center justify-between gap-2.5 cursor-pointer bg-white ${
+                                className={`w-full py-2.5 px-3.5 rounded-xl border text-left transition-all flex items-center justify-between gap-2 cursor-pointer bg-white ${
                                     isReasonDropdownOpen
-                                        ? "border-[#0A84FF] ring-2 ring-blue-500/20 shadow-xs"
+                                        ? "border-[#0A84FF] ring-1 ring-blue-500/20 shadow-2xs"
                                         : "border-slate-300 hover:border-slate-400"
                                 }`}
                             >
-                                <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="flex items-center gap-2 min-w-0">
                                     <span className="text-base shrink-0">
                                         {reasonOptions.find(r => r.label === reasonCategory)?.icon || "📝"}
                                     </span>
@@ -472,14 +443,14 @@ export default function RescheduleModal({
                                         {reasonCategory}
                                     </span>
                                 </div>
-                                <IoChevronDownOutline className={`text-slate-400 text-sm shrink-0 transition-transform duration-200 ${
+                                <IoChevronDownOutline className={`text-slate-400 text-xs shrink-0 transition-transform duration-200 ${
                                     isReasonDropdownOpen ? "rotate-180 text-[#0A84FF]" : ""
                                 }`} />
                             </button>
 
                             {/* Floating Custom Dropdown Menu */}
                             {isReasonDropdownOpen && (
-                                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150 max-h-64 overflow-y-auto">
+                                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-2xl border border-slate-200/90 p-1 space-y-0.5 animate-in fade-in zoom-in-95 duration-150 max-h-56 overflow-y-auto">
                                     {reasonOptions.map((opt) => {
                                         const isSelected = reasonCategory === opt.label;
                                         return (
@@ -490,25 +461,22 @@ export default function RescheduleModal({
                                                     setReasonCategory(opt.label);
                                                     setIsReasonDropdownOpen(false);
                                                 }}
-                                                className={`w-full p-2.5 rounded-xl text-left transition-all flex items-center justify-between gap-2.5 cursor-pointer ${
+                                                className={`w-full p-2 rounded-lg text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
                                                     isSelected
-                                                        ? "bg-blue-50/90 text-[#0A84FF] font-bold"
+                                                        ? "bg-blue-50 text-[#0A84FF] font-bold"
                                                         : "hover:bg-slate-50 text-slate-700 font-medium"
                                                 }`}
                                             >
-                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                    <span className="text-base shrink-0">{opt.icon}</span>
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="text-sm shrink-0">{opt.icon}</span>
                                                     <div className="min-w-0">
                                                         <span className={`text-xs block truncate font-bold ${isSelected ? "text-[#0A84FF]" : "text-slate-800"}`}>
                                                             {opt.label}
                                                         </span>
-                                                        <span className="text-[10.5px] text-slate-400 block truncate">
-                                                            {opt.desc}
-                                                        </span>
                                                     </div>
                                                 </div>
                                                 {isSelected && (
-                                                    <IoCheckmarkCircleOutline className="text-base text-[#0A84FF] shrink-0" />
+                                                    <IoCheckmarkCircleOutline className="text-sm text-[#0A84FF] shrink-0" />
                                                 )}
                                             </button>
                                         );
@@ -521,30 +489,27 @@ export default function RescheduleModal({
                             rows={2}
                             value={customReason}
                             onChange={(e) => setCustomReason(e.target.value)}
-                            placeholder="Optional: Add a specific note or instruction for the hydrogeologist..."
-                            className="w-full p-3 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent resize-none bg-white placeholder:text-slate-400"
+                            placeholder="Optional: Add a note or instruction for the hydrogeologist..."
+                            className="w-full py-2 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#0A84FF] focus:border-transparent resize-none bg-white placeholder:text-slate-400"
                         />
                     </div>
 
-                    {/* Time Slot Notice */}
-                    <div className="flex items-start gap-2.5 text-[11px] text-blue-900 bg-blue-50/70 p-3 rounded-xl border border-blue-200/80">
-                        <IoTimeOutline className="text-[#0A84FF] text-base shrink-0 mt-0.5" />
-                        <div>
-                            <strong className="text-blue-950 font-bold">Visit Arrival Time:</strong> The assigned expert will confirm their exact visit arrival time slot based on their daily survey route.
+                    {/* Notices Container */}
+                    <div className="space-y-2 pt-0.5">
+                        <div className="flex items-center gap-2 text-[11px] text-blue-900 bg-blue-50/80 py-2 px-3 rounded-xl border border-blue-200/70">
+                            <IoTimeOutline className="text-[#0A84FF] text-sm shrink-0" />
+                            <span><strong>Arrival Slot:</strong> Confirmed by expert based on daily route.</span>
                         </div>
-                    </div>
 
-                    {/* Policy Disclaimer */}
-                    <div className="flex items-start gap-2.5 text-[11px] text-slate-600 leading-relaxed bg-emerald-50/70 p-3 rounded-xl border border-emerald-200/80">
-                        <IoShieldCheckmarkOutline className="text-emerald-600 text-base shrink-0 mt-0.5" />
-                        <div>
-                            <strong className="text-emerald-950 font-bold">Zero Cancellation Penalty:</strong> Your 40% advance deposit carries over seamlessly. The assigned expert will receive an immediate schedule update.
+                        <div className="flex items-center gap-2 text-[11px] text-emerald-900 bg-emerald-50/80 py-2 px-3 rounded-xl border border-emerald-200/70">
+                            <IoShieldCheckmarkOutline className="text-emerald-600 text-sm shrink-0" />
+                            <span><strong>Zero Penalty:</strong> 40% advance deposit carries over seamlessly.</span>
                         </div>
                     </div>
                 </form>
 
-                {/* ── 3. STICKY FOOTER ACTIONS ── */}
-                <div className="p-4 sm:p-5 border-t border-slate-100 bg-white/95 backdrop-blur-md shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
+                {/* ── 3. STICKY FOOTER ACTION ── */}
+                <div className="p-4 sm:p-5 border-t border-slate-100 bg-white/95 backdrop-blur-md shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-5">
                     <button
                         type="submit"
                         form="reschedule-form"
