@@ -163,13 +163,20 @@ export default function VendorBookingDetails() {
         socket.emit('join_booking_tracking', bookingId);
 
         const handleBookingUpdate = (data) => {
-            const updatedBookingId = data?.bookingId?.toString() || data?.data?.bookingId?.toString() || data?.metadata?.bookingId?.toString() || data?.relatedEntity?.entityId?.toString();
-            const currentBookingId = bookingId?.toString();
-
-            if (!updatedBookingId || updatedBookingId === currentBookingId) {
+            const incomingId = data?.bookingId || data?.booking?._id || data?.id || data?._id;
+            if (!incomingId || incomingId === bookingId) {
                 console.log('[VendorBookingDetails] Real-time booking update received via socket:', data);
                 if (data?.booking) {
                     setBooking(prev => ({ ...prev, ...data.booking }));
+                } else if (data?.scheduledDate || data?.scheduledTime) {
+                    setBooking(prev => ({
+                        ...prev,
+                        scheduledDate: data.scheduledDate || prev?.scheduledDate,
+                        scheduledTime: data.scheduledTime || prev?.scheduledTime,
+                        rescheduleCount: data.rescheduleCount ?? prev?.rescheduleCount,
+                        rescheduleHistory: data.rescheduleHistory || prev?.rescheduleHistory,
+                        status: data.status || prev?.status
+                    }));
                 }
                 loadBookingDetails(false);
             }
@@ -177,12 +184,16 @@ export default function VendorBookingDetails() {
 
         socket.on('booking_updated', handleBookingUpdate);
         socket.on('booking_status_updated', handleBookingUpdate);
+        socket.on('BOOKING_RESCHEDULED', handleBookingUpdate);
+        socket.on('booking_rescheduled', handleBookingUpdate);
         socket.on('new_notification', handleBookingUpdate);
         socket.on('newNotification', handleBookingUpdate);
 
         return () => {
             socket.off('booking_updated', handleBookingUpdate);
             socket.off('booking_status_updated', handleBookingUpdate);
+            socket.off('BOOKING_RESCHEDULED', handleBookingUpdate);
+            socket.off('booking_rescheduled', handleBookingUpdate);
             socket.off('new_notification', handleBookingUpdate);
             socket.off('newNotification', handleBookingUpdate);
         };

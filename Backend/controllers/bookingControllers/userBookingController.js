@@ -2361,14 +2361,35 @@ const rescheduleBooking = async (req, res) => {
         rescheduleCount: booking.rescheduleCount,
         reschedulesRemaining: Math.max(0, 2 - booking.rescheduleCount),
         rescheduleHistory: booking.rescheduleHistory,
-        status: booking.status
+        status: booking.status,
+        booking: {
+          _id: booking._id,
+          bookingId: booking.bookingId || booking._id,
+          scheduledDate: booking.scheduledDate,
+          scheduledTime: booking.scheduledTime,
+          rescheduleCount: booking.rescheduleCount,
+          rescheduleHistory: booking.rescheduleHistory,
+          status: booking.status
+        }
       };
       const userIdStr = userId.toString();
       io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
+      io.to(`booking_${booking._id}`).emit('BOOKING_RESCHEDULED', bookingPayload);
       io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+      io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('BOOKING_RESCHEDULED', bookingPayload);
       if (booking.vendor) {
         const vendorIdStr = (booking.vendor._id || booking.vendor).toString();
-        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+        const vendorRooms = [
+          `vendor:${vendorIdStr}`,
+          `Vendor_${vendorIdStr}`,
+          `vendor_${vendorIdStr}`,
+          vendorIdStr
+        ];
+        vendorRooms.forEach(room => {
+          io.to(room).emit('booking_updated', bookingPayload);
+          io.to(room).emit('booking_status_updated', bookingPayload);
+          io.to(room).emit('BOOKING_RESCHEDULED', bookingPayload);
+        });
       }
     }
 

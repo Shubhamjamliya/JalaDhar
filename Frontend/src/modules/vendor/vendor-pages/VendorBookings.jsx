@@ -258,6 +258,18 @@ export default function VendorBookings() {
 
         const handleSocketNotification = (data) => {
             console.log('[VendorBookings] Real-time socket event received:', data);
+            const targetBookingId = data?.bookingId || data?.booking?._id || data?.id || data?._id;
+            if (targetBookingId) {
+                setActiveBookings(prev => prev.map(b => (b._id === targetBookingId || b.id === targetBookingId) ? {
+                    ...b,
+                    ...(data.booking || {}),
+                    scheduledDate: data.scheduledDate || data.booking?.scheduledDate || b.scheduledDate,
+                    scheduledTime: data.scheduledTime || data.booking?.scheduledTime || b.scheduledTime,
+                    rescheduleCount: data.rescheduleCount ?? data.booking?.rescheduleCount ?? b.rescheduleCount,
+                    rescheduleHistory: data.rescheduleHistory || data.booking?.rescheduleHistory || b.rescheduleHistory,
+                    status: data.status || data.booking?.status || b.status
+                } : b));
+            }
             if (loadAllBookingsRef.current) {
                 loadAllBookingsRef.current(false);
             }
@@ -269,6 +281,8 @@ export default function VendorBookings() {
         socket.on('new_booking', handleSocketNotification);
         socket.on('booking_updated', handleSocketNotification);
         socket.on('booking_status_updated', handleSocketNotification);
+        socket.on('BOOKING_RESCHEDULED', handleSocketNotification);
+        socket.on('booking_rescheduled', handleSocketNotification);
 
         return () => {
             socket.off('new_notification', handleSocketNotification);
@@ -277,6 +291,8 @@ export default function VendorBookings() {
             socket.off('new_booking', handleSocketNotification);
             socket.off('booking_updated', handleSocketNotification);
             socket.off('booking_status_updated', handleSocketNotification);
+            socket.off('BOOKING_RESCHEDULED', handleSocketNotification);
+            socket.off('booking_rescheduled', handleSocketNotification);
         };
     }, [socket]);
 

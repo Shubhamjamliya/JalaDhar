@@ -47,20 +47,19 @@ export default function VendorOngoingBookingCard({
     const navigate = useNavigate();
     const toast = useToast();
     const { socket } = useNotifications();
-    const gpsWatchIdRef = useRef(null);
-
-    const [localBooking, setLocalBooking] = useState(booking);
+    const [localOverride, setLocalOverride] = useState(null);
     const [showTimePickerModal, setShowTimePickerModal] = useState(false);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState("09:00 AM - 10:00 AM");
     const [isSavingSchedule, setIsSavingSchedule] = useState(false);
     const [pendingStartJourney, setPendingStartJourney] = useState(false);
 
+    // Reset local override whenever parent prop booking changes
     useEffect(() => {
-        setLocalBooking(booking);
-    }, [booking]);
+        setLocalOverride(null);
+    }, [booking?._id, booking?.scheduledDate, booking?.scheduledTime, booking?.rescheduleCount, booking?.status]);
 
     // Sockets and rooms rely on the internal MongoDB _id
-    const currentBooking = localBooking || booking;
+    const currentBooking = localOverride ? { ...booking, ...localOverride } : (booking || {});
     const bookingId = currentBooking?._id;
     const status = (currentBooking?.status || currentBooking?.vendorStatus || "").toUpperCase();
     const isEnRoute = status === "EN_ROUTE";
@@ -234,7 +233,7 @@ export default function VendorOngoingBookingCard({
                     ...currentBooking,
                     scheduledTime: selectedTimeSlot
                 };
-                setLocalBooking(updatedBooking);
+                setLocalOverride(updatedBooking);
                 setShowTimePickerModal(false);
 
                 if (pendingStartJourney) {
