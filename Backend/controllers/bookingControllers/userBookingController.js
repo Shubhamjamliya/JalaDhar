@@ -2314,8 +2314,8 @@ const rescheduleBooking = async (req, res) => {
     }
 
     const previousDate = booking.scheduledDate || new Date();
-    const previousTime = booking.scheduledTime || '09:00 AM - 11:00 AM';
-    const newFormattedTime = scheduledTime || booking.scheduledTime || '09:00 AM - 11:00 AM';
+    const previousTime = booking.scheduledTime || 'Time TBD by Expert';
+    const newFormattedTime = scheduledTime || 'Time TBD by Expert';
 
     // Update booking schedule
     booking.scheduledDate = requestedDate;
@@ -2334,7 +2334,7 @@ const rescheduleBooking = async (req, res) => {
       previousTime: previousTime,
       newDate: requestedDate,
       newTime: newFormattedTime,
-      reason: reason ? reason.trim() : 'Customer voluntary date/time reschedule',
+      reason: reason ? reason.trim() : 'Customer voluntary date reschedule',
       status: 'APPLIED',
       createdAt: new Date()
     });
@@ -2344,6 +2344,7 @@ const rescheduleBooking = async (req, res) => {
     // Send notifications to Vendor and User
     const shortBookingId = booking._id.toString().slice(-4).toUpperCase();
     const formattedNewDate = requestedDate.toLocaleDateString('en-IN', {
+      weekday: 'short',
       day: 'numeric',
       month: 'short',
       year: 'numeric'
@@ -2378,7 +2379,7 @@ const rescheduleBooking = async (req, res) => {
         recipientModel: 'Vendor',
         type: 'BOOKING_RESCHEDULED',
         title: 'Survey Appointment Rescheduled 🗓️',
-        message: `Customer rescheduled booking #JALA${shortBookingId} to ${formattedNewDate} (${newFormattedTime}). Reason: ${reason ? reason.trim() : 'Customer requested date change'}`,
+        message: `Customer rescheduled booking #JALA${shortBookingId} to ${formattedNewDate}. Please set your visit arrival time slot. Reason: ${reason ? reason.trim() : 'Customer requested date change'}`,
         relatedEntity: {
           entityType: 'Booking',
           entityId: booking._id

@@ -6,9 +6,6 @@ import {
     IoAlertCircleOutline,
     IoCheckmarkCircleOutline,
     IoCloseOutline,
-    IoSunnyOutline,
-    IoPartlySunnyOutline,
-    IoMoonOutline,
     IoInformationCircleOutline,
     IoShieldCheckmarkOutline,
     IoChevronDownOutline,
@@ -24,7 +21,8 @@ import {
 /**
  * RescheduleModal Component
  * Ultra-modern, responsive modal for rescheduling groundwater survey appointments.
- * Enforces expert working day availability guardrails, custom dropdown, and DD/MM/YYYY date formatting.
+ * Follows the standard 2-step flow (Date + Reason) matching normal booking,
+ * where the expert confirms the visit arrival slot.
  * 
  * @param {boolean} isOpen - Controls modal visibility
  * @param {function} onClose - Closes the modal
@@ -54,7 +52,6 @@ export default function RescheduleModal({
     };
 
     const [selectedDate, setSelectedDate] = useState("");
-    const [selectedTimeSlot, setSelectedTimeSlot] = useState("09:00 AM - 11:00 AM");
     const [reasonCategory, setReasonCategory] = useState("Personal / Family emergency");
     const [customReason, setCustomReason] = useState("");
     const [formError, setFormError] = useState("");
@@ -111,7 +108,6 @@ export default function RescheduleModal({
                 })();
 
                 setSelectedDate(firstAvailable);
-                setSelectedTimeSlot("09:00 AM - 11:00 AM");
                 setReasonCategory("Personal / Family emergency");
                 setCustomReason("");
                 setFormError("");
@@ -209,14 +205,6 @@ export default function RescheduleModal({
 
     if (!isOpen) return null;
 
-    const timeSlots = [
-        { label: "Morning (08:00 AM - 11:00 AM)", value: "08:00 AM - 11:00 AM", icon: IoSunnyOutline, period: "Morning" },
-        { label: "Noon (11:00 AM - 01:00 PM)", value: "11:00 AM - 01:00 PM", icon: IoPartlySunnyOutline, period: "Noon" },
-        { label: "Afternoon (02:00 PM - 04:00 PM)", value: "02:00 PM - 04:00 PM", icon: IoPartlySunnyOutline, period: "Afternoon" },
-        { label: "Evening (04:00 PM - 06:00 PM)", value: "04:00 PM - 06:00 PM", icon: IoMoonOutline, period: "Evening" },
-        { label: "Time TBD by Expert", value: "Time TBD by Expert", icon: IoTimeOutline, period: "Flexible" }
-    ];
-
     const reasonOptions = [
         { label: "Personal / Family emergency", icon: "🚨", desc: "Urgent personal or family matter" },
         { label: "Site / Land preparation pending", icon: "🚜", desc: "Clearing or groundwork not ready" },
@@ -263,7 +251,7 @@ export default function RescheduleModal({
 
         onReschedule({
             scheduledDate: selectedDate,
-            scheduledTime: selectedTimeSlot,
+            scheduledTime: "Time TBD by Expert",
             reason: fullReason
         });
     };
@@ -300,7 +288,7 @@ export default function RescheduleModal({
                                 <IoSparklesOutline className="text-amber-500 text-sm hidden sm:inline" />
                             </h3>
                             <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
-                                Shift your groundwater inspection date & slot
+                                Choose a new date for your groundwater survey
                             </p>
                         </div>
                     </div>
@@ -345,7 +333,7 @@ export default function RescheduleModal({
                                 <strong className="text-slate-900 font-extrabold text-xs mt-0.5 block">{currentFormattedDate}</strong>
                             </div>
                             <div className="bg-white p-2.5 rounded-xl border border-slate-200/60">
-                                <span className="text-slate-500 block text-[10.5px] font-medium">Time Window</span>
+                                <span className="text-slate-500 block text-[10.5px] font-medium">Current Time</span>
                                 <strong className="text-slate-900 font-extrabold text-xs mt-0.5 block">{currentBooking?.scheduledTime || "TBD"}</strong>
                             </div>
                         </div>
@@ -459,52 +447,10 @@ export default function RescheduleModal({
                         </div>
                     </div>
 
-                    {/* Step 2: Preferred Time Slot */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[11px] font-black">2</span>
-                            <span>Preferred Time Slot</span>
-                        </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {timeSlots.map((slot) => {
-                                const Icon = slot.icon;
-                                const isSelected = selectedTimeSlot === slot.value;
-                                return (
-                                    <button
-                                        type="button"
-                                        key={slot.value}
-                                        onClick={() => setSelectedTimeSlot(slot.value)}
-                                        className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between gap-2.5 cursor-pointer ${
-                                            isSelected
-                                                ? "border-[#0A84FF] bg-blue-50/80 text-[#0A84FF] font-bold shadow-xs ring-2 ring-blue-500/20"
-                                                : "border-slate-200/90 hover:border-slate-300 text-slate-700 bg-white hover:bg-slate-50/60"
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-2.5 min-w-0">
-                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                                                isSelected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
-                                            }`}>
-                                                <Icon className="text-sm" />
-                                            </div>
-                                            <div className="truncate">
-                                                <span className="text-xs font-bold block truncate">{slot.label}</span>
-                                            </div>
-                                        </div>
-                                        {isSelected ? (
-                                            <IoCheckmarkCircleOutline className="text-lg text-[#0A84FF] shrink-0" />
-                                        ) : (
-                                            <div className="w-4 h-4 rounded-full border border-slate-300 shrink-0" />
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Step 3: Reason for Rescheduling (Custom Dropdown) */}
+                    {/* Step 2: Reason for Rescheduling (Custom Dropdown) */}
                     <div className="space-y-2" ref={reasonDropdownRef}>
                         <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[11px] font-black">3</span>
+                            <span className="w-5 h-5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[11px] font-black">2</span>
                             <span>Reason for Reschedule</span>
                         </label>
 
@@ -578,6 +524,14 @@ export default function RescheduleModal({
                             placeholder="Optional: Add a specific note or instruction for the hydrogeologist..."
                             className="w-full p-3 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent resize-none bg-white placeholder:text-slate-400"
                         />
+                    </div>
+
+                    {/* Time Slot Notice */}
+                    <div className="flex items-start gap-2.5 text-[11px] text-blue-900 bg-blue-50/70 p-3 rounded-xl border border-blue-200/80">
+                        <IoTimeOutline className="text-[#0A84FF] text-base shrink-0 mt-0.5" />
+                        <div>
+                            <strong className="text-blue-950 font-bold">Visit Arrival Time:</strong> The assigned expert will confirm their exact visit arrival time slot based on their daily survey route.
+                        </div>
                     </div>
 
                     {/* Policy Disclaimer */}
