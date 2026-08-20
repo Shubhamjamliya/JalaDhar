@@ -1422,7 +1422,7 @@ export default function VendorBookingDetails() {
                                             Rescheduled
                                         </span>
                                     )}
-                                    {!isStartOtpVerified && !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(booking.status) && (
+                                    {!booking?.otp?.startSurvey?.verified && !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(booking?.status) && (
                                         <button
                                             type="button"
                                             onClick={handleOpenUpdateSchedule}
