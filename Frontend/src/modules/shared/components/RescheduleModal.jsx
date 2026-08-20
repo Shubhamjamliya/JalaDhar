@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
     IoCalendarOutline,
     IoTimeOutline,
@@ -9,12 +9,22 @@ import {
     IoSunnyOutline,
     IoPartlySunnyOutline,
     IoMoonOutline,
-    IoInformationCircleOutline
+    IoInformationCircleOutline,
+    IoShieldCheckmarkOutline,
+    IoChevronDownOutline,
+    IoSparklesOutline
 } from "react-icons/io5";
+import {
+    isExpertAvailableOnDate,
+    getNextAvailableDates,
+    formatWorkingDays,
+    normalizeWorkingDays
+} from "../../../utils/availabilityUtils";
 
 /**
  * RescheduleModal Component
- * Allows customers to reschedule groundwater survey appointments with guardrails.
+ * Ultra-modern, responsive modal for rescheduling groundwater survey appointments.
+ * Enforces expert working day availability guardrails and DD/MM/YYYY date formatting.
  * 
  * @param {boolean} isOpen - Controls modal visibility
  * @param {function} onClose - Closes the modal
@@ -31,13 +41,11 @@ export default function RescheduleModal({
 }) {
     const rescheduleCount = currentBooking?.rescheduleCount || 0;
     const reschedulesRemaining = Math.max(0, 2 - rescheduleCount);
+    const expert = currentBooking?.vendor;
 
-    // Initial state calculation
-    const getTomorrowDate = () => {
-        const d = new Date();
-        d.setDate(d.getDate() + 1);
-        return d.toISOString().split("T")[0];
-    };
+    const expertScheduleText = useMemo(() => {
+        return formatWorkingDays(expert?.workingDays);
+    }, [expert?.workingDays]);
 
     const getMaxDate = () => {
         const d = new Date();
@@ -50,11 +58,53 @@ export default function RescheduleModal({
     const [reasonCategory, setReasonCategory] = useState("Personal / Family emergency");
     const [customReason, setCustomReason] = useState("");
     const [formError, setFormError] = useState("");
+    const dateInputRef = useRef(null);
 
-    // Lock body scroll when open
+    // Format YYYY-MM-DD to DD/MM/YYYY
+    const formatToDDMMYYYY = (isoDate) => {
+        if (!isoDate) return "";
+        const parts = isoDate.split("-");
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+        }
+        return isoDate;
+    };
+
+    // Calculate next available working dates for this expert
+    const availableQuickDates = useMemo(() => {
+        const upcoming = getNextAvailableDates(expert, 4);
+        if (upcoming && upcoming.length > 0) {
+            return upcoming;
+        }
+
+        // Fallback if no specific working days configured
+        const fallback = [];
+        const today = new Date();
+        for (let i = 1; i <= 4; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
+            const dateStr = d.toISOString().split("T")[0];
+            const shortDay = d.toLocaleDateString("en-IN", { weekday: "short" });
+            const dayNum = d.getDate();
+            const monthStr = d.toLocaleDateString("en-IN", { month: "short" });
+            fallback.push({
+                date: dateStr,
+                formattedDisplay: i === 1 ? "Tomorrow" : `${shortDay}, ${dayNum} ${monthStr}`
+            });
+        }
+        return fallback;
+    }, [expert]);
+
+    // Lock body scroll and set default available date when opened
     useEffect(() => {
         if (isOpen) {
-            setSelectedDate(getTomorrowDate());
+            const firstAvailable = availableQuickDates[0]?.date || (() => {
+                const d = new Date();
+                d.setDate(d.getDate() + 1);
+                return d.toISOString().split("T")[0];
+            })();
+
+            setSelectedDate(firstAvailable);
             setSelectedTimeSlot("09:00 AM - 11:00 AM");
             setReasonCategory("Personal / Family emergency");
             setCustomReason("");
@@ -69,16 +119,72 @@ export default function RescheduleModal({
                 document.documentElement.style.overflow = originalHtmlOverflow;
             };
         }
-    }, [isOpen]);
+    }, [isOpen, availableQuickDates]);
+
+    const isCurrentDateAvailable = useMemo(() => {
+        if (!selectedDate) return false;
+        return isExpertAvailableOnDate(expert, selectedDate);
+    }, [expert, selectedDate]);
+
+    const handleDateChange = (newDateVal) => {
+        setSelectedDate(newDateVal);
+        if (!newDateVal) {
+            setFormError("Please select a valid date.");
+            return;
+        }
+
+        const chosenDate = new Date(newDateVal);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (chosenDate < today) {
+            setFormError("Rescheduled date cannot be in the past.");
+            return;
+        }
+
+        const available = isExpertAvailableOnDate(expert, newDateVal);
+        if (!available) {
+            let dayName = "that day";
+            try {
+                const parts = newDateVal.split("-");
+                if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    dayName = d.toLocaleDateString("en-US", { weekday: "long" }) + "s";
+                }
+            } catch {}
+            setFormError(`The assigned expert is not available on ${dayName}. Active schedule: ${expertScheduleText}. Please choose an available working day.`);
+        } else {
+            setFormError("");
+        }
+    };
+
+    const formattedSelectedDatePreview = useMemo(() => {
+        if (!selectedDate) return "";
+        try {
+            const parts = selectedDate.split("-");
+            if (parts.length === 3) {
+                const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                return d.toLocaleDateString("en-IN", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric"
+                });
+            }
+        } catch {
+            return "";
+        }
+        return "";
+    }, [selectedDate]);
 
     if (!isOpen) return null;
 
     const timeSlots = [
-        { label: "Morning (08:00 AM - 11:00 AM)", value: "08:00 AM - 11:00 AM", icon: IoSunnyOutline },
-        { label: "Noon (11:00 AM - 01:00 PM)", value: "11:00 AM - 01:00 PM", icon: IoPartlySunnyOutline },
-        { label: "Afternoon (02:00 PM - 04:00 PM)", value: "02:00 PM - 04:00 PM", icon: IoPartlySunnyOutline },
-        { label: "Evening (04:00 PM - 06:00 PM)", value: "04:00 PM - 06:00 PM", icon: IoMoonOutline },
-        { label: "Time TBD by Expert", value: "Time TBD by Expert", icon: IoTimeOutline }
+        { label: "Morning (08:00 AM - 11:00 AM)", value: "08:00 AM - 11:00 AM", icon: IoSunnyOutline, period: "Morning" },
+        { label: "Noon (11:00 AM - 01:00 PM)", value: "11:00 AM - 01:00 PM", icon: IoPartlySunnyOutline, period: "Noon" },
+        { label: "Afternoon (02:00 PM - 04:00 PM)", value: "02:00 PM - 04:00 PM", icon: IoPartlySunnyOutline, period: "Afternoon" },
+        { label: "Evening (04:00 PM - 06:00 PM)", value: "04:00 PM - 06:00 PM", icon: IoMoonOutline, period: "Evening" },
+        { label: "Time TBD by Expert", value: "Time TBD by Expert", icon: IoTimeOutline, period: "Flexible" }
     ];
 
     const reasonOptions = [
@@ -89,12 +195,6 @@ export default function RescheduleModal({
         "Laborer / Drilling rig availability issue",
         "Other reason"
     ];
-
-    const handleQuickDateSelect = (daysToAdd) => {
-        const d = new Date();
-        d.setDate(d.getDate() + daysToAdd);
-        setSelectedDate(d.toISOString().split("T")[0]);
-    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -114,6 +214,19 @@ export default function RescheduleModal({
             return;
         }
 
+        if (!isExpertAvailableOnDate(expert, selectedDate)) {
+            let dayName = "that day";
+            try {
+                const parts = selectedDate.split("-");
+                if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    dayName = d.toLocaleDateString("en-US", { weekday: "long" }) + "s";
+                }
+            } catch {}
+            setFormError(`The assigned expert is not available on ${dayName}. Active schedule: ${expertScheduleText}.`);
+            return;
+        }
+
         const fullReason = customReason.trim()
             ? `${reasonCategory} - ${customReason.trim()}`
             : reasonCategory;
@@ -125,7 +238,7 @@ export default function RescheduleModal({
         });
     };
 
-    const currentExpertName = currentBooking?.vendor?.name || "Assigned Expert";
+    const currentExpertName = expert?.name || "Assigned Expert Hydrogeologist";
     const currentFormattedDate = currentBooking?.scheduledDate
         ? new Date(currentBooking.scheduledDate).toLocaleDateString("en-IN", {
             day: "numeric",
@@ -136,124 +249,191 @@ export default function RescheduleModal({
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200 overflow-y-auto"
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-950/65 backdrop-blur-sm p-0 sm:p-4 transition-all duration-300 animate-in fade-in"
             onClick={(e) => {
                 if (e.target === e.currentTarget && !isLoading) onClose();
             }}
         >
             <div
-                className="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-auto overflow-hidden transform transition-all animate-in zoom-in-95 duration-200 border border-slate-100 my-8"
+                className="bg-white rounded-t-[28px] sm:rounded-[24px] shadow-2xl max-w-lg w-full mx-auto flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden transform transition-all animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 border border-slate-100"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Modal Header */}
-                <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50/50 via-white to-slate-50/50">
+                {/* ── 1. STICKY MODAL HEADER ── */}
+                <div className="px-5 py-4 sm:px-6 sm:py-4.5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50/70 via-white to-sky-50/40 shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-blue-100 text-[#0A84FF] flex items-center justify-center shadow-xs">
-                            <IoCalendarOutline className="text-2xl" />
+                        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
+                            <IoCalendarOutline className="text-xl sm:text-2xl" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-black text-slate-900 leading-tight">
-                                Reschedule Survey
+                            <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight flex items-center gap-1.5">
+                                <span>Reschedule Survey</span>
+                                <IoSparklesOutline className="text-amber-500 text-sm hidden sm:inline" />
                             </h3>
-                            <p className="text-xs text-slate-500 font-medium mt-0.5">
+                            <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
                                 Shift your groundwater inspection date & slot
                             </p>
                         </div>
                     </div>
                     <button
+                        type="button"
                         onClick={onClose}
                         disabled={isLoading}
-                        className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
+                        className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50 shrink-0"
                     >
-                        <IoCloseOutline className="text-xl" />
+                        <IoCloseOutline className="text-lg sm:text-xl" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5">
-                    {/* Remaining Reschedules Pill */}
-                    <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 border border-blue-200 text-xs">
-                        <div className="flex items-center gap-2 text-blue-900 font-bold">
-                            <IoInformationCircleOutline className="text-base text-[#0A84FF]" />
+                {/* ── 2. SCROLLABLE FORM BODY ── */}
+                <form id="reschedule-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4.5 overscroll-contain">
+                    {/* Remaining Reschedules Banner */}
+                    <div className="flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50/60 border border-blue-200/80 shadow-2xs text-xs">
+                        <div className="flex items-center gap-2 text-blue-950 font-bold">
+                            <div className="w-6 h-6 rounded-full bg-blue-600/10 text-[#0A84FF] flex items-center justify-center shrink-0">
+                                <IoInformationCircleOutline className="text-base" />
+                            </div>
                             <span>Free Reschedules Remaining:</span>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full bg-[#0A84FF] text-white font-extrabold text-[11px] shadow-xs">
+                        <span className="px-3 py-1 rounded-full bg-[#0A84FF] text-white font-black text-[11px] shadow-xs tracking-wide">
                             {reschedulesRemaining} of 2 Left
                         </span>
                     </div>
 
-                    {/* Current Appointment Snapshot */}
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs">
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                            Current Schedule
-                        </span>
-                        <div className="grid grid-cols-2 gap-2 text-slate-700">
-                            <div>
-                                <span className="text-slate-500 block text-[11px]">Scheduled Date:</span>
-                                <strong className="text-slate-900 font-bold">{currentFormattedDate}</strong>
+                    {/* Current Appointment Snapshot & Expert Schedule */}
+                    <div className="p-4 rounded-2xl bg-slate-50/90 border border-slate-200/80 space-y-2.5 text-xs">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                                Current Schedule
+                            </span>
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                                Confirmed
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 pt-0.5">
+                            <div className="bg-white p-2.5 rounded-xl border border-slate-200/60">
+                                <span className="text-slate-500 block text-[10.5px] font-medium">Scheduled Date</span>
+                                <strong className="text-slate-900 font-extrabold text-xs mt-0.5 block">{currentFormattedDate}</strong>
                             </div>
-                            <div>
-                                <span className="text-slate-500 block text-[11px]">Time Window:</span>
-                                <strong className="text-slate-900 font-bold">{currentBooking?.scheduledTime || "TBD"}</strong>
+                            <div className="bg-white p-2.5 rounded-xl border border-slate-200/60">
+                                <span className="text-slate-500 block text-[10.5px] font-medium">Time Window</span>
+                                <strong className="text-slate-900 font-extrabold text-xs mt-0.5 block">{currentBooking?.scheduledTime || "TBD"}</strong>
                             </div>
-                            <div className="col-span-2 pt-1 border-t border-slate-200/60 flex items-center gap-1.5 text-slate-600">
-                                <IoPersonOutline className="text-slate-500" />
-                                <span>Expert: <strong className="text-slate-800">{currentExpertName}</strong></span>
+                        </div>
+
+                        {/* Expert Info & Working Days Schedule */}
+                        <div className="pt-2 border-t border-slate-200/60 space-y-1.5 text-slate-700">
+                            <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center shrink-0 text-xs font-bold">
+                                    <IoPersonOutline className="text-xs" />
+                                </div>
+                                <span className="truncate">
+                                    Expert: <strong className="text-slate-900">{currentExpertName}</strong>
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] text-blue-800 bg-blue-50/80 px-2.5 py-1 rounded-lg border border-blue-200/60 font-semibold">
+                                <IoCalendarOutline className="text-xs text-[#0A84FF] shrink-0" />
+                                <span>Expert Working Schedule: <strong>{expertScheduleText}</strong></span>
                             </div>
                         </div>
                     </div>
 
                     {/* Error Banner if any */}
                     {formError && (
-                        <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2 text-xs text-rose-700 font-semibold animate-in fade-in">
-                            <IoAlertCircleOutline className="text-base flex-shrink-0" />
+                        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-xs text-rose-700 font-semibold animate-in fade-in">
+                            <IoAlertCircleOutline className="text-lg shrink-0 mt-0.5" />
                             <span>{formError}</span>
                         </div>
                     )}
 
                     {/* Step 1: Select New Date */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
-                            1. Select New Date
-                        </label>
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            min={getTomorrowDate()}
-                            max={getMaxDate()}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            required
-                            className="w-full p-3 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white shadow-2xs"
-                        />
-                        {/* Quick Selection Chips */}
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                            <button
-                                type="button"
-                                onClick={() => handleQuickDateSelect(1)}
-                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
-                            >
-                                Tomorrow
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleQuickDateSelect(2)}
-                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
-                            >
-                                In 2 Days
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleQuickDateSelect(5)}
-                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
-                            >
-                                In 5 Days
-                            </button>
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="w-5 h-5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[11px] font-black">1</span>
+                                <span>Select New Date</span>
+                            </label>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-md">
+                                DD/MM/YYYY
+                            </span>
+                        </div>
+
+                        {/* Custom Date Input Display with Overlay Native Picker */}
+                        <div className="relative group">
+                            <div className={`w-full py-3 px-4 rounded-xl border bg-white shadow-2xs flex items-center justify-between transition-all ${
+                                !isCurrentDateAvailable
+                                    ? "border-rose-400 ring-2 ring-rose-200"
+                                    : "border-slate-300 group-hover:border-blue-400"
+                            }`}>
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                        !isCurrentDateAvailable ? "bg-rose-50 text-rose-600" : "bg-blue-50 text-[#0A84FF]"
+                                    }`}>
+                                        <IoCalendarOutline className="text-lg" />
+                                    </div>
+                                    <div>
+                                        <span className="text-base font-black text-slate-900 tracking-wider">
+                                            {formatToDDMMYYYY(selectedDate) || "DD/MM/YYYY"}
+                                        </span>
+                                        {formattedSelectedDatePreview && (
+                                            <span className={`block text-[11px] font-semibold ${
+                                                !isCurrentDateAvailable ? "text-rose-600" : "text-[#0A84FF]"
+                                            }`}>
+                                                {formattedSelectedDatePreview} {!isCurrentDateAvailable && "(Expert Unavailable)"}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="text-slate-400 group-hover:text-[#0A84FF] transition-colors pr-1">
+                                    <IoCalendarOutline className="text-xl" />
+                                </div>
+                            </div>
+
+                            {/* Transparent Native Date Picker Overlay */}
+                            <input
+                                type="date"
+                                ref={dateInputRef}
+                                value={selectedDate}
+                                min={availableQuickDates[0]?.date || new Date().toISOString().split("T")[0]}
+                                max={getMaxDate()}
+                                onChange={(e) => handleDateChange(e.target.value)}
+                                required
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                title="Click to select date"
+                            />
+                        </div>
+
+                        {/* Quick Selection Chips - Filtered to Expert Available Working Days */}
+                        <div className="space-y-1 pt-1">
+                            <span className="text-[10.5px] text-slate-500 font-medium block">
+                                Available dates for {currentExpertName.split(" ")[0]}:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                                {availableQuickDates.map((chip) => {
+                                    const isActive = selectedDate === chip.date;
+                                    return (
+                                        <button
+                                            type="button"
+                                            key={chip.date}
+                                            onClick={() => handleDateChange(chip.date)}
+                                            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
+                                                isActive
+                                                    ? "bg-blue-600 text-white border-blue-600 shadow-xs scale-102"
+                                                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200/60"
+                                            }`}
+                                        >
+                                            {chip.formattedDisplay} ({formatToDDMMYYYY(chip.date)})
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
 
                     {/* Step 2: Preferred Time Slot */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
-                            2. Preferred Time Slot
+                        <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[11px] font-black">2</span>
+                            <span>Preferred Time Slot</span>
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {timeSlots.map((slot) => {
@@ -264,17 +444,27 @@ export default function RescheduleModal({
                                         type="button"
                                         key={slot.value}
                                         onClick={() => setSelectedTimeSlot(slot.value)}
-                                        className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                                        className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between gap-2.5 cursor-pointer ${
                                             isSelected
-                                                ? "border-[#0A84FF] bg-blue-50/70 text-[#0A84FF] font-bold shadow-2xs"
-                                                : "border-slate-200 hover:border-slate-300 text-slate-700 bg-white"
+                                                ? "border-[#0A84FF] bg-blue-50/80 text-[#0A84FF] font-bold shadow-xs ring-2 ring-blue-500/20"
+                                                : "border-slate-200/90 hover:border-slate-300 text-slate-700 bg-white hover:bg-slate-50/60"
                                         }`}
                                     >
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <Icon className={`text-base flex-shrink-0 ${isSelected ? "text-[#0A84FF]" : "text-slate-400"}`} />
-                                            <span className="text-xs truncate">{slot.label}</span>
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                                                isSelected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
+                                            }`}>
+                                                <Icon className="text-sm" />
+                                            </div>
+                                            <div className="truncate">
+                                                <span className="text-xs font-bold block truncate">{slot.label}</span>
+                                            </div>
                                         </div>
-                                        {isSelected && <IoCheckmarkCircleOutline className="text-base text-[#0A84FF] flex-shrink-0" />}
+                                        {isSelected ? (
+                                            <IoCheckmarkCircleOutline className="text-lg text-[#0A84FF] shrink-0" />
+                                        ) : (
+                                            <div className="w-4 h-4 rounded-full border border-slate-300 shrink-0" />
+                                        )}
                                     </button>
                                 );
                             })}
@@ -283,58 +473,68 @@ export default function RescheduleModal({
 
                     {/* Step 3: Reason for Rescheduling */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
-                            3. Reason for Reschedule
+                        <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[11px] font-black">3</span>
+                            <span>Reason for Reschedule</span>
                         </label>
-                        <select
-                            value={reasonCategory}
-                            onChange={(e) => setReasonCategory(e.target.value)}
-                            className="w-full p-3 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white"
-                        >
-                            {reasonOptions.map((opt) => (
-                                <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                        </select>
+
+                        <div className="relative">
+                            <select
+                                value={reasonCategory}
+                                onChange={(e) => setReasonCategory(e.target.value)}
+                                className="w-full py-3 px-4 pr-10 rounded-xl border border-slate-300 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white appearance-none cursor-pointer"
+                            >
+                                {reasonOptions.map((opt) => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                            </select>
+                            <IoChevronDownOutline className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-sm" />
+                        </div>
+
                         <textarea
                             rows={2}
                             value={customReason}
                             onChange={(e) => setCustomReason(e.target.value)}
-                            placeholder="Optional: Add a message or note for the expert..."
-                            className="w-full p-3 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent resize-none"
+                            placeholder="Optional: Add a specific note or instruction for the hydrogeologist..."
+                            className="w-full p-3 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent resize-none bg-white placeholder:text-slate-400"
                         />
                     </div>
 
                     {/* Policy Disclaimer */}
-                    <p className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
-                        🛡️ <strong>Zero Cancellation Penalty:</strong> Your 40% advance deposit carries over seamlessly. The assigned expert will receive an immediate schedule update.
-                    </p>
-
-                    {/* Footer Actions */}
-                    <div className="pt-3 border-t border-slate-100 flex gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            disabled={isLoading}
-                            className="flex-1 py-3 px-4 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-all cursor-pointer disabled:opacity-50"
-                        >
-                            Keep Current Date
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="flex-2 py-3 px-4 rounded-xl bg-[#0A84FF] hover:bg-[#0070DF] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-98"
-                        >
-                            {isLoading ? (
-                                <span>Updating Schedule...</span>
-                            ) : (
-                                <>
-                                    <IoCheckmarkCircleOutline className="text-base" />
-                                    <span>Confirm Reschedule</span>
-                                </>
-                            )}
-                        </button>
+                    <div className="flex items-start gap-2.5 text-[11px] text-slate-600 leading-relaxed bg-emerald-50/70 p-3 rounded-xl border border-emerald-200/80">
+                        <IoShieldCheckmarkOutline className="text-emerald-600 text-base shrink-0 mt-0.5" />
+                        <div>
+                            <strong className="text-emerald-950 font-bold">Zero Cancellation Penalty:</strong> Your 40% advance deposit carries over seamlessly. The assigned expert will receive an immediate schedule update.
+                        </div>
                     </div>
                 </form>
+
+                {/* ── 3. STICKY FOOTER ACTIONS ── */}
+                <div className="p-4 sm:p-5 border-t border-slate-100 bg-white/95 backdrop-blur-md shrink-0 flex gap-3 shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={isLoading}
+                        className="flex-1 py-3.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-all cursor-pointer disabled:opacity-50 active:scale-98 text-center"
+                    >
+                        Keep Current Date
+                    </button>
+                    <button
+                        type="submit"
+                        form="reschedule-form"
+                        disabled={isLoading || !isCurrentDateAvailable}
+                        className="flex-[1.5] py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#0A84FF] to-blue-700 hover:from-[#0070DF] hover:to-blue-800 text-white font-extrabold text-xs shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-98"
+                    >
+                        {isLoading ? (
+                            <span>Updating Schedule...</span>
+                        ) : (
+                            <>
+                                <IoCheckmarkCircleOutline className="text-base" />
+                                <span>Confirm Reschedule</span>
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );

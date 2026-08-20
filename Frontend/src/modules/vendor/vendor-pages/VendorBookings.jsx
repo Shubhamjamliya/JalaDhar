@@ -16,6 +16,7 @@ import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import OTPInputModal from "../../shared/components/OTPInputModal";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 import VendorOngoingBookingCard from "../vendor-components/VendorOngoingBookingCard";
 
 export default function VendorBookings() {
@@ -69,6 +70,7 @@ export default function VendorBookings() {
     const [showStartOTPModal, setShowStartOTPModal] = useState(false);
     const [showEndOTPModal, setShowEndOTPModal] = useState(false);
     const [selectedBookingId, setSelectedBookingId] = useState(null);
+    const [earlyJourneyBooking, setEarlyJourneyBooking] = useState(null);
     const [verifyingOTP, setVerifyingOTP] = useState(false);
     const [resendingOTP, setResendingOTP] = useState(false);
     const toast = useToast();
@@ -158,7 +160,24 @@ export default function VendorBookings() {
         }
     };
 
+    const isFutureSurvey = (dateString) => {
+        if (!dateString) return false;
+        const surveyDate = new Date(dateString);
+        surveyDate.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return surveyDate > today;
+    };
+
     const handleMarkEnRoute = async (b) => {
+        if (isFutureSurvey(b?.scheduledDate)) {
+            setEarlyJourneyBooking(b);
+            return;
+        }
+        await executeMarkEnRoute(b);
+    };
+
+    const executeMarkEnRoute = async (b) => {
         const targetId = b._id || b.id;
         const loadingToast = toast.showLoading("Updating status to En Route...");
         try {
@@ -622,6 +641,33 @@ export default function VendorBookings() {
                 message="Please ask the customer for the End Survey OTP to complete the survey."
                 submitText="Verify OTP"
                 isLoading={verifyingOTP}
+            />
+
+            {/* Early Journey Departure Confirmation Modal */}
+            <ConfirmModal
+                isOpen={!!earlyJourneyBooking}
+                onClose={() => setEarlyJourneyBooking(null)}
+                onConfirm={async () => {
+                    const b = earlyJourneyBooking;
+                    setEarlyJourneyBooking(null);
+                    if (b) await executeMarkEnRoute(b);
+                }}
+                title="Early Departure Confirmation"
+                message={`This groundwater survey is scheduled for ${
+                    earlyJourneyBooking?.scheduledDate
+                        ? new Date(earlyJourneyBooking.scheduledDate).toLocaleDateString("en-IN", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric"
+                        })
+                        : "a future date"
+                }${
+                    earlyJourneyBooking?.scheduledTime ? ` (${earlyJourneyBooking.scheduledTime})` : ""
+                }.\n\nStarting the journey now will notify the customer that you are on your way and activate live GPS tracking.\n\nAre you sure you want to start traveling now?`}
+                confirmText="Yes, Start Journey"
+                cancelText="Cancel"
+                confirmColor="primary"
             />
         </PageContainer>
     );

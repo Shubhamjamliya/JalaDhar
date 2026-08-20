@@ -26,6 +26,10 @@ const notificationSchema = new mongoose.Schema({
       'BOOKING_COMPLETED',
       'BOOKING_FAILED',
       'BOOKING_REASSIGNED',
+      'BOOKING_CONFIRMED',
+      'BOOKING_RESCHEDULED',
+      'EXPERT_CANCELLED',
+      'UNABLE_TO_COMPLETE',
       // Report & Borewell
       'REPORT_UPLOADED',
       'REPORT_APPROVED',
@@ -56,6 +60,10 @@ const notificationSchema = new mongoose.Schema({
       // Service
       'SERVICE_APPROVED',
       'SERVICE_REJECTED',
+      // Wallet
+      'WITHDRAWAL_REQUEST',
+      'WITHDRAWAL_PROCESSED',
+      'PLATFORM_FEE_DEDUCTION',
       // Admin
       'NEW_VENDOR_REGISTRATION',
       'NEW_BOOKING_PENDING',
@@ -78,7 +86,7 @@ const notificationSchema = new mongoose.Schema({
   relatedEntity: {
     entityType: {
       type: String,
-      enum: ['Booking', 'Payment', 'Vendor', 'Service'],
+      enum: ['Booking', 'Payment', 'Vendor', 'Service', 'Dispute', 'Rating', 'User', 'Wallet'],
       default: null
     },
     entityId: {

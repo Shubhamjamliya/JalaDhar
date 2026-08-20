@@ -461,7 +461,7 @@ const createBooking = async (req, res) => {
 
     // Populate booking for response
     await booking.populate('user', 'name email phone alternatePhone');
-    await booking.populate('vendor', 'name email phone designation');
+    await booking.populate('vendor', 'name email phone designation workingDays workingHours');
     await booking.populate('service', 'name price');
 
     // Send notifications (asynchronously)
@@ -564,7 +564,7 @@ const getUserBookings = async (req, res) => {
 
     const [bookings, total] = await Promise.all([
       Booking.find(query)
-        .populate('vendor', 'name email phone rating designation')
+        .populate('vendor', 'name email phone rating designation workingDays workingHours')
         .populate('service', 'name price machineType')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -634,7 +634,7 @@ const getBookingDetails = async (req, res) => {
       user: userId
     })
       .populate('user', 'name email phone alternatePhone')
-      .populate('vendor', 'name email phone rating address designation')
+      .populate('vendor', 'name email phone rating address designation workingDays workingHours')
       .populate('service', 'name price machineType description');
 
     if (!booking) {
@@ -2283,8 +2283,38 @@ const rescheduleBooking = async (req, res) => {
       });
     }
 
-    const previousDate = booking.scheduledDate;
-    const previousTime = booking.scheduledTime || 'TBD';
+    // Validate vendor working day availability
+    if (booking.vendor && booking.vendor.workingDays) {
+      const dayOfWeek = checkDate.toLocaleDateString('en-US', { weekday: 'long' });
+      let activeDays = [];
+      const rawDays = booking.vendor.workingDays;
+      if (Array.isArray(rawDays)) {
+        activeDays = rawDays;
+      } else if (typeof rawDays === 'string') {
+        const trimmed = rawDays.trim().toLowerCase();
+        if (trimmed === 'all days' || trimmed === 'everyday' || trimmed === 'all' || trimmed === 'monday - sunday' || trimmed === 'monday to sunday') {
+          activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        } else if (trimmed === 'weekdays' || trimmed === 'monday - friday' || trimmed === 'monday to friday') {
+          activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        } else if (trimmed === 'weekends' || trimmed === 'weekends only' || trimmed === 'saturday & sunday' || trimmed === 'saturday - sunday') {
+          activeDays = ['Saturday', 'Sunday'];
+        } else if (trimmed === 'monday - saturday' || trimmed === 'monday to saturday') {
+          activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        } else if (rawDays.includes(',')) {
+          activeDays = rawDays.split(',').map(d => d.trim());
+        }
+      }
+
+      if (activeDays.length > 0 && !activeDays.some(d => d.toLowerCase() === dayOfWeek.toLowerCase())) {
+        return res.status(400).json({
+          success: false,
+          message: `The assigned expert is not available on ${dayOfWeek}s. Active schedule: ${activeDays.join(', ')}.`
+        });
+      }
+    }
+
+    const previousDate = booking.scheduledDate || new Date();
+    const previousTime = booking.scheduledTime || '09:00 AM - 11:00 AM';
     const newFormattedTime = scheduledTime || booking.scheduledTime || '09:00 AM - 11:00 AM';
 
     // Update booking schedule
@@ -2320,6 +2350,26 @@ const rescheduleBooking = async (req, res) => {
     });
 
     const io = getIO();
+
+    // Real-time socket broadcast for booking update
+    if (io) {
+      const bookingPayload = {
+        bookingId: booking._id.toString(),
+        scheduledDate: booking.scheduledDate,
+        scheduledTime: booking.scheduledTime,
+        rescheduleCount: booking.rescheduleCount,
+        reschedulesRemaining: Math.max(0, 2 - booking.rescheduleCount),
+        rescheduleHistory: booking.rescheduleHistory,
+        status: booking.status
+      };
+      const userIdStr = userId.toString();
+      io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
+      io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+      if (booking.vendor) {
+        const vendorIdStr = (booking.vendor._id || booking.vendor).toString();
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+      }
+    }
 
     // Notify Assigned Expert
     if (booking.vendor) {

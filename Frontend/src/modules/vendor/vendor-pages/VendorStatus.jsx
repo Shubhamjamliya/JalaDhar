@@ -48,6 +48,7 @@ export default function VendorStatus() {
     const [showRejectInput, setShowRejectInput] = useState(false);
     const [showRejectConfirm, setShowRejectConfirm] = useState(false);
     const [showVisitConfirm, setShowVisitConfirm] = useState(false);
+    const [showEarlyJourneyConfirm, setShowEarlyJourneyConfirm] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
     const [showMapPicker, setShowMapPicker] = useState(false);
     const loadBookingDetailsRef = useRef(null);
@@ -67,6 +68,15 @@ export default function VendorStatus() {
             };
         }
     }, [showAcceptConfirm]);
+
+    const isFutureSurvey = (dateString) => {
+        if (!dateString) return false;
+        const surveyDate = new Date(dateString);
+        surveyDate.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return surveyDate > today;
+    };
 
     const loadBookingDetails = async () => {
         try {
@@ -226,6 +236,14 @@ export default function VendorStatus() {
     };
 
     const handleMarkEnRoute = async () => {
+        if (isFutureSurvey(booking?.scheduledDate)) {
+            setShowEarlyJourneyConfirm(true);
+            return;
+        }
+        await executeMarkEnRoute();
+    };
+
+    const executeMarkEnRoute = async () => {
         const loadingToast = toast.showLoading("Updating status to En Route...");
         try {
             setActionLoading(true);
@@ -1186,6 +1204,32 @@ export default function VendorStatus() {
                     </div>
                 </div>
             )}
+
+            {/* Early Journey Departure Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showEarlyJourneyConfirm}
+                onClose={() => setShowEarlyJourneyConfirm(false)}
+                onConfirm={async () => {
+                    setShowEarlyJourneyConfirm(false);
+                    await executeMarkEnRoute();
+                }}
+                title="Early Departure Confirmation"
+                message={`This groundwater survey is scheduled for ${
+                    booking?.scheduledDate
+                        ? new Date(booking.scheduledDate).toLocaleDateString("en-IN", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric"
+                        })
+                        : "a future date"
+                }${
+                    booking?.scheduledTime ? ` (${booking.scheduledTime})` : ""
+                }.\n\nStarting the journey now will notify the customer that you are on your way and activate live GPS tracking.\n\nAre you sure you want to start traveling now?`}
+                confirmText="Yes, Start Journey"
+                cancelText="Cancel"
+                confirmColor="primary"
+            />
         </div>
     );
 }

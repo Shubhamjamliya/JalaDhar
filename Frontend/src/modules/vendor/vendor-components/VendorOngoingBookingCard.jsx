@@ -206,6 +206,11 @@ export default function VendorOngoingBookingCard({
                             {currentStatus.icon}
                             {currentStatus.label}
                         </span>
+                        {booking?.rescheduleCount > 0 && (
+                            <span className="px-2.5 py-0.5 font-bold text-[11px] rounded-md border bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                                🗓️ Rescheduled
+                            </span>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
@@ -256,6 +261,12 @@ export default function VendorOngoingBookingCard({
                         {surveyTime}
                     </span>
                 </div>
+
+                {booking?.rescheduleHistory && booking.rescheduleHistory.length > 0 && (
+                    <div className="p-2 rounded-lg bg-amber-50/90 border border-amber-200/70 text-[11px] text-amber-900 font-medium">
+                        <span className="font-bold">Reschedule Reason:</span> {booking.rescheduleHistory[booking.rescheduleHistory.length - 1].reason || "Customer requested date change"}
+                    </div>
+                )}
             </div>
 
             {/* ── 3. CURRENT STATUS PROGRESS STEP ── */}
