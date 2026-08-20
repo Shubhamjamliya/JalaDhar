@@ -115,11 +115,14 @@ export default function RescheduleModal({
 
             const originalBodyOverflow = document.body.style.overflow;
             const originalHtmlOverflow = document.documentElement.style.overflow;
+            const originalBodyTouchAction = document.body.style.touchAction;
             document.body.style.overflow = "hidden";
             document.documentElement.style.overflow = "hidden";
+            document.body.style.touchAction = "none";
             return () => {
                 document.body.style.overflow = originalBodyOverflow;
                 document.documentElement.style.overflow = originalHtmlOverflow;
+                document.body.style.touchAction = originalBodyTouchAction;
             };
         }
     }, [isOpen, expert]);
@@ -265,13 +268,13 @@ export default function RescheduleModal({
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-sm p-0 sm:p-4 transition-all duration-300 animate-in fade-in"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-sm p-0 sm:p-4 transition-all duration-300 animate-in fade-in overscroll-none touch-none select-none overflow-hidden"
             onClick={(e) => {
                 if (e.target === e.currentTarget && !isLoading) onClose();
             }}
         >
             <div
-                className="bg-white w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-lg rounded-none sm:rounded-[24px] shadow-2xl flex flex-col overflow-hidden transform transition-all animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 border-0 sm:border sm:border-slate-100"
+                className="bg-white w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-lg rounded-none sm:rounded-[24px] shadow-2xl flex flex-col overflow-hidden overscroll-none border-0 sm:border sm:border-slate-100"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* ── 1. HEADER ── */}
@@ -301,7 +304,7 @@ export default function RescheduleModal({
                 </div>
 
                 {/* ── 2. FORM BODY ── */}
-                <form id="reschedule-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 overscroll-contain">
+                <form id="reschedule-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 space-y-3.5 overscroll-contain touch-pan-y">
                     {/* Remaining Reschedules Banner */}
                     <div className="flex items-center justify-between py-2 px-3.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50/60 border border-blue-200/70 shadow-2xs text-xs">
                         <div className="flex items-center gap-1.5 text-blue-950 font-bold">
@@ -397,7 +400,7 @@ export default function RescheduleModal({
                         </div>
 
                         {/* Quick Selection Chips */}
-                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        <div className="flex flex-wrap gap-1.5 pt-0.5 overflow-hidden">
                             {availableQuickDates.map((chip) => {
                                 const isActive = selectedDate === chip.date;
                                 return (
@@ -407,7 +410,7 @@ export default function RescheduleModal({
                                         onClick={() => handleDateChange(chip.date)}
                                         className={`px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer border ${
                                             isActive
-                                                ? "bg-blue-600 text-white border-blue-600 shadow-2xs scale-102"
+                                                ? "bg-blue-600 text-white border-blue-600 shadow-2xs ring-2 ring-blue-500/20"
                                                 : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200/60"
                                         }`}
                                     >
