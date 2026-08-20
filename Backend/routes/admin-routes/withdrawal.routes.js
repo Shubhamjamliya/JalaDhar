@@ -7,13 +7,15 @@ const {
   approveWithdrawalRequest,
   rejectWithdrawalRequest,
   processWithdrawal,
-  createWithdrawalPayment
+  createWithdrawalPayment,
+  assignWithdrawalRequest
 } = require('../../controllers/adminControllers/withdrawalController');
 
 router.use(authenticate);
 router.use(isAdmin);
 
 router.get('/', getAllWithdrawalRequests);
+router.put('/:requestId/assign', assignWithdrawalRequest);
 router.put('/:vendorId/:requestId/approve', approveWithdrawalRequest);
 router.put('/:vendorId/:requestId/reject', rejectWithdrawalRequest);
 router.put('/:vendorId/:requestId/process', processWithdrawal);

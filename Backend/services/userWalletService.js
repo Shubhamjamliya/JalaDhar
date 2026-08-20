@@ -208,6 +208,14 @@ const createWithdrawalRequest = async (userId, amount, payoutData = {}) => {
       throw new Error('Please provide Account Number and IFSC Code for bank transfer payout');
     }
 
+    // Auto-assign to available Finance Admin using Least-Active-Load engine
+    const { autoAssignRequest } = require('./workloadDistributionService');
+    const assignment = await autoAssignRequest({
+      department: 'FINANCE',
+      statusAtAssignment: 'PENDING',
+      notes: 'Auto-assigned user refund withdrawal request'
+    });
+
     // Create withdrawal request in separate collection
     const withdrawalRequest = await UserWithdrawalRequest.create({
       user: userId,
@@ -216,7 +224,9 @@ const createWithdrawalRequest = async (userId, amount, payoutData = {}) => {
       upiId,
       accountDetails,
       status: 'PENDING',
-      requestedAt: new Date()
+      requestedAt: new Date(),
+      assignedTo: assignment.assignedTo || null,
+      assignmentHistory: assignment.auditRecord ? [assignment.auditRecord] : []
     });
 
     // Create transaction record
@@ -333,6 +343,12 @@ const processWithdrawalRequest = async (userId, requestId, action, adminId, data
 
     await user.save({ session });
     await session.commitTransaction();
+
+    // Decrement assigned Finance Admin active workload
+    if (['REJECT', 'PROCESS'].includes(action) && withdrawalRequest.assignedTo) {
+      const { decrementActiveWorkload } = require('./workloadDistributionService');
+      await decrementActiveWorkload(withdrawalRequest.assignedTo);
+    }
 
     return {
       success: true,

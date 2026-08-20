@@ -6,43 +6,71 @@ import {
     IoCloseCircleOutline,
     IoSearchOutline,
     IoFilterOutline,
+    IoPersonOutline,
+    IoSwapHorizontalOutline
 } from "react-icons/io5";
 import {
     getAllWithdrawalRequests,
     approveWithdrawalRequest,
     rejectWithdrawalRequest,
-    processWithdrawal
+    processWithdrawal,
+    assignWithdrawalRequestApi,
+    getAllAdmins
 } from "../../../services/adminApi";
+import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError, handleApiSuccess } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import AssignmentHistoryModal from "../admin-component/AssignmentHistoryModal";
 
 export default function AdminWithdrawals() {
     const toast = useToast();
+    const { admin: currentAdmin } = useAdminAuth();
     const [loading, setLoading] = useState(true);
     const [withdrawalRequests, setWithdrawalRequests] = useState([]);
     const [filteredRequests, setFilteredRequests] = useState([]);
-    const [activeTab, setActiveTab] = useState("all"); // all, pending, approved, rejected, processed
+    const [availableFinanceAdmins, setAvailableFinanceAdmins] = useState([]);
+    const [activeTab, setActiveTab] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
 
     // Modal states
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [showProcessModal, setShowProcessModal] = useState(false);
+    const [showAssignmentModal, setShowAssignmentModal] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [rejectionReason, setRejectionReason] = useState("");
-    const [razorpayPayoutId, setRazorpayPayoutId] = useState("");
+    const [transactionId, setTransactionId] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState("UPI");
+    const [notes, setNotes] = useState("");
     const [processing, setProcessing] = useState(false);
+
+    const isSuperAdmin = currentAdmin?.role === "SUPER_ADMIN";
 
     useEffect(() => {
         loadWithdrawalRequests();
+        loadAvailableFinanceAdmins();
     }, []);
 
     useEffect(() => {
         filterRequests();
     }, [withdrawalRequests, activeTab, searchQuery]);
+
+    const loadAvailableFinanceAdmins = async () => {
+        try {
+            const res = await getAllAdmins();
+            if (res.success && res.data?.admins) {
+                const financeAdmins = res.data.admins.filter(a =>
+                    a.isActive && ['FINANCE_ADMIN', 'SUPER_ADMIN'].includes(a.role)
+                );
+                setAvailableFinanceAdmins(financeAdmins);
+            }
+        } catch (err) {
+            console.error("Failed to load finance admins:", err);
+        }
+    };
 
     const loadWithdrawalRequests = async () => {
         try {
@@ -61,12 +89,10 @@ export default function AdminWithdrawals() {
     const filterRequests = () => {
         let filtered = [...withdrawalRequests];
 
-        // Filter by status
         if (activeTab !== "all") {
             filtered = filtered.filter(req => req.status.toLowerCase() === activeTab.toUpperCase());
         }
 
-        // Filter by search query
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter(req =>
@@ -77,15 +103,8 @@ export default function AdminWithdrawals() {
             );
         }
 
-        // Sort by requestedAt descending
         filtered.sort((a, b) => new Date(b.requestedAt) - new Date(a.requestedAt));
-
         setFilteredRequests(filtered);
-    };
-
-    const handleApprove = (request) => {
-        setSelectedRequest(request);
-        setShowApproveModal(true);
     };
 
     const handleApproveConfirm = async () => {
@@ -100,7 +119,7 @@ export default function AdminWithdrawals() {
                 handleApiSuccess(response, "Withdrawal request approved successfully!");
                 setShowApproveModal(false);
                 setSelectedRequest(null);
-                loadWithdrawalRequests();
+                await loadWithdrawalRequests();
             }
         } catch (err) {
             handleApiError(err, "Failed to approve withdrawal request");
@@ -109,30 +128,21 @@ export default function AdminWithdrawals() {
         }
     };
 
-    const handleReject = (request) => {
-        setSelectedRequest(request);
-        setRejectionReason("");
-        setShowRejectModal(true);
-    };
-
-    const handleRejectConfirm = async () => {
-        if (!selectedRequest || !rejectionReason.trim()) {
-            toast.showError("Please provide a rejection reason");
-            return;
-        }
+    const handleRejectConfirm = async (reason) => {
+        if (!selectedRequest) return;
         try {
             setProcessing(true);
             const response = await rejectWithdrawalRequest(
                 selectedRequest.vendorId,
                 selectedRequest._id,
-                rejectionReason
+                reason
             );
             if (response.success) {
                 handleApiSuccess(response, "Withdrawal request rejected");
                 setShowRejectModal(false);
                 setSelectedRequest(null);
                 setRejectionReason("");
-                loadWithdrawalRequests();
+                await loadWithdrawalRequests();
             }
         } catch (err) {
             handleApiError(err, "Failed to reject withdrawal request");
@@ -141,30 +151,30 @@ export default function AdminWithdrawals() {
         }
     };
 
-    const handleProcess = (request) => {
-        setSelectedRequest(request);
-        setRazorpayPayoutId("");
-        setShowProcessModal(true);
-    };
-
     const handleProcessConfirm = async () => {
-        if (!selectedRequest || !razorpayPayoutId.trim()) {
-            toast.showError("Please provide Razorpay payout ID");
+        if (!selectedRequest) return;
+        if (!transactionId.trim()) {
+            toast.showError("Please enter Transaction / Reference ID");
             return;
         }
+
         try {
             setProcessing(true);
             const response = await processWithdrawal(
                 selectedRequest.vendorId,
                 selectedRequest._id,
-                razorpayPayoutId
+                transactionId.trim(),
+                notes,
+                paymentMethod,
+                new Date().toISOString()
             );
             if (response.success) {
-                handleApiSuccess(response, "Withdrawal processed successfully!");
+                handleApiSuccess(response, "Withdrawal marked as processed successfully!");
                 setShowProcessModal(false);
                 setSelectedRequest(null);
-                setRazorpayPayoutId("");
-                loadWithdrawalRequests();
+                setTransactionId("");
+                setNotes("");
+                await loadWithdrawalRequests();
             }
         } catch (err) {
             handleApiError(err, "Failed to process withdrawal");
@@ -173,218 +183,194 @@ export default function AdminWithdrawals() {
         }
     };
 
-    const formatAmount = (amount) => {
-        return amount.toLocaleString("en-IN", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
-    };
-
-    const formatDateTime = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
-
-    const getStatusBadge = (status) => {
-        const badges = {
-            PENDING: { color: "bg-yellow-100 text-yellow-800", icon: IoTimeOutline },
-            APPROVED: { color: "bg-blue-100 text-blue-800", icon: IoCheckmarkCircleOutline },
-            REJECTED: { color: "bg-red-100 text-red-800", icon: IoCloseCircleOutline },
-            PROCESSED: { color: "bg-green-100 text-green-800", icon: IoCheckmarkCircleOutline }
-        };
-        return badges[status] || badges.PENDING;
+    const handleReassignWithdrawal = async (newAdminId, reason, notesText) => {
+        if (!selectedRequest) return;
+        try {
+            const res = await assignWithdrawalRequestApi(selectedRequest._id, {
+                assignedTo: newAdminId,
+                reason,
+                notes: notesText
+            });
+            if (res.success) {
+                toast.showSuccess("Disbursal ticket reassigned successfully!");
+                setShowAssignmentModal(false);
+                setSelectedRequest(null);
+                await loadWithdrawalRequests();
+            } else {
+                toast.showError(res.message || "Failed to reassign disbursal");
+            }
+        } catch (err) {
+            handleApiError(err, "Reassignment failed");
+        }
     };
 
     const getStatusCount = (status) => {
         if (status === "all") return withdrawalRequests.length;
-        return withdrawalRequests.filter(req => req.status === status.toUpperCase()).length;
+        return withdrawalRequests.filter(req => req.status.toLowerCase() === status.toLowerCase()).length;
+    };
+
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case "PENDING":
+                return { bg: "bg-yellow-100", text: "text-yellow-800", icon: IoTimeOutline };
+            case "APPROVED":
+                return { bg: "bg-blue-100", text: "text-blue-800", icon: IoCheckmarkCircleOutline };
+            case "PROCESSED":
+                return { bg: "bg-green-100", text: "text-green-800", icon: IoCheckmarkCircleOutline };
+            case "REJECTED":
+                return { bg: "bg-red-100", text: "text-red-800", icon: IoCloseCircleOutline };
+            default:
+                return { bg: "bg-gray-100", text: "text-gray-800", icon: IoTimeOutline };
+        }
+    };
+
+    const formatAmount = (amount) => {
+        return new Intl.NumberFormat("en-IN").format(amount || 0);
     };
 
     if (loading) {
-        return <LoadingSpinner message="Loading withdrawal requests..." />;
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <LoadingSpinner />
+            </div>
+        );
     }
 
     return (
-        <>
-        <div className="min-h-[calc(100vh-5rem)] p-4 md:p-6">
+        <div className="p-6 max-w-7xl mx-auto space-y-6">
             {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Withdrawal Management</h1>
-                <p className="text-gray-600">Manage vendor withdrawal requests</p>
+            <div>
+                <h1 className="text-2xl font-bold text-gray-900">Expert Disbursals & Withdrawals</h1>
+                <p className="text-sm text-gray-500 mt-1">Review, approve, and disburse wallet settlements to expert partners.</p>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-lg p-4 shadow-md">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600">Total Requests</p>
-                            <p className="text-2xl font-bold text-gray-800">{getStatusCount("all")}</p>
-                        </div>
-                        <IoWalletOutline className="text-3xl text-blue-500" />
-                    </div>
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                    <p className="text-xs font-bold text-gray-400 uppercase">Total Requests</p>
+                    <p className="text-2xl font-black text-gray-900 mt-1">{getStatusCount("all")}</p>
                 </div>
-                <div className="bg-white rounded-lg p-4 shadow-md">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600">Pending</p>
-                            <p className="text-2xl font-bold text-yellow-600">{getStatusCount("pending")}</p>
-                        </div>
-                        <IoTimeOutline className="text-3xl text-yellow-500" />
-                    </div>
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                    <p className="text-xs font-bold text-amber-600 uppercase">Pending Review</p>
+                    <p className="text-2xl font-black text-amber-600 mt-1">{getStatusCount("pending")}</p>
                 </div>
-                <div className="bg-white rounded-lg p-4 shadow-md">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600">Approved</p>
-                            <p className="text-2xl font-bold text-blue-600">{getStatusCount("approved")}</p>
-                        </div>
-                        <IoCheckmarkCircleOutline className="text-3xl text-blue-500" />
-                    </div>
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                    <p className="text-xs font-bold text-blue-600 uppercase">Approved (Ready to Pay)</p>
+                    <p className="text-2xl font-black text-blue-600 mt-1">{getStatusCount("approved")}</p>
                 </div>
-                <div className="bg-white rounded-lg p-4 shadow-md">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600">Processed</p>
-                            <p className="text-2xl font-bold text-green-600">{getStatusCount("processed")}</p>
-                        </div>
-                        <IoCheckmarkCircleOutline className="text-3xl text-green-500" />
-                    </div>
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                    <p className="text-xs font-bold text-emerald-600 uppercase">Processed & Settled</p>
+                    <p className="text-2xl font-black text-emerald-600 mt-1">{getStatusCount("processed")}</p>
                 </div>
             </div>
 
             {/* Tabs and Search */}
-            <div className="bg-white rounded-lg p-4 shadow-md mb-6">
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    {/* Tabs */}
-                    <div className="flex gap-2 overflow-x-auto">
-                        {["all", "pending", "approved", "rejected", "processed"].map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                                    activeTab === tab
-                                        ? "bg-[#0A84FF] text-white"
-                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                }`}
-                            >
-                                {tab.charAt(0).toUpperCase() + tab.slice(1)} ({getStatusCount(tab)})
-                            </button>
-                        ))}
-                    </div>
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="flex gap-2 overflow-x-auto">
+                    {["all", "pending", "approved", "rejected", "processed"].map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                                activeTab === tab
+                                    ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20"
+                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                        >
+                            {tab.charAt(0).toUpperCase() + tab.slice(1)} ({getStatusCount(tab)})
+                        </button>
+                    ))}
+                </div>
 
-                    {/* Search */}
-                    <div className="relative flex-1 max-w-md">
-                        <IoSearchOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search by vendor name, email, or ID..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
-                        />
-                    </div>
+                <div className="relative flex-1 max-w-md">
+                    <IoSearchOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search by vendor name, email, or ID..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                 </div>
             </div>
 
-            {/* Withdrawal Requests List */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {/* Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 {filteredRequests.length === 0 ? (
-                    <div className="p-8 text-center">
-                        <p className="text-gray-500">No withdrawal requests found</p>
-                    </div>
+                    <div className="p-12 text-center text-xs text-gray-400">No withdrawal requests found</div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expert</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bank Details</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-gray-50/80 border-b border-gray-200 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                                    <th className="px-5 py-3">Expert Partner</th>
+                                    <th className="px-5 py-3">Amount</th>
+                                    <th className="px-5 py-3">Status</th>
+                                    <th className="px-5 py-3">Assigned Finance Admin</th>
+                                    <th className="px-5 py-3">Requested</th>
+                                    <th className="px-5 py-3 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
+                            <tbody className="divide-y divide-gray-100 text-xs">
                                 {filteredRequests.map((request) => {
                                     const badge = getStatusBadge(request.status);
-                                    const StatusIcon = badge.icon;
                                     return (
-                                        <tr key={request._id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-4">
-                                                <div>
-                                                    <p className="font-semibold text-gray-800">{request.vendorName}</p>
-                                                    <p className="text-sm text-gray-500">{request.vendorEmail}</p>
-                                                    <p className="text-xs text-gray-400">{request.vendorPhone}</p>
-                                                </div>
+                                        <tr key={request._id} className="hover:bg-gray-50/60 transition-colors">
+                                            <td className="px-5 py-3.5">
+                                                <div className="font-bold text-gray-900">{request.vendorName}</div>
+                                                <div className="text-[11px] text-gray-400">{request.vendorEmail}</div>
                                             </td>
-                                            <td className="px-4 py-4">
-                                                <p className="font-bold text-gray-800">₹{formatAmount(request.amount)}</p>
+                                            <td className="px-5 py-3.5 font-bold text-gray-900 font-mono">
+                                                ₹{formatAmount(request.amount)}
                                             </td>
-                                            <td className="px-4 py-4">
-                                                <p className="text-sm text-gray-600">{formatDateTime(request.requestedAt)}</p>
-                                                {request.processedAt && (
-                                                    <p className="text-xs text-gray-400">Processed: {formatDateTime(request.processedAt)}</p>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-4">
-                                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${badge.color}`}>
-                                                    <StatusIcon className="text-sm" />
+                                            <td className="px-5 py-3.5">
+                                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${badge.bg} ${badge.text}`}>
                                                     {request.status}
                                                 </span>
-                                                {request.rejectionReason && (
-                                                    <p className="text-xs text-red-500 mt-1">{request.rejectionReason}</p>
-                                                )}
-                                                {request.razorpayPayoutId && (
-                                                    <p className="text-xs text-gray-500 mt-1">Payout ID: {request.razorpayPayoutId}</p>
-                                                )}
                                             </td>
-                                            <td className="px-4 py-4">
-                                                {request.bankDetails ? (
-                                                    <div className="text-sm">
-                                                        <p className="text-gray-800">{request.bankDetails.accountHolderName}</p>
-                                                        <p className="text-gray-600">{request.bankDetails.bankName}</p>
-                                                        <p className="text-gray-500 text-xs">{request.bankDetails.accountNumber}</p>
-                                                        <p className="text-gray-500 text-xs">{request.bankDetails.ifscCode}</p>
-                                                    </div>
-                                                ) : (
-                                                    <p className="text-xs text-gray-400">Not available</p>
-                                                )}
+                                            {/* Assigned Finance Admin Chip */}
+                                            <td className="px-5 py-3.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedRequest(request);
+                                                        setShowAssignmentModal(true);
+                                                    }}
+                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 transition-colors cursor-pointer"
+                                                >
+                                                    <IoPersonOutline className="text-xs" />
+                                                    {request.assignedTo?.name || "Auto-Assigned"}
+                                                    {isSuperAdmin && <IoSwapHorizontalOutline className="text-xs ml-1 text-emerald-500" />}
+                                                </button>
                                             </td>
-                                            <td className="px-4 py-4">
-                                                <div className="flex gap-2">
-                                                    {request.status === "PENDING" && (
-                                                        <>
-                                                             <button
-                                                                onClick={() => handleProcess(request)}
-                                                                className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-2xs transition-colors cursor-pointer"
-                                                            >
-                                                                Approve & Pay
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleReject(request)}
-                                                                className="px-3 py-1 bg-red-500 text-white rounded text-xs font-medium hover:bg-red-600"
-                                                            >
-                                                                Reject
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                    {request.status === "APPROVED" && (
+                                            <td className="px-5 py-3.5 text-gray-400">
+                                                {new Date(request.requestedAt).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-5 py-3.5 text-right space-x-2">
+                                                {request.status === "PENDING" && (
+                                                    <>
                                                         <button
-                                                            onClick={() => handleProcess(request)}
-                                                            className="px-3 py-1 bg-green-500 text-white rounded text-xs font-medium hover:bg-green-600"
+                                                            onClick={() => { setSelectedRequest(request); setShowApproveModal(true); }}
+                                                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs cursor-pointer"
                                                         >
-                                                            Process
+                                                            Approve
                                                         </button>
-                                                    )}
-                                                </div>
+                                                        <button
+                                                            onClick={() => { setSelectedRequest(request); setShowRejectModal(true); }}
+                                                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg font-bold text-xs cursor-pointer"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {request.status === "APPROVED" && (
+                                                    <button
+                                                        onClick={() => { setSelectedRequest(request); setShowProcessModal(true); }}
+                                                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs cursor-pointer"
+                                                    >
+                                                        Record Payment
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -394,71 +380,40 @@ export default function AdminWithdrawals() {
                     </div>
                 )}
             </div>
+
+            {/* Approve Modal */}
+            <ConfirmModal
+                isOpen={showApproveModal}
+                onClose={() => setShowApproveModal(false)}
+                onConfirm={handleApproveConfirm}
+                title="Approve Withdrawal Request"
+                message={`Approve ₹${formatAmount(selectedRequest?.amount)} withdrawal for ${selectedRequest?.vendorName}?`}
+            />
+
+            {/* Reject Modal */}
+            <InputModal
+                isOpen={showRejectModal}
+                onClose={() => setShowRejectModal(false)}
+                onSubmit={handleRejectConfirm}
+                title="Reject Withdrawal Request"
+                message="Provide reason for rejecting this payout request:"
+                placeholder="e.g. Bank details invalid..."
+            />
+
+            {/* Assignment History Modal */}
+            <AssignmentHistoryModal
+                isOpen={showAssignmentModal}
+                onClose={() => {
+                    setShowAssignmentModal(false);
+                    setSelectedRequest(null);
+                }}
+                entityTitle={`Expert Disbursal: ₹${formatAmount(selectedRequest?.amount)}`}
+                assignedTo={selectedRequest?.assignedTo}
+                assignmentHistory={selectedRequest?.assignmentHistory || []}
+                availableAdmins={availableFinanceAdmins}
+                onReassign={handleReassignWithdrawal}
+                isSuperAdmin={isSuperAdmin}
+            />
         </div>
-
-        {/* Approve Modal */}
-        <ConfirmModal
-            isOpen={showApproveModal}
-            onClose={() => {
-                setShowApproveModal(false);
-                setSelectedRequest(null);
-            }}
-            onConfirm={handleApproveConfirm}
-            title="Approve Withdrawal Request"
-            message={`Approve withdrawal of ₹${selectedRequest ? formatAmount(selectedRequest.amount) : '0'} for ${selectedRequest?.vendorName}?`}
-            confirmText="Approve"
-            cancelText="Cancel"
-            confirmColor="primary"
-            isLoading={processing}
-        />
-
-        {/* Reject Modal */}
-        <InputModal
-            isOpen={showRejectModal}
-            onClose={() => {
-                setShowRejectModal(false);
-                setSelectedRequest(null);
-                setRejectionReason("");
-            }}
-            onSubmit={handleRejectConfirm}
-            title="Reject Withdrawal Request"
-            label="Rejection Reason"
-            type="text"
-            value={rejectionReason}
-            onChange={(e) => setRejectionReason(e.target.value)}
-            placeholder="Enter reason for rejection"
-            submitText="Reject"
-            cancelText="Cancel"
-            isLoading={processing}
-            validation={(value) => {
-                if (!value.trim()) return "Rejection reason is required";
-                return null;
-            }}
-        />
-
-        {/* Process Modal */}
-        <InputModal
-            isOpen={showProcessModal}
-            onClose={() => {
-                setShowProcessModal(false);
-                setSelectedRequest(null);
-                setRazorpayPayoutId("");
-            }}
-            onSubmit={handleProcessConfirm}
-            title="Process Withdrawal"
-            label="Razorpay Payout ID"
-            type="text"
-            value={razorpayPayoutId}
-            onChange={(e) => setRazorpayPayoutId(e.target.value)}
-            placeholder="Enter Razorpay payout ID after manual transfer"
-            submitText="Mark as Processed"
-            cancelText="Cancel"
-            isLoading={processing}
-            validation={(value) => {
-                if (!value.trim()) return "Razorpay payout ID is required";
-                return null;
-            }}
-        />
-    </>);
+    );
 }
-

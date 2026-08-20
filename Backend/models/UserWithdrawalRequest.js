@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const assignmentHistoryRecordSchema = require('./schemas/assignmentHistorySchema');
 
 const userWithdrawalRequestSchema = new mongoose.Schema({
   user: {
@@ -18,6 +19,14 @@ const userWithdrawalRequestSchema = new mongoose.Schema({
     default: 'PENDING',
     index: true
   },
+  // Finance Admin assigned to verify and process
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin',
+    default: null
+  },
+  // Immutable Audit Trail for User Refunds / Withdrawals
+  assignmentHistory: [assignmentHistoryRecordSchema],
   payoutType: {
     type: String,
     enum: ['UPI', 'BANK_TRANSFER'],

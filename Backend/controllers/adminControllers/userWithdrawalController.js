@@ -21,6 +21,7 @@ const getAllWithdrawalRequests = async (req, res) => {
       UserWithdrawalRequest.find(query)
         .populate('user', 'name email phone')
         .populate('processedBy', 'name email')
+        .populate('assignedTo', 'name email role')
         .sort({ requestedAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
@@ -37,6 +38,8 @@ const getAllWithdrawalRequests = async (req, res) => {
       userPhone: request.user?.phone || "",
       amount: request.amount,
       status: request.status,
+      assignedTo: request.assignedTo || null,
+      assignmentHistory: request.assignmentHistory || [],
       requestedAt: request.requestedAt,
       processedAt: request.processedAt,
       processedBy: request.processedBy,
@@ -190,10 +193,51 @@ const processUserWithdrawal = async (req, res) => {
   }
 };
 
+/**
+ * Reassign User Withdrawal Request to a Finance Admin (Super Admin only)
+ */
+const assignUserWithdrawalRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { assignedTo, reason, notes } = req.body;
+    const adminId = req.userId;
+    const adminUser = req.user;
+
+    const targetAdminId = assignedTo || adminId;
+    const { manualReassign } = require('../../services/workloadDistributionService');
+
+    const result = await manualReassign({
+      model: UserWithdrawalRequest,
+      entityId: requestId,
+      newAdminId: targetAdminId,
+      reassignedByAdmin: adminUser || { _id: adminId, name: 'Admin' },
+      reason: reason || 'Manual user refund disbursal reassignment by Super Admin',
+      notes: notes || ''
+    });
+
+    res.json({
+      success: true,
+      message: result.message,
+      data: {
+        withdrawalRequest: result.entity,
+        auditRecord: result.auditRecord
+      }
+    });
+  } catch (error) {
+    console.error('Assign user withdrawal request error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to assign user withdrawal request',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllWithdrawalRequests,
   approveWithdrawalRequest,
   rejectWithdrawalRequest,
-  processWithdrawalRequest: processUserWithdrawal
+  processWithdrawalRequest: processUserWithdrawal,
+  assignUserWithdrawalRequest
 };
 

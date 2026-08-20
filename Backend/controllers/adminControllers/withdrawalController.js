@@ -24,6 +24,7 @@ const getAllWithdrawalRequests = async (req, res) => {
       VendorWithdrawalRequest.find(query)
         .populate('vendor', 'name email phone')
         .populate('processedBy', 'name email')
+        .populate('assignedTo', 'name email role')
         .sort({ requestedAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
@@ -49,6 +50,8 @@ const getAllWithdrawalRequests = async (req, res) => {
       bankDetails: request.vendor ? (bankDetailsMap[request.vendor._id.toString()] || null) : null,
       amount: request.amount,
       status: request.status,
+      assignedTo: request.assignedTo || null,
+      assignmentHistory: request.assignmentHistory || [],
       requestedAt: request.requestedAt,
       processedAt: request.processedAt,
       processedBy: request.processedBy,
@@ -256,11 +259,52 @@ const createWithdrawalPayment = async (req, res) => {
   }
 };
 
+/**
+ * Reassign Expert Withdrawal Request to a Finance Admin (Super Admin only)
+ */
+const assignWithdrawalRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { assignedTo, reason, notes } = req.body;
+    const adminId = req.userId;
+    const adminUser = req.user;
+
+    const targetAdminId = assignedTo || adminId;
+    const { manualReassign } = require('../../services/workloadDistributionService');
+
+    const result = await manualReassign({
+      model: VendorWithdrawalRequest,
+      entityId: requestId,
+      newAdminId: targetAdminId,
+      reassignedByAdmin: adminUser || { _id: adminId, name: 'Admin' },
+      reason: reason || 'Manual Disbursal reassignment by Super Admin',
+      notes: notes || ''
+    });
+
+    res.json({
+      success: true,
+      message: result.message,
+      data: {
+        withdrawalRequest: result.entity,
+        auditRecord: result.auditRecord
+      }
+    });
+  } catch (error) {
+    console.error('Assign withdrawal request error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to assign withdrawal request',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllWithdrawalRequests,
   approveWithdrawalRequest,
   rejectWithdrawalRequest,
   processWithdrawal,
-  createWithdrawalPayment
+  createWithdrawalPayment,
+  assignWithdrawalRequest
 };
 

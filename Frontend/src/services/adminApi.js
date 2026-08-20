@@ -683,13 +683,34 @@ export const rejectUserWithdrawalRequest = async (userId, requestId, data = {}) 
 
 /**
  * Process user withdrawal request
- * @param {string} userId
  * @param {string} requestId
  * @param {Object} data - { razorpayPayoutId, notes }
  * @returns {Promise}
  */
 export const processUserWithdrawalRequest = async (requestId, data = {}) => {
   const response = await api.patch(`/admin/user-withdrawals/${requestId}/process`, data);
+  return response.data;
+};
+
+/**
+ * Assign / Reassign expert withdrawal to a Finance Admin
+ * @param {string} requestId
+ * @param {Object} data - { assignedTo, reason, notes }
+ * @returns {Promise}
+ */
+export const assignWithdrawalRequestApi = async (requestId, data) => {
+  const response = await api.put(`/admin/withdrawals/${requestId}/assign`, data);
+  return response.data;
+};
+
+/**
+ * Assign / Reassign user withdrawal to a Finance Admin
+ * @param {string} requestId
+ * @param {Object} data - { assignedTo, reason, notes }
+ * @returns {Promise}
+ */
+export const assignUserWithdrawalRequestApi = async (requestId, data) => {
+  const response = await api.patch(`/admin/user-withdrawals/${requestId}/assign`, data);
   return response.data;
 };
 

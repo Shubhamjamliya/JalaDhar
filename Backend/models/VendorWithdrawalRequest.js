@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const assignmentHistoryRecordSchema = require('./schemas/assignmentHistorySchema');
 
 const vendorWithdrawalRequestSchema = new mongoose.Schema({
   vendor: {
@@ -18,6 +19,14 @@ const vendorWithdrawalRequestSchema = new mongoose.Schema({
     default: 'PENDING',
     index: true
   },
+  // Finance Admin assigned to verify and process
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin',
+    default: null
+  },
+  // Immutable Audit Trail for Disbursals
+  assignmentHistory: [assignmentHistoryRecordSchema],
   requestedAt: {
     type: Date,
     default: Date.now,
