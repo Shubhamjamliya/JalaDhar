@@ -1090,7 +1090,39 @@ function App() {
                                                                         path="/policies"
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPolicies />
+                                                                                <AdminPolicies defaultTab="hub" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/policies/legal"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPolicies defaultTab="legal" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/policies/privacy"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPolicies defaultTab="privacy" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/policies/cancellation"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPolicies defaultTab="cancellation" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/policies/expert"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminPolicies defaultTab="expert" />
                                                                             </Suspense>
                                                                         }
                                                                     />

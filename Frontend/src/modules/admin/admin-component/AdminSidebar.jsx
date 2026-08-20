@@ -157,10 +157,10 @@ const navSections = [
                 Icon: IoDocumentTextOutline,
                 roles: ["SUPER_ADMIN", "ADMIN"],
                 children: [
-                    { label: "Terms & Conditions", to: "/admin/policies" },
-                    { label: "Privacy Policy", to: "/admin/policies" },
-                    { label: "Cancellation & Refunds", to: "/admin/policies" },
-                    { label: "Expert Agreement", to: "/admin/policies" }
+                    { label: "Terms & Conditions", to: "/admin/policies/legal" },
+                    { label: "Privacy Policy", to: "/admin/policies/privacy" },
+                    { label: "Cancellation & Refunds", to: "/admin/policies/cancellation" },
+                    { label: "Expert Agreement", to: "/admin/policies/expert" }
                 ]
             },
             {
