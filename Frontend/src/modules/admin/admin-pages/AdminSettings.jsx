@@ -53,6 +53,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    useEffect(() => {
+        if (defaultTab) {
+            setActiveTab(defaultTab);
+        }
+    }, [defaultTab]);
+
     // Admin Registration State
     const [registrationStep, setRegistrationStep] = useState(1); // 1: Enter details, 2: Verify OTP
     const [registrationData, setRegistrationData] = useState({

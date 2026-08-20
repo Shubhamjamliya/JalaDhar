@@ -1039,6 +1039,14 @@ function App() {
                                                                         }
                                                                     />
                                                                     <Route
+                                                                        path="/settings/reschedule"
+                                                                        element={
+                                                                            <Suspense fallback={<LoadingSpinner />}>
+                                                                                <AdminSettings defaultTab="reschedule" />
+                                                                            </Suspense>
+                                                                        }
+                                                                    />
+                                                                    <Route
                                                                         path="/settings/billing"
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
