@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
     IoChevronBackOutline,
+    IoChevronDownOutline,
     IoCalendarOutline,
     IoLockClosedOutline,
     IoTimeOutline,
@@ -1362,7 +1363,7 @@ export default function VendorBookingDetails() {
                                 )}
 
                                 <a
-                                    href={`https://wa.me/91${(booking.user?.phone || booking.phone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${booking.user?.name || 'Customer'}, I am your ${booking.vendor?.designation || 'Groundwater Professional'} from Jaladhaara regarding Booking ORD-${booking._id?.slice(-8).toUpperCase()}`)}`}
+                                    href={`https://wa.me/91${(booking.user?.phone || booking.phone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${booking.user?.name || 'Customer'}, I am your ${booking.vendor?.designation || 'Groundwater Professional'} from Jaladhaara regarding Booking ORD-${String(booking._id || booking.id || '').slice(-8).toUpperCase()}`)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-xs rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100"
@@ -1746,7 +1747,7 @@ export default function VendorBookingDetails() {
                             <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
                                 <span className="text-base font-black text-gray-800">Expert Earnings</span>
                                 <span className="text-xl font-black text-[#0A84FF]">
-                                    ₹{((booking.vendorWalletPayments?.totalVendorPayment) || (booking.payment.baseServiceFee + booking.payment.travelCharges - (booking.vendorWalletPayments?.platformFee || 0)))?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                    ₹{((booking.vendorWalletPayments?.totalVendorPayment) || ((booking.payment?.baseServiceFee || 0) + (booking.payment?.travelCharges || 0) - (booking.vendorWalletPayments?.platformFee || 0)))?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </span>
                             </div>
                         </div>
@@ -1890,19 +1891,19 @@ export default function VendorBookingDetails() {
 
                     <div className="space-y-4">
                         {/* Current Applied Travel Charges */}
-                        {booking.payment.travelCharges !== undefined && (
+                        {booking.payment?.travelCharges !== undefined && booking.payment?.travelCharges !== null && (
                             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="font-semibold text-gray-800 text-sm">Applied Travel Charges (To & Fro)</p>
-                                        {booking.payment.distance !== null && booking.payment.distance !== undefined && (
+                                        {booking.payment?.distance !== null && booking.payment?.distance !== undefined && (
                                             <p className="text-xs text-gray-600 mt-1">
-                                                Distance: {booking.payment.distance.toFixed(2)} km × 2 (Round Trip)
+                                                Distance: {Number(booking.payment.distance).toFixed(2)} km × 2 (Round Trip)
                                             </p>
                                         )}
                                     </div>
                                     <p className="font-bold text-gray-800">
-                                        ₹{booking.payment.travelCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        ₹{(booking.payment?.travelCharges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </p>
                                 </div>
                             </div>
