@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     IoCloseOutline,
@@ -185,6 +185,7 @@ const navSections = [
 export default function AdminMobileSidebar({ isOpen, onClose }) {
     const { admin } = useAdminAuth();
     const location = useLocation();
+    const navigate = useNavigate();
     const [expandedItems, setExpandedItems] = useState({});
     const [counts, setCounts] = useState({
         approvals: 0,
@@ -249,7 +250,8 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
         }
     }, [isOpen, onClose]);
 
-    const toggleExpand = (id, e) => {
+    const toggleExpand = (id, to, e) => {
+        if (to) navigate(to);
         setExpandedItems(prev => {
             const isNowExpanded = !prev[id];
             if (isNowExpanded && e?.currentTarget) {
@@ -353,7 +355,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                                     {hasChildren ? (
                                                         <button
                                                             type="button"
-                                                            onClick={(e) => toggleExpand(item.id, e)}
+                                                            onClick={(e) => toggleExpand(item.id, item.to, e)}
                                                             className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-150 group w-full cursor-pointer ${
                                                                 isActive
                                                                     ? "bg-blue-600/15 text-blue-400 font-semibold"

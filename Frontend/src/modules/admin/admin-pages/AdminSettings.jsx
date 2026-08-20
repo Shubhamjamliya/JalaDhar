@@ -956,48 +956,48 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 <div className={`w-full ${activeTab === "languages" ? "max-w-7xl" : "max-w-4xl"}`}>
                     {/* Settings Content */}
                     <div className="w-full">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 ring-1 ring-black/[0.04]">
                             <ErrorMessage message={error} />
 
                             {activeTab === "general" && (
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-800 mb-6">General Settings</h2>
-                                    <div className="space-y-6">
+                                    <h2 className="text-base font-semibold text-gray-800 mb-5">General Settings</h2>
+                                    <div className="space-y-5">
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                 Admin Name
                                             </label>
                                             <input
                                                 type="text"
                                                 defaultValue={admin?.name || ""}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                 placeholder="Enter admin name"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                 Email Address
                                             </label>
                                             <input
                                                 type="email"
                                                 defaultValue={admin?.email || ""}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                 placeholder="Enter email address"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                 Time Zone
                                             </label>
-                                            <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent">
+                                            <select className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors">
                                                 <option>Asia/Kolkata (IST)</option>
                                                 <option>UTC</option>
                                             </select>
                                         </div>
                                         {/* Configurable Dispute Types */}
-                                        <div className="pt-6 border-t border-gray-200">
-                                            <h3 className="text-lg font-bold text-gray-800 mb-2">Configurable Dispute Types</h3>
-                                            <p className="text-xs text-gray-500 mb-4">
+                                        <div className="pt-5 border-t border-gray-100">
+                                            <h3 className="text-sm font-semibold text-gray-800 mb-1.5">Configurable Dispute Types</h3>
+                                            <p className="text-xs text-gray-400 mb-3">
                                                 Manage categories available for users and vendors when creating a dispute.
                                             </p>
 
@@ -1047,7 +1047,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                     type="button"
                                                     onClick={handleSaveDisputeTypes}
                                                     disabled={disputeTypesLoading}
-                                                    className="px-6 py-3 bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors font-semibold disabled:opacity-50"
+                                                    className="px-4 py-2 text-sm bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors font-semibold disabled:opacity-50"
                                                 >
                                                     {disputeTypesLoading ? "Saving..." : "Save Dispute Types"}
                                                 </button>
@@ -1058,10 +1058,10 @@ export default function AdminSettings({ defaultTab = "general" }) {
                             )}
 
                             {activeTab === "reschedule" && (
-                                <div className="space-y-6">
+                                <div className="space-y-5">
                                     <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                                         <div>
-                                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                            <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
                                                 <IoCalendarOutline className="text-blue-600" />
                                                 <span>Customer Reschedule Policy</span>
                                             </h2>
@@ -1078,7 +1078,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                         </span>
                                     </div>
 
-                                    <form onSubmit={handleRescheduleSettingsUpdate} className="space-y-6">
+                                    <form onSubmit={handleRescheduleSettingsUpdate} className="space-y-5">
                                         {/* Master Toggle Card */}
                                         <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
                                             rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE
@@ -1257,7 +1257,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             <button
                                                 type="submit"
                                                 disabled={rescheduleLoading}
-                                                className="px-6 py-3 bg-[#0A84FF] hover:bg-[#005BBB] text-white font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                className="px-4 py-2 bg-[#0A84FF] hover:bg-[#005BBB] text-white font-semibold text-sm rounded-lg shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                             >
                                                 {rescheduleLoading && (
                                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1271,14 +1271,14 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
                             {activeTab === "billing" && (
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-800 mb-6">Billing Information</h2>
+                                    <h2 className="text-base font-semibold text-gray-800 mb-5">Billing Information</h2>
                                     <p className="text-sm text-gray-500 mb-6">
                                         This information will be displayed on all invoices generated for users and vendors.
                                     </p>
-                                    <form onSubmit={handleBillingSettingsUpdate} className="space-y-6">
+                                    <form onSubmit={handleBillingSettingsUpdate} className="space-y-5">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     Company Name
                                                 </label>
                                                 <input
@@ -1291,12 +1291,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     required
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="Legal Company Name"
                                                 />
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     Billing Address
                                                 </label>
                                                 <textarea
@@ -1309,12 +1309,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                     }
                                                     required
                                                     rows={3}
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="Complete business address"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     GSTIN
                                                 </label>
                                                 <input
@@ -1327,12 +1327,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     required
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="GST Registration Number"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     PAN Number
                                                 </label>
                                                 <input
@@ -1345,12 +1345,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     required
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono"
                                                     placeholder="Permanent Account Number (PAN)"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     Contact Phone
                                                 </label>
                                                 <input
@@ -1363,12 +1363,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     required
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="Contact Number for Invoices"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     Billing Email
                                                 </label>
                                                 <input
@@ -1381,12 +1381,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     required
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="Billing Support Email"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     Website URL
                                                 </label>
                                                 <input
@@ -1398,12 +1398,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                             BILLING_WEBSITE: e.target.value,
                                                         })
                                                     }
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="https://jaladhaaraapp.in"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     SAC Code
                                                 </label>
                                                 <input
@@ -1415,12 +1415,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                             BILLING_SAC_CODE: e.target.value,
                                                         })
                                                     }
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono"
                                                     placeholder="998341"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     Place of Supply
                                                 </label>
                                                 <input
@@ -1432,12 +1432,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                             BILLING_PLACE_OF_SUPPLY: e.target.value,
                                                         })
                                                     }
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="Chhattisgarh (State Code: 22)"
                                                 />
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     Invoice Declaration / Footnote
                                                 </label>
                                                 <textarea
@@ -1449,12 +1449,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     rows={2}
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="This is a computer-generated Tax Invoice..."
                                                 />
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center justify-between">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 flex items-center justify-between">
                                                     <span>User Customer Invoice Terms & Conditions</span>
                                                     <span className="text-xs text-gray-400 font-normal">(Enter 1 clause per line)</span>
                                                 </label>
@@ -1467,12 +1467,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     rows={5}
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono text-xs leading-relaxed"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono text-xs leading-relaxed"
                                                     placeholder="Enter each terms clause on a new line..."
                                                 />
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center justify-between">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 flex items-center justify-between">
                                                     <span>Expert Facilitation Invoice Terms & Declarations</span>
                                                     <span className="text-xs text-gray-400 font-normal">(Enter 1 clause per line)</span>
                                                 </label>
@@ -1485,7 +1485,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     rows={5}
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono text-xs leading-relaxed"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent font-mono text-xs leading-relaxed"
                                                     placeholder="Enter each expert invoice term on a new line..."
                                                 />
                                             </div>
@@ -1494,7 +1494,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             <button
                                                 type="submit"
                                                 disabled={billingLoading}
-                                                className="px-6 py-3 bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                className="px-4 py-2 text-sm bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                             >
                                                 {billingLoading && (
                                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1509,10 +1509,10 @@ export default function AdminSettings({ defaultTab = "general" }) {
                             {/* Pricing tab content below */}
                             {activeTab === "pricing" && (
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-800 mb-6">Pricing Settings</h2>
-                                    <form onSubmit={handlePricingSettingsUpdate} className="space-y-6">
+                                    <h2 className="text-base font-semibold text-gray-800 mb-5">Pricing Settings</h2>
+                                    <form onSubmit={handlePricingSettingsUpdate} className="space-y-5">
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                 Travel Charge Per Kilometer (₹)
                                             </label>
                                             <input
@@ -1527,7 +1527,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 min="0"
                                                 step="0.01"
                                                 required
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                 placeholder="Enter travel charge per km"
                                             />
                                             <p className="text-xs text-gray-500 mt-1">
@@ -1535,7 +1535,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             </p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                 Base Radius (km)
                                             </label>
                                             <input
@@ -1550,7 +1550,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 min="0"
                                                 step="1"
                                                 required
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                 placeholder="Enter base radius in km"
                                             />
                                             <p className="text-xs text-gray-500 mt-1">
@@ -1558,7 +1558,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             </p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                 GST Percentage (%)
                                             </label>
                                             <input
@@ -1574,7 +1574,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 max="100"
                                                 step="0.01"
                                                 required
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                 placeholder="Enter GST percentage"
                                             />
                                             <p className="text-xs text-gray-500 mt-1">
@@ -1721,11 +1721,11 @@ export default function AdminSettings({ defaultTab = "general" }) {
                             {/* TAB: LANGUAGES & LOCALIZATION (SIMPLE ADD & DELETE)               */}
                             {/* ================================================================= */}
                             {activeTab === "languages" && (
-                                <div className="space-y-6">
+                                <div className="space-y-5">
                                     {/* Header Section */}
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
                                         <div>
-                                            <h2 className="text-xl font-bold text-gray-800">Language Management</h2>
+                                            <h2 className="text-base font-semibold text-gray-800">Language Management</h2>
                                             <p className="text-xs text-gray-500 mt-1">
                                                 Add or remove languages for Users & Vendors. Any added language is automatically translated across the platform.
                                             </p>
@@ -1805,40 +1805,40 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
                             {activeTab === "security" && (
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-800 mb-6">Security Settings</h2>
-                                    <div className="space-y-6">
+                                    <h2 className="text-base font-semibold text-gray-800 mb-5">Security Settings</h2>
+                                    <div className="space-y-5">
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                 Current Password
                                             </label>
                                             <input
                                                 type="password"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                 placeholder="Enter current password"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                 New Password
                                             </label>
                                             <input
                                                 type="password"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                 placeholder="Enter new password"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                 Confirm New Password
                                             </label>
                                             <input
                                                 type="password"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                 placeholder="Confirm new password"
                                             />
                                         </div>
                                         <div className="flex justify-end">
-                                            <button className="px-6 py-3 bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors font-semibold">
+                                            <button className="px-4 py-2 text-sm bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-colors font-semibold">
                                                 Update Password
                                             </button>
                                         </div>
@@ -1848,12 +1848,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
                             {activeTab === "register" && (
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-800 mb-6">Register New Admin</h2>
+                                    <h2 className="text-base font-semibold text-gray-800 mb-5">Register New Admin</h2>
 
                                     {registrationStep === 1 ? (
-                                        <form onSubmit={handleSendOTP} className="space-y-6">
+                                        <form onSubmit={handleSendOTP} className="space-y-5">
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     <IoPersonAddOutline className="inline text-base mr-1" />
                                                     Admin Name *
                                                 </label>
@@ -1867,12 +1867,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     required
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="Enter admin name"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     <IoMailOutline className="inline text-base mr-1" />
                                                     Email Address *
                                                 </label>
@@ -1886,12 +1886,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     required
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="Enter email address"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     <IoKeyOutline className="inline text-base mr-1" />
                                                     Password *
                                                 </label>
@@ -1906,12 +1906,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                     }
                                                     required
                                                     minLength={6}
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="Enter password (min 6 characters)"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     <IoKeyOutline className="inline text-base mr-1" />
                                                     Confirm Password *
                                                 </label>
@@ -1925,12 +1925,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     required
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                     placeholder="Confirm password"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     <IoShieldCheckmarkOutline className="inline text-base mr-1" />
                                                     Designated Role *
                                                 </label>
@@ -1943,7 +1943,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         })
                                                     }
                                                     required
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white"
                                                 >
                                                     <option value="ADMIN">General Admin</option>
                                                     <option value="SUPER_ADMIN">Super Admin (Owner)</option>
@@ -1967,7 +1967,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             </div>
                                         </form>
                                     ) : (
-                                        <form onSubmit={handleRegisterAdmin} className="space-y-6">
+                                        <form onSubmit={handleRegisterAdmin} className="space-y-5">
                                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                                                 <p className="text-sm text-blue-800">
                                                     OTP has been sent to <strong>{registrationData.email}</strong>
@@ -1978,7 +1978,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                                     Enter OTP *
                                                 </label>
                                                 <input
@@ -1990,7 +1990,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                     }}
                                                     required
                                                     maxLength={6}
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent text-center text-2xl tracking-widest font-mono"
+                                                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent text-center text-2xl tracking-widest font-mono"
                                                     placeholder="000000"
                                                 />
                                                 <p className="text-xs text-gray-500 mt-2">
@@ -2002,7 +2002,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 <button
                                                     type="button"
                                                     onClick={handleBackToForm}
-                                                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+                                                    className="px-4 py-2 text-sm border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
                                                 >
                                                     Back
                                                 </button>
@@ -2011,7 +2011,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         <button
                                                             type="button"
                                                             disabled
-                                                            className="px-6 py-3 border border-gray-300 text-gray-400 rounded-lg cursor-not-allowed"
+                                                            className="px-4 py-2 text-sm border border-gray-200 text-gray-400 rounded-lg cursor-not-allowed"
                                                         >
                                                             Resend OTP ({otpCountdown}s)
                                                         </button>
@@ -2020,7 +2020,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                             type="button"
                                                             onClick={handleResendOTP}
                                                             disabled={loading}
-                                                            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold disabled:opacity-50"
+                                                            className="px-4 py-2 text-sm border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors font-semibold disabled:opacity-50"
                                                         >
                                                             Resend OTP
                                                         </button>
