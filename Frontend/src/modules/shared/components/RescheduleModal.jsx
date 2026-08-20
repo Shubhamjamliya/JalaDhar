@@ -70,6 +70,8 @@ export default function RescheduleModal({
         return isoDate;
     };
 
+    const prevIsOpenRef = useRef(false);
+
     // Calculate next available working dates for this expert
     const availableQuickDates = useMemo(() => {
         const upcoming = getNextAvailableDates(expert, 4);
@@ -93,22 +95,25 @@ export default function RescheduleModal({
             });
         }
         return fallback;
-    }, [expert]);
+    }, [expert?.workingDays]);
 
-    // Lock body scroll and set default available date when opened
+    // Lock body scroll and set default available date ONLY when modal opens
     useEffect(() => {
         if (isOpen) {
-            const firstAvailable = availableQuickDates[0]?.date || (() => {
-                const d = new Date();
-                d.setDate(d.getDate() + 1);
-                return d.toISOString().split("T")[0];
-            })();
+            if (!prevIsOpenRef.current) {
+                const upcoming = getNextAvailableDates(expert, 1);
+                const firstAvailable = upcoming[0]?.date || (() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    return d.toISOString().split("T")[0];
+                })();
 
-            setSelectedDate(firstAvailable);
-            setSelectedTimeSlot("09:00 AM - 11:00 AM");
-            setReasonCategory("Personal / Family emergency");
-            setCustomReason("");
-            setFormError("");
+                setSelectedDate(firstAvailable);
+                setSelectedTimeSlot("09:00 AM - 11:00 AM");
+                setReasonCategory("Personal / Family emergency");
+                setCustomReason("");
+                setFormError("");
+            }
 
             const originalBodyOverflow = document.body.style.overflow;
             const originalHtmlOverflow = document.documentElement.style.overflow;
@@ -119,7 +124,11 @@ export default function RescheduleModal({
                 document.documentElement.style.overflow = originalHtmlOverflow;
             };
         }
-    }, [isOpen, availableQuickDates]);
+    }, [isOpen, expert]);
+
+    useEffect(() => {
+        prevIsOpenRef.current = isOpen;
+    }, [isOpen]);
 
     const isCurrentDateAvailable = useMemo(() => {
         if (!selectedDate) return false;
