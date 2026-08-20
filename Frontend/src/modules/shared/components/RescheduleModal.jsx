@@ -24,7 +24,7 @@ import {
 /**
  * RescheduleModal Component
  * Ultra-modern, responsive modal for rescheduling groundwater survey appointments.
- * Enforces expert working day availability guardrails and DD/MM/YYYY date formatting.
+ * Enforces expert working day availability guardrails, custom dropdown, and DD/MM/YYYY date formatting.
  * 
  * @param {boolean} isOpen - Controls modal visibility
  * @param {function} onClose - Closes the modal
@@ -58,7 +58,11 @@ export default function RescheduleModal({
     const [reasonCategory, setReasonCategory] = useState("Personal / Family emergency");
     const [customReason, setCustomReason] = useState("");
     const [formError, setFormError] = useState("");
+    const [isReasonDropdownOpen, setIsReasonDropdownOpen] = useState(false);
+    
     const dateInputRef = useRef(null);
+    const reasonDropdownRef = useRef(null);
+    const prevIsOpenRef = useRef(false);
 
     // Format YYYY-MM-DD to DD/MM/YYYY
     const formatToDDMMYYYY = (isoDate) => {
@@ -69,8 +73,6 @@ export default function RescheduleModal({
         }
         return isoDate;
     };
-
-    const prevIsOpenRef = useRef(false);
 
     // Calculate next available working dates for this expert
     const availableQuickDates = useMemo(() => {
@@ -113,6 +115,7 @@ export default function RescheduleModal({
                 setReasonCategory("Personal / Family emergency");
                 setCustomReason("");
                 setFormError("");
+                setIsReasonDropdownOpen(false);
             }
 
             const originalBodyOverflow = document.body.style.overflow;
@@ -129,6 +132,24 @@ export default function RescheduleModal({
     useEffect(() => {
         prevIsOpenRef.current = isOpen;
     }, [isOpen]);
+
+    // Click outside listener to close custom reason dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (reasonDropdownRef.current && !reasonDropdownRef.current.contains(event.target)) {
+                setIsReasonDropdownOpen(false);
+            }
+        };
+
+        if (isReasonDropdownOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
+    }, [isReasonDropdownOpen]);
 
     const isCurrentDateAvailable = useMemo(() => {
         if (!selectedDate) return false;
@@ -197,12 +218,12 @@ export default function RescheduleModal({
     ];
 
     const reasonOptions = [
-        "Personal / Family emergency",
-        "Site / Land preparation pending",
-        "Unfavourable weather / heavy rains",
-        "Out of town / Travel delay",
-        "Laborer / Drilling rig availability issue",
-        "Other reason"
+        { label: "Personal / Family emergency", icon: "🚨", desc: "Urgent personal or family matter" },
+        { label: "Site / Land preparation pending", icon: "🚜", desc: "Clearing or groundwork not ready" },
+        { label: "Unfavourable weather / heavy rains", icon: "🌧️", desc: "Rain, storm or muddy conditions" },
+        { label: "Out of town / Travel delay", icon: "✈️", desc: "Customer away from location" },
+        { label: "Laborer / Drilling rig availability issue", icon: "👷", desc: "Team or machinery schedule conflict" },
+        { label: "Other reason", icon: "📝", desc: "Provide details in note below" }
     ];
 
     const handleSubmit = (e) => {
@@ -480,24 +501,74 @@ export default function RescheduleModal({
                         </div>
                     </div>
 
-                    {/* Step 3: Reason for Rescheduling */}
-                    <div className="space-y-2">
+                    {/* Step 3: Reason for Rescheduling (Custom Dropdown) */}
+                    <div className="space-y-2" ref={reasonDropdownRef}>
                         <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                             <span className="w-5 h-5 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center text-[11px] font-black">3</span>
                             <span>Reason for Reschedule</span>
                         </label>
 
                         <div className="relative">
-                            <select
-                                value={reasonCategory}
-                                onChange={(e) => setReasonCategory(e.target.value)}
-                                className="w-full py-3 px-4 pr-10 rounded-xl border border-slate-300 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white appearance-none cursor-pointer"
+                            <button
+                                type="button"
+                                onClick={() => setIsReasonDropdownOpen(prev => !prev)}
+                                className={`w-full py-3 px-4 rounded-xl border text-left transition-all flex items-center justify-between gap-2.5 cursor-pointer bg-white ${
+                                    isReasonDropdownOpen
+                                        ? "border-[#0A84FF] ring-2 ring-blue-500/20 shadow-xs"
+                                        : "border-slate-300 hover:border-slate-400"
+                                }`}
                             >
-                                {reasonOptions.map((opt) => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                            </select>
-                            <IoChevronDownOutline className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-sm" />
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="text-base shrink-0">
+                                        {reasonOptions.find(r => r.label === reasonCategory)?.icon || "📝"}
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-800 truncate">
+                                        {reasonCategory}
+                                    </span>
+                                </div>
+                                <IoChevronDownOutline className={`text-slate-400 text-sm shrink-0 transition-transform duration-200 ${
+                                    isReasonDropdownOpen ? "rotate-180 text-[#0A84FF]" : ""
+                                }`} />
+                            </button>
+
+                            {/* Floating Custom Dropdown Menu */}
+                            {isReasonDropdownOpen && (
+                                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150 max-h-64 overflow-y-auto">
+                                    {reasonOptions.map((opt) => {
+                                        const isSelected = reasonCategory === opt.label;
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={opt.label}
+                                                onClick={() => {
+                                                    setReasonCategory(opt.label);
+                                                    setIsReasonDropdownOpen(false);
+                                                }}
+                                                className={`w-full p-2.5 rounded-xl text-left transition-all flex items-center justify-between gap-2.5 cursor-pointer ${
+                                                    isSelected
+                                                        ? "bg-blue-50/90 text-[#0A84FF] font-bold"
+                                                        : "hover:bg-slate-50 text-slate-700 font-medium"
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <span className="text-base shrink-0">{opt.icon}</span>
+                                                    <div className="min-w-0">
+                                                        <span className={`text-xs block truncate font-bold ${isSelected ? "text-[#0A84FF]" : "text-slate-800"}`}>
+                                                            {opt.label}
+                                                        </span>
+                                                        <span className="text-[10.5px] text-slate-400 block truncate">
+                                                            {opt.desc}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {isSelected && (
+                                                    <IoCheckmarkCircleOutline className="text-base text-[#0A84FF] shrink-0" />
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
 
                         <textarea
