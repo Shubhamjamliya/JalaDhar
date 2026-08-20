@@ -60,6 +60,14 @@ const createDispute = async (req, res) => {
       }
     }
 
+    // Auto-assign to available Customer Support Admin using Least-Active-Load engine
+    const { autoAssignRequest } = require('../../services/workloadDistributionService');
+    const assignment = await autoAssignRequest({
+      department: 'SUPPORT',
+      statusAtAssignment: 'PENDING',
+      notes: 'Auto-assigned upon user dispute creation'
+    });
+
     // Create dispute
     const dispute = await Dispute.create({
       raisedBy: userId,
@@ -69,7 +77,9 @@ const createDispute = async (req, res) => {
       subject: finalSubject,
       description: description.trim(),
       status: 'PENDING',
-      attachments: uploadedAttachments
+      attachments: uploadedAttachments,
+      assignedTo: assignment.assignedTo || null,
+      assignmentHistory: assignment.auditRecord ? [assignment.auditRecord] : []
     });
 
     // Populate for response

@@ -23,8 +23,22 @@ const adminSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['ADMIN', 'SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'VERIFIER_ADMIN', 'SUPPORT_ADMIN'],
+    enum: [
+      'ADMIN',
+      'SUPER_ADMIN',
+      'EXPERT_VERIFICATION_ADMIN',
+      'VERIFIER_ADMIN',
+      'OPERATIONS_ADMIN',
+      'FINANCE_ADMIN',
+      'SUPPORT_ADMIN',
+      'QC_ADMIN'
+    ],
     default: 'ADMIN'
+  },
+  department: {
+    type: String,
+    enum: ['GENERAL', 'VERIFICATION', 'OPERATIONS', 'FINANCE', 'SUPPORT', 'QUALITY_CONTROL', 'SUPER'],
+    default: 'GENERAL'
   },
   permissions: {
     type: [String],
@@ -33,6 +47,26 @@ const adminSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  // Workload distribution toggle: Controls whether new requests are auto-assigned to this admin
+  isAvailableForAssignment: {
+    type: Boolean,
+    default: true
+  },
+  // Active workload counter: Tracks open/in-progress tickets assigned to this admin
+  activeTicketsCount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  lastAssignedAt: {
+    type: Date,
+    default: null
+  },
+  phone: {
+    type: String,
+    trim: true,
+    default: null
   },
   lastLogin: {
     type: Date,

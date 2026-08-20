@@ -166,6 +166,12 @@ const updateDisputeStatus = async (req, res) => {
         resolvedAt: new Date(),
         actionTaken: req.body.actionTaken || 'OTHER'
       };
+
+      // Decrement assigned admin's active load
+      if (dispute.assignedTo) {
+        const { decrementActiveWorkload } = require('../../services/workloadDistributionService');
+        await decrementActiveWorkload(dispute.assignedTo);
+      }
     }
 
     await dispute.save();
@@ -210,42 +216,45 @@ const updateDisputeStatus = async (req, res) => {
 };
 
 /**
- * Assign dispute to admin
+ * Assign / Reassign dispute to admin (with audit logging and workload tracking)
  */
 const assignDispute = async (req, res) => {
   try {
     const { disputeId } = req.params;
-    const { assignedTo } = req.body;
+    const { assignedTo, reason, notes } = req.body;
     const adminId = req.userId;
+    const adminUser = req.user;
 
-    const dispute = await Dispute.findById(disputeId);
+    const targetAdminId = assignedTo || adminId;
+    const { manualReassign } = require('../../services/workloadDistributionService');
 
-    if (!dispute) {
-      return res.status(404).json({
-        success: false,
-        message: 'Dispute not found'
-      });
+    const result = await manualReassign({
+      model: Dispute,
+      entityId: disputeId,
+      newAdminId: targetAdminId,
+      reassignedByAdmin: adminUser || { _id: adminId, name: 'Admin' },
+      reason: reason || 'Manual reassignment',
+      notes: notes || ''
+    });
+
+    if (result.entity.status === 'PENDING') {
+      result.entity.status = 'IN_PROGRESS';
+      await result.entity.save();
     }
-
-    dispute.assignedTo = assignedTo || adminId;
-    if (dispute.status === 'PENDING') {
-      dispute.status = 'IN_PROGRESS';
-    }
-
-    await dispute.save();
 
     res.json({
       success: true,
-      message: 'Dispute assigned successfully',
+      message: result.message,
       data: {
-        dispute
+        dispute: result.entity,
+        auditRecord: result.auditRecord
       }
     });
   } catch (error) {
     console.error('Assign dispute error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to assign dispute',
+      message: error.message || 'Failed to assign dispute',
       error: error.message
     });
   }

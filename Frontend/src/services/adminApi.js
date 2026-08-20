@@ -896,4 +896,28 @@ export const translateDynamicText = async (text, targetLang, sourceLang = 'en') 
   return response.data;
 };
 
+/**
+ * Get Department Auto-Assignment Master Toggles
+ */
+export const getAssignmentTogglesApi = async () => {
+  const response = await api.get('/admin/auth/assignment-toggles');
+  return response.data;
+};
+
+/**
+ * Update Department Auto-Assignment Master Toggle
+ */
+export const updateAssignmentToggleApi = async (key, value) => {
+  const response = await api.post('/admin/auth/assignment-toggles', { key, value });
+  return response.data;
+};
+
+/**
+ * Get Team Performance & Evaluation Statistics
+ */
+export const getTeamPerformanceApi = async () => {
+  const response = await api.get('/admin/auth/team-performance');
+  return response.data;
+};
+
 

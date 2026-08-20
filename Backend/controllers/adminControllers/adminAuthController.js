@@ -535,7 +535,7 @@ const getAllAdmins = async (req, res) => {
 const updateAdmin = async (req, res) => {
   try {
     const { adminId } = req.params;
-    const { name, role, isActive } = req.body;
+    const { name, role, isActive, isAvailableForAssignment, department, phone } = req.body;
 
     const admin = await Admin.findById(adminId);
     if (!admin) {
@@ -556,9 +556,12 @@ const updateAdmin = async (req, res) => {
       }
     }
 
-    if (name) admin.name = name;
-    if (role) admin.role = role;
+    if (name !== undefined) admin.name = name;
+    if (role !== undefined) admin.role = role;
     if (isActive !== undefined) admin.isActive = isActive;
+    if (isAvailableForAssignment !== undefined) admin.isAvailableForAssignment = isAvailableForAssignment;
+    if (department !== undefined) admin.department = department;
+    if (phone !== undefined) admin.phone = phone;
 
     await admin.save();
 
@@ -627,6 +630,155 @@ const deleteAdmin = async (req, res) => {
   }
 };
 
+/**
+ * Get Department Auto-Assignment Master Toggles (Super Admin only)
+ */
+const getAssignmentToggles = async (req, res) => {
+  try {
+    const Settings = require('../../models/Settings');
+    const settings = await Settings.find({ category: 'assignment' });
+    
+    const toggles = {
+      AUTO_ASSIGN_VERIFICATION: true,
+      AUTO_ASSIGN_OPERATIONS: true,
+      AUTO_ASSIGN_FINANCE: true,
+      AUTO_ASSIGN_SUPPORT: true,
+      AUTO_ASSIGN_QC: true
+    };
+
+    settings.forEach(s => {
+      toggles[s.key] = s.value === true || s.value === 'true';
+    });
+
+    res.json({
+      success: true,
+      data: { toggles }
+    });
+  } catch (error) {
+    console.error('Get assignment toggles error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch assignment toggles',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update Department Auto-Assignment Master Toggle (Super Admin only)
+ */
+const updateAssignmentToggle = async (req, res) => {
+  try {
+    const { key, value } = req.body;
+    const Settings = require('../../models/Settings');
+
+    const validKeys = [
+      'AUTO_ASSIGN_VERIFICATION',
+      'AUTO_ASSIGN_OPERATIONS',
+      'AUTO_ASSIGN_FINANCE',
+      'AUTO_ASSIGN_SUPPORT',
+      'AUTO_ASSIGN_QC'
+    ];
+
+    if (!validKeys.includes(key)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid assignment toggle key'
+      });
+    }
+
+    const setting = await Settings.findOneAndUpdate(
+      { key },
+      {
+        key,
+        value: Boolean(value),
+        label: key.replace(/_/g, ' '),
+        category: 'assignment',
+        type: 'boolean',
+        updatedBy: req.userId
+      },
+      { upsert: true, new: true }
+    );
+
+    res.json({
+      success: true,
+      message: `Assignment toggle ${key} updated to ${value}`,
+      data: { setting }
+    });
+  } catch (error) {
+    console.error('Update assignment toggle error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update assignment toggle',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get Team Performance & Evaluation Statistics (Super Admin only)
+ */
+const getTeamPerformanceStats = async (req, res) => {
+  try {
+    const Dispute = require('../../models/Dispute');
+    const admins = await Admin.find({ isActive: true }).select('name email role department isAvailableForAssignment activeTicketsCount lastAssignedAt createdAt');
+
+    // Aggregate dispute stats per admin
+    const disputeStats = await Dispute.aggregate([
+      { $match: { assignedTo: { $ne: null } } },
+      {
+        $group: {
+          _id: '$assignedTo',
+          totalAssigned: { $sum: 1 },
+          resolvedCount: {
+            $sum: { $cond: [{ $in: ['$status', ['RESOLVED', 'CLOSED']] }, 1, 0] }
+          },
+          pendingCount: {
+            $sum: { $cond: [{ $in: ['$status', ['PENDING', 'IN_PROGRESS']] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    const statsMap = {};
+    disputeStats.forEach(s => {
+      statsMap[s._id.toString()] = s;
+    });
+
+    const performance = admins.map(admin => {
+      const stats = statsMap[admin._id.toString()] || { totalAssigned: 0, resolvedCount: 0, pendingCount: 0 };
+      const resolutionRate = stats.totalAssigned > 0 ? Math.round((stats.resolvedCount / stats.totalAssigned) * 100) : 100;
+
+      return {
+        adminId: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        department: admin.department,
+        isAvailableForAssignment: admin.isAvailableForAssignment,
+        activeTicketsCount: admin.activeTicketsCount || stats.pendingCount,
+        lastAssignedAt: admin.lastAssignedAt,
+        totalAssigned: stats.totalAssigned,
+        resolvedCount: stats.resolvedCount,
+        resolutionRate: `${resolutionRate}%`,
+        joinedAt: admin.createdAt
+      };
+    });
+
+    res.json({
+      success: true,
+      data: { performance }
+    });
+  } catch (error) {
+    console.error('Get team performance stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch team performance statistics',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -638,6 +790,9 @@ module.exports = {
   registerAdminWithOTP,
   getAllAdmins,
   updateAdmin,
-  deleteAdmin
+  deleteAdmin,
+  getAssignmentToggles,
+  updateAssignmentToggle,
+  getTeamPerformanceStats
 };
 

@@ -12,7 +12,10 @@ const {
   registerAdminWithOTP,
   getAllAdmins,
   updateAdmin,
-  deleteAdmin
+  deleteAdmin,
+  getAssignmentToggles,
+  updateAssignmentToggle,
+  getTeamPerformanceStats
 } = require('../../controllers/adminControllers/adminAuthController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isAdmin, isSuperAdmin } = require('../../middleware/roleMiddleware');
@@ -70,5 +73,10 @@ router.post('/register/verify-otp', authenticate, isSuperAdmin, authRateLimiter,
 router.get('/manage/all', authenticate, isSuperAdmin, getAllAdmins);
 router.patch('/manage/update/:adminId', authenticate, isSuperAdmin, updateAdmin);
 router.delete('/manage/delete/:adminId', authenticate, isSuperAdmin, deleteAdmin);
+
+// Workload Distribution & Performance (Super Admin only)
+router.get('/assignment-toggles', authenticate, isSuperAdmin, getAssignmentToggles);
+router.post('/assignment-toggles', authenticate, isSuperAdmin, updateAssignmentToggle);
+router.get('/team-performance', authenticate, isSuperAdmin, getTeamPerformanceStats);
 
 module.exports = router;

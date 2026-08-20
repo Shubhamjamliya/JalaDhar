@@ -29,14 +29,14 @@ const navSections = [
                 label: "Dashboard",
                 to: "/admin/dashboard",
                 Icon: IoHomeOutline,
-                roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"]
+                roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "EXPERT_VERIFICATION_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN", "QC_ADMIN"]
             },
             {
                 id: "vendors",
                 label: "Experts",
                 to: "/admin/vendors",
                 Icon: IoBusinessOutline,
-                roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"],
+                roles: ["SUPER_ADMIN", "EXPERT_VERIFICATION_ADMIN", "VERIFIER_ADMIN"],
                 children: [
                     { label: "All Experts", to: "/admin/vendors", end: true },
                     { label: "KYC & Approvals", to: "/admin/vendors/pending" },
@@ -49,7 +49,7 @@ const navSections = [
                 label: "Users",
                 to: "/admin/users",
                 Icon: IoPersonCircleOutline,
-                roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"],
+                roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN", "SUPPORT_ADMIN"],
                 children: [
                     { label: "All Users", to: "/admin/users", end: true },
                     { label: "User Bookings", to: "/admin/users/bookings" },
@@ -62,14 +62,14 @@ const navSections = [
                 label: "Approvals",
                 to: "/admin/approvals",
                 Icon: IoCheckmarkCircleOutline,
-                roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN"]
+                roles: ["SUPER_ADMIN", "EXPERT_VERIFICATION_ADMIN", "VERIFIER_ADMIN", "QC_ADMIN"]
             },
             {
                 id: "bookings",
                 label: "Bookings",
                 to: "/admin/bookings",
                 Icon: IoCalendarOutline,
-                roles: ["ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "VERIFIER_ADMIN", "SUPPORT_ADMIN"],
+                roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN"],
                 children: [
                     { label: "All Bookings", to: "/admin/bookings", end: true },
                     { label: "Live GPS Tracking", to: "/admin/bookings/tracking" },
@@ -99,7 +99,7 @@ const navSections = [
                 label: "Reports",
                 to: "/admin/reports",
                 Icon: IoBarChartOutline,
-                roles: ["SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN"],
+                roles: ["SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "QC_ADMIN"],
                 children: [
                     { label: "Executive Overview", to: "/admin/reports", end: true },
                     { label: "Market IQ & Geo Heatmaps", to: "/admin/reports/geo" },
@@ -120,14 +120,14 @@ const navSections = [
                 label: "Disputes & Support",
                 to: "/admin/disputes",
                 Icon: IoAlertCircleOutline,
-                roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN", "SUPPORT_ADMIN"]
+                roles: ["SUPER_ADMIN", "SUPPORT_ADMIN"]
             },
             {
                 id: "agreement-logs",
                 label: "Audit Logs",
                 to: "/admin/agreements",
                 Icon: IoShieldCheckmarkOutline,
-                roles: ["SUPER_ADMIN", "ADMIN", "SUPPORT_ADMIN", "OPERATIONS_ADMIN"],
+                roles: ["SUPER_ADMIN", "QC_ADMIN"],
                 children: [
                     { label: "User Agreement Logs", to: "/admin/agreements" },
                     { label: "Expert Agreement Logs", to: "/admin/expert-agreements" },
@@ -155,7 +155,7 @@ const navSections = [
                 label: "Content & Policies",
                 to: "/admin/policies",
                 Icon: IoDocumentTextOutline,
-                roles: ["SUPER_ADMIN", "ADMIN"],
+                roles: ["SUPER_ADMIN"],
                 children: [
                     { label: "Terms & Conditions", to: "/admin/policies/legal" },
                     { label: "Privacy Policy", to: "/admin/policies/privacy" },

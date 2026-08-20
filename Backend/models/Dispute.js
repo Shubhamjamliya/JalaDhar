@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+const assignmentHistoryRecordSchema = require('./schemas/assignmentHistorySchema');
+
 const disputeSchema = new mongoose.Schema({
   // Who raised the dispute
   raisedBy: {
@@ -55,6 +57,8 @@ const disputeSchema = new mongoose.Schema({
     ref: 'Admin',
     default: null
   },
+  // Immutable Assignment Audit Trail
+  assignmentHistory: [assignmentHistoryRecordSchema],
   // Resolution details
   resolution: {
     notes: {

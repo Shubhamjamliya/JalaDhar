@@ -27,7 +27,16 @@ const authorize = (...allowedRoles) => {
 /**
  * Check if user is admin (any type)
  */
-const isAdmin = authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.FINANCE_ADMIN, ROLES.OPERATIONS_ADMIN, ROLES.VERIFIER_ADMIN, ROLES.SUPPORT_ADMIN);
+const isAdmin = authorize(
+  ROLES.ADMIN,
+  ROLES.SUPER_ADMIN,
+  ROLES.EXPERT_VERIFICATION_ADMIN,
+  ROLES.VERIFIER_ADMIN,
+  ROLES.OPERATIONS_ADMIN,
+  ROLES.FINANCE_ADMIN,
+  ROLES.SUPPORT_ADMIN,
+  ROLES.QC_ADMIN
+);
 
 /**
  * Check if user is super admin
@@ -45,14 +54,20 @@ const isFinanceAdmin = authorize(ROLES.FINANCE_ADMIN, ROLES.SUPER_ADMIN);
 const isOperationsAdmin = authorize(ROLES.OPERATIONS_ADMIN, ROLES.SUPER_ADMIN);
 
 /**
- * Check if user is verifier admin or super admin
+ * Check if user is verifier admin, expert verification admin, or super admin
  */
-const isVerifierAdmin = authorize(ROLES.VERIFIER_ADMIN, ROLES.SUPER_ADMIN);
+const isVerifierAdmin = authorize(ROLES.EXPERT_VERIFICATION_ADMIN, ROLES.VERIFIER_ADMIN, ROLES.SUPER_ADMIN);
+const isExpertVerificationAdmin = isVerifierAdmin;
 
 /**
  * Check if user is support admin or super admin
  */
 const isSupportAdmin = authorize(ROLES.SUPPORT_ADMIN, ROLES.SUPER_ADMIN);
+
+/**
+ * Check if user is quality control admin or super admin
+ */
+const isQCAdmin = authorize(ROLES.QC_ADMIN, ROLES.SUPER_ADMIN);
 
 /**
  * Check if user is vendor
@@ -67,7 +82,17 @@ const isUser = authorize(ROLES.USER);
 /**
  * Check if user is vendor or admin
  */
-const isVendorOrAdmin = authorize(ROLES.VENDOR, ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.FINANCE_ADMIN, ROLES.OPERATIONS_ADMIN, ROLES.VERIFIER_ADMIN, ROLES.SUPPORT_ADMIN);
+const isVendorOrAdmin = authorize(
+  ROLES.VENDOR,
+  ROLES.ADMIN,
+  ROLES.SUPER_ADMIN,
+  ROLES.EXPERT_VERIFICATION_ADMIN,
+  ROLES.VERIFIER_ADMIN,
+  ROLES.OPERATIONS_ADMIN,
+  ROLES.FINANCE_ADMIN,
+  ROLES.SUPPORT_ADMIN,
+  ROLES.QC_ADMIN
+);
 
 /**
  * Check if user is user or vendor
@@ -81,7 +106,9 @@ module.exports = {
   isFinanceAdmin,
   isOperationsAdmin,
   isVerifierAdmin,
+  isExpertVerificationAdmin,
   isSupportAdmin,
+  isQCAdmin,
   isVendor,
   isUser,
   isVendorOrAdmin,

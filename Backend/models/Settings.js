@@ -27,7 +27,7 @@ const settingsSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['pricing', 'general', 'payment', 'notification', 'billing', 'policy'],
+    enum: ['pricing', 'general', 'payment', 'notification', 'billing', 'policy', 'assignment'],
     default: 'general'
   },
   updatedBy: {
