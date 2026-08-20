@@ -17,7 +17,7 @@ import {
     IoNavigateOutline,
     IoDownloadOutline
 } from "react-icons/io5";
-import { getBookingDetails } from "../../../services/adminApi";
+import { getBookingDetails, resolveInfeasibleBooking } from "../../../services/adminApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
@@ -27,6 +27,12 @@ export default function AdminBookingDetails() {
     const { bookingId } = useParams();
     const [loading, setLoading] = useState(true);
     const [booking, setBooking] = useState(null);
+    const [submittingArbitration, setSubmittingArbitration] = useState(false);
+    const [arbitrationDecision, setArbitrationDecision] = useState("APPROVE_INCOMPLETE");
+    const [payTravelFee, setPayTravelFee] = useState(true);
+    const [travelFeeAmount, setTravelFeeAmount] = useState("");
+    const [userRefundAmount, setUserRefundAmount] = useState("");
+    const [adminNotes, setAdminNotes] = useState("");
     const toast = useToast();
 
     useEffect(() => {
@@ -49,6 +55,39 @@ export default function AdminBookingDetails() {
         }
     };
 
+
+    useEffect(() => {
+        if (booking?.payment) {
+            const travel = booking.payment.travelCharges || 0;
+            const advance = booking.payment.advanceAmount || 0;
+            setTravelFeeAmount(travel);
+            setUserRefundAmount(Math.max(0, advance - travel));
+        }
+    }, [booking?._id]);
+
+    const handleResolveInfeasible = async () => {
+        try {
+            setSubmittingArbitration(true);
+            const payload = {
+                decision: arbitrationDecision,
+                travelFeePayableToVendor: arbitrationDecision === 'APPROVE_INCOMPLETE' ? payTravelFee : false,
+                travelFeeAmount: arbitrationDecision === 'APPROVE_INCOMPLETE' && payTravelFee ? parseFloat(travelFeeAmount) || 0 : 0,
+                userRefundAmount: parseFloat(userRefundAmount) || 0,
+                adminNotes: adminNotes.trim()
+            };
+            const response = await resolveInfeasibleBooking(bookingId, payload);
+            if (response.success) {
+                toast.showSuccess("On-site infeasibility case resolved and funds disbursed!");
+                loadBookingDetails();
+            } else {
+                toast.showError(response.message || "Failed to resolve infeasibility case");
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to resolve infeasibility case");
+        } finally {
+            setSubmittingArbitration(false);
+        }
+    };
 
     const formatDate = (dateString, timeString) => {
         if (!dateString) return "N/A";
@@ -226,10 +265,14 @@ export default function AdminBookingDetails() {
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                             <IoConstructOutline className="text-orange-500 text-2xl" />
-                            <span>On-Site Infeasibility Report (Mediation Required)</span>
+                            <span>On-Site Infeasibility Report (Mediation & Settlement)</span>
                         </h2>
-                        <span className="px-2.5 py-1 bg-orange-100 text-orange-800 text-xs font-black rounded-full uppercase">
-                            Admin Review
+                        <span className={`px-2.5 py-1 text-xs font-black rounded-full uppercase ${
+                            booking.unableToCompleteDetails?.adminReview?.status === 'RESOLVED'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-orange-100 text-orange-800'
+                        }`}>
+                            {booking.unableToCompleteDetails?.adminReview?.status === 'RESOLVED' ? 'Settlement Resolved' : 'Admin Review Pending'}
                         </span>
                     </div>
 
@@ -278,6 +321,181 @@ export default function AdminBookingDetails() {
                                             />
                                         </a>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Interactive Admin Arbitration & Settlement Panel */}
+                        {booking.unableToCompleteDetails?.adminReview?.status === 'RESOLVED' ? (
+                            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-black text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                                        <IoCheckmarkCircleOutline className="text-base text-emerald-600" />
+                                        Arbitration & Settlement Finalized
+                                    </span>
+                                    <span className="text-[11px] font-bold text-emerald-700">
+                                        {formatDate(booking.unableToCompleteDetails.adminReview.reviewedAt)}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                    <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
+                                        <span className="text-gray-500 block font-medium">Decision:</span>
+                                        <span className="font-bold text-emerald-950">
+                                            {booking.unableToCompleteDetails.adminReview.decision === 'APPROVE_INCOMPLETE'
+                                                ? '✅ Infeasibility Accepted (Travel Protected)'
+                                                : '❌ Claim Rejected (Full Refund)'}
+                                        </span>
+                                    </div>
+                                    <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
+                                        <span className="text-gray-500 block font-medium">Travel Allowance to Expert:</span>
+                                        <span className="font-bold text-slate-900">
+                                            {formatAmount(booking.unableToCompleteDetails.adminReview.travelFeeAmount || 0)}
+                                        </span>
+                                    </div>
+                                    <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
+                                        <span className="text-gray-500 block font-medium">Customer Refund Credited:</span>
+                                        <span className="font-bold text-slate-900">
+                                            {formatAmount(booking.unableToCompleteDetails.adminReview.userRefundAmount || 0)} ({booking.unableToCompleteDetails.adminReview.userRefundPercentage || 100}%)
+                                        </span>
+                                    </div>
+                                    <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
+                                        <span className="text-gray-500 block font-medium">Admin Remarks:</span>
+                                        <span className="font-bold text-slate-900">
+                                            {booking.unableToCompleteDetails.adminReview.notes || 'Settlement finalized.'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="p-4 bg-slate-50 border-2 border-orange-200 rounded-2xl space-y-4">
+                                <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                                        <IoWalletOutline className="text-orange-600 text-base" />
+                                        Arbitrate & Settle Funds
+                                    </h3>
+                                    <span className="text-[11px] font-bold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">
+                                        Action Required
+                                    </span>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {/* Decision Choice */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                                            Arbitration Decision
+                                        </label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setArbitrationDecision("APPROVE_INCOMPLETE");
+                                                    setPayTravelFee(true);
+                                                    const travel = booking.payment?.travelCharges || 0;
+                                                    const adv = booking.payment?.advanceAmount || 0;
+                                                    setTravelFeeAmount(travel);
+                                                    setUserRefundAmount(Math.max(0, adv - travel));
+                                                }}
+                                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                                                    arbitrationDecision === "APPROVE_INCOMPLETE"
+                                                        ? "border-emerald-500 bg-emerald-50/80 text-emerald-950 ring-2 ring-emerald-500/20"
+                                                        : "border-gray-200 bg-white hover:bg-gray-50 text-gray-700"
+                                                }`}
+                                            >
+                                                <div className="font-bold text-xs">Accept Infeasibility Claim</div>
+                                                <div className="text-[11px] text-gray-500 mt-0.5">
+                                                    Preserve expert's travel allowance & refund remaining balance to customer
+                                                </div>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setArbitrationDecision("REJECT_INCOMPLETE");
+                                                    setPayTravelFee(false);
+                                                    setTravelFeeAmount(0);
+                                                    setUserRefundAmount(booking.payment?.advanceAmount || 0);
+                                                }}
+                                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                                                    arbitrationDecision === "REJECT_INCOMPLETE"
+                                                        ? "border-rose-500 bg-rose-50/80 text-rose-950 ring-2 ring-rose-500/20"
+                                                        : "border-gray-200 bg-white hover:bg-gray-50 text-gray-700"
+                                                }`}
+                                            >
+                                                <div className="font-bold text-xs">Reject Claim (False Claim)</div>
+                                                <div className="text-[11px] text-gray-500 mt-0.5">
+                                                    100% full refund to customer & no travel payout to expert
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Financial Breakdown Inputs */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1">
+                                                Travel Allowance to Expert (₹)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={travelFeeAmount}
+                                                disabled={arbitrationDecision === "REJECT_INCOMPLETE"}
+                                                onChange={(e) => {
+                                                    const val = parseFloat(e.target.value) || 0;
+                                                    setTravelFeeAmount(e.target.value);
+                                                    const adv = booking.payment?.advanceAmount || 0;
+                                                    setUserRefundAmount(Math.max(0, adv - val));
+                                                }}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm font-bold text-gray-800 focus:ring-2 focus:ring-orange-400 bg-white disabled:bg-gray-100 disabled:text-gray-400"
+                                                placeholder="0.00"
+                                            />
+                                            <span className="text-[10px] text-gray-500 mt-0.5 block">
+                                                Calculated Travel Charges: {formatAmount(booking.payment?.travelCharges || 0)}
+                                            </span>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1">
+                                                Refund to Customer Wallet (₹)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={userRefundAmount}
+                                                onChange={(e) => setUserRefundAmount(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm font-bold text-gray-800 focus:ring-2 focus:ring-orange-400 bg-white"
+                                                placeholder="0.00"
+                                            />
+                                            <span className="text-[10px] text-gray-500 mt-0.5 block">
+                                                Total Advance Paid: {formatAmount(booking.payment?.advanceAmount || 0)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Admin Remarks */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                                            Admin Arbitration Remarks / Justification
+                                        </label>
+                                        <textarea
+                                            value={adminNotes}
+                                            onChange={(e) => setAdminNotes(e.target.value)}
+                                            rows="2"
+                                            placeholder="Enter mediation remarks (shared with customer & expert)..."
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-medium text-gray-800 focus:ring-2 focus:ring-orange-400 bg-white resize-none"
+                                        />
+                                    </div>
+
+                                    {/* Submit Action */}
+                                    <div className="pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleResolveInfeasible}
+                                            disabled={submittingArbitration}
+                                            className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                                        >
+                                            <IoCheckmarkCircleOutline className="text-base" />
+                                            <span>{submittingArbitration ? "Processing Settlement..." : "Resolve & Disburse Funds"}</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}

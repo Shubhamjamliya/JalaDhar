@@ -2865,6 +2865,168 @@ const processUserFinalSettlement = async (req, res) => {
   }
 };
 
+/**
+ * Arbitrate & Settle On-Site Infeasibility (UNABLE_TO_COMPLETE) Booking
+ */
+const resolveInfeasibleBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const {
+      decision = 'APPROVE_INCOMPLETE', // 'APPROVE_INCOMPLETE' or 'REJECT_INCOMPLETE'
+      travelFeePayableToVendor = true,
+      travelFeeAmount = 0,
+      userRefundAmount = 0,
+      adminNotes = ''
+    } = req.body;
+    const adminId = req.userId;
+
+    const booking = await Booking.findById(bookingId)
+      .populate('user', 'name email phone')
+      .populate('vendor', 'name email phone');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    if (booking.status !== BOOKING_STATUS.UNABLE_TO_COMPLETE && !booking.unableToCompleteDetails?.reported) {
+      return res.status(400).json({
+        success: false,
+        message: 'This booking has not been reported as on-site infeasible.'
+      });
+    }
+
+    const { creditToUserWallet } = require('../../services/userWalletService');
+    const shortId = booking._id.toString().slice(-6).toUpperCase();
+    let vendorCreditResult = null;
+    let userCreditResult = null;
+
+    // 1. Process Vendor Travel Payout if decision is APPROVE and travelFeePayableToVendor is true
+    const parsedTravelFee = parseFloat(travelFeeAmount) || 0;
+    if (decision === 'APPROVE_INCOMPLETE' && travelFeePayableToVendor && parsedTravelFee > 0) {
+      const vendorId = booking.vendor?._id || booking.vendor;
+      if (vendorId) {
+        vendorCreditResult = await creditToVendorWallet(
+          vendorId,
+          parsedTravelFee,
+          'SITE_VISIT',
+          booking._id,
+          { description: `On-site survey travel allowance for booking #${shortId} (Infeasibility Mediated)` }
+        );
+      }
+    }
+
+    // 2. Process Customer Refund
+    const parsedUserRefund = parseFloat(userRefundAmount) || 0;
+    if (parsedUserRefund > 0) {
+      const userId = booking.user?._id || booking.user;
+      if (userId) {
+        userCreditResult = await creditToUserWallet(
+          userId,
+          parsedUserRefund,
+          booking._id,
+          `Refund for on-site survey infeasibility (#${shortId})`
+        );
+      }
+      booking.payment = booking.payment || {};
+      booking.payment.refundStatus = 'COMPLETED';
+      booking.payment.refundAmount = (booking.payment.refundAmount || 0) + parsedUserRefund;
+      booking.payment.refundedAt = new Date();
+    }
+
+    // 3. Update unableToCompleteDetails
+    booking.unableToCompleteDetails = booking.unableToCompleteDetails || {};
+    booking.unableToCompleteDetails.adminReview = {
+      status: 'RESOLVED',
+      decision,
+      reviewedBy: adminId,
+      reviewedAt: new Date(),
+      notes: adminNotes?.trim() || (decision === 'APPROVE_INCOMPLETE' ? 'Infeasibility claim accepted by admin.' : 'Infeasibility claim rejected by admin.'),
+      travelFeePayableToVendor: decision === 'APPROVE_INCOMPLETE' ? Boolean(travelFeePayableToVendor) : false,
+      travelFeeAmount: decision === 'APPROVE_INCOMPLETE' ? parsedTravelFee : 0,
+      userRefundAmount: parsedUserRefund,
+      userRefundPercentage: booking.payment?.advanceAmount ? Math.round((parsedUserRefund / booking.payment.advanceAmount) * 100) : 100
+    };
+
+    // 4. Update Status
+    booking.status = BOOKING_STATUS.CANCELLED;
+    booking.vendorStatus = BOOKING_STATUS.CANCELLED;
+    booking.userStatus = BOOKING_STATUS.CANCELLED;
+    booking.cancellationReason = `On-site infeasibility resolved: ${adminNotes?.trim() || decision}`;
+    booking.cancelledAt = new Date();
+
+    await booking.save();
+
+    // 5. Real-time notifications and socket broadcast
+    try {
+      const io = typeof getIO === 'function' ? getIO() : null;
+
+      // User Notification
+      await sendNotification({
+        recipient: booking.user?._id || booking.user,
+        recipientModel: 'User',
+        type: 'BOOKING_CANCELLED',
+        title: 'Survey Infeasibility Case Resolved',
+        message: `Admin has reviewed the on-site conditions for booking #${shortId}. ${parsedUserRefund > 0 ? `₹${parsedUserRefund.toLocaleString('en-IN')} has been credited to your wallet.` : ''} Remarks: ${adminNotes || 'Settlement processed.'}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        }
+      }, io);
+
+      // Vendor Notification
+      await sendNotification({
+        recipient: booking.vendor?._id || booking.vendor,
+        recipientModel: 'Vendor',
+        type: 'SETTLEMENT_COMPLETED',
+        title: 'On-Site Survey Infeasibility Mediated',
+        message: `Infeasibility claim for booking #${shortId} was ${decision === 'APPROVE_INCOMPLETE' ? 'ACCEPTED' : 'REJECTED'}. ${parsedTravelFee > 0 ? `₹${parsedTravelFee.toLocaleString('en-IN')} travel allowance credited to your wallet.` : ''}`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        }
+      }, io);
+
+      if (io) {
+        const bookingPayload = {
+          bookingId: booking._id,
+          status: booking.status,
+          userStatus: booking.userStatus,
+          vendorStatus: booking.vendorStatus,
+          booking
+        };
+        io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
+        io.to(`booking_${booking._id}`).emit('booking_status_updated', bookingPayload);
+      }
+    } catch (notifyErr) {
+      console.error('[resolveInfeasibleBooking] Notification error:', notifyErr);
+    }
+
+    res.json({
+      success: true,
+      message: 'On-site infeasibility case resolved successfully. Funds have been disbursed.',
+      data: {
+        booking: {
+          id: booking._id,
+          status: booking.status,
+          unableToCompleteDetails: booking.unableToCompleteDetails,
+          vendorCreditResult,
+          userCreditResult
+        }
+      }
+    });
+  } catch (error) {
+    console.error('resolveInfeasibleBooking error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to resolve on-site infeasibility case',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllBookings,
   getPendingFirstPaymentReleases,
@@ -2891,6 +3053,7 @@ module.exports = {
   getCompletedUserFinalSettlements,
   processNewFinalSettlement,
   processUserFinalSettlement,
-  getBookingDetails
+  getBookingDetails,
+  resolveInfeasibleBooking
 };
 

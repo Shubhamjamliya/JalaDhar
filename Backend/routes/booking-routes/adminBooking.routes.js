@@ -27,7 +27,8 @@ const {
   getCompletedUserFinalSettlements,
   processNewFinalSettlement,
   processUserFinalSettlement,
-  getBookingDetails
+  getBookingDetails,
+  resolveInfeasibleBooking
 } = require('../../controllers/bookingControllers/adminBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isAdmin } = require('../../middleware/roleMiddleware');
@@ -78,6 +79,7 @@ router.patch('/bookings/:bookingId/final-settlement/vendor/process', authenticat
 router.get('/bookings/final-settlement/user/pending', authenticate, isAdmin, getPendingUserFinalSettlements);
 router.get('/bookings/final-settlement/user/completed', authenticate, isAdmin, getCompletedUserFinalSettlements);
 router.patch('/bookings/:bookingId/final-settlement/user/process', authenticate, isAdmin, processUserFinalSettlement);
+router.patch('/bookings/:bookingId/resolve-infeasible', authenticate, isAdmin, resolveInfeasibleBooking);
 
 // Generic ID route must be last
 router.get('/bookings/:bookingId', authenticate, isAdmin, getBookingDetails);

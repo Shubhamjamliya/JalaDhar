@@ -693,6 +693,17 @@ export const getBookingDetails = async (bookingId) => {
 };
 
 /**
+ * Arbitrate and resolve on-site infeasible booking
+ * @param {string} bookingId
+ * @param {Object} data - { decision, travelFeePayableToVendor, travelFeeAmount, userRefundAmount, adminNotes }
+ * @returns {Promise}
+ */
+export const resolveInfeasibleBooking = async (bookingId, data) => {
+  const response = await api.patch(`/admin/bookings/${bookingId}/resolve-infeasible`, data);
+  return response.data;
+};
+
+/**
  * Get all ratings
  * @param {Object} params - { page, limit, vendorId, userId, minRating, maxRating, search }
  * @returns {Promise}
