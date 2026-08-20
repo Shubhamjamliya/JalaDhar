@@ -13,7 +13,9 @@ import {
     IoImageOutline,
     IoCheckmarkCircleOutline,
     IoCloseCircleOutline,
-    IoWalletOutline
+    IoWalletOutline,
+    IoNavigateOutline,
+    IoDownloadOutline
 } from "react-icons/io5";
 import { getBookingDetails } from "../../../services/adminApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";

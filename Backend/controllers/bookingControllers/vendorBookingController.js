@@ -7,8 +7,9 @@ const { sendBookingStatusUpdateEmail } = require('../../services/emailService');
 const { sendNotification } = require('../../services/notificationService');
 const { dispatchSurveyOTP } = require('../../services/multiChannelNotificationService');
 const { autoReassignBooking } = require('../../services/bookingReassignmentService');
-const { creditToVendorWallet, retryFailedCredit } = require('../../services/walletService');
+const { creditToVendorWallet, retryFailedCredit, debitFromVendorWallet } = require('../../services/walletService');
 const { getSettings } = require('../../services/settingsService');
+const { getIO } = require('../../sockets');
 
 /**
  * Get vendor bookings
@@ -1084,8 +1085,28 @@ const markVisitedAndUploadReport = async (req, res) => {
     const finalImages = reportImages.length > 0 ? reportImages : existingImages;
     const finalReportFile = reportFile || booking.report?.reportFile || null;
 
+    const isWaterFound = typeof reportData.waterFound === 'boolean'
+      ? reportData.waterFound
+      : (reportData.waterFound === 'true' || reportData.waterFound === 'YES' || reportData.waterFound === true);
+
+    if (reportData.existingBorewell) {
+      reportData.existingBorewell.distance = parseNum(reportData.existingBorewell.distance);
+      reportData.existingBorewell.depth = parseNum(reportData.existingBorewell.depth);
+      reportData.existingBorewell.yield = parseNum(reportData.existingBorewell.yield);
+    }
+    if (reportData.surveyRecommendations) {
+      reportData.surveyRecommendations.pointsInvestigated = parseNum(reportData.surveyRecommendations.pointsInvestigated);
+      reportData.surveyRecommendations.recommendedBoreDepth = parseNum(reportData.surveyRecommendations.recommendedBoreDepth);
+      reportData.surveyRecommendations.recommendedCasingDepth = parseNum(reportData.surveyRecommendations.recommendedCasingDepth);
+      reportData.surveyRecommendations.expectedYield = parseNum(reportData.surveyRecommendations.expectedYield);
+    }
+    if (reportData.drillingInstructions) {
+      reportData.drillingInstructions.stopDrillingDepth = parseNum(reportData.drillingInstructions.stopDrillingDepth);
+    }
+
     booking.report = {
       ...reportData,
+      waterFound: isWaterFound,
       images: finalImages,
       reportFile: finalReportFile,
       uploadedAt: new Date(),
@@ -1139,79 +1160,82 @@ const markVisitedAndUploadReport = async (req, res) => {
 
     // Send notification to user and admin
     try {
-      await sendBookingStatusUpdateEmail({
-        email: booking.user.email,
-        name: booking.user.name,
-        bookingId: booking._id.toString(),
-        status: 'REPORT_UPLOADED',
-        message: 'Your groundwater survey report is ready. Please pay the remaining amount to view it.'
-      });
+      if (booking.user?.email) {
+        await sendBookingStatusUpdateEmail({
+          email: booking.user.email,
+          name: booking.user.name,
+          bookingId: booking._id.toString(),
+          status: 'REPORT_UPLOADED',
+          message: 'Your groundwater survey report is ready. Please pay the remaining amount to view it.'
+        });
+      }
+    } catch (emailError) {
+      console.error('Email notification error:', emailError);
+    }
 
-      // Send real-time notifications
-      try {
-        const { getIO } = require('../../sockets');
-        const io = getIO();
+    // Send real-time notifications
+    try {
+      const io = typeof getIO === 'function' ? getIO() : null;
 
-        // Notify vendor - report uploaded confirmation
+      // Notify vendor - report uploaded confirmation
+      await sendNotification({
+        recipient: booking.vendor?._id || booking.vendor,
+        recipientModel: 'Vendor',
+        type: 'REPORT_UPLOADED',
+        title: 'Report Uploaded',
+        message: `You have successfully uploaded the groundwater survey report for booking #${booking._id.toString().slice(-6)}. User will be notified to pay remaining amount.`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          waterFound: booking.report.waterFound
+        }
+      }, io);
+
+      // Notify user - report uploaded by vendor
+      if (booking.user) {
         await sendNotification({
-          recipient: booking.vendor,
-          recipientModel: 'Vendor',
+          recipient: booking.user._id || booking.user,
+          recipientModel: 'User',
           type: 'REPORT_UPLOADED',
-          title: 'Report Uploaded',
-          message: `You have successfully uploaded the groundwater survey report for booking #${booking._id.toString().slice(-6)}. User will be notified to pay remaining amount.`,
+          title: 'Report Uploaded by Expert',
+          message: `Expert has uploaded the groundwater survey report. Please pay remaining ₹${booking.payment?.remainingAmount || 0} to view it.`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            remainingAmount: booking.payment?.remainingAmount,
+            bookingId: booking._id.toString()
+          }
+        }, io);
+      }
+
+      // Notify admin (get all admins)
+      const Admin = require('../../models/Admin');
+      const admins = await Admin.find({ isActive: true });
+      for (const admin of admins) {
+        await sendNotification({
+          recipient: admin._id,
+          recipientModel: 'Admin',
+          type: 'REPORT_UPLOADED',
+          title: 'New Report Uploaded',
+          message: `New groundwater survey report uploaded for booking #${booking._id.toString().slice(-6)}`,
           relatedEntity: {
             entityType: 'Booking',
             entityId: booking._id
           },
           metadata: {
             bookingId: booking._id.toString(),
-            waterFound: booking.report.waterFound
+            vendorId: (booking.vendor?._id || booking.vendor)?.toString()
           }
         }, io);
-
-        // Notify user - report uploaded by vendor
-        await sendNotification({
-          recipient: booking.user._id,
-          recipientModel: 'User',
-          type: 'REPORT_UPLOADED',
-          title: 'Report Uploaded by Expert',
-          message: `Expert has uploaded the groundwater survey report. Please pay remaining ₹${booking.payment.remainingAmount} to view it.`,
-          relatedEntity: {
-            entityType: 'Booking',
-            entityId: booking._id
-          },
-          metadata: {
-            remainingAmount: booking.payment.remainingAmount,
-            bookingId: booking._id.toString()
-          }
-        }, io);
-
-        // Notify admin (get all admins)
-        const Admin = require('../../models/Admin');
-        const admins = await Admin.find({ isActive: true });
-        for (const admin of admins) {
-          await sendNotification({
-            recipient: admin._id,
-            recipientModel: 'Admin',
-            type: 'REPORT_UPLOADED',
-            title: 'New Report Uploaded',
-            message: `New groundwater survey report uploaded for booking #${booking._id.toString().slice(-6)}`,
-            relatedEntity: {
-              entityType: 'Booking',
-              entityId: booking._id
-            },
-            metadata: {
-              bookingId: booking._id.toString(),
-              vendorId: booking.vendor.toString()
-            }
-          }, io);
-        }
-      } catch (socketError) {
-        console.error('Socket notification error:', socketError);
-        // Continue even if Socket.io fails
       }
-    } catch (emailError) {
-      console.error('Email notification error:', emailError);
+    } catch (socketError) {
+      console.error('Socket notification error:', socketError);
+      // Continue even if Socket.io fails
     }
 
     // Broadcast Real-Time Socket Updates to all relevant rooms
@@ -1646,7 +1670,6 @@ const cancelBooking = async (req, res) => {
 
     // Reverse pre-allocated travel allowance from vendor wallet if applicable
     try {
-      const { debitFromVendorWallet } = require('../../services/vendorWalletService');
       if (booking.payment?.travelCharges && booking.payment?.travelCharges > 0) {
         await debitFromVendorWallet(
           vendorId,
@@ -1687,10 +1710,10 @@ const cancelBooking = async (req, res) => {
     }
 
     // Notify User with instant high-priority apology and resolution options
-    const io = getIO();
+    const io = typeof getIO === 'function' ? getIO() : null;
     const shortBookingId = booking._id.toString().slice(-4).toUpperCase();
     await sendNotification({
-      recipient: booking.user,
+      recipient: booking.user?._id || booking.user,
       recipientModel: 'User',
       type: 'EXPERT_CANCELLED',
       title: isSameDay ? 'Expert Unable to Attend Today’s Survey' : 'Expert Unable to Attend Survey',
@@ -1836,11 +1859,11 @@ const reportUnableToComplete = async (req, res) => {
     await booking.save();
 
     // Send notifications to User and Admin
-    const io = getIO();
+    const io = typeof getIO === 'function' ? getIO() : null;
     const shortBookingId = booking._id.toString().slice(-4).toUpperCase();
 
     await sendNotification({
-      recipient: booking.user._id,
+      recipient: booking.user?._id || booking.user,
       recipientModel: 'User',
       type: 'UNABLE_TO_COMPLETE',
       title: 'Survey Infeasible on Site',

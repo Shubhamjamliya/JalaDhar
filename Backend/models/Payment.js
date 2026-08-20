@@ -29,7 +29,7 @@ const paymentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: Object.values(PAYMENT_STATUS),
+    enum: [...Object.values(PAYMENT_STATUS), 'COMPLETED'],
     default: PAYMENT_STATUS.PENDING
   },
   // Razorpay details

@@ -1605,7 +1605,7 @@ const cancelBooking = async (req, res) => {
       const completedAdvancePayment = await Payment.findOne({
         booking: booking._id,
         paymentType: 'ADVANCE',
-        status: 'COMPLETED'
+        status: { $in: [PAYMENT_STATUS.SUCCESS, 'SUCCESS', 'COMPLETED'] }
       });
 
       const refundAmount = isAdvancePaidOnBooking 
@@ -1626,9 +1626,10 @@ const cancelBooking = async (req, res) => {
           vendor: booking.vendor?._id || booking.vendor,
           paymentType: 'REFUND',
           amount: refundAmount,
-          status: 'COMPLETED',
-          description: `Refund credited to user wallet for cancelled booking #${booking._id.toString().slice(-6).toUpperCase()}`,
-          completedAt: new Date()
+          status: PAYMENT_STATUS.SUCCESS,
+          paidAt: new Date(),
+          refundedAt: new Date(),
+          description: `Refund credited to user wallet for cancelled booking #${booking._id.toString().slice(-6).toUpperCase()}`
         });
       }
     } catch (refundErr) {
@@ -2164,7 +2165,7 @@ const claimFullRefundForExpertCancellation = async (req, res) => {
     const completedAdvancePayment = await Payment.findOne({
       booking: booking._id,
       paymentType: 'ADVANCE',
-      status: 'COMPLETED'
+      status: { $in: [PAYMENT_STATUS.SUCCESS, 'SUCCESS', 'COMPLETED'] }
     });
 
     let refundAmount = 0;
@@ -2188,12 +2189,13 @@ const claimFullRefundForExpertCancellation = async (req, res) => {
       await Payment.create({
         booking: booking._id,
         user: userId,
-        vendor: booking.vendor,
+        vendor: booking.vendor?._id || booking.vendor,
         paymentType: 'REFUND',
         amount: refundAmount,
-        status: 'COMPLETED',
-        description: `100% Full Refund credited to wallet for expert-cancelled booking #JALA${booking._id.toString().slice(-4).toUpperCase()}`,
-        completedAt: new Date()
+        status: PAYMENT_STATUS.SUCCESS,
+        paidAt: new Date(),
+        refundedAt: new Date(),
+        description: `100% Full Refund credited to wallet for expert-cancelled booking #JALA${booking._id.toString().slice(-4).toUpperCase()}`
       });
     }
 

@@ -847,7 +847,7 @@ function InputGroup({ label, name, value, onChange, type = "text", placeholder, 
             <input
                 type={type}
                 name={name}
-                value={value}
+                value={value ?? ""}
                 onChange={onChange}
                 onWheel={(e) => e.target.blur()}
                 placeholder={placeholder}
