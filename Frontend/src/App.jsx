@@ -1026,7 +1026,7 @@ function App() {
                                                                         path="/settings"
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminSettings />
+                                                                                <AdminSettings defaultTab="hub" />
                                                                             </Suspense>
                                                                         }
                                                                     />

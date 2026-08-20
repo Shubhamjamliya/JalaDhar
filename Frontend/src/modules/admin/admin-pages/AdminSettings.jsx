@@ -759,48 +759,199 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
 
 
+        // Hub card config
+        const hubCards = [
+            {
+                id: "general",
+                label: "General & App Info",
+                description: "Admin name, email, time zone & configurable dispute types",
+                icon: IoSettingsOutline,
+                gradient: "from-blue-500 to-indigo-600",
+                bg: "bg-blue-50",
+                iconColor: "text-blue-600",
+                border: "border-blue-100",
+                badge: "Core",
+                badgeBg: "bg-blue-100 text-blue-700",
+            },
+            {
+                id: "reschedule",
+                label: "Reschedule Policy",
+                description: "Free reschedule limits, booking windows & expert policies",
+                icon: IoCalendarOutline,
+                gradient: "from-violet-500 to-purple-600",
+                bg: "bg-violet-50",
+                iconColor: "text-violet-600",
+                border: "border-violet-100",
+                badge: "Policy",
+                badgeBg: "bg-violet-100 text-violet-700",
+            },
+            {
+                id: "pricing",
+                label: "Pricing & Quality Gate",
+                description: "Travel charges, base radius, GST, auto-approval SLA",
+                icon: IoCashOutline,
+                gradient: "from-emerald-500 to-teal-600",
+                bg: "bg-emerald-50",
+                iconColor: "text-emerald-600",
+                border: "border-emerald-100",
+                badge: "Finance",
+                badgeBg: "bg-emerald-100 text-emerald-700",
+            },
+            {
+                id: "billing",
+                label: "Billing & GST Declarations",
+                description: "Company details, GSTIN, PAN, invoice terms & T&C",
+                icon: IoBusinessOutline,
+                gradient: "from-orange-500 to-amber-600",
+                bg: "bg-orange-50",
+                iconColor: "text-orange-600",
+                border: "border-orange-100",
+                badge: "Finance",
+                badgeBg: "bg-orange-100 text-orange-700",
+            },
+            {
+                id: "languages",
+                label: "Languages",
+                description: "Multi-language support, AI translation & locale config",
+                icon: IoGlobeOutline,
+                gradient: "from-cyan-500 to-sky-600",
+                bg: "bg-cyan-50",
+                iconColor: "text-cyan-600",
+                border: "border-cyan-100",
+                badge: "Localization",
+                badgeBg: "bg-cyan-100 text-cyan-700",
+            },
+            {
+                id: "security",
+                label: "Security & Integrations",
+                description: "Admin registration, OTP verification & access control",
+                icon: IoLockClosedOutline,
+                gradient: "from-rose-500 to-pink-600",
+                bg: "bg-rose-50",
+                iconColor: "text-rose-600",
+                border: "border-rose-100",
+                badge: "Security",
+                badgeBg: "bg-rose-100 text-rose-700",
+            },
+        ];
+
         return (
             <div className="min-h-[calc(100vh-5rem)]">
-                {/* Header */}
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                        {activeTab === "register" ? "Admin Management" : "Settings"}
-                    </h1>
-                    <p className="text-gray-600">
-                        {activeTab === "register"
-                            ? "Onboard new internal administrative team members"
-                            : "Manage your admin panel preferences and configurations"}
-                    </p>
-                </div>
 
-                {/* Tabs */}
-                {activeTab !== "register" && (
-                    <div className="mb-6">
-                        <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
-                            {settingsTabs.map((tab) => {
-                                const Icon = tab.icon;
-                                const isActive = activeTab === tab.id;
+                {/* ── HUB VIEW ─────────────────────────────────────────────── */}
+                {activeTab === "hub" && (
+                    <div>
+                        {/* Hub Header */}
+                        <div className="mb-8">
+                            <div className="flex items-center gap-3 mb-1">
+                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0A84FF] to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-200">
+                                    <IoSettingsOutline className="text-white text-xl" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-900 leading-tight">Settings</h1>
+                                    <p className="text-sm text-gray-500">Manage your admin panel preferences and configurations</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Hub Cards Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 max-w-5xl">
+                            {hubCards.map((card) => {
+                                const CardIcon = card.icon;
                                 return (
                                     <button
-                                        key={tab.id}
+                                        key={card.id}
                                         onClick={() => {
-                                            setActiveTab(tab.id);
-                                            navigate(`/admin/settings/${tab.id}`);
-                                            setError("");
+                                            setActiveTab(card.id);
+                                            navigate(`/admin/settings/${card.id}`);
                                         }}
-                                        className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${isActive
-                                            ? "border-[#0A84FF] text-[#0A84FF]"
-                                            : "border-transparent text-gray-600 hover:text-gray-800"
-                                            }`}
+                                        className="group text-left bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-gray-300 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:ring-offset-2"
                                     >
-                                        <Icon className="text-lg" />
-                                        {tab.label}
+                                        {/* Icon + Badge Row */}
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className={`w-12 h-12 rounded-xl ${card.bg} ${card.border} border flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-200`}>
+                                                <CardIcon className={`text-2xl ${card.iconColor}`} />
+                                            </div>
+                                            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${card.badgeBg}`}>
+                                                {card.badge}
+                                            </span>
+                                        </div>
+
+                                        {/* Text */}
+                                        <h3 className="font-bold text-gray-900 text-base mb-1.5 group-hover:text-[#0A84FF] transition-colors">
+                                            {card.label}
+                                        </h3>
+                                        <p className="text-sm text-gray-500 leading-relaxed">
+                                            {card.description}
+                                        </p>
+
+                                        {/* Chevron */}
+                                        <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-gray-400 group-hover:text-[#0A84FF] transition-colors">
+                                            <span>Configure</span>
+                                            <IoChevronDownOutline className="-rotate-90 text-base" />
+                                        </div>
                                     </button>
                                 );
                             })}
                         </div>
                     </div>
                 )}
+
+                {/* ── DETAIL VIEW ──────────────────────────────────────────── */}
+                {activeTab !== "hub" && (
+                <div>
+                    {/* Header */}
+                    <div className="mb-6">
+                        {/* Back to settings hub breadcrumb */}
+                        <button
+                            onClick={() => {
+                                setActiveTab("hub");
+                                navigate("/admin/settings");
+                            }}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-[#0A84FF] transition-colors mb-3 group"
+                        >
+                            <IoChevronDownOutline className="rotate-90 text-sm group-hover:-translate-x-0.5 transition-transform" />
+                            All Settings
+                        </button>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                            {activeTab === "register" ? "Admin Management" : (settingsTabs.find(t => t.id === activeTab)?.label || "Settings")}
+                        </h1>
+                        <p className="text-sm text-gray-500">
+                            {activeTab === "register"
+                                ? "Onboard new internal administrative team members"
+                                : "Manage your admin panel preferences and configurations"}
+                        </p>
+                    </div>
+
+                    {/* Premium Pill-style Tab Bar */}
+                    {activeTab !== "register" && (
+                        <div className="mb-6">
+                            <div className="inline-flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto max-w-full">
+                                {settingsTabs.map((tab) => {
+                                    const Icon = tab.icon;
+                                    const isActive = activeTab === tab.id;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => {
+                                                setActiveTab(tab.id);
+                                                navigate(`/admin/settings/${tab.id}`);
+                                                setError("");
+                                            }}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all duration-150 ${
+                                                isActive
+                                                    ? "bg-white text-[#0A84FF] shadow-sm border border-gray-200"
+                                                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/60"
+                                            }`}
+                                        >
+                                            <Icon className="text-base" />
+                                            {tab.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                 <div className={`w-full ${activeTab === "languages" ? "max-w-7xl" : "max-w-4xl"}`}>
                     {/* Settings Content */}
@@ -1890,6 +2041,9 @@ export default function AdminSettings({ defaultTab = "general" }) {
                         </div>
                     </div>
                 </div>
+
+                </div>
+                )}
 
                 {/* Add Language Modal (Pixel-Perfect Alignment & Contained Flow) */}
                 {showAddLangModal && (
