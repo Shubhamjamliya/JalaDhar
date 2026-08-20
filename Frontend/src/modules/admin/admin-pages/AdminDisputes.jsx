@@ -12,14 +12,25 @@ import {
     IoCloseOutline,
     IoChatbubbleOutline,
     IoArrowForwardOutline,
+    IoSwapHorizontalOutline
 } from "react-icons/io5";
-import { getAllDisputes, getDisputeStatistics, getDisputeDetails, updateDisputeStatus, assignDispute, addDisputeComment } from "../../../services/adminApi";
+import {
+    getAllDisputes,
+    getDisputeStatistics,
+    getDisputeDetails,
+    updateDisputeStatus,
+    assignDispute,
+    addDisputeComment,
+    getAllAdmins
+} from "../../../services/adminApi";
+import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { getPublicSettings } from "../../../services/settingsApi";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
+import AssignmentHistoryModal from "../admin-component/AssignmentHistoryModal";
 
 const DEFAULT_DISPUTE_TYPES = [
     "Expert did not arrive",
@@ -38,12 +49,14 @@ const DEFAULT_DISPUTE_TYPES = [
 
 export default function AdminDisputes() {
     const navigate = useNavigate();
+    const { admin: currentAdmin } = useAdminAuth();
+    const toast = useToast();
     const [disputes, setDisputes] = useState([]);
     const [disputeTypes, setDisputeTypes] = useState(DEFAULT_DISPUTE_TYPES);
+    const [availableSupportAdmins, setAvailableSupportAdmins] = useState([]);
     const [statistics, setStatistics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [statsLoading, setStatsLoading] = useState(true);
-    const toast = useToast();
     const [filters, setFilters] = useState({
         search: "",
         status: "",
@@ -60,15 +73,33 @@ export default function AdminDisputes() {
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [showCommentModal, setShowCommentModal] = useState(false);
+    const [showAssignmentModal, setShowAssignmentModal] = useState(false);
     const [newComment, setNewComment] = useState("");
     const [statusUpdate, setStatusUpdate] = useState({ status: "", notes: "" });
     const [actionLoading, setActionLoading] = useState(false);
+
+    const isSuperAdmin = currentAdmin?.role === "SUPER_ADMIN";
 
     useEffect(() => {
         loadDisputes();
         loadStatistics();
         loadDisputeTypes();
+        loadAvailableSupportAdmins();
     }, [filters.page, filters.search, filters.status, filters.type]);
+
+    const loadAvailableSupportAdmins = async () => {
+        try {
+            const res = await getAllAdmins();
+            if (res.success && res.data?.admins) {
+                const supportAdmins = res.data.admins.filter(a =>
+                    a.isActive && ['CUSTOMER_SUPPORT_ADMIN', 'SUPER_ADMIN'].includes(a.role)
+                );
+                setAvailableSupportAdmins(supportAdmins);
+            }
+        } catch (err) {
+            console.error("Failed to load support admins:", err);
+        }
+    };
 
     const loadDisputeTypes = async () => {
         try {
@@ -141,31 +172,29 @@ export default function AdminDisputes() {
         }
     };
 
-    const handleUpdateStatus = async () => {
+    const handleStatusUpdate = async () => {
         if (!statusUpdate.status) {
             toast.showError("Please select a status");
             return;
         }
-        setActionLoading(true);
-        const loadingToast = toast.showLoading("Updating status...");
+
         try {
+            setActionLoading(true);
             const response = await updateDisputeStatus(selectedDispute._id, statusUpdate);
             if (response.success) {
-                toast.dismissToast(loadingToast);
-                toast.showSuccess("Dispute status updated successfully!");
+                toast.showSuccess("Dispute status updated successfully");
                 setShowStatusModal(false);
                 setStatusUpdate({ status: "", notes: "" });
                 await loadDisputes();
+                await loadStatistics();
                 if (showDetailsModal) {
                     await handleViewDetails(selectedDispute._id);
                 }
             } else {
-                toast.dismissToast(loadingToast);
-                toast.showError(response.message || "Failed to update status");
+                toast.showError(response.message || "Failed to update dispute status");
             }
         } catch (err) {
-            toast.dismissToast(loadingToast);
-            handleApiError(err, "Failed to update status");
+            handleApiError(err, "Failed to update dispute status");
         } finally {
             setActionLoading(false);
         }
@@ -176,36 +205,56 @@ export default function AdminDisputes() {
             toast.showError("Please enter a comment");
             return;
         }
-        setActionLoading(true);
-        const loadingToast = toast.showLoading("Adding comment...");
+
         try {
+            setActionLoading(true);
             const response = await addDisputeComment(selectedDispute._id, { comment: newComment });
             if (response.success) {
-                toast.dismissToast(loadingToast);
-                toast.showSuccess("Comment added successfully!");
+                toast.showSuccess("Comment added successfully");
                 setShowCommentModal(false);
                 setNewComment("");
-                await handleViewDetails(selectedDispute._id);
+                if (showDetailsModal) {
+                    await handleViewDetails(selectedDispute._id);
+                }
             } else {
-                toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to add comment");
             }
         } catch (err) {
-            toast.dismissToast(loadingToast);
             handleApiError(err, "Failed to add comment");
         } finally {
             setActionLoading(false);
         }
     };
 
+    const handleReassignDispute = async (newAdminId, reason, notesText) => {
+        if (!selectedDispute) return;
+        try {
+            const res = await assignDispute(selectedDispute._id, {
+                assignedTo: newAdminId,
+                reason,
+                notes: notesText
+            });
+            if (res.success) {
+                toast.showSuccess("Dispute reassigned successfully!");
+                setShowAssignmentModal(false);
+                setSelectedDispute(null);
+                await loadDisputes();
+                await loadStatistics();
+            } else {
+                toast.showError(res.message || "Failed to reassign dispute");
+            }
+        } catch (err) {
+            handleApiError(err, "Reassignment failed");
+        }
+    };
+
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
-        return new Date(dateString).toLocaleDateString("en-IN", {
-            day: "numeric",
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-IN", {
+            day: "2-digit",
             month: "short",
             year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
         });
     };
 
@@ -214,8 +263,8 @@ export default function AdminDisputes() {
             PENDING: "bg-yellow-100 text-yellow-700",
             IN_PROGRESS: "bg-blue-100 text-blue-700",
             RESOLVED: "bg-green-100 text-green-700",
-            CLOSED: "bg-gray-100 text-gray-700",
             REJECTED: "bg-red-100 text-red-700",
+            CLOSED: "bg-gray-100 text-gray-700",
         };
         return colors[status] || "bg-gray-100 text-gray-700";
     };
@@ -248,27 +297,27 @@ export default function AdminDisputes() {
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-gray-900">Disputes & Complaints</h1>
-                <p className="text-sm text-gray-500 mt-1">Manage all user and vendor disputes</p>
+                <p className="text-sm text-gray-500 mt-1">Manage all user and expert partner disputes and resolutions.</p>
             </div>
 
             {/* Statistics Cards */}
             {!statsLoading && statistics && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-white rounded-lg shadow-sm p-4">
-                        <p className="text-sm text-gray-500 mb-1">Total Disputes</p>
-                        <p className="text-2xl font-bold text-gray-900">{statistics.totalDisputes || 0}</p>
+                    <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
+                        <p className="text-xs font-bold text-gray-400 uppercase">Total Disputes</p>
+                        <p className="text-2xl font-black text-gray-900 mt-1">{statistics.totalDisputes || 0}</p>
                     </div>
-                    <div className="bg-white rounded-lg shadow-sm p-4">
-                        <p className="text-sm text-gray-500 mb-1">Pending</p>
-                        <p className="text-2xl font-bold text-yellow-600">{statistics.pendingDisputes || 0}</p>
+                    <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
+                        <p className="text-xs font-bold text-amber-600 uppercase">Open / Pending</p>
+                        <p className="text-2xl font-black text-amber-600 mt-1">{statistics.pendingDisputes || 0}</p>
                     </div>
-                    <div className="bg-white rounded-lg shadow-sm p-4">
-                        <p className="text-sm text-gray-500 mb-1">In Progress</p>
-                        <p className="text-2xl font-bold text-blue-600">{statistics.inProgressDisputes || 0}</p>
+                    <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
+                        <p className="text-xs font-bold text-blue-600 uppercase">Under Review</p>
+                        <p className="text-2xl font-black text-blue-600 mt-1">{statistics.inProgressDisputes || 0}</p>
                     </div>
-                    <div className="bg-white rounded-lg shadow-sm p-4">
-                        <p className="text-sm text-gray-500 mb-1">Resolved</p>
-                        <p className="text-2xl font-bold text-green-600">{statistics.resolvedDisputes || 0}</p>
+                    <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
+                        <p className="text-xs font-bold text-emerald-600 uppercase">Resolved</p>
+                        <p className="text-2xl font-black text-emerald-600 mt-1">{statistics.resolvedDisputes || 0}</p>
                     </div>
                 </div>
             )}
@@ -288,7 +337,7 @@ export default function AdminDisputes() {
                         <button
                             key={tab.id}
                             onClick={() => setFilters({ ...filters, status: tab.status, page: 1 })}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                                 isSelected
                                     ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
                                     : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
@@ -301,22 +350,22 @@ export default function AdminDisputes() {
             </div>
 
             {/* Filters */}
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="relative md:col-span-2">
-                        <IoSearchOutline className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                        <IoSearchOutline className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
                         <input
                             type="text"
                             placeholder="Search by dispute ID, user, vendor, or description..."
                             value={filters.search}
                             onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#0A84FF]/20 focus:border-[#0A84FF] outline-none transition-all"
+                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                         />
                     </div>
                     <select
                         value={filters.type}
                         onChange={(e) => setFilters({ ...filters, type: e.target.value, page: 1 })}
-                        className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#0A84FF]/20 focus:border-[#0A84FF] outline-none"
+                        className="px-3 py-2 border border-gray-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 outline-none"
                     >
                         <option value="">All Dispute Types</option>
                         {disputeTypes.map((typeOption, idx) => (
@@ -327,69 +376,84 @@ export default function AdminDisputes() {
                     </select>
                     <button
                         onClick={() => setFilters({ search: "", status: "", type: "", page: 1 })}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-200 transition-colors"
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-200 transition-colors cursor-pointer"
                     >
                         Clear Filters
                     </button>
                 </div>
             </div>
 
-            {/* Disputes List */}
+            {/* Table */}
             {loading ? (
                 <LoadingSpinner message="Loading disputes..." />
             ) : disputes.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-                    <IoAlertCircleOutline className="mx-auto text-6xl text-gray-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Disputes Found</h3>
-                    <p className="text-gray-600">No disputes match your filters</p>
+                <div className="bg-white rounded-2xl shadow-sm p-12 text-center border border-gray-100">
+                    <IoAlertCircleOutline className="mx-auto text-5xl text-gray-300 mb-3" />
+                    <h3 className="text-base font-bold text-gray-900 mb-1">No Disputes Found</h3>
+                    <p className="text-xs text-gray-400">No disputes match your current filter settings</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="overflow-x-auto max-w-full">
-                        <table className="w-full min-w-[800px]">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Raised By</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[200px]">Subject</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        <table className="w-full min-w-[850px] text-left border-collapse">
+                            <thead>
+                                <tr className="bg-gray-50/80 border-b border-gray-200 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                                    <th className="px-5 py-3">Dispute ID</th>
+                                    <th className="px-5 py-3">Raised By</th>
+                                    <th className="px-5 py-3">Type</th>
+                                    <th className="px-5 py-3 min-w-[180px]">Subject</th>
+                                    <th className="px-5 py-3">Status</th>
+                                    <th className="px-5 py-3">Assigned Agent</th>
+                                    <th className="px-5 py-3">Date</th>
+                                    <th className="px-5 py-3 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="divide-y divide-gray-100 text-xs">
                                 {disputes.map((dispute) => (
-                                    <tr key={dispute._id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-4 py-4">
-                                            <span className="text-sm font-medium text-gray-900">
-                                                #{dispute._id.toString().slice(-8).toUpperCase()}
-                                            </span>
+                                    <tr key={dispute._id} className="hover:bg-gray-50/60 transition-colors">
+                                        <td className="px-5 py-3.5 font-bold font-mono text-gray-900">
+                                            #{dispute._id.toString().slice(-8).toUpperCase()}
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <div className="text-sm font-medium text-gray-900 truncate max-w-[120px]">{dispute.raisedBy?.name || "N/A"}</div>
-                                            <div className="text-xs text-gray-500 truncate max-w-[120px]">{dispute.raisedByModel}</div>
+                                        <td className="px-5 py-3.5">
+                                            <div className="font-bold text-gray-900">{dispute.raisedBy?.name || "N/A"}</div>
+                                            <div className="text-[11px] text-gray-400">{dispute.raisedByModel}</div>
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <span className="text-sm text-gray-900 whitespace-nowrap">{getTypeLabel(dispute.type)}</span>
+                                        <td className="px-5 py-3.5 font-medium text-gray-700 whitespace-nowrap">
+                                            {getTypeLabel(dispute.type)}
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <div className="text-sm text-gray-900 max-w-[200px] truncate" title={dispute.subject}>{dispute.subject}</div>
+                                        <td className="px-5 py-3.5">
+                                            <div className="text-gray-900 max-w-[200px] truncate" title={dispute.subject}>{dispute.subject}</div>
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(dispute.status)}`}>
+                                        <td className="px-5 py-3.5">
+                                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getStatusColor(dispute.status)}`}>
                                                 {dispute.status}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">
+                                        {/* Assigned Support Agent Chip */}
+                                        <td className="px-5 py-3.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedDispute(dispute);
+                                                    setShowAssignmentModal(true);
+                                                }}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 transition-colors cursor-pointer"
+                                            >
+                                                <IoPersonOutline className="text-xs" />
+                                                {dispute.assignedTo?.name || "Auto-Assigned"}
+                                                {isSuperAdmin && <IoSwapHorizontalOutline className="text-xs ml-1 text-amber-500" />}
+                                            </button>
+                                        </td>
+                                        <td className="px-5 py-3.5 text-gray-400 whitespace-nowrap">
                                             {formatDate(dispute.createdAt)}
                                         </td>
-                                        <td className="px-4 py-4 text-sm font-medium">
+                                        <td className="px-5 py-3.5 text-right">
                                             <button
                                                 onClick={() => handleViewDetails(dispute._id)}
-                                                className="text-blue-600 hover:text-blue-900"
+                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                                title="View Details"
                                             >
-                                                <IoEyeOutline className="text-lg" />
+                                                <IoEyeOutline className="text-base" />
                                             </button>
                                         </td>
                                     </tr>
@@ -400,8 +464,8 @@ export default function AdminDisputes() {
 
                     {/* Pagination */}
                     {pagination.totalPages > 1 && (
-                        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                            <div className="text-sm text-gray-700">
+                        <div className="bg-gray-50/60 px-6 py-3.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                            <div>
                                 Showing {((pagination.currentPage - 1) * filters.limit) + 1} to{" "}
                                 {Math.min(pagination.currentPage * filters.limit, pagination.totalDisputes)} of{" "}
                                 {pagination.totalDisputes} disputes
@@ -410,14 +474,14 @@ export default function AdminDisputes() {
                                 <button
                                     onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
                                     disabled={filters.page === 1}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                                    className="px-3 py-1.5 font-bold bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 cursor-pointer"
                                 >
                                     Previous
                                 </button>
                                 <button
                                     onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
                                     disabled={filters.page >= pagination.totalPages}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                                    className="px-3 py-1.5 font-bold bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 cursor-pointer"
                                 >
                                     Next
                                 </button>
@@ -429,59 +493,76 @@ export default function AdminDisputes() {
 
             {/* Dispute Details Modal */}
             {showDetailsModal && selectedDispute && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-gray-900">Dispute Details</h2>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-100">
+                        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900">
+                                    Dispute #{selectedDispute._id?.toString().slice(-8).toUpperCase()}
+                                </h2>
+                                <p className="text-xs text-gray-400">Created on {formatDate(selectedDispute.createdAt)}</p>
+                            </div>
                             <button
                                 onClick={() => {
                                     setShowDetailsModal(false);
                                     setSelectedDispute(null);
                                 }}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg cursor-pointer"
                             >
                                 <IoCloseOutline className="text-2xl" />
                             </button>
                         </div>
                         <div className="p-6 space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <div>
-                                    <h3 className="text-sm font-medium text-gray-500 mb-2">Status</h3>
-                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedDispute.status)}`}>
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase mb-1">Status</h3>
+                                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold ${getStatusColor(selectedDispute.status)}`}>
                                         {selectedDispute.status}
                                     </span>
                                 </div>
+                                <div>
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase mb-1">Assigned Agent</h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAssignmentModal(true)}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 transition-colors cursor-pointer"
+                                    >
+                                        <IoPersonOutline className="text-xs" />
+                                        {selectedDispute.assignedTo?.name || "Auto-Assigned"}
+                                        {isSuperAdmin && <IoSwapHorizontalOutline className="text-xs ml-1 text-amber-500" />}
+                                    </button>
+                                </div>
                                 {selectedDispute.priority && (
                                     <div>
-                                        <h3 className="text-sm font-medium text-gray-500 mb-2">Priority</h3>
-                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(selectedDispute.priority)}`}>
+                                        <h3 className="text-xs font-bold text-gray-400 uppercase mb-1">Priority</h3>
+                                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold ${getPriorityColor(selectedDispute.priority)}`}>
                                             {selectedDispute.priority}
                                         </span>
                                     </div>
                                 )}
                             </div>
                             <div>
-                                <h3 className="text-sm font-medium text-gray-500 mb-2">Subject</h3>
-                                <p className="text-sm text-gray-900">{selectedDispute.subject}</p>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase mb-1">Subject</h3>
+                                <p className="text-sm font-semibold text-gray-900">{selectedDispute.subject}</p>
                             </div>
                             <div>
-                                <h3 className="text-sm font-medium text-gray-500 mb-2">Description</h3>
-                                <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedDispute.description}</p>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase mb-1">Description</h3>
+                                <p className="text-xs text-gray-700 bg-gray-50 p-4 rounded-xl leading-relaxed">{selectedDispute.description}</p>
                             </div>
                             <div>
-                                <h3 className="text-sm font-medium text-gray-500 mb-2">Raised By</h3>
-                                <p className="text-sm text-gray-900">{selectedDispute.raisedBy?.name} ({selectedDispute.raisedByModel})</p>
-                                <p className="text-sm text-gray-500">{selectedDispute.raisedBy?.email}</p>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase mb-1">Raised By</h3>
+                                <p className="text-xs font-semibold text-gray-900">{selectedDispute.raisedBy?.name} ({selectedDispute.raisedByModel})</p>
+                                <p className="text-xs text-gray-400">{selectedDispute.raisedBy?.email}</p>
                             </div>
                             {selectedDispute.booking && (
                                 <div>
-                                    <h3 className="text-sm font-medium text-gray-500 mb-2">Related Booking</h3>
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase mb-1">Related Booking</h3>
                                     <button
                                         onClick={() => {
                                             setShowDetailsModal(false);
                                             navigate(`/admin/bookings/${selectedDispute.booking._id}`);
                                         }}
-                                        className="text-sm text-[#0A84FF] hover:underline flex items-center gap-1"
+                                        className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
                                     >
                                         View Booking #{selectedDispute.booking._id.toString().slice(-8).toUpperCase()}
                                         <IoArrowForwardOutline />
@@ -490,45 +571,46 @@ export default function AdminDisputes() {
                             )}
                             {selectedDispute.comments && selectedDispute.comments.length > 0 && (
                                 <div>
-                                    <h3 className="text-sm font-medium text-gray-500 mb-3">Comments</h3>
-                                    <div className="space-y-3">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Comments ({selectedDispute.comments.length})</h3>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto">
                                         {selectedDispute.comments.map((comment, index) => (
-                                            <div key={index} className="bg-gray-50 p-3 rounded-lg">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-sm font-medium text-gray-900">
+                                            <div key={index} className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-xs font-bold text-gray-900">
                                                         {comment.commentedBy?.name || "Admin"}
                                                     </span>
-                                                    <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
+                                                    <span className="text-[10px] text-gray-400">{formatDate(comment.createdAt)}</span>
                                                 </div>
-                                                <p className="text-sm text-gray-700">{comment.comment}</p>
+                                                <p className="text-xs text-gray-600">{comment.comment}</p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             )}
                             {selectedDispute.resolution && (
-                                <div className="bg-green-50 p-4 rounded-lg">
-                                    <h3 className="text-sm font-medium text-gray-900 mb-2">Resolution</h3>
-                                    <p className="text-sm text-gray-700 mb-2">{selectedDispute.resolution.notes}</p>
-                                    <p className="text-xs text-gray-500">
+                                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                                    <h3 className="text-xs font-bold text-emerald-800 uppercase mb-1">Resolution</h3>
+                                    <p className="text-xs text-emerald-900 mb-1">{selectedDispute.resolution.notes}</p>
+                                    <p className="text-[10px] text-emerald-600">
                                         Resolved by {selectedDispute.resolution.resolvedBy?.name} on {formatDate(selectedDispute.resolution.resolvedAt)}
                                     </p>
                                 </div>
                             )}
-                            <div className="flex gap-2 pt-4 border-t">
+                            <div className="flex gap-2 pt-4 border-t border-gray-100">
                                 <button
                                     onClick={() => {
                                         setStatusUpdate({ status: selectedDispute.status, notes: "" });
                                         setShowStatusModal(true);
                                     }}
-                                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700"
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs cursor-pointer"
                                 >
                                     Update Status
                                 </button>
                                 <button
                                     onClick={() => setShowCommentModal(true)}
-                                    className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700"
+                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer"
                                 >
+                                    <IoChatbubbleOutline className="text-sm" />
                                     Add Comment
                                 </button>
                             </div>
@@ -537,77 +619,99 @@ export default function AdminDisputes() {
                 </div>
             )}
 
-            {/* Update Status Modal */}
-            <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 ${showStatusModal ? "" : "hidden"}`}>
-                <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Update Status</h2>
-                    <div className="space-y-4">
+            {/* Status Modal */}
+            {showStatusModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-gray-100">
+                        <h3 className="text-base font-bold text-gray-900">Update Dispute Status</h3>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Status</label>
                             <select
                                 value={statusUpdate.status}
                                 onChange={(e) => setStatusUpdate({ ...statusUpdate, status: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF]"
+                                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 outline-none"
                             >
-                                <option value="">Select Status</option>
-                                <option value="PENDING">Pending</option>
-                                <option value="IN_PROGRESS">In Progress</option>
-                                <option value="RESOLVED">Resolved</option>
-                                <option value="CLOSED">Closed</option>
-                                <option value="REJECTED">Rejected</option>
+                                <option value="PENDING">PENDING</option>
+                                <option value="IN_PROGRESS">IN PROGRESS</option>
+                                <option value="RESOLVED">RESOLVED</option>
+                                <option value="REJECTED">REJECTED</option>
+                                <option value="CLOSED">CLOSED</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Resolution Notes</label>
                             <textarea
                                 value={statusUpdate.notes}
                                 onChange={(e) => setStatusUpdate({ ...statusUpdate, notes: e.target.value })}
-                                rows={4}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF]"
-                                placeholder="Add any notes about this status update..."
+                                placeholder="Explain reason or resolution taken..."
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 outline-none"
                             />
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 justify-end pt-2">
                             <button
-                                onClick={() => {
-                                    setShowStatusModal(false);
-                                    setStatusUpdate({ status: "", notes: "" });
-                                }}
-                                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-300"
+                                onClick={() => setShowStatusModal(false)}
+                                className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer"
                             >
                                 Cancel
                             </button>
                             <button
-                                onClick={handleUpdateStatus}
-                                disabled={actionLoading || !statusUpdate.status}
-                                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                                onClick={handleStatusUpdate}
+                                disabled={actionLoading}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
                             >
-                                Update
+                                {actionLoading ? "Saving..." : "Save Update"}
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* Add Comment Modal */}
-            <InputModal
-                isOpen={showCommentModal}
+            {/* Comment Modal */}
+            {showCommentModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-gray-100">
+                        <h3 className="text-base font-bold text-gray-900">Add Dispute Comment</h3>
+                        <textarea
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            placeholder="Type internal comment or communication..."
+                            rows={4}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                        <div className="flex gap-2 justify-end pt-2">
+                            <button
+                                onClick={() => setShowCommentModal(false)}
+                                className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAddComment}
+                                disabled={actionLoading}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                            >
+                                {actionLoading ? "Adding..." : "Post Comment"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Universal Assignment History Modal */}
+            <AssignmentHistoryModal
+                isOpen={showAssignmentModal}
                 onClose={() => {
-                    setShowCommentModal(false);
-                    setNewComment("");
+                    setShowAssignmentModal(false);
+                    setSelectedDispute(null);
                 }}
-                onSubmit={handleAddComment}
-                title="Add Comment"
-                message="Add a comment to this dispute:"
-                inputLabel="Comment"
-                inputValue={newComment}
-                onInputChange={setNewComment}
-                inputType="textarea"
-                submitText="Add Comment"
-                submitColor="primary"
-                loading={actionLoading}
+                entityTitle={`Dispute #${selectedDispute?._id?.toString().slice(-8).toUpperCase()}`}
+                assignedTo={selectedDispute?.assignedTo}
+                assignmentHistory={selectedDispute?.assignmentHistory || []}
+                availableAdmins={availableSupportAdmins}
+                onReassign={handleReassignDispute}
+                isSuperAdmin={isSuperAdmin}
             />
         </div>
     );
 }
-
