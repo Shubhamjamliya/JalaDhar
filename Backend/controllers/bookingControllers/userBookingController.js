@@ -599,15 +599,43 @@ const getUserBookings = async (req, res) => {
       });
     }
 
+    // Fetch dynamic reschedule policy settings
+    const reschedulePolicySettings = await getSettings([
+      'ALLOW_CUSTOMER_RESCHEDULE',
+      'MAX_FREE_RESCHEDULES',
+      'RESCHEDULE_WINDOW_DAYS'
+    ]);
+    const allowReschedule = reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== false && reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== 'false';
+    const maxReschedules = typeof reschedulePolicySettings.MAX_FREE_RESCHEDULES === 'number'
+      ? reschedulePolicySettings.MAX_FREE_RESCHEDULES
+      : (parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) : 2);
+    const windowDays = typeof reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS === 'number'
+      ? reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS
+      : (parseInt(reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS, 10) || 30);
+
+    const formattedBookings = bookings.map(b => {
+      const bObj = b.toObject ? b.toObject() : { ...b };
+      bObj.allowReschedule = allowReschedule;
+      bObj.maxReschedules = maxReschedules;
+      bObj.rescheduleWindowDays = windowDays;
+      bObj.reschedulesRemaining = Math.max(0, maxReschedules - (b.rescheduleCount || 0));
+      return bObj;
+    });
+
     res.json({
       success: true,
       message: 'Bookings retrieved successfully',
       data: {
-        bookings,
+        bookings: formattedBookings,
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / parseInt(limit)),
           totalBookings: total
+        },
+        reschedulePolicy: {
+          allowReschedule,
+          maxReschedules,
+          rescheduleWindowDays: windowDays
         }
       }
     });
@@ -699,12 +727,38 @@ const getBookingDetails = async (req, res) => {
       }
     }
 
+    // Fetch dynamic reschedule policy settings
+    const reschedulePolicySettings = await getSettings([
+      'ALLOW_CUSTOMER_RESCHEDULE',
+      'MAX_FREE_RESCHEDULES',
+      'RESCHEDULE_WINDOW_DAYS'
+    ]);
+    const allowReschedule = reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== false && reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== 'false';
+    const maxReschedules = typeof reschedulePolicySettings.MAX_FREE_RESCHEDULES === 'number'
+      ? reschedulePolicySettings.MAX_FREE_RESCHEDULES
+      : (parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) : 2);
+    const windowDays = typeof reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS === 'number'
+      ? reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS
+      : (parseInt(reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS, 10) || 30);
+
+    const bookingObj = booking.toObject ? booking.toObject() : { ...booking };
+    bookingObj.allowReschedule = allowReschedule;
+    bookingObj.maxReschedules = maxReschedules;
+    bookingObj.rescheduleWindowDays = windowDays;
+    bookingObj.reschedulesRemaining = Math.max(0, maxReschedules - (booking.rescheduleCount || 0));
+
     res.json({
       success: true,
       message: 'Booking details retrieved successfully',
       data: {
-        booking,
-        paymentConfig
+        booking: bookingObj,
+        paymentConfig,
+        reschedulePolicy: {
+          allowReschedule,
+          maxReschedules,
+          rescheduleWindowDays: windowDays,
+          reschedulesRemaining: bookingObj.reschedulesRemaining
+        }
       }
     });
   } catch (error) {

@@ -226,9 +226,14 @@ export default function UserBookingDetails() {
 
     const handleReschedule = () => {
         if (!booking) return;
+        if (booking.allowReschedule === false) {
+            toast.showError("Rescheduling is currently disabled by platform policy. Please contact customer support.");
+            return;
+        }
+        const maxReschedules = booking.maxReschedules !== undefined ? Number(booking.maxReschedules) : 2;
         const count = booking.rescheduleCount || 0;
-        if (count >= 2) {
-            toast.showError("Maximum limit of 2 reschedules reached for this booking. Please contact support.");
+        if (maxReschedules === 0 || count >= maxReschedules) {
+            toast.showError(`Maximum limit of ${maxReschedules} reschedule${maxReschedules === 1 ? '' : 's'} reached for this booking. Please contact support.`);
             return;
         }
         setShowRescheduleModal(true);
@@ -872,14 +877,16 @@ export default function UserBookingDetails() {
                         })()}
 
                         {["AWAITING_ADVANCE", "PENDING", "ASSIGNED", "ACCEPTED"].includes(booking.status) && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <button
-                                    onClick={handleReschedule}
-                                    className="w-full flex items-center justify-center gap-1.5 bg-blue-50 text-[#0A84FF] border border-blue-200 hover:bg-blue-100/80 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer"
-                                >
-                                    <IoCalendarOutline className="text-base" />
-                                    Reschedule Survey
-                                </button>
+                            <div className={`grid grid-cols-1 ${booking.allowReschedule !== false && (booking.maxReschedules === undefined || Number(booking.maxReschedules) > 0) ? "sm:grid-cols-2" : "sm:grid-cols-1"} gap-2`}>
+                                {booking.allowReschedule !== false && (booking.maxReschedules === undefined || Number(booking.maxReschedules) > 0) && (
+                                    <button
+                                        onClick={handleReschedule}
+                                        className="w-full flex items-center justify-center gap-1.5 bg-blue-50 text-[#0A84FF] border border-blue-200 hover:bg-blue-100/80 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer"
+                                    >
+                                        <IoCalendarOutline className="text-base" />
+                                        Reschedule Survey
+                                    </button>
+                                )}
                                 <button
                                     onClick={handleCancelBooking}
                                     className="w-full flex items-center justify-center gap-1.5 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100/80 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer"
@@ -1615,6 +1622,7 @@ export default function UserBookingDetails() {
                 onClose={() => setShowRescheduleModal(false)}
                 onReschedule={handleConfirmReschedule}
                 currentBooking={booking}
+                maxReschedules={booking?.maxReschedules}
                 isLoading={rescheduling}
             />
         </PageContainer>

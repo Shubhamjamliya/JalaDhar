@@ -469,9 +469,14 @@ export default function UserStatus() {
 
     const handleReschedule = () => {
         if (!currentBooking) return;
+        if (currentBooking.allowReschedule === false) {
+            toast.showError("Rescheduling is currently disabled by platform policy. Please contact customer support.");
+            return;
+        }
+        const maxReschedules = currentBooking.maxReschedules !== undefined ? Number(currentBooking.maxReschedules) : 2;
         const count = currentBooking.rescheduleCount || 0;
-        if (count >= 2) {
-            toast.showError("Maximum limit of 2 reschedules reached for this booking. Please contact support.");
+        if (maxReschedules === 0 || count >= maxReschedules) {
+            toast.showError(`Maximum limit of ${maxReschedules} reschedule${maxReschedules === 1 ? '' : 's'} reached for this booking. Please contact support.`);
             return;
         }
         setShowRescheduleModal(true);
@@ -1169,13 +1174,15 @@ export default function UserStatus() {
                                                             Complete Advance Payment (40%)
                                                         </button>
                                                     )}
-                                                    <button
-                                                        onClick={handleReschedule}
-                                                        className="py-2 px-3 bg-blue-50 text-[#0A84FF] border border-blue-200 hover:bg-blue-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                                                    >
-                                                        <IoCalendarOutline className="text-base" />
-                                                        Reschedule
-                                                    </button>
+                                                    {currentBooking.allowReschedule !== false && (currentBooking.maxReschedules === undefined || Number(currentBooking.maxReschedules) > 0) && (
+                                                        <button
+                                                            onClick={handleReschedule}
+                                                            className="py-2 px-3 bg-blue-50 text-[#0A84FF] border border-blue-200 hover:bg-blue-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <IoCalendarOutline className="text-base" />
+                                                            Reschedule
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={handleCancelBooking}
                                                         className="py-2 px-3 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
@@ -1187,14 +1194,16 @@ export default function UserStatus() {
                                             )}
 
                                             {step.id === "booking-confirmed" && isActive && (
-                                                <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                                    <button
-                                                        onClick={handleReschedule}
-                                                        className="py-2 bg-blue-50 text-[#0A84FF] border border-blue-200 hover:bg-blue-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                                                    >
-                                                        <IoCalendarOutline className="text-sm" />
-                                                        Reschedule
-                                                    </button>
+                                                <div className={`mt-3 grid grid-cols-1 ${currentBooking.allowReschedule !== false && (currentBooking.maxReschedules === undefined || Number(currentBooking.maxReschedules) > 0) ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-2`}>
+                                                    {currentBooking.allowReschedule !== false && (currentBooking.maxReschedules === undefined || Number(currentBooking.maxReschedules) > 0) && (
+                                                        <button
+                                                            onClick={handleReschedule}
+                                                            className="py-2 bg-blue-50 text-[#0A84FF] border border-blue-200 hover:bg-blue-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <IoCalendarOutline className="text-sm" />
+                                                            Reschedule
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={handleCancelBooking}
                                                         className="py-2 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
@@ -1742,6 +1751,7 @@ export default function UserStatus() {
                 onClose={() => setShowRescheduleModal(false)}
                 onReschedule={handleConfirmReschedule}
                 currentBooking={currentBooking}
+                maxReschedules={currentBooking?.maxReschedules}
                 isLoading={rescheduling}
             />
         </div>

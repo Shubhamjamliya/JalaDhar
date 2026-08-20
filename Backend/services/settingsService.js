@@ -65,7 +65,7 @@ const setSetting = async (key, value, label, description, type = 'string', categ
         finalCategory = 'pricing';
       } else if (existing && existing.category) {
         finalCategory = existing.category;
-      } else if (key.includes('policy')) {
+      } else if (key.includes('policy') || key.includes('RESCHEDULE') || key.includes('CANCELLATION') || ['ALLOW_CUSTOMER_RESCHEDULE', 'MAX_FREE_RESCHEDULES', 'RESCHEDULE_WINDOW_DAYS'].includes(key)) {
         finalCategory = 'policy';
       } else {
         finalCategory = 'general';

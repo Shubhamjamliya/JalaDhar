@@ -113,9 +113,10 @@ const updateMultipleSettings = async (req, res) => {
     }
     
     const updatedSettings = [];
-    for (const { key, value } of settings) {
+    for (const item of settings) {
+      const { key, value, label, description, type, category } = item || {};
       if (key && value !== undefined) {
-        const setting = await setSetting(key, value, undefined, undefined, undefined, undefined, adminId);
+        const setting = await setSetting(key, value, label, description, type, category, adminId);
         updatedSettings.push(setting);
       }
     }
