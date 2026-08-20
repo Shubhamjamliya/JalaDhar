@@ -357,6 +357,12 @@ export default function VendorBookingDetails() {
     };
 
     const handleMarkEnRoute = async () => {
+        const isTimeTBD = !booking?.scheduledTime || booking?.scheduledTime === "Time TBD by Expert" || booking?.scheduledTime === "TBD";
+        if (isTimeTBD) {
+            toast.showWarning("Please set your arrival time slot before starting your journey.");
+            handleOpenUpdateSchedule();
+            return;
+        }
         if (isFutureSurvey(booking?.scheduledDate)) {
             setShowEarlyJourneyConfirm(true);
             return;

@@ -17,11 +17,13 @@ import {
     IoCarOutline,
     IoConstructOutline,
     IoCopyOutline,
-    IoChevronForwardOutline
+    IoChevronForwardOutline,
+    IoCloseOutline
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { maskPhone } from "../../../utils/phoneMasker";
+import { updateVisitSchedule } from "../../../services/vendorApi";
 
 /**
  * Ongoing Survey Booking Card for Expert App
@@ -31,6 +33,7 @@ import { maskPhone } from "../../../utils/phoneMasker";
  * 2. Survey & Site (Survey Category, Survey Purpose, Property Address, Survey Date & Time)
  * 3. Current Status (Advance Paid, En Route, Arrived, Survey Started, Survey Ongoing, Survey Completed, Report Uploaded, Awaiting Final Payment)
  * 4. Quick Actions (Call, WhatsApp, Navigate, Verify Start OTP, Verify End OTP, Upload Site Photos, Upload Survey Report, View Status)
+ * 5. Direct 1-Hour Time Slot Picker Modal & Guard for Start Journey
  */
 export default function VendorOngoingBookingCard({
     booking,
@@ -46,11 +49,22 @@ export default function VendorOngoingBookingCard({
     const { socket } = useNotifications();
     const gpsWatchIdRef = useRef(null);
 
+    const [localBooking, setLocalBooking] = useState(booking);
+    const [showTimePickerModal, setShowTimePickerModal] = useState(false);
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState("09:00 AM - 10:00 AM");
+    const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+    const [pendingStartJourney, setPendingStartJourney] = useState(false);
+
+    useEffect(() => {
+        setLocalBooking(booking);
+    }, [booking]);
+
     // Sockets and rooms rely on the internal MongoDB _id
-    const bookingId = booking?._id;
-    const status = (booking?.status || booking?.vendorStatus || "").toUpperCase();
+    const currentBooking = localBooking || booking;
+    const bookingId = currentBooking?._id;
+    const status = (currentBooking?.status || currentBooking?.vendorStatus || "").toUpperCase();
     const isEnRoute = status === "EN_ROUTE";
-    const userId = booking?.user?._id;
+    const userId = currentBooking?.user?._id;
 
     // ── GPS Streaming: Auto-broadcast live location when EN_ROUTE ──────────────
     useEffect(() => {
@@ -128,39 +142,40 @@ export default function VendorOngoingBookingCard({
         };
     }, [socket, bookingId, isEnRoute, userId]);
 
-    if (!booking) return null;
+    if (!currentBooking) return null;
 
     // Format Booking ID
-    const rawId = booking.bookingId || booking._id;
+    const rawId = currentBooking.bookingId || currentBooking._id;
     const formattedBookingId = rawId ? `ID: ${rawId.toString().slice(-8).toUpperCase()}` : "ID: N/A";
 
     // Customer Info
-    const customerName = booking.user?.name || "Customer";
-    const customerPhone = booking.user?.phone || booking.user?.mobileNumber || booking.phone || "";
+    const customerName = currentBooking.user?.name || "Customer";
+    const customerPhone = currentBooking.user?.phone || currentBooking.user?.mobileNumber || currentBooking.phone || "";
 
     // Survey Details
-    const surveyCategory = booking.service?.category?.name || booking.service?.name || "Hydrogeological Groundwater Survey";
-    const surveyPurpose = booking.service?.description || booking.surveyPurpose || booking.purpose || "Groundwater Source & Depth Identification";
-    const propertyAddress = typeof booking.address === "string"
-        ? booking.address
-        : booking.address?.fullAddress || `${booking.address?.addressLine1 || ""}, ${booking.address?.city || ""}`.replace(/^,\s*/, "") || "Address not provided";
+    const surveyCategory = currentBooking.service?.category?.name || currentBooking.service?.name || "Hydrogeological Groundwater Survey";
+    const surveyPurpose = currentBooking.service?.description || currentBooking.surveyPurpose || currentBooking.purpose || "Groundwater Source & Depth Identification";
+    const propertyAddress = typeof currentBooking.address === "string"
+        ? currentBooking.address
+        : currentBooking.address?.fullAddress || `${currentBooking.address?.addressLine1 || ""}, ${currentBooking.address?.city || ""}`.replace(/^,\s*/, "") || "Address not provided";
 
     // Survey Date & Time
-    const surveyDate = booking.scheduledDate
-        ? new Date(booking.scheduledDate).toLocaleDateString("en-IN", {
+    const surveyDate = currentBooking.scheduledDate
+        ? new Date(currentBooking.scheduledDate).toLocaleDateString("en-IN", {
             weekday: "short",
             day: "numeric",
             month: "short",
             year: "numeric"
         })
         : "Scheduled";
-    const surveyTime = booking.scheduledTime || "Time slot not specified";
+    const surveyTime = currentBooking.scheduledTime || "Time slot not specified";
+    const isTimeTBD = !currentBooking.scheduledTime || currentBooking.scheduledTime === "Time TBD by Expert" || currentBooking.scheduledTime === "TBD";
 
     // Status Resolution (status is already declared above for GPS streaming)
-    const isStartOtpVerified = Boolean(booking.otp?.startSurvey?.verified || booking.startSurveyVerifiedAt || ["VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
-    const isEndOtpVerified = Boolean(booking.otp?.endSurvey?.verified || booking.endSurveyVerifiedAt || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
-    const isReportUploaded = Boolean(booking.visitReport || booking.reportUploadedAt || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
-    const isRemainingPaid = Boolean(booking.payment?.remainingPaid || booking.remainingPaid || status === "COMPLETED");
+    const isStartOtpVerified = Boolean(currentBooking.otp?.startSurvey?.verified || currentBooking.startSurveyVerifiedAt || ["VISITED", "REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
+    const isEndOtpVerified = Boolean(currentBooking.otp?.endSurvey?.verified || currentBooking.endSurveyVerifiedAt || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
+    const isReportUploaded = Boolean(currentBooking.visitReport || currentBooking.reportUploadedAt || ["REPORT_UPLOADED", "AWAITING_PAYMENT", "PAYMENT_SUCCESS", "COMPLETED"].includes(status));
+    const isRemainingPaid = Boolean(currentBooking.payment?.remainingPaid || currentBooking.remainingPaid || status === "COMPLETED");
 
     // Status Pill Configuration
     const getStatusConfig = () => {
@@ -184,230 +199,523 @@ export default function VendorOngoingBookingCard({
 
     const currentStatus = getStatusConfig();
 
+    // Open Time Picker Modal from Card
+    const handleOpenTimePicker = (e, autoStart = false) => {
+        if (e) e.stopPropagation();
+        setPendingStartJourney(autoStart);
+        if (currentBooking?.scheduledTime && !isTimeTBD) {
+            setSelectedTimeSlot(currentBooking.scheduledTime);
+        } else {
+            setSelectedTimeSlot("09:00 AM - 10:00 AM");
+        }
+        setShowTimePickerModal(true);
+    };
+
+    // Save Time Slot from Modal
+    const handleSaveTimeSlot = async (e) => {
+        if (e) e.stopPropagation();
+        if (!selectedTimeSlot) {
+            toast.showError("Please select a time slot");
+            return;
+        }
+
+        const loadingToast = toast.showLoading("Saving arrival time...");
+        try {
+            setIsSavingSchedule(true);
+            const res = await updateVisitSchedule(bookingId, {
+                scheduledDate: currentBooking?.scheduledDate,
+                scheduledTime: selectedTimeSlot
+            });
+
+            if (res.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess(`Visit arrival time set to ${selectedTimeSlot}!`);
+                const updatedBooking = {
+                    ...currentBooking,
+                    scheduledTime: selectedTimeSlot
+                };
+                setLocalBooking(updatedBooking);
+                setShowTimePickerModal(false);
+
+                if (pendingStartJourney) {
+                    setPendingStartJourney(false);
+                    if (onMarkEnRoute) onMarkEnRoute(updatedBooking);
+                    else navigate(`/vendor/bookings/${bookingId}`);
+                }
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(res.message || "Failed to update visit time");
+            }
+        } catch (err) {
+            toast.dismissToast(loadingToast);
+            toast.showError(err.response?.data?.message || err.message || "Failed to update schedule");
+        } finally {
+            setIsSavingSchedule(false);
+        }
+    };
+
+    // Handle Start Journey Click with Guard
+    const handleStartJourneyClick = (e) => {
+        e.stopPropagation();
+        if (isTimeTBD) {
+            toast.showWarning("Please set your arrival time slot before starting the journey.");
+            handleOpenTimePicker(e, true);
+            return;
+        }
+        if (onMarkEnRoute) onMarkEnRoute(currentBooking);
+        else navigate(`/vendor/bookings/${bookingId}`);
+    };
+
     // Live Tracking
     const handleNavigateMaps = (e) => {
         e.stopPropagation();
-        navigate(`/vendor/booking/${booking._id || booking.bookingId}/tracking`);
+        navigate(`/vendor/booking/${currentBooking._id || currentBooking.bookingId}/tracking`);
     };
 
     return (
-        <div
-            onClick={() => onViewStatus ? onViewStatus(booking._id) : navigate(`/vendor/bookings/${booking._id}`)}
-            className="bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all p-5 space-y-4 cursor-pointer group"
-        >
-            {/* ── 1. BOOKING & CUSTOMER SECTION ── */}
-            <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2.5 py-0.5 bg-blue-50 text-[#0A84FF] font-extrabold text-[11px] rounded-md border border-blue-100 tracking-wide">
-                            {formattedBookingId}
-                        </span>
-                        <span className={`px-2.5 py-0.5 font-bold text-[11px] rounded-md border flex items-center gap-1 ${currentStatus.bg}`}>
-                            {currentStatus.icon}
-                            {currentStatus.label}
-                        </span>
-                        {booking?.rescheduleCount > 0 && (
-                            <span className="px-2.5 py-0.5 font-bold text-[11px] rounded-md border bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
-                                🗓️ Rescheduled
+        <>
+            <div
+                onClick={() => onViewStatus ? onViewStatus(currentBooking._id) : navigate(`/vendor/bookings/${currentBooking._id}`)}
+                className="bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all p-5 space-y-4 cursor-pointer group"
+            >
+                {/* ── 1. BOOKING & CUSTOMER SECTION ── */}
+                <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-0.5 bg-blue-50 text-[#0A84FF] font-extrabold text-[11px] rounded-md border border-blue-100 tracking-wide">
+                                {formattedBookingId}
                             </span>
+                            <span className={`px-2.5 py-0.5 font-bold text-[11px] rounded-md border flex items-center gap-1 ${currentStatus.bg}`}>
+                                {currentStatus.icon}
+                                {currentStatus.label}
+                            </span>
+                            {currentBooking?.rescheduleCount > 0 && (
+                                <span className="px-2.5 py-0.5 font-bold text-[11px] rounded-md border bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                                    🗓️ Rescheduled
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center font-black text-sm shrink-0">
+                                {customerName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black text-slate-900 group-hover:text-[#0A84FF] transition-colors leading-tight">
+                                    {customerName}
+                                </h3>
+                                {customerPhone && (
+                                    <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold mt-0.5">
+                                        <span>{maskPhone(customerPhone)}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <IoChevronForwardOutline className="text-slate-400 group-hover:text-blue-600 transition-colors text-lg shrink-0 mt-2" />
+                </div>
+
+                {/* ── 2. SURVEY & SITE SECTION ── */}
+                <div className="bg-slate-50/80 rounded-xl p-3.5 space-y-2 border border-slate-100 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                        <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                            <IoConstructOutline className="text-[#0A84FF] text-sm" />
+                            {surveyCategory}
+                        </span>
+                    </div>
+
+                    <p className="text-slate-600 font-medium text-[11px] leading-relaxed line-clamp-2">
+                        <strong className="text-slate-700">Purpose:</strong> {surveyPurpose}
+                    </p>
+
+                    <div className="flex items-start gap-1.5 text-slate-600 pt-1">
+                        <IoLocationOutline className="text-emerald-600 text-sm shrink-0 mt-0.5" />
+                        <span className="font-semibold text-[11px] leading-tight line-clamp-2">{propertyAddress}</span>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-slate-700 pt-1 border-t border-slate-200/60 text-[11px] flex-wrap">
+                        <span className="flex items-center gap-1 font-bold">
+                            <IoCalendarOutline className="text-blue-500" />
+                            {surveyDate}
+                        </span>
+                        {isTimeTBD ? (
+                            <button
+                                type="button"
+                                onClick={(e) => handleOpenTimePicker(e, false)}
+                                className="flex items-center gap-1 font-extrabold text-amber-800 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg text-[10.5px] border border-amber-300 shadow-2xs transition-all cursor-pointer hover:scale-102"
+                            >
+                                <IoTimeOutline className="text-amber-700 text-xs" />
+                                <span>Time TBD (Tap to Set)</span>
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={(e) => handleOpenTimePicker(e, false)}
+                                className="flex items-center gap-1 font-bold text-slate-700 hover:text-[#0A84FF] bg-white px-2 py-0.5 rounded-md border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer"
+                                title="Click to adjust time slot"
+                            >
+                                <IoTimeOutline className="text-amber-500" />
+                                <span>{surveyTime}</span>
+                            </button>
                         )}
                     </div>
 
-                    <div className="flex items-center gap-2 pt-1">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0A84FF] flex items-center justify-center font-black text-sm shrink-0">
-                            {customerName.charAt(0).toUpperCase()}
+                    {currentBooking?.rescheduleHistory && currentBooking.rescheduleHistory.length > 0 && (
+                        <div className="p-2 rounded-lg bg-amber-50/90 border border-amber-200/70 text-[11px] text-amber-900 font-medium">
+                            <span className="font-bold">Reschedule Reason:</span> {currentBooking.rescheduleHistory[currentBooking.rescheduleHistory.length - 1].reason || "Customer requested date change"}
                         </div>
-                        <div>
-                            <h3 className="text-sm font-black text-slate-900 group-hover:text-[#0A84FF] transition-colors leading-tight">
-                                {customerName}
-                            </h3>
-                            {customerPhone && (
-                                <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold mt-0.5">
-                                    <span>{maskPhone(customerPhone)}</span>
+                    )}
+                </div>
+
+                {/* ── 3. CURRENT STATUS PROGRESS STEP ── */}
+                <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                        <span>Active Status Timeline</span>
+                        <span className="text-blue-600">{currentStatus.label}</span>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-1">
+                        <div className={`h-1.5 rounded-full ${['ACCEPTED', 'EN_ROUTE', 'VISITED', 'REPORT_UPLOADED', 'AWAITING_PAYMENT', 'COMPLETED'].includes(status) ? 'bg-blue-600' : 'bg-slate-200'}`} title="Advance Paid" />
+                        <div className={`h-1.5 rounded-full ${['EN_ROUTE', 'VISITED', 'REPORT_UPLOADED', 'AWAITING_PAYMENT', 'COMPLETED'].includes(status) ? 'bg-blue-600' : 'bg-slate-200'}`} title="En Route" />
+                        <div className={`h-1.5 rounded-full ${isStartOtpVerified ? 'bg-indigo-600' : 'bg-slate-200'}`} title="Survey Started" />
+                        <div className={`h-1.5 rounded-full ${isEndOtpVerified ? 'bg-emerald-600' : 'bg-slate-200'}`} title="Survey Completed" />
+                    </div>
+                </div>
+
+                {/* ── 4. QUICK ACTIONS SECTION ── */}
+                <div className="pt-2 border-t border-slate-100 space-y-2" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                        Quick Actions
+                    </span>
+
+                    <div className="grid grid-cols-4 gap-1.5">
+                        {/* Call */}
+                        <a
+                            href={`tel:${customerPhone}`}
+                            className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
+                        >
+                            <IoCallOutline className="text-base text-blue-600" />
+                            <span>Call</span>
+                        </a>
+
+                        {/* WhatsApp */}
+                        <a
+                            href={`https://wa.me/91${customerPhone?.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
+                        >
+                            <IoLogoWhatsapp className="text-base text-emerald-600" />
+                            <span>WhatsApp</span>
+                        </a>
+
+                        {/* Navigate / Track Live */}
+                        {status === "EN_ROUTE" ? (
+                            <button
+                                onClick={handleNavigateMaps}
+                                className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
+                            >
+                                <IoNavigateOutline className="text-base text-blue-600" />
+                                <span>Track Live</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const query = encodeURIComponent(propertyAddress);
+                                    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+                                }}
+                                className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
+                            >
+                                <IoNavigateOutline className="text-base text-blue-600" />
+                                <span>Navigate</span>
+                            </button>
+                        )}
+
+                        {/* View Status */}
+                        <button
+                            onClick={() => onViewStatus ? onViewStatus(currentBooking._id) : navigate(`/vendor/bookings/${currentBooking._id}`)}
+                            className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
+                        >
+                            <IoEyeOutline className="text-base text-slate-600" />
+                            <span>View Status</span>
+                        </button>
+                    </div>
+
+                    {/* Contextual Action Row (Start Journey, OTP & Uploads) */}
+                    <div className="flex w-full pt-1" onClick={(e) => e.stopPropagation()}>
+                        {/* 1. If status is ACCEPTED -> Show Start Journey */}
+                        {status === "ACCEPTED" ? (
+                            <button
+                                onClick={handleStartJourneyClick}
+                                className={`w-full py-2.5 px-3 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                    isTimeTBD
+                                        ? "bg-gradient-to-r from-amber-600 to-blue-600 hover:from-amber-700 hover:to-blue-700 text-white"
+                                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                                }`}
+                            >
+                                <IoCarOutline className="text-base" />
+                                <span>{isTimeTBD ? "Set Arrival Time & Start Journey" : "Start Journey"}</span>
+                            </button>
+                        ) : !isStartOtpVerified ? (
+                            /* 2. If status is EN_ROUTE -> Show Verify Start OTP */
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onVerifyStartOTP) onVerifyStartOTP(currentBooking);
+                                    else navigate(`/vendor/bookings/${currentBooking._id}`, { state: { openStartOTP: true } });
+                                }}
+                                className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <IoKeyOutline className="text-base" />
+                                <span>Verify Start OTP</span>
+                            </button>
+                        ) : !isEndOtpVerified ? (
+                            /* Verify End OTP */
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onVerifyEndOTP) onVerifyEndOTP(currentBooking);
+                                    else navigate(`/vendor/bookings/${currentBooking._id}`, { state: { openEndOTP: true } });
+                                }}
+                                className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <IoKeyOutline className="text-base" />
+                                <span>Verify End OTP</span>
+                            </button>
+                        ) : (
+                            /* Upload Survey Report */
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onUploadReport) onUploadReport(currentBooking);
+                                    else navigate(`/vendor/bookings/${currentBooking._id}/upload-report`);
+                                }}
+                                className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <IoDocumentTextOutline className="text-base text-teal-400" />
+                                <span>Upload Report</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* ── TIME SLOT PICKER MODAL (DIRECT FROM CARD) ── */}
+            {showTimePickerModal && (
+                <div
+                    className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/65 backdrop-blur-sm p-4 animate-in fade-in"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isSavingSchedule) setShowTimePickerModal(false);
+                    }}
+                >
+                    <div
+                        className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4 border border-slate-100 animate-in zoom-in-95"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                                    <IoTimeOutline className="text-xl" />
                                 </div>
-                            )}
+                                <div>
+                                    <h3 className="text-base font-black text-slate-900">
+                                        {pendingStartJourney ? "Set Arrival Time & Start Journey" : "Set Visit Time Slot"}
+                                    </h3>
+                                    <p className="text-[11px] text-slate-500 font-medium">
+                                        Confirm arrival time window for customer
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowTimePickerModal(false)}
+                                disabled={isSavingSchedule}
+                                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
+                            >
+                                <IoCloseOutline className="text-lg" />
+                            </button>
+                        </div>
+
+                        {/* Prominent Survey Date Card */}
+                        <div className="bg-gradient-to-r from-blue-50/90 to-indigo-50/60 p-3 rounded-xl border border-blue-200/80 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                                    <IoCalendarOutline className="text-base" />
+                                </div>
+                                <div>
+                                    <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wider block">
+                                        Survey Date
+                                    </span>
+                                    <strong className="text-xs sm:text-sm font-black text-slate-900 block">
+                                        {surveyDate}
+                                    </strong>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                    Customer
+                                </span>
+                                <strong className="text-xs font-extrabold text-slate-800 block">
+                                    {customerName}
+                                </strong>
+                            </div>
+                        </div>
+
+                        {/* Notice */}
+                        {pendingStartJourney && (
+                            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 font-medium flex items-center gap-2">
+                                <IoAlertCircleOutline className="text-base text-amber-600 shrink-0" />
+                                <span>Please select your expected arrival window so the customer is notified before your trip starts.</span>
+                            </div>
+                        )}
+
+                        {/* Time Slot Picker */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                                <span className="flex items-center gap-1">
+                                    <IoTimeOutline className="text-[#0A84FF]" /> Select 1-Hour Arrival Slot
+                                </span>
+                                {selectedTimeSlot && (
+                                    <span className="text-[11px] font-bold text-[#0A84FF] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                                        {selectedTimeSlot}
+                                    </span>
+                                )}
+                            </label>
+
+                            <div className="max-h-52 overflow-y-auto space-y-3 pr-1 custom-scrollbar overscroll-contain">
+                                {/* Morning */}
+                                <div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                                        🌅 Morning Slots
+                                    </span>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        {[
+                                            "06:00 AM - 07:00 AM",
+                                            "07:00 AM - 08:00 AM",
+                                            "08:00 AM - 09:00 AM",
+                                            "09:00 AM - 10:00 AM",
+                                            "10:00 AM - 11:00 AM",
+                                            "11:00 AM - 12:00 PM"
+                                        ].map((slot) => {
+                                            const isSelected = selectedTimeSlot === slot;
+                                            return (
+                                                <button
+                                                    key={slot}
+                                                    type="button"
+                                                    onClick={() => setSelectedTimeSlot(slot)}
+                                                    className={`px-2.5 py-2 text-[11px] font-bold rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-500/20"
+                                                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50 hover:border-blue-300"
+                                                    }`}
+                                                >
+                                                    <span>{slot}</span>
+                                                    {isSelected && <span className="text-xs font-black">✓</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Afternoon */}
+                                <div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                                        ☀️ Afternoon Slots
+                                    </span>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        {[
+                                            "12:00 PM - 01:00 PM",
+                                            "01:00 PM - 02:00 PM",
+                                            "02:00 PM - 03:00 PM",
+                                            "03:00 PM - 04:00 PM"
+                                        ].map((slot) => {
+                                            const isSelected = selectedTimeSlot === slot;
+                                            return (
+                                                <button
+                                                    key={slot}
+                                                    type="button"
+                                                    onClick={() => setSelectedTimeSlot(slot)}
+                                                    className={`px-2.5 py-2 text-[11px] font-bold rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-500/20"
+                                                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50 hover:border-blue-300"
+                                                    }`}
+                                                >
+                                                    <span>{slot}</span>
+                                                    {isSelected && <span className="text-xs font-black">✓</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Evening */}
+                                <div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                                        🌆 Evening Slots
+                                    </span>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        {[
+                                            "04:00 PM - 05:00 PM",
+                                            "05:00 PM - 06:00 PM",
+                                            "06:00 PM - 07:00 PM"
+                                        ].map((slot) => {
+                                            const isSelected = selectedTimeSlot === slot;
+                                            return (
+                                                <button
+                                                    key={slot}
+                                                    type="button"
+                                                    onClick={() => setSelectedTimeSlot(slot)}
+                                                    className={`px-2.5 py-2 text-[11px] font-bold rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-500/20"
+                                                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50 hover:border-blue-300"
+                                                    }`}
+                                                >
+                                                    <span>{slot}</span>
+                                                    {isSelected && <span className="text-xs font-black">✓</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Confirmation Note */}
+                        {selectedTimeSlot && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-blue-900 flex items-center gap-2">
+                                <span className="text-blue-600 text-sm font-black">✓</span>
+                                <span>Customer will be notified: Visit at <strong>{selectedTimeSlot}</strong></span>
+                            </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex gap-2.5 pt-1">
+                            <button
+                                type="button"
+                                onClick={() => setShowTimePickerModal(false)}
+                                disabled={isSavingSchedule}
+                                className="flex-1 py-2.5 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-50 transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSaveTimeSlot}
+                                disabled={isSavingSchedule || !selectedTimeSlot}
+                                className="flex-1 py-2.5 bg-gradient-to-r from-[#0A84FF] to-blue-700 hover:from-[#0070DF] hover:to-blue-800 disabled:opacity-50 text-white font-extrabold rounded-xl text-xs shadow-md transition-all cursor-pointer"
+                            >
+                                {isSavingSchedule ? "Updating..." : (pendingStartJourney ? "Confirm & Start Trip" : "Confirm & Notify")}
+                            </button>
                         </div>
                     </div>
                 </div>
-
-                <IoChevronForwardOutline className="text-slate-400 group-hover:text-blue-600 transition-colors text-lg shrink-0 mt-2" />
-            </div>
-
-            {/* ── 2. SURVEY & SITE SECTION ── */}
-            <div className="bg-slate-50/80 rounded-xl p-3.5 space-y-2 border border-slate-100 text-xs">
-                <div className="flex items-center justify-between gap-2">
-                    <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                        <IoConstructOutline className="text-[#0A84FF] text-sm" />
-                        {surveyCategory}
-                    </span>
-                </div>
-
-                <p className="text-slate-600 font-medium text-[11px] leading-relaxed line-clamp-2">
-                    <strong className="text-slate-700">Purpose:</strong> {surveyPurpose}
-                </p>
-
-                <div className="flex items-start gap-1.5 text-slate-600 pt-1">
-                    <IoLocationOutline className="text-emerald-600 text-sm shrink-0 mt-0.5" />
-                    <span className="font-semibold text-[11px] leading-tight line-clamp-2">{propertyAddress}</span>
-                </div>
-
-                <div className="flex items-center gap-3 text-slate-700 pt-1 border-t border-slate-200/60 text-[11px] flex-wrap">
-                    <span className="flex items-center gap-1 font-bold">
-                        <IoCalendarOutline className="text-blue-500" />
-                        {surveyDate}
-                    </span>
-                    {booking?.scheduledTime === "Time TBD by Expert" || booking?.scheduledTime === "TBD" ? (
-                        <span className="flex items-center gap-1 font-extrabold text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded-md text-[10.5px]">
-                            <IoTimeOutline className="text-amber-600 text-xs" />
-                            <span>Time TBD (Tap to Set)</span>
-                        </span>
-                    ) : (
-                        <span className="flex items-center gap-1 font-bold text-slate-700">
-                            <IoTimeOutline className="text-amber-500" />
-                            {surveyTime}
-                        </span>
-                    )}
-                </div>
-
-                {booking?.rescheduleHistory && booking.rescheduleHistory.length > 0 && (
-                    <div className="p-2 rounded-lg bg-amber-50/90 border border-amber-200/70 text-[11px] text-amber-900 font-medium">
-                        <span className="font-bold">Reschedule Reason:</span> {booking.rescheduleHistory[booking.rescheduleHistory.length - 1].reason || "Customer requested date change"}
-                    </div>
-                )}
-            </div>
-
-            {/* ── 3. CURRENT STATUS PROGRESS STEP ── */}
-            <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
-                    <span>Active Status Timeline</span>
-                    <span className="text-blue-600">{currentStatus.label}</span>
-                </div>
-
-                <div className="grid grid-cols-4 gap-1">
-                    <div className={`h-1.5 rounded-full ${['ACCEPTED', 'EN_ROUTE', 'VISITED', 'REPORT_UPLOADED', 'AWAITING_PAYMENT', 'COMPLETED'].includes(status) ? 'bg-blue-600' : 'bg-slate-200'}`} title="Advance Paid" />
-                    <div className={`h-1.5 rounded-full ${['EN_ROUTE', 'VISITED', 'REPORT_UPLOADED', 'AWAITING_PAYMENT', 'COMPLETED'].includes(status) ? 'bg-blue-600' : 'bg-slate-200'}`} title="En Route" />
-                    <div className={`h-1.5 rounded-full ${isStartOtpVerified ? 'bg-indigo-600' : 'bg-slate-200'}`} title="Survey Started" />
-                    <div className={`h-1.5 rounded-full ${isEndOtpVerified ? 'bg-emerald-600' : 'bg-slate-200'}`} title="Survey Completed" />
-                </div>
-            </div>
-
-            {/* ── 4. QUICK ACTIONS SECTION ── */}
-            <div className="pt-2 border-t border-slate-100 space-y-2" onClick={(e) => e.stopPropagation()}>
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                    Quick Actions
-                </span>
-
-                <div className="grid grid-cols-4 gap-1.5">
-                    {/* Call */}
-                    <a
-                        href={`tel:${customerPhone}`}
-                        className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
-                    >
-                        <IoCallOutline className="text-base text-blue-600" />
-                        <span>Call</span>
-                    </a>
-
-                    {/* WhatsApp */}
-                    <a
-                        href={`https://wa.me/91${customerPhone?.replace(/\D/g, '')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
-                    >
-                        <IoLogoWhatsapp className="text-base text-emerald-600" />
-                        <span>WhatsApp</span>
-                    </a>
-
-                    {/* Navigate / Track Live */}
-                    {status === "EN_ROUTE" ? (
-                        <button
-                            onClick={handleNavigateMaps}
-                            className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
-                        >
-                            <IoNavigateOutline className="text-base text-blue-600" />
-                            <span>Track Live</span>
-                        </button>
-                    ) : (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                const query = encodeURIComponent(propertyAddress);
-                                window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
-                            }}
-                            className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
-                        >
-                            <IoNavigateOutline className="text-base text-blue-600" />
-                            <span>Navigate</span>
-                        </button>
-                    )}
-
-                    {/* View Status */}
-                    <button
-                        onClick={() => onViewStatus ? onViewStatus(booking._id) : navigate(`/vendor/bookings/${booking._id}`)}
-                        className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
-                    >
-                        <IoEyeOutline className="text-base text-slate-600" />
-                        <span>View Status</span>
-                    </button>
-                </div>
-
-                {/* Contextual Action Row (Start Journey, OTP & Uploads) */}
-                <div className="flex w-full pt-1" onClick={(e) => e.stopPropagation()}>
-                    {/* 1. If status is ACCEPTED -> Show Start Journey */}
-                    {status === "ACCEPTED" ? (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onMarkEnRoute) onMarkEnRoute(booking);
-                                else navigate(`/vendor/bookings/${booking._id}`);
-                            }}
-                            className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                            <IoCarOutline className="text-base" />
-                            <span>Start Journey</span>
-                        </button>
-                    ) : !isStartOtpVerified ? (
-                        /* 2. If status is EN_ROUTE -> Show Verify Start OTP */
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onVerifyStartOTP) onVerifyStartOTP(booking);
-                                else navigate(`/vendor/bookings/${booking._id}`, { state: { openStartOTP: true } });
-                            }}
-                            className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                            <IoKeyOutline className="text-base" />
-                            <span>Verify Start OTP</span>
-                        </button>
-                    ) : !isEndOtpVerified ? (
-                        /* Verify End OTP */
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onVerifyEndOTP) onVerifyEndOTP(booking);
-                                else navigate(`/vendor/bookings/${booking._id}`, { state: { openEndOTP: true } });
-                            }}
-                            className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                            <IoKeyOutline className="text-base" />
-                            <span>Verify End OTP</span>
-                        </button>
-                    ) : (
-                        /* Upload Survey Report */
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onUploadReport) onUploadReport(booking);
-                                else navigate(`/vendor/bookings/${booking._id}/upload-report`);
-                            }}
-                            className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                            <IoDocumentTextOutline className="text-base text-teal-400" />
-                            <span>Upload Report</span>
-                        </button>
-                    )}
-                </div>
-            </div>
-        </div>
+            )}
+        </>
     );
 }
