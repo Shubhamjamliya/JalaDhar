@@ -24,6 +24,7 @@ const TYPE_META = {
   BOOKING_REASSIGNED:         { icon: IoCalendarOutline,        color: 'text-orange-600 bg-orange-50' },
   BOOKING_CONFIRMED:          { icon: IoShieldCheckmarkOutline, color: 'text-green-600 bg-green-50' },
   BOOKING_RESCHEDULED:        { icon: IoCalendarOutline,        color: 'text-blue-600 bg-blue-50' },
+  BOOKING_SCHEDULED:          { icon: IoCalendarOutline,        color: 'text-indigo-600 bg-indigo-50' },
   EXPERT_CANCELLED:           { icon: IoAlertCircleOutline,     color: 'text-amber-600 bg-amber-50' },
   UNABLE_TO_COMPLETE:         { icon: IoAlertCircleOutline,     color: 'text-red-600 bg-red-50' },
   REPORT_UPLOADED:            { icon: IoDocumentTextOutline,    color: 'text-purple-600 bg-purple-50' },

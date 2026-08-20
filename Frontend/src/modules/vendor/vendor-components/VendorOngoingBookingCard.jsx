@@ -251,15 +251,22 @@ export default function VendorOngoingBookingCard({
                     <span className="font-semibold text-[11px] leading-tight line-clamp-2">{propertyAddress}</span>
                 </div>
 
-                <div className="flex items-center gap-4 text-slate-700 pt-1 border-t border-slate-200/60 text-[11px]">
+                <div className="flex items-center gap-3 text-slate-700 pt-1 border-t border-slate-200/60 text-[11px] flex-wrap">
                     <span className="flex items-center gap-1 font-bold">
                         <IoCalendarOutline className="text-blue-500" />
                         {surveyDate}
                     </span>
-                    <span className="flex items-center gap-1 font-bold">
-                        <IoTimeOutline className="text-amber-500" />
-                        {surveyTime}
-                    </span>
+                    {booking?.scheduledTime === "Time TBD by Expert" || booking?.scheduledTime === "TBD" ? (
+                        <span className="flex items-center gap-1 font-extrabold text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded-md text-[10.5px]">
+                            <IoTimeOutline className="text-amber-600 text-xs" />
+                            <span>Time TBD (Tap to Set)</span>
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-1 font-bold text-slate-700">
+                            <IoTimeOutline className="text-amber-500" />
+                            {surveyTime}
+                        </span>
+                    )}
                 </div>
 
                 {booking?.rescheduleHistory && booking.rescheduleHistory.length > 0 && (

@@ -228,6 +228,8 @@ export const scheduleVisit = async (bookingId, scheduleData) => {
   return response.data;
 };
 
+export const updateVisitSchedule = scheduleVisit;
+
 /**
  * Vendor Profile API functions
  */

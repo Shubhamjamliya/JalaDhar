@@ -590,26 +590,18 @@ export default function RescheduleModal({
                 </form>
 
                 {/* ── 3. STICKY FOOTER ACTIONS ── */}
-                <div className="p-4 sm:p-5 border-t border-slate-100 bg-white/95 backdrop-blur-md shrink-0 flex gap-3 shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={isLoading}
-                        className="flex-1 py-3.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-all cursor-pointer disabled:opacity-50 active:scale-98 text-center"
-                    >
-                        Keep Current Date
-                    </button>
+                <div className="p-4 sm:p-5 border-t border-slate-100 bg-white/95 backdrop-blur-md shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
                     <button
                         type="submit"
                         form="reschedule-form"
                         disabled={isLoading || !isCurrentDateAvailable}
-                        className="flex-[1.5] py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#0A84FF] to-blue-700 hover:from-[#0070DF] hover:to-blue-800 text-white font-extrabold text-xs shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-98"
+                        className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#0A84FF] to-blue-700 hover:from-[#0070DF] hover:to-blue-800 text-white font-extrabold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-98"
                     >
                         {isLoading ? (
                             <span>Updating Schedule...</span>
                         ) : (
                             <>
-                                <IoCheckmarkCircleOutline className="text-base" />
+                                <IoCheckmarkCircleOutline className="text-lg" />
                                 <span>Confirm Reschedule</span>
                             </>
                         )}

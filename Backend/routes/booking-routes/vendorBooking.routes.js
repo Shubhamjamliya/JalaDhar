@@ -17,7 +17,8 @@ const {
   markAsCompleted,
   getBookingDetails,
   requestTravelCharges,
-  downloadInvoice
+  downloadInvoice,
+  updateVisitSchedule
 } = require('../../controllers/bookingControllers/vendorBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isVendor } = require('../../middleware/roleMiddleware');
@@ -89,6 +90,8 @@ router.patch('/:bookingId/accept', (req, res, next) => {
 
 router.patch('/:bookingId/reject', authenticate, isVendor, rejectBookingValidation, rejectBooking);
 router.patch('/:bookingId/cancel', authenticate, isVendor, cancelBooking);
+router.put('/:bookingId/schedule', authenticate, isVendor, updateVisitSchedule);
+router.patch('/:bookingId/schedule', authenticate, isVendor, updateVisitSchedule);
 router.post(
   '/:bookingId/unable-to-complete',
   authenticate,

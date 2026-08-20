@@ -28,6 +28,7 @@ const notificationSchema = new mongoose.Schema({
       'BOOKING_REASSIGNED',
       'BOOKING_CONFIRMED',
       'BOOKING_RESCHEDULED',
+      'BOOKING_SCHEDULED',
       'EXPERT_CANCELLED',
       'UNABLE_TO_COMPLETE',
       // Report & Borewell

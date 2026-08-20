@@ -1837,6 +1837,113 @@ const reportUnableToComplete = async (req, res) => {
   }
 };
 
+/**
+ * Update / Set Visit Schedule Time by Expert
+ */
+const updateVisitSchedule = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const vendorId = req.userId;
+    const { scheduledDate, scheduledTime } = req.body || {};
+
+    if (!scheduledTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a scheduled visit time slot'
+      });
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      vendor: vendorId,
+      status: { $in: [BOOKING_STATUS.ASSIGNED, BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.PENDING] }
+    }).populate('user', 'name email phone').populate('vendor', 'name email phone designation');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or cannot be rescheduled in its current status'
+      });
+    }
+
+    if (scheduledDate) {
+      booking.scheduledDate = new Date(scheduledDate);
+      booking.scheduleDate = new Date(scheduledDate);
+    }
+    booking.scheduledTime = scheduledTime;
+    await booking.save();
+
+    const shortBookingId = booking._id.toString().slice(-4).toUpperCase();
+    const visitDateObj = booking.scheduledDate || booking.scheduleDate;
+    const formattedDate = visitDateObj
+      ? new Date(visitDateObj).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+      : 'scheduled date';
+
+    // Real-time socket broadcast
+    let io = null;
+    try {
+      const { getIO } = require('../../sockets');
+      io = getIO();
+    } catch (e) {
+      console.log('[updateVisitSchedule] Socket.io not initialized yet');
+    }
+
+    if (io) {
+      const vendorIdStr = vendorId.toString();
+      const userIdStr = (booking.user._id || booking.user).toString();
+      const bookingPayload = {
+        bookingId: booking._id.toString(),
+        status: booking.status,
+        userStatus: booking.userStatus,
+        vendorStatus: booking.vendorStatus,
+        scheduledDate: booking.scheduledDate,
+        scheduledTime: booking.scheduledTime,
+        booking
+      };
+
+      io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
+      io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+      io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+    }
+
+    // Send notification to customer
+    if (booking.user) {
+      const expertName = booking.vendor?.name || 'Your assigned expert';
+      await sendNotification({
+        recipient: booking.user._id || booking.user,
+        recipientModel: 'User',
+        type: 'BOOKING_SCHEDULED',
+        title: 'Survey Time Confirmed ⏰',
+        message: `${expertName} confirmed your survey visit for ${formattedDate} (${scheduledTime}).`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          scheduledDate: booking.scheduledDate,
+          scheduledTime: booking.scheduledTime
+        }
+      }, io);
+    }
+
+    res.json({
+      success: true,
+      message: `Visit schedule confirmed for ${scheduledTime}! Customer notified.`,
+      data: {
+        booking
+      }
+    });
+  } catch (error) {
+    console.error('updateVisitSchedule error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update visit schedule',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getVendorBookings,
   acceptBooking,
@@ -1852,6 +1959,7 @@ module.exports = {
   markAsCompleted,
   getBookingDetails,
   requestTravelCharges,
-  downloadInvoice
+  downloadInvoice,
+  updateVisitSchedule
 };
 

@@ -24,7 +24,7 @@ import {
     IoLogoWhatsapp,
     IoCameraOutline
 } from "react-icons/io5";
-import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, reportUnableToComplete, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice, verifyStartOTP, verifyEndOTP, resendSurveyOTP } from "../../../services/vendorApi";
+import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, reportUnableToComplete, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice, verifyStartOTP, verifyEndOTP, resendSurveyOTP, updateVisitSchedule } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -48,6 +48,9 @@ export default function VendorBookingDetails() {
     const [booking, setBooking] = useState(null);
     const toast = useToast();
     const [showAcceptConfirm, setShowAcceptConfirm] = useState(false);
+    const [showUpdateScheduleModal, setShowUpdateScheduleModal] = useState(false);
+    const [editScheduleDate, setEditScheduleDate] = useState("");
+    const [editScheduleTime, setEditScheduleTime] = useState("");
     const [showRejectInput, setShowRejectInput] = useState(false);
     const [showRejectConfirm, setShowRejectConfirm] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
@@ -251,6 +254,49 @@ export default function VendorBookingDetails() {
         } catch (err) {
             toast.dismissToast(loadingToast);
             handleApiError(err, "Failed to accept booking");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleOpenUpdateSchedule = () => {
+        const currentDate = booking?.scheduledDate || booking?.scheduleDate
+            ? new Date(booking.scheduledDate || booking.scheduleDate).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0];
+        setEditScheduleDate(currentDate);
+        setEditScheduleTime(
+            booking?.scheduledTime && booking?.scheduledTime !== "TBD" && booking?.scheduledTime !== "Time TBD by Expert"
+                ? booking.scheduledTime
+                : "09:00 AM - 10:00 AM"
+        );
+        setShowUpdateScheduleModal(true);
+    };
+
+    const handleSaveScheduleUpdate = async () => {
+        if (!editScheduleTime) {
+            toast.showError("Please select a visit time slot.");
+            return;
+        }
+        setShowUpdateScheduleModal(false);
+        const loadingToast = toast.showLoading("Updating survey visit time...");
+        try {
+            setActionLoading(true);
+            const response = await updateVisitSchedule(bookingId, {
+                scheduledDate: editScheduleDate,
+                scheduledTime: editScheduleTime
+            });
+
+            if (response.success) {
+                toast.dismissToast(loadingToast);
+                toast.showSuccess(`Visit time confirmed for ${editScheduleTime}! Customer notified.`);
+                await loadBookingDetails(false);
+            } else {
+                toast.dismissToast(loadingToast);
+                toast.showError(response.message || "Failed to update visit schedule");
+            }
+        } catch (err) {
+            toast.dismissToast(loadingToast);
+            handleApiError(err, "Failed to update visit schedule");
         } finally {
             setActionLoading(false);
         }
@@ -1364,17 +1410,29 @@ export default function VendorBookingDetails() {
                         </div>
 
                         {/* Preferred Survey Date & Time */}
-                        <div className="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-1">
+                        <div className="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-2">
                             <div className="flex items-center justify-between gap-2">
                                 <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
                                     <IoTimeOutline className="text-sm text-emerald-600" />
                                     <span>Scheduled Survey Date & Time</span>
                                 </p>
-                                {booking.rescheduleCount > 0 && (
-                                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-[#0A84FF] text-[10px] font-extrabold border border-blue-200">
-                                        Rescheduled
-                                    </span>
-                                )}
+                                <div className="flex items-center gap-1.5">
+                                    {booking.rescheduleCount > 0 && (
+                                        <span className="px-2 py-0.5 rounded-full bg-blue-100 text-[#0A84FF] text-[10px] font-extrabold border border-blue-200">
+                                            Rescheduled
+                                        </span>
+                                    )}
+                                    {!isStartOtpVerified && !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(booking.status) && (
+                                        <button
+                                            type="button"
+                                            onClick={handleOpenUpdateSchedule}
+                                            className="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-300 shadow-2xs flex items-center gap-1 cursor-pointer transition-all hover:scale-102"
+                                        >
+                                            <IoCalendarOutline className="text-xs text-emerald-600" />
+                                            <span>{booking.scheduledTime === "Time TBD by Expert" || booking.scheduledTime === "TBD" ? "Set Visit Time" : "Change Time"}</span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <p className="text-sm font-extrabold text-emerald-950">
                                 {booking.scheduledDate
@@ -1384,7 +1442,7 @@ export default function VendorBookingDetails() {
                                         year: "numeric",
                                     })
                                     : "N/A"
-                                } at {booking.scheduledTime || "TBD"}
+                                } at <span className={booking.scheduledTime === "Time TBD by Expert" || booking.scheduledTime === "TBD" ? "text-amber-800 font-black bg-amber-100 px-2 py-0.5 rounded-md" : "text-emerald-950"}>{booking.scheduledTime || "TBD"}</span>
                             </p>
                             {booking.rescheduleHistory && booking.rescheduleHistory.length > 0 && (
                                 <p className="text-[11px] text-slate-600 font-medium pt-1 border-t border-emerald-100/80">
@@ -2134,6 +2192,190 @@ export default function VendorBookingDetails() {
                                 className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold rounded-xl text-sm shadow-md transition-colors"
                             >
                                 {actionLoading ? "Accepting..." : "Confirm & Accept"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Update / Set Visit Schedule Time Modal */}
+            {showUpdateScheduleModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-gray-100 animate-in zoom-in-95">
+                        {/* Header */}
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                                <IoTimeOutline className="text-2xl" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Set Visit Time Slot</h3>
+                                <p className="text-xs text-gray-500">
+                                    {booking?.scheduledTime === "Time TBD by Expert" || booking?.scheduledTime === "TBD"
+                                        ? "Set your arrival time window for this survey"
+                                        : "Adjust your arrival time window for this survey"}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Date Details */}
+                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                            <div className="flex items-center justify-between text-slate-600">
+                                <span className="font-medium">Scheduled Date:</span>
+                                <strong className="text-slate-900 font-bold">
+                                    {editScheduleDate
+                                        ? new Date(editScheduleDate).toLocaleDateString("en-IN", {
+                                            weekday: "short",
+                                            day: "numeric",
+                                            month: "short",
+                                            year: "numeric"
+                                        })
+                                        : "N/A"}
+                                </strong>
+                            </div>
+                            <div className="flex items-center justify-between text-slate-600">
+                                <span className="font-medium">Customer:</span>
+                                <strong className="text-slate-900 font-bold">{booking?.user?.name || "Customer"}</strong>
+                            </div>
+                        </div>
+
+                        {/* Time Slot Picker */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-gray-700 flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                    <IoTimeOutline className="text-[#0A84FF] text-sm" /> Select Time Slot
+                                </span>
+                                {editScheduleTime && (
+                                    <span className="text-[11px] font-bold text-[#0A84FF] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                                        {editScheduleTime}
+                                    </span>
+                                )}
+                            </label>
+
+                            <div className="max-h-52 overflow-y-auto space-y-3 pr-1 custom-scrollbar overscroll-contain">
+                                {/* Morning */}
+                                <div>
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
+                                        🌅 Morning Slots
+                                    </span>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        {[
+                                            "06:00 AM - 07:00 AM",
+                                            "07:00 AM - 08:00 AM",
+                                            "08:00 AM - 09:00 AM",
+                                            "09:00 AM - 10:00 AM",
+                                            "10:00 AM - 11:00 AM",
+                                            "11:00 AM - 12:00 PM"
+                                        ].map((slot) => {
+                                            const isSelected = editScheduleTime === slot;
+                                            return (
+                                                <button
+                                                    key={slot}
+                                                    type="button"
+                                                    onClick={() => setEditScheduleTime(slot)}
+                                                    className={`px-2.5 py-2 text-[11px] font-bold rounded-xl border transition-all duration-200 text-left flex items-center justify-between cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20 scale-[1.02]"
+                                                            : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300"
+                                                    }`}
+                                                >
+                                                    <span>{slot}</span>
+                                                    {isSelected && <span className="text-xs font-black">✓</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Afternoon */}
+                                <div>
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
+                                        ☀️ Afternoon Slots
+                                    </span>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        {[
+                                            "12:00 PM - 01:00 PM",
+                                            "01:00 PM - 02:00 PM",
+                                            "02:00 PM - 03:00 PM",
+                                            "03:00 PM - 04:00 PM"
+                                        ].map((slot) => {
+                                            const isSelected = editScheduleTime === slot;
+                                            return (
+                                                <button
+                                                    key={slot}
+                                                    type="button"
+                                                    onClick={() => setEditScheduleTime(slot)}
+                                                    className={`px-2.5 py-2 text-[11px] font-bold rounded-xl border transition-all duration-200 text-left flex items-center justify-between cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20 scale-[1.02]"
+                                                            : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300"
+                                                    }`}
+                                                >
+                                                    <span>{slot}</span>
+                                                    {isSelected && <span className="text-xs font-black">✓</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Evening */}
+                                <div>
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
+                                        🌆 Evening Slots
+                                    </span>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        {[
+                                            "04:00 PM - 05:00 PM",
+                                            "05:00 PM - 06:00 PM",
+                                            "06:00 PM - 07:00 PM"
+                                        ].map((slot) => {
+                                            const isSelected = editScheduleTime === slot;
+                                            return (
+                                                <button
+                                                    key={slot}
+                                                    type="button"
+                                                    onClick={() => setEditScheduleTime(slot)}
+                                                    className={`px-2.5 py-2 text-[11px] font-bold rounded-xl border transition-all duration-200 text-left flex items-center justify-between cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20 scale-[1.02]"
+                                                            : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300"
+                                                    }`}
+                                                >
+                                                    <span>{slot}</span>
+                                                    {isSelected && <span className="text-xs font-black">✓</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Confirmation Note */}
+                        {editScheduleTime && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-blue-900 flex items-center gap-2">
+                                <span className="text-blue-600 text-sm font-black">✓</span>
+                                <span>Customer will be notified: Visit set for <strong>{editScheduleTime}</strong></span>
+                            </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex gap-3 pt-1">
+                            <button
+                                type="button"
+                                onClick={() => setShowUpdateScheduleModal(false)}
+                                disabled={actionLoading}
+                                className="flex-1 py-2.5 border border-gray-200 text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSaveScheduleUpdate}
+                                disabled={actionLoading || !editScheduleTime}
+                                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-xl text-sm shadow-md transition-colors cursor-pointer"
+                            >
+                                {actionLoading ? "Updating..." : "Confirm & Notify"}
                             </button>
                         </div>
                     </div>
