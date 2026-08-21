@@ -38,7 +38,7 @@ const navSections = [
                 label: "Experts",
                 to: "/admin/vendors",
                 Icon: IoBusinessOutline,
-                permission: "verification",
+                permission: "vendors",
                 roles: ["SUPER_ADMIN", "EXPERT_VERIFICATION_ADMIN", "VERIFIER_ADMIN"],
                 children: [
                     { label: "All Experts", to: "/admin/vendors", end: true },
@@ -52,7 +52,7 @@ const navSections = [
                 label: "Users",
                 to: "/admin/users",
                 Icon: IoPersonCircleOutline,
-                permission: "operations",
+                permission: "users",
                 roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN", "SUPPORT_ADMIN"],
                 children: [
                     { label: "All Users", to: "/admin/users", end: true },
@@ -66,7 +66,7 @@ const navSections = [
                 label: "Approvals",
                 to: "/admin/approvals",
                 Icon: IoCheckmarkCircleOutline,
-                permission: "qc",
+                permission: "approvals",
                 roles: ["SUPER_ADMIN", "EXPERT_VERIFICATION_ADMIN", "VERIFIER_ADMIN", "QC_ADMIN"]
             },
             {
@@ -74,7 +74,7 @@ const navSections = [
                 label: "Bookings",
                 to: "/admin/bookings",
                 Icon: IoCalendarOutline,
-                permission: "operations",
+                permission: "bookings",
                 roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN"],
                 children: [
                     { label: "All Bookings", to: "/admin/bookings", end: true },
@@ -93,7 +93,7 @@ const navSections = [
                 label: "Payments",
                 to: "/admin/payments",
                 Icon: IoWalletOutline,
-                permission: "finance",
+                permission: "payments",
                 roles: ["SUPER_ADMIN", "FINANCE_ADMIN"],
                 children: [
                     { label: "All Transactions", to: "/admin/payments", end: true },
@@ -121,7 +121,7 @@ const navSections = [
                 label: "Ratings & Reviews",
                 to: "/admin/ratings",
                 Icon: IoStarOutline,
-                permission: "support",
+                permission: "ratings",
                 roles: ["SUPER_ADMIN", "SUPPORT_ADMIN"]
             },
             {
@@ -129,7 +129,7 @@ const navSections = [
                 label: "Disputes & Support",
                 to: "/admin/disputes",
                 Icon: IoAlertCircleOutline,
-                permission: "support",
+                permission: "disputes",
                 roles: ["SUPER_ADMIN", "SUPPORT_ADMIN"]
             },
             {
@@ -137,7 +137,7 @@ const navSections = [
                 label: "Audit Logs",
                 to: "/admin/agreements",
                 Icon: IoShieldCheckmarkOutline,
-                permission: "settings",
+                permission: "agreement-logs",
                 roles: ["SUPER_ADMIN", "QC_ADMIN"],
                 children: [
                     { label: "User Agreement Logs", to: "/admin/agreements" },
@@ -162,7 +162,7 @@ const navSections = [
                 label: "Content & Policies",
                 to: "/admin/policies",
                 Icon: IoDocumentTextOutline,
-                permission: "settings",
+                permission: "policies",
                 roles: ["SUPER_ADMIN"],
                 children: [
                     { label: "Terms & Conditions", to: "/admin/policies/legal" },
