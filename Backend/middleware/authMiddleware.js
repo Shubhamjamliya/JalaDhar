@@ -50,7 +50,9 @@ const authenticate = async (req, res, next) => {
       case 'FINANCE_ADMIN':
       case 'OPERATIONS_ADMIN':
       case 'VERIFIER_ADMIN':
+      case 'EXPERT_VERIFICATION_ADMIN':
       case 'SUPPORT_ADMIN':
+      case 'QC_ADMIN':
         user = await Admin.findById(decoded.userId).select('-password');
         break;
       default:

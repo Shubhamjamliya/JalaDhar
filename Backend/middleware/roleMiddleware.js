@@ -41,7 +41,7 @@ const isAdmin = authorize(
 /**
  * Check if user is super admin
  */
-const isSuperAdmin = authorize(ROLES.SUPER_ADMIN);
+const isSuperAdmin = authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN);
 
 /**
  * Check if user is finance admin or super admin

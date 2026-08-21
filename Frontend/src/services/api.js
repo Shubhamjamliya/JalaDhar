@@ -56,8 +56,9 @@ api.interceptors.request.use(
     const url = config.url || '';
 
     // Public auth endpoints don't need tokens
+    // Note: /admin/auth/register/send-otp and /admin/auth/register/verify-otp are protected internal admin endpoints
     const isPublicAuthEndpoint =
-      url.includes('/auth/register') ||
+      (url.includes('/auth/register') && !url.includes('/admin/auth/register/')) ||
       url.includes('/auth/login') ||
       url.includes('/auth/forgot-password') ||
       url.includes('/auth/reset-password');

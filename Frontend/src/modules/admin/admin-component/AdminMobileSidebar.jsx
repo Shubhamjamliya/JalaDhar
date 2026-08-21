@@ -145,11 +145,7 @@ const navSections = [
                 label: "Admin Management",
                 to: "/admin/team",
                 Icon: IoLockClosedOutline,
-                roles: ["SUPER_ADMIN"],
-                children: [
-                    { label: "Team & Role Permissions", to: "/admin/team", end: true },
-                    { label: "Register Internal Admin", to: "/admin/settings/register" }
-                ]
+                roles: ["SUPER_ADMIN"]
             },
             {
                 id: "policies",
@@ -375,7 +371,7 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                                                     ) : (
                                                         <NavLink
                                                             to={item.to}
-                                                            end={item.to === "/admin/dashboard" || item.to === "/admin/approvals"}
+                                                            end={item.to === "/admin/dashboard" || item.to === "/admin/approvals" || item.to === "/admin/team"}
                                                             onClick={onClose}
                                                             className={({ isActive }) =>
                                                                 `flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-150 ${

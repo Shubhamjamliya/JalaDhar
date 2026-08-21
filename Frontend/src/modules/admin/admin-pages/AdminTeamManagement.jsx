@@ -15,7 +15,13 @@ import {
   IoRadioButtonOnOutline,
   IoBriefcaseOutline,
   IoCheckmarkOutline,
-  IoCloseOutline
+  IoCloseOutline,
+  IoMailOutline,
+  IoKeyOutline,
+  IoEyeOutline,
+  IoEyeOffOutline,
+  IoArrowBackOutline,
+  IoLockClosedOutline
 } from "react-icons/io5";
 import {
   getAllAdmins,
@@ -23,7 +29,9 @@ import {
   deleteAdmin,
   getAssignmentTogglesApi,
   updateAssignmentToggleApi,
-  getTeamPerformanceApi
+  getTeamPerformanceApi,
+  sendAdminRegistrationOTP,
+  registerAdminWithOTP
 } from "../../../services/adminApi";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useToast } from "../../../hooks/useToast";
@@ -37,6 +45,39 @@ const ROLE_OPTIONS = [
   { value: "FINANCE_ADMIN", label: "Finance Admin", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
   { value: "SUPPORT_ADMIN", label: "Customer Support Admin", color: "bg-rose-100 text-rose-700 border-rose-200" },
   { value: "QC_ADMIN", label: "Quality Control Admin", color: "bg-cyan-100 text-cyan-700 border-cyan-200" }
+];
+
+const ROLE_DEFINITIONS = [
+  { 
+    value: "OPERATIONS_ADMIN", 
+    label: "Operations Admin", 
+    description: "Manage bookings, surveyor shifts & daily operations"
+  },
+  { 
+    value: "EXPERT_VERIFICATION_ADMIN", 
+    label: "Expert Verification Admin", 
+    description: "Verify expert profiles, documents, KYC & certifications"
+  },
+  { 
+    value: "FINANCE_ADMIN", 
+    label: "Finance Admin", 
+    description: "Review transactions, expert payouts, refunds & invoices"
+  },
+  { 
+    value: "SUPPORT_ADMIN", 
+    label: "Customer Support Admin", 
+    description: "Handle customer disputes, support tickets & user inquiries"
+  },
+  { 
+    value: "QC_ADMIN", 
+    label: "Quality Control Admin", 
+    description: "Inspect survey reports, test readings & audit compliance"
+  },
+  { 
+    value: "SUPER_ADMIN", 
+    label: "Super Admin", 
+    description: "Full system governance, access permissions & team management"
+  }
 ];
 
 export default function AdminTeamManagement() {
@@ -63,6 +104,39 @@ export default function AdminTeamManagement() {
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [performanceStats, setPerformanceStats] = useState([]);
   const [statsLoading, setStatsLoading] = useState(false);
+
+  // Admin Registration Modal State
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [registerStep, setRegisterStep] = useState(1); // 1: Details, 2: OTP
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerError, setRegisterError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [otpCountdown, setOtpCountdown] = useState(0);
+
+  const [registerForm, setRegisterForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "OPERATIONS_ADMIN",
+  });
+
+  const [otpData, setOtpData] = useState({
+    otp: "",
+    token: "",
+    email: "",
+  });
+
+  useEffect(() => {
+    let timer;
+    if (otpCountdown > 0) {
+      timer = setInterval(() => {
+        setOtpCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [otpCountdown]);
 
   const loadData = async () => {
     try {
@@ -181,6 +255,149 @@ export default function AdminTeamManagement() {
     }
   };
 
+  const handleOpenRegisterModal = () => {
+    setRegisterStep(1);
+    setRegisterError("");
+    setRegisterForm({
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      role: "OPERATIONS_ADMIN",
+    });
+    setOtpData({
+      otp: "",
+      token: "",
+      email: "",
+    });
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setOtpCountdown(0);
+    setShowRegisterModal(true);
+  };
+
+  const handleCloseRegisterModal = () => {
+    if (registerLoading) return;
+    setShowRegisterModal(false);
+    setRegisterError("");
+  };
+
+  const handleSendRegistrationOTP = async (e) => {
+    e.preventDefault();
+    setRegisterError("");
+
+    if (!registerForm.name.trim()) {
+      setRegisterError("Admin name is required");
+      return;
+    }
+
+    if (!registerForm.email.trim()) {
+      setRegisterError("Admin email is required");
+      return;
+    }
+
+    if (registerForm.password.length < 6) {
+      setRegisterError("Password must be at least 6 characters");
+      return;
+    }
+
+    if (registerForm.password !== registerForm.confirmPassword) {
+      setRegisterError("Passwords do not match");
+      return;
+    }
+
+    try {
+      setRegisterLoading(true);
+      const res = await sendAdminRegistrationOTP({
+        name: registerForm.name.trim(),
+        email: registerForm.email.trim().toLowerCase(),
+      });
+
+      if (res.success) {
+        setOtpData({
+          token: res.data.token,
+          email: res.data.email,
+          otp: "",
+        });
+        setRegisterStep(2);
+        setOtpCountdown(60);
+        toast.showSuccess(`Verification code sent to ${registerForm.email}`);
+      } else {
+        setRegisterError(res.message || "Failed to send OTP");
+      }
+    } catch (err) {
+      console.error("Send OTP error:", err);
+      setRegisterError(err.response?.data?.message || "Failed to send verification code. Please try again.");
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (otpCountdown > 0 || registerLoading) return;
+    setRegisterError("");
+
+    try {
+      setRegisterLoading(true);
+      const res = await sendAdminRegistrationOTP({
+        name: registerForm.name.trim(),
+        email: registerForm.email.trim().toLowerCase(),
+      });
+
+      if (res.success) {
+        setOtpData((prev) => ({
+          ...prev,
+          token: res.data.token,
+          otp: "",
+        }));
+        setOtpCountdown(60);
+        toast.showSuccess("New verification code sent!");
+      } else {
+        setRegisterError(res.message || "Failed to resend OTP");
+      }
+    } catch (err) {
+      console.error("Resend OTP error:", err);
+      setRegisterError(err.response?.data?.message || "Failed to resend OTP. Please try again.");
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
+  const handleVerifyAndRegister = async (e) => {
+    e.preventDefault();
+    setRegisterError("");
+
+    if (!otpData.otp || otpData.otp.length !== 6) {
+      setRegisterError("Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    try {
+      setRegisterLoading(true);
+      const res = await registerAdminWithOTP({
+        name: registerForm.name.trim(),
+        email: registerForm.email.trim().toLowerCase(),
+        password: registerForm.password,
+        role: registerForm.role,
+        otp: otpData.otp,
+        token: otpData.token,
+      });
+
+      if (res.success) {
+        toast.showSuccess(`Admin "${registerForm.name}" registered successfully!`);
+        setShowRegisterModal(false);
+        await loadData();
+      } else {
+        setRegisterError(res.message || "Failed to register admin");
+      }
+    } catch (err) {
+      console.error("Register admin error:", err);
+      setRegisterError(err.response?.data?.message || "Registration failed. Please check OTP and try again.");
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
   const handleDeleteClick = (admin) => {
     if (admin._id === currentAdmin.id) {
       toast.showError("You cannot delete your own account");
@@ -225,20 +442,27 @@ export default function AdminTeamManagement() {
             Manage role-based admins, toggle automated workload distribution, and evaluate team statistics.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={handleOpenStats}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl transition-colors text-sm font-semibold cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl transition-colors text-sm font-semibold cursor-pointer"
           >
             <IoStatsChartOutline />
             Team Evaluation
           </button>
           <button
             onClick={loadData}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors text-sm font-medium cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors text-sm font-medium cursor-pointer"
           >
             <IoRefreshOutline className={loading ? 'animate-spin' : ''} />
             Refresh
+          </button>
+          <button
+            onClick={handleOpenRegisterModal}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all shadow-sm shadow-blue-500/20 text-sm font-semibold cursor-pointer active:scale-95"
+          >
+            <IoPersonAddOutline className="text-base" />
+            Register Admin
           </button>
         </div>
       </div>
@@ -305,7 +529,7 @@ export default function AdminTeamManagement() {
             <IoBriefcaseOutline className="text-gray-500 text-base" />
             <h3 className="text-sm font-bold text-gray-900">Active Team Members ({admins.length})</h3>
           </div>
-          <span className="text-xs text-gray-400">Total capacity: {admins.filter(a => a.isActive && a.isAvailableForAssignment !== false).length} on-duty</span>
+          <span className="text-xs text-gray-400">Operational staff on-duty: {admins.filter(a => a.role !== 'SUPER_ADMIN' && a.isActive && a.isAvailableForAssignment !== false).length}</span>
         </div>
 
         <div className="overflow-x-auto">
@@ -334,72 +558,91 @@ export default function AdminTeamManagement() {
                       <div className="text-[11px] text-gray-400">{admin.email}</div>
                     </td>
 
-                    {/* Role Dropdown */}
+                    {/* Role (Badge for Super Admin, Dropdown for Staff) */}
                     <td className="px-5 py-3.5">
-                      <select
-                        value={admin.role}
-                        onChange={(e) => handleRoleChange(admin._id, e.target.value)}
-                        disabled={isUpdating}
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer ${getRoleBadge(admin.role)}`}
-                      >
-                        {ROLE_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
+                      {admin.role === 'SUPER_ADMIN' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 select-none shadow-xs">
+                          <IoShieldCheckmarkOutline className="text-sm text-purple-600" />
+                          Super Admin
+                        </span>
+                      ) : (
+                        <select
+                          value={admin.role}
+                          onChange={(e) => handleRoleChange(admin._id, e.target.value)}
+                          disabled={isUpdating}
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer ${getRoleBadge(admin.role)}`}
+                        >
+                          {ROLE_OPTIONS.filter(opt => opt.value !== 'SUPER_ADMIN').map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
 
-                    {/* Account Status */}
+                    {/* Account Status (Operational Staff Only) */}
                     <td className="px-5 py-3.5">
-                      <button
-                        onClick={() => handleToggleActiveStatus(admin._id, admin.isActive)}
-                        disabled={isUpdating || (isSelf && admin.role === 'SUPER_ADMIN')}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer ${
-                          admin.isActive
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                            : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${admin.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
-                        {admin.isActive ? 'Active' : 'Inactive'}
-                      </button>
+                      {admin.role === 'SUPER_ADMIN' ? (
+                        <span className="text-gray-400 font-semibold text-xs">—</span>
+                      ) : (
+                        <button
+                          onClick={() => handleToggleActiveStatus(admin._id, admin.isActive)}
+                          disabled={isUpdating}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer ${
+                            admin.isActive
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                              : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${admin.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                          {admin.isActive ? 'Active' : 'Inactive'}
+                        </button>
+                      )}
                     </td>
 
-                    {/* Duty Status (Individual Toggle) */}
+                    {/* Duty Status (Operational Staff Only) */}
                     <td className="px-5 py-3.5">
-                      <button
-                        onClick={() => handleToggleDutyStatus(admin._id, isDuty)}
-                        disabled={isUpdating || !admin.isActive}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                          isDuty && admin.isActive
-                            ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                            : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${isDuty && admin.isActive ? 'bg-blue-500 animate-pulse' : 'bg-amber-400'}`} />
-                        {isDuty && admin.isActive ? 'On-Duty (Receiving)' : 'Away (Paused)'}
-                      </button>
+                      {admin.role === 'SUPER_ADMIN' ? (
+                        <span className="text-gray-400 font-semibold text-xs">—</span>
+                      ) : (
+                        <button
+                          onClick={() => handleToggleDutyStatus(admin._id, isDuty)}
+                          disabled={isUpdating || !admin.isActive}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                            isDuty && admin.isActive
+                              ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                              : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${isDuty && admin.isActive ? 'bg-blue-500 animate-pulse' : 'bg-amber-400'}`} />
+                          {isDuty && admin.isActive ? 'On-Duty (Receiving)' : 'Away (Paused)'}
+                        </button>
+                      )}
                     </td>
 
                     {/* Active Workload Counter */}
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
-                          (admin.activeTicketsCount || 0) > 5
-                            ? 'bg-rose-100 text-rose-700'
-                            : (admin.activeTicketsCount || 0) > 0
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {admin.activeTicketsCount || 0} open
-                        </span>
-                      </div>
+                      {admin.role === 'SUPER_ADMIN' ? (
+                        <span className="text-gray-400 font-semibold text-xs">—</span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
+                            (admin.activeTicketsCount || 0) > 5
+                              ? 'bg-rose-100 text-rose-700'
+                              : (admin.activeTicketsCount || 0) > 0
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {admin.activeTicketsCount || 0} open
+                          </span>
+                        </div>
+                      )}
                     </td>
 
                     {/* Delete Action */}
                     <td className="px-5 py-3.5 text-right">
-                      {!isSelf && (
+                      {!isSelf && admin.role !== 'SUPER_ADMIN' && (
                         <button
                           onClick={() => handleDeleteClick(admin)}
                           className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
@@ -493,6 +736,273 @@ export default function AdminTeamManagement() {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── REGISTER ADMIN MODAL (2-STEP WITH OTP) ── */}
+      {showRegisterModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg border border-blue-100">
+                  <IoPersonAddOutline />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Register Internal Admin</h3>
+                  <p className="text-xs text-gray-400">
+                    {registerStep === 1 
+                      ? "Create account and assign department permissions." 
+                      : "Verify email to activate new admin account."}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseRegisterModal}
+                disabled={registerLoading}
+                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <IoCloseOutline className="text-xl" />
+              </button>
+            </div>
+
+            {/* Error Message */}
+            {registerError && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3.5 py-2.5 rounded-xl flex items-center justify-between">
+                <span>{registerError}</span>
+                <button type="button" onClick={() => setRegisterError("")} className="text-rose-500 hover:text-rose-700 text-sm font-bold">×</button>
+              </div>
+            )}
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto pr-1">
+              {registerStep === 1 ? (
+                /* Step 1: Details Form */
+                <form onSubmit={handleSendRegistrationOTP} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                      Full Name *
+                    </label>
+                    <div className="relative">
+                      <IoPeopleOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                      <input
+                        type="text"
+                        value={registerForm.name}
+                        onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                        required
+                        className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
+                        placeholder="e.g. Rahul Sharma"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                      Email Address *
+                    </label>
+                    <div className="relative">
+                      <IoMailOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                      <input
+                        type="email"
+                        value={registerForm.email}
+                        onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                        required
+                        className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
+                        placeholder="rahul@jaladhar.com"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                        Password *
+                      </label>
+                      <div className="relative">
+                        <IoKeyOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          value={registerForm.password}
+                          onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                          required
+                          minLength={6}
+                          className="w-full pl-10 pr-9 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
+                          placeholder="Min 6 chars"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-base cursor-pointer"
+                        >
+                          {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                        Confirm Password *
+                      </label>
+                      <div className="relative">
+                        <IoKeyOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                        <input
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={registerForm.confirmPassword}
+                          onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                          required
+                          className="w-full pl-10 pr-9 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
+                          placeholder="Re-enter password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-base cursor-pointer"
+                        >
+                          {showConfirmPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                      Designated Role & Access Level *
+                    </label>
+                    <select
+                      value={registerForm.role}
+                      onChange={(e) => setRegisterForm({ ...registerForm, role: e.target.value })}
+                      required
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800 cursor-pointer"
+                    >
+                      {ROLE_DEFINITIONS.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label} — {r.description}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
+                    <button
+                      type="button"
+                      onClick={handleCloseRegisterModal}
+                      className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={registerLoading}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {registerLoading ? (
+                        <>
+                          <IoRefreshOutline className="animate-spin text-sm" />
+                          Sending OTP...
+                        </>
+                      ) : (
+                        <>
+                          <span>Send Verification OTP</span>
+                          <IoShieldCheckmarkOutline className="text-sm" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                /* Step 2: OTP Verification */
+                <form onSubmit={handleVerifyAndRegister} className="space-y-4">
+                  <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-4 space-y-1">
+                    <div className="flex items-center gap-2 text-blue-800 text-xs font-bold">
+                      <IoShieldCheckmarkOutline className="text-base text-blue-600" />
+                      Verification Code Sent
+                    </div>
+                    <p className="text-[11px] text-blue-700 leading-relaxed">
+                      We have sent a 6-digit OTP to <strong className="font-bold text-blue-900">{registerForm.email}</strong>. Please enter it below to complete registration.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 text-center">
+                      Enter 6-Digit Code
+                    </label>
+                    <input
+                      type="text"
+                      value={otpData.otp}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                        setOtpData({ ...otpData, otp: val });
+                      }}
+                      required
+                      maxLength={6}
+                      autoFocus
+                      className="w-full py-3 px-4 text-center font-mono text-2xl tracking-[0.4em] font-black bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors text-gray-900"
+                      placeholder="000000"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRegisterStep(1);
+                        setOtpData({ ...otpData, otp: "" });
+                      }}
+                      className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 font-semibold cursor-pointer"
+                    >
+                      <IoArrowBackOutline />
+                      Edit Details
+                    </button>
+
+                    {otpCountdown > 0 ? (
+                      <span className="text-gray-400 font-medium flex items-center gap-1">
+                        <IoTimeOutline />
+                        Resend in {otpCountdown}s
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendOTP}
+                        disabled={registerLoading}
+                        className="text-blue-600 hover:text-blue-700 font-bold cursor-pointer disabled:opacity-50"
+                      >
+                        Resend OTP Code
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
+                    <button
+                      type="button"
+                      onClick={handleCloseRegisterModal}
+                      className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={registerLoading || otpData.otp.length !== 6}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {registerLoading ? (
+                        <>
+                          <IoRefreshOutline className="animate-spin text-sm" />
+                          Creating Account...
+                        </>
+                      ) : (
+                        <>
+                          <IoCheckmarkCircleOutline className="text-sm" />
+                          Verify & Register Admin
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         </div>
