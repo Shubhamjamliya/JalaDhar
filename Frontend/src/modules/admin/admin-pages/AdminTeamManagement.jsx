@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   IoPeopleOutline,
   IoShieldCheckmarkOutline,
@@ -105,8 +106,8 @@ export default function AdminTeamManagement() {
   const [updatingId, setUpdatingId] = useState(null);
   const [togglesLoading, setTogglesLoading] = useState(false);
 
-  // Direct Table Permissions Dropdown State
-  const [openPermissionDropdownId, setOpenPermissionDropdownId] = useState(null);
+  // In-Place Table Row Expansion for RBAC Matrix
+  const [expandedAdminId, setExpandedAdminId] = useState(null);
 
   // Performance Modal
   const [showStatsModal, setShowStatsModal] = useState(false);
@@ -156,15 +157,6 @@ export default function AdminTeamManagement() {
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setOpenPermissionDropdownId(null);
-    };
-    window.addEventListener("click", handleClickOutside);
-    return () => window.removeEventListener("click", handleClickOutside);
-  }, []);
 
   const handleUpdatePermissionsDirect = async (adminId, updatedPermissions) => {
     try {
@@ -429,6 +421,7 @@ export default function AdminTeamManagement() {
         name: editAdminData.name.trim(),
         phone: editAdminData.phone.trim() || undefined,
         role: editAdminData.role,
+        permissions: editAdminData.permissions,
       };
 
       if (editAdminData.password.trim()) {
@@ -695,12 +688,20 @@ export default function AdminTeamManagement() {
 
       {/* ── ADMIN TEAM MEMBERS TABLE ── */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Table Header Bar */}
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
           <div className="flex items-center gap-2">
             <IoBriefcaseOutline className="text-gray-500 text-base" />
-            <h3 className="text-sm font-bold text-gray-900">Active Team Members ({admins.length})</h3>
+            <h3 className="text-sm font-bold text-gray-900">
+              Operational Staff Team ({admins.filter((a) => a.role !== "SUPER_ADMIN").length})
+            </h3>
           </div>
-          <span className="text-xs text-gray-400">Operational staff on-duty: {admins.filter(a => a.role !== 'SUPER_ADMIN' && a.isActive && a.isAvailableForAssignment !== false).length}</span>
+          <span className="text-xs text-gray-400">
+            Staff on-duty:{" "}
+            <strong className="text-gray-700">
+              {admins.filter((a) => a.role !== "SUPER_ADMIN" && a.isActive && a.isAvailableForAssignment !== false).length}
+            </strong>
+          </span>
         </div>
 
         <div className="overflow-x-auto min-h-[380px]">
@@ -717,318 +718,334 @@ export default function AdminTeamManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-xs">
-              {admins.map((admin) => {
-                const isSelf = admin._id === currentAdmin.id;
-                const isUpdating = updatingId === admin._id;
-                const isDuty = admin.isAvailableForAssignment !== false;
-                const currentPerms = Array.isArray(admin.permissions) && admin.permissions.length > 0
-                  ? admin.permissions
-                  : (ROLE_DEFAULT_PERMISSIONS[admin.role] || ["operations"]);
-                const isDropdownOpen = openPermissionDropdownId === admin._id;
-
-                return (
-                  <tr key={admin._id} className="hover:bg-gray-50/60 transition-colors">
-                    {/* Name, Email & Phone */}
-                    <td className="px-5 py-3.5">
-                      <div className="font-semibold text-gray-900 flex items-center gap-1.5">
-                        {admin.name} {isSelf && <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.2 rounded">(You)</span>}
+              {admins.filter((a) => a.role !== "SUPER_ADMIN").length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-12 text-center text-gray-400">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 text-2xl">
+                        <IoPeopleOutline />
                       </div>
-                      <div className="text-[11px] text-gray-400">{admin.email}</div>
-                      {admin.phone ? (
-                        <div className="text-[11px] text-gray-600 font-medium flex items-center gap-1 mt-0.5">
-                          <IoCallOutline className="text-[10px] text-blue-500" />
-                          <span>{admin.phone}</span>
-                        </div>
-                      ) : (
-                        <div className="text-[10px] text-gray-300 italic mt-0.5">No mobile number</div>
-                      )}
-                    </td>
+                      <p className="font-bold text-sm text-gray-700">No Operational Staff Members</p>
+                      <p className="text-xs text-gray-400 max-w-sm">
+                        Click <span className="font-semibold text-blue-600">"+ Register Admin"</span> above to onboard staff admins and assign department module clearances.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                admins
+                  .filter((a) => a.role !== "SUPER_ADMIN")
+                  .map((admin) => {
+                    const isSelf = admin._id === currentAdmin.id;
+                    const isUpdating = updatingId === admin._id;
+                    const isDuty = admin.isAvailableForAssignment !== false;
+                    const currentPerms =
+                      Array.isArray(admin.permissions) && admin.permissions.length > 0
+                        ? admin.permissions
+                        : ROLE_DEFAULT_PERMISSIONS[admin.role] || ["operations"];
+                    const isExpanded = expandedAdminId === admin._id;
 
-                    {/* Role */}
-                    <td className="px-5 py-3.5">
-                      {admin.role === 'SUPER_ADMIN' ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 select-none shadow-xs">
-                          <IoShieldCheckmarkOutline className="text-sm text-purple-600" />
-                          Super Admin
-                        </span>
-                      ) : (
-                        <select
-                          value={admin.role}
-                          onChange={(e) => handleRoleChange(admin._id, e.target.value)}
-                          disabled={isUpdating}
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer ${getRoleBadge(admin.role)}`}
+                    return (
+                      <React.Fragment key={admin._id}>
+                        <tr
+                          className={`transition-colors border-b border-gray-100 ${
+                            isExpanded ? "bg-blue-50/40" : "hover:bg-gray-50/60"
+                          }`}
                         >
-                          {ROLE_OPTIONS.filter(opt => opt.value !== 'SUPER_ADMIN').map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </td>
-
-                    {/* Module Access Clearance (Interactive RBAC Dropdown Card) */}
-                    <td className="px-5 py-3.5">
-                      {admin.role === 'SUPER_ADMIN' ? (
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 select-none shadow-xs">
-                          <IoShieldCheckmarkOutline className="text-sm text-purple-600" />
-                          <span>Full Root Access (All Modules)</span>
-                        </div>
-                      ) : (
-                        <div className="relative inline-block">
-                          {/* Unified Full-Card Dropdown Trigger */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenPermissionDropdownId(isDropdownOpen ? null : admin._id);
-                            }}
-                            className={`group flex flex-col items-start gap-1.5 p-2.5 rounded-2xl border text-left transition-all duration-150 cursor-pointer select-none active:scale-[0.98] ${
-                              isDropdownOpen
-                                ? "bg-blue-600 text-white border-blue-600 ring-4 ring-blue-500/20 shadow-md shadow-blue-500/20"
-                                : "bg-blue-50/70 hover:bg-blue-100/80 border-blue-200 hover:border-blue-300 text-blue-900 shadow-xs"
-                            }`}
-                          >
-                            {/* Card Top Row: Icon + Count + Chevron */}
-                            <div className="flex items-center justify-between gap-3 w-full">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <IoShieldCheckmarkOutline className={`text-sm flex-shrink-0 ${isDropdownOpen ? "text-white" : "text-blue-600"}`} />
-                                <span className="text-xs font-black tracking-tight whitespace-nowrap">
-                                  {currentPerms.length} Module{currentPerms.length !== 1 ? "s" : ""} Granted
+                          {/* Name, Email & Phone */}
+                          <td className="px-5 py-3.5">
+                            <div className="font-semibold text-gray-900 flex items-center gap-1.5">
+                              {admin.name}{" "}
+                              {isSelf && (
+                                <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.2 rounded">
+                                  (You)
                                 </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-gray-400">{admin.email}</div>
+                            {admin.phone ? (
+                              <div className="text-[11px] text-gray-600 font-medium flex items-center gap-1 mt-0.5">
+                                <IoCallOutline className="text-[10px] text-blue-500" />
+                                <span>{admin.phone}</span>
                               </div>
-                              <IoChevronDown
-                                className={`text-xs flex-shrink-0 transition-transform duration-200 ${
-                                  isDropdownOpen ? "rotate-180 text-white" : "text-blue-500 group-hover:text-blue-700"
-                                }`}
-                              />
-                            </div>
+                            ) : (
+                              <div className="text-[10px] text-gray-300 italic mt-0.5">No mobile number</div>
+                            )}
+                          </td>
 
-                            {/* Card Bottom Row: Module Pills */}
-                            <div className="flex flex-wrap gap-1 max-w-[240px]">
-                              {currentPerms.map((permKey) => {
-                                const mod = ADMIN_MODULES.find((m) => m.key === permKey);
-                                return (
-                                  <span
-                                    key={permKey}
-                                    className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${
-                                      isDropdownOpen
-                                        ? "bg-white/20 text-white border-white/30"
-                                        : mod?.color || "text-blue-700 bg-blue-100/70 border-blue-200"
-                                    }`}
-                                  >
-                                    {permKey}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          </button>
-
-                          {/* Floating Dropdown Matrix Popover */}
-                          {isDropdownOpen && (
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              className="absolute left-0 top-full mt-2 w-[460px] max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 space-y-3 z-[999] animate-in fade-in zoom-in-95 duration-150"
+                          {/* Role Dropdown */}
+                          <td className="px-5 py-3.5">
+                            <select
+                              value={admin.role}
+                              onChange={(e) => handleRoleChange(admin._id, e.target.value)}
+                              disabled={isUpdating}
+                              className={`text-xs font-semibold px-2.5 py-1 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer ${getRoleBadge(
+                                admin.role
+                              )}`}
                             >
-                              {/* Header */}
-                              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                                <div>
-                                  <div className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                                    MODULE ACCESS CLEARANCE (RBAC MATRIX)
-                                  </div>
-                                  <p className="text-[11px] text-gray-500 mt-0.5">
-                                    Customize which dashboard modules this admin is authorized to view and manage.
-                                  </p>
+                              {ROLE_OPTIONS.filter((opt) => opt.value !== "SUPER_ADMIN").map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+
+                          {/* Module Access Clearance (In-Place Accordion Trigger) */}
+                          <td className="px-5 py-3.5">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedAdminId(isExpanded ? null : admin._id)}
+                              className={`group flex flex-col items-start gap-1 p-2 rounded-xl border text-left transition-all duration-150 cursor-pointer select-none active:scale-[0.98] ${
+                                isExpanded
+                                  ? "bg-blue-600 text-white border-blue-600 ring-3 ring-blue-500/20 shadow-sm shadow-blue-500/20"
+                                  : "bg-blue-50/70 hover:bg-blue-100/80 border-blue-200 hover:border-blue-300 text-blue-900 shadow-xs"
+                              }`}
+                            >
+                              {/* Card Top Row: Icon + Count + Chevron */}
+                              <div className="flex items-center justify-between gap-2.5 w-full">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <IoShieldCheckmarkOutline
+                                    className={`text-xs flex-shrink-0 ${isExpanded ? "text-white" : "text-blue-600"}`}
+                                  />
+                                  <span className="text-[11px] font-black tracking-tight whitespace-nowrap">
+                                    {currentPerms.length} Module{currentPerms.length !== 1 ? "s" : ""} Granted
+                                  </span>
                                 </div>
-                                <span className="text-[10px] text-blue-700 font-black bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full whitespace-nowrap">
-                                  {currentPerms.length} module{currentPerms.length !== 1 ? "s" : ""} granted
-                                </span>
+                                <IoChevronDown
+                                  className={`text-[10px] flex-shrink-0 transition-transform duration-200 ${
+                                    isExpanded ? "rotate-180 text-white" : "text-blue-500 group-hover:text-blue-700"
+                                  }`}
+                                />
                               </div>
 
-                              {/* Quick Actions */}
-                              <div className="flex items-center justify-between text-[10px] font-bold px-1 text-gray-500">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleUpdatePermissionsDirect(
-                                      admin._id,
-                                      ADMIN_MODULES.map((m) => m.key)
-                                    )
-                                  }
-                                  className="text-blue-600 hover:underline cursor-pointer"
-                                >
-                                  ✓ Grant All Access
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleUpdatePermissionsDirect(
-                                      admin._id,
-                                      ROLE_DEFAULT_PERMISSIONS[admin.role] || ["operations"]
-                                    )
-                                  }
-                                  className="text-amber-600 hover:underline cursor-pointer"
-                                >
-                                  ↺ Reset to Role Defaults
-                                </button>
-                              </div>
-
-                              {/* Checkbox Grid (2 Columns) - Full Card Clickable */}
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                                {ADMIN_MODULES.map((mod) => {
-                                  const isChecked =
-                                    currentPerms.includes(mod.key) || currentPerms.includes("all");
+                              {/* Card Bottom Row: Module Pills */}
+                              <div className="flex flex-wrap gap-1 max-w-[220px]">
+                                {currentPerms.map((permKey) => {
+                                  const mod = ADMIN_MODULES.find((m) => m.key === permKey);
                                   return (
-                                    <button
-                                      key={mod.key}
-                                      type="button"
-                                      onClick={() => {
-                                        const updated = isChecked
-                                          ? currentPerms.filter((k) => k !== mod.key)
-                                          : [...currentPerms, mod.key];
-                                        handleUpdatePermissionsDirect(admin._id, updated);
-                                      }}
-                                      className={`group relative flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer select-none outline-none active:scale-[0.98] ${
-                                        isChecked
-                                          ? "bg-blue-50/90 border-blue-400 text-blue-950 shadow-sm ring-2 ring-blue-500/20"
-                                          : "bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-slate-50/80 hover:shadow-xs"
+                                    <span
+                                      key={permKey}
+                                      className={`px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase tracking-wider border ${
+                                        isExpanded
+                                          ? "bg-white/20 text-white border-white/30"
+                                          : mod?.color || "text-blue-700 bg-blue-100/70 border-blue-200"
                                       }`}
                                     >
-                                      {/* Custom Stylized Checkbox */}
-                                      <div
-                                        className={`w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-150 ${
-                                          isChecked
-                                            ? "bg-blue-600 text-white shadow-sm shadow-blue-500/30 scale-105"
-                                            : "border-2 border-gray-300 bg-gray-50 group-hover:border-blue-400 group-hover:bg-white"
-                                        }`}
-                                      >
-                                        {isChecked && <IoCheckmarkOutline className="text-xs stroke-[3]" />}
-                                      </div>
-
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-1">
-                                          <span
-                                            className={`text-xs font-bold leading-tight ${
-                                              isChecked
-                                                ? "text-blue-950"
-                                                : "text-gray-900 group-hover:text-blue-900"
-                                            }`}
-                                          >
-                                            {mod.label}
-                                          </span>
-                                        </div>
-                                        <div
-                                          className={`text-[10px] line-clamp-1 mt-0.5 ${
-                                            isChecked ? "text-blue-800/80" : "text-gray-500"
-                                          }`}
-                                        >
-                                          {mod.description}
-                                        </div>
-                                      </div>
-                                    </button>
+                                      {permKey}
+                                    </span>
                                   );
                                 })}
                               </div>
+                            </button>
+                          </td>
 
-                              {/* Footer */}
-                              <div className="pt-2 border-t border-gray-100 flex items-center justify-end">
-                                <button
-                                  type="button"
-                                  onClick={() => setOpenPermissionDropdownId(null)}
-                                  className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-xs"
-                                >
-                                  Done
-                                </button>
-                              </div>
+                          {/* Account Status (Operational Staff Only) */}
+                          <td className="px-5 py-3.5">
+                            <button
+                              onClick={() => handleToggleActiveStatus(admin._id, admin.isActive)}
+                              disabled={isUpdating}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer ${
+                                admin.isActive
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                  : "bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200"
+                              }`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  admin.isActive ? "bg-emerald-500" : "bg-gray-400"
+                                }`}
+                              />
+                              {admin.isActive ? "Active" : "Inactive"}
+                            </button>
+                          </td>
+
+                          {/* Duty Status (Operational Staff Only) */}
+                          <td className="px-5 py-3.5">
+                            <button
+                              onClick={() => handleToggleDutyStatus(admin._id, isDuty)}
+                              disabled={isUpdating || !admin.isActive}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                                isDuty && admin.isActive
+                                  ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                                  : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                              }`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  isDuty && admin.isActive ? "bg-blue-500 animate-pulse" : "bg-amber-400"
+                                }`}
+                              />
+                              {isDuty && admin.isActive ? "On-Duty (Receiving)" : "Away (Paused)"}
+                            </button>
+                          </td>
+
+                          {/* Active Workload Counter */}
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
+                                  (admin.activeTicketsCount || 0) > 5
+                                    ? "bg-rose-100 text-rose-700"
+                                    : (admin.activeTicketsCount || 0) > 0
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-gray-100 text-gray-500"
+                                }`}
+                              >
+                                {admin.activeTicketsCount || 0} open
+                              </span>
                             </div>
-                          )}
-                        </div>
-                      )}
-                    </td>
+                          </td>
 
-                    {/* Account Status (Operational Staff Only) */}
-                    <td className="px-5 py-3.5">
-                      {admin.role === 'SUPER_ADMIN' ? (
-                        <span className="text-gray-400 font-semibold text-xs">—</span>
-                      ) : (
-                        <button
-                          onClick={() => handleToggleActiveStatus(admin._id, admin.isActive)}
-                          disabled={isUpdating}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer ${
-                            admin.isActive
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${admin.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
-                          {admin.isActive ? 'Active' : 'Inactive'}
-                        </button>
-                      )}
-                    </td>
+                          {/* Actions */}
+                          <td className="px-5 py-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => handleOpenEditModal(admin)}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                title="Edit Profile & Password"
+                              >
+                                <IoCreateOutline className="text-base" />
+                              </button>
+                              {!isSelf && (
+                                <button
+                                  onClick={() => handleDeleteClick(admin)}
+                                  className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Delete Admin"
+                                >
+                                  <IoTrashOutline className="text-base" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
 
-                    {/* Duty Status (Operational Staff Only) */}
-                    <td className="px-5 py-3.5">
-                      {admin.role === 'SUPER_ADMIN' ? (
-                        <span className="text-gray-400 font-semibold text-xs">—</span>
-                      ) : (
-                        <button
-                          onClick={() => handleToggleDutyStatus(admin._id, isDuty)}
-                          disabled={isUpdating || !admin.isActive}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                            isDuty && admin.isActive
-                              ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                              : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isDuty && admin.isActive ? 'bg-blue-500 animate-pulse' : 'bg-amber-400'}`} />
-                          {isDuty && admin.isActive ? 'On-Duty (Receiving)' : 'Away (Paused)'}
-                        </button>
-                      )}
-                    </td>
+                        {/* Inline Expanded RBAC Matrix Accordion Sub-Card */}
+                        {isExpanded && (
+                          <tr className="bg-slate-50/90 border-b-2 border-blue-200/80">
+                            <td colSpan={7} className="p-0">
+                              <div className="p-3.5 sm:p-4 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                                {/* Sub-Card Header */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-200/80">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs text-xs flex-shrink-0">
+                                      <IoShieldCheckmarkOutline />
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider">
+                                        MODULE ACCESS CLEARANCE (RBAC MATRIX)
+                                      </h4>
+                                      <span className="text-[9px] text-blue-700 font-bold bg-blue-100/80 border border-blue-200 px-1.5 py-0.2 rounded-full">
+                                        {currentPerms.length} of {ADMIN_MODULES.length} granted
+                                      </span>
+                                      <span className="text-[10px] text-gray-400 hidden md:inline">
+                                        • Live clearances for <strong className="text-gray-700">{admin.name}</strong>
+                                      </span>
+                                    </div>
+                                  </div>
 
-                    {/* Active Workload Counter */}
-                    <td className="px-5 py-3.5">
-                      {admin.role === 'SUPER_ADMIN' ? (
-                        <span className="text-gray-400 font-semibold text-xs">—</span>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
-                            (admin.activeTicketsCount || 0) > 5
-                              ? 'bg-rose-100 text-rose-700'
-                              : (admin.activeTicketsCount || 0) > 0
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-gray-100 text-gray-500'
-                          }`}>
-                            {admin.activeTicketsCount || 0} open
-                          </span>
-                        </div>
-                      )}
-                    </td>
+                                  {/* Quick Actions & Collapse */}
+                                  <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdatePermissionsDirect(
+                                          admin._id,
+                                          ADMIN_MODULES.map((m) => m.key)
+                                        )
+                                      }
+                                      className="px-2 py-0.5 text-[10px] font-bold text-blue-700 hover:bg-blue-100/70 rounded-lg transition-colors cursor-pointer border border-blue-200/80"
+                                    >
+                                      ✓ Grant All
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdatePermissionsDirect(
+                                          admin._id,
+                                          ROLE_DEFAULT_PERMISSIONS[admin.role] || ["operations"]
+                                        )
+                                      }
+                                      className="px-2 py-0.5 text-[10px] font-bold text-amber-700 hover:bg-amber-100/70 rounded-lg transition-colors cursor-pointer border border-amber-200/80"
+                                    >
+                                      ↺ Reset
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedAdminId(null)}
+                                      className="px-2.5 py-0.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold transition-colors cursor-pointer shadow-xs ml-0.5"
+                                    >
+                                      Done
+                                    </button>
+                                  </div>
+                                </div>
 
-                    {/* Actions */}
-                    <td className="px-5 py-3.5 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleOpenEditModal(admin)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                          title="Edit Profile & Password"
-                        >
-                          <IoCreateOutline className="text-base" />
-                        </button>
-                        {!isSelf && admin.role !== 'SUPER_ADMIN' && (
-                          <button
-                            onClick={() => handleDeleteClick(admin)}
-                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            title="Delete Admin"
-                          >
-                            <IoTrashOutline className="text-base" />
-                          </button>
+                                {/* 7 Modules Grid across full width - 4 cols on xl/lg, 2 on sm */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                                  {ADMIN_MODULES.map((mod) => {
+                                    const isChecked =
+                                      currentPerms.includes(mod.key) || currentPerms.includes("all");
+                                    return (
+                                      <button
+                                        key={mod.key}
+                                        type="button"
+                                        onClick={() => {
+                                          const updated = isChecked
+                                            ? currentPerms.filter((k) => k !== mod.key)
+                                            : [...currentPerms, mod.key];
+                                          handleUpdatePermissionsDirect(admin._id, updated);
+                                        }}
+                                        className={`group flex items-start gap-2 p-2 px-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer select-none outline-none active:scale-[0.98] ${
+                                          isChecked
+                                            ? "bg-blue-50/90 border-blue-400 text-blue-950 shadow-xs ring-1 ring-blue-500/20"
+                                            : "bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-slate-50/80 hover:shadow-xs"
+                                        }`}
+                                      >
+                                        {/* Custom Stylized Checkbox */}
+                                        <div
+                                          className={`w-4 h-4 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-150 ${
+                                            isChecked
+                                              ? "bg-blue-600 text-white shadow-xs scale-105"
+                                              : "border border-gray-300 bg-gray-50 group-hover:border-blue-400 group-hover:bg-white"
+                                          }`}
+                                        >
+                                          {isChecked && <IoCheckmarkOutline className="text-[10px] stroke-[3]" />}
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center justify-between gap-1">
+                                            <span
+                                              className={`text-[11px] font-bold leading-tight ${
+                                                isChecked
+                                                  ? "text-blue-950"
+                                                  : "text-gray-900 group-hover:text-blue-900"
+                                              }`}
+                                            >
+                                              {mod.label}
+                                            </span>
+                                            {isChecked && (
+                                              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse flex-shrink-0" />
+                                            )}
+                                          </div>
+                                          <div
+                                            className={`text-[9px] leading-tight line-clamp-1 mt-0.5 ${
+                                              isChecked ? "text-blue-800/80" : "text-gray-500"
+                                            }`}
+                                          >
+                                            {mod.description}
+                                          </div>
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
                         )}
-                      </div>
-                    </td>
-                  </tr>
+                  </React.Fragment>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>
@@ -1577,6 +1594,78 @@ export default function AdminTeamManagement() {
                     </select>
                   )}
                 </div>
+
+                {/* Module Clearances & Permissions (if not Super Admin) */}
+                {editAdminData.role !== 'SUPER_ADMIN' && (
+                  <div className="space-y-2 pt-2 border-t border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Module Clearances & Permissions
+                      </label>
+                      <span className="text-[10px] text-blue-700 font-bold bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                        {editAdminData.permissions.length} of {ADMIN_MODULES.length} enabled
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-400">
+                      Customize which platform modules this admin is authorized to access.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                      {ADMIN_MODULES.map((mod) => {
+                        const isChecked =
+                          editAdminData.permissions.includes(mod.key) ||
+                          editAdminData.permissions.includes("all");
+                        return (
+                          <button
+                            key={mod.key}
+                            type="button"
+                            onClick={() => toggleEditPermission(mod.key)}
+                            className={`group flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer select-none outline-none active:scale-[0.98] ${
+                              isChecked
+                                ? "bg-blue-50/90 border-blue-400 text-blue-950 shadow-xs ring-1 ring-blue-500/20"
+                                : "bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-slate-50/80 hover:shadow-xs"
+                            }`}
+                          >
+                            {/* Stylized Checkbox */}
+                            <div
+                              className={`w-4 h-4 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-150 ${
+                                isChecked
+                                  ? "bg-blue-600 text-white shadow-xs scale-105"
+                                  : "border border-gray-300 bg-gray-50 group-hover:border-blue-400 group-hover:bg-white"
+                              }`}
+                            >
+                              {isChecked && <IoCheckmarkOutline className="text-[10px] stroke-[3]" />}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <span
+                                  className={`text-xs font-bold leading-tight ${
+                                    isChecked
+                                      ? "text-blue-950"
+                                      : "text-gray-900 group-hover:text-blue-900"
+                                  }`}
+                                >
+                                  {mod.label}
+                                </span>
+                                {isChecked && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse flex-shrink-0" />
+                                )}
+                              </div>
+                              <div
+                                className={`text-[10px] leading-tight line-clamp-1 mt-0.5 ${
+                                  isChecked ? "text-blue-800/80" : "text-gray-500"
+                                }`}
+                              >
+                                {mod.description}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Reset Password */}
                 <div>
