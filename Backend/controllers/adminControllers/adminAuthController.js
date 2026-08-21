@@ -378,27 +378,36 @@ const sendAdminRegistrationOTP = async (req, res) => {
     });
 
     // Send OTP email
-    const emailResult = await sendOTPEmail({
-      email,
-      name,
-      otp,
-      type: 'admin_registration'
-    });
+    let emailSent = false;
+    try {
+      const emailResult = await sendOTPEmail({
+        email,
+        name,
+        otp,
+        type: 'admin_registration'
+      });
+      emailSent = emailResult?.success === true;
+    } catch (e) {
+      console.warn('⚠️ SMTP warning during admin registration OTP:', e.message);
+    }
 
-    if (!emailResult.success) {
+    console.log(`🔑 [ADMIN_REGISTRATION_OTP] -> Email: ${email} | Code: ${otp} | Name: ${name}`);
+
+    if (!emailSent && process.env.NODE_ENV === 'production') {
+      await Token.deleteOne({ _id: tokenDoc._id });
       return res.status(500).json({
         success: false,
-        message: 'Failed to send OTP email',
-        error: emailResult.error
+        message: 'Failed to send OTP email. Please check SMTP settings.'
       });
     }
 
     res.json({
       success: true,
-      message: 'OTP sent to email successfully',
+      message: emailSent ? 'OTP sent to email successfully' : 'OTP generated successfully',
       data: {
-        token: tokenDoc.token, // Return token for verification step
-        email
+        token: tokenDoc.token,
+        email,
+        devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined
       }
     });
   } catch (error) {
@@ -425,8 +434,7 @@ const registerAdminWithOTP = async (req, res) => {
       });
     }
 
-    const { name, email, password, otp, token, role } = req.body;
-
+    const { name, email, password, otp, token, role, phone } = req.body;
 
     // Verify OTP using token
     const tokenDoc = await Token.findOne({
@@ -466,7 +474,7 @@ const registerAdminWithOTP = async (req, res) => {
     // Check if admin already exists (double check)
     const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin) {
-      await markTokenAsUsed(verification.tokenDoc._id);
+      await markTokenAsUsed(tokenDoc._id);
       return res.status(400).json({
         success: false,
         message: 'Admin with this email already exists'
@@ -475,10 +483,11 @@ const registerAdminWithOTP = async (req, res) => {
 
     // Create admin
     const admin = await Admin.create({
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
       password,
       role: role || 'ADMIN',
+      phone: phone ? phone.trim() : null,
       permissions: ['all'],
       isActive: true
     });
@@ -495,6 +504,7 @@ const registerAdminWithOTP = async (req, res) => {
           name: admin.name,
           email: admin.email,
           role: admin.role,
+          phone: admin.phone,
           permissions: admin.permissions
         }
       }
@@ -530,12 +540,12 @@ const getAllAdmins = async (req, res) => {
 };
 
 /**
- * Update admin role or status (Super Admin only)
+ * Update admin role, profile, phone, or password (Super Admin only)
  */
 const updateAdmin = async (req, res) => {
   try {
     const { adminId } = req.params;
-    const { name, role, isActive, isAvailableForAssignment, department, phone } = req.body;
+    const { name, role, isActive, isAvailableForAssignment, department, phone, password } = req.body;
 
     const admin = await Admin.findById(adminId);
     if (!admin) {
@@ -556,12 +566,15 @@ const updateAdmin = async (req, res) => {
       }
     }
 
-    if (name !== undefined) admin.name = name;
+    if (name !== undefined) admin.name = name.trim();
     if (role !== undefined) admin.role = role;
     if (isActive !== undefined) admin.isActive = isActive;
     if (isAvailableForAssignment !== undefined) admin.isAvailableForAssignment = isAvailableForAssignment;
     if (department !== undefined) admin.department = department;
-    if (phone !== undefined) admin.phone = phone;
+    if (phone !== undefined) admin.phone = phone ? phone.trim() : null;
+    if (password && typeof password === 'string' && password.trim().length >= 6) {
+      admin.password = password.trim();
+    }
 
     await admin.save();
 

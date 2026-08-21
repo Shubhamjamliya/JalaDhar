@@ -92,7 +92,7 @@ export default function AdminDisputes() {
             const res = await getAllAdmins();
             if (res.success && res.data?.admins) {
                 const supportAdmins = res.data.admins.filter(a =>
-                    a.isActive && ['CUSTOMER_SUPPORT_ADMIN', 'SUPER_ADMIN'].includes(a.role)
+                    a.isActive && ['SUPPORT_ADMIN', 'CUSTOMER_SUPPORT_ADMIN', 'SUPER_ADMIN'].includes(a.role)
                 );
                 setAvailableSupportAdmins(supportAdmins);
             }

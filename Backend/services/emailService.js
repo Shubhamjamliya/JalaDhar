@@ -21,7 +21,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
   try {
     const transporter = createTransporter();
 
-    const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'Jaladhaara <noreply@jaladhaaraapp.com>';
+    const fromEmail = process.env.EMAIL_FROM || (process.env.EMAIL_USER ? `"Jaladhaara" <${process.env.EMAIL_USER}>` : '"Jaladhaara" <noreply@jaladhaaraapp.com>');
 
     const mailOptions = {
       from: fromEmail,
@@ -55,64 +55,195 @@ const sendEmail = async ({ to, subject, html, text }) => {
 };
 
 /**
+ * Shared Jaladhaara Brand Email Shell
+ */
+const renderEmailShell = ({ title, badgeText, badgeBg = '#EFF6FF', badgeColor = '#0284C7', heroTitle, heroSubtitle, contentHtml }) => {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${title}</title>
+    </head>
+    <body style="margin: 0; padding: 24px 10px; background-color: #F1F5F9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1E293B;">
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; border: 1px solid #E2E8F0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);">
+        
+        <!-- Brand Header Bar -->
+        <tr>
+          <td style="padding: 24px 32px; background: #FFFFFF; border-bottom: 1px solid #F1F5F9;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="left" vertical-align="middle">
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding-right: 12px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%); border-radius: 12px; text-align: center; line-height: 40px; color: #FFFFFF; font-size: 20px; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);">💧</div>
+                      </td>
+                      <td>
+                        <div style="font-size: 20px; font-weight: 800; color: #0284C7; letter-spacing: -0.5px; line-height: 1.2;">Jaladhaara</div>
+                        <div style="font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px;">Groundwater Survey & Hydrogeology</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                ${badgeText ? `
+                <td align="right" vertical-align="middle">
+                  <span style="display: inline-block; padding: 5px 12px; font-size: 11px; font-weight: 700; color: ${badgeColor}; background: ${badgeBg}; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    ${badgeText}
+                  </span>
+                </td>
+                ` : ''}
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Hero Header -->
+        ${heroTitle ? `
+        <tr>
+          <td style="padding: 28px 32px 20px 32px; background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%); border-bottom: 1px solid #F1F5F9;">
+            <h1 style="margin: 0 0 6px 0; font-size: 22px; font-weight: 800; color: #0F172A; line-height: 1.3;">
+              ${heroTitle}
+            </h1>
+            ${heroSubtitle ? `
+            <p style="margin: 0; font-size: 13px; color: #64748B; line-height: 1.5;">
+              ${heroSubtitle}
+            </p>
+            ` : ''}
+          </td>
+        </tr>
+        ` : ''}
+
+        <!-- Main Body Content -->
+        <tr>
+          <td style="padding: 28px 32px; font-size: 14px; line-height: 1.6; color: #334155;">
+            ${contentHtml}
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background: #F8FAFC; border-top: 1px solid #E2E8F0; padding: 24px 32px; text-align: center; color: #64748B;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="left" style="font-size: 12px; color: #64748B; line-height: 1.5;">
+                  <strong style="color: #0F172A; font-weight: 700;">Jaladhaara Hydrogeological Services Pvt. Ltd.</strong><br>
+                  India's Premier Groundwater Survey & Borewell QA Platform<br>
+                  Raipur, Chhattisgarh, India • <a href="mailto:support@jaladhaaraapp.com" style="color: #0284C7; text-decoration: none;">support@jaladhaaraapp.com</a>
+                </td>
+              </tr>
+              <tr>
+                <td align="left" style="padding-top: 16px; border-top: 1px solid #E2E8F0; margin-top: 16px; font-size: 11px; color: #94A3B8;">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td align="left" style="font-size: 11px; color: #94A3B8;">
+                        © ${new Date().getFullYear()} Jaladhaara. All rights reserved.
+                      </td>
+                      <td align="right" style="font-size: 11px; color: #94A3B8;">
+                        <a href="#" style="color: #64748B; text-decoration: none; margin-left: 10px;">Security</a>
+                        <a href="#" style="color: #64748B; text-decoration: none; margin-left: 10px;">Privacy</a>
+                        <a href="#" style="color: #64748B; text-decoration: none; margin-left: 10px;">Terms</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+    </body>
+    </html>
+  `;
+};
+
+/**
  * Send OTP email
  * @param {Object} params - { email, name, otp, type }
  */
 const sendOTPEmail = async ({ email, name, otp, type = 'verification' }) => {
-  let subject = 'Email Verification OTP - Jaladhar';
+  let subject = 'Email Verification Code – Jaladhaara';
+  let badgeText = 'Email Verification';
+  let badgeBg = '#EFF6FF';
+  let badgeColor = '#0284C7';
+  let heroTitle = 'Verify Your Email Address';
+  let heroSubtitle = 'Use the 6-digit authentication code below to verify your account.';
+  let purposeDescription = 'We received a request to verify your email address on the Jaladhaara platform.';
+
   if (type === 'password_reset') {
-    subject = 'Password Reset OTP - Jaladhar';
+    subject = 'Password Reset Code – Jaladhaara';
+    badgeText = 'Password Reset';
+    badgeBg = '#FEF3C7';
+    badgeColor = '#B45309';
+    heroTitle = 'Reset Your Password';
+    heroSubtitle = 'A password reset was requested for your Jaladhaara account.';
+    purposeDescription = 'Please use the one-time security code below to securely reset your password.';
   } else if (type === 'admin_registration') {
-    subject = 'Admin Registration OTP - Jaladhar';
+    subject = '🔐 Admin Portal Registration OTP – Jaladhaara';
+    badgeText = '🛡️ Internal Admin Access';
+    badgeBg = '#F3E8FF';
+    badgeColor = '#7E22CE';
+    heroTitle = 'Internal Admin Registration';
+    heroSubtitle = 'Complete your internal administrator account verification.';
+    purposeDescription = 'You have been invited to register as an internal administrator on the <strong>Jaladhaara Governance & Operations Portal</strong>.';
   }
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; background: #f9f9f9; }
-        .otp-box { background: white; padding: 20px; text-align: center; margin: 20px 0; border: 2px dashed #4CAF50; }
-        .otp { font-size: 32px; font-weight: bold; color: #4CAF50; letter-spacing: 5px; }
-        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Jaladhar</h1>
-        </div>
-        <div class="content">
-          <p>Hello ${name},</p>
-          <p>Your OTP for ${type === 'password_reset' ? 'password reset' : type === 'admin_registration' ? 'admin registration' : 'email verification'} is:</p>
-          <div class="otp-box">
-            <div class="otp">${otp}</div>
-          </div>
-          <p>This OTP is valid for 10 minutes. Please do not share this OTP with anyone.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-        </div>
-        <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Jaladhar. All rights reserved.</p>
-        </div>
+  const contentHtml = `
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #1E293B;">
+      Hello <strong>${name || 'Team Member'}</strong>,
+    </p>
+    <p style="margin: 0 0 20px 0; color: #475569; font-size: 13.5px; line-height: 1.6;">
+      ${purposeDescription}
+    </p>
+
+    <!-- OTP Display Box -->
+    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 16px; padding: 24px 20px; text-align: center; margin: 24px 0;">
+      <div style="font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">
+        One-Time Verification Code
       </div>
-    </body>
-    </html>
+      <div style="display: inline-block; background: #FFFFFF; border: 1.5px solid #0284C7; border-radius: 12px; padding: 10px 24px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);">
+        <span style="font-family: 'SF Pro Display', -apple-system, Roboto, Monaco, 'Courier New', monospace; font-size: 36px; font-weight: 800; color: #0284C7; letter-spacing: 8px; line-height: 1.2;">
+          ${otp}
+        </span>
+      </div>
+      <div style="margin-top: 14px; font-size: 12px; color: #64748B; font-weight: 500;">
+        ⏱️ Code expires in <strong>10 minutes</strong> • Single use only
+      </div>
+    </div>
+
+    <!-- Security Warning Box -->
+    <div style="background: #FFFBEB; border-left: 4px solid #F59E0B; border-radius: 8px; padding: 12px 16px; margin-top: 24px;">
+      <div style="font-size: 12px; font-weight: 700; color: #92400E; margin-bottom: 2px;">
+        🔒 Security Advice
+      </div>
+      <div style="font-size: 11.5px; color: #B45309; line-height: 1.5;">
+        Never share this verification code with anyone. Jaladhaara administrators or support agents will never ask for your OTP. If you did not make this request, you can safely disregard this email.
+      </div>
+    </div>
   `;
 
+  const html = renderEmailShell({
+    title: subject,
+    badgeText,
+    badgeBg,
+    badgeColor,
+    heroTitle,
+    heroSubtitle,
+    contentHtml
+  });
+
   const text = `
-    Hello ${name},
-    
-    Your OTP for ${type === 'password_reset' ? 'password reset' : type === 'admin_registration' ? 'admin registration' : 'email verification'} is: ${otp}
-    
-    This OTP is valid for 10 minutes. Please do not share this OTP with anyone.
-    
-    If you didn't request this, please ignore this email.
-    
-    © ${new Date().getFullYear()} Jaladhar. All rights reserved.
+Hello ${name},
+
+Your OTP code for ${type === 'password_reset' ? 'password reset' : type === 'admin_registration' ? 'admin registration' : 'email verification'} is: ${otp}
+
+This OTP is valid for 10 minutes. For your security, please do not share this OTP with anyone.
+
+If you didn't request this, please ignore this email.
+
+© ${new Date().getFullYear()} Jaladhaara. All rights reserved.
   `;
 
   return await sendEmail({ to: email, subject, html, text });
@@ -123,34 +254,31 @@ const sendOTPEmail = async ({ email, name, otp, type = 'verification' }) => {
  * @param {Object} params - { email, name }
  */
 const sendWelcomeEmail = async ({ email, name }) => {
-  const subject = 'Welcome to Jaladhar!';
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; background: #f9f9f9; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Welcome to Jaladhar!</h1>
-        </div>
-        <div class="content">
-          <p>Hello ${name},</p>
-          <p>Thank you for joining Jaladhar! We're excited to have you on board.</p>
-          <p>Your account has been successfully created. You can now start booking services.</p>
-          <p>Best regards,<br>The Jaladhar Team</p>
-        </div>
-      </div>
-    </body>
-    </html>
+  const subject = 'Welcome to Jaladhaara! 💧';
+  const contentHtml = `
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #1E293B;">
+      Hello <strong>${name}</strong>,
+    </p>
+    <p style="margin: 0 0 16px 0; color: #475569; font-size: 13.5px; line-height: 1.6;">
+      Thank you for joining <strong>Jaladhaara</strong>! We're excited to have you on board India's premier groundwater survey and hydrogeological assessment platform.
+    </p>
+    <p style="margin: 0 0 20px 0; color: #475569; font-size: 13.5px; line-height: 1.6;">
+      Your account is now active. You can explore certified hydrogeologists, request borewell surveys, track real-time assessments, and download certified QA survey reports.
+    </p>
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}" style="display: inline-block; padding: 12px 28px; background: #0284C7; color: #FFFFFF; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+        Explore Jaladhaara Platform
+      </a>
+    </div>
   `;
+
+  const html = renderEmailShell({
+    title: subject,
+    badgeText: '✨ New Account',
+    heroTitle: 'Welcome to Jaladhaara',
+    heroSubtitle: 'Groundwater Survey & Certified Hydrogeological Services',
+    contentHtml
+  });
 
   return await sendEmail({ to: email, subject, html });
 };
@@ -160,55 +288,41 @@ const sendWelcomeEmail = async ({ email, name }) => {
  * @param {Object} params - { email, name }
  */
 const sendVendorApprovalEmail = async ({ email, name }) => {
-  const subject = 'Vendor Account Approved - Jaladhar';
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; background: #f9f9f9; }
-        .button { display: inline-block; padding: 12px 24px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Account Approved!</h1>
-        </div>
-        <div class="content">
-          <p>Hello ${name},</p>
-          <p>Great news! Your vendor account has been approved by our admin team.</p>
-          <p>You can now:</p>
-          <ul>
-            <li>Login to your vendor dashboard</li>
-            <li>Add and manage your services</li>
-            <li>Accept booking requests from customers</li>
-            <li>Start earning on Jaladhar platform</li>
-          </ul>
-          <p>We're excited to have you on board!</p>
-          <p>Best regards,<br>The Jaladhar Team</p>
-        </div>
-      </div>
-    </body>
-    </html>
+  const subject = '🎉 Vendor Account Approved – Jaladhaara';
+  const contentHtml = `
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #1E293B;">
+      Hello <strong>${name}</strong>,
+    </p>
+    <p style="margin: 0 0 16px 0; color: #475569; font-size: 13.5px; line-height: 1.6;">
+      Great news! Your Expert / Vendor profile has been successfully reviewed and <strong>approved</strong> by our technical verification team.
+    </p>
+    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 12px; padding: 16px; margin: 20px 0;">
+      <div style="font-size: 13px; font-weight: 700; color: #166534; margin-bottom: 8px;">What You Can Do Now:</div>
+      <ul style="margin: 0; padding-left: 20px; color: #15803D; font-size: 12.5px; line-height: 1.7;">
+        <li>Login to your Expert Dashboard</li>
+        <li>Set your service coverage zones & equipment specs</li>
+        <li>Accept customer survey bookings in real-time</li>
+        <li>Submit survey readings and receive automated wallet payouts</li>
+      </ul>
+    </div>
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="${(process.env.FRONTEND_URL || 'http://localhost:5173') + '/vendor/login'}" style="display: inline-block; padding: 12px 28px; background: #16A34A; color: #FFFFFF; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);">
+        Login to Expert Dashboard
+      </a>
+    </div>
   `;
 
-  const text = `
-    Hello ${name},
-    
-    Great news! Your vendor account has been approved by our admin team.
-    
-    You can now login to your vendor dashboard and start accepting bookings.
-    
-    Best regards,
-    The Jaladhar Team
-  `;
+  const html = renderEmailShell({
+    title: subject,
+    badgeText: '✅ Approved',
+    badgeBg: '#DCFCE7',
+    badgeColor: '#15803D',
+    heroTitle: 'Expert Profile Approved',
+    heroSubtitle: 'You are now certified to accept groundwater survey requests.',
+    contentHtml
+  });
 
-  return await sendEmail({ to: email, subject, html, text });
+  return await sendEmail({ to: email, subject, html });
 };
 
 /**
@@ -216,54 +330,34 @@ const sendVendorApprovalEmail = async ({ email, name }) => {
  * @param {Object} params - { email, name, rejectionReason }
  */
 const sendVendorRejectionEmail = async ({ email, name, rejectionReason }) => {
-  const subject = 'Vendor Account Status Update - Jaladhar';
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #f44336; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; background: #f9f9f9; }
-        .reason-box { background: white; padding: 15px; margin: 20px 0; border-left: 4px solid #f44336; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Account Status Update</h1>
-        </div>
-        <div class="content">
-          <p>Hello ${name},</p>
-          <p>We regret to inform you that your vendor account application has been reviewed and unfortunately, we cannot approve it at this time.</p>
-          <div class="reason-box">
-            <strong>Reason:</strong>
-            <p>${rejectionReason || 'Please contact support for more details.'}</p>
-          </div>
-          <p>If you believe this is an error or would like to reapply with updated information, please contact our support team.</p>
-          <p>Best regards,<br>The Jaladhar Team</p>
-        </div>
-      </div>
-    </body>
-    </html>
+  const subject = 'Application Status Update – Jaladhaara';
+  const contentHtml = `
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #1E293B;">
+      Hello <strong>${name}</strong>,
+    </p>
+    <p style="margin: 0 0 16px 0; color: #475569; font-size: 13.5px; line-height: 1.6;">
+      Thank you for applying to become a certified Expert on Jaladhaara. After reviewing your credentials and submitted documents, our verification team was unable to approve your application at this time.
+    </p>
+    <div style="background: #FEF2F2; border-left: 4px solid #EF4444; border-radius: 8px; padding: 14px 16px; margin: 20px 0;">
+      <div style="font-size: 12px; font-weight: 700; color: #991B1B; margin-bottom: 4px;">Review Feedback:</div>
+      <p style="margin: 0; font-size: 13px; color: #B91C1C; line-height: 1.5;">${rejectionReason || 'Uploaded documents did not satisfy hydrogeological certification criteria.'}</p>
+    </div>
+    <p style="margin: 16px 0 0 0; color: #64748B; font-size: 12.5px; line-height: 1.5;">
+      If you believe this decision was in error or have updated certifications to provide, please reply directly or contact <a href="mailto:support@jaladhaaraapp.com" style="color: #0284C7; text-decoration: none;">support@jaladhaaraapp.com</a>.
+    </p>
   `;
 
-  const text = `
-    Hello ${name},
-    
-    We regret to inform you that your vendor account application has been reviewed and unfortunately, we cannot approve it at this time.
-    
-    Reason: ${rejectionReason || 'Please contact support for more details.'}
-    
-    If you believe this is an error or would like to reapply, please contact our support team.
-    
-    Best regards,
-    The Jaladhar Team
-  `;
+  const html = renderEmailShell({
+    title: subject,
+    badgeText: '⚠️ Status Update',
+    badgeBg: '#FEE2E2',
+    badgeColor: '#B91C1C',
+    heroTitle: 'Application Status Update',
+    heroSubtitle: 'Feedback regarding your expert onboarding submission.',
+    contentHtml
+  });
 
-  return await sendEmail({ to: email, subject, html, text });
+  return await sendEmail({ to: email, subject, html });
 };
 
 /**
@@ -549,38 +643,41 @@ const sendBookingConfirmationEmail = async ({
  * @param {Object} params - { email, name, bookingId, status, message }
  */
 const sendBookingStatusUpdateEmail = async ({ email, name, bookingId, status, message }) => {
-  const subject = `Booking Update - ${status} - Jaladhar`;
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #0A84FF; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; background: #f9f9f9; }
-        .status-box { background: white; padding: 15px; margin: 15px 0; border-left: 4px solid #0A84FF; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Booking Status Update</h1>
-        </div>
-        <div class="content">
-          <p>Hello ${name},</p>
-          <div class="status-box">
-            <p><strong>Booking ID:</strong> ${bookingId}</p>
-            <p><strong>Status:</strong> ${status}</p>
-            <p>${message}</p>
-          </div>
-          <p>Best regards,<br>The Jaladhar Team</p>
-        </div>
+  const subject = `Booking Update (${status}) – Jaladhaara`;
+  const contentHtml = `
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #1E293B;">
+      Hello <strong>${name}</strong>,
+    </p>
+    <p style="margin: 0 0 16px 0; color: #475569; font-size: 13.5px; line-height: 1.6;">
+      There is an update regarding your groundwater survey booking.
+    </p>
+    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 12px; padding: 18px 20px; margin: 20px 0;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+        <span style="font-size: 12px; color: #64748B; font-weight: 600;">Booking Reference:</span>
+        <strong style="font-size: 13px; color: #0F172A;">${bookingId}</strong>
       </div>
-    </body>
-    </html>
+      <div style="margin-bottom: 12px;">
+        <span style="font-size: 12px; color: #64748B; font-weight: 600;">Current Status:</span>
+        <span style="display: inline-block; padding: 3px 10px; background: #EFF6FF; color: #0284C7; font-weight: 700; font-size: 12px; border-radius: 6px; margin-left: 6px;">${status}</span>
+      </div>
+      <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.5; border-top: 1px solid #E2E8F0; padding-top: 10px;">
+        ${message || 'Your survey schedule has been updated.'}
+      </p>
+    </div>
+    <div style="text-align: center; margin: 24px 0;">
+      <a href="${(process.env.FRONTEND_URL || 'http://localhost:5173') + '/user/bookings/' + bookingId}" style="display: inline-block; padding: 12px 28px; background: #0284C7; color: #FFFFFF; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+        Track Live Status
+      </a>
+    </div>
   `;
+
+  const html = renderEmailShell({
+    title: subject,
+    badgeText: `Status: ${status}`,
+    heroTitle: 'Survey Status Update',
+    heroSubtitle: `Update for Booking #${bookingId}`,
+    contentHtml
+  });
 
   return await sendEmail({ to: email, subject, html });
 };
@@ -590,41 +687,37 @@ const sendBookingStatusUpdateEmail = async ({ email, name, bookingId, status, me
  * @param {Object} params - { email, name, bookingId, amount, paymentType, invoiceUrl }
  */
 const sendPaymentConfirmationEmail = async ({ email, name, bookingId, amount, paymentType, invoiceUrl }) => {
-  const subject = 'Payment Confirmed - Jaladhar';
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; background: #f9f9f9; }
-        .payment-box { background: white; padding: 15px; margin: 15px 0; border-left: 4px solid #4CAF50; }
-        .button { display: inline-block; padding: 12px 24px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Payment Confirmed!</h1>
-        </div>
-        <div class="content">
-          <p>Hello ${name},</p>
-          <p>Your ${paymentType} payment has been confirmed successfully!</p>
-          <div class="payment-box">
-            <p><strong>Booking ID:</strong> ${bookingId}</p>
-            <p><strong>Payment Type:</strong> ${paymentType}</p>
-            <p><strong>Amount:</strong> ₹${amount.toFixed(2)}</p>
-          </div>
-          ${invoiceUrl ? `<p><a href="${invoiceUrl}" class="button">Download Invoice</a></p>` : ''}
-          <p>Best regards,<br>The Jaladhar Team</p>
-        </div>
-      </div>
-    </body>
-    </html>
+  const subject = '💳 Payment Received – Jaladhaara';
+  const contentHtml = `
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #1E293B;">
+      Hello <strong>${name}</strong>,
+    </p>
+    <p style="margin: 0 0 16px 0; color: #475569; font-size: 13.5px; line-height: 1.6;">
+      We have successfully received your payment for the groundwater survey.
+    </p>
+    <div style="background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 14px; padding: 20px; margin: 20px 0; text-align: center;">
+      <div style="font-size: 11px; font-weight: 700; color: #15803D; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Payment Confirmed</div>
+      <div style="font-size: 32px; font-weight: 800; color: #166534; margin-bottom: 8px;">₹${typeof amount === 'number' ? amount.toFixed(2) : amount}</div>
+      <div style="font-size: 12px; color: #15803D;">Type: <strong>${paymentType}</strong> • Booking: <strong>#${bookingId}</strong></div>
+    </div>
+    ${invoiceUrl ? `
+    <div style="text-align: center; margin: 24px 0;">
+      <a href="${invoiceUrl}" style="display: inline-block; padding: 12px 28px; background: #0284C7; color: #FFFFFF; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+        Download Tax Invoice
+      </a>
+    </div>
+    ` : ''}
   `;
+
+  const html = renderEmailShell({
+    title: subject,
+    badgeText: 'Payment Success',
+    badgeBg: '#DCFCE7',
+    badgeColor: '#15803D',
+    heroTitle: 'Payment Received',
+    heroSubtitle: `Receipt for Booking #${bookingId}`,
+    contentHtml
+  });
 
   return await sendEmail({ to: email, subject, html });
 };
@@ -634,42 +727,35 @@ const sendPaymentConfirmationEmail = async ({ email, name, bookingId, amount, pa
  * @param {Object} params - { email, name, bookingId, settlementAmount, settlementType, incentive, penalty }
  */
 const sendSettlementNotificationEmail = async ({ email, name, bookingId, settlementAmount, settlementType, incentive, penalty }) => {
-  const subject = 'Vendor Settlement Processed - Jaladhar';
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: ${settlementType === 'SUCCESS' ? '#4CAF50' : '#f44336'}; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; background: #f9f9f9; }
-        .settlement-box { background: white; padding: 15px; margin: 15px 0; border-left: 4px solid ${settlementType === 'SUCCESS' ? '#4CAF50' : '#f44336'}; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Settlement Processed</h1>
-        </div>
-        <div class="content">
-          <p>Hello ${name},</p>
-          <p>Your vendor settlement has been processed for the following booking:</p>
-          <div class="settlement-box">
-            <p><strong>Booking ID:</strong> ${bookingId}</p>
-            <p><strong>Result:</strong> ${settlementType === 'SUCCESS' ? 'Success' : 'Failed'}</p>
-            <p><strong>Settlement Amount:</strong> ₹${settlementAmount.toFixed(2)}</p>
-            ${incentive > 0 ? `<p><strong>Incentive:</strong> ₹${incentive.toFixed(2)}</p>` : ''}
-            ${penalty > 0 ? `<p><strong>Penalty:</strong> ₹${penalty.toFixed(2)}</p>` : ''}
-          </div>
-          <p>The amount will be transferred to your registered bank account within 3-5 business days.</p>
-          <p>Best regards,<br>The Jaladhar Team</p>
-        </div>
-      </div>
-    </body>
-    </html>
+  const isSuccess = settlementType === 'SUCCESS';
+  const subject = `Payout Settlement ${isSuccess ? 'Processed' : 'Failed'} – Jaladhaara`;
+  const contentHtml = `
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #1E293B;">
+      Hello <strong>${name}</strong>,
+    </p>
+    <p style="margin: 0 0 16px 0; color: #475569; font-size: 13.5px; line-height: 1.6;">
+      Your expert survey payout settlement has been processed for booking <strong>#${bookingId}</strong>.
+    </p>
+    <div style="background: ${isSuccess ? '#F0FDF4' : '#FEF2F2'}; border: 1.5px solid ${isSuccess ? '#BBF7D0' : '#FECACA'}; border-radius: 14px; padding: 20px; margin: 20px 0;">
+      <div style="font-size: 12px; color: ${isSuccess ? '#15803D' : '#B91C1C'}; font-weight: 600; margin-bottom: 4px;">Settlement Amount:</div>
+      <div style="font-size: 28px; font-weight: 800; color: ${isSuccess ? '#166534' : '#991B1B'}; margin-bottom: 10px;">₹${typeof settlementAmount === 'number' ? settlementAmount.toFixed(2) : settlementAmount}</div>
+      ${incentive > 0 ? `<div style="font-size: 12px; color: #15803D; margin-bottom: 3px;">+ Incentive: ₹${incentive.toFixed(2)}</div>` : ''}
+      ${penalty > 0 ? `<div style="font-size: 12px; color: #B91C1C; margin-bottom: 3px;">- Penalty: ₹${penalty.toFixed(2)}</div>` : ''}
+    </div>
+    <p style="margin: 0; color: #64748B; font-size: 12px; line-height: 1.5;">
+      ${isSuccess ? 'Funds will reflect in your registered bank account per standard banking settlement cycles (T+2 business days).' : 'Please check your bank details in settings or contact support.'}
+    </p>
   `;
+
+  const html = renderEmailShell({
+    title: subject,
+    badgeText: isSuccess ? 'Payout Processed' : 'Payout Failed',
+    badgeBg: isSuccess ? '#DCFCE7' : '#FEE2E2',
+    badgeColor: isSuccess ? '#15803D' : '#B91C1C',
+    heroTitle: 'Survey Payout Settlement',
+    heroSubtitle: `Settlement for Booking #${bookingId}`,
+    contentHtml
+  });
 
   return await sendEmail({ to: email, subject, html });
 };

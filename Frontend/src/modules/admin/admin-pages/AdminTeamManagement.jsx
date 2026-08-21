@@ -21,7 +21,8 @@ import {
   IoEyeOutline,
   IoEyeOffOutline,
   IoArrowBackOutline,
-  IoLockClosedOutline
+  IoLockClosedOutline,
+  IoCallOutline
 } from "react-icons/io5";
 import {
   getAllAdmins,
@@ -44,53 +45,52 @@ const ROLE_OPTIONS = [
   { value: "OPERATIONS_ADMIN", label: "Operations Admin", color: "bg-blue-100 text-blue-700 border-blue-200" },
   { value: "FINANCE_ADMIN", label: "Finance Admin", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
   { value: "SUPPORT_ADMIN", label: "Customer Support Admin", color: "bg-rose-100 text-rose-700 border-rose-200" },
-  { value: "QC_ADMIN", label: "Quality Control Admin", color: "bg-cyan-100 text-cyan-700 border-cyan-200" }
+  { value: "QC_ADMIN", label: "Quality Control Admin", color: "bg-teal-100 text-teal-700 border-teal-200" },
 ];
 
 const ROLE_DEFINITIONS = [
   { 
-    value: "OPERATIONS_ADMIN", 
-    label: "Operations Admin", 
-    description: "Manage bookings, surveyor shifts & daily operations"
-  },
-  { 
     value: "EXPERT_VERIFICATION_ADMIN", 
     label: "Expert Verification Admin", 
-    description: "Verify expert profiles, documents, KYC & certifications"
+    description: "Reviews expert KYC documents, certificates, and onboardings.",
+    department: "Verification"
+  },
+  { 
+    value: "OPERATIONS_ADMIN", 
+    label: "Operations Admin", 
+    description: "Oversees booking dispatches, live GPS tracking, and surveyor scheduling.",
+    department: "Operations"
   },
   { 
     value: "FINANCE_ADMIN", 
     label: "Finance Admin", 
-    description: "Review transactions, expert payouts, refunds & invoices"
+    description: "Processes expert withdrawals, user refunds, and invoice payouts.",
+    department: "Finance"
   },
   { 
     value: "SUPPORT_ADMIN", 
     label: "Customer Support Admin", 
-    description: "Handle customer disputes, support tickets & user inquiries"
+    description: "Resolves customer & vendor disputes, tickets, and reviews ratings.",
+    department: "Support"
   },
   { 
     value: "QC_ADMIN", 
     label: "Quality Control Admin", 
-    description: "Inspect survey reports, test readings & audit compliance"
+    description: "Audits groundwater survey reports, depth readings, and borewell QA.",
+    department: "Quality Control"
   },
   { 
     value: "SUPER_ADMIN", 
     label: "Super Admin", 
-    description: "Full system governance, access permissions & team management"
-  }
+    description: "Full master governance, policies, pricing, and team IAM control.",
+    department: "Governance"
+  },
 ];
 
 export default function AdminTeamManagement() {
   const { admin: currentAdmin } = useAdminAuth();
   const toast = useToast();
   const [admins, setAdmins] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [adminToDelete, setAdminToDelete] = useState(null);
-  const [updatingId, setUpdatingId] = useState(null);
-
-  // Department Master Toggles State
   const [toggles, setToggles] = useState({
     AUTO_ASSIGN_VERIFICATION: true,
     AUTO_ASSIGN_OPERATIONS: true,
@@ -98,14 +98,21 @@ export default function AdminTeamManagement() {
     AUTO_ASSIGN_SUPPORT: true,
     AUTO_ASSIGN_QC: true
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [updatingId, setUpdatingId] = useState(null);
   const [togglesLoading, setTogglesLoading] = useState(false);
 
-  // Team Performance Analytics Modal State
+  // Performance Modal
   const [showStatsModal, setShowStatsModal] = useState(false);
-  const [performanceStats, setPerformanceStats] = useState([]);
+  const [statsData, setStatsData] = useState([]);
   const [statsLoading, setStatsLoading] = useState(false);
 
-  // Admin Registration Modal State
+  // Delete Modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [adminToDelete, setAdminToDelete] = useState(null);
+
+  // Registration Modal State (2-Step)
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [registerStep, setRegisterStep] = useState(1); // 1: Details, 2: OTP
   const [registerLoading, setRegisterLoading] = useState(false);
@@ -117,6 +124,7 @@ export default function AdminTeamManagement() {
   const [registerForm, setRegisterForm] = useState({
     name: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
     role: "OPERATIONS_ADMIN",
@@ -127,6 +135,20 @@ export default function AdminTeamManagement() {
     token: "",
     email: "",
   });
+
+  // Edit Admin Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editAdminData, setEditAdminData] = useState({
+    id: "",
+    name: "",
+    email: "",
+    phone: "",
+    role: "OPERATIONS_ADMIN",
+    password: "",
+  });
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
 
   useEffect(() => {
     let timer;
@@ -261,6 +283,7 @@ export default function AdminTeamManagement() {
     setRegisterForm({
       name: "",
       email: "",
+      phone: "",
       password: "",
       confirmPassword: "",
       role: "OPERATIONS_ADMIN",
@@ -280,6 +303,68 @@ export default function AdminTeamManagement() {
     if (registerLoading) return;
     setShowRegisterModal(false);
     setRegisterError("");
+  };
+
+  const handleOpenEditModal = (admin) => {
+    setEditError("");
+    setShowEditPassword(false);
+    setEditAdminData({
+      id: admin._id,
+      name: admin.name || "",
+      email: admin.email || "",
+      phone: admin.phone || "",
+      role: admin.role || "OPERATIONS_ADMIN",
+      password: "",
+    });
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    if (editLoading) return;
+    setShowEditModal(false);
+    setEditError("");
+  };
+
+  const handleSaveEditAdmin = async (e) => {
+    e.preventDefault();
+    setEditError("");
+
+    if (!editAdminData.name.trim()) {
+      setEditError("Admin name cannot be empty");
+      return;
+    }
+
+    if (editAdminData.password && editAdminData.password.length < 6) {
+      setEditError("New password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      const payload = {
+        name: editAdminData.name.trim(),
+        phone: editAdminData.phone.trim() || undefined,
+        role: editAdminData.role,
+      };
+
+      if (editAdminData.password.trim()) {
+        payload.password = editAdminData.password.trim();
+      }
+
+      const res = await updateAdmin(editAdminData.id, payload);
+      if (res.success) {
+        toast.showSuccess(`Admin "${editAdminData.name}" profile updated!`);
+        setShowEditModal(false);
+        await loadData();
+      } else {
+        setEditError(res.message || "Failed to update admin profile");
+      }
+    } catch (err) {
+      console.error("Update admin error:", err);
+      setEditError(err.response?.data?.message || "Failed to update admin");
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const handleSendRegistrationOTP = async (e) => {
@@ -377,6 +462,7 @@ export default function AdminTeamManagement() {
       const res = await registerAdminWithOTP({
         name: registerForm.name.trim(),
         email: registerForm.email.trim().toLowerCase(),
+        phone: registerForm.phone.trim() || undefined,
         password: registerForm.password,
         role: registerForm.role,
         otp: otpData.otp,
@@ -552,10 +638,20 @@ export default function AdminTeamManagement() {
 
                 return (
                   <tr key={admin._id} className="hover:bg-gray-50/60 transition-colors">
-                    {/* Name & Email */}
+                    {/* Name, Email & Phone */}
                     <td className="px-5 py-3.5">
-                      <div className="font-semibold text-gray-900">{admin.name} {isSelf && <span className="text-[10px] text-blue-600 font-bold">(You)</span>}</div>
+                      <div className="font-semibold text-gray-900 flex items-center gap-1.5">
+                        {admin.name} {isSelf && <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.2 rounded">(You)</span>}
+                      </div>
                       <div className="text-[11px] text-gray-400">{admin.email}</div>
+                      {admin.phone ? (
+                        <div className="text-[11px] text-gray-600 font-medium flex items-center gap-1 mt-0.5">
+                          <IoCallOutline className="text-[10px] text-blue-500" />
+                          <span>{admin.phone}</span>
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-gray-300 italic mt-0.5">No mobile number</div>
+                      )}
                     </td>
 
                     {/* Role (Badge for Super Admin, Dropdown for Staff) */}
@@ -640,17 +736,26 @@ export default function AdminTeamManagement() {
                       )}
                     </td>
 
-                    {/* Delete Action */}
+                    {/* Actions */}
                     <td className="px-5 py-3.5 text-right">
-                      {!isSelf && admin.role !== 'SUPER_ADMIN' && (
+                      <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => handleDeleteClick(admin)}
-                          className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                          title="Delete Admin"
+                          onClick={() => handleOpenEditModal(admin)}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          title="Edit Profile & Password"
                         >
-                          <IoTrashOutline className="text-base" />
+                          <IoCreateOutline className="text-base" />
                         </button>
-                      )}
+                        {!isSelf && admin.role !== 'SUPER_ADMIN' && (
+                          <button
+                            onClick={() => handleDeleteClick(admin)}
+                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete Admin"
+                          >
+                            <IoTrashOutline className="text-base" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -813,6 +918,22 @@ export default function AdminTeamManagement() {
                         required
                         className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
                         placeholder="rahul@jaladhar.com"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                      Mobile Number <span className="text-gray-400 font-normal lowercase">(optional)</span>
+                    </label>
+                    <div className="relative">
+                      <IoCallOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                      <input
+                        type="tel"
+                        value={registerForm.phone}
+                        onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
+                        className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
+                        placeholder="+91 98765 43210"
                       />
                     </div>
                   </div>
@@ -1003,6 +1124,182 @@ export default function AdminTeamManagement() {
                   </div>
                 </form>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT ADMIN PROFILE & SECURITY MODAL ── */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg border border-blue-100">
+                  <IoCreateOutline />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Edit Admin Profile & Security</h3>
+                  <p className="text-xs text-gray-400">
+                    Update profile, mobile number, role, or reset password.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseEditModal}
+                disabled={editLoading}
+                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <IoCloseOutline className="text-xl" />
+              </button>
+            </div>
+
+            {/* Error Message */}
+            {editError && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3.5 py-2.5 rounded-xl flex items-center justify-between">
+                <span>{editError}</span>
+                <button type="button" onClick={() => setEditError("")} className="text-rose-500 hover:text-rose-700 text-sm font-bold">×</button>
+              </div>
+            )}
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto pr-1">
+              <form onSubmit={handleSaveEditAdmin} className="space-y-4">
+                {/* Full Name */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                    Full Name *
+                  </label>
+                  <div className="relative">
+                    <IoPeopleOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                    <input
+                      type="text"
+                      value={editAdminData.name}
+                      onChange={(e) => setEditAdminData({ ...editAdminData, name: e.target.value })}
+                      required
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
+                      placeholder="e.g. Rahul Sharma"
+                    />
+                  </div>
+                </div>
+
+                {/* Email (Read-only) */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                    Email Address <span className="text-gray-400 font-normal lowercase">(read-only)</span>
+                  </label>
+                  <div className="relative">
+                    <IoMailOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                    <input
+                      type="email"
+                      value={editAdminData.email}
+                      disabled
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-100 border border-gray-200 rounded-xl font-medium text-gray-500 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                {/* Mobile / Phone Number */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                    Mobile Number <span className="text-gray-400 font-normal lowercase">(optional)</span>
+                  </label>
+                  <div className="relative">
+                    <IoCallOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                    <input
+                      type="tel"
+                      value={editAdminData.phone}
+                      onChange={(e) => setEditAdminData({ ...editAdminData, phone: e.target.value })}
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+                </div>
+
+                {/* Role (Protected for Super Admin) */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                    Assigned Role
+                  </label>
+                  {editAdminData.role === 'SUPER_ADMIN' ? (
+                    <div className="px-3.5 py-2.5 text-xs bg-purple-50 text-purple-700 font-bold border border-purple-200 rounded-xl flex items-center gap-2">
+                      <IoShieldCheckmarkOutline className="text-base text-purple-600" />
+                      Super Admin (Root Governance - Protected)
+                    </div>
+                  ) : (
+                    <select
+                      value={editAdminData.role}
+                      onChange={(e) => setEditAdminData({ ...editAdminData, role: e.target.value })}
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800 cursor-pointer"
+                    >
+                      {ROLE_DEFINITIONS.filter(r => r.value !== 'SUPER_ADMIN').map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label} — {r.description}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Reset Password */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      Reset Password
+                    </label>
+                    <span className="text-[10px] text-gray-400">Leave blank to keep unchanged</span>
+                  </div>
+                  <div className="relative">
+                    <IoKeyOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                    <input
+                      type={showEditPassword ? "text" : "password"}
+                      value={editAdminData.password}
+                      onChange={(e) => setEditAdminData({ ...editAdminData, password: e.target.value })}
+                      minLength={6}
+                      className="w-full pl-10 pr-9 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
+                      placeholder="Enter new password (min 6 chars)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-base cursor-pointer"
+                    >
+                      {showEditPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Modal Actions */}
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleCloseEditModal}
+                    disabled={editLoading}
+                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editLoading}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {editLoading ? (
+                      <>
+                        <IoRefreshOutline className="animate-spin text-sm" />
+                        Saving Changes...
+                      </>
+                    ) : (
+                      <>
+                        <IoCheckmarkOutline className="text-sm" />
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
