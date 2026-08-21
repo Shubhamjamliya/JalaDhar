@@ -25,6 +25,10 @@ const tokenSchema = new mongoose.Schema({
     type: String,
     required: false // For admin registration, store email directly
   },
+  phone: {
+    type: String,
+    required: false // For SMS verification, store phone directly
+  },
   otp: {
     type: String,
     required: true

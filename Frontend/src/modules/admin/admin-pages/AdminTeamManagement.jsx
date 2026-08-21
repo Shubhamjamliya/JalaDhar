@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   IoPeopleOutline,
   IoShieldCheckmarkOutline,
+  IoShieldOutline,
   IoTrashOutline,
   IoCreateOutline,
   IoCheckmarkCircleOutline,
@@ -16,6 +17,7 @@ import {
   IoRadioButtonOnOutline,
   IoBriefcaseOutline,
   IoCheckmarkOutline,
+  IoCheckmarkDoneOutline,
   IoCloseOutline,
   IoMailOutline,
   IoKeyOutline,
@@ -24,7 +26,18 @@ import {
   IoArrowBackOutline,
   IoLockClosedOutline,
   IoCallOutline,
-  IoChevronDown
+  IoChevronDown,
+  IoHomeOutline,
+  IoBusinessOutline,
+  IoPersonCircleOutline,
+  IoCalendarOutline,
+  IoWalletOutline,
+  IoBarChartOutline,
+  IoStarOutline,
+  IoAlertCircleOutline,
+  IoDocumentTextOutline,
+  IoSettingsOutline,
+  IoCheckmarkDoneCircleOutline
 } from "react-icons/io5";
 import {
   getAllAdmins,
@@ -38,7 +51,15 @@ import {
 } from "../../../services/adminApi";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useToast } from "../../../hooks/useToast";
-import { ADMIN_MODULES, ROLE_DEFAULT_PERMISSIONS, hasAdminPermission } from "../../../utils/permissionUtils";
+import {
+  ADMIN_MODULES,
+  SIDEBAR_MODULE_PERMISSIONS,
+  APPROVAL_PERMISSIONS,
+  ROLE_DEFAULT_PERMISSIONS,
+  normalizePermissions,
+  sanitizePermissions,
+  hasAdminPermission
+} from "../../../utils/permissionUtils";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 
@@ -106,12 +127,10 @@ export default function AdminTeamManagement() {
   const [updatingId, setUpdatingId] = useState(null);
   const [togglesLoading, setTogglesLoading] = useState(false);
 
-  // In-Place Table Row Expansion for RBAC Matrix
-  const [expandedAdminId, setExpandedAdminId] = useState(null);
 
   // Performance Modal
   const [showStatsModal, setShowStatsModal] = useState(false);
-  const [statsData, setStatsData] = useState([]);
+  const [performanceStats, setPerformanceStats] = useState([]);
   const [statsLoading, setStatsLoading] = useState(false);
 
   // Delete Modal
@@ -126,6 +145,7 @@ export default function AdminTeamManagement() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otpCountdown, setOtpCountdown] = useState(0);
+  const [verifyMethod, setVerifyMethod] = useState("EMAIL"); // "EMAIL" | "PHONE"
 
   const [registerForm, setRegisterForm] = useState({
     name: "",
@@ -141,6 +161,8 @@ export default function AdminTeamManagement() {
     otp: "",
     token: "",
     email: "",
+    phone: "",
+    verifyMethod: "EMAIL",
   });
 
   // Edit Admin Modal State
@@ -312,6 +334,7 @@ export default function AdminTeamManagement() {
   const handleOpenRegisterModal = () => {
     setRegisterStep(1);
     setRegisterError("");
+    setVerifyMethod("EMAIL");
     setRegisterForm({
       name: "",
       email: "",
@@ -325,6 +348,8 @@ export default function AdminTeamManagement() {
       otp: "",
       token: "",
       email: "",
+      phone: "",
+      verifyMethod: "EMAIL",
     });
     setShowPassword(false);
     setShowConfirmPassword(false);
@@ -338,31 +363,90 @@ export default function AdminTeamManagement() {
     setRegisterError("");
   };
 
+  const renderModuleIcon = (iconName) => {
+    switch (iconName) {
+      case "IoHomeOutline":
+        return <IoHomeOutline className="text-blue-500 text-sm" />;
+      case "IoBusinessOutline":
+        return <IoBusinessOutline className="text-amber-500 text-sm" />;
+      case "IoPersonCircleOutline":
+        return <IoPersonCircleOutline className="text-cyan-500 text-sm" />;
+      case "IoCalendarOutline":
+        return <IoCalendarOutline className="text-sky-500 text-sm" />;
+      case "IoCheckmarkCircleOutline":
+        return <IoCheckmarkCircleOutline className="text-emerald-500 text-sm" />;
+      case "IoWalletOutline":
+        return <IoWalletOutline className="text-teal-500 text-sm" />;
+      case "IoBarChartOutline":
+        return <IoBarChartOutline className="text-indigo-500 text-sm" />;
+      case "IoStarOutline":
+        return <IoStarOutline className="text-yellow-500 text-sm" />;
+      case "IoAlertCircleOutline":
+        return <IoAlertCircleOutline className="text-rose-500 text-sm" />;
+      case "IoShieldCheckmarkOutline":
+        return <IoShieldCheckmarkOutline className="text-purple-500 text-sm" />;
+      case "IoDocumentTextOutline":
+        return <IoDocumentTextOutline className="text-slate-500 text-sm" />;
+      case "IoSettingsOutline":
+        return <IoSettingsOutline className="text-gray-500 text-sm" />;
+      default:
+        return <IoShieldOutline className="text-blue-500 text-sm" />;
+    }
+  };
+
   const handleRegisterRoleChange = (newRole) => {
     const defaultPerms = ROLE_DEFAULT_PERMISSIONS[newRole] || ["operations"];
     setRegisterForm((prev) => ({
       ...prev,
       role: newRole,
-      permissions: defaultPerms,
+      permissions: sanitizePermissions(defaultPerms),
     }));
   };
 
   const toggleRegisterPermission = (permKey) => {
     setRegisterForm((prev) => {
       const current = prev.permissions || [];
-      const updated = current.includes(permKey)
-        ? current.filter((k) => k !== permKey)
-        : [...current, permKey];
-      return { ...prev, permissions: updated };
+      const isCurrentlyChecked = current.includes(permKey);
+      let updated;
+      if (isCurrentlyChecked) {
+        updated = current.filter((k) => k !== permKey);
+        // If unticking a parent module, also remove dependent approval permissions
+        if (permKey === "vendors") updated = updated.filter((k) => k !== "can_approve_vendors");
+        if (permKey === "approvals") updated = updated.filter((k) => k !== "can_approve_reports");
+        if (permKey === "payments") updated = updated.filter((k) => k !== "can_approve_disbursals");
+      } else {
+        // If ticking an approval permission, ensure its parent page is enabled
+        const appDef = APPROVAL_PERMISSIONS.find((a) => a.key === permKey);
+        if (appDef && !current.includes(appDef.requiredPage) && !current.includes("all")) {
+          return prev;
+        }
+        updated = [...current, permKey];
+      }
+      return { ...prev, permissions: sanitizePermissions(updated) };
     });
+  };
+
+  const handleSelectAllRegisterPermissions = () => {
+    const allKeys = [
+      ...SIDEBAR_MODULE_PERMISSIONS.map((p) => p.key),
+      ...APPROVAL_PERMISSIONS.map((p) => p.key),
+    ];
+    setRegisterForm((prev) => ({ ...prev, permissions: sanitizePermissions(allKeys) }));
+  };
+
+  const handleResetRegisterPermissions = () => {
+    const defaultPerms = ROLE_DEFAULT_PERMISSIONS[registerForm.role] || ["operations"];
+    setRegisterForm((prev) => ({ ...prev, permissions: sanitizePermissions(defaultPerms) }));
   };
 
   const handleOpenEditModal = (admin) => {
     setEditError("");
     setShowEditPassword(false);
-    const existingPerms = Array.isArray(admin.permissions) && admin.permissions.length > 0
+    const rawPerms = Array.isArray(admin.permissions) && admin.permissions.length > 0
       ? admin.permissions
-      : (ROLE_DEFAULT_PERMISSIONS[admin.role] || ["operations"]);
+      : (ROLE_DEFAULT_PERMISSIONS[admin.role] || ["vendors"]);
+    
+    const existingPerms = sanitizePermissions(normalizePermissions(rawPerms));
 
     setEditAdminData({
       id: admin._id,
@@ -387,18 +471,44 @@ export default function AdminTeamManagement() {
     setEditAdminData((prev) => ({
       ...prev,
       role: newRole,
-      permissions: defaultPerms,
+      permissions: sanitizePermissions(defaultPerms),
     }));
   };
 
   const toggleEditPermission = (permKey) => {
     setEditAdminData((prev) => {
       const current = prev.permissions || [];
-      const updated = current.includes(permKey)
-        ? current.filter((k) => k !== permKey)
-        : [...current, permKey];
-      return { ...prev, permissions: updated };
+      const isCurrentlyChecked = current.includes(permKey);
+      let updated;
+      if (isCurrentlyChecked) {
+        updated = current.filter((k) => k !== permKey);
+        // If unticking a parent module, also remove dependent approval permissions
+        if (permKey === "vendors") updated = updated.filter((k) => k !== "can_approve_vendors");
+        if (permKey === "approvals") updated = updated.filter((k) => k !== "can_approve_reports");
+        if (permKey === "payments") updated = updated.filter((k) => k !== "can_approve_disbursals");
+      } else {
+        // If ticking an approval permission, ensure its parent page is enabled
+        const appDef = APPROVAL_PERMISSIONS.find((a) => a.key === permKey);
+        if (appDef && !current.includes(appDef.requiredPage) && !current.includes("all")) {
+          return prev;
+        }
+        updated = [...current, permKey];
+      }
+      return { ...prev, permissions: sanitizePermissions(updated) };
     });
+  };
+
+  const handleSelectAllEditPermissions = () => {
+    const allKeys = [
+      ...SIDEBAR_MODULE_PERMISSIONS.map((p) => p.key),
+      ...APPROVAL_PERMISSIONS.map((p) => p.key),
+    ];
+    setEditAdminData((prev) => ({ ...prev, permissions: sanitizePermissions(allKeys) }));
+  };
+
+  const handleResetEditPermissions = () => {
+    const defaultPerms = ROLE_DEFAULT_PERMISSIONS[editAdminData.role] || ["operations"];
+    setEditAdminData((prev) => ({ ...prev, permissions: sanitizePermissions(defaultPerms) }));
   };
 
   const handleSaveEditAdmin = async (e) => {
@@ -421,7 +531,7 @@ export default function AdminTeamManagement() {
         name: editAdminData.name.trim(),
         phone: editAdminData.phone.trim() || undefined,
         role: editAdminData.role,
-        permissions: editAdminData.permissions,
+        permissions: sanitizePermissions(editAdminData.permissions),
       };
 
       if (editAdminData.password.trim()) {
@@ -453,8 +563,13 @@ export default function AdminTeamManagement() {
       return;
     }
 
-    if (!registerForm.email.trim()) {
-      setRegisterError("Admin email is required");
+    if (verifyMethod === "EMAIL" && !registerForm.email.trim()) {
+      setRegisterError("Admin email address is required for Email verification");
+      return;
+    }
+
+    if (verifyMethod === "PHONE" && !registerForm.phone.trim()) {
+      setRegisterError("Mobile number is required for SMS OTP verification");
       return;
     }
 
@@ -472,18 +587,23 @@ export default function AdminTeamManagement() {
       setRegisterLoading(true);
       const res = await sendAdminRegistrationOTP({
         name: registerForm.name.trim(),
-        email: registerForm.email.trim().toLowerCase(),
+        email: registerForm.email.trim() ? registerForm.email.trim().toLowerCase() : undefined,
+        phone: registerForm.phone.trim() || undefined,
+        verifyMethod,
       });
 
       if (res.success) {
         setOtpData({
           token: res.data.token,
-          email: res.data.email,
+          email: res.data.email || registerForm.email,
+          phone: res.data.phone || registerForm.phone,
+          verifyMethod,
           otp: "",
         });
         setRegisterStep(2);
         setOtpCountdown(60);
-        toast.showSuccess(`Verification code sent to ${registerForm.email}`);
+        const destination = verifyMethod === "PHONE" ? registerForm.phone : registerForm.email;
+        toast.showSuccess(`Verification code sent to ${destination}`);
       } else {
         setRegisterError(res.message || "Failed to send OTP");
       }
@@ -503,7 +623,9 @@ export default function AdminTeamManagement() {
       setRegisterLoading(true);
       const res = await sendAdminRegistrationOTP({
         name: registerForm.name.trim(),
-        email: registerForm.email.trim().toLowerCase(),
+        email: registerForm.email.trim() ? registerForm.email.trim().toLowerCase() : undefined,
+        phone: registerForm.phone.trim() || undefined,
+        verifyMethod,
       });
 
       if (res.success) {
@@ -538,11 +660,12 @@ export default function AdminTeamManagement() {
       setRegisterLoading(true);
       const res = await registerAdminWithOTP({
         name: registerForm.name.trim(),
-        email: registerForm.email.trim().toLowerCase(),
+        email: registerForm.email.trim() ? registerForm.email.trim().toLowerCase() : undefined,
         phone: registerForm.phone.trim() || undefined,
         password: registerForm.password,
         role: registerForm.role,
-        permissions: registerForm.permissions,
+        permissions: sanitizePermissions(registerForm.permissions),
+        verifyMethod,
         otp: otpData.otp,
         token: otpData.token,
       });
@@ -594,90 +717,96 @@ export default function AdminTeamManagement() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-5 max-w-7xl mx-auto space-y-3.5">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <IoPeopleOutline className="text-blue-600" />
+          <h1 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+            <IoPeopleOutline className="text-blue-600 text-lg" />
             Admin Team & Workload Management
           </h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-xs text-gray-400 mt-0.5">
             Manage role-based admins, toggle automated workload distribution, and evaluate team statistics.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={handleOpenStats}
-            className="flex items-center gap-2 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl transition-colors text-sm font-semibold cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-xl transition-colors text-xs font-semibold cursor-pointer"
           >
-            <IoStatsChartOutline />
+            <IoStatsChartOutline className="text-sm" />
             Team Evaluation
           </button>
           <button
             onClick={loadData}
-            className="flex items-center gap-2 px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors text-sm font-medium cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors text-xs font-medium cursor-pointer"
           >
-            <IoRefreshOutline className={loading ? 'animate-spin' : ''} />
+            <IoRefreshOutline className={`text-sm ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
           <button
             onClick={handleOpenRegisterModal}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all shadow-sm shadow-blue-500/20 text-sm font-semibold cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all shadow-xs text-xs font-bold cursor-pointer active:scale-95"
           >
-            <IoPersonAddOutline className="text-base" />
+            <IoPersonAddOutline className="text-sm" />
             Register Admin
           </button>
         </div>
       </div>
 
-      {error && <ErrorMessage message={error} className="mb-6" />}
+      {error && <ErrorMessage message={error} className="mb-3" />}
 
       {/* ── DEPARTMENT MASTER AUTO-ASSIGN TOGGLE CARD ── */}
-      <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-3">
+      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-gray-200/80 shadow-xs space-y-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-base border border-blue-100">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm border border-blue-100">
               <IoFlashOutline />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-gray-900">Department Auto-Assignment Toggles</h2>
-              <p className="text-xs text-gray-400">When enabled, new incoming requests are automatically distributed equally using Least-Active-Load.</p>
+              <h2 className="text-xs sm:text-sm font-bold text-gray-900">Department Auto-Assignment Toggles</h2>
+              <p className="text-[11px] text-gray-400">When enabled, new incoming requests are automatically distributed equally using Least-Active-Load.</p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-1">
           {[
-            { key: 'AUTO_ASSIGN_VERIFICATION', label: 'KYC & Verification', role: 'Expert Verifiers' },
-            { key: 'AUTO_ASSIGN_OPERATIONS',   label: 'Operations',          role: 'Bookings & Shifts' },
-            { key: 'AUTO_ASSIGN_FINANCE',      label: 'Finance & Payouts',   role: 'Withdrawals & Invoices' },
-            { key: 'AUTO_ASSIGN_SUPPORT',      label: 'Customer Support',    role: 'Disputes & Tickets' },
-            { key: 'AUTO_ASSIGN_QC',           label: 'Quality Control',     role: 'Reports & Borewell QA' },
+            { key: "AUTO_ASSIGN_VERIFICATION", label: "KYC & Verification", role: "Expert Verifiers" },
+            { key: "AUTO_ASSIGN_OPERATIONS", label: "Operations", role: "Bookings & Shifts" },
+            { key: "AUTO_ASSIGN_FINANCE", label: "Finance & Payouts", role: "Withdrawals & Invoices" },
+            { key: "AUTO_ASSIGN_SUPPORT", label: "Customer Support", role: "Disputes & Tickets" },
+            { key: "AUTO_ASSIGN_QC", label: "Quality Control", role: "Reports & Borewell QA" },
           ].map((dept) => {
             const isEnabled = toggles[dept.key] !== false;
             return (
               <div
                 key={dept.key}
-                className={`p-3 rounded-xl border transition-all ${isEnabled ? 'bg-blue-50/40 border-blue-200' : 'bg-gray-50 border-gray-200'}`}
+                className={`p-2.5 rounded-xl border transition-all ${
+                  isEnabled ? "bg-blue-50/40 border-blue-200" : "bg-gray-50 border-gray-200"
+                }`}
               >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-bold text-gray-900 truncate">{dept.label}</span>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11.5px] font-bold text-gray-900 truncate">{dept.label}</span>
                   <button
                     type="button"
                     onClick={() => handleToggleDepartment(dept.key, isEnabled)}
                     disabled={togglesLoading}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isEnabled ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    className={`relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      isEnabled ? "bg-blue-600" : "bg-gray-300"
+                    }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${isEnabled ? 'translate-x-4' : 'translate-x-0'}`}
+                      className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                        isEnabled ? "translate-x-3.5" : "translate-x-0"
+                      }`}
                     />
                   </button>
                 </div>
-                <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center justify-between text-[9.5px]">
                   <span className="text-gray-400 truncate">{dept.role}</span>
-                  <span className={`font-bold ${isEnabled ? 'text-blue-600' : 'text-gray-400'}`}>
-                    {isEnabled ? 'AUTO' : 'POOL'}
+                  <span className={`font-black tracking-wider ${isEnabled ? "text-blue-600" : "text-gray-400"}`}>
+                    {isEnabled ? "AUTO" : "POOL"}
                   </span>
                 </div>
               </div>
@@ -687,47 +816,45 @@ export default function AdminTeamManagement() {
       </div>
 
       {/* ── ADMIN TEAM MEMBERS TABLE ── */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xs border border-gray-200/80 overflow-hidden">
         {/* Table Header Bar */}
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
           <div className="flex items-center gap-2">
-            <IoBriefcaseOutline className="text-gray-500 text-base" />
-            <h3 className="text-sm font-bold text-gray-900">
+            <IoBriefcaseOutline className="text-gray-500 text-sm" />
+            <h3 className="text-xs sm:text-sm font-bold text-gray-900">
               Operational Staff Team ({admins.filter((a) => a.role !== "SUPER_ADMIN").length})
             </h3>
           </div>
-          <span className="text-xs text-gray-400">
+          <span className="text-[11px] text-gray-400">
             Staff on-duty:{" "}
-            <strong className="text-gray-700">
+            <strong className="text-gray-700 font-bold">
               {admins.filter((a) => a.role !== "SUPER_ADMIN" && a.isActive && a.isAvailableForAssignment !== false).length}
             </strong>
           </span>
         </div>
 
-        <div className="overflow-x-auto min-h-[380px]">
+        <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/80 border-b border-gray-200 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="px-5 py-3">Admin</th>
-                <th className="px-5 py-3">Assigned Role</th>
-                <th className="px-5 py-3">Module Clearances (RBAC)</th>
-                <th className="px-5 py-3">Account Status</th>
-                <th className="px-5 py-3">Duty / Auto-Assign</th>
-                <th className="px-5 py-3">Active Load</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+              <tr className="bg-gray-50/80 border-b border-gray-200 text-[10.5px] font-bold text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-2.5">Admin</th>
+                <th className="px-4 py-2.5">Account Status</th>
+                <th className="px-4 py-2.5">Duty / Auto-Assign</th>
+                <th className="px-4 py-2.5">Active Load</th>
+                <th className="px-4 py-2.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-xs">
               {admins.filter((a) => a.role !== "SUPER_ADMIN").length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center text-gray-400">
+                  <td colSpan={5} className="px-4 py-10 text-center text-gray-400">
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 text-2xl">
+                      <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-xl">
                         <IoPeopleOutline />
                       </div>
-                      <p className="font-bold text-sm text-gray-700">No Operational Staff Members</p>
-                      <p className="text-xs text-gray-400 max-w-sm">
-                        Click <span className="font-semibold text-blue-600">"+ Register Admin"</span> above to onboard staff admins and assign department module clearances.
+                      <p className="font-bold text-xs text-gray-700">No Operational Staff Members</p>
+                      <p className="text-[11px] text-gray-400 max-w-sm">
+                        Click <span className="font-semibold text-blue-600">"+ Register Admin"</span> above to onboard staff admins and assign module clearances.
                       </p>
                     </div>
                   </td>
@@ -739,313 +866,178 @@ export default function AdminTeamManagement() {
                     const isSelf = admin._id === currentAdmin.id;
                     const isUpdating = updatingId === admin._id;
                     const isDuty = admin.isAvailableForAssignment !== false;
-                    const currentPerms =
-                      Array.isArray(admin.permissions) && admin.permissions.length > 0
-                        ? admin.permissions
-                        : ROLE_DEFAULT_PERMISSIONS[admin.role] || ["operations"];
-                    const isExpanded = expandedAdminId === admin._id;
 
                     return (
-                      <React.Fragment key={admin._id}>
-                        <tr
-                          className={`transition-colors border-b border-gray-100 ${
-                            isExpanded ? "bg-blue-50/40" : "hover:bg-gray-50/60"
-                          }`}
-                        >
-                          {/* Name, Email & Phone */}
-                          <td className="px-5 py-3.5">
-                            <div className="font-semibold text-gray-900 flex items-center gap-1.5">
-                              {admin.name}{" "}
-                              {isSelf && (
-                                <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.2 rounded">
-                                  (You)
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[11px] text-gray-400">{admin.email}</div>
-                            {admin.phone ? (
-                              <div className="text-[11px] text-gray-600 font-medium flex items-center gap-1 mt-0.5">
-                                <IoCallOutline className="text-[10px] text-blue-500" />
-                                <span>{admin.phone}</span>
-                              </div>
-                            ) : (
-                              <div className="text-[10px] text-gray-300 italic mt-0.5">No mobile number</div>
+                      <tr key={admin._id} className="hover:bg-gray-50/60 transition-colors border-b border-gray-100">
+                        {/* Name, Role Badge, Email, Phone & Permissions Preview */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-gray-900 text-xs">{admin.name}</span>
+                            {isSelf && (
+                              <span className="text-[9.5px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.2 rounded">
+                                (You)
+                              </span>
                             )}
-                          </td>
-
-                          {/* Role Dropdown */}
-                          <td className="px-5 py-3.5">
-                            <select
-                              value={admin.role}
-                              onChange={(e) => handleRoleChange(admin._id, e.target.value)}
-                              disabled={isUpdating}
-                              className={`text-xs font-semibold px-2.5 py-1 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer ${getRoleBadge(
+                            <span
+                              className={`px-1.5 py-0.2 rounded-full text-[9.5px] font-bold border ${getRoleBadge(
                                 admin.role
                               )}`}
                             >
-                              {ROLE_OPTIONS.filter((opt) => opt.value !== "SUPER_ADMIN").map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
+                              {ROLE_DEFINITIONS.find((r) => r.value === admin.role)?.label || admin.role}
+                            </span>
+                          </div>
+                          <div className="text-[10.5px] text-gray-400 mt-0.2">{admin.email}</div>
+                          {admin.phone ? (
+                            <div className="text-[10.5px] text-gray-600 font-medium flex items-center gap-1 mt-0.5">
+                              <IoCallOutline className="text-[10px] text-blue-500" />
+                              <span>{admin.phone}</span>
+                            </div>
+                          ) : (
+                            <div className="text-[9.5px] text-gray-300 italic mt-0.5">No mobile number</div>
+                          )}
 
-                          {/* Module Access Clearance (In-Place Accordion Trigger) */}
-                          <td className="px-5 py-3.5">
-                            <button
-                              type="button"
-                              onClick={() => setExpandedAdminId(isExpanded ? null : admin._id)}
-                              className={`group flex flex-col items-start gap-1 p-2 rounded-xl border text-left transition-all duration-150 cursor-pointer select-none active:scale-[0.98] ${
-                                isExpanded
-                                  ? "bg-blue-600 text-white border-blue-600 ring-3 ring-blue-500/20 shadow-sm shadow-blue-500/20"
-                                  : "bg-blue-50/70 hover:bg-blue-100/80 border-blue-200 hover:border-blue-300 text-blue-900 shadow-xs"
-                              }`}
-                            >
-                              {/* Card Top Row: Icon + Count + Chevron */}
-                              <div className="flex items-center justify-between gap-2.5 w-full">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <IoShieldCheckmarkOutline
-                                    className={`text-xs flex-shrink-0 ${isExpanded ? "text-white" : "text-blue-600"}`}
-                                  />
-                                  <span className="text-[11px] font-black tracking-tight whitespace-nowrap">
-                                    {currentPerms.length} Module{currentPerms.length !== 1 ? "s" : ""} Granted
+                          {/* Permissions Preview Pills (e.g. 1-2 pills + "+3 more") */}
+                          <div className="flex items-center gap-1 flex-wrap mt-1.5">
+                            {(() => {
+                              const rawPerms = Array.isArray(admin.permissions) && admin.permissions.length > 0
+                                ? admin.permissions
+                                : (ROLE_DEFAULT_PERMISSIONS[admin.role] || []);
+
+                              if (rawPerms.includes("all")) {
+                                return (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                    <IoShieldCheckmarkOutline className="text-[9.5px]" />
+                                    All Access
                                   </span>
-                                </div>
-                                <IoChevronDown
-                                  className={`text-[10px] flex-shrink-0 transition-transform duration-200 ${
-                                    isExpanded ? "rotate-180 text-white" : "text-blue-500 group-hover:text-blue-700"
-                                  }`}
-                                />
-                              </div>
+                                );
+                              }
 
-                              {/* Card Bottom Row: Module Pills */}
-                              <div className="flex flex-wrap gap-1 max-w-[220px]">
-                                {currentPerms.map((permKey) => {
-                                  const mod = ADMIN_MODULES.find((m) => m.key === permKey);
-                                  return (
+                              if (rawPerms.length === 0) {
+                                return (
+                                  <span className="text-[9px] text-gray-400 italic">
+                                    0 permissions
+                                  </span>
+                                );
+                              }
+
+                              const allLabels = rawPerms.map((key) => {
+                                const matchModule = SIDEBAR_MODULE_PERMISSIONS.find((m) => m.key === key);
+                                if (matchModule) return matchModule.label.split("&")[0].split("/")[0].trim();
+                                const matchApp = APPROVAL_PERMISSIONS.find((a) => a.key === key);
+                                if (matchApp) return matchApp.label.replace("Can Approve", "Approve").trim();
+                                return key;
+                              });
+
+                              const visibleLabels = allLabels.slice(0, 2);
+                              const remainingCount = allLabels.length - visibleLabels.length;
+
+                              return (
+                                <>
+                                  {visibleLabels.map((lbl, idx) => (
                                     <span
-                                      key={permKey}
-                                      className={`px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase tracking-wider border ${
-                                        isExpanded
-                                          ? "bg-white/20 text-white border-white/30"
-                                          : mod?.color || "text-blue-700 bg-blue-100/70 border-blue-200"
-                                      }`}
+                                      key={idx}
+                                      className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/80 truncate max-w-[120px]"
+                                      title={lbl}
                                     >
-                                      {permKey}
+                                      {lbl}
                                     </span>
-                                  );
-                                })}
-                              </div>
-                            </button>
-                          </td>
+                                  ))}
+                                  {remainingCount > 0 && (
+                                    <span
+                                      className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200 cursor-help"
+                                      title={`Other permissions: ${allLabels.slice(2).join(", ")}`}
+                                    >
+                                      +{remainingCount} more
+                                    </span>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </td>
 
-                          {/* Account Status (Operational Staff Only) */}
-                          <td className="px-5 py-3.5">
-                            <button
-                              onClick={() => handleToggleActiveStatus(admin._id, admin.isActive)}
-                              disabled={isUpdating}
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer ${
-                                admin.isActive
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                                  : "bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200"
+                        {/* Account Status (Operational Staff Only) */}
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => handleToggleActiveStatus(admin._id, admin.isActive)}
+                            disabled={isUpdating}
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors cursor-pointer ${
+                              admin.isActive
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                : "bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200"
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                admin.isActive ? "bg-emerald-500" : "bg-gray-400"
+                              }`}
+                            />
+                            {admin.isActive ? "Active" : "Inactive"}
+                          </button>
+                        </td>
+
+                        {/* Duty Status (Operational Staff Only) */}
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => handleToggleDutyStatus(admin._id, isDuty)}
+                            disabled={isUpdating || !admin.isActive}
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                              isDuty && admin.isActive
+                                ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                                : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                isDuty && admin.isActive ? "bg-blue-500 animate-pulse" : "bg-amber-400"
+                              }`}
+                            />
+                            {isDuty && admin.isActive ? "On-Duty (Receiving)" : "Away (Paused)"}
+                          </button>
+                        </td>
+
+                        {/* Active Workload Counter */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`font-mono font-bold px-2 py-0.5 rounded text-[10.5px] ${
+                                (admin.activeTicketsCount || 0) > 5
+                                  ? "bg-rose-100 text-rose-700"
+                                  : (admin.activeTicketsCount || 0) > 0
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-gray-100 text-gray-500"
                               }`}
                             >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  admin.isActive ? "bg-emerald-500" : "bg-gray-400"
-                                }`}
-                              />
-                              {admin.isActive ? "Active" : "Inactive"}
-                            </button>
-                          </td>
+                              {admin.activeTicketsCount || 0} open
+                            </span>
+                          </div>
+                        </td>
 
-                          {/* Duty Status (Operational Staff Only) */}
-                          <td className="px-5 py-3.5">
+                        {/* Actions */}
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
                             <button
-                              onClick={() => handleToggleDutyStatus(admin._id, isDuty)}
-                              disabled={isUpdating || !admin.isActive}
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                                isDuty && admin.isActive
-                                  ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                                  : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                              }`}
+                              onClick={() => handleOpenEditModal(admin)}
+                              className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
+                              title="Edit Profile & Permissions"
                             >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  isDuty && admin.isActive ? "bg-blue-500 animate-pulse" : "bg-amber-400"
-                                }`}
-                              />
-                              {isDuty && admin.isActive ? "On-Duty (Receiving)" : "Away (Paused)"}
+                              <IoCreateOutline className="text-sm" />
                             </button>
-                          </td>
-
-                          {/* Active Workload Counter */}
-                          <td className="px-5 py-3.5">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
-                                  (admin.activeTicketsCount || 0) > 5
-                                    ? "bg-rose-100 text-rose-700"
-                                    : (admin.activeTicketsCount || 0) > 0
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "bg-gray-100 text-gray-500"
-                                }`}
-                              >
-                                {admin.activeTicketsCount || 0} open
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Actions */}
-                          <td className="px-5 py-3.5 text-right">
-                            <div className="flex items-center justify-end gap-1">
+                            {!isSelf && (
                               <button
-                                onClick={() => handleOpenEditModal(admin)}
-                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                                title="Edit Profile & Password"
+                                onClick={() => handleDeleteClick(admin)}
+                                className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                                title="Delete Admin"
                               >
-                                <IoCreateOutline className="text-base" />
+                                <IoTrashOutline className="text-sm" />
                               </button>
-                              {!isSelf && (
-                                <button
-                                  onClick={() => handleDeleteClick(admin)}
-                                  className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                  title="Delete Admin"
-                                >
-                                  <IoTrashOutline className="text-base" />
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-
-                        {/* Inline Expanded RBAC Matrix Accordion Sub-Card */}
-                        {isExpanded && (
-                          <tr className="bg-slate-50/90 border-b-2 border-blue-200/80">
-                            <td colSpan={7} className="p-0">
-                              <div className="p-3.5 sm:p-4 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                                {/* Sub-Card Header */}
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-200/80">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs text-xs flex-shrink-0">
-                                      <IoShieldCheckmarkOutline />
-                                    </div>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider">
-                                        MODULE ACCESS CLEARANCE (RBAC MATRIX)
-                                      </h4>
-                                      <span className="text-[9px] text-blue-700 font-bold bg-blue-100/80 border border-blue-200 px-1.5 py-0.2 rounded-full">
-                                        {currentPerms.length} of {ADMIN_MODULES.length} granted
-                                      </span>
-                                      <span className="text-[10px] text-gray-400 hidden md:inline">
-                                        • Live clearances for <strong className="text-gray-700">{admin.name}</strong>
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  {/* Quick Actions & Collapse */}
-                                  <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdatePermissionsDirect(
-                                          admin._id,
-                                          ADMIN_MODULES.map((m) => m.key)
-                                        )
-                                      }
-                                      className="px-2 py-0.5 text-[10px] font-bold text-blue-700 hover:bg-blue-100/70 rounded-lg transition-colors cursor-pointer border border-blue-200/80"
-                                    >
-                                      ✓ Grant All
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdatePermissionsDirect(
-                                          admin._id,
-                                          ROLE_DEFAULT_PERMISSIONS[admin.role] || ["operations"]
-                                        )
-                                      }
-                                      className="px-2 py-0.5 text-[10px] font-bold text-amber-700 hover:bg-amber-100/70 rounded-lg transition-colors cursor-pointer border border-amber-200/80"
-                                    >
-                                      ↺ Reset
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setExpandedAdminId(null)}
-                                      className="px-2.5 py-0.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold transition-colors cursor-pointer shadow-xs ml-0.5"
-                                    >
-                                      Done
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {/* 7 Modules Grid across full width - 4 cols on xl/lg, 2 on sm */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                                  {ADMIN_MODULES.map((mod) => {
-                                    const isChecked =
-                                      currentPerms.includes(mod.key) || currentPerms.includes("all");
-                                    return (
-                                      <button
-                                        key={mod.key}
-                                        type="button"
-                                        onClick={() => {
-                                          const updated = isChecked
-                                            ? currentPerms.filter((k) => k !== mod.key)
-                                            : [...currentPerms, mod.key];
-                                          handleUpdatePermissionsDirect(admin._id, updated);
-                                        }}
-                                        className={`group flex items-start gap-2 p-2 px-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer select-none outline-none active:scale-[0.98] ${
-                                          isChecked
-                                            ? "bg-blue-50/90 border-blue-400 text-blue-950 shadow-xs ring-1 ring-blue-500/20"
-                                            : "bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-slate-50/80 hover:shadow-xs"
-                                        }`}
-                                      >
-                                        {/* Custom Stylized Checkbox */}
-                                        <div
-                                          className={`w-4 h-4 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-150 ${
-                                            isChecked
-                                              ? "bg-blue-600 text-white shadow-xs scale-105"
-                                              : "border border-gray-300 bg-gray-50 group-hover:border-blue-400 group-hover:bg-white"
-                                          }`}
-                                        >
-                                          {isChecked && <IoCheckmarkOutline className="text-[10px] stroke-[3]" />}
-                                        </div>
-
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center justify-between gap-1">
-                                            <span
-                                              className={`text-[11px] font-bold leading-tight ${
-                                                isChecked
-                                                  ? "text-blue-950"
-                                                  : "text-gray-900 group-hover:text-blue-900"
-                                              }`}
-                                            >
-                                              {mod.label}
-                                            </span>
-                                            {isChecked && (
-                                              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse flex-shrink-0" />
-                                            )}
-                                          </div>
-                                          <div
-                                            className={`text-[9px] leading-tight line-clamp-1 mt-0.5 ${
-                                              isChecked ? "text-blue-800/80" : "text-gray-500"
-                                            }`}
-                                          >
-                                            {mod.description}
-                                          </div>
-                                        </div>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                  </React.Fragment>
-                );
-              }))}
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+              )}
             </tbody>
           </table>
         </div>
@@ -1076,7 +1068,7 @@ export default function AdminTeamManagement() {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto pr-1 space-y-3">
+            <div className="flex-1 overflow-y-auto pr-1.5 space-y-3 custom-scrollbar">
               {statsLoading ? (
                 <div className="py-12 text-center text-xs text-gray-400">
                   <IoRefreshOutline className="animate-spin text-2xl mx-auto mb-2 text-indigo-600" />
@@ -1134,19 +1126,19 @@ export default function AdminTeamManagement() {
 
       {/* ── REGISTER ADMIN MODAL (2-STEP WITH OTP) ── */}
       {showRegisterModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl max-w-2xl sm:max-w-3xl w-full p-4 sm:p-6 shadow-2xl space-y-3.5 max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg border border-blue-100">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-base border border-blue-100">
                   <IoPersonAddOutline />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-gray-900">Register Internal Admin</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900">Register Internal Admin</h3>
                   <p className="text-xs text-gray-400">
                     {registerStep === 1 
-                      ? "Create account and assign department permissions." 
+                      ? "Create account, assign role, approvals, and sidebar module access." 
                       : "Verify email to activate new admin account."}
                   </p>
                 </div>
@@ -1163,87 +1155,113 @@ export default function AdminTeamManagement() {
 
             {/* Error Message */}
             {registerError && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3.5 py-2.5 rounded-xl flex items-center justify-between">
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3.5 py-2 rounded-xl flex items-center justify-between">
                 <span>{registerError}</span>
                 <button type="button" onClick={() => setRegisterError("")} className="text-rose-500 hover:text-rose-700 text-sm font-bold">×</button>
               </div>
             )}
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto pr-1">
+            <div className="flex-1 overflow-y-auto pr-1.5 custom-scrollbar">
               {registerStep === 1 ? (
                 /* Step 1: Details Form */
                 <form onSubmit={handleSendRegistrationOTP} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                      Full Name *
-                    </label>
-                    <div className="relative">
-                      <IoPeopleOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
-                      <input
-                        type="text"
-                        value={registerForm.name}
-                        onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
-                        required
-                        className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
-                        placeholder="e.g. Rahul Sharma"
-                      />
+                  {/* Verification Channel Selector */}
+                  <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] font-bold text-slate-700">
+                        Choose Verification Channel *
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        OTP will be dispatched via this channel
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setVerifyMethod("EMAIL")}
+                        className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none outline-none ${
+                          verifyMethod === "EMAIL"
+                            ? "bg-white border-blue-500 text-blue-900 shadow-xs ring-1 ring-blue-500/20"
+                            : "bg-white/60 border-slate-200 text-slate-600 hover:bg-white hover:text-slate-900"
+                        }`}
+                      >
+                        <IoMailOutline className={verifyMethod === "EMAIL" ? "text-blue-600 text-sm" : "text-slate-400 text-sm"} />
+                        <span>Email OTP</span>
+                        {verifyMethod === "EMAIL" && <span className="w-1.5 h-1.5 rounded-full bg-blue-600 ml-0.5"></span>}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setVerifyMethod("PHONE")}
+                        className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none outline-none ${
+                          verifyMethod === "PHONE"
+                            ? "bg-white border-blue-500 text-blue-900 shadow-xs ring-1 ring-blue-500/20"
+                            : "bg-white/60 border-slate-200 text-slate-600 hover:bg-white hover:text-slate-900"
+                        }`}
+                      >
+                        <IoCallOutline className={verifyMethod === "PHONE" ? "text-blue-600 text-sm" : "text-slate-400 text-sm"} />
+                        <span>Mobile SMS OTP</span>
+                        {verifyMethod === "PHONE" && <span className="w-1.5 h-1.5 rounded-full bg-blue-600 ml-0.5"></span>}
+                      </button>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                      Email Address *
-                    </label>
-                    <div className="relative">
-                      <IoMailOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
-                      <input
-                        type="email"
-                        value={registerForm.email}
-                        onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-                        required
-                        className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
-                        placeholder="rahul@jaladhar.com"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                      Mobile Number <span className="text-gray-400 font-normal lowercase">(optional)</span>
-                    </label>
-                    <div className="relative">
-                      <IoCallOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
-                      <input
-                        type="tel"
-                        value={registerForm.phone}
-                        onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
-                        className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
-                        placeholder="+91 98765 43210"
-                      />
-                    </div>
-                  </div>
-
+                  {/* Credentials 2-Column Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Full Name *
+                      </label>
+                      <div className="relative">
+                        <IoPeopleOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                        <input
+                          type="text"
+                          value={registerForm.name}
+                          onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                          required
+                          className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-gray-800 outline-none transition-all shadow-xs"
+                          placeholder="e.g. Rahul Sharma"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Email Address {verifyMethod === "EMAIL" ? <span className="text-rose-500">*</span> : <span className="text-gray-400 font-normal lowercase">(optional)</span>}
+                      </label>
+                      <div className="relative">
+                        <IoMailOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                        <input
+                          type="email"
+                          value={registerForm.email}
+                          onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                          required={verifyMethod === "EMAIL"}
+                          className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-gray-800 outline-none transition-all shadow-xs"
+                          placeholder="rahul@jaladhar.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
                         Password *
                       </label>
                       <div className="relative">
-                        <IoKeyOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                        <IoKeyOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                         <input
                           type={showPassword ? "text" : "password"}
                           value={registerForm.password}
                           onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                           required
                           minLength={6}
-                          className="w-full pl-10 pr-9 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
+                          className="w-full pl-9 pr-8 py-2 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-gray-800 outline-none transition-all shadow-xs"
                           placeholder="Min 6 chars"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-base cursor-pointer"
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm cursor-pointer"
                         >
                           {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
                         </button>
@@ -1251,114 +1269,261 @@ export default function AdminTeamManagement() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
                         Confirm Password *
                       </label>
                       <div className="relative">
-                        <IoKeyOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                        <IoKeyOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                         <input
                           type={showConfirmPassword ? "text" : "password"}
                           value={registerForm.confirmPassword}
                           onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
                           required
-                          className="w-full pl-10 pr-9 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
+                          className="w-full pl-9 pr-8 py-2 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-gray-800 outline-none transition-all shadow-xs"
                           placeholder="Re-enter password"
                         />
                         <button
                           type="button"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-base cursor-pointer"
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm cursor-pointer"
                         >
                           {showConfirmPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
                         </button>
                       </div>
                     </div>
+
+                    <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                          Designated Role *
+                        </label>
+                        <select
+                          value={registerForm.role}
+                          onChange={(e) => handleRegisterRoleChange(e.target.value)}
+                          required
+                          className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-gray-800 cursor-pointer outline-none transition-all shadow-xs"
+                        >
+                          {ROLE_DEFINITIONS.map((r) => (
+                            <option key={r.value} value={r.value}>
+                              {r.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                          Mobile Number {verifyMethod === "PHONE" ? <span className="text-rose-500">*</span> : <span className="text-gray-400 font-normal lowercase">(optional)</span>}
+                        </label>
+                        <div className="relative">
+                          <IoCallOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                          <input
+                            type="tel"
+                            value={registerForm.phone}
+                            onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
+                            required={verifyMethod === "PHONE"}
+                            className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-gray-800 outline-none transition-all shadow-xs"
+                            placeholder="+91 98765 43210"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                      Designated Role & Access Level *
-                    </label>
-                    <select
-                      value={registerForm.role}
-                      onChange={(e) => handleRegisterRoleChange(e.target.value)}
-                      required
-                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800 cursor-pointer"
-                    >
-                      {ROLE_DEFINITIONS.map((r) => (
-                        <option key={r.value} value={r.value}>
-                          {r.label} — {r.description}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Module Access Clearance Checkboxes */}
-                  <div className="space-y-2 pt-1 border-t border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        Module Access Clearance (RBAC Matrix)
-                      </label>
-                      <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">
-                        {registerForm.permissions.length} module{registerForm.permissions.length !== 1 ? 's' : ''} granted
-                      </span>
+                  {/* 1. SIDEBAR NAVIGATION & PAGE ACCESS SECTION */}
+                  <div className="space-y-2 pt-2 border-t border-gray-100">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <IoBriefcaseOutline className="text-blue-600 text-sm" />
+                        <h4 className="text-xs font-bold text-gray-900">
+                          Sidebar Navigation & Page Access
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSelectAllRegisterPermissions}
+                          className="text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer"
+                        >
+                          ✓ Allow All Pages
+                        </button>
+                        <span className="text-gray-300">•</span>
+                        <button
+                          type="button"
+                          onClick={handleResetRegisterPermissions}
+                          className="text-[10px] text-gray-500 hover:text-gray-700 font-medium hover:underline cursor-pointer"
+                        >
+                          ↺ Reset Defaults
+                        </button>
+                        <span className="text-[10px] text-blue-700 font-bold bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full ml-1">
+                          {SIDEBAR_MODULE_PERMISSIONS.filter((m) => registerForm.permissions.includes(m.key)).length} / {SIDEBAR_MODULE_PERMISSIONS.length} pages allowed
+                        </span>
+                      </div>
                     </div>
                     <p className="text-[11px] text-gray-400">
-                      Select which modules this staff admin can view and access in the dashboard.
+                      Select which sidebar navigation pages this staff admin can visit. Items not selected will be hidden from their sidebar.
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                      {ADMIN_MODULES.map((mod) => {
-                        const isChecked =
-                          registerForm.permissions.includes(mod.key) ||
-                          registerForm.permissions.includes("all");
-                        return (
-                          <button
-                            key={mod.key}
-                            type="button"
-                            onClick={() => toggleRegisterPermission(mod.key)}
-                            className={`group relative flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer select-none outline-none active:scale-[0.98] ${
-                              isChecked
-                                ? "bg-blue-50/90 border-blue-400 text-blue-950 shadow-sm ring-2 ring-blue-500/20"
-                                : "bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-slate-50/80 hover:shadow-xs"
-                            }`}
-                          >
-                            {/* Custom Stylized Checkbox */}
-                            <div
-                              className={`w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-150 ${
+
+                    <div className="bg-gray-50/70 p-2.5 rounded-2xl border border-gray-200/80 max-h-[220px] overflow-y-auto custom-scrollbar">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {SIDEBAR_MODULE_PERMISSIONS.map((mod) => {
+                          const isChecked =
+                            registerForm.permissions.includes(mod.key) ||
+                            registerForm.permissions.includes("all");
+                          return (
+                            <button
+                              key={mod.key}
+                              type="button"
+                              onClick={() => toggleRegisterPermission(mod.key)}
+                              className={`flex items-start gap-2.5 p-2 px-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer select-none outline-none ${
                                 isChecked
-                                  ? "bg-blue-600 text-white shadow-sm shadow-blue-500/30 scale-105"
-                                  : "border-2 border-gray-300 bg-gray-50 group-hover:border-blue-400 group-hover:bg-white"
+                                  ? "bg-white border-blue-400 text-blue-950 shadow-xs ring-1 ring-blue-500/20"
+                                  : "bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-xs"
                               }`}
                             >
-                              {isChecked && <IoCheckmarkOutline className="text-xs stroke-[3]" />}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1">
-                                <span
-                                  className={`text-xs font-bold leading-tight ${
-                                    isChecked
-                                      ? "text-blue-950"
-                                      : "text-gray-900 group-hover:text-blue-900"
-                                  }`}
-                                >
-                                  {mod.label}
-                                </span>
-                              </div>
                               <div
-                                className={`text-[10px] line-clamp-1 mt-0.5 ${
-                                  isChecked ? "text-blue-800/80" : "text-gray-500"
+                                className={`w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                                  isChecked
+                                    ? "bg-blue-600 text-white shadow-xs"
+                                    : "border border-gray-300 bg-white"
                                 }`}
                               >
-                                {mod.description}
+                                {isChecked && <IoCheckmarkOutline className="text-[9px] stroke-[3]" />}
                               </div>
-                            </div>
-                          </button>
-                        );
-                      })}
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    {renderModuleIcon(mod.icon)}
+                                    <span
+                                      className={`text-[11px] font-bold truncate ${
+                                        isChecked ? "text-blue-950" : "text-gray-900"
+                                      }`}
+                                    >
+                                      {mod.label}
+                                    </span>
+                                  </div>
+                                  <span className="text-[8px] font-bold text-gray-400 bg-gray-100 px-1 py-0.2 rounded uppercase">
+                                    {mod.section.split(" ")[0]}
+                                  </span>
+                                </div>
+                                <p
+                                  className={`text-[9.5px] mt-0.5 leading-snug line-clamp-1 ${
+                                    isChecked ? "text-blue-800/80" : "text-gray-400"
+                                  }`}
+                                >
+                                  {mod.description}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
+                  {/* 2. APPROVAL PERMISSIONS SECTION (Shows all, disabling unselected parent pages) */}
+                  {(() => {
+                    const activeApprovalCount = APPROVAL_PERMISSIONS.filter(
+                      (a) =>
+                        (registerForm.permissions.includes(a.requiredPage) || registerForm.permissions.includes("all")) &&
+                        (registerForm.permissions.includes(a.key) || registerForm.permissions.includes("all"))
+                    ).length;
+
+                    return (
+                      <div className="space-y-2 pt-2 border-t border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <IoShieldCheckmarkOutline className="text-amber-600 text-sm" />
+                            <h4 className="text-xs font-bold text-gray-900">
+                              Approval & Action Permissions
+                            </h4>
+                          </div>
+                          <span className="text-[10px] text-amber-700 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                            {activeApprovalCount} approval rights enabled
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-400">
+                          Grant operational authority to verify and approve actions. Requires corresponding sidebar page access enabled above.
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                          {APPROVAL_PERMISSIONS.map((app) => {
+                            const isPageAllowed =
+                              registerForm.permissions.includes(app.requiredPage) ||
+                              registerForm.permissions.includes("all");
+                            const isChecked =
+                              isPageAllowed &&
+                              (registerForm.permissions.includes(app.key) ||
+                                registerForm.permissions.includes("all"));
+
+                            return (
+                              <button
+                                key={app.key}
+                                type="button"
+                                disabled={!isPageAllowed}
+                                onClick={() => isPageAllowed && toggleRegisterPermission(app.key)}
+                                className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all duration-150 select-none outline-none ${
+                                  !isPageAllowed
+                                    ? "bg-gray-50/70 border-dashed border-gray-200 text-gray-400 opacity-60 cursor-not-allowed"
+                                    : isChecked
+                                    ? "bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs ring-1 ring-amber-400/20 cursor-pointer"
+                                    : "bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-xs cursor-pointer"
+                                }`}
+                              >
+                                <div
+                                  className={`w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                                    !isPageAllowed
+                                      ? "border border-dashed border-gray-300 bg-gray-100 text-gray-400"
+                                      : isChecked
+                                      ? "bg-amber-600 text-white shadow-xs"
+                                      : "border border-gray-300 bg-white"
+                                  }`}
+                                >
+                                  {!isPageAllowed ? (
+                                    <IoLockClosedOutline className="text-[9px] text-gray-400" />
+                                  ) : isChecked ? (
+                                    <IoCheckmarkOutline className="text-[9px] stroke-[3]" />
+                                  ) : null}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <span
+                                    className={`text-[11px] font-bold block truncate ${
+                                      !isPageAllowed
+                                        ? "text-gray-400"
+                                        : isChecked
+                                        ? "text-amber-950"
+                                        : "text-gray-900"
+                                    }`}
+                                  >
+                                    {app.label}
+                                  </span>
+                                  <p
+                                    className={`text-[9.5px] mt-0.5 leading-snug line-clamp-2 ${
+                                      !isPageAllowed
+                                        ? "text-gray-400"
+                                        : isChecked
+                                        ? "text-amber-800/80"
+                                        : "text-gray-400"
+                                    }`}
+                                  >
+                                    {app.description}
+                                  </p>
+                                  {!isPageAllowed && (
+                                    <span className="text-[8.5px] text-amber-700/80 font-semibold block mt-1">
+                                      🔒 Requires '{app.pageName.split(" ")[0]}' page access
+                                    </span>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Actions */}
                   <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
                     <button
                       type="button"
@@ -1391,11 +1556,19 @@ export default function AdminTeamManagement() {
                 <form onSubmit={handleVerifyAndRegister} className="space-y-4">
                   <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-4 space-y-1">
                     <div className="flex items-center gap-2 text-blue-800 text-xs font-bold">
-                      <IoShieldCheckmarkOutline className="text-base text-blue-600" />
-                      Verification Code Sent
+                      {verifyMethod === "PHONE" ? (
+                        <IoCallOutline className="text-base text-blue-600" />
+                      ) : (
+                        <IoMailOutline className="text-base text-blue-600" />
+                      )}
+                      Verification Code Sent via {verifyMethod === "PHONE" ? "SMS" : "Email"}
                     </div>
                     <p className="text-[11px] text-blue-700 leading-relaxed">
-                      We have sent a 6-digit OTP to <strong className="font-bold text-blue-900">{registerForm.email}</strong>. Please enter it below to complete registration.
+                      We have sent a 6-digit OTP to{" "}
+                      <strong className="font-bold text-blue-900">
+                        {verifyMethod === "PHONE" ? registerForm.phone : registerForm.email}
+                      </strong>
+                      . Please enter it below to complete registration.
                     </p>
                   </div>
 
@@ -1483,18 +1656,18 @@ export default function AdminTeamManagement() {
 
       {/* ── EDIT ADMIN PROFILE & SECURITY MODAL ── */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl max-w-2xl sm:max-w-3xl w-full p-4 sm:p-6 shadow-2xl space-y-3.5 max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg border border-blue-100">
-                  <IoCreateOutline />
+                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-base border border-rose-100">
+                  <IoShieldOutline />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-gray-900">Edit Admin Profile & Security</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900">Edit Admin Profile & Security</h3>
                   <p className="text-xs text-gray-400">
-                    Update profile, mobile number, role, or reset password.
+                    Update credentials, role clearances, approval permissions, and sidebar page access.
                   </p>
                 </div>
               </div>
@@ -1510,190 +1683,309 @@ export default function AdminTeamManagement() {
 
             {/* Error Message */}
             {editError && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3.5 py-2.5 rounded-xl flex items-center justify-between">
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3.5 py-2 rounded-xl flex items-center justify-between">
                 <span>{editError}</span>
-                <button type="button" onClick={() => setEditError("")} className="text-rose-500 hover:text-rose-700 text-sm font-bold">×</button>
+                <button
+                  type="button"
+                  onClick={() => setEditError("")}
+                  className="text-rose-500 hover:text-rose-700 text-sm font-bold"
+                >
+                  ×
+                </button>
               </div>
             )}
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto pr-1">
+            <div className="flex-1 overflow-y-auto pr-1.5 custom-scrollbar">
               <form onSubmit={handleSaveEditAdmin} className="space-y-4">
-                {/* Full Name */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                    Full Name *
-                  </label>
-                  <div className="relative">
-                    <IoPeopleOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                {/* 2-Column Grid for Credentials & Role */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Name * */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Name *
+                    </label>
                     <input
                       type="text"
                       value={editAdminData.name}
                       onChange={(e) => setEditAdminData({ ...editAdminData, name: e.target.value })}
                       required
-                      className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
-                      placeholder="e.g. Rahul Sharma"
+                      className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-gray-800 outline-none transition-all shadow-xs"
+                      placeholder="Enter admin name"
                     />
                   </div>
-                </div>
 
-                {/* Email (Read-only) */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                    Email Address <span className="text-gray-400 font-normal lowercase">(read-only)</span>
-                  </label>
-                  <div className="relative">
-                    <IoMailOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                  {/* Email * (Read-only) */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Email *
+                    </label>
                     <input
                       type="email"
                       value={editAdminData.email}
                       disabled
-                      className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-100 border border-gray-200 rounded-xl font-medium text-gray-500 cursor-not-allowed"
+                      className="w-full px-3 py-2 text-xs bg-gray-50/80 border border-gray-200 rounded-xl font-medium text-gray-500 cursor-not-allowed outline-none shadow-xs"
                     />
                   </div>
-                </div>
 
-                {/* Mobile / Phone Number */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                    Mobile Number <span className="text-gray-400 font-normal lowercase">(optional)</span>
-                  </label>
-                  <div className="relative">
-                    <IoCallOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                  {/* Password (leave blank to keep) */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Password (leave blank to keep)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showEditPassword ? "text" : "password"}
+                        value={editAdminData.password}
+                        onChange={(e) => setEditAdminData({ ...editAdminData, password: e.target.value })}
+                        minLength={6}
+                        className="w-full pl-3 pr-8 py-2 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-gray-800 placeholder:text-gray-400 outline-none transition-all shadow-xs"
+                        placeholder="Min 6 characters"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditPassword(!showEditPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm cursor-pointer"
+                      >
+                        {showEditPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Role * */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Role *
+                    </label>
+                    {editAdminData.role === "SUPER_ADMIN" ? (
+                      <div className="px-3 py-2 text-xs bg-purple-50 text-purple-700 font-bold border border-purple-200 rounded-xl flex items-center gap-1.5 shadow-xs">
+                        <IoShieldCheckmarkOutline className="text-sm text-purple-600" />
+                        Super Admin (Protected Master Access)
+                      </div>
+                    ) : (
+                      <select
+                        value={editAdminData.role}
+                        onChange={(e) => handleEditRoleChange(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-gray-800 cursor-pointer outline-none transition-all shadow-xs"
+                      >
+                        {ROLE_DEFINITIONS.filter((r) => r.value !== "SUPER_ADMIN").map((r) => (
+                          <option key={r.value} value={r.value}>
+                            {r.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  {/* Mobile Number (optional) */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Mobile Number <span className="text-gray-400 font-normal lowercase">(optional)</span>
+                    </label>
                     <input
                       type="tel"
                       value={editAdminData.phone}
                       onChange={(e) => setEditAdminData({ ...editAdminData, phone: e.target.value })}
-                      className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
+                      className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-gray-800 outline-none transition-all shadow-xs"
                       placeholder="+91 98765 43210"
                     />
                   </div>
                 </div>
 
-                {/* Role (Protected for Super Admin) */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                    Assigned Role
-                  </label>
-                  {editAdminData.role === 'SUPER_ADMIN' ? (
-                    <div className="px-3.5 py-2.5 text-xs bg-purple-50 text-purple-700 font-bold border border-purple-200 rounded-xl flex items-center gap-2">
-                      <IoShieldCheckmarkOutline className="text-base text-purple-600" />
-                      Super Admin (Root Governance - Protected)
-                    </div>
-                  ) : (
-                    <select
-                      value={editAdminData.role}
-                      onChange={(e) => handleEditRoleChange(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800 cursor-pointer"
-                    >
-                      {ROLE_DEFINITIONS.filter(r => r.value !== 'SUPER_ADMIN').map((r) => (
-                        <option key={r.value} value={r.value}>
-                          {r.label} — {r.description}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* Module Clearances & Permissions (if not Super Admin) */}
-                {editAdminData.role !== 'SUPER_ADMIN' && (
+                {/* 1. SIDEBAR NAVIGATION & PAGE ACCESS SECTION */}
+                {editAdminData.role !== "SUPER_ADMIN" && (
                   <div className="space-y-2 pt-2 border-t border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        Module Clearances & Permissions
-                      </label>
-                      <span className="text-[10px] text-blue-700 font-bold bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
-                        {editAdminData.permissions.length} of {ADMIN_MODULES.length} enabled
-                      </span>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <IoBriefcaseOutline className="text-blue-600 text-sm" />
+                        <h4 className="text-xs font-bold text-gray-900">
+                          Sidebar Navigation & Page Access
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSelectAllEditPermissions}
+                          className="text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer"
+                        >
+                          ✓ Allow All Pages
+                        </button>
+                        <span className="text-gray-300">•</span>
+                        <button
+                          type="button"
+                          onClick={handleResetEditPermissions}
+                          className="text-[10px] text-gray-500 hover:text-gray-700 font-medium hover:underline cursor-pointer"
+                        >
+                          ↺ Reset Defaults
+                        </button>
+                        <span className="text-[10px] text-blue-700 font-bold bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full ml-1">
+                          {SIDEBAR_MODULE_PERMISSIONS.filter((m) => editAdminData.permissions.includes(m.key)).length} / {SIDEBAR_MODULE_PERMISSIONS.length} pages allowed
+                        </span>
+                      </div>
                     </div>
                     <p className="text-[11px] text-gray-400">
-                      Customize which platform modules this admin is authorized to access.
+                      Select which sidebar navigation pages this staff admin can visit. Items not selected will be hidden from their sidebar.
                     </p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
-                      {ADMIN_MODULES.map((mod) => {
-                        const isChecked =
-                          editAdminData.permissions.includes(mod.key) ||
-                          editAdminData.permissions.includes("all");
-                        return (
-                          <button
-                            key={mod.key}
-                            type="button"
-                            onClick={() => toggleEditPermission(mod.key)}
-                            className={`group flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer select-none outline-none active:scale-[0.98] ${
-                              isChecked
-                                ? "bg-blue-50/90 border-blue-400 text-blue-950 shadow-xs ring-1 ring-blue-500/20"
-                                : "bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-slate-50/80 hover:shadow-xs"
-                            }`}
-                          >
-                            {/* Stylized Checkbox */}
-                            <div
-                              className={`w-4 h-4 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-150 ${
+                    <div className="bg-gray-50/70 p-2.5 rounded-2xl border border-gray-200/80 max-h-[240px] overflow-y-auto custom-scrollbar">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {SIDEBAR_MODULE_PERMISSIONS.map((mod) => {
+                          const isChecked =
+                            editAdminData.permissions.includes(mod.key) ||
+                            editAdminData.permissions.includes("all");
+                          return (
+                            <button
+                              key={mod.key}
+                              type="button"
+                              onClick={() => toggleEditPermission(mod.key)}
+                              className={`flex items-start gap-2.5 p-2 px-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer select-none outline-none ${
                                 isChecked
-                                  ? "bg-blue-600 text-white shadow-xs scale-105"
-                                  : "border border-gray-300 bg-gray-50 group-hover:border-blue-400 group-hover:bg-white"
+                                  ? "bg-white border-blue-400 text-blue-950 shadow-xs ring-1 ring-blue-500/20"
+                                  : "bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-xs"
                               }`}
                             >
-                              {isChecked && <IoCheckmarkOutline className="text-[10px] stroke-[3]" />}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1">
-                                <span
-                                  className={`text-xs font-bold leading-tight ${
-                                    isChecked
-                                      ? "text-blue-950"
-                                      : "text-gray-900 group-hover:text-blue-900"
-                                  }`}
-                                >
-                                  {mod.label}
-                                </span>
-                                {isChecked && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse flex-shrink-0" />
-                                )}
-                              </div>
                               <div
-                                className={`text-[10px] leading-tight line-clamp-1 mt-0.5 ${
-                                  isChecked ? "text-blue-800/80" : "text-gray-500"
+                                className={`w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                                  isChecked
+                                    ? "bg-blue-600 text-white shadow-xs"
+                                    : "border border-gray-300 bg-white"
                                 }`}
                               >
-                                {mod.description}
+                                {isChecked && <IoCheckmarkOutline className="text-[9px] stroke-[3]" />}
                               </div>
-                            </div>
-                          </button>
-                        );
-                      })}
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    {renderModuleIcon(mod.icon)}
+                                    <span
+                                      className={`text-[11px] font-bold truncate ${
+                                        isChecked ? "text-blue-950" : "text-gray-900"
+                                      }`}
+                                    >
+                                      {mod.label}
+                                    </span>
+                                  </div>
+                                  <span className="text-[8px] font-bold text-gray-400 bg-gray-100 px-1 py-0.2 rounded uppercase">
+                                    {mod.section.split(" ")[0]}
+                                  </span>
+                                </div>
+                                <p
+                                  className={`text-[9.5px] mt-0.5 leading-snug line-clamp-1 ${
+                                    isChecked ? "text-blue-800/80" : "text-gray-400"
+                                  }`}
+                                >
+                                  {mod.description}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* Reset Password */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">
-                      Reset Password
-                    </label>
-                    <span className="text-[10px] text-gray-400">Leave blank to keep unchanged</span>
-                  </div>
-                  <div className="relative">
-                    <IoKeyOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
-                    <input
-                      type={showEditPassword ? "text" : "password"}
-                      value={editAdminData.password}
-                      onChange={(e) => setEditAdminData({ ...editAdminData, password: e.target.value })}
-                      minLength={6}
-                      className="w-full pl-10 pr-9 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-colors font-medium text-gray-800"
-                      placeholder="Enter new password (min 6 chars)"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowEditPassword(!showEditPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-base cursor-pointer"
-                    >
-                      {showEditPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
-                    </button>
-                  </div>
-                </div>
+                {/* 2. APPROVAL PERMISSIONS SECTION (Shows all, disabling unselected parent pages) */}
+                {editAdminData.role !== "SUPER_ADMIN" && (() => {
+                  const activeApprovalCount = APPROVAL_PERMISSIONS.filter(
+                    (a) =>
+                      (editAdminData.permissions.includes(a.requiredPage) || editAdminData.permissions.includes("all")) &&
+                      (editAdminData.permissions.includes(a.key) || editAdminData.permissions.includes("all"))
+                  ).length;
+
+                  return (
+                    <div className="space-y-2 pt-2 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <IoShieldCheckmarkOutline className="text-amber-600 text-sm" />
+                          <h4 className="text-xs font-bold text-gray-900">
+                            Approval & Action Permissions
+                          </h4>
+                        </div>
+                        <span className="text-[10px] text-amber-700 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                          {activeApprovalCount} approval rights enabled
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400">
+                        Grant operational authority to verify and approve actions. Requires corresponding sidebar page access enabled above.
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                        {APPROVAL_PERMISSIONS.map((app) => {
+                          const isPageAllowed =
+                            editAdminData.permissions.includes(app.requiredPage) ||
+                            editAdminData.permissions.includes("all");
+                          const isChecked =
+                            isPageAllowed &&
+                            (editAdminData.permissions.includes(app.key) ||
+                              editAdminData.permissions.includes("all"));
+
+                          return (
+                            <button
+                              key={app.key}
+                              type="button"
+                              disabled={!isPageAllowed}
+                              onClick={() => isPageAllowed && toggleEditPermission(app.key)}
+                              className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all duration-150 select-none outline-none ${
+                                !isPageAllowed
+                                  ? "bg-gray-50/70 border-dashed border-gray-200 text-gray-400 opacity-60 cursor-not-allowed"
+                                  : isChecked
+                                  ? "bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs ring-1 ring-amber-400/20 cursor-pointer"
+                                  : "bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-xs cursor-pointer"
+                              }`}
+                            >
+                              <div
+                                className={`w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                                  !isPageAllowed
+                                    ? "border border-dashed border-gray-300 bg-gray-100 text-gray-400"
+                                    : isChecked
+                                    ? "bg-amber-600 text-white shadow-xs"
+                                    : "border border-gray-300 bg-white"
+                                }`}
+                              >
+                                {!isPageAllowed ? (
+                                  <IoLockClosedOutline className="text-[9px] text-gray-400" />
+                                ) : isChecked ? (
+                                  <IoCheckmarkOutline className="text-[9px] stroke-[3]" />
+                                ) : null}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span
+                                  className={`text-[11px] font-bold block truncate ${
+                                    !isPageAllowed
+                                      ? "text-gray-400"
+                                      : isChecked
+                                      ? "text-amber-950"
+                                      : "text-gray-900"
+                                  }`}
+                                >
+                                  {app.label}
+                                </span>
+                                <p
+                                  className={`text-[9.5px] mt-0.5 leading-snug line-clamp-2 ${
+                                    !isPageAllowed
+                                      ? "text-gray-400"
+                                      : isChecked
+                                      ? "text-amber-800/80"
+                                      : "text-gray-400"
+                                  }`}
+                                >
+                                  {app.description}
+                                </p>
+                                {!isPageAllowed && (
+                                  <span className="text-[8.5px] text-amber-700/80 font-semibold block mt-1">
+                                    🔒 Requires '{app.pageName.split(" ")[0]}' page access
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Modal Actions */}
                 <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">

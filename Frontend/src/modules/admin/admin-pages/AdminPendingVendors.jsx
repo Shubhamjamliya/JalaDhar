@@ -11,13 +11,15 @@ import {
     IoCallOutline,
     IoBusinessOutline,
     IoPersonOutline,
-    IoSwapHorizontalOutline
+    IoSwapHorizontalOutline,
+    IoLockClosedOutline
 } from "react-icons/io5";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPendingVendors, approveVendor, rejectVendor, assignVendorKYCApi, getAllAdmins } from "../../../services/adminApi";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import { hasAdminPermission } from "../../../utils/permissionUtils";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -26,6 +28,7 @@ import AssignmentHistoryModal from "../admin-component/AssignmentHistoryModal";
 export default function AdminPendingVendors() {
     const navigate = useNavigate();
     const { admin: currentAdmin } = useAdminAuth();
+    const canApproveVendors = hasAdminPermission(currentAdmin, "can_approve_vendors");
     const [vendors, setVendors] = useState([]);
     const [availableAdmins, setAvailableAdmins] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -236,20 +239,29 @@ export default function AdminPendingVendors() {
                                     >
                                         <IoEyeOutline className="text-xl" />
                                     </button>
-                                    <button
-                                        onClick={() => { setSelectedVendorId(vendor._id); setShowApproveConfirm(true); }}
-                                        className="px-4 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center gap-2 cursor-pointer"
-                                    >
-                                        <IoCheckmarkCircleOutline className="text-lg" />
-                                        Approve &amp; Send Agreement
-                                    </button>
-                                    <button
-                                        onClick={() => { setSelectedVendorId(vendor._id); setShowRejectInput(true); }}
-                                        className="px-4 py-2.5 bg-red-50 text-red-600 text-xs font-bold rounded-xl hover:bg-red-600 hover:text-white transition-all flex items-center gap-2 border border-red-100 cursor-pointer"
-                                    >
-                                        <IoCloseCircleOutline className="text-lg" />
-                                        Reject
-                                    </button>
+                                    {canApproveVendors ? (
+                                        <>
+                                            <button
+                                                onClick={() => { setSelectedVendorId(vendor._id); setShowApproveConfirm(true); }}
+                                                className="px-4 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center gap-2 cursor-pointer"
+                                            >
+                                                <IoCheckmarkCircleOutline className="text-lg" />
+                                                Approve &amp; Send Agreement
+                                            </button>
+                                            <button
+                                                onClick={() => { setSelectedVendorId(vendor._id); setShowRejectInput(true); }}
+                                                className="px-4 py-2.5 bg-red-50 text-red-600 text-xs font-bold rounded-xl hover:bg-red-600 hover:text-white transition-all flex items-center gap-2 border border-red-100 cursor-pointer"
+                                            >
+                                                <IoCloseCircleOutline className="text-lg" />
+                                                Reject
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <span className="px-3 py-2 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-xl font-bold text-xs flex items-center gap-1.5" title="Requires Expert / Vendor KYC Approval permission">
+                                            <IoLockClosedOutline className="text-sm text-amber-600" />
+                                            Review Only
+                                        </span>
+                                    )}
                                 </div>
                             </motion.div>
                         ))

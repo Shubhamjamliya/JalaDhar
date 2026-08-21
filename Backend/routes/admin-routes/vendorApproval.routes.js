@@ -12,7 +12,7 @@ const {
   assignVendorKYC
 } = require('../../controllers/adminControllers/vendorManagementController');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin, isSuperAdmin } = require('../../middleware/roleMiddleware');
+const { isAdmin, isSuperAdmin, canApproveVendors } = require('../../middleware/roleMiddleware');
 
 // Validation rules
 const rejectVendorValidation = [
@@ -37,11 +37,11 @@ router.get('/vendors/:vendorId', authenticate, isAdmin, getVendorDetails);
 // Assign / Reassign vendor KYC
 router.patch('/vendors/:vendorId/assign', authenticate, isSuperAdmin, assignVendorKYC);
 
-// Approve vendor
-router.patch('/vendors/:vendorId/approve', authenticate, isAdmin, approveVendor);
+// Approve vendor (Requires can_approve_vendors clearance)
+router.patch('/vendors/:vendorId/approve', authenticate, canApproveVendors, approveVendor);
 
-// Reject vendor
-router.patch('/vendors/:vendorId/reject', authenticate, isAdmin, rejectVendorValidation, rejectVendor);
+// Reject vendor (Requires can_approve_vendors clearance)
+router.patch('/vendors/:vendorId/reject', authenticate, canApproveVendors, rejectVendorValidation, rejectVendor);
 
 // Deactivate vendor
 router.patch('/vendors/:vendorId/deactivate', authenticate, isAdmin, deactivateVendor);

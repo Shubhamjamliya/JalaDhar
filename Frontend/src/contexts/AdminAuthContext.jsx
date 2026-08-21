@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { adminLogin, adminLogout, adminRegister } from '../services/adminApi';
 import { registerFCMToken, unregisterFCMToken } from '../services/pushNotificationService';
+import api from '../services/api';
 
 const AdminAuthContext = createContext(null);
 
@@ -17,6 +18,21 @@ export const AdminAuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshProfile = useCallback(async () => {
+    try {
+      const response = await api.get('/admin/auth/profile');
+      if (response.data?.success && response.data.data?.admin) {
+        const latestAdmin = response.data.data.admin;
+        setAdmin(latestAdmin);
+        localStorage.setItem('admin', JSON.stringify(latestAdmin));
+        return latestAdmin;
+      }
+    } catch (err) {
+      console.error('Failed to sync admin profile:', err);
+    }
+    return null;
+  }, []);
+
   // Check for existing auth on mount
   useEffect(() => {
     const storedToken = localStorage.getItem('adminAccessToken');
@@ -28,6 +44,8 @@ export const AdminAuthProvider = ({ children }) => {
         setAdmin(JSON.parse(storedAdmin));
         // Register push token if authenticated
         registerFCMToken('admin');
+        // Synchronize fresh permissions from server
+        refreshProfile();
       } catch (error) {
         console.error('Error parsing stored admin:', error);
         localStorage.removeItem('adminAccessToken');
@@ -36,7 +54,7 @@ export const AdminAuthProvider = ({ children }) => {
       }
     }
     setLoading(false);
-  }, []);
+  }, [refreshProfile]);
 
   /**
    * Register new admin
@@ -142,7 +160,8 @@ export const AdminAuthProvider = ({ children }) => {
     isAuthenticated: !!token && !!admin,
     login,
     register,
-    logout
+    logout,
+    refreshProfile
   };
 
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;

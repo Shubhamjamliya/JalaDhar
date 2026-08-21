@@ -3,9 +3,13 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FiAward, FiStar, FiCheckCircle, FiChevronRight, FiBriefcase } from 'react-icons/fi';
 import { formatCurrency } from '../../utils/adminHelpers';
+import { useAdminAuth } from '../../../../contexts/AdminAuthContext';
+import { hasAdminPermission } from '../../../../utils/permissionUtils';
 
 const ExpertPerformance = ({ expertPerformance }) => {
     const navigate = useNavigate();
+    const { admin } = useAdminAuth();
+    const canVendors = hasAdminPermission(admin, 'vendors');
     const list = expertPerformance && expertPerformance.length > 0 ? expertPerformance : [];
 
     return (
@@ -23,12 +27,14 @@ const ExpertPerformance = ({ expertPerformance }) => {
                         </h2>
                         <p className="text-xs text-gray-500">Top hydrogeologists & ground survey specialists</p>
                     </div>
-                    <button
-                        onClick={() => navigate('/admin/vendors/analytics')}
-                        className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:underline"
-                    >
-                        View All Experts <FiChevronRight />
-                    </button>
+                    {canVendors && (
+                        <button
+                            onClick={() => navigate('/admin/vendors/analytics')}
+                            className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:underline cursor-pointer"
+                        >
+                            View All Experts <FiChevronRight />
+                        </button>
+                    )}
                 </div>
 
                 {list.length === 0 ? (
@@ -41,8 +47,10 @@ const ExpertPerformance = ({ expertPerformance }) => {
                         {list.map((expert, idx) => (
                             <div
                                 key={expert.vendorId || idx}
-                                onClick={() => expert.vendorId && navigate(`/admin/vendors/${expert.vendorId}`)}
-                                className="flex items-center justify-between p-3 rounded-lg bg-gray-50/70 hover:bg-blue-50/50 border border-gray-100 transition-all cursor-pointer group"
+                                onClick={() => canVendors && expert.vendorId && navigate(`/admin/vendors/${expert.vendorId}`)}
+                                className={`flex items-center justify-between p-3 rounded-lg bg-gray-50/70 ${
+                                    canVendors ? 'hover:bg-blue-50/50 cursor-pointer group' : 'cursor-default'
+                                } border border-gray-100 transition-all`}
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="relative">

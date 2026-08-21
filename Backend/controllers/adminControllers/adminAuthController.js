@@ -83,7 +83,7 @@ const register = async (req, res) => {
 };
 
 /**
- * Login admin
+ * Login admin (supports Email OR Mobile Number)
  */
 const login = async (req, res) => {
   try {
@@ -97,22 +97,48 @@ const login = async (req, res) => {
     }
 
     const { email, password } = req.body;
+    const identifier = (email || '').trim();
+
+    if (!identifier) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email or mobile number is required'
+      });
+    }
+
+    // Build flexible query matching email or mobile number
+    let query;
+    if (identifier.includes('@')) {
+      query = { email: identifier.toLowerCase() };
+    } else {
+      const digitsOnly = identifier.replace(/\D/g, '');
+      const last10 = digitsOnly.slice(-10);
+      query = {
+        $or: [
+          { phone: identifier },
+          { phone: digitsOnly },
+          { phone: `+91${last10}` },
+          { phone: last10 },
+          { email: identifier.toLowerCase() }
+        ]
+      };
+    }
 
     // Find admin with password
-    const admin = await Admin.findOne({ email }).select('+password');
+    const admin = await Admin.findOne(query).select('+password');
 
     if (!admin) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid credentials. Please check your email/mobile number and password.'
       });
     }
 
     // Check if account is active
-    if (!admin.isActive) {
+    if (admin.isActive === false) {
       return res.status(401).json({
         success: false,
-        message: 'Your account has been deactivated. Please contact support.'
+        message: 'Your account has been deactivated. Please contact administrator.'
       });
     }
 
@@ -121,7 +147,7 @@ const login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid credentials. Please check your email/mobile number and password.'
       });
     }
 
@@ -338,30 +364,57 @@ const getProfile = async (req, res) => {
 };
 
 /**
- * Send OTP for admin registration
+ * Send OTP for admin registration (supports EMAIL and PHONE)
  */
 const sendAdminRegistrationOTP = async (req, res) => {
   try {
-    const { email, name } = req.body;
+    const { email, phone, name, verifyMethod = 'EMAIL' } = req.body;
 
-    if (!email || !name) {
+    if (!name) {
       return res.status(400).json({
         success: false,
-        message: 'Email and name are required'
+        message: 'Name is required'
       });
     }
 
-    // Check if admin already exists
-    const existingAdmin = await Admin.findOne({ email });
-    if (existingAdmin) {
-      return res.status(400).json({
-        success: false,
-        message: 'Admin with this email already exists'
-      });
+    if (verifyMethod === 'PHONE') {
+      if (!phone || phone.trim().length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Valid mobile number is required for SMS OTP verification'
+        });
+      }
+      const existingAdmin = await Admin.findOne({ phone: phone.trim() });
+      if (existingAdmin) {
+        return res.status(400).json({
+          success: false,
+          message: 'Admin with this mobile number already exists'
+        });
+      }
+    } else {
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Valid email address is required for Email OTP verification'
+        });
+      }
+      const existingAdmin = await Admin.findOne({ email: email.toLowerCase().trim() });
+      if (existingAdmin) {
+        return res.status(400).json({
+          success: false,
+          message: 'Admin with this email already exists'
+        });
+      }
     }
 
-    // Delete any existing tokens for this email
-    await Token.deleteMany({ email, type: TOKEN_TYPES.ADMIN_REGISTRATION, isUsed: false });
+    // Delete any existing tokens for this target
+    const tokenQuery = { type: TOKEN_TYPES.ADMIN_REGISTRATION, isUsed: false };
+    if (verifyMethod === 'PHONE') {
+      tokenQuery.phone = phone.trim();
+    } else {
+      tokenQuery.email = email.toLowerCase().trim();
+    }
+    await Token.deleteMany(tokenQuery);
 
     const otp = generateOTP(6);
     const token = generateToken(32);
@@ -373,40 +426,52 @@ const sendAdminRegistrationOTP = async (req, res) => {
       token,
       type: TOKEN_TYPES.ADMIN_REGISTRATION,
       otp,
-      email, // Store email directly
+      email: email ? email.toLowerCase().trim() : undefined,
+      phone: phone ? phone.trim() : undefined,
       expiresAt
     });
 
-    // Send OTP email
-    let emailSent = false;
-    try {
-      const emailResult = await sendOTPEmail({
-        email,
-        name,
-        otp,
-        type: 'admin_registration'
-      });
-      emailSent = emailResult?.success === true;
-    } catch (e) {
-      console.warn('⚠️ SMTP warning during admin registration OTP:', e.message);
-    }
+    let sentSuccessfully = false;
+    let channelMessage = '';
 
-    console.log(`🔑 [ADMIN_REGISTRATION_OTP] -> Email: ${email} | Code: ${otp} | Name: ${name}`);
-
-    if (!emailSent && process.env.NODE_ENV === 'production') {
-      await Token.deleteOne({ _id: tokenDoc._id });
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send OTP email. Please check SMTP settings.'
-      });
+    if (verifyMethod === 'PHONE') {
+      try {
+        const smsService = require('../../services/smsService');
+        const smsResult = await smsService.sendSMSOTP({
+          phone: phone.trim(),
+          otp,
+          type: 'admin_registration'
+        });
+        sentSuccessfully = smsResult?.success === true;
+      } catch (e) {
+        console.warn('⚠️ SMS warning during admin registration OTP:', e.message);
+      }
+      console.log(`🔑 [ADMIN_REGISTRATION_PHONE_OTP] -> Phone: ${phone} | Code: ${otp} | Name: ${name}`);
+      channelMessage = `OTP sent to mobile number ${phone} successfully`;
+    } else {
+      try {
+        const emailResult = await sendOTPEmail({
+          email: email.toLowerCase().trim(),
+          name,
+          otp,
+          type: 'admin_registration'
+        });
+        sentSuccessfully = emailResult?.success === true;
+      } catch (e) {
+        console.warn('⚠️ SMTP warning during admin registration OTP:', e.message);
+      }
+      console.log(`🔑 [ADMIN_REGISTRATION_EMAIL_OTP] -> Email: ${email} | Code: ${otp} | Name: ${name}`);
+      channelMessage = `OTP sent to email ${email} successfully`;
     }
 
     res.json({
       success: true,
-      message: emailSent ? 'OTP sent to email successfully' : 'OTP generated successfully',
+      message: channelMessage,
       data: {
         token: tokenDoc.token,
-        email,
+        email: email ? email.toLowerCase().trim() : '',
+        phone: phone ? phone.trim() : '',
+        verifyMethod,
         devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined
       }
     });
@@ -421,7 +486,7 @@ const sendAdminRegistrationOTP = async (req, res) => {
 };
 
 /**
- * Register new admin with OTP verification
+ * Register new admin with OTP verification (supports EMAIL and PHONE)
  */
 const registerAdminWithOTP = async (req, res) => {
   try {
@@ -434,21 +499,27 @@ const registerAdminWithOTP = async (req, res) => {
       });
     }
 
-    const { name, email, password, otp, token, role, phone, permissions } = req.body;
+    const { name, email, password, otp, token, role, phone, permissions, verifyMethod = 'EMAIL' } = req.body;
 
     // Verify OTP using token
-    const tokenDoc = await Token.findOne({
+    const tokenQuery = {
       token,
       type: TOKEN_TYPES.ADMIN_REGISTRATION,
-      email,
       isUsed: false,
       expiresAt: { $gt: new Date() }
-    });
+    };
+    if (verifyMethod === 'PHONE' && phone) {
+      tokenQuery.phone = phone.trim();
+    } else if (email) {
+      tokenQuery.email = email.toLowerCase().trim();
+    }
+
+    const tokenDoc = await Token.findOne(tokenQuery);
 
     if (!tokenDoc) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid or expired OTP token'
+        message: 'Invalid or expired OTP token. Please request a new OTP.'
       });
     }
 
@@ -467,12 +538,17 @@ const registerAdminWithOTP = async (req, res) => {
       await tokenDoc.save();
       return res.status(400).json({
         success: false,
-        message: 'Invalid OTP. Please try again.'
+        message: `Invalid OTP. ${5 - tokenDoc.attempts} attempts remaining.`
       });
     }
 
+    // Determine clean email (fallback for phone-only registration)
+    const adminEmail = email && email.trim()
+      ? email.toLowerCase().trim()
+      : `${phone.replace(/\D/g, '')}@jaladhar.internal`;
+
     // Check if admin already exists (double check)
-    const existingAdmin = await Admin.findOne({ email });
+    const existingAdmin = await Admin.findOne({ email: adminEmail });
     if (existingAdmin) {
       await markTokenAsUsed(tokenDoc._id);
       return res.status(400).json({
@@ -480,6 +556,19 @@ const registerAdminWithOTP = async (req, res) => {
         message: 'Admin with this email already exists'
       });
     }
+
+    // Mark token as used
+    tokenDoc.isUsed = true;
+    await tokenDoc.save();
+
+    // Map role to department
+    let department = 'GENERAL';
+    if (role === 'SUPER_ADMIN') department = 'SUPER';
+    else if (role === 'EXPERT_VERIFICATION_ADMIN' || role === 'VERIFIER_ADMIN') department = 'VERIFICATION';
+    else if (role === 'OPERATIONS_ADMIN') department = 'OPERATIONS';
+    else if (role === 'FINANCE_ADMIN') department = 'FINANCE';
+    else if (role === 'SUPPORT_ADMIN') department = 'SUPPORT';
+    else if (role === 'QC_ADMIN') department = 'QUALITY_CONTROL';
 
     // Helper for default role permissions
     const getDefaultPermissions = (r) => {
@@ -510,12 +599,14 @@ const registerAdminWithOTP = async (req, res) => {
     // Create admin
     const admin = await Admin.create({
       name: name.trim(),
-      email: email.trim().toLowerCase(),
+      email: adminEmail,
       password,
       role: role || 'ADMIN',
+      department,
       phone: phone ? phone.trim() : null,
       permissions: resolvedPermissions,
-      isActive: true
+      isActive: true,
+      isAvailableForAssignment: true
     });
 
     // Mark token as used
@@ -763,33 +854,48 @@ const updateAssignmentToggle = async (req, res) => {
 const getTeamPerformanceStats = async (req, res) => {
   try {
     const Dispute = require('../../models/Dispute');
-    const admins = await Admin.find({ isActive: true }).select('name email role department isAvailableForAssignment activeTicketsCount lastAssignedAt createdAt');
+    const admins = await Admin.find({ isActive: { $ne: false } }).select(
+      'name email role department isAvailableForAssignment activeTicketsCount lastAssignedAt createdAt'
+    );
 
-    // Aggregate dispute stats per admin
-    const disputeStats = await Dispute.aggregate([
-      { $match: { assignedTo: { $ne: null } } },
-      {
-        $group: {
-          _id: '$assignedTo',
-          totalAssigned: { $sum: 1 },
-          resolvedCount: {
-            $sum: { $cond: [{ $in: ['$status', ['RESOLVED', 'CLOSED']] }, 1, 0] }
-          },
-          pendingCount: {
-            $sum: { $cond: [{ $in: ['$status', ['PENDING', 'IN_PROGRESS']] }, 1, 0] }
+    let disputeStats = [];
+    try {
+      disputeStats = await Dispute.aggregate([
+        { $match: { assignedTo: { $ne: null } } },
+        {
+          $group: {
+            _id: '$assignedTo',
+            totalAssigned: { $sum: 1 },
+            resolvedCount: {
+              $sum: { $cond: [{ $in: ['$status', ['RESOLVED', 'CLOSED']] }, 1, 0] }
+            },
+            pendingCount: {
+              $sum: { $cond: [{ $in: ['$status', ['PENDING', 'IN_PROGRESS']] }, 1, 0] }
+            }
           }
         }
-      }
-    ]);
+      ]);
+    } catch (aggErr) {
+      console.warn('Dispute aggregation warning:', aggErr.message);
+    }
 
     const statsMap = {};
-    disputeStats.forEach(s => {
-      statsMap[s._id.toString()] = s;
-    });
+    if (Array.isArray(disputeStats)) {
+      disputeStats.forEach((s) => {
+        if (s._id) statsMap[s._id.toString()] = s;
+      });
+    }
 
-    const performance = admins.map(admin => {
-      const stats = statsMap[admin._id.toString()] || { totalAssigned: 0, resolvedCount: 0, pendingCount: 0 };
-      const resolutionRate = stats.totalAssigned > 0 ? Math.round((stats.resolvedCount / stats.totalAssigned) * 100) : 100;
+    const performance = admins.map((admin) => {
+      const stats = statsMap[admin._id.toString()] || {
+        totalAssigned: 0,
+        resolvedCount: 0,
+        pendingCount: 0
+      };
+      const resolutionRate =
+        stats.totalAssigned > 0
+          ? Math.round((stats.resolvedCount / stats.totalAssigned) * 100)
+          : 100;
 
       return {
         adminId: admin._id,
@@ -807,13 +913,13 @@ const getTeamPerformanceStats = async (req, res) => {
       };
     });
 
-    res.json({
+    return res.json({
       success: true,
       data: { performance }
     });
   } catch (error) {
     console.error('Get team performance stats error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to fetch team performance statistics',
       error: error.message

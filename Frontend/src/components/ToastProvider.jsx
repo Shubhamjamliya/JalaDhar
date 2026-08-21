@@ -1,4 +1,5 @@
-import { Toaster } from 'react-hot-toast';
+import { useEffect } from 'react';
+import { Toaster, useToasterStore, toast } from 'react-hot-toast';
 import { useTheme } from '../contexts/ThemeContext';
 
 /**
@@ -6,16 +7,20 @@ import { useTheme } from '../contexts/ThemeContext';
  * 
  * Centralized toast notification provider with theme integration
  * Provides consistent toast styling across the entire application
- * 
- * Features:
- * - Mobile-first responsive design
- * - Theme-aware styling
- * - Customizable positions and durations
- * - Professional animations
+ * Enforces strictly 1 toast at a time
  */
 export default function ToastProvider() {
   const { themeColors, theme } = useTheme();
   const colors = themeColors[theme] || themeColors.default;
+  const { toasts } = useToasterStore();
+
+  // Enforce strictly 1 toast at a time across the application
+  useEffect(() => {
+    toasts
+      .filter((t) => t.visible)
+      .filter((_, i) => i >= 1)
+      .forEach((t) => toast.dismiss(t.id));
+  }, [toasts]);
 
   return (
     <Toaster

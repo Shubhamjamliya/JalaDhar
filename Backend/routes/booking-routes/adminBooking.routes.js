@@ -34,11 +34,13 @@ const {
   assignBookingOperations
 } = require('../../controllers/bookingControllers/adminBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin, isSuperAdmin } = require('../../middleware/roleMiddleware');
+const { isAdmin, isSuperAdmin, canApproveReports, canApproveDisbursals } = require('../../middleware/roleMiddleware');
 
 // Validation rules
 const approveBorewellResultValidation = [
-  body('approved').isBoolean().withMessage('Approved must be a boolean value')
+  body('approved')
+    .isBoolean()
+    .withMessage('Approved must be a boolean')
 ];
 
 const rejectTravelChargesValidation = [
@@ -46,32 +48,33 @@ const rejectTravelChargesValidation = [
     .trim()
     .notEmpty()
     .withMessage('Rejection reason is required')
-    .isLength({ min: 10 })
-    .withMessage('Rejection reason must be at least 10 characters')
+    .isLength({ min: 10, max: 500 })
+    .withMessage('Rejection reason must be between 10 and 500 characters')
 ];
 
 // Routes
 router.get('/bookings', authenticate, isAdmin, getAllBookings);
+router.patch('/bookings/:bookingId/resolve-infeasible', authenticate, isSuperAdmin, resolveInfeasibleBooking);
 router.patch('/bookings/:bookingId/assign-operations', authenticate, isSuperAdmin, assignBookingOperations);
 // Moved generic /bookings/:bookingId to end to avoid masking other routes
 router.get('/statistics', authenticate, isAdmin, getBookingStatistics);
 router.get('/travel-charges', authenticate, isAdmin, getTravelChargesRequests);
-router.patch('/bookings/:bookingId/approve-result', authenticate, isAdmin, approveBorewellResultValidation, approveBorewellResult);
-router.patch('/bookings/:bookingId/settlement', authenticate, isAdmin, processVendorSettlement);
-router.patch('/bookings/:bookingId/travel-charges/approve', authenticate, isAdmin, approveTravelCharges);
-router.patch('/bookings/:bookingId/travel-charges/reject', authenticate, isAdmin, rejectTravelChargesValidation, rejectTravelCharges);
-router.patch('/bookings/:bookingId/travel-charges/pay', authenticate, isAdmin, payTravelCharges);
-router.patch('/bookings/:bookingId/first-installment/pay', authenticate, isAdmin, payFirstInstallment);
-router.patch('/bookings/:bookingId/second-installment/pay', authenticate, isAdmin, paySecondInstallment);
+router.patch('/bookings/:bookingId/approve-result', authenticate, canApproveReports, approveBorewellResultValidation, approveBorewellResult);
+router.patch('/bookings/:bookingId/settlement', authenticate, canApproveDisbursals, processVendorSettlement);
+router.patch('/bookings/:bookingId/travel-charges/approve', authenticate, canApproveDisbursals, approveTravelCharges);
+router.patch('/bookings/:bookingId/travel-charges/reject', authenticate, canApproveDisbursals, rejectTravelChargesValidation, rejectTravelCharges);
+router.patch('/bookings/:bookingId/travel-charges/pay', authenticate, canApproveDisbursals, payTravelCharges);
+router.patch('/bookings/:bookingId/first-installment/pay', authenticate, canApproveDisbursals, payFirstInstallment);
+router.patch('/bookings/:bookingId/second-installment/pay', authenticate, canApproveDisbursals, paySecondInstallment);
 router.get('/bookings/report-pending', authenticate, isAdmin, getReportPendingApprovals);
 router.patch('/bookings/:bookingId/assign-report-qa', authenticate, isSuperAdmin, assignReportQA);
-router.patch('/bookings/:bookingId/approve-report', authenticate, isAdmin, approveReport);
-router.patch('/bookings/:bookingId/reject-report', authenticate, isAdmin, rejectTravelChargesValidation, rejectReport);
+router.patch('/bookings/:bookingId/approve-report', authenticate, canApproveReports, approveReport);
+router.patch('/bookings/:bookingId/reject-report', authenticate, canApproveReports, rejectTravelChargesValidation, rejectReport);
 router.get('/bookings/borewell-pending', authenticate, isAdmin, getBorewellPendingApprovals);
 router.patch('/bookings/:bookingId/assign-borewell-qa', authenticate, isSuperAdmin, assignBorewellQA);
 router.get('/bookings/pending-user-refunds', authenticate, isAdmin, getPendingUserRefunds);
-router.patch('/bookings/:bookingId/user-refund', authenticate, isAdmin, processUserRefund);
-router.patch('/bookings/:bookingId/final-settlement', authenticate, isAdmin, processFinalSettlement);
+router.patch('/bookings/:bookingId/user-refund', authenticate, canApproveDisbursals, processUserRefund);
+router.patch('/bookings/:bookingId/final-settlement', authenticate, canApproveDisbursals, processFinalSettlement);
 router.get('/bookings/pending-first-payment', authenticate, isAdmin, getPendingFirstPaymentReleases);
 router.get('/bookings/pending-second-payment', authenticate, isAdmin, getPendingSecondPaymentReleases);
 

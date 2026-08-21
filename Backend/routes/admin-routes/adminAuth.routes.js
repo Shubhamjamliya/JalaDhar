@@ -30,7 +30,7 @@ const registerValidation = [
 ];
 
 const loginValidation = [
-  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('email').trim().notEmpty().withMessage('Please provide your email or mobile number'),
   body('password').notEmpty().withMessage('Password is required')
 ];
 
@@ -45,13 +45,16 @@ const resetPasswordValidation = [
 ];
 
 const adminRegistrationOTPValidation = [
-  body('email').isEmail().withMessage('Please provide a valid email'),
-  body('name').trim().notEmpty().withMessage('Name is required')
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('verifyMethod').optional().isIn(['EMAIL', 'PHONE']).withMessage('Invalid verification method'),
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Please provide a valid email'),
+  body('phone').optional({ checkFalsy: true }).trim()
 ];
 
 const registerAdminWithOTPValidation = [
   body('name').trim().notEmpty().withMessage('Name is required'),
-  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Please provide a valid email'),
+  body('phone').optional({ checkFalsy: true }).trim(),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
   body('token').trim().notEmpty().withMessage('Verification token is required')

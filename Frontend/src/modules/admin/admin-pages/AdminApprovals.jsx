@@ -14,6 +14,7 @@ import {
     IoDownloadOutline,
     IoExpandOutline,
     IoWaterOutline,
+    IoLockClosedOutline,
 } from "react-icons/io5";
 import {
     getBorewellPendingApprovals,
@@ -29,6 +30,7 @@ import { useTheme } from "../../../contexts/ThemeContext";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import { hasAdminPermission } from "../../../utils/permissionUtils";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import AssignmentHistoryModal from "../admin-component/AssignmentHistoryModal";
 
@@ -55,6 +57,7 @@ export default function AdminApprovals() {
     const [previewImage, setPreviewImage] = useState(null);
 
     const isSuperAdmin = currentAdmin?.role === "SUPER_ADMIN";
+    const canApproveReports = hasAdminPermission(currentAdmin, "can_approve_reports");
 
     // Pagination
     const [reportPagination, setReportPagination] = useState({
@@ -445,24 +448,33 @@ export default function AdminApprovals() {
                                                     <IoDocumentTextOutline className="text-lg" />
                                                     <span>View Report</span>
                                                 </button>
-                                                <button
-                                                    onClick={() => handleApproveReport(booking._id)}
-                                                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
-                                                >
-                                                    <IoCheckmarkCircleOutline className="text-lg" />
-                                                    <span>Approve</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedBooking(booking);
-                                                        setModalType("reject-report");
-                                                        setShowModal(true);
-                                                    }}
-                                                    className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
-                                                >
-                                                    <IoCloseCircleOutline className="text-lg" />
-                                                    <span>Reject</span>
-                                                </button>
+                                                {canApproveReports ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleApproveReport(booking._id)}
+                                                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <IoCheckmarkCircleOutline className="text-lg" />
+                                                            <span>Approve</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedBooking(booking);
+                                                                setModalType("reject-report");
+                                                                setShowModal(true);
+                                                            }}
+                                                            className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <IoCloseCircleOutline className="text-lg" />
+                                                            <span>Reject</span>
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <span className="px-3 py-2 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-xl font-bold text-xs flex items-center gap-1.5" title="Requires Borewell Survey Report Approval permission">
+                                                        <IoLockClosedOutline className="text-sm text-amber-600" />
+                                                        Review Only
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
 
@@ -644,28 +656,37 @@ export default function AdminApprovals() {
 
                                                 {/* Action Buttons */}
                                                 <div className="flex items-center gap-3 sm:self-center">
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedBooking(booking);
-                                                            setModalType("approve-borewell-success");
-                                                            setShowModal(true);
-                                                        }}
-                                                        className="flex-1 sm:flex-initial px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
-                                                    >
-                                                        <IoCheckmarkCircleOutline className="text-lg" />
-                                                        <span>Confirm Success</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedBooking(booking);
-                                                            setModalType("approve-borewell-failed");
-                                                            setShowModal(true);
-                                                        }}
-                                                        className="flex-1 sm:flex-initial px-5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
-                                                    >
-                                                        <IoCloseCircleOutline className="text-lg" />
-                                                        <span>Mark Failed</span>
-                                                    </button>
+                                                    {canApproveReports ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedBooking(booking);
+                                                                    setModalType("approve-borewell-success");
+                                                                    setShowModal(true);
+                                                                }}
+                                                                className="flex-1 sm:flex-initial px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                                                            >
+                                                                <IoCheckmarkCircleOutline className="text-lg" />
+                                                                <span>Confirm Success</span>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedBooking(booking);
+                                                                    setModalType("approve-borewell-failed");
+                                                                    setShowModal(true);
+                                                                }}
+                                                                className="flex-1 sm:flex-initial px-5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                                                            >
+                                                                <IoCloseCircleOutline className="text-lg" />
+                                                                <span>Mark Failed</span>
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <span className="px-3 py-2 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-xl font-bold text-xs flex items-center gap-1.5" title="Requires Borewell Survey Report Approval permission">
+                                                            <IoLockClosedOutline className="text-sm text-amber-600" />
+                                                            Review Only
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -961,16 +982,23 @@ export default function AdminApprovals() {
                             >
                                 Close
                             </button>
-                            <button
-                                onClick={() => {
-                                    const bId = viewingReportBooking._id;
-                                    setViewingReportBooking(null);
-                                    handleApproveReport(bId);
-                                }}
-                                className="px-5 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition-colors cursor-pointer shadow-xs"
-                            >
-                                Approve Report Now
-                            </button>
+                            {canApproveReports ? (
+                                <button
+                                    onClick={() => {
+                                        const bId = viewingReportBooking._id;
+                                        setViewingReportBooking(null);
+                                        handleApproveReport(bId);
+                                    }}
+                                    className="px-5 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition-colors cursor-pointer shadow-xs"
+                                >
+                                    Approve Report Now
+                                </button>
+                            ) : (
+                                <span className="px-4 py-2.5 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-xl font-bold text-xs flex items-center gap-1.5">
+                                    <IoLockClosedOutline className="text-sm text-amber-600" />
+                                    Approval Clearance Required
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>

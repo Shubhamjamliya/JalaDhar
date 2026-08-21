@@ -28,12 +28,11 @@ export const handleApiError = (error, defaultMessage = 'Something went wrong. Pl
     error?.message ||
     defaultMessage;
 
+  toast.dismiss();
+
   // Handle validation errors (array of errors)
   if (Array.isArray(errorMessage)) {
-    errorMessage.forEach((msg) => {
-      toast.error(msg);
-    });
-    return;
+    return toast.error(errorMessage[0] || defaultMessage, { duration: 4000 });
   }
 
   // Handle single error message
@@ -65,6 +64,7 @@ export const handleApiSuccess = (messageOrResponse = 'Operation completed succes
     }
   }
 
+  toast.dismiss();
   return toast.success(messageText, {
     icon: '✓',
     duration,
@@ -74,43 +74,29 @@ export const handleApiSuccess = (messageOrResponse = 'Operation completed succes
 /**
  * Handle form validation errors
  * @param {Object|Array} errors - Validation errors object or array
- * 
- * @example
- * // Single error message
- * handleValidationErrors('Email is required');
- * 
- * // Object with field errors
- * handleValidationErrors({ email: 'Email is invalid', password: 'Password too short' });
- * 
- * // Array of errors
- * handleValidationErrors(['Error 1', 'Error 2']);
  */
 export const handleValidationErrors = (errors) => {
   if (!errors) return;
 
+  toast.dismiss();
+
   if (typeof errors === 'string') {
-    // Single error message
     toast.error(errors);
     return;
   }
 
   if (Array.isArray(errors)) {
-    // Array of error messages
-    errors.forEach((error) => {
-      toast.error(error);
-    });
+    if (errors[0]) toast.error(errors[0]);
     return;
   }
 
   if (typeof errors === 'object') {
-    // Object with field errors
-    Object.values(errors).forEach((error) => {
-      if (typeof error === 'string') {
-        toast.error(error);
-      } else if (Array.isArray(error)) {
-        error.forEach((err) => toast.error(err));
-      }
-    });
+    const firstError = Object.values(errors)[0];
+    if (typeof firstError === 'string') {
+      toast.error(firstError);
+    } else if (Array.isArray(firstError) && firstError[0]) {
+      toast.error(firstError[0]);
+    }
     return;
   }
 };

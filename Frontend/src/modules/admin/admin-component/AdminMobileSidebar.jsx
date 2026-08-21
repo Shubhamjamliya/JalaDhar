@@ -191,7 +191,7 @@ const navSections = [
 ];
 
 export default function AdminMobileSidebar({ isOpen, onClose }) {
-    const { admin } = useAdminAuth();
+    const { admin, refreshProfile } = useAdminAuth();
     const location = useLocation();
     const navigate = useNavigate();
     const [expandedItems, setExpandedItems] = useState({});
@@ -216,12 +216,18 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
         };
 
         fetchCounts();
-        const interval = setInterval(fetchCounts, 20000);
+        if (refreshProfile) refreshProfile();
+
+        const interval = setInterval(() => {
+            fetchCounts();
+            if (refreshProfile) refreshProfile();
+        }, 20000);
+
         return () => {
             isMounted = false;
             clearInterval(interval);
         };
-    }, []);
+    }, [refreshProfile]);
 
     // Auto-close on navigate
     useEffect(() => {
@@ -345,10 +351,8 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
                             {navSections.map((section, sIdx) => {
                                 const visibleItems = section.items.filter(item => {
                                     if (admin?.role === 'SUPER_ADMIN' || admin?.role === 'ADMIN') return true;
-                                    if (item.permission) {
-                                        return hasAdminPermission(admin, item.permission);
-                                    }
-                                    return !item.roles || item.roles.includes(admin?.role);
+                                    if (item.id === "team") return false;
+                                    return hasAdminPermission(admin, item.id) || (item.permission && hasAdminPermission(admin, item.permission));
                                 });
                                 if (visibleItems.length === 0) return null;
 

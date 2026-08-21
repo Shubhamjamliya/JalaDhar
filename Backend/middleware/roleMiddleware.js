@@ -27,8 +27,8 @@ const authorize = (...allowedRoles) => {
 /**
  * Granular module-level permission check middleware
  * Supports both role-based fallback and custom granular permissions (checkboxes)
- * @param {string} permission - The permission module key (e.g. 'finance', 'operations', 'verification', 'support', 'qc', 'reports', 'settings')
- * @param {...string} fallbackRoles - Fallback roles that inherently possess this access
+ * @param {string} permission - The permission module key
+ * @param {...string} fallbackRoles - Fallback roles that inherently possess this access if permissions unassigned
  */
 const requirePermission = (permission, ...fallbackRoles) => {
   return (req, res, next) => {
@@ -55,14 +55,30 @@ const requirePermission = (permission, ...fallbackRoles) => {
       return next();
     }
 
-    // 4. Fallback check based on role defaults
-    if (fallbackRoles.includes(req.userRole)) {
+    // 4. 1-to-1 legacy compatibility
+    const legacyAliases = {
+      verification: 'vendors',
+      vendors: 'verification',
+      qc: 'approvals',
+      approvals: 'qc',
+      finance: 'payments',
+      payments: 'finance',
+      support: 'disputes',
+      disputes: 'support',
+    };
+
+    if (legacyAliases[permission] && userPermissions.includes(legacyAliases[permission])) {
+      return next();
+    }
+
+    // 5. Fallback check based on role defaults ONLY if permissions were uninitialized
+    if (!req.user.permissions && fallbackRoles.includes(req.userRole)) {
       return next();
     }
 
     return res.status(403).json({
       success: false,
-      message: `Access denied. You do not have '${permission}' permission to access this resource.`
+      message: `Access denied. You do not have '${permission}' clearance to perform this action.`
     });
   };
 };
@@ -113,6 +129,13 @@ const isSupportAdmin = requirePermission('support', ROLES.SUPPORT_ADMIN);
 const isQCAdmin = requirePermission('qc', ROLES.QC_ADMIN);
 
 /**
+ * Specific Approval & Decision Clearance Middlewares
+ */
+const canApproveVendors = requirePermission('can_approve_vendors');
+const canApproveReports = requirePermission('can_approve_reports');
+const canApproveDisbursals = requirePermission('can_approve_disbursals');
+
+/**
  * Check if user is vendor
  */
 const isVendor = authorize(ROLES.VENDOR);
@@ -153,6 +176,9 @@ module.exports = {
   isExpertVerificationAdmin,
   isSupportAdmin,
   isQCAdmin,
+  canApproveVendors,
+  canApproveReports,
+  canApproveDisbursals,
   isVendor,
   isUser,
   isVendorOrAdmin,

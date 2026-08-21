@@ -1043,129 +1043,161 @@ function App() {
                                                                     <Route
                                                                         path="/settings"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminSettings defaultTab="hub" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings defaultTab="hub" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/settings/general"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminSettings defaultTab="general" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings defaultTab="general" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/settings/reschedule"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminSettings defaultTab="reschedule" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings defaultTab="reschedule" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/settings/billing"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminSettings defaultTab="billing" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings defaultTab="billing" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/settings/pricing"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminSettings defaultTab="pricing" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings defaultTab="pricing" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/settings/security"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminSettings defaultTab="security" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings defaultTab="security" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/settings/languages"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminSettings defaultTab="languages" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings defaultTab="languages" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/settings/register"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminSettings defaultTab="register" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings defaultTab="register" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/policies"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPolicies defaultTab="hub" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="policies">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPolicies defaultTab="hub" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/policies/legal"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPolicies defaultTab="legal" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="policies">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPolicies defaultTab="legal" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/policies/privacy"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPolicies defaultTab="privacy" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="policies">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPolicies defaultTab="privacy" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/policies/cancellation"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPolicies defaultTab="cancellation" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="policies">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPolicies defaultTab="cancellation" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/policies/expert"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPolicies defaultTab="expert" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="policies">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPolicies defaultTab="expert" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/agreements"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminAgreementLogs />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="agreement-logs">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminAgreementLogs />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/expert-agreements"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminExpertAgreementLogs />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="agreement-logs">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminExpertAgreementLogs />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/otp-logs"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminOTPLogs />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="agreement-logs">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminOTPLogs />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
@@ -1181,17 +1213,21 @@ function App() {
                                                                     <Route
                                                                         path="/approvals"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminApprovals />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="approvals">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminApprovals />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/bookings/:bookingId"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminBookingDetails />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="bookings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminBookingDetails />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
@@ -1207,17 +1243,21 @@ function App() {
                                                                     <Route
                                                                         path="/ratings"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminRatings />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="ratings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminRatings />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/disputes"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminDisputes />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="disputes">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminDisputes />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                 </Routes>

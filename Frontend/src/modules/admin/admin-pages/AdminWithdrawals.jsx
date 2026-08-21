@@ -7,7 +7,8 @@ import {
     IoSearchOutline,
     IoFilterOutline,
     IoPersonOutline,
-    IoSwapHorizontalOutline
+    IoSwapHorizontalOutline,
+    IoLockClosedOutline
 } from "react-icons/io5";
 import {
     getAllWithdrawalRequests,
@@ -20,6 +21,7 @@ import {
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError, handleApiSuccess } from "../../../utils/toastHelper";
+import { hasAdminPermission } from "../../../utils/permissionUtils";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -28,6 +30,8 @@ import AssignmentHistoryModal from "../admin-component/AssignmentHistoryModal";
 export default function AdminWithdrawals() {
     const toast = useToast();
     const { admin: currentAdmin } = useAdminAuth();
+    const canApproveDisbursals = hasAdminPermission(currentAdmin, "can_approve_disbursals");
+    const isSuperAdmin = currentAdmin?.role === "SUPER_ADMIN";
     const [loading, setLoading] = useState(true);
     const [withdrawalRequests, setWithdrawalRequests] = useState([]);
     const [filteredRequests, setFilteredRequests] = useState([]);
@@ -46,8 +50,6 @@ export default function AdminWithdrawals() {
     const [paymentMethod, setPaymentMethod] = useState("UPI");
     const [notes, setNotes] = useState("");
     const [processing, setProcessing] = useState(false);
-
-    const isSuperAdmin = currentAdmin?.role === "SUPER_ADMIN";
 
     useEffect(() => {
         loadWithdrawalRequests();
@@ -347,31 +349,43 @@ export default function AdminWithdrawals() {
                                                 {new Date(request.requestedAt).toLocaleDateString()}
                                             </td>
                                             <td className="px-5 py-3.5 text-right space-x-2">
-                                                {request.status === "PENDING" && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => { setSelectedRequest(request); setShowApproveModal(true); }}
-                                                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs cursor-pointer"
-                                                        >
-                                                            Approve
-                                                        </button>
-                                                        <button
-                                                            onClick={() => { setSelectedRequest(request); setShowRejectModal(true); }}
-                                                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg font-bold text-xs cursor-pointer"
-                                                        >
-                                                            Reject
-                                                        </button>
-                                                    </>
-                                                )}
-                                                {request.status === "APPROVED" && (
-                                                    <button
-                                                        onClick={() => { setSelectedRequest(request); setShowProcessModal(true); }}
-                                                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs cursor-pointer"
-                                                    >
-                                                        Record Payment
-                                                    </button>
-                                                )}
-                                            </td>
+                                                 {canApproveDisbursals ? (
+                                                     <>
+                                                         {request.status === "PENDING" && (
+                                                             <>
+                                                                 <button
+                                                                     onClick={() => { setSelectedRequest(request); setShowApproveModal(true); }}
+                                                                     className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs cursor-pointer"
+                                                                 >
+                                                                     Approve
+                                                                 </button>
+                                                                 <button
+                                                                     onClick={() => { setSelectedRequest(request); setShowRejectModal(true); }}
+                                                                     className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg font-bold text-xs cursor-pointer"
+                                                                 >
+                                                                     Reject
+                                                                 </button>
+                                                             </>
+                                                         )}
+                                                         {request.status === "APPROVED" && (
+                                                             <button
+                                                                 onClick={() => { setSelectedRequest(request); setShowProcessModal(true); }}
+                                                                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs cursor-pointer"
+                                                             >
+                                                                 Process Disbursal
+                                                             </button>
+                                                         )}
+                                                         {request.status === "REJECTED" && (
+                                                             <span className="text-[11px] text-gray-400 italic">Rejected</span>
+                                                         )}
+                                                         {request.status === "COMPLETED" && (
+                                                             <span className="text-[11px] text-emerald-600 font-bold">Disbursed</span>
+                                                         )}
+                                                     </>
+                                                 ) : (
+                                                     <span className="text-[11px] text-gray-400 italic">Review Only</span>
+                                                 )}
+                                             </td>
                                         </tr>
                                     );
                                 })}

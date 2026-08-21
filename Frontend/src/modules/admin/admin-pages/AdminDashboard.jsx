@@ -18,9 +18,12 @@ import PlatformFeesWidget from '../admin-component/dashboard/PlatformFeesWidget'
 import ExpertPerformance from '../admin-component/dashboard/ExpertPerformance';
 import AdminAlerts from '../admin-component/dashboard/AdminAlerts';
 import { getDashboardStats, getRevenueAnalytics } from '../../../services/adminDashboardService';
+import { useAdminAuth } from '../../../contexts/AdminAuthContext';
+import { hasAdminPermission } from '../../../utils/permissionUtils';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
+    const { admin } = useAdminAuth();
     const [period, setPeriod] = useState('month');
     const [revenueData, setRevenueData] = useState([]);
     const [recentBookingsList, setRecentBookingsList] = useState([]);
@@ -39,6 +42,12 @@ const AdminDashboard = () => {
         totalRevenue: 0,
         todayRevenue: 0,
     });
+
+    const canReports = hasAdminPermission(admin, 'reports');
+    const canBookings = hasAdminPermission(admin, 'bookings');
+    const canUsers = hasAdminPermission(admin, 'users');
+    const canVendors = hasAdminPermission(admin, 'vendors');
+    const canPayments = hasAdminPermission(admin, 'payments');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -137,7 +146,9 @@ const AdminDashboard = () => {
     };
 
     const onViewBooking = (booking) => {
-        if (booking?._id || booking?.id) navigate(`/admin/bookings/${booking._id || booking.id}`);
+        if (canBookings && (booking?._id || booking?.id)) {
+            navigate(`/admin/bookings/${booking._id || booking.id}`);
+        }
     };
 
     const statsCards = [
@@ -150,7 +161,7 @@ const AdminDashboard = () => {
             bgColor: 'bg-gradient-to-br from-green-500 to-emerald-600',
             cardBg: 'bg-gradient-to-br from-green-50 to-emerald-50',
             iconBg: 'bg-white/20',
-            link: '/admin/reports/revenue'
+            link: canReports ? '/admin/reports/revenue' : (canPayments ? '/admin/payments' : null)
         },
         {
             title: 'Pending Bookings',
@@ -161,7 +172,7 @@ const AdminDashboard = () => {
             bgColor: 'bg-gradient-to-br from-blue-500 to-indigo-600',
             cardBg: 'bg-gradient-to-br from-blue-50 to-indigo-50',
             iconBg: 'bg-white/20',
-            link: '/admin/reports/bookings'
+            link: canBookings ? '/admin/bookings' : (canReports ? '/admin/reports/bookings' : null)
         },
         {
             title: 'Completed Bookings',
@@ -172,7 +183,7 @@ const AdminDashboard = () => {
             bgColor: 'bg-gradient-to-br from-purple-500 to-violet-600',
             cardBg: 'bg-gradient-to-br from-purple-50 to-violet-50',
             iconBg: 'bg-white/20',
-            link: '/admin/reports/bookings'
+            link: canBookings ? '/admin/bookings' : (canReports ? '/admin/reports/bookings' : null)
         },
         {
             title: 'Total Users',
@@ -183,7 +194,7 @@ const AdminDashboard = () => {
             bgColor: 'bg-gradient-to-br from-orange-500 to-amber-600',
             cardBg: 'bg-gradient-to-br from-orange-50 to-amber-50',
             iconBg: 'bg-white/20',
-            link: '/admin/users/analytics'
+            link: canUsers ? '/admin/users' : null
         },
         {
             title: 'Total Experts',
@@ -194,7 +205,7 @@ const AdminDashboard = () => {
             bgColor: 'bg-gradient-to-br from-teal-500 to-cyan-600',
             cardBg: 'bg-gradient-to-br from-teal-50 to-cyan-50',
             iconBg: 'bg-white/20',
-            link: '/admin/vendors/analytics'
+            link: canVendors ? '/admin/vendors' : null
         }
     ];
 
@@ -218,6 +229,7 @@ const AdminDashboard = () => {
                 {statsCards.map((card, index) => {
                     const Icon = card.icon;
                     const isPositive = (card.change || 0) >= 0;
+                    const isClickable = Boolean(card.link);
 
                     return (
                         <motion.div
@@ -225,10 +237,14 @@ const AdminDashboard = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.08 }}
-                            onClick={() => card.link && navigate(card.link)}
-                            className={`${card.cardBg} rounded-xl p-3 sm:p-4 shadow-sm border border-transparent hover:shadow-md transition-all duration-300 relative overflow-hidden cursor-pointer group`}
+                            onClick={() => isClickable && navigate(card.link)}
+                            className={`${card.cardBg} rounded-xl p-3 sm:p-4 shadow-sm border border-transparent ${
+                                isClickable ? 'hover:shadow-md cursor-pointer group' : 'cursor-default'
+                            } transition-all duration-300 relative overflow-hidden`}
                         >
-                            <div className={`absolute top-0 right-0 w-24 h-24 ${card.bgColor} opacity-10 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform`} />
+                            <div className={`absolute top-0 right-0 w-24 h-24 ${card.bgColor} opacity-10 rounded-full -mr-12 -mt-12 ${
+                                isClickable ? 'group-hover:scale-110' : ''
+                            } transition-transform`} />
 
                             <div className="flex items-center justify-between mb-2 sm:mb-3 relative z-10">
                                 <div className={`${card.bgColor} ${card.iconBg} p-1.5 sm:p-2 rounded-lg shadow-sm`}>

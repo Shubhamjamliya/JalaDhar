@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isFinanceAdmin } = require('../../middleware/roleMiddleware');
+const { isFinanceAdmin, canApproveDisbursals } = require('../../middleware/roleMiddleware');
 const {
   getAllWithdrawalRequests,
   approveWithdrawalRequest,
@@ -15,9 +15,9 @@ router.use(isFinanceAdmin);
 
 router.get('/', getAllWithdrawalRequests);
 router.patch('/:requestId/assign', assignUserWithdrawalRequest);
-router.patch('/:userId/:requestId/approve', approveWithdrawalRequest);
-router.patch('/:userId/:requestId/reject', rejectWithdrawalRequest);
-router.patch('/:requestId/process', processWithdrawalRequest); // Updated: userId found from request
+router.patch('/:userId/:requestId/approve', canApproveDisbursals, approveWithdrawalRequest);
+router.patch('/:userId/:requestId/reject', canApproveDisbursals, rejectWithdrawalRequest);
+router.patch('/:requestId/process', canApproveDisbursals, processWithdrawalRequest); // Updated: userId found from request
 
 module.exports = router;
 

@@ -81,21 +81,21 @@ export default function AdminLogin() {
                     </div>
 
                     <form className="space-y-4" onSubmit={handleAdminLogin}>
-                        {/* Email Input */}
+                        {/* Email or Mobile Number Input */}
                         <div>
                             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
-                                Email
+                                Email or Mobile Number
                             </label>
                             <div className="relative">
                                 <IoMailOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
                                 <input
-                                    type="email"
-                                    placeholder="Enter your email"
+                                    type="text"
+                                    placeholder="Enter your email or mobile number"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                                     disabled={loading}
-                                    autoComplete="off"
+                                    autoComplete="username"
                                     required
                                     autoFocus
                                     onKeyPress={(e) => {

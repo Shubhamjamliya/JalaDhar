@@ -13,16 +13,21 @@ import {
     IoTimeOutline,
     IoDocumentTextOutline,
     IoImageOutline,
+    IoLockClosedOutline,
 } from "react-icons/io5";
 import { getVendorDetails, approveVendor, rejectVendor, deactivateVendor, activateVendor } from "../../../services/adminApi";
+import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import { hasAdminPermission } from "../../../utils/permissionUtils";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
 
 export default function AdminVendorDetails() {
     const { vendorId } = useParams();
     const navigate = useNavigate();
+    const { admin: currentAdmin } = useAdminAuth();
+    const canApproveVendors = hasAdminPermission(currentAdmin, "can_approve_vendors");
     const [vendor, setVendor] = useState(null);
     const [statistics, setStatistics] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -314,24 +319,31 @@ export default function AdminVendorDetails() {
                     {/* Actions */}
                     <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
                         {!vendor.isApproved && (
-                            <>
-                                <button
-                                    onClick={handleApprove}
-                                    disabled={actionLoading}
-                                    className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-[8px] hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <IoCheckmarkCircleOutline className="text-base" />
-                                    {actionLoading ? "Processing..." : "Approve Expert"}
-                                </button>
-                                <button
-                                    onClick={handleReject}
-                                    disabled={actionLoading}
-                                    className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-[8px] hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <IoCloseCircleOutline className="text-base" />
-                                    {actionLoading ? "Processing..." : "Reject Expert"}
-                                </button>
-                            </>
+                            canApproveVendors ? (
+                                <>
+                                    <button
+                                        onClick={handleApprove}
+                                        disabled={actionLoading}
+                                        className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-[8px] hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <IoCheckmarkCircleOutline className="text-base" />
+                                        {actionLoading ? "Processing..." : "Approve Expert"}
+                                    </button>
+                                    <button
+                                        onClick={handleReject}
+                                        disabled={actionLoading}
+                                        className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-[8px] hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <IoCloseCircleOutline className="text-base" />
+                                        {actionLoading ? "Processing..." : "Reject Expert"}
+                                    </button>
+                                </>
+                            ) : (
+                                <span className="px-3 py-2 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-xl font-bold text-xs flex items-center gap-1.5" title="Requires Expert / Vendor KYC Approval permission">
+                                    <IoLockClosedOutline className="text-sm text-amber-600" />
+                                    Review Only (Approval Restricted)
+                                </span>
+                            )
                         )}
 
                         {vendor.isActive ? (

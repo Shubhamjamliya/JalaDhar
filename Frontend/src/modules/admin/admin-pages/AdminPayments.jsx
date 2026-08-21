@@ -3850,8 +3850,8 @@ export default function AdminPayments({ defaultTab = "overview" }) {
 
                 {/* Second Installment Payment Modal */}
                 {secondInstallmentModal.open && secondInstallmentModal.booking && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 custom-scrollbar">
                             <h3 className="text-xl font-bold text-gray-800 mb-4">Pay Second Installment (Final Settlement)</h3>
 
                             <div className="mb-4 p-4 bg-gray-50 rounded-lg">
@@ -3927,8 +3927,8 @@ export default function AdminPayments({ defaultTab = "overview" }) {
 
                 {/* User Refund Modal */}
                 {userRefundModal.open && userRefundModal.booking && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 custom-scrollbar">
                             <h3 className="text-xl font-bold text-gray-800 mb-4">Process User Refund</h3>
 
                             <div className="mb-4 p-4 bg-gray-50 rounded-lg">
@@ -4135,8 +4135,8 @@ export default function AdminPayments({ defaultTab = "overview" }) {
             {/* Final Settlement Modal */}
             {
                 showFinalSettlementModal && selectedFinalSettlementBooking && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
                             <div className="p-6">
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-2xl font-bold text-gray-800">
@@ -4263,8 +4263,8 @@ export default function AdminPayments({ defaultTab = "overview" }) {
             {/* User Final Settlement Modal */}
             {
                 showUserFinalSettlementModal && selectedUserFinalSettlementBooking && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
                             <div className="p-6">
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-2xl font-bold text-gray-800">
