@@ -82,12 +82,12 @@ router.get('/bookings/pending-second-payment', authenticate, isAdmin, getPending
 // Vendor final settlements
 router.get('/bookings/final-settlement/vendor/pending', authenticate, isAdmin, getPendingVendorFinalSettlements);
 router.get('/bookings/final-settlement/vendor/completed', authenticate, isAdmin, getCompletedVendorFinalSettlements);
-router.patch('/bookings/:bookingId/final-settlement/vendor/process', authenticate, isAdmin, processNewFinalSettlement);
+router.patch('/bookings/:bookingId/final-settlement/vendor/process', authenticate, canApproveDisbursals, processNewFinalSettlement);
 // User final settlements
 router.get('/bookings/final-settlement/user/pending', authenticate, isAdmin, getPendingUserFinalSettlements);
 router.get('/bookings/final-settlement/user/completed', authenticate, isAdmin, getCompletedUserFinalSettlements);
-router.patch('/bookings/:bookingId/final-settlement/user/process', authenticate, isAdmin, processUserFinalSettlement);
-router.patch('/bookings/:bookingId/resolve-infeasible', authenticate, isAdmin, resolveInfeasibleBooking);
+router.patch('/bookings/:bookingId/final-settlement/user/process', authenticate, canApproveDisbursals, processUserFinalSettlement);
+router.patch('/bookings/:bookingId/resolve-infeasible', authenticate, isSuperAdmin, resolveInfeasibleBooking);
 
 // Generic ID route must be last
 router.get('/bookings/:bookingId', authenticate, isAdmin, getBookingDetails);

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin } = require('../../middleware/roleMiddleware');
+const { requirePermission } = require('../../middleware/roleMiddleware');
 const {
   getAllSettings,
   getSettingByKey,
@@ -10,7 +10,7 @@ const {
 } = require('../../controllers/adminControllers/settingsController');
 
 router.use(authenticate);
-router.use(isAdmin);
+router.use(requirePermission('settings'));
 
 router.get('/', getAllSettings);
 router.get('/:key', getSettingByKey);

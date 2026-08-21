@@ -7,20 +7,23 @@ const {
   activateUser
 } = require('../../controllers/adminControllers/userManagementController');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin } = require('../../middleware/roleMiddleware');
+const { requirePermission } = require('../../middleware/roleMiddleware');
+const { ROLES } = require('../../utils/constants');
 
-// Routes
+// Routes (Requires users permission or Operations / Support role)
+const isUserAdmin = requirePermission('users', ROLES.OPERATIONS_ADMIN, ROLES.SUPPORT_ADMIN);
+
 // Get all users
-router.get('/users', authenticate, isAdmin, getAllUsers);
+router.get('/users', authenticate, isUserAdmin, getAllUsers);
 
 // Get user details
-router.get('/users/:userId', authenticate, isAdmin, getUserDetails);
+router.get('/users/:userId', authenticate, isUserAdmin, getUserDetails);
 
 // Deactivate user
-router.patch('/users/:userId/deactivate', authenticate, isAdmin, deactivateUser);
+router.patch('/users/:userId/deactivate', authenticate, isUserAdmin, deactivateUser);
 
 // Activate user
-router.patch('/users/:userId/activate', authenticate, isAdmin, activateUser);
+router.patch('/users/:userId/activate', authenticate, isUserAdmin, activateUser);
 
 module.exports = router;
 

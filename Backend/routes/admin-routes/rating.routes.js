@@ -7,13 +7,18 @@ const {
   deleteRating
 } = require('../../controllers/adminControllers/ratingController');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin } = require('../../middleware/roleMiddleware');
+const { requirePermission } = require('../../middleware/roleMiddleware');
+const { ROLES } = require('../../utils/constants');
 
-// Routes
-router.get('/', authenticate, isAdmin, getAllRatings);
-router.get('/statistics', authenticate, isAdmin, getRatingStatistics);
-router.get('/:ratingId', authenticate, isAdmin, getRatingDetails);
-router.delete('/:ratingId', authenticate, isAdmin, deleteRating);
+// Routes (Requires ratings permission or Support role)
+const isRatingAdmin = requirePermission('ratings', ROLES.SUPPORT_ADMIN);
+
+router.use(authenticate, isRatingAdmin);
+
+router.get('/', getAllRatings);
+router.get('/statistics', getRatingStatistics);
+router.get('/:ratingId', getRatingDetails);
+router.delete('/:ratingId', deleteRating);
 
 module.exports = router;
 

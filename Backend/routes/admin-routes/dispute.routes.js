@@ -10,7 +10,7 @@ const {
   getDisputeStatistics
 } = require('../../controllers/adminControllers/disputeController');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin } = require('../../middleware/roleMiddleware');
+const { isSupportAdmin } = require('../../middleware/roleMiddleware');
 
 // Validation rules
 const updateStatusValidation = [
@@ -29,13 +29,15 @@ const addCommentValidation = [
     .withMessage('Comment must be between 1 and 1000 characters')
 ];
 
-// Routes
-router.get('/', authenticate, isAdmin, getAllDisputes);
-router.get('/statistics', authenticate, isAdmin, getDisputeStatistics);
-router.get('/:disputeId', authenticate, isAdmin, getDisputeDetails);
-router.patch('/:disputeId/status', authenticate, isAdmin, updateStatusValidation, updateDisputeStatus);
-router.patch('/:disputeId/assign', authenticate, isAdmin, assignDispute);
-router.post('/:disputeId/comment', authenticate, isAdmin, addCommentValidation, addComment);
+// Routes (Requires support / disputes permission)
+router.use(authenticate, isSupportAdmin);
+
+router.get('/', getAllDisputes);
+router.get('/statistics', getDisputeStatistics);
+router.get('/:disputeId', getDisputeDetails);
+router.patch('/:disputeId/status', updateStatusValidation, updateDisputeStatus);
+router.patch('/:disputeId/assign', assignDispute);
+router.post('/:disputeId/comment', addCommentValidation, addComment);
 
 module.exports = router;
 
