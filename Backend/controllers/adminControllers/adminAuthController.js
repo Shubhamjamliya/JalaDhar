@@ -7,6 +7,7 @@ const { createOTPToken, verifyOTPToken, markTokenAsUsed } = require('../../servi
 const { sendOTPEmail } = require('../../services/emailService');
 const { TOKEN_TYPES } = require('../../utils/constants');
 const { generateOTP, generateToken } = require('../../utils/generateOTP');
+const { logAdminActivity } = require('../../services/auditLogger');
 
 /**
  * Register new admin with admin code
@@ -612,6 +613,18 @@ const registerAdminWithOTP = async (req, res) => {
     // Mark token as used
     await markTokenAsUsed(tokenDoc._id);
 
+    // Record Audit Log
+    logAdminActivity({
+      req,
+      action: 'ADMIN_CREATED',
+      module: 'SECURITY',
+      targetEntity: 'Admin',
+      targetId: admin._id,
+      targetLabel: `Admin: ${admin.name} (${admin.role})`,
+      previousState: null,
+      newState: { name: admin.name, email: admin.email, role: admin.role, permissions: admin.permissions }
+    });
+
     res.status(201).json({
       success: true,
       message: 'Admin registered successfully',
@@ -672,6 +685,13 @@ const updateAdmin = async (req, res) => {
       });
     }
 
+    const previousSnapshot = {
+      name: admin.name,
+      role: admin.role,
+      isActive: admin.isActive,
+      permissions: admin.permissions
+    };
+
     // Don't allow changing own role if it's the last super admin
     if (admin._id.toString() === req.userId && role && role !== 'SUPER_ADMIN') {
       const superAdminCount = await Admin.countDocuments({ role: 'SUPER_ADMIN', isActive: true });
@@ -697,6 +717,18 @@ const updateAdmin = async (req, res) => {
     }
 
     await admin.save();
+
+    // Record Audit Log
+    logAdminActivity({
+      req,
+      action: 'ADMIN_PERMISSIONS_UPDATED',
+      module: 'SECURITY',
+      targetEntity: 'Admin',
+      targetId: admin._id,
+      targetLabel: `Admin: ${admin.name} (${admin.role})`,
+      previousState: previousSnapshot,
+      newState: { name: admin.name, role: admin.role, isActive: admin.isActive, permissions: admin.permissions }
+    });
 
     res.json({
       success: true,
@@ -748,6 +780,18 @@ const deleteAdmin = async (req, res) => {
     }
 
     await Admin.findByIdAndDelete(adminId);
+
+    // Record Audit Log
+    logAdminActivity({
+      req,
+      action: 'ADMIN_DELETED',
+      module: 'SECURITY',
+      targetEntity: 'Admin',
+      targetId: adminId,
+      targetLabel: `Deleted Admin: ${admin.name} (${admin.email})`,
+      previousState: { name: admin.name, email: admin.email, role: admin.role },
+      newState: null
+    });
 
     res.json({
       success: true,

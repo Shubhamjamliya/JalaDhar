@@ -5,6 +5,7 @@ const Service = require('../../models/Service');
 const Booking = require('../../models/Booking');
 const { validationResult } = require('express-validator');
 const { sendVendorApprovalEmail, sendVendorRejectionEmail } = require('../../services/emailService');
+const { logAdminActivity } = require('../../services/auditLogger');
 
 /**
  * Get all vendors with filters
@@ -379,6 +380,18 @@ const approveVendor = async (req, res) => {
       console.error('Notification error:', notifError);
     }
 
+    // Record Audit Log
+    logAdminActivity({
+      req,
+      action: 'VENDOR_KYC_APPROVED',
+      module: 'VERIFICATION',
+      targetEntity: 'Vendor',
+      targetId: vendor._id,
+      targetLabel: `Expert: ${vendor.name} (${vendor.phone || vendor.email})`,
+      previousState: { verificationStatus: 'PENDING_VERIFICATION', isApproved: false },
+      newState: { verificationStatus: 'VERIFIED_PENDING_AGREEMENT', isApproved: false }
+    });
+
     res.json({
       success: true,
       message: 'Vendor approved successfully',
@@ -462,6 +475,19 @@ const rejectVendor = async (req, res) => {
       rejectionReason: vendor.rejectionReason
     });
 
+    // Record Audit Log
+    logAdminActivity({
+      req,
+      action: 'VENDOR_KYC_REJECTED',
+      module: 'VERIFICATION',
+      targetEntity: 'Vendor',
+      targetId: vendor._id,
+      targetLabel: `Expert: ${vendor.name} (${vendor.phone || vendor.email})`,
+      previousState: { isApproved: false },
+      newState: { isApproved: false, rejectionReason: vendor.rejectionReason },
+      notes: vendor.rejectionReason
+    });
+
     // Send real-time notification
     try {
       const { sendNotification } = require('../../services/notificationService');
@@ -542,6 +568,18 @@ const deactivateVendor = async (req, res) => {
       { isActive: false }
     );
 
+    // Record Audit Log
+    logAdminActivity({
+      req,
+      action: 'VENDOR_DEACTIVATED',
+      module: 'VERIFICATION',
+      targetEntity: 'Vendor',
+      targetId: vendor._id,
+      targetLabel: `Expert: ${vendor.name} (${vendor.phone || vendor.email})`,
+      previousState: { isActive: true },
+      newState: { isActive: false }
+    });
+
     res.json({
       success: true,
       message: 'Vendor deactivated successfully',
@@ -590,6 +628,18 @@ const activateVendor = async (req, res) => {
     // Activate vendor
     vendor.isActive = true;
     await vendor.save();
+
+    // Record Audit Log
+    logAdminActivity({
+      req,
+      action: 'VENDOR_ACTIVATED',
+      module: 'VERIFICATION',
+      targetEntity: 'Vendor',
+      targetId: vendor._id,
+      targetLabel: `Expert: ${vendor.name} (${vendor.phone || vendor.email})`,
+      previousState: { isActive: false },
+      newState: { isActive: true }
+    });
 
     res.json({
       success: true,

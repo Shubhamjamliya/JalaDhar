@@ -195,6 +195,7 @@ app.use('/api/admin/withdrawals', require('./routes/admin-routes/withdrawal.rout
 app.use('/api/admin/user-withdrawals', require('./routes/admin-routes/userWithdrawal.routes'));
 app.use('/api/admin/ratings', require('./routes/admin-routes/rating.routes'));
 app.use('/api/admin/disputes', require('./routes/admin-routes/dispute.routes'));
+app.use('/api/admin/audit-logs', require('./routes/admin-routes/adminAudit.routes'));
 
 // Booking routes
 app.use('/api/bookings', require('./routes/booking-routes/userBooking.routes'));

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import AdminActivityLogs from "./AdminActivityLogs";
 import {
   IoPeopleOutline,
   IoShieldCheckmarkOutline,
@@ -112,6 +114,7 @@ const ROLE_DEFINITIONS = [
 ];
 
 export default function AdminTeamManagement() {
+  const navigate = useNavigate();
   const { admin: currentAdmin } = useAdminAuth();
   const toast = useToast();
   const [admins, setAdmins] = useState([]);
@@ -126,6 +129,7 @@ export default function AdminTeamManagement() {
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
   const [togglesLoading, setTogglesLoading] = useState(false);
+  const [currentTab, setCurrentTab] = useState("TEAM"); // "TEAM" | "AUDIT"
 
 
   // Performance Modal
@@ -717,47 +721,80 @@ export default function AdminTeamManagement() {
   };
 
   return (
-    <div className="p-4 sm:p-5 max-w-7xl mx-auto space-y-3.5">
+    <div className="p-4 sm:p-5 max-w-7xl mx-auto space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
             <IoPeopleOutline className="text-blue-600 text-lg" />
-            Admin Team & Workload Management
+            Admin Team & Governance
           </h1>
           <p className="text-xs text-gray-400 mt-0.5">
-            Manage role-based admins, toggle automated workload distribution, and evaluate team statistics.
+            Manage role-based admins, toggle automated workload distribution, and audit internal staff actions.
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={handleOpenStats}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-xl transition-colors text-xs font-semibold cursor-pointer"
-          >
-            <IoStatsChartOutline className="text-sm" />
-            Team Evaluation
-          </button>
-          <button
-            onClick={loadData}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors text-xs font-medium cursor-pointer"
-          >
-            <IoRefreshOutline className={`text-sm ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-          <button
-            onClick={handleOpenRegisterModal}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all shadow-xs text-xs font-bold cursor-pointer active:scale-95"
-          >
-            <IoPersonAddOutline className="text-sm" />
-            Register Admin
-          </button>
-        </div>
+        {currentTab === "TEAM" && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={loadData}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors text-xs font-medium cursor-pointer"
+            >
+              <IoRefreshOutline className={`text-sm ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+            <button
+              onClick={handleOpenRegisterModal}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all shadow-xs text-xs font-bold cursor-pointer active:scale-95"
+            >
+              <IoPersonAddOutline className="text-sm" />
+              Register Admin
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── SUB-PAGE TAB SWITCHER ── */}
+      <div className="flex items-center gap-2 bg-gray-100/80 p-1 rounded-2xl w-fit border border-gray-200/60">
+        <button
+          type="button"
+          onClick={() => setCurrentTab("TEAM")}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            currentTab === "TEAM"
+              ? "bg-white text-gray-900 shadow-xs border border-gray-200/80"
+              : "text-gray-500 hover:text-gray-900"
+          }`}
+        >
+          <IoPeopleOutline className="text-sm" />
+          <span>Team Members & Roles</span>
+          <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
+            currentTab === "TEAM" ? "bg-blue-50 text-blue-700 border border-blue-100" : "bg-gray-200 text-gray-600"
+          }`}>
+            {admins.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setCurrentTab("AUDIT")}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            currentTab === "AUDIT"
+              ? "bg-white text-gray-900 shadow-xs border border-gray-200/80"
+              : "text-gray-500 hover:text-gray-900"
+          }`}
+        >
+          <IoShieldCheckmarkOutline className="text-sm text-blue-600" />
+          <span>Staff Activity & Audit Trail</span>
+        </button>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-3" />}
 
-      {/* ── DEPARTMENT MASTER AUTO-ASSIGN TOGGLE CARD ── */}
-      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-gray-200/80 shadow-xs space-y-2.5">
+      {currentTab === "AUDIT" ? (
+        <AdminActivityLogs embedded={true} />
+      ) : (
+        <>
+          {/* ── DEPARTMENT MASTER AUTO-ASSIGN TOGGLE CARD ── */}
+          <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-gray-200/80 shadow-xs space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm border border-blue-100">
@@ -1042,6 +1079,8 @@ export default function AdminTeamManagement() {
           </table>
         </div>
       </div>
+    </>
+  )}
 
       {/* ── TEAM PERFORMANCE & EVALUATION MODAL ── */}
       {showStatsModal && (

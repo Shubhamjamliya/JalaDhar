@@ -6,6 +6,7 @@ const { sendSettlementNotificationEmail } = require('../../services/emailService
 const { sendNotification } = require('../../services/notificationService');
 const { getIO } = require('../../sockets');
 const { creditToVendorWallet, debitFromVendorWallet } = require('../../services/walletService');
+const { logAdminActivity } = require('../../services/auditLogger');
 
 /**
  * Get single booking details by ID
@@ -895,6 +896,18 @@ const approveReport = async (req, res) => {
       // Continue even if notifications fail
     }
 
+    // Record Audit Log
+    logAdminActivity({
+      req,
+      action: 'BOREWELL_REPORT_APPROVED',
+      module: 'QC',
+      targetEntity: 'Booking',
+      targetId: booking._id,
+      targetLabel: `Booking #${booking._id.toString().slice(-6)} (Survey Report)`,
+      previousState: { reportApproved: false },
+      newState: { reportApproved: true, approvedAt: booking.report.approvedAt }
+    });
+
     res.json({
       success: true,
       message: 'Report approved successfully. Payment can now be processed from payments page.',
@@ -954,11 +967,11 @@ const rejectReport = async (req, res) => {
       });
     }
 
-    // Check if already approved or rejected
+    // Check if already approved
     if (booking.report.approvedAt) {
       return res.status(400).json({
         success: false,
-        message: 'Report already approved. Cannot reject an approved report.'
+        message: 'Cannot reject an already approved report'
       });
     }
 
@@ -986,6 +999,19 @@ const rejectReport = async (req, res) => {
       const { decrementActiveWorkload } = require('../../services/workloadDistributionService');
       await decrementActiveWorkload(booking.report.assignedTo);
     }
+
+    // Record Audit Log
+    logAdminActivity({
+      req,
+      action: 'BOREWELL_REPORT_REJECTED',
+      module: 'QC',
+      targetEntity: 'Booking',
+      targetId: booking._id,
+      targetLabel: `Booking #${booking._id.toString().slice(-6)} (Survey Report)`,
+      previousState: { reportApproved: false },
+      newState: { reportRejected: true, rejectionReason: rejectionReason.trim() },
+      notes: rejectionReason.trim()
+    });
 
     // Notify vendor about report revision requirement
     try {
@@ -1908,6 +1934,18 @@ const processUserRefund = async (req, res) => {
     } catch (notifyError) {
       console.error('Failed to send refund notification:', notifyError);
     }
+
+    // Record Audit Log
+    logAdminActivity({
+      req,
+      action: 'USER_REFUND_PROCESSED',
+      module: 'FINANCE',
+      targetEntity: 'Booking',
+      targetId: booking._id,
+      targetLabel: `Booking #${booking._id.toString().slice(-6)} (Refund: ₹${finalRefundAmount})`,
+      previousState: { status: booking.status, refunded: false },
+      newState: { status: 'COMPLETED', refunded: true, refundAmount: finalRefundAmount }
+    });
 
     res.json({
       success: true,

@@ -985,4 +985,23 @@ export const getTeamPerformanceApi = async () => {
   return response.data;
 };
 
+/**
+ * Admin Activity & Audit Trail APIs
+ */
+export const getAdminActivityLogs = async (params) => {
+  const response = await api.get('/admin/audit-logs', { params });
+  return response.data;
+};
+
+export const getAuditLogStats = async () => {
+  const response = await api.get('/admin/audit-logs/stats');
+  return response.data;
+};
+
+export const getAuditLogDetails = async (logId) => {
+  const response = await api.get(`/admin/audit-logs/${logId}`);
+  return response.data;
+};
+
+
 

@@ -111,6 +111,7 @@ const AdminPolicies = lazy(() => import("./modules/admin/admin-pages/AdminPolici
 const AdminAgreementLogs = lazy(() => import("./modules/admin/admin-pages/AdminAgreementLogs"));
 const AdminExpertAgreementLogs = lazy(() => import("./modules/admin/admin-pages/AdminExpertAgreementLogs"));
 const AdminOTPLogs = lazy(() => import("./modules/admin/admin-pages/AdminOTPLogs"));
+const AdminActivityLogs = lazy(() => import("./modules/admin/admin-pages/AdminActivityLogs"));
 const AdminReports = lazy(() => import("./modules/admin/admin-pages/Reports"));
 const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavbar"));
 
@@ -1236,6 +1237,16 @@ function App() {
                                                                             <AdminProtectedRoute requiredPermission="agreement-logs">
                                                                                 <Suspense fallback={<LoadingSpinner />}>
                                                                                     <AdminOTPLogs />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/activity-logs"
+                                                                        element={
+                                                                            <AdminProtectedRoute requiredPermission="agreement-logs">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminActivityLogs />
                                                                                 </Suspense>
                                                                             </AdminProtectedRoute>
                                                                         }
