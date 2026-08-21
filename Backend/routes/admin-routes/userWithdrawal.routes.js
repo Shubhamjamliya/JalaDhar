@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin } = require('../../middleware/roleMiddleware');
+const { isFinanceAdmin } = require('../../middleware/roleMiddleware');
 const {
   getAllWithdrawalRequests,
   approveWithdrawalRequest,
@@ -11,7 +11,7 @@ const {
 } = require('../../controllers/adminControllers/userWithdrawalController');
 
 router.use(authenticate);
-router.use(isAdmin);
+router.use(isFinanceAdmin);
 
 router.get('/', getAllWithdrawalRequests);
 router.patch('/:requestId/assign', assignUserWithdrawalRequest);

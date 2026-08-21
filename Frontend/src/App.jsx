@@ -953,73 +953,91 @@ function App() {
                                                                     <Route
                                                                         path="/payments"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPayments />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="finance">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPayments />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/payments/admin"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPayments defaultTab="admin-overview" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="finance">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPayments defaultTab="admin-overview" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/payments/admin/transactions"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPayments defaultTab="admin-transactions" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="finance">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPayments defaultTab="admin-transactions" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/payments/user"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPayments defaultTab="user-overview" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="finance">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPayments defaultTab="user-overview" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/payments/user/transactions"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPayments defaultTab="user-transactions" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="finance">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPayments defaultTab="user-transactions" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/payments/vendor"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPayments defaultTab="vendor-payments" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="finance">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPayments defaultTab="vendor-payments" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/payments/vendor/transactions"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminPayments defaultTab="vendor-transactions" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="finance">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPayments defaultTab="vendor-transactions" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/withdrawals"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminWithdrawals />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="finance">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminWithdrawals />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/user-withdrawals"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminUserWithdrawals />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="finance">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminUserWithdrawals />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
@@ -1153,9 +1171,11 @@ function App() {
                                                                     <Route
                                                                         path="/team"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminTeamManagement />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredRole="SUPER_ADMIN">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminTeamManagement />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
@@ -1177,9 +1197,11 @@ function App() {
                                                                     <Route
                                                                         path="/reports/*"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminReports />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="reports">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminReports />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route

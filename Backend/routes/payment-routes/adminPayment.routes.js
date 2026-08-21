@@ -12,18 +12,18 @@ const {
   getCodReports
 } = require('../../controllers/paymentControllers/adminPaymentController');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin } = require('../../middleware/roleMiddleware');
+const { isFinanceAdmin } = require('../../middleware/roleMiddleware');
 
-// Routes
-router.get('/payments', authenticate, isAdmin, getAllPayments);
-router.get('/payments/statistics', authenticate, isAdmin, getPaymentStatistics);
-router.get('/payments/overview', authenticate, isAdmin, getAdminPaymentOverview);
-router.get('/payments/vendor-overview', authenticate, isAdmin, getVendorPaymentOverview);
-router.get('/payments/reports', authenticate, isAdmin, getPaymentReports);
-router.get('/payments/reports/gst', authenticate, isAdmin, getGstReports);
-router.get('/payments/reports/tds', authenticate, isAdmin, getTdsReports);
-router.get('/payments/reports/cod', authenticate, isAdmin, getCodReports);
-router.get('/payments/:paymentId', authenticate, isAdmin, getPaymentDetails);
+// Routes (Protected by Finance Permission & Super Admin)
+router.get('/payments', authenticate, isFinanceAdmin, getAllPayments);
+router.get('/payments/statistics', authenticate, isFinanceAdmin, getPaymentStatistics);
+router.get('/payments/overview', authenticate, isFinanceAdmin, getAdminPaymentOverview);
+router.get('/payments/vendor-overview', authenticate, isFinanceAdmin, getVendorPaymentOverview);
+router.get('/payments/reports', authenticate, isFinanceAdmin, getPaymentReports);
+router.get('/payments/reports/gst', authenticate, isFinanceAdmin, getGstReports);
+router.get('/payments/reports/tds', authenticate, isFinanceAdmin, getTdsReports);
+router.get('/payments/reports/cod', authenticate, isFinanceAdmin, getCodReports);
+router.get('/payments/:paymentId', authenticate, isFinanceAdmin, getPaymentDetails);
 
 module.exports = router;
 

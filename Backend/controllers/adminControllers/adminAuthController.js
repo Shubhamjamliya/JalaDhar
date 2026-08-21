@@ -434,7 +434,7 @@ const registerAdminWithOTP = async (req, res) => {
       });
     }
 
-    const { name, email, password, otp, token, role, phone } = req.body;
+    const { name, email, password, otp, token, role, phone, permissions } = req.body;
 
     // Verify OTP using token
     const tokenDoc = await Token.findOne({
@@ -481,6 +481,32 @@ const registerAdminWithOTP = async (req, res) => {
       });
     }
 
+    // Helper for default role permissions
+    const getDefaultPermissions = (r) => {
+      switch (r) {
+        case 'SUPER_ADMIN':
+        case 'ADMIN':
+          return ['all', 'operations', 'verification', 'finance', 'support', 'qc', 'reports', 'settings'];
+        case 'OPERATIONS_ADMIN':
+          return ['operations', 'reports'];
+        case 'EXPERT_VERIFICATION_ADMIN':
+        case 'VERIFIER_ADMIN':
+          return ['verification'];
+        case 'FINANCE_ADMIN':
+          return ['finance', 'reports'];
+        case 'SUPPORT_ADMIN':
+          return ['support'];
+        case 'QC_ADMIN':
+          return ['qc'];
+        default:
+          return ['operations'];
+      }
+    };
+
+    const resolvedPermissions = (Array.isArray(permissions) && permissions.length > 0)
+      ? permissions
+      : getDefaultPermissions(role || 'ADMIN');
+
     // Create admin
     const admin = await Admin.create({
       name: name.trim(),
@@ -488,7 +514,7 @@ const registerAdminWithOTP = async (req, res) => {
       password,
       role: role || 'ADMIN',
       phone: phone ? phone.trim() : null,
-      permissions: ['all'],
+      permissions: resolvedPermissions,
       isActive: true
     });
 
@@ -540,12 +566,12 @@ const getAllAdmins = async (req, res) => {
 };
 
 /**
- * Update admin role, profile, phone, or password (Super Admin only)
+ * Update admin role, profile, phone, password, or permissions (Super Admin only)
  */
 const updateAdmin = async (req, res) => {
   try {
     const { adminId } = req.params;
-    const { name, role, isActive, isAvailableForAssignment, department, phone, password } = req.body;
+    const { name, role, isActive, isAvailableForAssignment, department, phone, password, permissions } = req.body;
 
     const admin = await Admin.findById(adminId);
     if (!admin) {
@@ -574,6 +600,9 @@ const updateAdmin = async (req, res) => {
     if (phone !== undefined) admin.phone = phone ? phone.trim() : null;
     if (password && typeof password === 'string' && password.trim().length >= 6) {
       admin.password = password.trim();
+    }
+    if (permissions !== undefined && Array.isArray(permissions)) {
+      admin.permissions = permissions;
     }
 
     await admin.save();

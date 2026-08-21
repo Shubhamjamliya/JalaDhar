@@ -18,6 +18,7 @@ import {
     IoChevronDown,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
+import { hasAdminPermission } from "../../../utils/permissionUtils";
 import api from "../../../services/api";
 
 const navSections = [
@@ -36,6 +37,7 @@ const navSections = [
                 label: "Experts",
                 to: "/admin/vendors",
                 Icon: IoBusinessOutline,
+                permission: "verification",
                 roles: ["SUPER_ADMIN", "EXPERT_VERIFICATION_ADMIN", "VERIFIER_ADMIN"],
                 children: [
                     { label: "All Experts", to: "/admin/vendors", end: true },
@@ -49,6 +51,7 @@ const navSections = [
                 label: "Users",
                 to: "/admin/users",
                 Icon: IoPersonCircleOutline,
+                permission: "operations",
                 roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN", "SUPPORT_ADMIN"],
                 children: [
                     { label: "All Users", to: "/admin/users", end: true },
@@ -62,6 +65,7 @@ const navSections = [
                 label: "Approvals",
                 to: "/admin/approvals",
                 Icon: IoCheckmarkCircleOutline,
+                permission: "qc",
                 roles: ["SUPER_ADMIN", "EXPERT_VERIFICATION_ADMIN", "VERIFIER_ADMIN", "QC_ADMIN"]
             },
             {
@@ -69,6 +73,7 @@ const navSections = [
                 label: "Bookings",
                 to: "/admin/bookings",
                 Icon: IoCalendarOutline,
+                permission: "operations",
                 roles: ["SUPER_ADMIN", "OPERATIONS_ADMIN"],
                 children: [
                     { label: "All Bookings", to: "/admin/bookings", end: true },
@@ -87,6 +92,7 @@ const navSections = [
                 label: "Payments",
                 to: "/admin/payments",
                 Icon: IoWalletOutline,
+                permission: "finance",
                 roles: ["SUPER_ADMIN", "FINANCE_ADMIN"],
                 children: [
                     { label: "All Transactions", to: "/admin/payments", end: true },
@@ -99,6 +105,7 @@ const navSections = [
                 label: "Reports",
                 to: "/admin/reports",
                 Icon: IoBarChartOutline,
+                permission: "reports",
                 roles: ["SUPER_ADMIN", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "QC_ADMIN"],
                 children: [
                     { label: "Executive Overview", to: "/admin/reports", end: true },
@@ -113,6 +120,7 @@ const navSections = [
                 label: "Ratings & Reviews",
                 to: "/admin/ratings",
                 Icon: IoStarOutline,
+                permission: "support",
                 roles: ["SUPER_ADMIN", "SUPPORT_ADMIN"]
             },
             {
@@ -120,6 +128,7 @@ const navSections = [
                 label: "Disputes & Support",
                 to: "/admin/disputes",
                 Icon: IoAlertCircleOutline,
+                permission: "support",
                 roles: ["SUPER_ADMIN", "SUPPORT_ADMIN"]
             },
             {
@@ -127,6 +136,7 @@ const navSections = [
                 label: "Audit Logs",
                 to: "/admin/agreements",
                 Icon: IoShieldCheckmarkOutline,
+                permission: "settings",
                 roles: ["SUPER_ADMIN", "QC_ADMIN"],
                 children: [
                     { label: "User Agreement Logs", to: "/admin/agreements" },
@@ -151,6 +161,7 @@ const navSections = [
                 label: "Content & Policies",
                 to: "/admin/policies",
                 Icon: IoDocumentTextOutline,
+                permission: "settings",
                 roles: ["SUPER_ADMIN"],
                 children: [
                     { label: "Terms & Conditions", to: "/admin/policies/legal" },
@@ -164,6 +175,7 @@ const navSections = [
                 label: "Settings",
                 to: "/admin/settings",
                 Icon: IoSettingsOutline,
+                permission: "settings",
                 roles: ["SUPER_ADMIN"],
                 children: [
                     { label: "General & App Info", to: "/admin/settings/general" },
@@ -283,7 +295,13 @@ export default function AdminSidebar() {
             {/* Navigation Menu (Ergonomic & Space-Efficient) */}
             <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-3.5 custom-scrollbar scrollbar-hide overscroll-contain">
                 {navSections.map((section, sIdx) => {
-                    const visibleItems = section.items.filter(item => !item.roles || item.roles.includes(admin?.role));
+                    const visibleItems = section.items.filter(item => {
+                        if (admin?.role === 'SUPER_ADMIN' || admin?.role === 'ADMIN') return true;
+                        if (item.permission) {
+                            return hasAdminPermission(admin, item.permission);
+                        }
+                        return !item.roles || item.roles.includes(admin?.role);
+                    });
                     if (visibleItems.length === 0) return null;
 
                     return (
