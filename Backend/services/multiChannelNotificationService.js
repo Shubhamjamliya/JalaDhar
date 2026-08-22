@@ -127,7 +127,8 @@ const dispatchBookingConfirmation = async ({ user, booking, vendor, io = null })
   }
 
   // 3. WhatsApp Channel
-  if (phone) {
+  const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
+  if (phone && isAutoWhatsAppEnabled) {
     tasks.push(
       sendWhatsAppBookingConfirmation({ phone, name, bookingId, serviceName, scheduledDate })
         .catch(err => console.error('WhatsApp Confirmation error:', err))
@@ -285,7 +286,8 @@ const dispatchSurveyReportNotification = async ({ user, booking, expertName, rep
   }
 
   // 3. WhatsApp Channel
-  if (phone) {
+  const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
+  if (phone && isAutoWhatsAppEnabled) {
     tasks.push(
       sendWhatsAppSurveyReportAlert({ phone, name, bookingId, expertName, reportUrl })
         .catch(err => console.error('WhatsApp Report Alert error:', err))
@@ -297,6 +299,7 @@ const dispatchSurveyReportNotification = async ({ user, booking, expertName, rep
 };
 
 module.exports = {
+  interpolateTemplate,
   dispatchOTP,
   dispatchSurveyOTP,
   dispatchBookingConfirmation,

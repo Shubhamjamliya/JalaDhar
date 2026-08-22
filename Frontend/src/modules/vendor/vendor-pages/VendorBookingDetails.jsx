@@ -25,7 +25,7 @@ import {
     IoLogoWhatsapp,
     IoCameraOutline
 } from "react-icons/io5";
-import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, reportUnableToComplete, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice, verifyStartOTP, verifyEndOTP, resendSurveyOTP, updateVisitSchedule } from "../../../services/vendorApi";
+import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, reportUnableToComplete, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice, verifyStartOTP, verifyEndOTP, resendSurveyOTP, updateVisitSchedule, getPublicNotificationSettings } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -98,6 +98,8 @@ export default function VendorBookingDetails() {
     const [submittingUnable, setSubmittingUnable] = useState(false);
     const [showMapPicker, setShowMapPicker] = useState(false);
     const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+    const [whatsappAssistantEnabled, setWhatsappAssistantEnabled] = useState(true);
+    const [templatesConfig, setTemplatesConfig] = useState(null);
     const [showStartOTPModal, setShowStartOTPModal] = useState(false);
     const [showEndOTPModal, setShowEndOTPModal] = useState(false);
     const [verifyingOTP, setVerifyingOTP] = useState(false);
@@ -220,6 +222,22 @@ export default function VendorBookingDetails() {
 
             if (response.success) {
                 setBooking(response.data.booking);
+
+                // Load communication settings to check if WhatsApp assistant is enabled by Admin
+                getPublicNotificationSettings()
+                    .then(sRes => {
+                        if (sRes.success && Array.isArray(sRes.data?.settings)) {
+                            const assistantSetting = sRes.data.settings.find(s => s.key === 'ENABLE_VENDOR_WHATSAPP_ASSISTANT');
+                            if (assistantSetting !== undefined) {
+                                setWhatsappAssistantEnabled(Boolean(assistantSetting.value));
+                            }
+                            const tmplSetting = sRes.data.settings.find(s => s.key === 'WHATSAPP_TEMPLATES_CONFIG');
+                            if (tmplSetting?.value) {
+                                setTemplatesConfig(tmplSetting.value);
+                            }
+                        }
+                    })
+                    .catch(() => {});
             } else {
                 toast.showError(response.message || "Failed to load booking details");
             }
@@ -1364,14 +1382,16 @@ export default function VendorBookingDetails() {
                                     </a>
                                 )}
 
-                                <button
-                                    type="button"
-                                    onClick={() => setShowWhatsAppModal(true)}
-                                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-xs rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100 cursor-pointer"
-                                >
-                                    <IoLogoWhatsapp className="text-base text-emerald-500" />
-                                    <span>WhatsApp</span>
-                                </button>
+                                {whatsappAssistantEnabled && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowWhatsAppModal(true)}
+                                        className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-xs rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100 cursor-pointer"
+                                    >
+                                        <IoLogoWhatsapp className="text-base text-emerald-500" />
+                                        <span>WhatsApp</span>
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
@@ -2537,15 +2557,17 @@ export default function VendorBookingDetails() {
                         <span className="text-[10px] font-bold text-gray-800">Call</span>
                     </button>
 
-                    <button
-                        onClick={() => setShowWhatsAppModal(true)}
-                        className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-green-500 transition-colors cursor-pointer"
-                    >
-                        <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-500">
-                            <IoLogoWhatsapp className="text-xl" />
-                        </div>
-                        <span className="text-[10px] font-bold text-gray-800">WhatsApp</span>
-                    </button>
+                    {whatsappAssistantEnabled && (
+                        <button
+                            onClick={() => setShowWhatsAppModal(true)}
+                            className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-green-500 transition-colors cursor-pointer"
+                        >
+                            <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-500">
+                                <IoLogoWhatsapp className="text-xl" />
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-800">WhatsApp</span>
+                        </button>
+                    )}
 
                     <button
                         onClick={() => setShowMapPicker(true)}
@@ -2986,6 +3008,7 @@ export default function VendorBookingDetails() {
                 onClose={() => setShowWhatsAppModal(false)}
                 booking={booking}
                 vendor={vendor}
+                templatesConfig={templatesConfig}
             />
         </PageContainer>
     );

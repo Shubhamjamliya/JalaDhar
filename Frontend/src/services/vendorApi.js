@@ -510,3 +510,15 @@ export const addDisputeComment = async (disputeId, data) => {
   return response.data;
 };
 
+/**
+ * Get public platform communication & notification settings
+ */
+export const getPublicNotificationSettings = async () => {
+  try {
+    const response = await api.get('/settings', { params: { category: 'notification' } });
+    return response.data;
+  } catch (error) {
+    return { success: false, data: { settings: [] } };
+  }
+};
+

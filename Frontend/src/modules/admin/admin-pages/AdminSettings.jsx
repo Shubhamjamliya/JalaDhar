@@ -1203,13 +1203,24 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 Control the 1-Tap WhatsApp Assistant in the Expert App and manage standardized message templates.
                                             </p>
                                         </div>
-                                        <span className={`px-3 py-1 text-xs font-black rounded-full border ${
-                                            communicationSettings.ENABLE_VENDOR_WHATSAPP_ASSISTANT
-                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                : "bg-red-50 text-red-700 border-red-200"
-                                        }`}>
-                                            {communicationSettings.ENABLE_VENDOR_WHATSAPP_ASSISTANT ? "● ASSISTANT ACTIVE" : "○ ASSISTANT DISABLED"}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => navigate('/admin/activity-logs')}
+                                                className="px-3 py-1 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full border border-gray-300 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                                                title="View All Admin Audit History Logs"
+                                            >
+                                                <IoTimeOutline className="text-sm text-gray-600" />
+                                                <span>Audit History</span>
+                                            </button>
+                                            <span className={`px-3 py-1 text-xs font-black rounded-full border ${
+                                                communicationSettings.ENABLE_VENDOR_WHATSAPP_ASSISTANT
+                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                    : "bg-red-50 text-red-700 border-red-200"
+                                            }`}>
+                                                {communicationSettings.ENABLE_VENDOR_WHATSAPP_ASSISTANT ? "● ASSISTANT ACTIVE" : "○ ASSISTANT DISABLED"}
+                                            </span>
+                                        </div>
                                     </div>
 
                                     {/* Master Toggles Card */}

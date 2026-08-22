@@ -22,8 +22,7 @@ import {
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import { useNotifications } from "../../../contexts/NotificationContext";
-import { maskPhone } from "../../../utils/phoneMasker";
-import { updateVisitSchedule } from "../../../services/vendorApi";
+import { updateVisitSchedule, getPublicNotificationSettings } from "../../../services/vendorApi";
 import WhatsAppTemplateModal from "../../shared/components/WhatsAppTemplateModal";
 
 /**
@@ -43,7 +42,9 @@ export default function VendorOngoingBookingCard({
     onVerifyEndOTP,
     onUploadPhotos,
     onUploadReport,
-    onViewStatus
+    onViewStatus,
+    whatsappAssistantEnabled = true,
+    templatesConfig = null
 }) {
     const navigate = useNavigate();
     const toast = useToast();
@@ -53,9 +54,38 @@ export default function VendorOngoingBookingCard({
     const [localOverride, setLocalOverride] = useState(null);
     const [showTimePickerModal, setShowTimePickerModal] = useState(false);
     const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+    const [isWhatsAppEnabled, setIsWhatsAppEnabled] = useState(whatsappAssistantEnabled);
+    const [activeTemplatesConfig, setActiveTemplatesConfig] = useState(templatesConfig);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState("09:00 AM - 10:00 AM");
     const [isSavingSchedule, setIsSavingSchedule] = useState(false);
     const [pendingStartJourney, setPendingStartJourney] = useState(false);
+
+    // Sync with props
+    useEffect(() => {
+        setIsWhatsAppEnabled(whatsappAssistantEnabled);
+    }, [whatsappAssistantEnabled]);
+
+    useEffect(() => {
+        setActiveTemplatesConfig(templatesConfig);
+    }, [templatesConfig]);
+
+    // Self-fetch settings on mount
+    useEffect(() => {
+        getPublicNotificationSettings()
+            .then(res => {
+                if (res.success && Array.isArray(res.data?.settings)) {
+                    const assistantSetting = res.data.settings.find(s => s.key === 'ENABLE_VENDOR_WHATSAPP_ASSISTANT');
+                    if (assistantSetting !== undefined) {
+                        setIsWhatsAppEnabled(Boolean(assistantSetting.value));
+                    }
+                    const tmplSetting = res.data.settings.find(s => s.key === 'WHATSAPP_TEMPLATES_CONFIG');
+                    if (tmplSetting?.value) {
+                        setActiveTemplatesConfig(tmplSetting.value);
+                    }
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     // Reset local override whenever parent prop booking changes
     useEffect(() => {
@@ -398,7 +428,7 @@ export default function VendorOngoingBookingCard({
                         Quick Actions
                     </span>
 
-                    <div className="grid grid-cols-4 gap-1.5">
+                    <div className={`grid ${isWhatsAppEnabled ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5`}>
                         {/* Call */}
                         <a
                             href={`tel:${customerPhone}`}
@@ -408,18 +438,20 @@ export default function VendorOngoingBookingCard({
                             <span>Call</span>
                         </a>
 
-                        {/* WhatsApp */}
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setShowWhatsAppModal(true);
-                            }}
-                            className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
-                        >
-                            <IoLogoWhatsapp className="text-base text-emerald-600" />
-                            <span>WhatsApp</span>
-                        </button>
+                        {/* WhatsApp (Admin Configurable) */}
+                        {isWhatsAppEnabled && (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowWhatsAppModal(true);
+                                }}
+                                className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
+                            >
+                                <IoLogoWhatsapp className="text-base text-emerald-600" />
+                                <span>WhatsApp</span>
+                            </button>
+                        )}
 
                         {/* Navigate / Track Live */}
                         {status === "EN_ROUTE" ? (
@@ -757,6 +789,7 @@ export default function VendorOngoingBookingCard({
                 isOpen={showWhatsAppModal}
                 onClose={() => setShowWhatsAppModal(false)}
                 booking={currentBooking}
+                templatesConfig={activeTemplatesConfig}
             />
         </>
     );
