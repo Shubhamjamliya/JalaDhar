@@ -8,7 +8,7 @@ const getPublicSettings = async (req, res) => {
     const { category } = req.query;
 
     // Only allow specific categories to be retrieved publicly
-    const allowedCategories = ['billing', 'pricing', 'general', 'policy'];
+    const allowedCategories = ['billing', 'pricing', 'general', 'policy', 'notification'];
 
     if (category && !allowedCategories.includes(category)) {
       return res.status(403).json({

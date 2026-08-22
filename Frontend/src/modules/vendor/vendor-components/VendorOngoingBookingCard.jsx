@@ -24,6 +24,7 @@ import { useToast } from "../../../hooks/useToast";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { maskPhone } from "../../../utils/phoneMasker";
 import { updateVisitSchedule } from "../../../services/vendorApi";
+import WhatsAppTemplateModal from "../../shared/components/WhatsAppTemplateModal";
 
 /**
  * Ongoing Survey Booking Card for Expert App
@@ -51,6 +52,7 @@ export default function VendorOngoingBookingCard({
 
     const [localOverride, setLocalOverride] = useState(null);
     const [showTimePickerModal, setShowTimePickerModal] = useState(false);
+    const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState("09:00 AM - 10:00 AM");
     const [isSavingSchedule, setIsSavingSchedule] = useState(false);
     const [pendingStartJourney, setPendingStartJourney] = useState(false);
@@ -407,15 +409,17 @@ export default function VendorOngoingBookingCard({
                         </a>
 
                         {/* WhatsApp */}
-                        <a
-                            href={`https://wa.me/91${customerPhone?.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noreferrer"
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowWhatsAppModal(true);
+                            }}
                             className="flex flex-col items-center justify-center py-2 px-1 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 rounded-xl border border-slate-200/80 transition-all text-[11px] font-bold gap-1 cursor-pointer"
                         >
                             <IoLogoWhatsapp className="text-base text-emerald-600" />
                             <span>WhatsApp</span>
-                        </a>
+                        </button>
 
                         {/* Navigate / Track Live */}
                         {status === "EN_ROUTE" ? (
@@ -747,6 +751,13 @@ export default function VendorOngoingBookingCard({
                     </div>
                 </div>
             )}
+
+            {/* WhatsApp Quick Message Template Modal */}
+            <WhatsAppTemplateModal
+                isOpen={showWhatsAppModal}
+                onClose={() => setShowWhatsAppModal(false)}
+                booking={currentBooking}
+            />
         </>
     );
 }

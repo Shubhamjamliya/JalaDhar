@@ -401,12 +401,59 @@ const initializeDefaultSettings = async () => {
       category: 'policy'
     },
     {
-      key: 'RESCHEDULE_WINDOW_DAYS',
-      value: 30,
-      label: 'Reschedule Window (Days)',
-      description: 'Maximum days in the future a booking can be rescheduled to',
-      type: 'number',
-      category: 'policy'
+      key: 'ENABLE_VENDOR_WHATSAPP_ASSISTANT',
+      value: true,
+      label: 'Enable Expert WhatsApp Action Button',
+      description: 'Show or hide the 1-tap WhatsApp communication button in the Expert App',
+      type: 'boolean',
+      category: 'notification'
+    },
+    {
+      key: 'ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS',
+      value: true,
+      label: 'Enable Automated WhatsApp Notifications',
+      description: 'Automatically dispatch WhatsApp notifications to customers on key booking events',
+      type: 'boolean',
+      category: 'notification'
+    },
+    {
+      key: 'WHATSAPP_TEMPLATES_CONFIG',
+      value: {
+        booking_accepted: {
+          enabled: true,
+          title: 'Booking Accepted',
+          template: 'Hello {Customer Name}, This is {Expert Name}, your assigned Jaladhaara Expert.\nI have accepted your Groundwater Survey booking (Booking ID: {Booking ID}). I will contact you shortly to confirm the survey schedule. Thank you.'
+        },
+        on_the_way: {
+          enabled: true,
+          title: 'On the Way',
+          template: 'Hello {Customer Name},\nI am on my way to your survey location and expect to arrive at approximately {Time}. Please keep the site accessible. Thank you.'
+        },
+        schedule_confirmation: {
+          enabled: true,
+          title: 'Schedule Confirmation',
+          template: 'Hello {Customer Name},\nYour groundwater survey is scheduled for {Date} at {Time}. Kindly ensure someone is available at the site to assist during the survey.'
+        },
+        need_location: {
+          enabled: true,
+          title: 'Need Location',
+          template: 'Hello {Customer Name},\nPlease share your live location or the exact survey site location on WhatsApp to help me reach the site without delay. Thank you.'
+        },
+        customer_not_reachable: {
+          enabled: true,
+          title: 'Customer Not Reachable',
+          template: 'Hello {Customer Name},\nI tried contacting you regarding your Jaladhaara survey booking but could not reach you. Please call or reply at your earliest convenience to avoid delays.'
+        },
+        delay_notification: {
+          enabled: true,
+          title: 'Delay Notification',
+          template: 'Hello {Customer Name},\nDue to unforeseen circumstances, I may be delayed by approximately {X} minutes. Sorry for the inconvenience, and thank you for your patience.'
+        }
+      },
+      label: 'WhatsApp Message Templates Configuration',
+      description: 'Configure active WhatsApp templates and their default text wording',
+      type: 'json',
+      category: 'notification'
     }
   ];
 

@@ -1,5 +1,6 @@
 const Settings = require('../../models/Settings');
 const { setSetting, getSetting, getSettings } = require('../../services/settingsService');
+const { logAdminActivity } = require('../../services/auditLogger');
 
 /**
  * Get all settings
@@ -120,6 +121,21 @@ const updateMultipleSettings = async (req, res) => {
         updatedSettings.push(setting);
       }
     }
+
+    // Log admin audit action asynchronously
+    const settingKeys = settings.map(s => s?.key).filter(Boolean).join(', ');
+    logAdminActivity({
+      req,
+      adminId,
+      action: 'PLATFORM_SETTINGS_UPDATED',
+      module: 'SETTINGS',
+      targetEntity: 'Settings',
+      targetId: 'SYSTEM_SETTINGS',
+      targetLabel: `Updated: ${settingKeys}`,
+      notes: `Updated settings keys: ${settingKeys}`
+    }).catch(err => console.error('Error recording settings audit log:', err));
+    
+    const { getWhatsAppProviderStatus, testSendWhatsAppMessage } = require('../../services/whatsappService');
     
     res.json({
       success: true,
@@ -136,10 +152,86 @@ const updateMultipleSettings = async (req, res) => {
   }
 };
 
+/**
+ * Get WhatsApp Service Status & Diagnostics
+ */
+const getWhatsAppStatus = async (req, res) => {
+  try {
+    const { getWhatsAppProviderStatus } = require('../../services/whatsappService');
+    const status = getWhatsAppProviderStatus();
+    res.json({
+      success: true,
+      data: { status }
+    });
+  } catch (error) {
+    console.error('getWhatsAppStatus error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve WhatsApp status',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Send WhatsApp Test Message (Admin Diagnostics)
+ */
+const testSendWhatsApp = async (req, res) => {
+  try {
+    const { phone, customMessage } = req.body;
+    const adminId = req.userId;
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Recipient phone number is required'
+      });
+    }
+
+    const { testSendWhatsAppMessage } = require('../../services/whatsappService');
+    const result = await testSendWhatsAppMessage({ phone, customMessage });
+
+    // Record audit log for test dispatch
+    logAdminActivity({
+      req,
+      adminId,
+      action: 'WHATSAPP_TEST_DISPATCHED',
+      module: 'SETTINGS',
+      targetEntity: 'Settings',
+      targetId: 'WHATSAPP_TEST',
+      targetLabel: `WhatsApp test sent to ${phone}`,
+      notes: `Dispatch result: ${JSON.stringify(result)}`
+    }).catch(err => console.error('Error recording WhatsApp test audit log:', err));
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.mocked ? 'Test message logged in sandbox mode' : 'Test message sent to WhatsApp successfully!',
+        data: result
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to send test message',
+        data: result
+      });
+    }
+  } catch (error) {
+    console.error('testSendWhatsApp error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send WhatsApp test',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllSettings,
   getSettingByKey,
   updateSetting,
-  updateMultipleSettings
+  updateMultipleSettings,
+  getWhatsAppStatus,
+  testSendWhatsApp
 };
 

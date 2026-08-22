@@ -1,7 +1,19 @@
-const { sendEmail, sendOTPEmail, sendPaymentConfirmationEmail } = require('./emailService');
+const { sendEmail, sendOTPEmail, sendPaymentConfirmationEmail, sendBookingStatusUpdateEmail } = require('./emailService');
 const { sendSMS, sendSMSOTP, sendBookingConfirmationSMS, sendSurveyReportSMS, sendSurveyOTPSMS } = require('./smsService');
-const { sendWhatsAppMessage, sendWhatsAppOTP, sendWhatsAppBookingConfirmation, sendWhatsAppSurveyReportAlert } = require('./whatsappService');
+const { 
+  sendWhatsAppMessage, 
+  sendWhatsAppOTP, 
+  sendWhatsAppBookingConfirmation, 
+  sendWhatsAppSurveyReportAlert,
+  sendWhatsAppBookingAccepted,
+  sendWhatsAppOnTheWay,
+  sendWhatsAppScheduleConfirmation,
+  sendWhatsAppNeedLocation,
+  sendWhatsAppCustomerNotReachable,
+  sendWhatsAppDelayNotification
+} = require('./whatsappService');
 const { sendNotification } = require('./notificationService');
+const { getSetting } = require('./settingsService');
 
 /**
  * Enterprise Multi-Channel Notification Orchestrator
@@ -127,6 +139,114 @@ const dispatchBookingConfirmation = async ({ user, booking, vendor, io = null })
 };
 
 /**
+ * Helper to interpolate template tokens ({Customer Name}, {Expert Name}, {Booking ID}, {Date}, {Time}, {X})
+ */
+const interpolateTemplate = (templateString, variables = {}) => {
+  if (!templateString) return '';
+  return templateString
+    .replace(/\{Customer Name\}/gi, variables.customerName || 'Customer')
+    .replace(/\{Expert Name\}/gi, variables.expertName || 'Jaladhaara Expert')
+    .replace(/\{Booking ID\}/gi, variables.bookingId || 'ORD-JALADHAR')
+    .replace(/\{Date\}/gi, variables.date || 'Scheduled Date')
+    .replace(/\{Time\}/gi, variables.time || 'Scheduled Time')
+    .replace(/\{X\}/gi, String(variables.delayMinutes || '30'));
+};
+
+/**
+ * Send Booking Accepted Multi-Channel Alert (including Automated WhatsApp)
+ */
+const dispatchBookingAccepted = async ({ user, booking, vendor, io = null }) => {
+  if (!user || !booking) return;
+
+  const phone = user.phone || user.mobile;
+  if (!phone) return;
+
+  const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
+  if (!isAutoWhatsAppEnabled) return;
+
+  const customerName = user.name || 'Customer';
+  const expertName = vendor?.name || 'Jaladhaara Expert';
+  const bookingId = booking.bookingId || `ORD-${booking._id?.toString()?.slice(-8).toUpperCase()}`;
+
+  const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+  const tmpl = templatesConfig?.booking_accepted;
+
+  if (tmpl && tmpl.enabled === false) {
+    console.log('ℹ️ [Multi-Channel] Booking Accepted WhatsApp template disabled by Admin');
+    return;
+  }
+
+  const text = tmpl?.template
+    ? interpolateTemplate(tmpl.template, { customerName, expertName, bookingId })
+    : `Hello ${customerName}, This is ${expertName}, your assigned Jaladhaara Expert.\nI have accepted your Groundwater Survey booking (Booking ID: ${bookingId}). I will contact you shortly to confirm the survey schedule. Thank you.`;
+
+  sendWhatsAppMessage({ phone, text })
+    .catch(err => console.error('Automated WhatsApp Booking Accepted error:', err));
+};
+
+/**
+ * Send On The Way (En Route) Multi-Channel Alert (including Automated WhatsApp)
+ */
+const dispatchOnTheWay = async ({ user, booking, vendor, io = null, expectedTime = 'shortly' }) => {
+  if (!user || !booking) return;
+
+  const phone = user.phone || user.mobile;
+  if (!phone) return;
+
+  const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
+  if (!isAutoWhatsAppEnabled) return;
+
+  const customerName = user.name || 'Customer';
+  const expertName = vendor?.name || 'Jaladhaara Expert';
+
+  const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+  const tmpl = templatesConfig?.on_the_way;
+
+  if (tmpl && tmpl.enabled === false) {
+    console.log('ℹ️ [Multi-Channel] On The Way WhatsApp template disabled by Admin');
+    return;
+  }
+
+  const text = tmpl?.template
+    ? interpolateTemplate(tmpl.template, { customerName, expertName, time: expectedTime })
+    : `Hello ${customerName},\nI am on my way to your survey location and expect to arrive at approximately ${expectedTime}. Please keep the site accessible. Thank you.`;
+
+  sendWhatsAppMessage({ phone, text })
+    .catch(err => console.error('Automated WhatsApp On The Way error:', err));
+};
+
+/**
+ * Send Schedule Confirmed Multi-Channel Alert (including Automated WhatsApp)
+ */
+const dispatchScheduleConfirmed = async ({ user, booking, vendor, io = null, date, time }) => {
+  if (!user || !booking) return;
+
+  const phone = user.phone || user.mobile;
+  if (!phone) return;
+
+  const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
+  if (!isAutoWhatsAppEnabled) return;
+
+  const customerName = user.name || 'Customer';
+  const expertName = vendor?.name || 'Jaladhaara Expert';
+
+  const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+  const tmpl = templatesConfig?.schedule_confirmation;
+
+  if (tmpl && tmpl.enabled === false) {
+    console.log('ℹ️ [Multi-Channel] Schedule Confirmation WhatsApp template disabled by Admin');
+    return;
+  }
+
+  const text = tmpl?.template
+    ? interpolateTemplate(tmpl.template, { customerName, expertName, date, time })
+    : `Hello ${customerName},\nYour groundwater survey is scheduled for ${date} at ${time}. Kindly ensure someone is available at the site to assist during the survey.`;
+
+  sendWhatsAppMessage({ phone, text })
+    .catch(err => console.error('Automated WhatsApp Schedule Confirmation error:', err));
+};
+
+/**
  * Send Survey Report Upload Notification across Email, SMS, WhatsApp, and In-App Push
  */
 const dispatchSurveyReportNotification = async ({ user, booking, expertName, reportUrl, io = null }) => {
@@ -180,5 +300,8 @@ module.exports = {
   dispatchOTP,
   dispatchSurveyOTP,
   dispatchBookingConfirmation,
+  dispatchBookingAccepted,
+  dispatchOnTheWay,
+  dispatchScheduleConfirmed,
   dispatchSurveyReportNotification
 };

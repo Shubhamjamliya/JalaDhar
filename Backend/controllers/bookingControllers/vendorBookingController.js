@@ -4,8 +4,12 @@ const { BOOKING_STATUS } = require('../../utils/constants');
 const { uploadToCloudinary } = require('../../services/cloudinaryService');
 const { Readable } = require('stream');
 const { sendBookingStatusUpdateEmail } = require('../../services/emailService');
-const { sendNotification } = require('../../services/notificationService');
-const { dispatchSurveyOTP } = require('../../services/multiChannelNotificationService');
+const { 
+  dispatchSurveyOTP,
+  dispatchBookingAccepted,
+  dispatchOnTheWay,
+  dispatchScheduleConfirmed
+} = require('../../services/multiChannelNotificationService');
 const { autoReassignBooking } = require('../../services/bookingReassignmentService');
 const { creditToVendorWallet, retryFailedCredit, debitFromVendorWallet } = require('../../services/walletService');
 const { getSettings } = require('../../services/settingsService');
@@ -223,7 +227,7 @@ const acceptBooking = async (req, res) => {
       console.error('[acceptBooking] Error creating notification:', notifErr);
     }
 
-    // 2. Send Email Notification (Isolated try/catch)
+    // 2. Send Email & Automated WhatsApp Multi-Channel Notification (Isolated try/catch)
     try {
       if (booking.user?.email) {
         await sendBookingStatusUpdateEmail({
@@ -234,6 +238,14 @@ const acceptBooking = async (req, res) => {
           message: `Vendor has accepted your booking request.${timeDetail ? ` Visit scheduled ${timeDetail}.` : ''}`
         });
       }
+
+      // Automated WhatsApp notification
+      dispatchBookingAccepted({
+        user: booking.user,
+        booking,
+        vendor: booking.vendor,
+        io
+      }).catch(waErr => console.error('[acceptBooking] WhatsApp automated alert error:', waErr));
     } catch (emailError) {
       console.error('[acceptBooking] Email notification error:', emailError);
     }
@@ -480,7 +492,7 @@ const markAsEnRoute = async (req, res) => {
         }
       }, io);
 
-      // Dispatch Start Survey OTP via SMS & Multi-channel
+      // Dispatch Start Survey OTP & Automated WhatsApp On The Way Alert
       if (booking.user?.phone || booking.user?.email) {
         dispatchSurveyOTP({
           phone: booking.user.phone,
@@ -491,6 +503,14 @@ const markAsEnRoute = async (req, res) => {
           bookingId: booking._id,
           vendorName: booking.vendor?.name || 'your expert'
         }).catch(err => console.error('[markAsEnRoute] Error dispatching Start Survey OTP:', err));
+
+        dispatchOnTheWay({
+          user: booking.user,
+          booking,
+          vendor: booking.vendor,
+          io,
+          expectedTime: booking.scheduledTime || 'shortly'
+        }).catch(err => console.error('[markAsEnRoute] Error dispatching On The Way WhatsApp:', err));
       }
 
       // Broadcast Real-Time Socket Updates to all relevant rooms
@@ -2054,6 +2074,16 @@ const updateVisitSchedule = async (req, res) => {
           scheduledTime: booking.scheduledTime
         }
       }, io);
+
+      // Automated WhatsApp Schedule Confirmation
+      dispatchScheduleConfirmed({
+        user: booking.user,
+        booking,
+        vendor: booking.vendor,
+        io,
+        date: formattedDate,
+        time: scheduledTime
+      }).catch(err => console.error('[updateVisitSchedule] Automated WhatsApp error:', err));
     }
 
     res.json({

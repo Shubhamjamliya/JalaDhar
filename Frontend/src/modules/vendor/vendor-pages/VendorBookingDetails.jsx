@@ -37,6 +37,7 @@ import { maskPhone } from "../../../utils/phoneMasker";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal, { VENDOR_REJECTION_REASONS } from "../../shared/components/InputModal";
 import OTPInputModal from "../../shared/components/OTPInputModal";
+import WhatsAppTemplateModal from "../../shared/components/WhatsAppTemplateModal";
 
 export default function VendorBookingDetails() {
     const navigate = useNavigate();
@@ -96,6 +97,7 @@ export default function VendorBookingDetails() {
     const [unableImages, setUnableImages] = useState([]);
     const [submittingUnable, setSubmittingUnable] = useState(false);
     const [showMapPicker, setShowMapPicker] = useState(false);
+    const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
     const [showStartOTPModal, setShowStartOTPModal] = useState(false);
     const [showEndOTPModal, setShowEndOTPModal] = useState(false);
     const [verifyingOTP, setVerifyingOTP] = useState(false);
@@ -1362,15 +1364,14 @@ export default function VendorBookingDetails() {
                                     </a>
                                 )}
 
-                                <a
-                                    href={`https://wa.me/91${(booking.user?.phone || booking.phone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${booking.user?.name || 'Customer'}, I am your ${booking.vendor?.designation || 'Groundwater Professional'} from Jaladhaara regarding Booking ORD-${String(booking._id || booking.id || '').slice(-8).toUpperCase()}`)}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-xs rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100"
+                                <button
+                                    type="button"
+                                    onClick={() => setShowWhatsAppModal(true)}
+                                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-xs rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100 cursor-pointer"
                                 >
                                     <IoLogoWhatsapp className="text-base text-emerald-500" />
                                     <span>WhatsApp</span>
-                                </a>
+                                </button>
                             </div>
                         )}
                     </div>
@@ -2537,8 +2538,8 @@ export default function VendorBookingDetails() {
                     </button>
 
                     <button
-                        onClick={() => window.open(`https://wa.me/91${(booking.user?.phone || booking.phone || '').replace(/[^0-9]/g, '')}`, '_blank')}
-                        className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-green-500 transition-colors"
+                        onClick={() => setShowWhatsAppModal(true)}
+                        className="flex flex-col items-center gap-1 p-2 text-gray-600 hover:text-green-500 transition-colors cursor-pointer"
                     >
                         <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-500">
                             <IoLogoWhatsapp className="text-xl" />
@@ -2977,6 +2978,14 @@ export default function VendorBookingDetails() {
                 confirmText="Yes, Start Journey"
                 cancelText="Cancel"
                 confirmColor="primary"
+            />
+
+            {/* WhatsApp 6-Template Quick Messaging Modal */}
+            <WhatsAppTemplateModal
+                isOpen={showWhatsAppModal}
+                onClose={() => setShowWhatsAppModal(false)}
+                booking={booking}
+                vendor={vendor}
             />
         </PageContainer>
     );

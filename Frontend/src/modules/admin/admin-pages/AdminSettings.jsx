@@ -27,7 +27,8 @@ import {
     IoTrashOutline,
     IoChevronDownOutline,
     IoCalendarOutline,
-    IoTimeOutline
+    IoTimeOutline,
+    IoLogoWhatsapp
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import {
@@ -35,6 +36,8 @@ import {
     registerAdminWithOTP,
     getAllSettings,
     updateMultipleSettings,
+    getWhatsAppStatusApi,
+    testSendWhatsAppApi,
     getLanguageConfig,
     updateLanguageConfig,
     addLanguageApi,
@@ -78,12 +81,55 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
     const settingsTabs = [
         { id: "general", label: "General", icon: IoSettingsOutline },
+        { id: "communication", label: "WhatsApp & Alerts", icon: IoLogoWhatsapp },
         { id: "reschedule", label: "Reschedule Policy", icon: IoCalendarOutline },
         { id: "pricing", label: "Pricing", icon: IoCashOutline },
         { id: "billing", label: "Billing Info", icon: IoBusinessOutline },
         { id: "languages", label: "Languages", icon: IoGlobeOutline },
         { id: "security", label: "Security", icon: IoLockClosedOutline },
     ];
+
+    // Communication & WhatsApp Settings State
+    const [communicationSettings, setCommunicationSettings] = useState({
+        ENABLE_VENDOR_WHATSAPP_ASSISTANT: true,
+        ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS: true,
+        WHATSAPP_TEMPLATES_CONFIG: {
+            booking_accepted: {
+                enabled: true,
+                title: "1. Booking Accepted",
+                template: "Hello {Customer Name}, This is {Expert Name}, your assigned Jaladhaara Expert.\nI have accepted your Groundwater Survey booking (Booking ID: {Booking ID}). I will contact you shortly to confirm the survey schedule. Thank you."
+            },
+            on_the_way: {
+                enabled: true,
+                title: "2. On the Way",
+                template: "Hello {Customer Name},\nI am on my way to your survey location and expect to arrive at approximately {Time}. Please keep the site accessible. Thank you."
+            },
+            schedule_confirmation: {
+                enabled: true,
+                title: "3. Schedule Confirmation",
+                template: "Hello {Customer Name},\nYour groundwater survey is scheduled for {Date} at {Time}. Kindly ensure someone is available at the site to assist during the survey."
+            },
+            need_location: {
+                enabled: true,
+                title: "4. Need Location",
+                template: "Hello {Customer Name},\nPlease share your live location or the exact survey site location on WhatsApp to help me reach the site without delay. Thank you."
+            },
+            customer_not_reachable: {
+                enabled: true,
+                title: "5. Customer Not Reachable",
+                template: "Hello {Customer Name},\nI tried contacting you regarding your Jaladhaara survey booking but could not reach you. Please call or reply at your earliest convenience to avoid delays."
+            },
+            delay_notification: {
+                enabled: true,
+                title: "6. Delay Notification",
+                template: "Hello {Customer Name},\nDue to unforeseen circumstances, I may be delayed by approximately {X} minutes. Sorry for the inconvenience, and thank you for your patience."
+            }
+        }
+    });
+    const [communicationLoading, setCommunicationLoading] = useState(false);
+    const [whatsappStatus, setWhatsappStatus] = useState(null);
+    const [testPhone, setTestPhone] = useState("");
+    const [testSending, setTestSending] = useState(false);
 
     // Reschedule Policy Settings State
     const [rescheduleSettings, setRescheduleSettings] = useState({
@@ -529,6 +575,93 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 setError(err.response?.data?.message || "Failed to update dispute types. Please try again.");
             } finally {
                 setDisputeTypesLoading(false);
+            }
+        };
+
+        // Load communication settings
+        useEffect(() => {
+            const loadCommunicationSettings = async () => {
+                try {
+                    const response = await getAllSettings('notification');
+                    if (response.success && response.data?.settings) {
+                        const settingsObj = {};
+                        response.data.settings.forEach(setting => {
+                            if (setting.key === 'ENABLE_VENDOR_WHATSAPP_ASSISTANT' || setting.key === 'ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS') {
+                                settingsObj[setting.key] = setting.value === true || setting.value === 'true' || setting.value === 1;
+                            } else if (setting.key === 'WHATSAPP_TEMPLATES_CONFIG') {
+                                try {
+                                    settingsObj[setting.key] = typeof setting.value === 'string' ? JSON.parse(setting.value) : setting.value;
+                                } catch (e) {
+                                    settingsObj[setting.key] = setting.value;
+                                }
+                            }
+                        });
+                        setCommunicationSettings(prev => ({
+                            ...prev,
+                            ...settingsObj,
+                            WHATSAPP_TEMPLATES_CONFIG: {
+                                ...prev.WHATSAPP_TEMPLATES_CONFIG,
+                                ...(settingsObj.WHATSAPP_TEMPLATES_CONFIG || {})
+                            }
+                        }));
+                    }
+                } catch (err) {
+                    console.error('Error loading communication settings:', err);
+                }
+            };
+            if (activeTab === 'communication') {
+                loadCommunicationSettings();
+                getWhatsAppStatusApi()
+                    .then(res => {
+                        if (res.success && res.data?.status) {
+                            setWhatsappStatus(res.data.status);
+                        }
+                    })
+                    .catch(err => console.error("Error loading WhatsApp status:", err));
+            }
+        }, [activeTab]);
+
+        const handleSendTestWhatsApp = async () => {
+            if (!testPhone || testPhone.trim().length < 10) {
+                toast.showError("Please enter a valid 10-digit mobile number for testing");
+                return;
+            }
+            setTestSending(true);
+            try {
+                const res = await testSendWhatsAppApi(testPhone.trim());
+                if (res.success) {
+                    toast.showSuccess(res.message || "Test message dispatched successfully!");
+                } else {
+                    toast.showError(res.message || "Failed to send test message");
+                }
+            } catch (err) {
+                toast.showError(err.response?.data?.message || err.message || "Failed to send test message");
+            } finally {
+                setTestSending(false);
+            }
+        };
+
+        const handleSaveCommunicationSettings = async (e) => {
+            if (e) e.preventDefault();
+            setError("");
+            setCommunicationLoading(true);
+
+            try {
+                const response = await updateMultipleSettings([
+                    { key: 'ENABLE_VENDOR_WHATSAPP_ASSISTANT', value: Boolean(communicationSettings.ENABLE_VENDOR_WHATSAPP_ASSISTANT), category: 'notification' },
+                    { key: 'ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', value: Boolean(communicationSettings.ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS), category: 'notification' },
+                    { key: 'WHATSAPP_TEMPLATES_CONFIG', value: communicationSettings.WHATSAPP_TEMPLATES_CONFIG, category: 'notification' }
+                ]);
+                if (response.success) {
+                    toast.showSuccess("WhatsApp & Communication settings updated successfully!");
+                } else {
+                    setError(response.message || "Failed to update communication settings");
+                }
+            } catch (err) {
+                console.error("Update communication settings error:", err);
+                setError(err.response?.data?.message || "Failed to update settings. Please try again.");
+            } finally {
+                setCommunicationLoading(false);
             }
         };
 
@@ -1053,6 +1186,223 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 </button>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === "communication" && (
+                                <div className="space-y-5">
+                                    {/* Header */}
+                                    <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                                        <div>
+                                            <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                                                <IoLogoWhatsapp className="text-emerald-600 text-lg" />
+                                                <span>WhatsApp & Customer Communication Settings</span>
+                                            </h2>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Control the 1-Tap WhatsApp Assistant in the Expert App and manage standardized message templates.
+                                            </p>
+                                        </div>
+                                        <span className={`px-3 py-1 text-xs font-black rounded-full border ${
+                                            communicationSettings.ENABLE_VENDOR_WHATSAPP_ASSISTANT
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                : "bg-red-50 text-red-700 border-red-200"
+                                        }`}>
+                                            {communicationSettings.ENABLE_VENDOR_WHATSAPP_ASSISTANT ? "● ASSISTANT ACTIVE" : "○ ASSISTANT DISABLED"}
+                                        </span>
+                                    </div>
+
+                                    {/* Master Toggles Card */}
+                                    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4 shadow-2xs">
+                                        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 border-b border-gray-100 pb-2">
+                                            <span>Master Communication Toggles</span>
+                                        </h3>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Toggle 1: Expert App Button */}
+                                            <div className="flex items-start justify-between p-3.5 bg-gray-50/80 rounded-xl border border-gray-200/80">
+                                                <div className="pr-3">
+                                                    <span className="text-xs font-bold text-gray-900 block">
+                                                        Expert WhatsApp Action Button
+                                                    </span>
+                                                    <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
+                                                        Show the 1-tap WhatsApp button on booking details and card actions in the Expert App.
+                                                    </p>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={Boolean(communicationSettings.ENABLE_VENDOR_WHATSAPP_ASSISTANT)}
+                                                        onChange={(e) =>
+                                                            setCommunicationSettings(prev => ({
+                                                                ...prev,
+                                                                ENABLE_VENDOR_WHATSAPP_ASSISTANT: e.target.checked
+                                                            }))
+                                                        }
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                                </label>
+                                            </div>
+
+                                            {/* Toggle 2: Server Automated Alerts */}
+                                            <div className="flex items-start justify-between p-3.5 bg-gray-50/80 rounded-xl border border-gray-200/80">
+                                                <div className="pr-3">
+                                                    <span className="text-xs font-bold text-gray-900 block">
+                                                        Automated Server Notifications
+                                                    </span>
+                                                    <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
+                                                        Automatically dispatch WhatsApp alerts to customers on status changes (Acceptance, En Route, OTP).
+                                                    </p>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={Boolean(communicationSettings.ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS)}
+                                                        onChange={(e) =>
+                                                            setCommunicationSettings(prev => ({
+                                                                ...prev,
+                                                                ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS: e.target.checked
+                                                            }))
+                                                        }
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0A84FF]"></div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Meta Cloud API Diagnostics & Live Test Console */}
+                                    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4 shadow-2xs">
+                                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                            <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                                <span>Meta WhatsApp Cloud API Diagnostics</span>
+                                            </h3>
+                                            <span className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md border ${
+                                                whatsappStatus?.hasMeta
+                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                    : "bg-amber-50 text-amber-700 border-amber-200"
+                                            }`}>
+                                                {whatsappStatus?.statusText || "Checking status..."}
+                                            </span>
+                                        </div>
+
+                                        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200/80 space-y-3">
+                                            <p className="text-xs text-gray-600 leading-relaxed">
+                                                Test your Meta WhatsApp Cloud API credentials in real time. Enter a 10-digit mobile number to dispatch a live verification ping.
+                                            </p>
+                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                <div className="flex-1 relative">
+                                                    <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-400">+91</span>
+                                                    <input
+                                                        type="tel"
+                                                        value={testPhone}
+                                                        onChange={(e) => setTestPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                                        placeholder="Enter 10-digit mobile number"
+                                                        className="w-full pl-11 pr-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white"
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSendTestWhatsApp}
+                                                    disabled={testSending || !testPhone}
+                                                    className="px-4 py-2 bg-[#0A84FF] hover:bg-[#0070DF] disabled:opacity-50 text-white font-bold text-xs rounded-lg shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                                                >
+                                                    <IoLogoWhatsapp className="text-sm" />
+                                                    <span>{testSending ? "Sending..." : "Send Test WhatsApp"}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Templates Configuration Card */}
+                                    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4 shadow-2xs">
+                                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                            <div>
+                                                <h3 className="text-sm font-bold text-gray-800">
+                                                    Message Templates Management (6 Templates)
+                                                </h3>
+                                                <p className="text-xs text-gray-500 mt-0.5">
+                                                    Enable/disable templates and customize their wording for the Expert App.
+                                                </p>
+                                            </div>
+                                            <div className="text-[11px] font-mono text-gray-400 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                                                Tokens: {"{Customer Name}"}, {"{Expert Name}"}, {"{Booking ID}"}, {"{Date}"}, {"{Time}"}, {"{X}"}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {Object.entries(communicationSettings.WHATSAPP_TEMPLATES_CONFIG || {}).map(([key, tmpl]) => (
+                                                <div key={key} className="p-4 rounded-xl border border-gray-200 bg-gray-50/50 space-y-2.5">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-black text-gray-900">
+                                                                {tmpl.title || key}
+                                                            </span>
+                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                                                tmpl.enabled ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-gray-200 text-gray-600 border-gray-300"
+                                                            }`}>
+                                                                {tmpl.enabled ? "ENABLED" : "DISABLED"}
+                                                            </span>
+                                                        </div>
+                                                        <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
+                                                            <span>Show in App</span>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={tmpl.enabled !== false}
+                                                                onChange={(e) => {
+                                                                    const updated = {
+                                                                        ...communicationSettings.WHATSAPP_TEMPLATES_CONFIG,
+                                                                        [key]: {
+                                                                            ...tmpl,
+                                                                            enabled: e.target.checked
+                                                                        }
+                                                                    };
+                                                                    setCommunicationSettings(prev => ({
+                                                                        ...prev,
+                                                                        WHATSAPP_TEMPLATES_CONFIG: updated
+                                                                    }));
+                                                                }}
+                                                                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                                                            />
+                                                        </label>
+                                                    </div>
+
+                                                    <textarea
+                                                        rows={3}
+                                                        value={tmpl.template || ""}
+                                                        onChange={(e) => {
+                                                            const updated = {
+                                                                ...communicationSettings.WHATSAPP_TEMPLATES_CONFIG,
+                                                                [key]: {
+                                                                    ...tmpl,
+                                                                    template: e.target.value
+                                                                }
+                                                            };
+                                                            setCommunicationSettings(prev => ({
+                                                                ...prev,
+                                                                WHATSAPP_TEMPLATES_CONFIG: updated
+                                                            }));
+                                                        }}
+                                                        className="w-full p-2.5 text-xs bg-white border border-gray-200 rounded-lg text-gray-800 font-sans focus:outline-none focus:ring-2 focus:ring-[#0A84FF]/20 focus:border-[#0A84FF] transition-all resize-none"
+                                                        placeholder="Template wording..."
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Submit Action */}
+                                    <div className="flex justify-end pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleSaveCommunicationSettings}
+                                            disabled={communicationLoading}
+                                            className="px-5 py-2.5 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+                                        >
+                                            {communicationLoading ? "Saving Settings..." : "Save Communication Settings"}
+                                        </button>
                                     </div>
                                 </div>
                             )}

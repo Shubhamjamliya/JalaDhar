@@ -6,12 +6,16 @@ const {
   getAllSettings,
   getSettingByKey,
   updateSetting,
-  updateMultipleSettings
+  updateMultipleSettings,
+  getWhatsAppStatus,
+  testSendWhatsApp
 } = require('../../controllers/adminControllers/settingsController');
 
 router.use(authenticate);
 router.use(requirePermission('settings'));
 
+router.get('/whatsapp-status', getWhatsAppStatus);
+router.post('/whatsapp-test', testSendWhatsApp);
 router.get('/', getAllSettings);
 router.get('/:key', getSettingByKey);
 router.put('/:key', updateSetting);

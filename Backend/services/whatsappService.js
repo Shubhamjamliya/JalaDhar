@@ -18,6 +18,30 @@ const formatWhatsAppNumber = (phone) => {
 };
 
 /**
+ * Get active WhatsApp configuration & provider status
+ */
+const getWhatsAppProviderStatus = () => {
+  const isEnabled = process.env.ENABLE_WHATSAPP === 'true';
+  const hasMeta = Boolean(process.env.WHATSAPP_CLOUD_API_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
+  const hasTwilio = Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_NUMBER);
+
+  let activeProvider = 'mock_sandbox';
+  if (hasMeta) activeProvider = 'meta_cloud';
+  else if (hasTwilio) activeProvider = 'twilio_whatsapp';
+
+  return {
+    isEnabled,
+    activeProvider,
+    hasMeta,
+    hasTwilio,
+    metaPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID ? `***${String(process.env.WHATSAPP_PHONE_NUMBER_ID).slice(-4)}` : null,
+    statusText: !isEnabled
+      ? 'Disabled in .env (Set ENABLE_WHATSAPP=true to activate)'
+      : (hasMeta ? 'Meta WhatsApp Cloud API Active' : (hasTwilio ? 'Twilio WhatsApp Active' : 'Sandbox / Mock Mode (Console Logging)'))
+  };
+};
+
+/**
  * Send WhatsApp Message
  * @param {Object} params - { phone, text, templateName, components }
  */
@@ -25,20 +49,24 @@ const sendWhatsAppMessage = async ({ phone, text, templateName = null, component
   const formattedPhone = formatWhatsAppNumber(phone);
   const isEnabled = process.env.ENABLE_WHATSAPP === 'true';
 
-  console.log('💬 [WhatsApp Service] Request:', {
+  console.log('💬 [WhatsApp Service] Outbound Request:', {
     phone: formattedPhone,
-    text,
+    textLength: text?.length,
     templateName,
     enabled: isEnabled
   });
 
+  if (!formattedPhone) {
+    return { success: false, error: 'Invalid or missing phone number' };
+  }
+
   if (!isEnabled) {
-    console.log('ℹ️ [WhatsApp Service] WhatsApp messaging is disabled or in sandbox mode (Set ENABLE_WHATSAPP=true in .env to activate).');
-    return { success: true, mocked: true, message: 'WhatsApp message logged in sandbox mode' };
+    console.log('ℹ️ [WhatsApp Service] WhatsApp messaging is running in sandbox/mock mode (ENABLE_WHATSAPP != true).');
+    return { success: true, mocked: true, message: 'WhatsApp message logged in sandbox mode', text };
   }
 
   try {
-    // 1. Meta WhatsApp Cloud API Driver Integration
+    // 1. Meta WhatsApp Cloud API Driver Integration (Option A)
     if (process.env.WHATSAPP_CLOUD_API_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) {
       const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
       const apiToken = process.env.WHATSAPP_CLOUD_API_TOKEN;
@@ -64,21 +92,23 @@ const sendWhatsAppMessage = async ({ phone, text, templateName = null, component
           };
 
       const response = await axios.post(
-        `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
+        `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`,
         payload,
         {
           headers: {
             'Authorization': `Bearer ${apiToken}`,
             'Content-Type': 'application/json'
-          }
+          },
+          timeout: 15000
         }
       );
 
-      console.log('✅ [WhatsApp Service] Sent via Meta Cloud API successfully:', response.data);
-      return { success: true, provider: 'meta_cloud', data: response.data };
+      const messageId = response.data?.messages?.[0]?.id;
+      console.log('✅ [WhatsApp Service] Sent via Meta Cloud API successfully. MessageId:', messageId);
+      return { success: true, provider: 'meta_cloud', messageId, data: response.data };
     }
 
-    // 2. Twilio WhatsApp API Driver Integration
+    // 2. Twilio WhatsApp API Driver Integration (Option B)
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_NUMBER) {
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
       const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -99,7 +129,8 @@ const sendWhatsAppMessage = async ({ phone, text, templateName = null, component
           headers: {
             'Authorization': `Basic ${auth}`,
             'Content-Type': 'application/x-www-form-urlencoded'
-          }
+          },
+          timeout: 15000
         }
       );
 
@@ -107,13 +138,35 @@ const sendWhatsAppMessage = async ({ phone, text, templateName = null, component
       return { success: true, provider: 'twilio_whatsapp', messageId: response.data.sid };
     }
 
-    // Default Fallback
-    console.log('⚠️ [WhatsApp Service] No active WhatsApp credentials configured. Message logged locally.');
+    // Default Fallback: Sandbox Log
+    console.log('⚠️ [WhatsApp Service] No active Meta or Twilio credentials found. Message logged in sandbox.');
     return { success: true, mocked: true, text };
   } catch (error) {
-    console.error('❌ [WhatsApp Service] Failed to send WhatsApp message:', error.response?.data || error.message);
-    return { success: false, error: error.message };
+    const metaError = error.response?.data?.error;
+    const errorMessage = metaError?.message || metaError?.error_user_msg || error.message || 'Unknown WhatsApp dispatch error';
+    const errorCode = metaError?.code;
+
+    console.error('❌ [WhatsApp Service] Failed to send WhatsApp message:', {
+      error: errorMessage,
+      code: errorCode,
+      details: metaError?.error_data?.details || metaError?.error_subcode
+    });
+
+    return { 
+      success: false, 
+      error: errorMessage,
+      code: errorCode,
+      details: metaError?.error_data?.details
+    };
   }
+};
+
+/**
+ * Diagnostic Test Method for Admin
+ */
+const testSendWhatsAppMessage = async ({ phone, customMessage }) => {
+  const text = customMessage || `🌊 *Jaladhaara WhatsApp Diagnostics Test*\n\nThis is a test notification from Jaladhaara Hydrogeological Services to verify Meta Cloud API connectivity. Timestamp: ${new Date().toLocaleTimeString('en-IN')}`;
+  return await sendWhatsAppMessage({ phone, text });
 };
 
 /**
@@ -140,9 +193,65 @@ const sendWhatsAppSurveyReportAlert = async ({ phone, name, bookingId, expertNam
   return await sendWhatsAppMessage({ phone, text });
 };
 
+/**
+ * 1. Send WhatsApp Booking Accepted Alert
+ */
+const sendWhatsAppBookingAccepted = async ({ phone, customerName = 'Customer', expertName = 'Expert', bookingId }) => {
+  const text = `Hello ${customerName}, This is ${expertName}, your assigned Jaladhaara Expert.\nI have accepted your Groundwater Survey booking (Booking ID: ${bookingId}). I will contact you shortly to confirm the survey schedule. Thank you.`;
+  return await sendWhatsAppMessage({ phone, text });
+};
+
+/**
+ * 2. Send WhatsApp On The Way Alert
+ */
+const sendWhatsAppOnTheWay = async ({ phone, customerName = 'Customer', expectedTime = 'shortly' }) => {
+  const text = `Hello ${customerName},\nI am on my way to your survey location and expect to arrive at approximately ${expectedTime}. Please keep the site accessible. Thank you.`;
+  return await sendWhatsAppMessage({ phone, text });
+};
+
+/**
+ * 3. Send WhatsApp Schedule Confirmation Alert
+ */
+const sendWhatsAppScheduleConfirmation = async ({ phone, customerName = 'Customer', date, time }) => {
+  const text = `Hello ${customerName},\nYour groundwater survey is scheduled for ${date} at ${time}. Kindly ensure someone is available at the site to assist during the survey.`;
+  return await sendWhatsAppMessage({ phone, text });
+};
+
+/**
+ * 4. Send WhatsApp Need Location Alert
+ */
+const sendWhatsAppNeedLocation = async ({ phone, customerName = 'Customer' }) => {
+  const text = `Hello ${customerName},\nPlease share your live location or the exact survey site location on WhatsApp to help me reach the site without delay. Thank you.`;
+  return await sendWhatsAppMessage({ phone, text });
+};
+
+/**
+ * 5. Send WhatsApp Customer Not Reachable Alert
+ */
+const sendWhatsAppCustomerNotReachable = async ({ phone, customerName = 'Customer' }) => {
+  const text = `Hello ${customerName},\nI tried contacting you regarding your Jaladhaara survey booking but could not reach you. Please call or reply at your earliest convenience to avoid delays.`;
+  return await sendWhatsAppMessage({ phone, text });
+};
+
+/**
+ * 6. Send WhatsApp Delay Notification Alert
+ */
+const sendWhatsAppDelayNotification = async ({ phone, customerName = 'Customer', delayMinutes = 30 }) => {
+  const text = `Hello ${customerName},\nDue to unforeseen circumstances, I may be delayed by approximately ${delayMinutes} minutes. Sorry for the inconvenience, and thank you for your patience.`;
+  return await sendWhatsAppMessage({ phone, text });
+};
+
 module.exports = {
+  getWhatsAppProviderStatus,
   sendWhatsAppMessage,
+  testSendWhatsAppMessage,
   sendWhatsAppOTP,
   sendWhatsAppBookingConfirmation,
-  sendWhatsAppSurveyReportAlert
+  sendWhatsAppSurveyReportAlert,
+  sendWhatsAppBookingAccepted,
+  sendWhatsAppOnTheWay,
+  sendWhatsAppScheduleConfirmation,
+  sendWhatsAppNeedLocation,
+  sendWhatsAppCustomerNotReachable,
+  sendWhatsAppDelayNotification
 };

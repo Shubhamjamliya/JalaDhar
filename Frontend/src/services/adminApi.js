@@ -91,6 +91,22 @@ export const updateMultipleSettings = async (settings) => {
   return response.data;
 };
 
+/**
+ * Get WhatsApp Service Provider Status
+ */
+export const getWhatsAppStatusApi = async () => {
+  const response = await api.get('/admin/settings/whatsapp-status');
+  return response.data;
+};
+
+/**
+ * Send WhatsApp Test Message (Admin Diagnostics)
+ */
+export const testSendWhatsAppApi = async (phone, customMessage = '') => {
+  const response = await api.post('/admin/settings/whatsapp-test', { phone, customMessage });
+  return response.data;
+};
+
 export const adminForgotPassword = async (data) => {
   const response = await api.post('/admin/auth/forgot-password', data);
   return response.data;
