@@ -1,0 +1,16 @@
+{
+  "name": "jaladhar-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "Frontend",
+    "Backend"
+  ],
+  "scripts": {
+    "dev": "npm --prefix Frontend run dev",
+    "dev:frontend": "npm --prefix Frontend run dev",
+    "dev:backend": "npm --prefix Backend run dev",
+    "build": "npm --prefix Frontend run build",
+    "start": "npm --prefix Backend start"
+  }
+}
