@@ -52,15 +52,31 @@ export default function AdminSettings({ defaultTab = "general" }) {
     const location = useLocation();
     const { admin } = useAdminAuth();
     const toast = useToast();
-    const [activeTab, setActiveTab] = useState(defaultTab);
+
+    // Determine initial tab from URL pathname or defaultTab
+    const getInitialTab = () => {
+        const pathParts = location.pathname.split('/').filter(Boolean);
+        const lastPart = pathParts[pathParts.length - 1];
+        if (lastPart && lastPart !== 'settings' && lastPart !== 'admin') {
+            return lastPart;
+        }
+        return defaultTab || "general";
+    };
+
+    const [activeTab, setActiveTab] = useState(getInitialTab);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
-        if (defaultTab) {
+        const pathParts = location.pathname.split('/').filter(Boolean);
+        const lastPart = pathParts[pathParts.length - 1];
+        if (lastPart && lastPart !== 'settings' && lastPart !== 'admin') {
+            setActiveTab(lastPart);
+        } else if (defaultTab) {
             setActiveTab(defaultTab);
         }
-    }, [defaultTab]);
+    }, [location.pathname, defaultTab]);
+
 
     // Admin Registration State
     const [registrationStep, setRegistrationStep] = useState(1); // 1: Enter details, 2: Verify OTP
@@ -80,15 +96,16 @@ export default function AdminSettings({ defaultTab = "general" }) {
     const [otpCountdown, setOtpCountdown] = useState(0);
 
     const settingsTabs = [
-        { id: "general", label: "General", icon: IoSettingsOutline },
-        { id: "availability", label: "Expert Availability & Shifts", icon: IoTimeOutline },
-        { id: "communication", label: "WhatsApp & Alerts", icon: IoLogoWhatsapp },
-        { id: "reschedule", label: "Reschedule Policy", icon: IoCalendarOutline },
-        { id: "pricing", label: "Pricing", icon: IoCashOutline },
-        { id: "billing", label: "Billing Info", icon: IoBusinessOutline },
-        { id: "languages", label: "Languages", icon: IoGlobeOutline },
-        { id: "security", label: "Security", icon: IoLockClosedOutline },
+        { id: "general", label: "General", title: "General & App Info", icon: IoSettingsOutline },
+        { id: "availability", label: "Availability", title: "Expert Availability & Shifts", icon: IoTimeOutline },
+        { id: "communication", label: "WhatsApp", title: "WhatsApp & Alerts", icon: IoLogoWhatsapp },
+        { id: "reschedule", label: "Reschedule", title: "Reschedule Policy", icon: IoCalendarOutline },
+        { id: "pricing", label: "Pricing", title: "Pricing & Quality Gate", icon: IoCashOutline },
+        { id: "billing", label: "Billing", title: "Billing & GST Declarations", icon: IoBusinessOutline },
+        { id: "languages", label: "Languages", title: "Language System", icon: IoGlobeOutline },
+        { id: "security", label: "Security", title: "Security & Integrations", icon: IoLockClosedOutline },
     ];
+
 
     // Expert Availability & Operating Hours Policy State
     const [availabilityPolicySettings, setAvailabilityPolicySettings] = useState({
@@ -1179,7 +1196,9 @@ export default function AdminSettings({ defaultTab = "general" }) {
                             All Settings
                         </button>
                         <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                            {activeTab === "register" ? "Admin Management" : (settingsTabs.find(t => t.id === activeTab)?.label || "Settings")}
+                            {activeTab === "register"
+                                ? "Admin Management"
+                                : (settingsTabs.find(t => t.id === activeTab)?.title || settingsTabs.find(t => t.id === activeTab)?.label || "Settings")}
                         </h1>
                         <p className="text-sm text-gray-500">
                             {activeTab === "register"
@@ -1188,10 +1207,10 @@ export default function AdminSettings({ defaultTab = "general" }) {
                         </p>
                     </div>
 
-                    {/* Premium Pill-style Tab Bar */}
+                    {/* Compact Modern Segmented Tab Bar */}
                     {activeTab !== "register" && (
-                        <div className="mb-6">
-                            <div className="inline-flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto max-w-full">
+                        <div className="mb-6 overflow-x-auto pb-1">
+                            <div className="inline-flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 shadow-2xs">
                                 {settingsTabs.map((tab) => {
                                     const Icon = tab.icon;
                                     const isActive = activeTab === tab.id;
@@ -1203,20 +1222,21 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 navigate(`/admin/settings/${tab.id}`);
                                                 setError("");
                                             }}
-                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all duration-150 ${
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-150 cursor-pointer ${
                                                 isActive
-                                                    ? "bg-white text-[#0A84FF] shadow-sm border border-gray-200"
-                                                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/60"
+                                                    ? "bg-white text-[#0A84FF] shadow-xs border border-slate-200/80 font-extrabold"
+                                                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
                                             }`}
                                         >
-                                            <Icon className="text-base" />
-                                            {tab.label}
+                                            <Icon className={`text-sm shrink-0 ${isActive ? "text-[#0A84FF]" : "text-slate-500"}`} />
+                                            <span>{tab.label}</span>
                                         </button>
                                     );
                                 })}
                             </div>
                         </div>
                     )}
+
 
                 <div className={`w-full ${activeTab === "languages" ? "max-w-7xl" : "max-w-4xl"}`}>
                     {/* Settings Content */}

@@ -1102,6 +1102,26 @@ function App() {
                                                                         }
                                                                     />
                                                                     <Route
+                                                                        path="/settings/availability"
+                                                                        element={
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings defaultTab="availability" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/settings/communication"
+                                                                        element={
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings defaultTab="communication" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
+                                                                        }
+                                                                    />
+                                                                    <Route
                                                                         path="/settings/reschedule"
                                                                         element={
                                                                             <AdminProtectedRoute requiredPermission="settings">
@@ -1111,6 +1131,7 @@ function App() {
                                                                             </AdminProtectedRoute>
                                                                         }
                                                                     />
+
                                                                     <Route
                                                                         path="/settings/billing"
                                                                         element={

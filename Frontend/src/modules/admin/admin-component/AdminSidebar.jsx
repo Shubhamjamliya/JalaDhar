@@ -179,12 +179,16 @@ const navSections = [
                 roles: ["SUPER_ADMIN"],
                 children: [
                     { label: "General & App Info", to: "/admin/settings/general" },
+                    { label: "Expert Availability & Shifts", to: "/admin/settings/availability" },
+                    { label: "WhatsApp & Alerts", to: "/admin/settings/communication" },
+                    { label: "Reschedule Policy", to: "/admin/settings/reschedule" },
                     { label: "Pricing & Quality Gate", to: "/admin/settings/pricing" },
                     { label: "Billing & GST Declarations", to: "/admin/settings/billing" },
                     { label: "Languages", to: "/admin/settings/languages" },
                     { label: "Security & Integrations", to: "/admin/settings/security" }
                 ]
             },
+
         ]
     }
 ];
