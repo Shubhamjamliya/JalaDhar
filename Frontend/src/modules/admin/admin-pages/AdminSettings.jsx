@@ -81,6 +81,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
     const settingsTabs = [
         { id: "general", label: "General", icon: IoSettingsOutline },
+        { id: "availability", label: "Expert Availability & Shifts", icon: IoTimeOutline },
         { id: "communication", label: "WhatsApp & Alerts", icon: IoLogoWhatsapp },
         { id: "reschedule", label: "Reschedule Policy", icon: IoCalendarOutline },
         { id: "pricing", label: "Pricing", icon: IoCashOutline },
@@ -89,8 +90,19 @@ export default function AdminSettings({ defaultTab = "general" }) {
         { id: "security", label: "Security", icon: IoLockClosedOutline },
     ];
 
+    // Expert Availability & Operating Hours Policy State
+    const [availabilityPolicySettings, setAvailabilityPolicySettings] = useState({
+        ALLOW_EXPERT_AVAILABILITY_TOGGLE: true,
+        PLATFORM_OPERATING_HOURS_START: "08:00",
+        PLATFORM_OPERATING_HOURS_END: "20:00",
+        ALLOW_REST_OF_TODAY_PAUSE: true,
+        MAX_PAUSE_DURATION_HOURS: 4
+    });
+    const [savingAvailabilityPolicy, setSavingAvailabilityPolicy] = useState(false);
+
     // Communication & WhatsApp Settings State
     const [communicationSettings, setCommunicationSettings] = useState({
+
         ENABLE_VENDOR_WHATSAPP_ASSISTANT: true,
         ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS: true,
         WHATSAPP_TEMPLATES_CONFIG: {
@@ -433,11 +445,106 @@ export default function AdminSettings({ defaultTab = "general" }) {
             setOtpData({ ...otpData, otp: "" });
         };
 
+        // Load availability policy settings
+        useEffect(() => {
+            const loadAvailabilitySettings = async () => {
+                try {
+                    const response = await getAllSettings('policy');
+                    if (response.success && response.data?.settings) {
+                        const settingsObj = {};
+                        response.data.settings.forEach(setting => {
+                            if (setting.key === 'ALLOW_EXPERT_AVAILABILITY_TOGGLE') {
+                                settingsObj[setting.key] = setting.value === true || setting.value === 'true' || setting.value === 1;
+                            } else if (setting.key === 'ALLOW_REST_OF_TODAY_PAUSE') {
+                                settingsObj[setting.key] = setting.value === true || setting.value === 'true' || setting.value === 1;
+                            } else if (setting.key === 'PLATFORM_OPERATING_HOURS_START' || setting.key === 'PLATFORM_OPERATING_HOURS_END') {
+                                settingsObj[setting.key] = String(setting.value || '');
+                            } else if (setting.key === 'MAX_PAUSE_DURATION_HOURS') {
+                                settingsObj[setting.key] = Number(setting.value || 4);
+                            }
+                        });
+                        setAvailabilityPolicySettings(prev => ({
+                            ...prev,
+                            ...settingsObj
+                        }));
+                    }
+                } catch (err) {
+                    console.error('Error loading availability policy settings:', err);
+                }
+            };
+            if (activeTab === 'availability') {
+                loadAvailabilitySettings();
+            }
+        }, [activeTab]);
+
+        const handleSaveAvailabilityPolicy = async (e) => {
+            if (e) e.preventDefault();
+            setError("");
+            setSavingAvailabilityPolicy(true);
+            try {
+                const payload = [
+                    {
+                        key: 'ALLOW_EXPERT_AVAILABILITY_TOGGLE',
+                        value: Boolean(availabilityPolicySettings.ALLOW_EXPERT_AVAILABILITY_TOGGLE),
+                        label: 'Allow Experts to Toggle Availability',
+                        description: 'Enable or disable the real-time online/offline toggle switch on the Expert App platform-wide',
+                        type: 'boolean',
+                        category: 'policy'
+                    },
+                    {
+                        key: 'PLATFORM_OPERATING_HOURS_START',
+                        value: String(availabilityPolicySettings.PLATFORM_OPERATING_HOURS_START || '08:00'),
+                        label: 'Platform Operating Hours (Opening)',
+                        description: 'Opening dispatch time for survey bookings across the platform (HH:MM)',
+                        type: 'string',
+                        category: 'policy'
+                    },
+                    {
+                        key: 'PLATFORM_OPERATING_HOURS_END',
+                        value: String(availabilityPolicySettings.PLATFORM_OPERATING_HOURS_END || '20:00'),
+                        label: 'Platform Operating Hours (Closing)',
+                        description: 'Closing dispatch time for survey bookings across the platform (HH:MM)',
+                        type: 'string',
+                        category: 'policy'
+                    },
+                    {
+                        key: 'ALLOW_REST_OF_TODAY_PAUSE',
+                        value: Boolean(availabilityPolicySettings.ALLOW_REST_OF_TODAY_PAUSE),
+                        label: 'Allow "Busy for Rest of Today" Break',
+                        description: 'Allow experts to pause new bookings for today with automatic resumption tomorrow morning',
+                        type: 'boolean',
+                        category: 'policy'
+                    },
+                    {
+                        key: 'MAX_PAUSE_DURATION_HOURS',
+                        value: Number(availabilityPolicySettings.MAX_PAUSE_DURATION_HOURS || 4),
+                        label: 'Max Break Duration (Hours)',
+                        description: 'Maximum permitted hours for an expert to pause availability during a single shift',
+                        type: 'number',
+                        category: 'policy'
+                    }
+                ];
+
+                const response = await updateMultipleSettings(payload);
+                if (response.success) {
+                    toast.showSuccess("Expert Availability & Operating Hours Policy updated successfully!");
+                } else {
+                    setError(response.message || "Failed to update availability policy");
+                }
+            } catch (err) {
+                console.error("Save availability policy error:", err);
+                setError(err.response?.data?.message || "Failed to update availability policy. Please try again.");
+            } finally {
+                setSavingAvailabilityPolicy(false);
+            }
+        };
+
         // Load reschedule policy settings
         useEffect(() => {
             const loadRescheduleSettings = async () => {
                 try {
                     const response = await getAllSettings('policy');
+
                     if (response.success && response.data?.settings) {
                         const settingsObj = {};
                         response.data.settings.forEach(setting => {
@@ -907,10 +1014,35 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 badgeBg: "bg-blue-100 text-blue-700",
             },
             {
+                id: "availability",
+                label: "Expert Availability & Shifts",
+                description: "Master online/offline switch, platform operating hours & pause rules",
+                icon: IoTimeOutline,
+                gradient: "from-teal-500 to-emerald-600",
+                bg: "bg-teal-50",
+                iconColor: "text-teal-600",
+                border: "border-teal-100",
+                badge: "Operations",
+                badgeBg: "bg-teal-100 text-teal-700",
+            },
+            {
+                id: "communication",
+                label: "WhatsApp & Alerts",
+                description: "WhatsApp assistant button, auto-notifications & message templates",
+                icon: IoLogoWhatsapp,
+                gradient: "from-emerald-500 to-green-600",
+                bg: "bg-emerald-50",
+                iconColor: "text-emerald-600",
+                border: "border-emerald-100",
+                badge: "Alerts",
+                badgeBg: "bg-emerald-100 text-emerald-700",
+            },
+            {
                 id: "reschedule",
                 label: "Reschedule Policy",
                 description: "Free reschedule limits, booking windows & expert policies",
                 icon: IoCalendarOutline,
+
                 gradient: "from-violet-500 to-purple-600",
                 bg: "bg-violet-50",
                 iconColor: "text-violet-600",
@@ -1186,6 +1318,217 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 </button>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === "availability" && (
+                                <div className="space-y-6">
+                                    {/* Header */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <div className="p-2 rounded-xl bg-teal-50 text-teal-600 border border-teal-100">
+                                                    <IoTimeOutline className="text-xl" />
+                                                </div>
+                                                <h2 className="text-lg font-bold text-gray-900">
+                                                    Expert Availability & Shift Timing Policy
+                                                </h2>
+                                            </div>
+                                            <p className="text-xs text-gray-500 max-w-2xl leading-relaxed">
+                                                Manage the platform-wide master toggle for expert online/offline availability, operating hours, and daily break limits.
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${
+                                                availabilityPolicySettings.ALLOW_EXPERT_AVAILABILITY_TOGGLE
+                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                    : "bg-amber-50 text-amber-800 border-amber-200"
+                                            }`}>
+                                                <span className={`w-2 h-2 rounded-full ${
+                                                    availabilityPolicySettings.ALLOW_EXPERT_AVAILABILITY_TOGGLE ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                                                }`} />
+                                                <span>{availabilityPolicySettings.ALLOW_EXPERT_AVAILABILITY_TOGGLE ? "Self-Service Toggle ON" : "Centrally Locked (Shift Only)"}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Section 1: Master Feature Toggle */}
+                                    <div className="p-5 rounded-2xl bg-white border border-gray-200 shadow-2xs space-y-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="space-y-1">
+                                                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                                    <span>Allow Experts to Switch Online / Offline</span>
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-md font-extrabold bg-blue-50 text-blue-700 border border-blue-100">
+                                                        Master Switch
+                                                    </span>
+                                                </h3>
+                                                <p className="text-xs text-gray-600 leading-relaxed max-w-2xl">
+                                                    When <strong>enabled</strong>, hydrogeologist experts see the real-time Online/Offline toggle pill on their top navbar, dashboard, and settings, and can take pauses or declare themselves busy today. When <strong>disabled</strong>, the button is completely hidden and experts remain automatically managed by scheduled shift hours.
+                                                </p>
+                                            </div>
+
+                                            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={availabilityPolicySettings.ALLOW_EXPERT_AVAILABILITY_TOGGLE}
+                                                    onChange={(e) => setAvailabilityPolicySettings(prev => ({
+                                                        ...prev,
+                                                        ALLOW_EXPERT_AVAILABILITY_TOGGLE: e.target.checked
+                                                    }))}
+                                                    className="sr-only peer"
+                                                />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                            </label>
+                                        </div>
+
+                                        {/* Dynamic UI Status Preview */}
+                                        <div className={`p-3.5 rounded-xl border text-xs flex items-center gap-3 ${
+                                            availabilityPolicySettings.ALLOW_EXPERT_AVAILABILITY_TOGGLE
+                                                ? "bg-emerald-50/70 border-emerald-200 text-emerald-900"
+                                                : "bg-amber-50/70 border-amber-200 text-amber-900"
+                                        }`}>
+                                            <span className="material-symbols-outlined !text-lg shrink-0">
+                                                {availabilityPolicySettings.ALLOW_EXPERT_AVAILABILITY_TOGGLE ? "toggle_on" : "lock"}
+                                            </span>
+                                            <p className="font-medium">
+                                                {availabilityPolicySettings.ALLOW_EXPERT_AVAILABILITY_TOGGLE
+                                                    ? "Experts can toggle their availability at will and select short breaks (2 hours) or 'Busy for Rest of Today'."
+                                                    : "Toggle switch is hidden on Expert App. Experts will be displayed as 'On-Duty (08:00 AM - 08:00 PM)' during their scheduled working hours."}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Section 2: Platform Operating Hours */}
+                                    <div className="p-5 rounded-2xl bg-white border border-gray-200 shadow-2xs space-y-4">
+                                        <div>
+                                            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                                <IoTimeOutline className="text-teal-600 text-base" />
+                                                <span>Platform Operating & Dispatch Window</span>
+                                            </h3>
+                                            <p className="text-xs text-gray-600 mt-0.5">
+                                                Specify the daily service hours when customer survey bookings are accepted and dispatched.
+                                            </p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                                                    Platform Opening Time (Start)
+                                                </label>
+                                                <input
+                                                    type="time"
+                                                    value={availabilityPolicySettings.PLATFORM_OPERATING_HOURS_START || "08:00"}
+                                                    onChange={(e) => setAvailabilityPolicySettings(prev => ({
+                                                        ...prev,
+                                                        PLATFORM_OPERATING_HOURS_START: e.target.value
+                                                    }))}
+                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
+                                                />
+                                                <span className="text-[11px] text-gray-400 font-medium mt-1 block">
+                                                    Earliest morning dispatch time (e.g. 08:00 AM)
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                                                    Platform Closing Time (End)
+                                                </label>
+                                                <input
+                                                    type="time"
+                                                    value={availabilityPolicySettings.PLATFORM_OPERATING_HOURS_END || "20:00"}
+                                                    onChange={(e) => setAvailabilityPolicySettings(prev => ({
+                                                        ...prev,
+                                                        PLATFORM_OPERATING_HOURS_END: e.target.value
+                                                    }))}
+                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
+                                                />
+                                                <span className="text-[11px] text-gray-400 font-medium mt-1 block">
+                                                    Latest evening dispatch time (e.g. 08:00 PM)
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Section 3: Break & Smart Pause Rules */}
+                                    <div className="p-5 rounded-2xl bg-white border border-gray-200 shadow-2xs space-y-4">
+                                        <div>
+                                            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                                <span className="material-symbols-outlined !text-base text-teal-600">bedtime</span>
+                                                <span>Break & Pause Rules</span>
+                                            </h3>
+                                            <p className="text-xs text-gray-600 mt-0.5">
+                                                Configure limits for short breaks and same-day availability pauses.
+                                            </p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200/80 flex items-center justify-between">
+                                                <div className="pr-2">
+                                                    <p className="text-xs font-bold text-gray-800">
+                                                        Allow "Busy for Rest of Today"
+                                                    </p>
+                                                    <p className="text-[11px] text-gray-500 mt-0.5">
+                                                        Auto-resumes tomorrow morning at shift start
+                                                    </p>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={availabilityPolicySettings.ALLOW_REST_OF_TODAY_PAUSE}
+                                                        onChange={(e) => setAvailabilityPolicySettings(prev => ({
+                                                            ...prev,
+                                                            ALLOW_REST_OF_TODAY_PAUSE: e.target.checked
+                                                        }))}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-600"></div>
+                                                </label>
+                                            </div>
+
+                                            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200/80">
+                                                <label className="block text-xs font-bold text-gray-800 mb-1">
+                                                    Max Daily Break Duration
+                                                </label>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="8"
+                                                        value={availabilityPolicySettings.MAX_PAUSE_DURATION_HOURS || 4}
+                                                        onChange={(e) => setAvailabilityPolicySettings(prev => ({
+                                                            ...prev,
+                                                            MAX_PAUSE_DURATION_HOURS: Math.max(1, Math.min(8, Number(e.target.value)))
+                                                        }))}
+                                                        className="w-24 px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-bold text-gray-800 bg-white"
+                                                    />
+                                                    <span className="text-xs text-gray-500 font-medium">Hours per shift</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Bar */}
+                                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                                        <button
+                                            type="button"
+                                            onClick={handleSaveAvailabilityPolicy}
+                                            disabled={savingAvailabilityPolicy}
+                                            className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                                        >
+                                            {savingAvailabilityPolicy ? (
+                                                <>
+                                                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    <span>Saving Policy...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <IoCheckmarkCircleOutline className="text-base" />
+                                                    <span>Save Availability & Shift Policy</span>
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
                             )}

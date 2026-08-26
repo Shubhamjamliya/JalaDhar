@@ -58,10 +58,11 @@ function ToggleSwitch({ checked, onChange, activeColor = "bg-[#0A84FF]", ariaLab
 export default function VendorSettings() {
     const navigate = useNavigate();
     const toast = useToast();
-    const { vendor, updateOnlineStatus } = useVendorAuth();
+    const { vendor, updateOnlineStatus, allowAvailabilityToggle, availabilitySettings } = useVendorAuth();
 
     const { language: currentLang, setLanguage, supportedLanguages } = useLanguage();
     const [saving, setSaving] = useState(false);
+
     const [showDocViewer, setShowDocViewer] = useState(false);
 
     // Active Section State
@@ -353,25 +354,42 @@ export default function VendorSettings() {
                         </div>
 
                         <div className="space-y-6">
-                            <div className="flex items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
+                            <div className={`flex items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl border ${
+                                allowAvailabilityToggle === false
+                                    ? "bg-slate-50 border-slate-200"
+                                    : "bg-emerald-50/70 border-emerald-200/80"
+                            }`}>
                                 <div className="space-y-0.5 pr-2">
-                                    <h4 className="text-xs sm:text-sm font-bold text-emerald-950 flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                                        <span className={`w-2 h-2 rounded-full ${
+                                            allowAvailabilityToggle === false
+                                                ? "bg-blue-500 animate-pulse"
+                                                : "bg-emerald-500 animate-pulse"
+                                        }`} />
                                         <span>Instant Online Availability</span>
                                     </h4>
-                                    <p className="text-[11px] sm:text-xs text-emerald-700 font-medium leading-relaxed">
-                                        {settings.isOnline
+                                    <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-relaxed">
+                                        {allowAvailabilityToggle === false
+                                            ? `Centrally Managed — Your availability is active according to platform shift policy (${availabilitySettings?.operatingHoursStart || '08:00'} - ${availabilitySettings?.operatingHoursEnd || '20:00'}).`
+                                            : settings.isOnline
                                             ? "Active — You are currently receiving new booking requests"
                                             : "Offline — New survey bookings are paused for your profile"}
                                     </p>
                                 </div>
-                                <ToggleSwitch
-                                    checked={settings.isOnline}
-                                    onChange={() => handleToggle("isOnline")}
-                                    activeColor="bg-emerald-500"
-                                    ariaLabel="Instant Online Availability"
-                                />
+                                {allowAvailabilityToggle !== false ? (
+                                    <ToggleSwitch
+                                        checked={settings.isOnline}
+                                        onChange={() => handleToggle("isOnline")}
+                                        activeColor="bg-emerald-500"
+                                        ariaLabel="Instant Online Availability"
+                                    />
+                                ) : (
+                                    <span className="shrink-0 text-[10px] font-black bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full border border-blue-200">
+                                        Platform Shift
+                                    </span>
+                                )}
                             </div>
+
 
                             {/* Working Days Dropdown & Custom Days */}
                             <div className="space-y-2.5 p-4 rounded-2xl bg-slate-50 border border-slate-100">

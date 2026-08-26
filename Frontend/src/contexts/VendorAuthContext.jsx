@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { vendorLogin, vendorLogout, vendorRegister } from '../services/vendorAuthApi';
-import { toggleVendorOnlineStatus } from '../services/vendorApi';
+import { toggleVendorOnlineStatus, getPlatformAvailabilitySettings } from '../services/vendorApi';
 import { registerFCMToken, unregisterFCMToken } from '../services/pushNotificationService';
 
 const VendorAuthContext = createContext(null);
@@ -17,8 +17,39 @@ export const VendorAuthProvider = ({ children }) => {
   const [vendor, setVendor] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [availabilitySettings, setAvailabilitySettings] = useState({
+    allowToggle: true,
+    operatingHoursStart: '08:00',
+    operatingHoursEnd: '20:00',
+    allowRestOfToday: true,
+    maxPauseHours: 4
+  });
 
-  // Check for existing auth on mount
+  const loadAvailabilityPolicy = async () => {
+    try {
+      const res = await getPlatformAvailabilitySettings();
+      if (res.success && Array.isArray(res.data?.settings)) {
+        const toggleSetting = res.data.settings.find(s => s.key === 'ALLOW_EXPERT_AVAILABILITY_TOGGLE');
+        const startSetting = res.data.settings.find(s => s.key === 'PLATFORM_OPERATING_HOURS_START');
+        const endSetting = res.data.settings.find(s => s.key === 'PLATFORM_OPERATING_HOURS_END');
+        const restOfTodaySetting = res.data.settings.find(s => s.key === 'ALLOW_REST_OF_TODAY_PAUSE');
+        const maxPauseSetting = res.data.settings.find(s => s.key === 'MAX_PAUSE_DURATION_HOURS');
+
+        setAvailabilitySettings(prev => ({
+          ...prev,
+          allowToggle: toggleSetting !== undefined ? (toggleSetting.value === true || toggleSetting.value === 'true') : true,
+          operatingHoursStart: startSetting?.value || '08:00',
+          operatingHoursEnd: endSetting?.value || '20:00',
+          allowRestOfToday: restOfTodaySetting !== undefined ? (restOfTodaySetting.value === true || restOfTodaySetting.value === 'true') : true,
+          maxPauseHours: maxPauseSetting?.value ? Number(maxPauseSetting.value) : 4
+        }));
+      }
+    } catch (e) {
+      console.warn('Could not load availability policy:', e);
+    }
+  };
+
+  // Check for existing auth and load policy on mount
   useEffect(() => {
     const storedToken = localStorage.getItem('vendorAccessToken');
     const storedVendor = localStorage.getItem('vendor');
@@ -37,7 +68,9 @@ export const VendorAuthProvider = ({ children }) => {
       }
     }
     setLoading(false);
+    loadAvailabilityPolicy();
   }, []);
+
 
   /**
    * Register new vendor
@@ -191,10 +224,14 @@ export const VendorAuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    updateOnlineStatus
+    updateOnlineStatus,
+    allowAvailabilityToggle: availabilitySettings.allowToggle,
+    availabilitySettings,
+    refreshAvailabilityPolicy: loadAvailabilityPolicy
   };
 
   return <VendorAuthContext.Provider value={value}>{children}</VendorAuthContext.Provider>;
 };
+
 
 

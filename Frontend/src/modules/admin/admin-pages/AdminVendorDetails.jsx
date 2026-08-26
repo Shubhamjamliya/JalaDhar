@@ -20,8 +20,10 @@ import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import { hasAdminPermission } from "../../../utils/permissionUtils";
+import { getExpertLiveStatus, formatWorkingDays, formatWorkingHours } from "../../../utils/availabilityUtils";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
+
 
 export default function AdminVendorDetails() {
     const { vendorId } = useParams();
@@ -243,6 +245,8 @@ export default function AdminVendorDetails() {
         );
     }
 
+    const liveStatus = getExpertLiveStatus(vendor);
+
     return (
         <>
             <div className="min-h-[calc(100vh-5rem)]">
@@ -287,6 +291,26 @@ export default function AdminVendorDetails() {
                                 >
                                     {vendor.isActive ? "Active" : "Inactive"}
                                 </span>
+                                <span
+                                    className={`px-3 py-1 rounded-[6px] text-sm font-bold flex items-center gap-1.5 border ${
+                                        liveStatus.status === 'ONLINE'
+                                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                            : liveStatus.status === 'PAUSED'
+                                            ? "bg-amber-50 text-amber-800 border-amber-200"
+                                            : "bg-slate-100 text-slate-700 border-slate-200"
+                                    }`}
+                                >
+                                    <span
+                                        className={`w-2 h-2 rounded-full ${
+                                            liveStatus.status === 'ONLINE'
+                                                ? "bg-emerald-500 animate-pulse"
+                                                : liveStatus.status === 'PAUSED'
+                                                ? "bg-amber-500"
+                                                : "bg-slate-400"
+                                        }`}
+                                    />
+                                    <span>Live: {liveStatus.label}</span>
+                                </span>
                                 {vendor.isEmailVerified && (
                                     <span className="px-3 py-1 rounded-[6px] text-sm font-semibold bg-blue-100 text-blue-700">
                                         Email Verified
@@ -295,6 +319,7 @@ export default function AdminVendorDetails() {
                             </div>
                         </div>
                     </div>
+
 
                     {/* Contact Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -390,12 +415,89 @@ export default function AdminVendorDetails() {
                     </div>
                 )}
 
+                {/* Availability & Operating Shift Section */}
+                <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-6 border border-gray-100">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <IoTimeOutline className="text-teal-600 text-xl" />
+                        <span>Live Availability & Shift Schedule</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Live Status Overview */}
+                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Current Dispatch Status</p>
+                            <div className="flex items-center gap-2">
+                                <span className={`w-3 h-3 rounded-full ${
+                                    liveStatus.status === 'ONLINE'
+                                        ? 'bg-emerald-500 animate-pulse'
+                                        : liveStatus.status === 'PAUSED'
+                                        ? 'bg-amber-500'
+                                        : 'bg-slate-400'
+                                }`} />
+                                <span className="text-base font-extrabold text-gray-900">
+                                    {liveStatus.label}
+                                </span>
+                            </div>
+                            <p className="text-xs text-gray-600 font-medium leading-relaxed">
+                                {liveStatus.status === 'ONLINE'
+                                    ? 'Expert is on-duty and actively receiving instant survey bookings.'
+                                    : liveStatus.status === 'PAUSED'
+                                    ? `Expert has paused new bookings (${vendor.pauseReason || 'Break'}). Auto-resumes tomorrow.`
+                                    : 'Expert is currently offline or outside active shift hours.'}
+                            </p>
+                        </div>
+
+                        {/* Working Days */}
+                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Working Days</p>
+                            <p className="text-sm font-extrabold text-gray-900">
+                                {formatWorkingDays(vendor.workingDays)}
+                            </p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(day => {
+                                    const isActive = (vendor.workingDays || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]).includes(day);
+                                    return (
+                                        <span
+                                            key={day}
+                                            className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                                                isActive
+                                                    ? "bg-teal-100 text-teal-800"
+                                                    : "bg-gray-200 text-gray-400"
+                                            }`}
+                                        >
+                                            {day}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Working Hours & Last Online Activity */}
+                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Shift Working Hours</p>
+                            <p className="text-sm font-extrabold text-gray-900 flex items-center gap-1.5">
+                                <IoTimeOutline className="text-teal-600" />
+                                <span>{formatWorkingHours(vendor.workingHours)}</span>
+                            </p>
+                            <div className="pt-1 text-xs text-gray-500 space-y-0.5 border-t border-gray-200">
+                                {vendor.lastOnlineAt && (
+                                    <p>Last Online: <span className="font-semibold text-gray-700">{formatDate(vendor.lastOnlineAt)}</span></p>
+                                )}
+                                {vendor.lastOfflineAt && (
+                                    <p>Last Offline: <span className="font-semibold text-gray-700">{formatDate(vendor.lastOfflineAt)}</span></p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Location Section */}
                 <div className="bg-white rounded-[12px] p-6 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] mb-6">
                     <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <IoLocationOutline className="text-red-500" />
                         Location Details
                     </h3>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-1 space-y-4">
                             <div>

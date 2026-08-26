@@ -66,6 +66,22 @@ const updateSetting = async (req, res) => {
       });
     }
 
+    // Broadcast update via Socket.IO
+    try {
+      const { getIO } = require('../sockets');
+      const io = getIO();
+      if (io) {
+        io.emit('platform_settings_updated', {
+          key: setting.key,
+          value: setting.value,
+          category: setting.category,
+          timestamp: new Date()
+        });
+      }
+    } catch (socketErr) {
+      console.warn('[Socket] Could not broadcast settings update:', socketErr.message);
+    }
+
     res.json({
       success: true,
       message: 'Setting updated successfully',

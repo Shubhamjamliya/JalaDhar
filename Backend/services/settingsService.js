@@ -454,6 +454,46 @@ const initializeDefaultSettings = async () => {
       description: 'Configure active WhatsApp templates and their default text wording',
       type: 'json',
       category: 'notification'
+    },
+    {
+      key: 'ALLOW_EXPERT_AVAILABILITY_TOGGLE',
+      value: true,
+      label: 'Allow Experts to Toggle Availability',
+      description: 'Enable or disable the real-time online/offline toggle switch on the Expert App platform-wide',
+      type: 'boolean',
+      category: 'policy'
+    },
+    {
+      key: 'PLATFORM_OPERATING_HOURS_START',
+      value: '08:00',
+      label: 'Platform Operating Hours (Opening)',
+      description: 'Opening dispatch time for survey bookings across the platform (HH:MM)',
+      type: 'string',
+      category: 'policy'
+    },
+    {
+      key: 'PLATFORM_OPERATING_HOURS_END',
+      value: '20:00',
+      label: 'Platform Operating Hours (Closing)',
+      description: 'Closing dispatch time for survey bookings across the platform (HH:MM)',
+      type: 'string',
+      category: 'policy'
+    },
+    {
+      key: 'ALLOW_REST_OF_TODAY_PAUSE',
+      value: true,
+      label: 'Allow "Busy for Rest of Today" Break',
+      description: 'Allow experts to pause new bookings for today with automatic resumption tomorrow morning',
+      type: 'boolean',
+      category: 'policy'
+    },
+    {
+      key: 'MAX_PAUSE_DURATION_HOURS',
+      value: 4,
+      label: 'Max Break Duration (Hours)',
+      description: 'Maximum permitted hours for an expert to pause availability during a single shift',
+      type: 'number',
+      category: 'policy'
     }
   ];
 

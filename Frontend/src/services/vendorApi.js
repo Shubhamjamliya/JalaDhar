@@ -536,5 +536,18 @@ export const getPublicNotificationSettings = async () => {
   }
 };
 
+/**
+ * Get public platform availability & operating hours policy settings
+ */
+export const getPlatformAvailabilitySettings = async () => {
+  try {
+    const response = await api.get('/settings', { params: { category: 'policy' } });
+    return response.data;
+  } catch (error) {
+    return { success: false, data: { settings: [] } };
+  }
+};
+
+
 
 

@@ -134,14 +134,28 @@ const updateMultipleSettings = async (req, res) => {
       targetLabel: `Updated: ${settingKeys}`,
       notes: `Updated settings keys: ${settingKeys}`
     }).catch(err => console.error('Error recording settings audit log:', err));
-    
-    const { getWhatsAppProviderStatus, testSendWhatsAppMessage } = require('../../services/whatsappService');
+
+    // Real-time broadcast to all connected apps (Expert, User, Admin)
+    try {
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      if (io) {
+        io.emit('platform_settings_updated', {
+          settings: updatedSettings,
+          keys: settings.map(s => s?.key).filter(Boolean),
+          timestamp: new Date()
+        });
+      }
+    } catch (socketErr) {
+      console.warn('[Socket] Could not broadcast settings update:', socketErr.message);
+    }
     
     res.json({
       success: true,
       message: 'Settings updated successfully',
       data: { settings: updatedSettings }
     });
+
   } catch (error) {
     console.error('Update multiple settings error:', error);
     res.status(500).json({

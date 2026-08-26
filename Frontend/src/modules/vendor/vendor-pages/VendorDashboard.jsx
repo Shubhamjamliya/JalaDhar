@@ -26,12 +26,13 @@ import VendorAvailabilityModal from "../vendor-components/VendorAvailabilityModa
 export default function VendorDashboard() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { vendor, updateOnlineStatus } = useVendorAuth();
+    const { vendor, updateOnlineStatus, allowAvailabilityToggle, availabilitySettings } = useVendorAuth();
     const { socket } = useNotifications();
     const [loading, setLoading] = useState(true);
     const [showPauseModal, setShowPauseModal] = useState(false);
     const [pauseLoading, setPauseLoading] = useState(false);
     const liveStatus = getExpertLiveStatus(vendor);
+
 
     const handleResumeOnline = async () => {
         setPauseLoading(true);
@@ -320,7 +321,9 @@ export default function VendorDashboard() {
 
             {/* Interactive Real-Time Availability & Dispatch Control Card */}
             <section className={`my-3.5 p-4 sm:p-5 rounded-3xl border transition-all ${
-                liveStatus.status === 'ONLINE'
+                allowAvailabilityToggle === false
+                    ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 shadow-xs'
+                    : liveStatus.status === 'ONLINE'
                     ? 'bg-emerald-50/70 border-emerald-200/80 shadow-xs'
                     : liveStatus.status === 'PAUSED'
                     ? 'bg-amber-50/80 border-amber-200 shadow-xs'
@@ -330,14 +333,18 @@ export default function VendorDashboard() {
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className={`w-2.5 h-2.5 rounded-full ${
-                                liveStatus.status === 'ONLINE'
+                                allowAvailabilityToggle === false
+                                    ? 'bg-emerald-500 animate-pulse'
+                                    : liveStatus.status === 'ONLINE'
                                     ? 'bg-emerald-500 animate-pulse'
                                     : liveStatus.status === 'PAUSED'
                                     ? 'bg-amber-500'
                                     : 'bg-slate-400'
                             }`} />
                             <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                                {liveStatus.status === 'ONLINE'
+                                {allowAvailabilityToggle === false
+                                    ? 'Scheduled Operating Shift: On-Duty'
+                                    : liveStatus.status === 'ONLINE'
                                     ? 'Instant Online Availability: Active'
                                     : liveStatus.status === 'PAUSED'
                                     ? 'Availability Paused'
@@ -345,7 +352,9 @@ export default function VendorDashboard() {
                             </h3>
                         </div>
                         <p className="text-xs text-slate-600 font-medium leading-relaxed max-w-xl">
-                            {liveStatus.status === 'ONLINE'
+                            {allowAvailabilityToggle === false
+                                ? `Your availability is active and scheduled according to platform operating policy (${availabilitySettings?.operatingHoursStart || '08:00'} - ${availabilitySettings?.operatingHoursEnd || '20:00'}).`
+                                : liveStatus.status === 'ONLINE'
                                 ? 'You are visible to nearby users and receiving new instant groundwater survey requests.'
                                 : liveStatus.status === 'PAUSED'
                                 ? `${liveStatus.label}. You will not receive new bookings today, but your ongoing bookings and future bookings remain active.`
@@ -354,7 +363,12 @@ export default function VendorDashboard() {
                     </div>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                        {liveStatus.status === 'ONLINE' ? (
+                        {allowAvailabilityToggle === false ? (
+                            <div className="w-full sm:w-auto px-4 py-2 rounded-2xl bg-white border border-emerald-200 text-emerald-800 font-bold text-xs shadow-2xs flex items-center justify-center gap-1.5">
+                                <span className="material-symbols-outlined !text-base text-emerald-600">verified_user</span>
+                                <span>Platform Managed Shift</span>
+                            </div>
+                        ) : liveStatus.status === 'ONLINE' ? (
                             <button
                                 type="button"
                                 onClick={() => setShowPauseModal(true)}
@@ -384,6 +398,7 @@ export default function VendorDashboard() {
                     </div>
                 </div>
             </section>
+
 
 
             {/* Two Prominent KPI Stat Cards */}
