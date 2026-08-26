@@ -19,8 +19,6 @@ export const VendorAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [availabilitySettings, setAvailabilitySettings] = useState({
     allowToggle: true,
-    operatingHoursStart: '08:00',
-    operatingHoursEnd: '20:00',
     allowRestOfToday: true,
     maxPauseHours: 4
   });
@@ -30,16 +28,12 @@ export const VendorAuthProvider = ({ children }) => {
       const res = await getPlatformAvailabilitySettings();
       if (res.success && Array.isArray(res.data?.settings)) {
         const toggleSetting = res.data.settings.find(s => s.key === 'ALLOW_EXPERT_AVAILABILITY_TOGGLE');
-        const startSetting = res.data.settings.find(s => s.key === 'PLATFORM_OPERATING_HOURS_START');
-        const endSetting = res.data.settings.find(s => s.key === 'PLATFORM_OPERATING_HOURS_END');
         const restOfTodaySetting = res.data.settings.find(s => s.key === 'ALLOW_REST_OF_TODAY_PAUSE');
         const maxPauseSetting = res.data.settings.find(s => s.key === 'MAX_PAUSE_DURATION_HOURS');
 
         setAvailabilitySettings(prev => ({
           ...prev,
           allowToggle: toggleSetting !== undefined ? (toggleSetting.value === true || toggleSetting.value === 'true') : true,
-          operatingHoursStart: startSetting?.value || '08:00',
-          operatingHoursEnd: endSetting?.value || '20:00',
           allowRestOfToday: restOfTodaySetting !== undefined ? (restOfTodaySetting.value === true || restOfTodaySetting.value === 'true') : true,
           maxPauseHours: maxPauseSetting?.value ? Number(maxPauseSetting.value) : 4
         }));
@@ -48,6 +42,7 @@ export const VendorAuthProvider = ({ children }) => {
       console.warn('Could not load availability policy:', e);
     }
   };
+
 
   // Check for existing auth and load policy on mount
   useEffect(() => {

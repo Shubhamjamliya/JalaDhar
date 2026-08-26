@@ -464,22 +464,6 @@ const initializeDefaultSettings = async () => {
       category: 'policy'
     },
     {
-      key: 'PLATFORM_OPERATING_HOURS_START',
-      value: '08:00',
-      label: 'Platform Operating Hours (Opening)',
-      description: 'Opening dispatch time for survey bookings across the platform (HH:MM)',
-      type: 'string',
-      category: 'policy'
-    },
-    {
-      key: 'PLATFORM_OPERATING_HOURS_END',
-      value: '20:00',
-      label: 'Platform Operating Hours (Closing)',
-      description: 'Closing dispatch time for survey bookings across the platform (HH:MM)',
-      type: 'string',
-      category: 'policy'
-    },
-    {
       key: 'ALLOW_REST_OF_TODAY_PAUSE',
       value: true,
       label: 'Allow "Busy for Rest of Today" Break',
@@ -497,12 +481,20 @@ const initializeDefaultSettings = async () => {
     }
   ];
 
+  // Clean up any deprecated platform operating hours keys to ensure single source of truth
+  try {
+    await Settings.deleteMany({ key: { $in: ['PLATFORM_OPERATING_HOURS_START', 'PLATFORM_OPERATING_HOURS_END'] } });
+  } catch (cleanErr) {
+    // Ignore cleanup error
+  }
+
   for (const setting of defaultSettings) {
     const exists = await Settings.findOne({ key: setting.key });
     if (!exists) {
       await Settings.create(setting);
       console.log(`Initialized default setting: ${setting.key}`);
     } else if (setting.key.startsWith('BILLING_') && exists.category !== 'billing') {
+
       exists.category = 'billing';
       await exists.save();
       console.log(`Updated category to 'billing' for: ${setting.key}`);

@@ -107,15 +107,14 @@ export default function AdminSettings({ defaultTab = "general" }) {
     ];
 
 
-    // Expert Availability & Operating Hours Policy State
+    // Expert Availability & Policy State
     const [availabilityPolicySettings, setAvailabilityPolicySettings] = useState({
         ALLOW_EXPERT_AVAILABILITY_TOGGLE: true,
-        PLATFORM_OPERATING_HOURS_START: "08:00",
-        PLATFORM_OPERATING_HOURS_END: "20:00",
         ALLOW_REST_OF_TODAY_PAUSE: true,
         MAX_PAUSE_DURATION_HOURS: 4
     });
     const [savingAvailabilityPolicy, setSavingAvailabilityPolicy] = useState(false);
+
 
     // Communication & WhatsApp Settings State
     const [communicationSettings, setCommunicationSettings] = useState({
@@ -474,8 +473,6 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                 settingsObj[setting.key] = setting.value === true || setting.value === 'true' || setting.value === 1;
                             } else if (setting.key === 'ALLOW_REST_OF_TODAY_PAUSE') {
                                 settingsObj[setting.key] = setting.value === true || setting.value === 'true' || setting.value === 1;
-                            } else if (setting.key === 'PLATFORM_OPERATING_HOURS_START' || setting.key === 'PLATFORM_OPERATING_HOURS_END') {
-                                settingsObj[setting.key] = String(setting.value || '');
                             } else if (setting.key === 'MAX_PAUSE_DURATION_HOURS') {
                                 settingsObj[setting.key] = Number(setting.value || 4);
                             }
@@ -509,22 +506,6 @@ export default function AdminSettings({ defaultTab = "general" }) {
                         category: 'policy'
                     },
                     {
-                        key: 'PLATFORM_OPERATING_HOURS_START',
-                        value: String(availabilityPolicySettings.PLATFORM_OPERATING_HOURS_START || '08:00'),
-                        label: 'Platform Operating Hours (Opening)',
-                        description: 'Opening dispatch time for survey bookings across the platform (HH:MM)',
-                        type: 'string',
-                        category: 'policy'
-                    },
-                    {
-                        key: 'PLATFORM_OPERATING_HOURS_END',
-                        value: String(availabilityPolicySettings.PLATFORM_OPERATING_HOURS_END || '20:00'),
-                        label: 'Platform Operating Hours (Closing)',
-                        description: 'Closing dispatch time for survey bookings across the platform (HH:MM)',
-                        type: 'string',
-                        category: 'policy'
-                    },
-                    {
                         key: 'ALLOW_REST_OF_TODAY_PAUSE',
                         value: Boolean(availabilityPolicySettings.ALLOW_REST_OF_TODAY_PAUSE),
                         label: 'Allow "Busy for Rest of Today" Break',
@@ -543,6 +524,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 ];
 
                 const response = await updateMultipleSettings(payload);
+
                 if (response.success) {
                     toast.showSuccess("Expert Availability & Operating Hours Policy updated successfully!");
                 } else {
@@ -1033,7 +1015,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
             {
                 id: "availability",
                 label: "Expert Availability & Shifts",
-                description: "Master online/offline switch, platform operating hours & pause rules",
+                description: "Master online/offline switch, break duration limits & shift policies",
                 icon: IoTimeOutline,
                 gradient: "from-teal-500 to-emerald-600",
                 bg: "bg-teal-50",
@@ -1042,6 +1024,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 badge: "Operations",
                 badgeBg: "bg-teal-100 text-teal-700",
             },
+
             {
                 id: "communication",
                 label: "WhatsApp & Alerts",
@@ -1415,63 +1398,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             <p className="font-medium">
                                                 {availabilityPolicySettings.ALLOW_EXPERT_AVAILABILITY_TOGGLE
                                                     ? "Experts can toggle their availability at will and select short breaks (2 hours) or 'Busy for Rest of Today'."
-                                                    : "Toggle switch is hidden on Expert App. Experts will be displayed as 'On-Duty (08:00 AM - 08:00 PM)' during their scheduled working hours."}
+                                                    : "Toggle switch is hidden on Expert App. Experts will automatically be active during their profile scheduled working hours."}
                                             </p>
                                         </div>
                                     </div>
 
-                                    {/* Section 2: Platform Operating Hours */}
-                                    <div className="p-5 rounded-2xl bg-white border border-gray-200 shadow-2xs space-y-4">
-                                        <div>
-                                            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                                <IoTimeOutline className="text-teal-600 text-base" />
-                                                <span>Platform Operating & Dispatch Window</span>
-                                            </h3>
-                                            <p className="text-xs text-gray-600 mt-0.5">
-                                                Specify the daily service hours when customer survey bookings are accepted and dispatched.
-                                            </p>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                                                    Platform Opening Time (Start)
-                                                </label>
-                                                <input
-                                                    type="time"
-                                                    value={availabilityPolicySettings.PLATFORM_OPERATING_HOURS_START || "08:00"}
-                                                    onChange={(e) => setAvailabilityPolicySettings(prev => ({
-                                                        ...prev,
-                                                        PLATFORM_OPERATING_HOURS_START: e.target.value
-                                                    }))}
-                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
-                                                />
-                                                <span className="text-[11px] text-gray-400 font-medium mt-1 block">
-                                                    Earliest morning dispatch time (e.g. 08:00 AM)
-                                                </span>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                                                    Platform Closing Time (End)
-                                                </label>
-                                                <input
-                                                    type="time"
-                                                    value={availabilityPolicySettings.PLATFORM_OPERATING_HOURS_END || "20:00"}
-                                                    onChange={(e) => setAvailabilityPolicySettings(prev => ({
-                                                        ...prev,
-                                                        PLATFORM_OPERATING_HOURS_END: e.target.value
-                                                    }))}
-                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
-                                                />
-                                                <span className="text-[11px] text-gray-400 font-medium mt-1 block">
-                                                    Latest evening dispatch time (e.g. 08:00 PM)
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 3: Break & Smart Pause Rules */}
+                                    {/* Section 2: Break & Smart Pause Rules */}
                                     <div className="p-5 rounded-2xl bg-white border border-gray-200 shadow-2xs space-y-4">
                                         <div>
                                             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
@@ -1482,6 +1414,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 Configure limits for short breaks and same-day availability pauses.
                                             </p>
                                         </div>
+
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="p-4 rounded-xl bg-gray-50 border border-gray-200/80 flex items-center justify-between">

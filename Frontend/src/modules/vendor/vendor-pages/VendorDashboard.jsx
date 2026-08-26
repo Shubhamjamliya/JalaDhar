@@ -20,8 +20,9 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
-import { getExpertLiveStatus } from "../../../utils/availabilityUtils";
+import { getExpertLiveStatus, formatWorkingHours } from "../../../utils/availabilityUtils";
 import VendorAvailabilityModal from "../vendor-components/VendorAvailabilityModal";
+
 
 export default function VendorDashboard() {
     const navigate = useNavigate();
@@ -353,13 +354,14 @@ export default function VendorDashboard() {
                         </div>
                         <p className="text-xs text-slate-600 font-medium leading-relaxed max-w-xl">
                             {allowAvailabilityToggle === false
-                                ? `Your availability is active and scheduled according to platform operating policy (${availabilitySettings?.operatingHoursStart || '08:00'} - ${availabilitySettings?.operatingHoursEnd || '20:00'}).`
+                                ? `Your availability is active and follows your configured shift schedule (${vendor?.workingHours ? formatWorkingHours(vendor.workingHours) : 'Configured Shift Hours'}).`
                                 : liveStatus.status === 'ONLINE'
                                 ? 'You are visible to nearby users and receiving new instant groundwater survey requests.'
                                 : liveStatus.status === 'PAUSED'
                                 ? `${liveStatus.label}. You will not receive new bookings today, but your ongoing bookings and future bookings remain active.`
                                 : 'You are currently offline. Turn online when ready to accept new survey leads.'}
                         </p>
+
                     </div>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">

@@ -370,11 +370,12 @@ export default function VendorSettings() {
                                     </h4>
                                     <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-relaxed">
                                         {allowAvailabilityToggle === false
-                                            ? `Centrally Managed — Your availability is active according to platform shift policy (${availabilitySettings?.operatingHoursStart || '08:00'} - ${availabilitySettings?.operatingHoursEnd || '20:00'}).`
+                                            ? `Centrally Managed — Your availability is active and follows your configured schedule (${vendor?.workingHours?.start && vendor?.workingHours?.end ? `${vendor.workingHours.start} - ${vendor.workingHours.end}` : 'Configured Working Hours'}).`
                                             : settings.isOnline
                                             ? "Active — You are currently receiving new booking requests"
                                             : "Offline — New survey bookings are paused for your profile"}
                                     </p>
+
                                 </div>
                                 {allowAvailabilityToggle !== false ? (
                                     <ToggleSwitch
