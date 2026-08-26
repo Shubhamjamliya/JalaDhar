@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { vendorLogin, vendorLogout, vendorRegister } from '../services/vendorAuthApi';
+import { toggleVendorOnlineStatus } from '../services/vendorApi';
 import { registerFCMToken, unregisterFCMToken } from '../services/pushNotificationService';
 
 const VendorAuthContext = createContext(null);
@@ -110,6 +111,51 @@ export const VendorAuthProvider = ({ children }) => {
   };
 
   /**
+   * Toggle vendor online availability status / smart pause
+   */
+  const updateOnlineStatus = async ({ isOnline, pauseDuration, pauseReason } = {}) => {
+    if (!vendor) return { success: false, message: 'Vendor not authenticated' };
+    
+    // Save previous state for optimistic rollback
+    const previousVendor = { ...vendor };
+    
+    // Optimistically update vendor
+    const nextOnline = typeof isOnline === 'boolean' ? isOnline : !vendor.isOnline;
+    const optimisticVendor = {
+      ...vendor,
+      isOnline: nextOnline,
+      pauseReason: nextOnline ? null : (pauseReason || (pauseDuration === '2_HOURS' ? 'QUICK_BREAK' : pauseDuration === 'REST_OF_TODAY' ? 'BUSY_TODAY' : 'MANUAL')),
+      pausedUntil: nextOnline ? null : (pauseDuration === '2_HOURS' ? new Date(Date.now() + 2 * 3600 * 1000).toISOString() : (pauseDuration === 'REST_OF_TODAY' ? new Date(new Date().setHours(24 + 8, 0, 0, 0)).toISOString() : null))
+    };
+
+    setVendor(optimisticVendor);
+    localStorage.setItem('vendor', JSON.stringify(optimisticVendor));
+
+    try {
+      const response = await toggleVendorOnlineStatus({ isOnline: nextOnline, pauseDuration, pauseReason });
+      if (response.success && response.data?.vendor) {
+        const updated = {
+          ...vendor,
+          ...response.data.vendor
+        };
+        setVendor(updated);
+        localStorage.setItem('vendor', JSON.stringify(updated));
+        return { success: true, vendor: updated };
+      }
+      return { success: true, vendor: optimisticVendor };
+    } catch (error) {
+      console.error('Error toggling vendor online status:', error);
+      // Rollback
+      setVendor(previousVendor);
+      localStorage.setItem('vendor', JSON.stringify(previousVendor));
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to update online status'
+      };
+    }
+  };
+
+  /**
    * Logout vendor
    */
   const logout = async () => {
@@ -138,14 +184,17 @@ export const VendorAuthProvider = ({ children }) => {
 
   const value = {
     vendor,
+    setVendor,
     token,
     loading,
     isAuthenticated: !!token && !!vendor,
     login,
     register,
-    logout
+    logout,
+    updateOnlineStatus
   };
 
   return <VendorAuthContext.Provider value={value}>{children}</VendorAuthContext.Provider>;
 };
+
 

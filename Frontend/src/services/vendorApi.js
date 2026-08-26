@@ -511,6 +511,20 @@ export const addDisputeComment = async (disputeId, data) => {
 };
 
 /**
+ * Toggle expert online availability / smart pause
+ * @param {Object} data - { isOnline, pauseDuration, pauseReason }
+ * @returns {Promise}
+ */
+export const toggleVendorOnlineStatus = async ({ isOnline, pauseDuration, pauseReason } = {}) => {
+  const response = await api.patch('/vendors/profile/online-status', {
+    isOnline,
+    pauseDuration,
+    pauseReason
+  });
+  return response.data;
+};
+
+/**
  * Get public platform communication & notification settings
  */
 export const getPublicNotificationSettings = async () => {
@@ -521,4 +535,6 @@ export const getPublicNotificationSettings = async () => {
     return { success: false, data: { settings: [] } };
   }
 };
+
+
 

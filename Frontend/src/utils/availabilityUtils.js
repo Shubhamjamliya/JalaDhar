@@ -278,6 +278,26 @@ export const formatWorkingHours = (workingHours) => {
 };
 
 /**
+ * Check if a given time is within working hours
+ */
+export const isCurrentTimeWithinWorkingHours = (workingHours, now = new Date()) => {
+  const norm = normalizeWorkingHours(workingHours);
+  if (!norm.start || !norm.end) return true;
+
+  const currentHours = now.getHours();
+  const currentMinutes = now.getMinutes();
+  const currentTimeVal = currentHours * 60 + currentMinutes;
+
+  const [startH, startM] = norm.start.split(':').map(Number);
+  const [endH, endM] = norm.end.split(':').map(Number);
+
+  const startTimeVal = (isNaN(startH) ? 8 : startH) * 60 + (isNaN(startM) ? 0 : startM);
+  const endTimeVal = (isNaN(endH) ? 19 : endH) * 60 + (isNaN(endM) ? 0 : endM);
+
+  return currentTimeVal >= startTimeVal && currentTimeVal <= endTimeVal;
+};
+
+/**
  * Check if an expert is available on a specific date (YYYY-MM-DD or Date object)
  */
 export const isExpertAvailableOnDate = (expert, dateInput) => {
@@ -297,10 +317,102 @@ export const isExpertAvailableOnDate = (expert, dateInput) => {
 
   if (isNaN(localDate.getTime())) return false;
 
+  // If the date is TODAY and expert is currently paused
+  const now = new Date();
+  const isToday = localDate.getFullYear() === now.getFullYear() &&
+                  localDate.getMonth() === now.getMonth() &&
+                  localDate.getDate() === now.getDate();
+
+  if (isToday) {
+    if (expert?.pausedUntil && new Date(expert.pausedUntil) > now) {
+      return false;
+    }
+    if (expert?.isOnline === false) {
+      return false;
+    }
+  }
+
   const dayOfWeek = localDate.toLocaleDateString('en-US', { weekday: 'long' });
   const activeDays = normalizeWorkingDays(expert?.workingDays);
 
   return activeDays.includes(dayOfWeek);
+};
+
+/**
+ * Compute the comprehensive Smart Live Status for an expert
+ * Returns { status: 'ONLINE' | 'PAUSED' | 'OFF_DUTY' | 'OFFLINE', label, badgeColor, isAvailableNow, pausedUntilFormatted }
+ */
+export const getExpertLiveStatus = (expert, now = new Date()) => {
+  if (!expert) {
+    return {
+      status: 'OFFLINE',
+      label: 'Offline',
+      badgeColor: 'gray',
+      isAvailableNow: false
+    };
+  }
+
+  // 1. Check if paused with active timer
+  if (expert.pausedUntil && new Date(expert.pausedUntil) > now) {
+    const resumeTime = new Date(expert.pausedUntil);
+    const isTomorrow = resumeTime.getDate() !== now.getDate();
+    const formattedTime = formatTimeToAMPM(`${String(resumeTime.getHours()).padStart(2, '0')}:${String(resumeTime.getMinutes()).padStart(2, '0')}`);
+    
+    return {
+      status: 'PAUSED',
+      label: isTomorrow ? `Paused (Resumes Tomorrow ${formattedTime})` : `Paused (Resumes ${formattedTime})`,
+      shortLabel: 'Busy Today',
+      badgeColor: 'amber',
+      isAvailableNow: false,
+      pausedUntil: expert.pausedUntil,
+      pauseReason: expert.pauseReason
+    };
+  }
+
+  // 2. Check if manually turned offline
+  if (expert.isOnline === false) {
+    return {
+      status: 'OFFLINE',
+      label: 'Offline',
+      shortLabel: 'Offline',
+      badgeColor: 'gray',
+      isAvailableNow: false
+    };
+  }
+
+  // 3. Check if today is a scheduled working day
+  const isWorkingDay = isExpertAvailableOnDate(expert, now);
+  if (!isWorkingDay) {
+    return {
+      status: 'OFF_DUTY',
+      label: 'Off-Duty (Off Day)',
+      shortLabel: 'Off Day',
+      badgeColor: 'slate',
+      isAvailableNow: false
+    };
+  }
+
+  // 4. Check if current time is within working hours
+  const isWithinHours = isCurrentTimeWithinWorkingHours(expert.workingHours, now);
+  if (!isWithinHours) {
+    const hoursNorm = normalizeWorkingHours(expert.workingHours);
+    return {
+      status: 'OFF_DUTY',
+      label: `Shift Ended (${hoursNorm.label})`,
+      shortLabel: 'Shift Ended',
+      badgeColor: 'slate',
+      isAvailableNow: false
+    };
+  }
+
+  // 5. Active & Online
+  return {
+    status: 'ONLINE',
+    label: 'Available Now',
+    shortLabel: 'Available Now',
+    badgeColor: 'emerald',
+    isAvailableNow: true
+  };
 };
 
 /**
@@ -317,12 +429,14 @@ export const getNextAvailableDates = (expert, count = 6) => {
     candidateDate.setDate(today.getDate() + i);
 
     const dayOfWeek = candidateDate.toLocaleDateString('en-US', { weekday: 'long' });
-    if (activeDays.includes(dayOfWeek)) {
-      const yyyy = candidateDate.getFullYear();
-      const mm = String(candidateDate.getMonth() + 1).padStart(2, '0');
-      const dd = String(candidateDate.getDate()).padStart(2, '0');
-      const dateString = `${yyyy}-${mm}-${dd}`;
+    
+    // Check if expert is available on this candidate date
+    const yyyy = candidateDate.getFullYear();
+    const mm = String(candidateDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(candidateDate.getDate()).padStart(2, '0');
+    const dateString = `${yyyy}-${mm}-${dd}`;
 
+    if (isExpertAvailableOnDate(expert, candidateDate)) {
       const shortDay = candidateDate.toLocaleDateString('en-US', { weekday: 'short' });
       const monthStr = candidateDate.toLocaleDateString('en-US', { month: 'short' });
       const dayNum = candidateDate.getDate();
@@ -349,3 +463,4 @@ export const getNextAvailableDates = (expert, count = 6) => {
 
   return availableDates;
 };
+

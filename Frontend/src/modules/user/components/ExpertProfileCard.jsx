@@ -11,7 +11,7 @@ import {
   IoCalendarOutline,
   IoTimeOutline
 } from "react-icons/io5";
-import { formatWorkingDays, formatWorkingHours } from "../../../utils/availabilityUtils";
+import { formatWorkingDays, formatWorkingHours, getExpertLiveStatus } from "../../../utils/availabilityUtils";
 
 /**
  * ExpertProfileCard
@@ -27,6 +27,8 @@ import { formatWorkingDays, formatWorkingHours } from "../../../utils/availabili
  */
 const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "Select Expert" }) => {
   if (!expert) return null;
+
+  const liveStatus = getExpertLiveStatus(expert);
 
   // Extract dynamic values with fallback handling
   const experienceYears = typeof expert.experience === "number" ? expert.experience : 0;
@@ -99,9 +101,32 @@ const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "S
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1 pr-1">
-              <h3 className="text-base sm:text-lg font-extrabold text-gray-900 leading-snug group-hover:text-[#0A84FF] transition-colors truncate">
-                {expert.name || "Expert Hydrogeologist"}
-              </h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-extrabold text-gray-900 leading-snug group-hover:text-[#0A84FF] transition-colors truncate">
+                  {expert.name || "Expert Hydrogeologist"}
+                </h3>
+                {/* Live Availability Badge */}
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs ${
+                    liveStatus.status === 'ONLINE'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : liveStatus.status === 'PAUSED'
+                      ? 'bg-amber-50 text-amber-800 border-amber-200'
+                      : 'bg-slate-100 text-slate-600 border-slate-200'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      liveStatus.status === 'ONLINE'
+                        ? 'bg-emerald-500 animate-pulse'
+                        : liveStatus.status === 'PAUSED'
+                        ? 'bg-amber-500'
+                        : 'bg-slate-400'
+                    }`}
+                  />
+                  <span>{liveStatus.shortLabel || liveStatus.label}</span>
+                </span>
+              </div>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <p className="text-xs text-gray-500 font-semibold flex items-center gap-1">
                   <IoBriefcaseOutline className="text-[#0A84FF]" />
@@ -134,6 +159,7 @@ const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "S
           </div>
         </div>
       </div>
+
 
       {/* Grid Section: 4 Key Dynamic Metrics */}
       <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-3.5 p-2.5 bg-gray-50/80 rounded-2xl border border-gray-100/90">

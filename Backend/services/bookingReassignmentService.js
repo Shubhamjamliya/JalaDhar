@@ -45,13 +45,23 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
     }
 
     // Find all active and approved services with the same name and category
-    const similarServices = await Service.find({
+    let similarServices = await Service.find({
       name,
       category,
       status: 'APPROVED',
       isActive: true,
       vendor: { $nin: booking.rejectedVendors }
     }).populate('vendor');
+
+    // Filter for active, online, and non-paused vendors
+    const now = new Date();
+    similarServices = similarServices.filter(s => {
+      const v = s.vendor;
+      if (!v || v.isActive === false || v.isApproved === false) return false;
+      if (v.isOnline === false) return false;
+      if (v.pausedUntil && new Date(v.pausedUntil) > now) return false;
+      return true;
+    });
 
     if (similarServices.length === 0) {
       // No other services available

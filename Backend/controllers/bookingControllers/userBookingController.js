@@ -41,7 +41,7 @@ const getAvailableVendors = async (req, res) => {
         { isApproved: { $exists: false } }
       ],
       services: serviceId
-    }).select('name email phone experience rating address workingDays workingHours aboutExpert languages availableServices instruments');
+    }).select('name email phone experience rating address workingDays workingHours aboutExpert languages availableServices instruments isOnline pausedUntil pauseReason lastOnlineAt lastOfflineAt');
 
     // Calculate distance and sort vendors
     const vendorsWithDistance = vendors.map(vendor => {
@@ -1131,7 +1131,7 @@ const getNearbyVendors = async (req, res) => {
 
     // First, get all vendors with services populated (no status filter - show all services)
     const vendors = await Vendor.find(query)
-      .select('name email phone experience experienceDetails designation education institution graduationYear specialization surveysCompleted rating bookingStats serviceAreas designation address location services servicePrice machineType workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates')
+      .select('name email phone experience experienceDetails designation education institution graduationYear specialization surveysCompleted rating bookingStats serviceAreas designation address location services servicePrice machineType workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates isOnline pausedUntil pauseReason lastOnlineAt lastOfflineAt')
       .populate({
         path: 'services',
         // Removed match filter - show all services regardless of status
@@ -1342,7 +1342,7 @@ const getVendorProfile = async (req, res) => {
     }
 
     const vendor = await Vendor.findById(vendorId)
-      .select('name email phone experience experienceDetails designation education institution graduationYear specialization surveysCompleted machineType rating bookingStats serviceAreas address location services servicePrice isActive isApproved gender educationalQualifications workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates panNo isGstRegistered gstNumber')
+      .select('name email phone experience experienceDetails designation education institution graduationYear specialization surveysCompleted machineType rating bookingStats serviceAreas address location services servicePrice isActive isApproved gender educationalQualifications workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates panNo isGstRegistered gstNumber isOnline pausedUntil pauseReason lastOnlineAt lastOfflineAt')
       .populate({
         path: 'services',
         select: 'name category price description images status isActive machineType'
@@ -1953,7 +1953,7 @@ const getAvailableReplacementVendors = async (req, res) => {
     }
 
     const availableVendors = await Vendor.find(query)
-      .select('name expertId designation email phone rating profilePicture experience workingDays workingHours specialization address machineType aboutExpert')
+      .select('name expertId designation email phone rating profilePicture experience workingDays workingHours specialization address machineType aboutExpert isOnline pausedUntil pauseReason')
       .sort({ 'rating.averageRating': -1, surveysCompleted: -1 })
       .limit(10);
 
@@ -1968,7 +1968,7 @@ const getAvailableReplacementVendors = async (req, res) => {
         email: { $not: /@example\.com$/i }
       };
       vendorsList = await Vendor.find(fallbackQuery)
-        .select('name expertId designation email phone rating profilePicture experience workingDays workingHours specialization address machineType aboutExpert')
+        .select('name expertId designation email phone rating profilePicture experience workingDays workingHours specialization address machineType aboutExpert isOnline pausedUntil pauseReason')
         .sort({ 'rating.averageRating': -1, surveysCompleted: -1 })
         .limit(10);
     }

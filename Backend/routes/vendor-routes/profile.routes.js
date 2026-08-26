@@ -8,8 +8,8 @@ const {
   uploadProfilePicture,
   uploadGalleryImages,
   deleteGalleryImage,
-
-  getPaymentStatus
+  getPaymentStatus,
+  toggleOnlineStatus
 } = require('../../controllers/vendorControllers/vendorProfileController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isVendor } = require('../../middleware/roleMiddleware');
@@ -46,6 +46,10 @@ router.get('/profile', authenticate, isVendor, getProfile);
 // Update profile
 router.put('/profile', authenticate, isVendor, updateProfileValidation, updateProfile);
 
+// Toggle real-time online status / smart pause
+router.patch('/online-status', authenticate, isVendor, toggleOnlineStatus);
+router.patch('/profile/online-status', authenticate, isVendor, toggleOnlineStatus);
+
 // Upload profile picture
 router.post('/profile/picture', authenticate, isVendor, upload.single('image'), uploadProfilePicture);
 
@@ -53,10 +57,9 @@ router.post('/profile/picture', authenticate, isVendor, upload.single('image'), 
 router.post('/gallery', authenticate, isVendor, upload.array('images', 10), uploadGalleryImages);
 router.delete('/gallery/:imageId', authenticate, isVendor, deleteGalleryImage);
 
-
-
 // Payment status
 router.get('/payment-status', authenticate, isVendor, getPaymentStatus);
 
 module.exports = router;
+
 

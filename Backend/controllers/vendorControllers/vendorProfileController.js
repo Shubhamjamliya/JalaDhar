@@ -280,7 +280,10 @@ const updateProfile = async (req, res) => {
       'availableServices',
       'workingDays',
       'workingHours',
-      'aboutExpert'
+      'aboutExpert',
+      'isOnline',
+      'pausedUntil',
+      'pauseReason'
     ];
 
     // Update allowed fields
@@ -659,13 +662,105 @@ const getPaymentStatus = async (req, res) => {
   }
 };
 
+/**
+ * Toggle vendor real-time online status / smart pause
+ */
+const toggleOnlineStatus = async (req, res) => {
+  try {
+    const vendorId = req.userId;
+    const { isOnline, pauseDuration, pauseReason } = req.body;
+
+    const vendor = await Vendor.findById(vendorId);
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vendor not found'
+      });
+    }
+
+    const newOnlineStatus = typeof isOnline === 'boolean' ? isOnline : !vendor.isOnline;
+    vendor.isOnline = newOnlineStatus;
+
+    if (newOnlineStatus) {
+      vendor.lastOnlineAt = new Date();
+      vendor.pausedUntil = null;
+      vendor.pauseReason = null;
+    } else {
+      vendor.lastOfflineAt = new Date();
+      vendor.pauseReason = pauseReason || (pauseDuration === '2_HOURS' ? 'QUICK_BREAK' : pauseDuration === 'REST_OF_TODAY' ? 'BUSY_TODAY' : 'MANUAL');
+
+      if (pauseDuration === '2_HOURS') {
+        const pauseDate = new Date();
+        pauseDate.setHours(pauseDate.getHours() + 2);
+        vendor.pausedUntil = pauseDate;
+      } else if (pauseDuration === 'REST_OF_TODAY') {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        let startHour = 8;
+        let startMin = 0;
+        if (vendor.workingHours && vendor.workingHours.start) {
+          const [h, m] = vendor.workingHours.start.split(':').map(Number);
+          if (!isNaN(h)) startHour = h;
+          if (!isNaN(m)) startMin = m;
+        }
+        tomorrow.setHours(startHour, startMin, 0, 0);
+        vendor.pausedUntil = tomorrow;
+      } else {
+        vendor.pausedUntil = null;
+      }
+    }
+
+    await vendor.save();
+
+    // Broadcast status change via Socket.IO if available
+    try {
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      if (io) {
+        io.emit('vendor_online_status_changed', {
+          vendorId: vendor._id,
+          isOnline: vendor.isOnline,
+          pausedUntil: vendor.pausedUntil,
+          pauseReason: vendor.pauseReason,
+          timestamp: new Date()
+        });
+      }
+    } catch (socketErr) {
+      console.warn('[Socket] Could not broadcast vendor status update:', socketErr.message);
+    }
+
+    res.json({
+      success: true,
+      message: `Status updated to ${vendor.isOnline ? 'Online' : 'Offline'}`,
+      data: {
+        vendor: {
+          _id: vendor._id,
+          isOnline: vendor.isOnline,
+          pausedUntil: vendor.pausedUntil,
+          pauseReason: vendor.pauseReason,
+          lastOnlineAt: vendor.lastOnlineAt,
+          lastOfflineAt: vendor.lastOfflineAt
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Toggle online status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update availability status',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   uploadProfilePicture,
   uploadGalleryImages,
   deleteGalleryImage,
-
-  getPaymentStatus
+  getPaymentStatus,
+  toggleOnlineStatus
 };
+
 

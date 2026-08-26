@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     IoSettingsOutline,
@@ -16,6 +16,7 @@ import {
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import { useLanguage } from "../../../contexts/LanguageContext";
+import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import ExpertAgreementDocViewer from "../vendor-components/ExpertAgreementDocViewer";
 import CustomDropdown from "../../shared/components/CustomDropdown";
 import {
@@ -57,6 +58,8 @@ function ToggleSwitch({ checked, onChange, activeColor = "bg-[#0A84FF]", ariaLab
 export default function VendorSettings() {
     const navigate = useNavigate();
     const toast = useToast();
+    const { vendor, updateOnlineStatus } = useVendorAuth();
+
     const { language: currentLang, setLanguage, supportedLanguages } = useLanguage();
     const [saving, setSaving] = useState(false);
     const [showDocViewer, setShowDocViewer] = useState(false);
@@ -77,7 +80,7 @@ export default function VendorSettings() {
         primaryDistrict: "Bengaluru Rural",
 
         // Availability Schedule
-        isOnline: true,
+        isOnline: vendor?.isOnline !== false,
         workingDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
         workingHoursStart: "08:00",
         workingHoursEnd: "18:00",
@@ -97,7 +100,29 @@ export default function VendorSettings() {
         theme: "light"
     });
 
-    const handleToggle = (key) => {
+    // Update settings if vendor auth changes
+    useEffect(() => {
+        if (vendor) {
+            setSettings(prev => ({
+                ...prev,
+                isOnline: vendor.isOnline !== false
+            }));
+        }
+    }, [vendor]);
+
+    const handleToggle = async (key) => {
+        if (key === "isOnline") {
+            const nextVal = !settings.isOnline;
+            setSettings((prev) => ({ ...prev, isOnline: nextVal }));
+            const res = await updateOnlineStatus({ isOnline: nextVal });
+            if (res.success) {
+                toast.showSuccess(`Availability updated to ${nextVal ? "Online" : "Offline"}`);
+            } else {
+                setSettings((prev) => ({ ...prev, isOnline: !nextVal }));
+                toast.showError(res.message || "Failed to update availability");
+            }
+            return;
+        }
         setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
     };
 
@@ -113,6 +138,7 @@ export default function VendorSettings() {
 
     const handleSave = (e) => {
         e.preventDefault();
+
         setSaving(true);
         setTimeout(() => {
             setSaving(false);

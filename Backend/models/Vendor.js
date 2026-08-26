@@ -194,6 +194,29 @@ const vendorSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Real-time online availability & smart pause
+  isOnline: {
+    type: Boolean,
+    default: true,
+    index: true
+  },
+  pausedUntil: {
+    type: Date,
+    default: null
+  },
+  pauseReason: {
+    type: String,
+    enum: ['QUICK_BREAK', 'BUSY_TODAY', 'MANUAL', null],
+    default: null
+  },
+  lastOnlineAt: {
+    type: Date,
+    default: Date.now
+  },
+  lastOfflineAt: {
+    type: Date,
+    default: null
+  },
   district: {
     type: String,
     trim: true,

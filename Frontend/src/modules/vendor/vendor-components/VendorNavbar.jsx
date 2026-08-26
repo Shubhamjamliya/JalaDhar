@@ -27,6 +27,9 @@ import logo from "@/assets/Header-logoo.png";
 
 import VendorSidebar from "./VendorSidebar";
 import ExpertAgreementModal from "./ExpertAgreementModal";
+import VendorAvailabilityModal from "./VendorAvailabilityModal";
+import { getExpertLiveStatus } from "../../../utils/availabilityUtils";
+import { useToast } from "../../../hooks/useToast";
 import api from "../../../services/api";
 
 const navItems = [
@@ -71,14 +74,75 @@ export default function VendorNavbar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const toggleRef = useRef(null);
-    const { logout, vendor } = useVendorAuth();
+    const { logout, vendor, updateOnlineStatus } = useVendorAuth();
     const location = useLocation();
     const navigate = useNavigate();
+    const toast = useToast();
+
+    // Availability State
+    const [showPauseModal, setShowPauseModal] = useState(false);
+    const [pauseLoading, setPauseLoading] = useState(false);
+    const liveStatus = getExpertLiveStatus(vendor);
+
+    const handleToggleClick = () => {
+        // If currently Online, open the modal to choose pause duration
+        if (liveStatus.status === 'ONLINE') {
+            setShowPauseModal(true);
+        } else {
+            // If currently offline or paused, immediately turn back Online
+            handleResumeOnline();
+        }
+    };
+
+    const handleResumeOnline = async () => {
+        setPauseLoading(true);
+        try {
+            const res = await updateOnlineStatus({ isOnline: true });
+            if (res.success) {
+                toast.showSuccess("You are now Online and receiving new booking requests!");
+            } else {
+                toast.showError(res.message || "Failed to update status");
+            }
+        } catch (err) {
+            toast.showError("Failed to update status");
+        } finally {
+            setPauseLoading(false);
+            setShowPauseModal(false);
+        }
+    };
+
+    const handleConfirmPause = async (pauseDuration) => {
+        setPauseLoading(true);
+        try {
+            const res = await updateOnlineStatus({
+                isOnline: false,
+                pauseDuration,
+                pauseReason: pauseDuration === 'REST_OF_TODAY' ? 'BUSY_TODAY' : (pauseDuration === '2_HOURS' ? 'QUICK_BREAK' : 'MANUAL')
+            });
+            if (res.success) {
+                toast.showSuccess(
+                    pauseDuration === 'REST_OF_TODAY'
+                        ? "Paused for today. Auto-resuming tomorrow morning!"
+                        : pauseDuration === '2_HOURS'
+                        ? "Paused for 2 hours."
+                        : "You are now offline."
+                );
+            } else {
+                toast.showError(res.message || "Failed to update status");
+            }
+        } catch (err) {
+            toast.showError("Failed to update status");
+        } finally {
+            setPauseLoading(false);
+            setShowPauseModal(false);
+        }
+    };
 
     const [showLangMenu, setShowLangMenu] = useState(false);
     const langDropdownRef = useRef(null);
     const { language, setLanguage, supportedLanguages, isLanguageEnabled } = useLanguage();
     const currentLangObj = supportedLanguages.find(l => l.code === language) || supportedLanguages[0];
+
 
     // Close language dropdown on outside click or touch
     useEffect(() => {
@@ -205,10 +269,58 @@ export default function VendorNavbar() {
                 </nav>
 
                 {/* Right Icons */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-3.5">
+                    {/* Real-time Online / Offline Availability Toggle Pill */}
+                    {vendor && (
+                        <button
+                            onClick={handleToggleClick}
+                            disabled={pauseLoading}
+                            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold transition-all shadow-2xs border cursor-pointer ${
+                                liveStatus.status === 'ONLINE'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                    : liveStatus.status === 'PAUSED'
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                                    : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                            }`}
+                            title={liveStatus.label}
+                        >
+                            <span
+                                className={`w-2 h-2 rounded-full shrink-0 ${
+                                    liveStatus.status === 'ONLINE'
+                                        ? 'bg-emerald-500 animate-pulse'
+                                        : liveStatus.status === 'PAUSED'
+                                        ? 'bg-amber-500'
+                                        : 'bg-slate-400'
+                                }`}
+                            />
+                            <span className="hidden xs:inline sm:inline">
+                                {liveStatus.status === 'ONLINE'
+                                    ? 'Online'
+                                    : liveStatus.status === 'PAUSED'
+                                    ? 'Paused'
+                                    : 'Offline'}
+                            </span>
+                            {pauseLoading ? (
+                                <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
+                            ) : (
+                                <span
+                                    className={`inline-block w-6 h-3.5 rounded-full transition-colors relative shrink-0 ${
+                                        liveStatus.status === 'ONLINE' ? 'bg-emerald-500' : 'bg-slate-300'
+                                    }`}
+                                >
+                                    <span
+                                        className={`absolute top-0.5 left-0.5 bg-white w-2.5 h-2.5 rounded-full transition-transform ${
+                                            liveStatus.status === 'ONLINE' ? 'translate-x-2.5' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </span>
+                            )}
+                        </button>
+                    )}
+
                     {/* Expert Name - Desktop Only */}
                     {vendor && (
-                        <span className="hidden md:block text-sm font-medium text-gray-700">
+                        <span className="hidden lg:block text-sm font-medium text-gray-700">
                             {vendor.name}
                         </span>
                     )}
@@ -295,21 +407,25 @@ export default function VendorNavbar() {
                             end={id === "dashboard"}
                         >
                             {({ isActive }) => {
-                                const TargetIcon = isActive ? ActiveIcon : Icon;
+                                const IconComponent = isActive ? ActiveIcon : Icon;
                                 return (
                                     <>
-                                        <div className={`relative flex items-center justify-center px-3.5 py-1 rounded-full transition-all duration-200 ${
-                                            isActive
-                                                ? "bg-blue-50 text-[#0A84FF] scale-105"
-                                                : "bg-transparent text-gray-500 group-hover:bg-gray-50"
-                                        }`}>
-                                            <TargetIcon className={`text-xl transition-transform duration-200 ${
-                                                isActive ? "text-[#0A84FF]" : "text-gray-500"
-                                            }`} />
+                                        <div
+                                            className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200 ${
+                                                isActive
+                                                    ? "bg-blue-50 text-[#0A84FF] shadow-xs"
+                                                    : "text-gray-400 group-hover:text-gray-600"
+                                            }`}
+                                        >
+                                            <IconComponent className="text-xl transition-transform group-hover:scale-110" />
                                         </div>
-                                        <span className={`text-[10px] leading-none mt-1 tracking-tight transition-colors duration-200 ${
-                                            isActive ? "font-bold text-[#0A84FF]" : "font-semibold text-gray-500"
-                                        }`}>
+                                        <span
+                                            className={`text-[10px] font-bold mt-0.5 tracking-tight transition-colors ${
+                                                isActive
+                                                    ? "text-[#0A84FF]"
+                                                    : "text-gray-400"
+                                            }`}
+                                        >
                                             {label}
                                         </span>
                                     </>
@@ -319,6 +435,14 @@ export default function VendorNavbar() {
                     ))}
                 </div>
             </nav>
+
+            {/* Availability Smart Pause Modal */}
+            <VendorAvailabilityModal
+                isOpen={showPauseModal}
+                onClose={() => setShowPauseModal(false)}
+                onConfirm={handleConfirmPause}
+                loading={pauseLoading}
+            />
 
             {/* Logout Confirmation Modal */}
             <ConfirmModal

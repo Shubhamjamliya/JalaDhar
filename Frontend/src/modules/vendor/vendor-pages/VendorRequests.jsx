@@ -19,6 +19,7 @@ import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal, { VENDOR_REJECTION_REASONS } from "../../shared/components/InputModal";
 import OTPInputModal from "../../shared/components/OTPInputModal";
 import VendorOngoingBookingCard from "../vendor-components/VendorOngoingBookingCard";
+import { getExpertLiveStatus } from "../../../utils/availabilityUtils";
 import {
     IoNotificationsOutline,
     IoTimeOutline,
@@ -37,12 +38,14 @@ export default function VendorRequests() {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
-    const { vendor } = useVendorAuth();
+    const { vendor, updateOnlineStatus } = useVendorAuth();
     const { socket } = useNotifications();
+    const liveStatus = getExpertLiveStatus(vendor);
 
     // Determine initial active tab from URL search params or location state or sessionStorage
     const getInitialTab = () => {
         const urlTab = searchParams.get("tab") || location.state?.tab;
+
         if (urlTab) {
             const normalized = urlTab.toLowerCase().replace(/_/g, " ");
             if (normalized.includes("progress")) return "In Progress";
@@ -629,8 +632,48 @@ export default function VendorRequests() {
                     ))}
                 </div>
 
+                {/* Availability Alert Banner for New Requests Tab */}
+                {activeTab === "New" && liveStatus.status !== "ONLINE" && (
+                    <div className={`mb-4 p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all ${
+                        liveStatus.status === 'PAUSED'
+                            ? 'bg-amber-50/90 border-amber-200/90 text-amber-950 shadow-2xs'
+                            : 'bg-slate-50 border-slate-200/90 text-slate-900 shadow-2xs'
+                    }`}>
+                        <div className="flex items-start gap-2.5">
+                            <span className="material-symbols-outlined !text-xl text-amber-600 shrink-0 mt-0.5">
+                                {liveStatus.status === 'PAUSED' ? 'bedtime' : 'power_settings_new'}
+                            </span>
+                            <div>
+                                <p className="text-xs sm:text-sm font-bold">
+                                    {liveStatus.status === 'PAUSED'
+                                        ? 'New bookings are paused for today'
+                                        : 'You are currently offline'}
+                                </p>
+                                <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-relaxed">
+                                    {liveStatus.status === 'PAUSED'
+                                        ? `${liveStatus.label}. You won't receive new leads today, but existing active jobs continue normally.`
+                                        : 'Switch to online when you are ready to receive new instant survey bookings.'}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                const res = await updateOnlineStatus({ isOnline: true });
+                                if (res.success) toast.showSuccess("You are now Online and receiving new booking requests!");
+                                else toast.showError(res.message || "Failed to update status");
+                            }}
+                            className="shrink-0 w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined !text-base">bolt</span>
+                            <span>Go Online</span>
+                        </button>
+                    </div>
+                )}
+
                 {/* Booking Cards */}
                 <div className="space-y-4">
+
                     {currentRequests.length === 0 ? (
                         <div className="rounded-xl bg-white p-8 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                             <p className="text-[#3A3A3A]">

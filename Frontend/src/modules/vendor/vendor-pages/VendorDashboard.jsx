@@ -20,13 +20,63 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import { getExpertLiveStatus } from "../../../utils/availabilityUtils";
+import VendorAvailabilityModal from "../vendor-components/VendorAvailabilityModal";
 
 export default function VendorDashboard() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { vendor } = useVendorAuth();
+    const { vendor, updateOnlineStatus } = useVendorAuth();
     const { socket } = useNotifications();
     const [loading, setLoading] = useState(true);
+    const [showPauseModal, setShowPauseModal] = useState(false);
+    const [pauseLoading, setPauseLoading] = useState(false);
+    const liveStatus = getExpertLiveStatus(vendor);
+
+    const handleResumeOnline = async () => {
+        setPauseLoading(true);
+        try {
+            const res = await updateOnlineStatus({ isOnline: true });
+            if (res.success) {
+                toast.showSuccess("You are now Online and receiving new booking requests!");
+            } else {
+                toast.showError(res.message || "Failed to update status");
+            }
+        } catch (err) {
+            toast.showError("Failed to update status");
+        } finally {
+            setPauseLoading(false);
+            setShowPauseModal(false);
+        }
+    };
+
+    const handleConfirmPause = async (pauseDuration) => {
+        setPauseLoading(true);
+        try {
+            const res = await updateOnlineStatus({
+                isOnline: false,
+                pauseDuration,
+                pauseReason: pauseDuration === 'REST_OF_TODAY' ? 'BUSY_TODAY' : (pauseDuration === '2_HOURS' ? 'QUICK_BREAK' : 'MANUAL')
+            });
+            if (res.success) {
+                toast.showSuccess(
+                    pauseDuration === 'REST_OF_TODAY'
+                        ? "Paused for today. Auto-resuming tomorrow morning!"
+                        : pauseDuration === '2_HOURS'
+                        ? "Paused for 2 hours."
+                        : "You are now offline."
+                );
+            } else {
+                toast.showError(res.message || "Failed to update status");
+            }
+        } catch (err) {
+            toast.showError("Failed to update status");
+        } finally {
+            setPauseLoading(false);
+            setShowPauseModal(false);
+        }
+    };
+
     const [stats, setStats] = useState({
         pendingBookings: 0,
         assignedBookings: 0,
@@ -223,13 +273,25 @@ export default function VendorDashboard() {
         <PageContainer className="w-full max-w-full overflow-x-hidden pb-12">
 
             {/* Profile Header — Senior SDE Expert Glassmorphism Banner */}
-            <section className="relative my-3 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 p-6 shadow-xl text-white border border-slate-800/80">
+            <section className="relative my-3 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 p-5 sm:p-6 shadow-xl text-white border border-slate-800/80">
                 <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
                 <div className="relative z-10 flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold mb-2 border border-emerald-500/30">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span>On-Duty & Ready for Dispatch</span>
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-2 border ${
+                            liveStatus.status === 'ONLINE'
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                : liveStatus.status === 'PAUSED'
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                : 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                        }`}>
+                            <span className={`w-2 h-2 rounded-full ${
+                                liveStatus.status === 'ONLINE'
+                                    ? 'bg-emerald-400 animate-pulse'
+                                    : liveStatus.status === 'PAUSED'
+                                    ? 'bg-amber-400'
+                                    : 'bg-slate-400'
+                            }`}></span>
+                            <span>{liveStatus.label}</span>
                         </div>
                         <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white truncate">
                             Welcome, {vendorProfileData?.name || vendor?.name || "Hydrogeologist Expert"} 👨‍🔧
@@ -255,6 +317,74 @@ export default function VendorDashboard() {
                     </div>
                 </div>
             </section>
+
+            {/* Interactive Real-Time Availability & Dispatch Control Card */}
+            <section className={`my-3.5 p-4 sm:p-5 rounded-3xl border transition-all ${
+                liveStatus.status === 'ONLINE'
+                    ? 'bg-emerald-50/70 border-emerald-200/80 shadow-xs'
+                    : liveStatus.status === 'PAUSED'
+                    ? 'bg-amber-50/80 border-amber-200 shadow-xs'
+                    : 'bg-slate-50 border-slate-200 shadow-xs'
+            }`}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${
+                                liveStatus.status === 'ONLINE'
+                                    ? 'bg-emerald-500 animate-pulse'
+                                    : liveStatus.status === 'PAUSED'
+                                    ? 'bg-amber-500'
+                                    : 'bg-slate-400'
+                            }`} />
+                            <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                                {liveStatus.status === 'ONLINE'
+                                    ? 'Instant Online Availability: Active'
+                                    : liveStatus.status === 'PAUSED'
+                                    ? 'Availability Paused'
+                                    : 'Offline Mode: New Requests Paused'}
+                            </h3>
+                        </div>
+                        <p className="text-xs text-slate-600 font-medium leading-relaxed max-w-xl">
+                            {liveStatus.status === 'ONLINE'
+                                ? 'You are visible to nearby users and receiving new instant groundwater survey requests.'
+                                : liveStatus.status === 'PAUSED'
+                                ? `${liveStatus.label}. You will not receive new bookings today, but your ongoing bookings and future bookings remain active.`
+                                : 'You are currently offline. Turn online when ready to accept new survey leads.'}
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                        {liveStatus.status === 'ONLINE' ? (
+                            <button
+                                type="button"
+                                onClick={() => setShowPauseModal(true)}
+                                disabled={pauseLoading}
+                                className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <span className="material-symbols-outlined !text-base text-amber-600">bedtime</span>
+                                <span>Take Break / Pause</span>
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleResumeOnline}
+                                disabled={pauseLoading}
+                                className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-200 transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                {pauseLoading ? (
+                                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined !text-base">bolt</span>
+                                        <span>Go Online Now</span>
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </section>
+
 
             {/* Two Prominent KPI Stat Cards */}
             <section className="my-4 grid grid-cols-2 gap-3.5">
@@ -577,6 +707,15 @@ export default function VendorDashboard() {
                     </div>
                 )}
             </section>
+
+            {/* Availability Smart Pause Modal */}
+            <VendorAvailabilityModal
+                isOpen={showPauseModal}
+                onClose={() => setShowPauseModal(false)}
+                onConfirm={handleConfirmPause}
+                loading={pauseLoading}
+            />
         </PageContainer>
     );
 }
+
