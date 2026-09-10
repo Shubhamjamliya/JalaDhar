@@ -21,7 +21,7 @@ html,
 body {
   font-family: "Inter", sans-serif;
   background-color: #F3F7FA;
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100vw;
 }
 

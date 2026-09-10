@@ -9,7 +9,8 @@ import {
     IoSearchOutline,
     IoChevronBackOutline,
     IoChevronForwardOutline,
-    IoCloseOutline
+    IoCloseOutline,
+    IoFilterOutline
 } from "react-icons/io5";
 
 export default function UserWallet() {
@@ -34,11 +35,16 @@ export default function UserWallet() {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalTransactions: 0, limit: 10 });
     const [transactionsLoading, setTransactionsLoading] = useState(false);
+    const [showFilters, setShowFilters] = useState(false);
+    const activeFilterCount = (typeFilter !== "ALL" ? 1 : 0) + (statusFilter !== "ALL" ? 1 : 0);
+
+    // Active Tab: "TRANSACTIONS" | "WITHDRAWALS"
+    const [activeTab, setActiveTab] = useState("TRANSACTIONS");
 
     // Filter & Pagination States for Withdrawal Requests
     const [withdrawalStatusFilter, setWithdrawalStatusFilter] = useState("ALL"); // ALL, PENDING, APPROVED, PROCESSED, REJECTED
     const [withdrawalPage, setWithdrawalPage] = useState(1);
-    const withdrawalItemsPerPage = 3;
+    const withdrawalItemsPerPage = 5;
 
     // Filtered & Paginated Withdrawal Requests
     const filteredWithdrawalRequests = withdrawalRequests.filter((req) => {
@@ -50,6 +56,9 @@ export default function UserWallet() {
         (withdrawalPage - 1) * withdrawalItemsPerPage,
         withdrawalPage * withdrawalItemsPerPage
     );
+    const pendingWithdrawalsCount = withdrawalRequests.filter(
+        (r) => r.status === "PENDING" || r.status === "APPROVED"
+    ).length;
 
     const loadTransactions = async (page = 1, limit = 10, type = "ALL", status = "ALL", search = "", showSpinner = false) => {
         try {
@@ -251,6 +260,7 @@ export default function UserWallet() {
                 handleApiSuccess("Withdrawal request submitted successfully!");
                 setShowWithdrawModal(false);
                 setWithdrawAmount("");
+                setActiveTab("WITHDRAWALS");
                 loadWalletData(); // Reload data
             }
         } catch (err) {
@@ -342,81 +352,179 @@ export default function UserWallet() {
             </section>
 
             {/* Hydro Summary Cards */}
-            <div className="grid grid-cols-2 gap-3.5 mb-6">
-                <div className="rounded-2xl bg-white p-4 shadow-xs border border-gray-100/90 hover:border-emerald-300 transition-all">
-                    <span className="material-symbols-outlined text-emerald-500 !text-2xl font-bold">payments</span>
-                    <p className="mt-1.5 text-xs font-bold text-gray-500">Total Refunded</p>
-                    <p className="mt-0.5 text-lg font-extrabold text-emerald-600">
-                        ₹{formatAmount(totalCredited)}
-                    </p>
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-5">
+                <div className="flex items-center gap-2.5 sm:gap-3 rounded-2xl bg-white p-3 shadow-xs border border-gray-100 hover:border-emerald-300 transition-all">
+                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
+                        <span className="material-symbols-outlined text-lg sm:text-xl font-bold">payments</span>
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-gray-500 truncate">Total Refunded</p>
+                        <p className="text-sm sm:text-base font-black text-emerald-600 truncate">
+                            ₹{formatAmount(totalCredited)}
+                        </p>
+                    </div>
                 </div>
-                <div className="rounded-2xl bg-white p-4 shadow-xs border border-gray-100/90 hover:border-teal-300 transition-all">
-                    <span className="material-symbols-outlined text-teal-600 !text-2xl font-bold">account_balance_wallet</span>
-                    <p className="mt-1.5 text-xs font-bold text-gray-500">Available Balance</p>
-                    <p className="mt-0.5 text-lg font-extrabold text-teal-700">
-                        ₹{formatAmount(walletBalance)}
-                    </p>
+
+                <div className="flex items-center gap-2.5 sm:gap-3 rounded-2xl bg-white p-3 shadow-xs border border-gray-100 hover:border-teal-300 transition-all">
+                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-600 shrink-0">
+                        <span className="material-symbols-outlined text-lg sm:text-xl font-bold">account_balance_wallet</span>
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-gray-500 truncate">Available Balance</p>
+                        <p className="text-sm sm:text-base font-black text-teal-700 truncate">
+                            ₹{formatAmount(walletBalance)}
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            {/* Withdrawal Requests */}
-            {withdrawalRequests.length > 0 && (
-                <div className="mb-8">
-                    <div className="flex items-center justify-between flex-wrap gap-2 px-1 pt-2 pb-3">
+            {/* View Tabs: All Transactions vs Withdrawal Requests */}
+            <div className="flex items-center justify-between gap-3 mb-5 border-b border-slate-200/70 pb-3">
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/70 w-full sm:w-auto">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab("TRANSACTIONS")}
+                        className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            activeTab === "TRANSACTIONS"
+                                ? "bg-white text-slate-900 shadow-xs"
+                                : "text-slate-500 hover:text-slate-800"
+                        }`}
+                    >
+                        <span className="material-symbols-outlined !text-base">receipt_long</span>
+                        <span>All Transactions</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                            activeTab === "TRANSACTIONS" ? "bg-blue-50 text-[#0A84FF]" : "bg-slate-200 text-slate-600"
+                        }`}>
+                            {pagination.totalTransactions}
+                        </span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab("WITHDRAWALS")}
+                        className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+                            activeTab === "WITHDRAWALS"
+                                ? "bg-white text-slate-900 shadow-xs"
+                                : "text-slate-500 hover:text-slate-800"
+                        }`}
+                    >
+                        <span className="material-symbols-outlined !text-base">account_balance_wallet</span>
+                        <span>Withdrawal Requests</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                            activeTab === "WITHDRAWALS" ? "bg-blue-50 text-[#0A84FF]" : "bg-slate-200 text-slate-600"
+                        }`}>
+                            {withdrawalRequests.length}
+                        </span>
+                        {pendingWithdrawalsCount > 0 && (
+                            <span className="flex h-2 w-2 relative" title={`${pendingWithdrawalsCount} active request(s)`}>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                            </span>
+                        )}
+                    </button>
+                </div>
+
+                {refreshing && (
+                    <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
+                        Syncing...
+                    </span>
+                )}
+            </div>
+
+            {/* Tab 1: Withdrawal Requests */}
+            {activeTab === "WITHDRAWALS" && (
+                <div className="space-y-4 mb-8">
+                    {/* Header with Sub-filters */}
+                    <div className="flex items-center justify-between flex-wrap gap-2 px-1">
                         <div className="flex items-center gap-2">
                             <h2 className="text-lg font-black text-gray-900 tracking-tight">Withdrawal Requests</h2>
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                                {withdrawalRequests.length}
+                                {filteredWithdrawalRequests.length} of {withdrawalRequests.length}
                             </span>
                         </div>
-                        {refreshing && (
-                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100 animate-pulse">
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
-                                Syncing...
-                            </span>
+
+                        {walletBalance >= 1000 && (
+                            <button
+                                type="button"
+                                onClick={handleWithdrawClick}
+                                className="px-3.5 py-1.5 bg-[#0A84FF] hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1"
+                            >
+                                <span>+ Request Withdrawal</span>
+                            </button>
                         )}
                     </div>
 
                     {/* Status Filter for Withdrawal Requests */}
-                    {withdrawalRequests.length > 1 && (
-                        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none">
+                    {withdrawalRequests.length > 0 && (
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                             {[
-                                { id: "ALL", label: `All (${withdrawalRequests.length})` },
-                                { id: "PENDING", label: `Pending (${withdrawalRequests.filter(r => r.status === 'PENDING').length})` },
-                                { id: "APPROVED", label: `Approved (${withdrawalRequests.filter(r => r.status === 'APPROVED').length})` },
-                                { id: "PROCESSED", label: `Settled (${withdrawalRequests.filter(r => r.status === 'PROCESSED').length})` },
-                                { id: "REJECTED", label: `Rejected (${withdrawalRequests.filter(r => r.status === 'REJECTED').length})` },
-                            ].map((f) => (
-                                <button
-                                    key={f.id}
-                                    type="button"
-                                    onClick={() => {
-                                        setWithdrawalStatusFilter(f.id);
-                                        setWithdrawalPage(1);
-                                    }}
-                                    className={`px-3 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 ${
-                                        withdrawalStatusFilter === f.id
-                                            ? "bg-slate-900 text-white shadow-xs"
-                                            : "bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50"
-                                    }`}
-                                >
-                                    {f.label}
-                                </button>
-                            ))}
+                                { id: "ALL", label: `All (${withdrawalRequests.length})`, count: withdrawalRequests.length },
+                                { id: "PENDING", label: `Pending (${withdrawalRequests.filter(r => r.status === 'PENDING').length})`, count: withdrawalRequests.filter(r => r.status === 'PENDING').length },
+                                { id: "APPROVED", label: `Approved (${withdrawalRequests.filter(r => r.status === 'APPROVED').length})`, count: withdrawalRequests.filter(r => r.status === 'APPROVED').length },
+                                { id: "PROCESSED", label: `Processed (${withdrawalRequests.filter(r => r.status === 'PROCESSED').length})`, count: withdrawalRequests.filter(r => r.status === 'PROCESSED').length },
+                                { id: "REJECTED", label: `Rejected (${withdrawalRequests.filter(r => r.status === 'REJECTED').length})`, count: withdrawalRequests.filter(r => r.status === 'REJECTED').length },
+                            ]
+                                .filter((f) => f.id === "ALL" || f.count > 0)
+                                .map((f) => (
+                                    <button
+                                        key={f.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setWithdrawalStatusFilter(f.id);
+                                            setWithdrawalPage(1);
+                                        }}
+                                        className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 ${
+                                            withdrawalStatusFilter === f.id
+                                                ? "bg-slate-900 text-white shadow-xs"
+                                                : "bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50"
+                                        }`}
+                                    >
+                                        {f.label}
+                                    </button>
+                                ))}
                         </div>
                     )}
 
-                    {/* Cards */}
-                    {paginatedWithdrawalRequests.length === 0 ? (
-                        <div className="p-6 text-center bg-white rounded-2xl border border-slate-100 text-slate-400 text-xs font-medium">
+                    {/* Cards List */}
+                    {withdrawalRequests.length === 0 ? (
+                        <div className="rounded-2xl bg-white p-10 text-center shadow-xs border border-gray-100">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#0A84FF] flex items-center justify-center mx-auto mb-3">
+                                <span className="material-symbols-outlined text-2xl">account_balance_wallet</span>
+                            </div>
+                            <p className="text-gray-900 text-sm font-bold">No withdrawal requests yet</p>
+                            <p className="text-gray-400 text-xs mt-1 max-w-sm mx-auto">
+                                When you request payouts for your refundable credits, you can track their status and payout reference here.
+                            </p>
+                            {walletBalance >= 1000 && (
+                                <button
+                                    type="button"
+                                    onClick={handleWithdrawClick}
+                                    className="mt-4 px-4 py-2 bg-gradient-to-r from-[#0A84FF] to-blue-600 text-white text-xs font-bold rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer"
+                                >
+                                    Request Withdrawal 💸
+                                </button>
+                            )}
+                        </div>
+                    ) : paginatedWithdrawalRequests.length === 0 ? (
+                        <div className="p-8 text-center bg-white rounded-2xl border border-slate-100 text-slate-400 text-xs font-medium">
                             No withdrawal requests match the selected status.
+                            <div className="mt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setWithdrawalStatusFilter("ALL")}
+                                    className="px-3 py-1 text-xs font-bold text-blue-600 bg-blue-50 rounded-lg cursor-pointer"
+                                >
+                                    Show All Requests
+                                </button>
+                            </div>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-3">
                             {paginatedWithdrawalRequests.map((request) => (
                                 <div
                                     key={request._id}
-                                    className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-xs border border-gray-100"
+                                    className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-xs border border-gray-100 hover:border-blue-200 transition-all"
                                 >
                                     <div className={`flex h-12 w-12 items-center justify-center rounded-2xl shrink-0 ${
                                         request.status === 'PROCESSED' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
@@ -425,18 +533,36 @@ export default function UserWallet() {
                                     }`}>
                                         <span className="material-symbols-outlined font-bold text-xl">
                                             {request.status === 'PROCESSED' ? 'check_circle' :
-                                             request.status === 'REJECTED' ? 'cancel' : 'pending'}
+                                             request.status === 'REJECTED' ? 'cancel' :
+                                             request.status === 'APPROVED' ? 'verified' : 'pending'}
                                         </span>
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-extrabold text-gray-900 text-sm">
-                                            Withdrawal Request
-                                        </p>
-                                        <p className="text-xs text-gray-500 font-medium">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <p className="font-extrabold text-gray-900 text-sm">
+                                                Withdrawal Request
+                                            </p>
+                                            {request.payoutType === 'UPI' && request.upiId && (
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                                                    ⚡ {request.upiId}
+                                                </span>
+                                            )}
+                                            {request.payoutType === 'BANK_TRANSFER' && (
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                                                    🏦 {request.accountDetails?.bankName || 'Bank'} ••••{request.accountDetails?.accountNumber?.slice(-4) || ''}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-500 font-medium mt-0.5">
                                             {formatDateTime(request.requestedAt)}
                                         </p>
+                                        {request.status === 'PROCESSED' && request.transactionReference && (
+                                            <p className="text-xs text-emerald-700 font-bold mt-1 bg-emerald-50 px-2 py-0.5 rounded-md inline-block">
+                                                UTR / Ref: {request.transactionReference}
+                                            </p>
+                                        )}
                                         {request.rejectionReason && (
-                                            <p className="text-xs text-rose-500 mt-0.5 font-semibold">
+                                            <p className="text-xs text-rose-600 mt-1 font-semibold bg-rose-50 px-2 py-0.5 rounded-md inline-block">
                                                 Reason: {request.rejectionReason}
                                             </p>
                                         )}
@@ -445,7 +571,7 @@ export default function UserWallet() {
                                         <p className="font-extrabold text-gray-900 text-sm">
                                             ₹{formatAmount(request.amount)}
                                         </p>
-                                        <span className={`inline-block text-[11px] font-extrabold px-2 py-0.5 rounded-full ${getStatusColor(request.status)}`}>
+                                        <span className={`inline-block text-[11px] font-extrabold px-2 py-0.5 rounded-full mt-0.5 ${getStatusColor(request.status)}`}>
                                             {request.status}
                                         </span>
                                     </div>
@@ -483,272 +609,314 @@ export default function UserWallet() {
                 </div>
             )}
 
-            {/* Transaction History Section */}
-            <div className="space-y-3 mb-8">
-                {/* Header */}
-                <div className="flex items-center justify-between flex-wrap gap-2 px-1">
-                    <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-black text-gray-900 tracking-tight">Transaction History</h2>
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                            {pagination.totalTransactions}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Filter & Search Bar */}
-                <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs space-y-3">
-                    {/* Search Input */}
-                    <div className="relative">
-                        <IoSearchOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search by description or reference..."
-                            className="w-full pl-9 pr-9 py-2 bg-slate-50 hover:bg-slate-100/60 focus:bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0A84FF]/20 focus:border-[#0A84FF] transition-all"
-                        />
-                        {searchQuery && (
-                            <button
-                                type="button"
-                                onClick={() => setSearchQuery("")}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm"
-                            >
-                                <IoCloseOutline />
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Filter Pills */}
-                    <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
-                        {/* Type Filters */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Type:</span>
-                            {[
-                                { id: "ALL", label: "All Activities" },
-                                { id: "REFUND", label: "Refund Credits" },
-                                { id: "WITHDRAWAL", label: "Withdrawals" },
-                            ].map((t) => (
-                                <button
-                                    key={t.id}
-                                    type="button"
-                                    onClick={() => {
-                                        setTypeFilter(t.id);
-                                        setCurrentPage(1);
-                                    }}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                                        typeFilter === t.id
-                                            ? "bg-[#0A84FF] text-white shadow-xs"
-                                            : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/60"
-                                    }`}
-                                >
-                                    {t.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Status Filters */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Status:</span>
-                            {[
-                                { id: "ALL", label: "All" },
-                                { id: "SUCCESS", label: "Success" },
-                                { id: "PENDING", label: "Pending" },
-                                { id: "FAILED", label: "Rejected" },
-                            ].map((s) => (
-                                <button
-                                    key={s.id}
-                                    type="button"
-                                    onClick={() => {
-                                        setStatusFilter(s.id);
-                                        setCurrentPage(1);
-                                    }}
-                                    className={`px-2.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                                        statusFilter === s.id
-                                            ? "bg-slate-900 text-white shadow-xs"
-                                            : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/60"
-                                    }`}
-                                >
-                                    {s.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Transaction Cards List */}
-                {transactionsLoading ? (
-                    <div className="py-12 text-center bg-white rounded-2xl border border-slate-100 shadow-xs flex flex-col items-center justify-center">
-                        <div className="w-7 h-7 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-2" />
-                        <p className="text-xs font-semibold text-slate-500">Loading transactions...</p>
-                    </div>
-                ) : transactions.length === 0 ? (
-                    <div className="rounded-2xl bg-white p-10 text-center shadow-xs border border-gray-100">
-                        <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">receipt_long</span>
-                        <p className="text-gray-700 text-sm font-bold">No transactions found</p>
-                        <p className="text-gray-400 text-xs mt-1">
-                            {(typeFilter !== 'ALL' || statusFilter !== 'ALL' || searchQuery)
-                                ? "Try adjusting your filters or search query"
-                                : "Transactions will appear here once you receive refunds or request withdrawals"}
-                        </p>
-                        {(typeFilter !== 'ALL' || statusFilter !== 'ALL' || searchQuery) && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setTypeFilter("ALL");
-                                    setStatusFilter("ALL");
-                                    setSearchQuery("");
-                                    setCurrentPage(1);
-                                }}
-                                className="mt-3 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors cursor-pointer"
-                            >
-                                Reset Filters
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    <div className="flex flex-col gap-3">
-                        {transactions.map((transaction) => {
-                            const isCredit = transaction.type === 'REFUND';
-                            const isWithdrawal = ['WITHDRAWAL_REQUEST', 'WITHDRAWAL_PROCESSED', 'WITHDRAWAL_REJECTED'].includes(transaction.type);
-                            const isFailed = transaction.status === 'FAILED' || transaction.status === 'REJECTED' || transaction.type === 'WITHDRAWAL_REJECTED';
-                            const isSuccess = transaction.status === 'SUCCESS' && !isFailed;
-                            const isPending = transaction.status === 'PENDING' && !isFailed;
-                            
-                            return (
-                                <div
-                                    key={transaction._id}
-                                    className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-xs border border-gray-100 hover:border-blue-300 transition-all"
-                                >
-                                    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl shrink-0 ${
-                                        isFailed ? "bg-rose-50 text-rose-500 border border-rose-100" :
-                                        isSuccess ? (isCredit ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : isWithdrawal ? "bg-blue-50 text-[#0A84FF] border border-blue-100" : "bg-gray-50 text-gray-500") : 
-                                        isPending ? "bg-amber-50 text-amber-600 border border-amber-100" : "bg-rose-50 text-rose-600 border border-rose-100"
-                                    }`}>
-                                        <span className="material-symbols-outlined font-bold text-xl">
-                                            {isFailed ? "cancel" : isCredit ? "arrow_downward_alt" : isWithdrawal ? "account_balance_wallet" : "info"}
-                                        </span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-extrabold text-gray-900 text-sm truncate">
-                                            {getTransactionTypeLabel(transaction.type)}
-                                        </p>
-                                        <p className="text-xs text-gray-500 font-medium">
-                                            {formatDateTime(transaction.createdAt)}
-                                        </p>
-                                        {transaction.booking && (
-                                            <p className="text-xs text-blue-600 font-bold mt-0.5">
-                                                Booking #{transaction.booking._id?.toString().slice(-8).toUpperCase()}
-                                            </p>
-                                        )}
-                                        {(transaction.errorMessage || transaction.metadata?.rejectionReason) && (
-                                            <p className="text-xs text-rose-500 mt-0.5 font-semibold">
-                                                Reason: {transaction.errorMessage || transaction.metadata?.rejectionReason}
-                                            </p>
-                                        )}
-                                        {transaction.description && !transaction.errorMessage && (
-                                            <p className="text-xs text-gray-500 mt-0.5 italic">
-                                                {transaction.description}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <p className={`font-extrabold text-sm ${
-                                            isFailed ? "text-slate-400 line-through" :
-                                            isSuccess ? (isCredit ? "text-emerald-600" : isWithdrawal ? "text-[#0A84FF]" : "text-gray-700") : 
-                                            isPending ? "text-amber-600" : "text-rose-600"
-                                        }`}>
-                                            {isFailed ? "" : isCredit ? "+" : isWithdrawal ? "-" : ""} ₹{formatAmount(Math.abs(transaction.amount))}
-                                        </p>
-                                        <span className={`inline-block text-[11px] font-extrabold px-2 py-0.5 rounded-full mt-0.5 ${
-                                            isFailed ? "text-rose-600" : getStatusColor(transaction.status)
-                                        }`}>
-                                            {isFailed ? "REJECTED" : transaction.status}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {/* Pagination Controls */}
-                {pagination.totalTransactions > 0 && (
-                    <div className="flex items-center justify-between flex-wrap gap-3 pt-4 px-1 border-t border-slate-100">
-                        <p className="text-xs font-semibold text-slate-500">
-                            Showing <span className="font-bold text-slate-800">{(pagination.currentPage - 1) * pagination.limit + 1}</span>–<span className="font-bold text-slate-800">{Math.min(pagination.currentPage * pagination.limit, pagination.totalTransactions)}</span> of <span className="font-bold text-slate-800">{pagination.totalTransactions}</span>
-                        </p>
-
+            {/* Tab 2: Transaction History */}
+            {activeTab === "TRANSACTIONS" && (
+                <div className="space-y-3 mb-8">
+                    {/* Header */}
+                    <div className="flex items-center justify-between flex-wrap gap-2 px-1">
                         <div className="flex items-center gap-2">
-                            {/* Rows Selector */}
-                            <div className="flex items-center gap-1.5 mr-1">
-                                <span className="text-[11px] font-semibold text-slate-400">Rows:</span>
-                                <select
-                                    value={itemsPerPage}
-                                    onChange={(e) => {
-                                        setItemsPerPage(Number(e.target.value));
-                                        setCurrentPage(1);
-                                    }}
-                                    className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-                                >
-                                    <option value={5}>5</option>
-                                    <option value={10}>10</option>
-                                    <option value={20}>20</option>
-                                    <option value={50}>50</option>
-                                </select>
+                            <h2 className="text-lg font-black text-gray-900 tracking-tight">Transaction History</h2>
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                {pagination.totalTransactions}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Filter & Search Bar - Compact & Sticky on scroll */}
+                    <div className="sticky top-[62px] md:top-[74px] z-30 bg-white/95 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 border border-slate-200/90 shadow-sm space-y-2.5 transition-all">
+                        {/* Search Input & Filter Button */}
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                                <IoSearchOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search by description or reference..."
+                                    className="w-full pl-9 pr-8 py-2 bg-slate-50 hover:bg-slate-100/60 focus:bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0A84FF]/20 focus:border-[#0A84FF] transition-all"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery("")}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm"
+                                    >
+                                        <IoCloseOutline />
+                                    </button>
+                                )}
                             </div>
 
-                            {/* Prev Page Button */}
+                            {/* Filter Toggle Button */}
                             <button
                                 type="button"
-                                disabled={pagination.currentPage <= 1}
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                onClick={() => setShowFilters(prev => !prev)}
+                                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shrink-0 ${
+                                    showFilters || activeFilterCount > 0
+                                        ? "bg-[#0A84FF] text-white border-[#0A84FF] shadow-xs"
+                                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                                }`}
+                                title="Toggle Filters"
                             >
-                                <IoChevronBackOutline />
-                                <span>Prev</span>
-                            </button>
-
-                            {/* Page Numbers */}
-                            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-                                .filter(page => {
-                                    return page === 1 || page === pagination.totalPages || Math.abs(page - pagination.currentPage) <= 1;
-                                })
-                                .map((page, idx, arr) => {
-                                    const prev = arr[idx - 1];
-                                    return (
-                                        <div key={page} className="flex items-center">
-                                            {prev && page - prev > 1 && (
-                                                <span className="px-1 text-slate-400 font-bold text-xs">...</span>
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => setCurrentPage(page)}
-                                                className={`w-7 h-7 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                                                    pagination.currentPage === page
-                                                        ? "bg-[#0A84FF] text-white shadow-xs"
-                                                        : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
-                                                }`}
-                                            >
-                                                {page}
-                                            </button>
-                                        </div>
-                                    );
-                                })}
-
-                            {/* Next Page Button */}
-                            <button
-                                type="button"
-                                disabled={pagination.currentPage >= pagination.totalPages}
-                                onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                            >
-                                <span>Next</span>
-                                <IoChevronForwardOutline />
+                                <IoFilterOutline className="text-sm" />
+                                <span>Filter</span>
+                                {activeFilterCount > 0 && (
+                                    <span className={`w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center ${
+                                        showFilters || activeFilterCount > 0 ? "bg-white text-[#0A84FF]" : "bg-[#0A84FF] text-white"
+                                    }`}>
+                                        {activeFilterCount}
+                                    </span>
+                                )}
                             </button>
                         </div>
+
+                        {/* Collapsible Filter Options */}
+                        {showFilters && (
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap animate-in fade-in slide-in-from-top-1 duration-150">
+                                {/* Type Filters */}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-0.5">Type:</span>
+                                    {[
+                                        { id: "ALL", label: "All Activities" },
+                                        { id: "REFUND", label: "Refund Credits" },
+                                        { id: "WITHDRAWAL", label: "Withdrawals" },
+                                    ].map((t) => (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setTypeFilter(t.id);
+                                                setCurrentPage(1);
+                                            }}
+                                            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                                typeFilter === t.id
+                                                    ? "bg-[#0A84FF] text-white shadow-xs"
+                                                    : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/60"
+                                            }`}
+                                        >
+                                            {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Status Filters */}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-0.5">Status:</span>
+                                    {[
+                                        { id: "ALL", label: "All" },
+                                        { id: "SUCCESS", label: "Success" },
+                                        { id: "PENDING", label: "Pending" },
+                                        { id: "FAILED", label: "Rejected" },
+                                    ].map((s) => (
+                                        <button
+                                            key={s.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setStatusFilter(s.id);
+                                                setCurrentPage(1);
+                                            }}
+                                            className={`px-2 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                                statusFilter === s.id
+                                                    ? "bg-slate-900 text-white shadow-xs"
+                                                    : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/60"
+                                            }`}
+                                        >
+                                            {s.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {activeFilterCount > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setTypeFilter("ALL");
+                                            setStatusFilter("ALL");
+                                            setCurrentPage(1);
+                                        }}
+                                        className="text-[11px] font-bold text-rose-500 hover:text-rose-600 cursor-pointer ml-auto"
+                                    >
+                                        Clear Filters
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
+
+                    {/* Transaction Cards List */}
+                    {transactionsLoading ? (
+                        <div className="py-12 text-center bg-white rounded-2xl border border-slate-100 shadow-xs flex flex-col items-center justify-center">
+                            <div className="w-7 h-7 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-2" />
+                            <p className="text-xs font-semibold text-slate-500">Loading transactions...</p>
+                        </div>
+                    ) : transactions.length === 0 ? (
+                        <div className="rounded-2xl bg-white p-10 text-center shadow-xs border border-gray-100">
+                            <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">receipt_long</span>
+                            <p className="text-gray-700 text-sm font-bold">No transactions found</p>
+                            <p className="text-gray-400 text-xs mt-1">
+                                {(typeFilter !== 'ALL' || statusFilter !== 'ALL' || searchQuery)
+                                    ? "Try adjusting your filters or search query"
+                                    : "Transactions will appear here once you receive refunds or request withdrawals"}
+                            </p>
+                            {(typeFilter !== 'ALL' || statusFilter !== 'ALL' || searchQuery) && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setTypeFilter("ALL");
+                                        setStatusFilter("ALL");
+                                        setSearchQuery("");
+                                        setCurrentPage(1);
+                                    }}
+                                    className="mt-3 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors cursor-pointer"
+                                >
+                                    Reset Filters
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
+                            {transactions.map((transaction) => {
+                                const isCredit = transaction.type === 'REFUND';
+                                const isWithdrawal = ['WITHDRAWAL_REQUEST', 'WITHDRAWAL_PROCESSED', 'WITHDRAWAL_REJECTED'].includes(transaction.type);
+                                const isFailed = transaction.status === 'FAILED' || transaction.status === 'REJECTED' || transaction.type === 'WITHDRAWAL_REJECTED';
+                                const isSuccess = transaction.status === 'SUCCESS' && !isFailed;
+                                const isPending = transaction.status === 'PENDING' && !isFailed;
+                                
+                                return (
+                                    <div
+                                        key={transaction._id}
+                                        className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-xs border border-gray-100 hover:border-blue-300 transition-all"
+                                    >
+                                        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl shrink-0 ${
+                                            isFailed ? "bg-rose-50 text-rose-500 border border-rose-100" :
+                                            isSuccess ? (isCredit ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : isWithdrawal ? "bg-blue-50 text-[#0A84FF] border border-blue-100" : "bg-gray-50 text-gray-500") : 
+                                            isPending ? "bg-amber-50 text-amber-600 border border-amber-100" : "bg-rose-50 text-rose-600 border border-rose-100"
+                                        }`}>
+                                            <span className="material-symbols-outlined font-bold text-xl">
+                                                {isFailed ? "cancel" : isCredit ? "arrow_downward_alt" : isWithdrawal ? "account_balance_wallet" : "info"}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-extrabold text-gray-900 text-sm truncate">
+                                                {getTransactionTypeLabel(transaction.type)}
+                                            </p>
+                                            <p className="text-xs text-gray-500 font-medium">
+                                                {formatDateTime(transaction.createdAt)}
+                                            </p>
+                                            {transaction.booking && (
+                                                <p className="text-xs text-blue-600 font-bold mt-0.5">
+                                                    Booking #{transaction.booking._id?.toString().slice(-8).toUpperCase()}
+                                                </p>
+                                            )}
+                                            {(transaction.errorMessage || transaction.metadata?.rejectionReason) && (
+                                                <p className="text-xs text-rose-500 mt-0.5 font-semibold">
+                                                    Reason: {transaction.errorMessage || transaction.metadata?.rejectionReason}
+                                                </p>
+                                            )}
+                                            {transaction.description && !transaction.errorMessage && (
+                                                <p className="text-xs text-gray-500 mt-0.5 italic">
+                                                    {transaction.description}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <p className={`font-extrabold text-sm ${
+                                                isFailed ? "text-slate-400 line-through" :
+                                                isSuccess ? (isCredit ? "text-emerald-600" : isWithdrawal ? "text-[#0A84FF]" : "text-gray-700") : 
+                                                isPending ? "text-amber-600" : "text-rose-600"
+                                            }`}>
+                                                {isFailed ? "" : isCredit ? "+" : isWithdrawal ? "-" : ""} ₹{formatAmount(Math.abs(transaction.amount))}
+                                            </p>
+                                            <span className={`inline-block text-[11px] font-extrabold px-2 py-0.5 rounded-full mt-0.5 ${
+                                                isFailed ? "text-rose-600" : getStatusColor(transaction.status)
+                                            }`}>
+                                                {isFailed ? "REJECTED" : transaction.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Pagination Controls */}
+                    {pagination.totalTransactions > 0 && (
+                        <div className="flex items-center justify-between flex-wrap gap-3 pt-4 px-1 border-t border-slate-100">
+                            <p className="text-xs font-semibold text-slate-500">
+                                Showing <span className="font-bold text-slate-800">{(pagination.currentPage - 1) * pagination.limit + 1}</span>–<span className="font-bold text-slate-800">{Math.min(pagination.currentPage * pagination.limit, pagination.totalTransactions)}</span> of <span className="font-bold text-slate-800">{pagination.totalTransactions}</span>
+                            </p>
+
+                            <div className="flex items-center gap-2">
+                                {/* Rows Selector */}
+                                <div className="flex items-center gap-1.5 mr-1">
+                                    <span className="text-[11px] font-semibold text-slate-400">Rows:</span>
+                                    <select
+                                        value={itemsPerPage}
+                                        onChange={(e) => {
+                                            setItemsPerPage(Number(e.target.value));
+                                            setCurrentPage(1);
+                                        }}
+                                        className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                                    >
+                                        <option value={5}>5</option>
+                                        <option value={10}>10</option>
+                                        <option value={20}>20</option>
+                                        <option value={50}>50</option>
+                                    </select>
+                                </div>
+
+                                {/* Prev Page Button */}
+                                <button
+                                    type="button"
+                                    disabled={pagination.currentPage <= 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                >
+                                    <IoChevronBackOutline />
+                                    <span>Prev</span>
+                                </button>
+
+                                {/* Page Numbers */}
+                                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                                    .filter(page => {
+                                        return page === 1 || page === pagination.totalPages || Math.abs(page - pagination.currentPage) <= 1;
+                                    })
+                                    .map((page, idx, arr) => {
+                                        const prev = arr[idx - 1];
+                                        return (
+                                            <div key={page} className="flex items-center">
+                                                {prev && page - prev > 1 && (
+                                                    <span className="px-1 text-slate-400 font-bold text-xs">...</span>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCurrentPage(page)}
+                                                    className={`w-7 h-7 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                                        pagination.currentPage === page
+                                                            ? "bg-[#0A84FF] text-white shadow-xs"
+                                                            : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                                                    }`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+
+                                {/* Next Page Button */}
+                                <button
+                                    type="button"
+                                    disabled={pagination.currentPage >= pagination.totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                >
+                                    <span>Next</span>
+                                    <IoChevronForwardOutline />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
         </PageContainer>
 
         {/* Withdrawal Request Modal */}
