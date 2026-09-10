@@ -62,6 +62,17 @@ export const removeUserPayoutDetails = async () => {
 };
 
 /**
+ * Verify / Lookup IFSC code
+ * @param {string} code - 11-digit IFSC code
+ * @returns {Promise}
+ */
+export const verifyIFSCCode = async (code) => {
+  const clean = String(code).trim().toUpperCase();
+  const response = await api.get(`/user/wallet/ifsc/${clean}`);
+  return response.data;
+};
+
+/**
  * User Dispute API functions
  */
 

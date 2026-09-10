@@ -204,10 +204,45 @@ export default function VendorWallet() {
 
     const handleBankEditSubmit = async (e) => {
         e.preventDefault();
+
+        const cleanHolder = String(bankFormData.accountHolderName || '').trim();
+        if (!cleanHolder || cleanHolder.length < 3) {
+            toast.showError("Account Holder Name must be at least 3 characters");
+            return;
+        }
+
+        const cleanAcc = String(bankFormData.accountNumber || '').replace(/[\s-]/g, '').trim();
+        if (!/^\d{9,18}$/.test(cleanAcc)) {
+            toast.showError("Bank Account Number must be between 9 and 18 digits (numbers only)");
+            return;
+        }
+        if (/^0+$/.test(cleanAcc)) {
+            toast.showError("Bank Account Number cannot be all zeros");
+            return;
+        }
+
+        const cleanIfsc = String(bankFormData.ifscCode || '').replace(/[\s-]/g, '').trim().toUpperCase();
+        if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(cleanIfsc)) {
+            toast.showError("Invalid IFSC format. Must be 4 uppercase letters, 0 (zero), followed by 6 alphanumeric characters (e.g. SBIN0001234)");
+            return;
+        }
+
+        const cleanBank = String(bankFormData.bankName || '').trim();
+        if (!cleanBank || cleanBank.length < 2) {
+            toast.showError("Bank Name is required");
+            return;
+        }
+
         try {
             setSavingBank(true);
             const response = await updateVendorProfile({
-                bankDetails: bankFormData
+                bankDetails: {
+                    ...bankFormData,
+                    accountHolderName: cleanHolder,
+                    accountNumber: cleanAcc,
+                    ifscCode: cleanIfsc,
+                    bankName: cleanBank
+                }
             });
             if (response.success) {
                 handleApiSuccess("Bank details updated & submitted to Admin for verification!");
@@ -1403,22 +1438,57 @@ export default function VendorWallet() {
                                 <input
                                     required
                                     type="text"
+                                    inputMode="numeric"
+                                    maxLength={18}
                                     value={bankFormData.accountNumber}
-                                    onChange={(e) => setBankFormData(prev => ({ ...prev, accountNumber: e.target.value }))}
-                                    placeholder="Enter account number"
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 18);
+                                        setBankFormData(prev => ({ ...prev, accountNumber: val }));
+                                    }}
+                                    placeholder="9–18 digit account number"
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs font-bold text-gray-900 focus:outline-none focus:border-blue-500 font-mono"
                                 />
+                                {bankFormData.accountNumber && (
+                                    <p className={`text-[10px] font-bold mt-1 ${
+                                        bankFormData.accountNumber.length >= 9 && !/^0+$/.test(bankFormData.accountNumber)
+                                            ? "text-emerald-600"
+                                            : "text-amber-600"
+                                    }`}>
+                                        {bankFormData.accountNumber.length >= 9 && !/^0+$/.test(bankFormData.accountNumber)
+                                            ? `✓ Valid account length (${bankFormData.accountNumber.length} digits)`
+                                            : `9–18 digits required (${bankFormData.accountNumber.length}/18)`}
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">IFSC Code *</label>
                                 <input
                                     required
                                     type="text"
+                                    maxLength={11}
                                     value={bankFormData.ifscCode}
-                                    onChange={(e) => setBankFormData(prev => ({ ...prev, ifscCode: e.target.value.toUpperCase() }))}
+                                    onChange={(e) => {
+                                        const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
+                                        setBankFormData(prev => ({ ...prev, ifscCode: val }));
+                                    }}
                                     placeholder="e.g. SBIN0001234"
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs font-bold text-gray-900 focus:outline-none focus:border-blue-500 font-mono uppercase"
                                 />
+                                {bankFormData.ifscCode && (
+                                    <p className={`text-[10px] font-bold mt-1 ${
+                                        /^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankFormData.ifscCode)
+                                            ? "text-emerald-600"
+                                            : bankFormData.ifscCode.length === 11
+                                            ? "text-rose-500"
+                                            : "text-slate-400"
+                                    }`}>
+                                        {/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankFormData.ifscCode)
+                                            ? "✓ Valid IFSC format"
+                                            : bankFormData.ifscCode.length >= 5 && bankFormData.ifscCode[4] !== '0'
+                                            ? "⚠️ 5th character must be 0 (Zero)"
+                                            : `11 characters required (${bankFormData.ifscCode.length}/11)`}
+                                    </p>
+                                )}
                             </div>
                         </div>
 

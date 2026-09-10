@@ -8,7 +8,8 @@ const {
   createWithdrawRequest,
   getWithdrawalRequests,
   updatePayoutDetails,
-  deletePayoutDetails
+  deletePayoutDetails,
+  verifyIFSC
 } = require('../../controllers/userControllers/userWalletController');
 
 router.use(authenticate);
@@ -20,6 +21,7 @@ router.post('/withdraw-request', createWithdrawRequest);
 router.get('/withdrawal-requests', getWithdrawalRequests);
 router.put('/payout-details', updatePayoutDetails);
 router.delete('/payout-details', deletePayoutDetails);
+router.get('/ifsc/:code', verifyIFSC);
 
 module.exports = router;
 

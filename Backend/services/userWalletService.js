@@ -3,6 +3,7 @@ const Admin = require('../models/Admin');
 const UserWalletTransaction = require('../models/UserWalletTransaction');
 const UserWithdrawalRequest = require('../models/UserWithdrawalRequest');
 const { sendNotification } = require('./notificationService');
+const { validateAccountNumber, validateIFSC, validateUPI, validateBankDetails } = require('../utils/bankValidator');
 
 /**
  * Credit refund amount to user wallet
@@ -260,13 +261,31 @@ const createWithdrawalRequest = async (userId, amount, payoutData = {}) => {
     // Extract payout details
     const { payoutType = 'UPI', upiId = null, accountDetails = null } = payoutData;
 
-    // Validate payout details
-    if (payoutType === 'UPI' && !upiId) {
-      throw new Error('Please provide a valid UPI ID for withdrawal payout');
-    }
+    let sanitizedUpiId = null;
+    let sanitizedAccountDetails = null;
 
-    if (payoutType === 'BANK_TRANSFER' && (!accountDetails || !accountDetails.accountNumber || !accountDetails.ifscCode)) {
-      throw new Error('Please provide Account Number and IFSC Code for bank transfer payout');
+    // Validate payout details
+    if (payoutType === 'UPI') {
+      const upiCheck = validateUPI(upiId);
+      if (!upiCheck.isValid) {
+        throw new Error(upiCheck.message);
+      }
+      sanitizedUpiId = upiCheck.sanitized;
+    } else if (payoutType === 'BANK_TRANSFER') {
+      if (!accountDetails) {
+        throw new Error('Please provide bank account details');
+      }
+      const bankCheck = validateBankDetails(accountDetails, {
+        requireHolder: true,
+        requireBankName: true,
+        requireConfirm: Boolean(accountDetails.confirmAccountNumber)
+      });
+      if (!bankCheck.isValid) {
+        throw new Error(bankCheck.message);
+      }
+      sanitizedAccountDetails = bankCheck.sanitized;
+    } else {
+      throw new Error('Invalid payout method selected');
     }
 
     // Auto-assign to available Finance Admin using Least-Active-Load engine
@@ -282,8 +301,8 @@ const createWithdrawalRequest = async (userId, amount, payoutData = {}) => {
       user: userId,
       amount,
       payoutType,
-      upiId,
-      accountDetails,
+      upiId: sanitizedUpiId,
+      accountDetails: sanitizedAccountDetails,
       status: 'PENDING',
       requestedAt: new Date(),
       assignedTo: assignment.assignedTo || null,
@@ -295,8 +314,8 @@ const createWithdrawalRequest = async (userId, amount, payoutData = {}) => {
       if (!user.wallet) user.wallet = {};
       user.wallet.savedPayoutDetails = {
         payoutType,
-        upiId: payoutType === 'UPI' ? upiId : (user.wallet.savedPayoutDetails?.upiId || null),
-        accountDetails: payoutType === 'BANK_TRANSFER' ? accountDetails : (user.wallet.savedPayoutDetails?.accountDetails || null),
+        upiId: payoutType === 'UPI' ? sanitizedUpiId : (user.wallet.savedPayoutDetails?.upiId || null),
+        accountDetails: payoutType === 'BANK_TRANSFER' ? sanitizedAccountDetails : (user.wallet.savedPayoutDetails?.accountDetails || null),
         updatedAt: new Date()
       };
       await user.save();
@@ -600,11 +619,37 @@ const saveUserPayoutDetails = async (userId, payoutData = {}) => {
   const user = await User.findById(userId);
   if (!user) throw new Error('User not found');
 
+  let sanitizedUpiId = null;
+  let sanitizedAccountDetails = null;
+
+  if (payoutType === 'UPI') {
+    const upiCheck = validateUPI(upiId);
+    if (!upiCheck.isValid) {
+      throw new Error(upiCheck.message);
+    }
+    sanitizedUpiId = upiCheck.sanitized;
+  } else if (payoutType === 'BANK_TRANSFER') {
+    if (!accountDetails) {
+      throw new Error('Please provide bank account details');
+    }
+    const bankCheck = validateBankDetails(accountDetails, {
+      requireHolder: true,
+      requireBankName: true,
+      requireConfirm: Boolean(accountDetails.confirmAccountNumber)
+    });
+    if (!bankCheck.isValid) {
+      throw new Error(bankCheck.message);
+    }
+    sanitizedAccountDetails = bankCheck.sanitized;
+  } else {
+    throw new Error('Invalid payout method selected');
+  }
+
   if (!user.wallet) user.wallet = {};
   user.wallet.savedPayoutDetails = {
     payoutType,
-    upiId: payoutType === 'UPI' ? (upiId ? upiId.trim() : null) : (user.wallet.savedPayoutDetails?.upiId || null),
-    accountDetails: payoutType === 'BANK_TRANSFER' ? accountDetails : (user.wallet.savedPayoutDetails?.accountDetails || null),
+    upiId: payoutType === 'UPI' ? sanitizedUpiId : (user.wallet.savedPayoutDetails?.upiId || null),
+    accountDetails: payoutType === 'BANK_TRANSFER' ? sanitizedAccountDetails : (user.wallet.savedPayoutDetails?.accountDetails || null),
     updatedAt: new Date()
   };
   await user.save();

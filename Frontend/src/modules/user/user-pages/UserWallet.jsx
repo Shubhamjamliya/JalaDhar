@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getUserWalletBalance, getUserWalletTransactions, createUserWithdrawalRequest, saveUserPayoutDetails, removeUserPayoutDetails } from "../../../services/userApi";
+import { getUserWalletBalance, getUserWalletTransactions, createUserWithdrawalRequest, saveUserPayoutDetails, removeUserPayoutDetails, verifyIFSCCode } from "../../../services/userApi";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
@@ -10,7 +10,11 @@ import {
     IoChevronBackOutline,
     IoChevronForwardOutline,
     IoCloseOutline,
-    IoFilterOutline
+    IoFilterOutline,
+    IoCheckmarkCircle,
+    IoAlertCircle,
+    IoEyeOutline,
+    IoEyeOffOutline
 } from "react-icons/io5";
 
 export default function UserWallet() {
@@ -108,13 +112,15 @@ export default function UserWallet() {
                         localStorage.setItem("user_withdrawal_upi", saved.upiId);
                     }
                     if (saved.accountDetails && (saved.accountDetails.accountNumber || saved.accountDetails.ifscCode)) {
-                        setAccountDetails({
+                        const acc = {
                             accountHolderName: saved.accountDetails.accountHolderName || "",
                             accountNumber: saved.accountDetails.accountNumber || "",
                             ifscCode: saved.accountDetails.ifscCode || "",
                             bankName: saved.accountDetails.bankName || ""
-                        });
-                        localStorage.setItem("user_withdrawal_bank", JSON.stringify(saved.accountDetails));
+                        };
+                        setAccountDetails(acc);
+                        setConfirmAccountNumber(acc.accountNumber);
+                        localStorage.setItem("user_withdrawal_bank", JSON.stringify(acc));
                     }
                 }
             }
@@ -206,10 +212,170 @@ export default function UserWallet() {
             return { accountHolderName: "", accountNumber: "", ifscCode: "", bankName: "" };
         }
     });
+    const [confirmAccountNumber, setConfirmAccountNumber] = useState(() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem("user_withdrawal_bank"));
+            return saved?.accountNumber || "";
+        } catch {
+            return "";
+        }
+    });
+    const [showConfirmAccEye, setShowConfirmAccEye] = useState(false);
+    const [ifscStatus, setIfscStatus] = useState({ loading: false, verified: false, error: "", bank: "", branch: "" });
     const [showPayoutManageModal, setShowPayoutManageModal] = useState(false);
     const [showRemoveConfirmModal, setShowRemoveConfirmModal] = useState(false);
     const [savingPayout, setSavingPayout] = useState(false);
     const [removingPayout, setRemovingPayout] = useState(false);
+
+    const validateAccountNumber = (num) => {
+        if (!num) return { isValid: false, message: "Bank Account Number is required" };
+        const clean = String(num).replace(/[\s-]/g, '').trim();
+        if (!/^\d+$/.test(clean)) {
+            return { isValid: false, message: "Bank Account Number must contain numbers only" };
+        }
+        if (clean.length < 9 || clean.length > 18) {
+            return { isValid: false, message: `Bank Account Number must be between 9 and 18 digits (current: ${clean.length})` };
+        }
+        if (/^0+$/.test(clean)) {
+            return { isValid: false, message: "Bank Account Number cannot be all zeros" };
+        }
+        return { isValid: true, sanitized: clean };
+    };
+
+    const validateConfirmAccountNumber = (acc, conf) => {
+        if (!conf) return { isValid: false, message: "Please confirm your bank account number" };
+        const cleanAcc = String(acc || '').replace(/[\s-]/g, '').trim();
+        const cleanConf = String(conf || '').replace(/[\s-]/g, '').trim();
+        if (cleanAcc !== cleanConf) {
+            return { isValid: false, message: "Account numbers do not match" };
+        }
+        return { isValid: true };
+    };
+
+    const validateIFSC = (code) => {
+        if (!code) return { isValid: false, message: "IFSC Code is required" };
+        const clean = String(code).replace(/[\s-]/g, '').trim().toUpperCase();
+        if (clean.length !== 11) {
+            return { isValid: false, message: `IFSC Code must be exactly 11 characters (current: ${clean.length}/11)` };
+        }
+        if (!/^[A-Z]{4}/.test(clean)) {
+            return { isValid: false, message: "First 4 characters must be bank code letters (e.g. SBIN)" };
+        }
+        if (clean[4] !== '0') {
+            return { isValid: false, message: "5th character of IFSC must be 0 (Zero)" };
+        }
+        if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(clean)) {
+            return { isValid: false, message: "Invalid IFSC format. Must be 4 letters, a 0 (zero), followed by 6 alphanumeric characters" };
+        }
+        return { isValid: true, sanitized: clean };
+    };
+
+    const validateAccountHolderName = (name) => {
+        if (!name || !String(name).trim()) return { isValid: false, message: "Account Holder Name is required" };
+        const clean = String(name).trim();
+        if (clean.length < 3) return { isValid: false, message: "Account Holder Name must be at least 3 characters" };
+        if (!/^[a-zA-Z\s.'-]+$/.test(clean)) return { isValid: false, message: "Account Holder Name should only contain letters and spaces" };
+        return { isValid: true, sanitized: clean };
+    };
+
+    const validateBankName = (name) => {
+        if (!name || !String(name).trim()) return { isValid: false, message: "Bank Name is required" };
+        const clean = String(name).trim();
+        if (clean.length < 2) return { isValid: false, message: "Bank Name must be at least 2 characters" };
+        return { isValid: true, sanitized: clean };
+    };
+
+    const handleIFSCChange = async (rawVal) => {
+        const val = rawVal.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
+        setAccountDetails(prev => ({ ...prev, ifscCode: val }));
+
+        if (val.length < 11) {
+            setIfscStatus({ loading: false, verified: false, error: "", bank: "", branch: "" });
+            return;
+        }
+
+        const check = validateIFSC(val);
+        if (!check.isValid) {
+            setIfscStatus({ loading: false, verified: false, error: check.message, bank: "", branch: "" });
+            return;
+        }
+
+        try {
+            setIfscStatus({ loading: true, verified: false, error: "", bank: "", branch: "" });
+            const res = await verifyIFSCCode(val);
+            if (res.success && res.data) {
+                const bankName = res.data.bank || res.data.BANK || "";
+                const branchName = res.data.branch || res.data.BRANCH || "";
+                setIfscStatus({
+                    loading: false,
+                    verified: true,
+                    error: "",
+                    bank: bankName,
+                    branch: branchName
+                });
+                if (bankName) {
+                    setAccountDetails(prev => ({
+                        ...prev,
+                        bankName: bankName
+                    }));
+                }
+            } else {
+                setIfscStatus({
+                    loading: false,
+                    verified: false,
+                    error: res.message || "IFSC not recognized by RBI database",
+                    bank: "",
+                    branch: ""
+                });
+            }
+        } catch {
+            // Direct Razorpay public fallback
+            try {
+                const fallbackRes = await fetch(`https://ifsc.razorpay.com/${val}`);
+                if (fallbackRes.status === 404) {
+                    setIfscStatus({
+                        loading: false,
+                        verified: false,
+                        error: `IFSC "${val}" not found in RBI database`,
+                        bank: "",
+                        branch: ""
+                    });
+                    return;
+                }
+                if (fallbackRes.ok) {
+                    const data = await fallbackRes.json();
+                    const bankName = data.BANK || "";
+                    const branchName = data.BRANCH || "";
+                    setIfscStatus({
+                        loading: false,
+                        verified: true,
+                        error: "",
+                        bank: bankName,
+                        branch: branchName
+                    });
+                    if (bankName) {
+                        setAccountDetails(prev => ({
+                            ...prev,
+                            bankName: bankName
+                        }));
+                    }
+                    return;
+                }
+            } catch {
+                // Ignore offline error
+            }
+            setIfscStatus({ loading: false, verified: true, error: "", bank: "", branch: "" });
+        }
+    };
+
+    const validateUPI = (upi) => {
+        if (!upi) return { isValid: false, message: "UPI ID is required" };
+        const clean = String(upi).trim();
+        if (!/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z0-9.\-_]{2,64}$/.test(clean)) {
+            return { isValid: false, message: "Please enter a valid UPI ID (e.g. name@upi, 9876543210@paytm)" };
+        }
+        return { isValid: true, sanitized: clean };
+    };
 
     const hasSavedPayout = Boolean(
         (upiId && upiId.trim()) ||
@@ -218,13 +384,43 @@ export default function UserWallet() {
 
     const handleSavePayoutDetails = async (e) => {
         if (e) e.preventDefault();
-        if (payoutType === "UPI" && !upiId.trim()) {
-            toast.showError("Please enter a valid UPI ID (e.g. name@upi)");
-            return;
+        if (payoutType === "UPI") {
+            const upiCheck = validateUPI(upiId);
+            if (!upiCheck.isValid) {
+                toast.showError(upiCheck.message);
+                return;
+            }
         }
-        if (payoutType === "BANK_TRANSFER" && (!accountDetails.accountNumber.trim() || !accountDetails.ifscCode.trim())) {
-            toast.showError("Please enter Account Number and IFSC Code");
-            return;
+        if (payoutType === "BANK_TRANSFER") {
+            const holderCheck = validateAccountHolderName(accountDetails.accountHolderName);
+            if (!holderCheck.isValid) {
+                toast.showError(holderCheck.message);
+                return;
+            }
+            const accCheck = validateAccountNumber(accountDetails.accountNumber);
+            if (!accCheck.isValid) {
+                toast.showError(accCheck.message);
+                return;
+            }
+            const confCheck = validateConfirmAccountNumber(accountDetails.accountNumber, confirmAccountNumber);
+            if (!confCheck.isValid) {
+                toast.showError(confCheck.message);
+                return;
+            }
+            const ifscCheck = validateIFSC(accountDetails.ifscCode);
+            if (!ifscCheck.isValid) {
+                toast.showError(ifscCheck.message);
+                return;
+            }
+            if (ifscStatus.error) {
+                toast.showError(ifscStatus.error);
+                return;
+            }
+            const bankCheck = validateBankName(accountDetails.bankName);
+            if (!bankCheck.isValid) {
+                toast.showError(bankCheck.message);
+                return;
+            }
         }
 
         try {
@@ -232,7 +428,14 @@ export default function UserWallet() {
             const res = await saveUserPayoutDetails({
                 payoutType,
                 upiId: payoutType === "UPI" ? upiId.trim() : null,
-                accountDetails: payoutType === "BANK_TRANSFER" ? accountDetails : null
+                accountDetails: payoutType === "BANK_TRANSFER" ? {
+                    ...accountDetails,
+                    accountHolderName: accountDetails.accountHolderName.trim(),
+                    accountNumber: accountDetails.accountNumber.trim(),
+                    confirmAccountNumber: confirmAccountNumber.trim(),
+                    ifscCode: accountDetails.ifscCode.trim().toUpperCase(),
+                    bankName: accountDetails.bankName.trim()
+                } : null
             });
             if (res.success) {
                 toast.showSuccess("Payout details saved successfully!");
@@ -259,6 +462,8 @@ export default function UserWallet() {
                 toast.showSuccess("Payout account unlinked successfully!");
                 setUpiId("");
                 setAccountDetails({ accountHolderName: "", accountNumber: "", ifscCode: "", bankName: "" });
+                setConfirmAccountNumber("");
+                setIfscStatus({ loading: false, verified: false, error: "", bank: "", branch: "" });
                 localStorage.removeItem("user_withdrawal_upi");
                 localStorage.removeItem("user_withdrawal_bank");
                 setShowRemoveConfirmModal(false);
@@ -273,8 +478,12 @@ export default function UserWallet() {
 
     const handleWithdrawClick = () => {
         if (walletBalance >= 1000) {
+            setConfirmAccountNumber(accountDetails.accountNumber || "");
             setShowWithdrawModal(true);
             setWithdrawAmount("");
+            if (accountDetails.ifscCode && accountDetails.ifscCode.length === 11) {
+                handleIFSCChange(accountDetails.ifscCode);
+            }
         } else {
             toast.showError("Minimum withdrawal amount is ₹1,000");
         }
@@ -315,14 +524,44 @@ export default function UserWallet() {
             return;
         }
 
-        if (payoutType === "UPI" && !upiId.trim()) {
-            toast.showError("Please enter a valid UPI ID (e.g. name@upi)");
-            return;
+        if (payoutType === "UPI") {
+            const upiCheck = validateUPI(upiId);
+            if (!upiCheck.isValid) {
+                toast.showError(upiCheck.message);
+                return;
+            }
         }
 
-        if (payoutType === "BANK_TRANSFER" && (!accountDetails.accountNumber.trim() || !accountDetails.ifscCode.trim())) {
-            toast.showError("Please enter Account Number and IFSC Code");
-            return;
+        if (payoutType === "BANK_TRANSFER") {
+            const holderCheck = validateAccountHolderName(accountDetails.accountHolderName);
+            if (!holderCheck.isValid) {
+                toast.showError(holderCheck.message);
+                return;
+            }
+            const accCheck = validateAccountNumber(accountDetails.accountNumber);
+            if (!accCheck.isValid) {
+                toast.showError(accCheck.message);
+                return;
+            }
+            const confCheck = validateConfirmAccountNumber(accountDetails.accountNumber, confirmAccountNumber);
+            if (!confCheck.isValid) {
+                toast.showError(confCheck.message);
+                return;
+            }
+            const ifscCheck = validateIFSC(accountDetails.ifscCode);
+            if (!ifscCheck.isValid) {
+                toast.showError(ifscCheck.message);
+                return;
+            }
+            if (ifscStatus.error) {
+                toast.showError(ifscStatus.error);
+                return;
+            }
+            const bankCheck = validateBankName(accountDetails.bankName);
+            if (!bankCheck.isValid) {
+                toast.showError(bankCheck.message);
+                return;
+            }
         }
 
         try {
@@ -507,7 +746,13 @@ export default function UserWallet() {
                         <>
                             <button
                                 type="button"
-                                onClick={() => setShowPayoutManageModal(true)}
+                                onClick={() => {
+                                    setConfirmAccountNumber(accountDetails.accountNumber || "");
+                                    setShowPayoutManageModal(true);
+                                    if (accountDetails.ifscCode && accountDetails.ifscCode.length === 11) {
+                                        handleIFSCChange(accountDetails.ifscCode);
+                                    }
+                                }}
                                 className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-[#0A84FF] bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
                             >
                                 Edit / Change
@@ -523,7 +768,13 @@ export default function UserWallet() {
                     ) : (
                         <button
                             type="button"
-                            onClick={() => setShowPayoutManageModal(true)}
+                            onClick={() => {
+                                setConfirmAccountNumber(accountDetails.accountNumber || "");
+                                setShowPayoutManageModal(true);
+                                if (accountDetails.ifscCode && accountDetails.ifscCode.length === 11) {
+                                    handleIFSCChange(accountDetails.ifscCode);
+                                }
+                            }}
                             className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#0A84FF] hover:bg-blue-600 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                         >
                             <span>+ Link Account / UPI</span>
@@ -1196,57 +1447,159 @@ export default function UserWallet() {
                             /* Bank Details */
                             <div className="space-y-3 pt-1">
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                                        Account Holder Name
-                                    </label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                            Account Holder Name <span className="text-red-500">*</span>
+                                        </label>
+                                        {accountDetails.accountHolderName && (
+                                            <span className={`text-[10px] font-bold ${
+                                                validateAccountHolderName(accountDetails.accountHolderName).isValid ? "text-emerald-600" : "text-amber-600"
+                                            }`}>
+                                                {validateAccountHolderName(accountDetails.accountHolderName).isValid ? "✓ Valid Name" : "Min 3 letters required"}
+                                            </span>
+                                        )}
+                                    </div>
                                     <input
                                         type="text"
                                         value={accountDetails.accountHolderName}
                                         onChange={(e) => setAccountDetails({ ...accountDetails, accountHolderName: e.target.value })}
-                                        placeholder="Full name as per bank"
-                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                                        Account Number <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={accountDetails.accountNumber}
-                                        onChange={(e) => setAccountDetails({ ...accountDetails, accountNumber: e.target.value })}
-                                        placeholder="Enter Bank Account Number"
-                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800"
+                                        placeholder="Full name as per bank passbook"
+                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
                                         required
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                            Bank Account Number <span className="text-red-500">*</span>
+                                        </label>
+                                        {accountDetails.accountNumber && (
+                                            <span className={`text-[10px] font-bold ${
+                                                accountDetails.accountNumber.length >= 9 && !/^0+$/.test(accountDetails.accountNumber)
+                                                    ? "text-emerald-600"
+                                                    : "text-amber-600"
+                                            }`}>
+                                                {accountDetails.accountNumber.length >= 9 && !/^0+$/.test(accountDetails.accountNumber)
+                                                    ? `✓ Valid account length (${accountDetails.accountNumber.length} digits)`
+                                                    : `9–18 digits required (${accountDetails.accountNumber.length}/18)`}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        maxLength={18}
+                                        autoComplete="off"
+                                        value={accountDetails.accountNumber}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '').slice(0, 18);
+                                            setAccountDetails({ ...accountDetails, accountNumber: val });
+                                        }}
+                                        placeholder="Enter 9–18 digit Bank Account Number"
+                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold font-mono text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                            Confirm Account Number <span className="text-red-500">*</span>
+                                        </label>
+                                        {confirmAccountNumber && (
+                                            <span className={`text-[10px] font-bold ${
+                                                accountDetails.accountNumber === confirmAccountNumber && confirmAccountNumber.length >= 9
+                                                    ? "text-emerald-600"
+                                                    : "text-rose-500"
+                                            }`}>
+                                                {accountDetails.accountNumber === confirmAccountNumber && confirmAccountNumber.length >= 9
+                                                    ? "✓ Account numbers match"
+                                                    : "✕ Account numbers do not match"}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="relative">
+                                        <input
+                                            type={showConfirmAccEye ? "text" : "password"}
+                                            inputMode="numeric"
+                                            maxLength={18}
+                                            autoComplete="off"
+                                            value={confirmAccountNumber}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '').slice(0, 18);
+                                                setConfirmAccountNumber(val);
+                                            }}
+                                            placeholder="Re-enter Bank Account Number"
+                                            className="w-full px-3.5 py-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold font-mono text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmAccEye(!showConfirmAccEye)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm"
+                                            title={showConfirmAccEye ? "Hide digits" : "Show digits"}
+                                        >
+                                            {showConfirmAccEye ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <div className="space-y-1">
                                         <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                                             IFSC Code <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="text"
+                                            maxLength={11}
                                             value={accountDetails.ifscCode}
-                                            onChange={(e) => setAccountDetails({ ...accountDetails, ifscCode: e.target.value.toUpperCase() })}
+                                            onChange={(e) => handleIFSCChange(e.target.value)}
                                             placeholder="e.g. SBIN0001234"
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 uppercase"
+                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 font-mono uppercase focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
                                             required
                                         />
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                                            Bank Name
+                                            Bank Name <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="text"
                                             value={accountDetails.bankName}
                                             onChange={(e) => setAccountDetails({ ...accountDetails, bankName: e.target.value })}
-                                            placeholder="e.g. SBI, HDFC"
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800"
+                                            placeholder="e.g. State Bank of India"
+                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                            required
                                         />
                                     </div>
                                 </div>
+                                {accountDetails.ifscCode && (
+                                    <div className="pt-0.5">
+                                        {ifscStatus.loading ? (
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[11px] font-medium animate-pulse">
+                                                <span className="inline-block animate-spin">⏳</span>
+                                                <span>Verifying IFSC with RBI directory...</span>
+                                            </div>
+                                        ) : ifscStatus.verified ? (
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-[11px] font-medium">
+                                                <IoCheckmarkCircle className="text-emerald-600 text-sm shrink-0" />
+                                                <span className="truncate">
+                                                    <strong>{ifscStatus.bank || accountDetails.bankName || "Bank"}</strong>
+                                                    {ifscStatus.branch ? ` • ${ifscStatus.branch} Branch` : " (Verified)"}
+                                                </span>
+                                            </div>
+                                        ) : ifscStatus.error ? (
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-[11px] font-medium">
+                                                <IoAlertCircle className="text-rose-500 text-sm shrink-0" />
+                                                <span>{ifscStatus.error}</span>
+                                            </div>
+                                        ) : accountDetails.ifscCode.length < 11 ? (
+                                            <p className="text-[10px] font-bold text-slate-400">
+                                                {accountDetails.ifscCode.length >= 5 && accountDetails.ifscCode[4] !== '0'
+                                                    ? "⚠️ 5th character must be '0' (Zero)"
+                                                    : `Format: 4 letters + 0 + 6 letters/digits (${accountDetails.ifscCode.length}/11)`}
+                                            </p>
+                                        ) : null}
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -1346,39 +1699,111 @@ export default function UserWallet() {
                             /* Bank Form */
                             <div className="space-y-3 pt-1">
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                                        Account Holder Name
-                                    </label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                            Account Holder Name <span className="text-red-500">*</span>
+                                        </label>
+                                        {accountDetails.accountHolderName && (
+                                            <span className={`text-[10px] font-bold ${
+                                                validateAccountHolderName(accountDetails.accountHolderName).isValid ? "text-emerald-600" : "text-amber-600"
+                                            }`}>
+                                                {validateAccountHolderName(accountDetails.accountHolderName).isValid ? "✓ Valid Name" : "Min 3 letters required"}
+                                            </span>
+                                        )}
+                                    </div>
                                     <input
                                         type="text"
                                         value={accountDetails.accountHolderName}
                                         onChange={(e) => setAccountDetails({ ...accountDetails, accountHolderName: e.target.value })}
                                         placeholder="Full name on bank passbook"
                                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                        required
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                                        Account Number <span className="text-red-500">*</span>
-                                    </label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                            Bank Account Number <span className="text-red-500">*</span>
+                                        </label>
+                                        {accountDetails.accountNumber && (
+                                            <span className={`text-[10px] font-bold ${
+                                                accountDetails.accountNumber.length >= 9 && !/^0+$/.test(accountDetails.accountNumber)
+                                                    ? "text-emerald-600"
+                                                    : "text-amber-600"
+                                            }`}>
+                                                {accountDetails.accountNumber.length >= 9 && !/^0+$/.test(accountDetails.accountNumber)
+                                                    ? `✓ Valid account length (${accountDetails.accountNumber.length} digits)`
+                                                    : `9–18 digits required (${accountDetails.accountNumber.length}/18)`}
+                                            </span>
+                                        )}
+                                    </div>
                                     <input
                                         type="text"
+                                        inputMode="numeric"
+                                        maxLength={18}
+                                        autoComplete="off"
                                         value={accountDetails.accountNumber}
-                                        onChange={(e) => setAccountDetails({ ...accountDetails, accountNumber: e.target.value })}
-                                        placeholder="Enter Bank Account Number"
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '').slice(0, 18);
+                                            setAccountDetails({ ...accountDetails, accountNumber: val });
+                                        }}
+                                        placeholder="Enter 9–18 digit Bank Account Number"
                                         className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 font-mono focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
                                         required
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                            Confirm Account Number <span className="text-red-500">*</span>
+                                        </label>
+                                        {confirmAccountNumber && (
+                                            <span className={`text-[10px] font-bold ${
+                                                accountDetails.accountNumber === confirmAccountNumber && confirmAccountNumber.length >= 9
+                                                    ? "text-emerald-600"
+                                                    : "text-rose-500"
+                                            }`}>
+                                                {accountDetails.accountNumber === confirmAccountNumber && confirmAccountNumber.length >= 9
+                                                    ? "✓ Account numbers match"
+                                                    : "✕ Account numbers do not match"}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="relative">
+                                        <input
+                                            type={showConfirmAccEye ? "text" : "password"}
+                                            inputMode="numeric"
+                                            maxLength={18}
+                                            autoComplete="off"
+                                            value={confirmAccountNumber}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '').slice(0, 18);
+                                                setConfirmAccountNumber(val);
+                                            }}
+                                            placeholder="Re-enter Bank Account Number"
+                                            className="w-full px-3.5 py-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold font-mono text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmAccEye(!showConfirmAccEye)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm"
+                                            title={showConfirmAccEye ? "Hide digits" : "Show digits"}
+                                        >
+                                            {showConfirmAccEye ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <div className="space-y-1">
                                         <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                                             IFSC Code <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="text"
+                                            maxLength={11}
                                             value={accountDetails.ifscCode}
-                                            onChange={(e) => setAccountDetails({ ...accountDetails, ifscCode: e.target.value.toUpperCase() })}
+                                            onChange={(e) => handleIFSCChange(e.target.value)}
                                             placeholder="e.g. SBIN0001234"
                                             className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 font-mono uppercase focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
                                             required
@@ -1386,17 +1811,47 @@ export default function UserWallet() {
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                                            Bank Name
+                                            Bank Name <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="text"
                                             value={accountDetails.bankName}
                                             onChange={(e) => setAccountDetails({ ...accountDetails, bankName: e.target.value })}
-                                            placeholder="e.g. SBI, HDFC"
+                                            placeholder="e.g. State Bank of India"
                                             className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                            required
                                         />
                                     </div>
                                 </div>
+                                {accountDetails.ifscCode && (
+                                    <div className="pt-0.5">
+                                        {ifscStatus.loading ? (
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[11px] font-medium animate-pulse">
+                                                <span className="inline-block animate-spin">⏳</span>
+                                                <span>Verifying IFSC with RBI directory...</span>
+                                            </div>
+                                        ) : ifscStatus.verified ? (
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-[11px] font-medium">
+                                                <IoCheckmarkCircle className="text-emerald-600 text-sm shrink-0" />
+                                                <span className="truncate">
+                                                    <strong>{ifscStatus.bank || accountDetails.bankName || "Bank"}</strong>
+                                                    {ifscStatus.branch ? ` • ${ifscStatus.branch} Branch` : " (Verified)"}
+                                                </span>
+                                            </div>
+                                        ) : ifscStatus.error ? (
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-[11px] font-medium">
+                                                <IoAlertCircle className="text-rose-500 text-sm shrink-0" />
+                                                <span>{ifscStatus.error}</span>
+                                            </div>
+                                        ) : accountDetails.ifscCode.length < 11 ? (
+                                            <p className="text-[10px] font-bold text-slate-400">
+                                                {accountDetails.ifscCode.length >= 5 && accountDetails.ifscCode[4] !== '0'
+                                                    ? "⚠️ 5th character must be '0' (Zero)"
+                                                    : `Format: 4 letters + 0 + 6 letters/digits (${accountDetails.ifscCode.length}/11)`}
+                                            </p>
+                                        ) : null}
+                                    </div>
+                                )}
                             </div>
                         )}
 

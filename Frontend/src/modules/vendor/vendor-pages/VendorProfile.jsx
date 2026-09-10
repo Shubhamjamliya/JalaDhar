@@ -713,6 +713,25 @@ export default function VendorProfile() {
                 aboutExpert: profileData.aboutExpert || "",
             };
 
+            if (updateData.bankDetails && updateData.bankDetails.accountNumber) {
+                const cleanAcc = String(updateData.bankDetails.accountNumber).replace(/[\s-]/g, '').trim();
+                if (!/^\d{9,18}$/.test(cleanAcc)) {
+                    toast.showError("Bank Account Number must be between 9 and 18 digits (numbers only)");
+                    return;
+                }
+                if (/^0+$/.test(cleanAcc)) {
+                    toast.showError("Bank Account Number cannot be all zeros");
+                    return;
+                }
+                const cleanIfsc = String(updateData.bankDetails.ifscCode || '').replace(/[\s-]/g, '').trim().toUpperCase();
+                if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(cleanIfsc)) {
+                    toast.showError("Invalid IFSC format. Must be 4 letters, 0, followed by 6 letters/digits (e.g. SBIN0001234)");
+                    return;
+                }
+                updateData.bankDetails.accountNumber = cleanAcc;
+                updateData.bankDetails.ifscCode = cleanIfsc;
+            }
+
             const response = await updateVendorProfile(updateData);
 
             if (response.success) {

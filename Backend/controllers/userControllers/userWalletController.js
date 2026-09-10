@@ -1,6 +1,7 @@
 const { getUserWalletBalance, createWithdrawalRequest, saveUserPayoutDetails, removeUserPayoutDetails } = require('../../services/userWalletService');
 const UserWalletTransaction = require('../../models/UserWalletTransaction');
 const User = require('../../models/User');
+const { validateAccountNumber, validateIFSC, validateUPI, validateBankDetails, lookupIFSC } = require('../../utils/bankValidator');
 
 /**
  * Get user wallet balance and summary
@@ -192,17 +193,37 @@ const updatePayoutDetails = async (req, res) => {
     const userId = req.userId;
     const { payoutType, upiId, accountDetails } = req.body;
 
-    if (payoutType === 'UPI' && (!upiId || !upiId.trim())) {
-      return res.status(400).json({
-        success: false,
-        message: 'Valid UPI ID is required'
+    if (payoutType === 'UPI') {
+      const upiCheck = validateUPI(upiId);
+      if (!upiCheck.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: upiCheck.message
+        });
+      }
+    } else if (payoutType === 'BANK_TRANSFER') {
+      if (!accountDetails) {
+        return res.status(400).json({
+          success: false,
+          message: 'Bank account details are required'
+        });
+      }
+      const bankCheck = validateBankDetails(accountDetails, {
+        requireHolder: true,
+        requireBankName: true,
+        requireConfirm: Boolean(accountDetails.confirmAccountNumber)
       });
-    }
-
-    if (payoutType === 'BANK_TRANSFER' && (!accountDetails || !accountDetails.accountNumber || !accountDetails.ifscCode)) {
+      if (!bankCheck.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: bankCheck.message
+        });
+      }
+      accountDetails = bankCheck.sanitized;
+    } else {
       return res.status(400).json({
         success: false,
-        message: 'Account Number and IFSC code are required for bank transfer'
+        message: 'Invalid payout method selected'
       });
     }
 
@@ -247,13 +268,39 @@ const deletePayoutDetails = async (req, res) => {
   }
 };
 
+/**
+ * Verify / Lookup IFSC code
+ */
+const verifyIFSC = async (req, res) => {
+  try {
+    const { code } = req.params;
+    const result = await lookupIFSC(code);
+    if (!result.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: result.message || 'Invalid IFSC code'
+      });
+    }
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify IFSC'
+    });
+  }
+};
+
 module.exports = {
   getWalletBalance,
   getWalletTransactions,
   createWithdrawRequest,
   getWithdrawalRequests,
   updatePayoutDetails,
-  deletePayoutDetails
+  deletePayoutDetails,
+  verifyIFSC
 };
 
 

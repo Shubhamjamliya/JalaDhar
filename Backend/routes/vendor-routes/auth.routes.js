@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
+const { validateAccountNumber, validateIFSC } = require('../../utils/bankValidator');
 const multer = require('multer');
 const {
   sendRegistrationOTP,
@@ -58,8 +59,22 @@ const registerValidation = [
   body('phone').trim().notEmpty().withMessage('Phone number is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('bankDetails.accountHolderName').trim().notEmpty().withMessage('Account holder name is required'),
-  body('bankDetails.accountNumber').trim().notEmpty().withMessage('Account number is required'),
-  body('bankDetails.ifscCode').trim().notEmpty().withMessage('IFSC code is required'),
+  body('bankDetails.accountNumber')
+    .trim()
+    .notEmpty().withMessage('Account number is required')
+    .custom((val) => {
+      const check = validateAccountNumber(val);
+      if (!check.isValid) throw new Error(check.message);
+      return true;
+    }),
+  body('bankDetails.ifscCode')
+    .trim()
+    .notEmpty().withMessage('IFSC code is required')
+    .custom((val) => {
+      const check = validateIFSC(val);
+      if (!check.isValid) throw new Error(check.message);
+      return true;
+    }),
   body('bankDetails.bankName').trim().notEmpty().withMessage('Bank name is required'),
   body('experience').isInt({ min: 0 }).withMessage('Experience must be a valid number (years)')
 ];
@@ -104,8 +119,22 @@ const registerWithOTPValidation = [
   body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
   body('token').trim().notEmpty().withMessage('Verification token is required'),
   body('bankDetails.accountHolderName').trim().notEmpty().withMessage('Account holder name is required'),
-  body('bankDetails.accountNumber').trim().notEmpty().withMessage('Account number is required'),
-  body('bankDetails.ifscCode').trim().notEmpty().withMessage('IFSC code is required'),
+  body('bankDetails.accountNumber')
+    .trim()
+    .notEmpty().withMessage('Account number is required')
+    .custom((val) => {
+      const check = validateAccountNumber(val);
+      if (!check.isValid) throw new Error(check.message);
+      return true;
+    }),
+  body('bankDetails.ifscCode')
+    .trim()
+    .notEmpty().withMessage('IFSC code is required')
+    .custom((val) => {
+      const check = validateIFSC(val);
+      if (!check.isValid) throw new Error(check.message);
+      return true;
+    }),
   body('bankDetails.bankName').trim().notEmpty().withMessage('Bank name is required'),
   body('experience').isInt({ min: 0 }).withMessage('Experience must be a valid number (years)')
 ];

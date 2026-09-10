@@ -2,6 +2,7 @@ const Vendor = require('../../models/Vendor');
 const VendorBankDetails = require('../../models/VendorBankDetails');
 const VendorDocument = require('../../models/VendorDocument');
 const { validationResult } = require('express-validator');
+const { validateAccountNumber, validateIFSC } = require('../../utils/bankValidator');
 const cloudinary = require('cloudinary').v2;
 const { Readable } = require('stream');
 
@@ -390,6 +391,17 @@ const updateProfile = async (req, res) => {
       }
 
       if (bankDetailsData && bankDetailsData.accountNumber) {
+        const accCheck = validateAccountNumber(bankDetailsData.accountNumber);
+        if (!accCheck.isValid) {
+          return res.status(400).json({ success: false, message: accCheck.message });
+        }
+        const ifscCheck = validateIFSC(bankDetailsData.ifscCode);
+        if (!ifscCheck.isValid) {
+          return res.status(400).json({ success: false, message: ifscCheck.message });
+        }
+        bankDetailsData.accountNumber = accCheck.sanitized;
+        bankDetailsData.ifscCode = ifscCheck.sanitized;
+
         // Find existing bank details or create new
         let bankDetails = await VendorBankDetails.findOne({ vendor: vendorId });
 

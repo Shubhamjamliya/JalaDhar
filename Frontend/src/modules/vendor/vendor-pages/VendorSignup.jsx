@@ -786,9 +786,24 @@ export default function VendorSignup() {
         if (!formData.accountHolderName) { toast.showError("Account Holder Name is required"); return false; }
         if (!formData.bankName) { toast.showError("Bank Name is required"); return false; }
         if (!formData.ifscCode) { toast.showError("IFSC Code is required"); return false; }
+        const cleanIfsc = String(formData.ifscCode).replace(/[\s-]/g, '').trim().toUpperCase();
+        if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(cleanIfsc)) {
+            toast.showError("Invalid IFSC format. Must be 4 uppercase letters, 0 (zero), followed by 6 alphanumeric characters (e.g. SBIN0001234)");
+            return false;
+        }
         if (!formData.accountNumber) { toast.showError("Account Number is required"); return false; }
+        const cleanAcc = String(formData.accountNumber).replace(/[\s-]/g, '').trim();
+        if (!/^\d{9,18}$/.test(cleanAcc)) {
+            toast.showError("Bank Account Number must be between 9 and 18 digits (numbers only)");
+            return false;
+        }
+        if (/^0+$/.test(cleanAcc)) {
+            toast.showError("Bank Account Number cannot be all zeros");
+            return false;
+        }
         if (!formData.confirmAccountNumber) { toast.showError("Confirm Account Number is required"); return false; }
-        if (formData.accountNumber !== formData.confirmAccountNumber) { toast.showError("Account Numbers do not match"); return false; }
+        const cleanConfirm = String(formData.confirmAccountNumber).replace(/[\s-]/g, '').trim();
+        if (cleanAcc !== cleanConfirm) { toast.showError("Account Numbers do not match"); return false; }
         return true;
     };
 
