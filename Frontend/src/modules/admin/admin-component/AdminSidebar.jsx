@@ -18,6 +18,7 @@ import {
     IoChevronDown,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import { hasAdminPermission } from "../../../utils/permissionUtils";
 import api from "../../../services/api";
 
@@ -197,6 +198,7 @@ export default function AdminSidebar() {
     const { admin, refreshProfile } = useAdminAuth();
     const location = useLocation();
     const navigate = useNavigate();
+    const { socket } = useNotifications();
     const [expandedItems, setExpandedItems] = useState({});
     const [counts, setCounts] = useState({
         approvals: 0,
@@ -228,11 +230,26 @@ export default function AdminSidebar() {
             if (refreshProfile) refreshProfile();
         }, 20000);
 
+        if (socket) {
+            const handleSocketRefresh = () => {
+                fetchCounts();
+                if (refreshProfile) refreshProfile();
+            };
+            socket.on('admin_counts_updated', handleSocketRefresh);
+            socket.on('new_notification', handleSocketRefresh);
+            return () => {
+                isMounted = false;
+                clearInterval(interval);
+                socket.off('admin_counts_updated', handleSocketRefresh);
+                socket.off('new_notification', handleSocketRefresh);
+            };
+        }
+
         return () => {
             isMounted = false;
             clearInterval(interval);
         };
-    }, [refreshProfile]);
+    }, [refreshProfile, socket]);
 
     // Auto-expand based on route
     useEffect(() => {

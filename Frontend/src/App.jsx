@@ -819,7 +819,7 @@ function App() {
                                                                         path="/notifications"
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
-                                                                                <UserNotificationsPage />
+                                                                                <AdminBookingNotifications />
                                                                             </Suspense>
                                                                         }
                                                                     />
@@ -827,7 +827,7 @@ function App() {
                                                                         path="/notification"
                                                                         element={
                                                                             <Suspense fallback={<LoadingSpinner />}>
-                                                                                <UserNotificationsPage />
+                                                                                <AdminBookingNotifications />
                                                                             </Suspense>
                                                                         }
                                                                     />

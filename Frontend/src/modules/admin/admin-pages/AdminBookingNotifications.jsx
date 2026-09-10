@@ -97,6 +97,22 @@ const NOTIFICATION_TYPE_CONFIG = {
     label: "Approved",
     actionPath: (meta) => meta?.bookingId ? `/admin/bookings/${meta.bookingId}` : `/admin/approvals`,
   },
+  WITHDRAWAL_REQUEST: {
+    icon: IoCashOutline,
+    color: "bg-purple-50 text-purple-600",
+    badge: "bg-purple-100 text-purple-700",
+    label: "Refund Claim",
+    actionLabel: "Review & Disburse",
+    actionPath: (meta) => meta?.link || `/admin/user-withdrawals`,
+  },
+  WITHDRAWAL_PROCESSED: {
+    icon: IoCheckmarkCircleOutline,
+    color: "bg-emerald-50 text-emerald-600",
+    badge: "bg-emerald-100 text-emerald-700",
+    label: "Disbursal Settled",
+    actionLabel: "View Details",
+    actionPath: (meta) => meta?.link || `/admin/user-withdrawals`,
+  },
 };
 
 const DEFAULT_CONFIG = {
@@ -192,10 +208,18 @@ export default function AdminBookingNotifications() {
   };
 
   const handleNavigate = (notif) => {
-    const config = getConfig(notif.type);
-    const path = config.actionPath(notif.metadata || {});
     if (!notif.isRead) handleMarkRead(notif._id);
-    navigate(path);
+    if (notif.actionUrl) {
+      navigate(notif.actionUrl);
+      return;
+    }
+    if (notif.metadata?.link) {
+      navigate(notif.metadata.link);
+      return;
+    }
+    const config = getConfig(notif.type);
+    const path = typeof config.actionPath === "function" ? config.actionPath(notif.metadata || {}) : config.actionPath;
+    navigate(path || "/admin/dashboard");
   };
 
   const handleLoadMore = () => {
@@ -209,9 +233,10 @@ export default function AdminBookingNotifications() {
   const FILTER_TABS = [
     { id: "all", label: "All" },
     { id: "unread", label: `Unread${unreadCount > 0 ? ` (${unreadCount})` : ""}` },
+    { id: "WITHDRAWAL_REQUEST", label: "Refunds & Claims" },
+    { id: "PAYMENT_RECEIVED", label: "Payments" },
     { id: "REPORT_UPLOADED", label: "Reports" },
     { id: "BOREWELL_UPLOADED", label: "Borewell" },
-    { id: "PAYMENT_RECEIVED", label: "Payments" },
     { id: "BOOKING_CREATED", label: "Bookings" },
     { id: "VENDOR_REGISTERED", label: "Experts" },
   ];
@@ -219,6 +244,8 @@ export default function AdminBookingNotifications() {
   const filtered = notifications.filter((n) => {
     if (filter === "all") return true;
     if (filter === "unread") return !n.isRead;
+    if (filter === "WITHDRAWAL_REQUEST") return n.type === "WITHDRAWAL_REQUEST" || n.type === "WITHDRAWAL_PROCESSED";
+    if (filter === "PAYMENT_RECEIVED") return n.type === "PAYMENT_RECEIVED" || n.type === "PAYMENT_SUCCESS" || n.type === "FINAL_SETTLEMENT_PROCESSED";
     return n.type === filter;
   });
 
@@ -228,7 +255,7 @@ export default function AdminBookingNotifications() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-outfit text-gray-900">
-            Booking Alerts
+            Notifications & System Alerts
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">
             {totalCount} total notifications
@@ -290,8 +317,9 @@ export default function AdminBookingNotifications() {
             return (
               <div
                 key={n._id}
-                className={`bg-white p-4 rounded-2xl border shadow-sm flex items-start gap-4 transition-all group ${
-                  !n.isRead ? "ring-1 ring-blue-400/30 border-blue-100" : "border-gray-100"
+                onClick={() => handleNavigate(n)}
+                className={`bg-white p-4 rounded-2xl border shadow-sm flex items-start gap-4 transition-all group cursor-pointer hover:border-blue-300 hover:shadow-md ${
+                  !n.isRead ? "ring-1 ring-blue-400/30 border-blue-100 bg-blue-50/20" : "border-gray-100"
                 }`}
               >
                 {/* Icon */}
@@ -325,7 +353,10 @@ export default function AdminBookingNotifications() {
                 <div className="flex items-center gap-1 shrink-0">
                   {!n.isRead && (
                     <button
-                      onClick={() => handleMarkRead(n._id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkRead(n._id);
+                      }}
                       className="p-2 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                       title="Mark as read"
                     >
@@ -333,14 +364,20 @@ export default function AdminBookingNotifications() {
                     </button>
                   )}
                   <button
-                    onClick={() => handleNavigate(n)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleNavigate(n);
+                    }}
                     className="p-2 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                     title="View Details"
                   >
                     <IoChevronForwardOutline className="text-lg" />
                   </button>
                   <button
-                    onClick={() => handleDelete(n._id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(n._id);
+                    }}
                     className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                     title="Delete"
                   >

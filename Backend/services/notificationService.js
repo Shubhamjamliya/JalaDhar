@@ -104,21 +104,41 @@ const sendNotification = async (notificationData, io = null) => {
     const notification = await createNotification(notificationData);
 
     // 2. Emit via Socket.io if available
-    if (io) {
+    let activeIO = io;
+    if (!activeIO) {
+      try {
+        const { getIO } = require('../sockets');
+        activeIO = typeof getIO === 'function' ? getIO() : null;
+      } catch (socketInitErr) {
+        // Sockets might not be initialized in standalone scripts or tests
+      }
+    }
+
+    if (activeIO) {
       try {
         const room = getRoomName(notificationData.recipientModel, notificationData.recipient.toString());
-        io.to(room).emit('new_notification', {
-          id: notification._id,
+        const payload = {
+          id: notification._id.toString(),
+          _id: notification._id.toString(),
           recipient: notification.recipient.toString(),
           recipientModel: notification.recipientModel,
           type: notification.type,
           title: notification.title,
           message: notification.message,
           relatedEntity: notification.relatedEntity,
+          actionUrl: notification.actionUrl || notification.metadata?.link || null,
           isRead: notification.isRead,
           createdAt: notification.createdAt,
           metadata: notification.metadata
-        });
+        };
+        activeIO.to(room).emit('new_notification', payload);
+        activeIO.to(notificationData.recipient.toString()).emit('new_notification', payload);
+
+        // Notify admins to refresh sidebar badge counts in real time
+        if (notificationData.recipientModel === 'Admin') {
+          activeIO.to(room).emit('admin_counts_updated');
+          activeIO.to(notificationData.recipient.toString()).emit('admin_counts_updated');
+        }
       } catch (socketError) {
         console.error('Socket.io emission error:', socketError);
       }
