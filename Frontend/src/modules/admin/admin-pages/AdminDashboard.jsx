@@ -84,10 +84,10 @@ const AdminDashboard = () => {
                     endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
                     apiPeriod = 'monthly';
                 } else if (period === 'custom' && customRange.startDate && customRange.endDate) {
-                    startDate = new Date(customRange.startDate);
-                    startDate.setHours(0, 0, 0, 0);
-                    endDate = new Date(customRange.endDate);
-                    endDate.setHours(23, 59, 59, 999);
+                    const [sy, sm, sd] = customRange.startDate.split('-').map(Number);
+                    const [ey, em, ed] = customRange.endDate.split('-').map(Number);
+                    startDate = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
+                    endDate = new Date(ey, em - 1, ed, 23, 59, 59, 999);
                     const diffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
                     if (diffDays <= 1) {
                         apiPeriod = 'hourly';

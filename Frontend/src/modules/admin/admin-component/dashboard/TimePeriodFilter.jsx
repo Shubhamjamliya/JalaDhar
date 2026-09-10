@@ -1,5 +1,154 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiCalendar, FiDownload, FiCheck, FiX } from 'react-icons/fi';
+import { FiCalendar, FiDownload, FiCheck, FiX, FiAlertCircle } from 'react-icons/fi';
+
+// Convert a Date object to YYYY-MM-DD using local time (avoids UTC timezone shifts)
+export const toLocalIsoDate = (d) => {
+  if (!d) return '';
+  const dateObj = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(dateObj.getTime())) return '';
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Format YYYY-MM-DD to DD/MM/YYYY
+export const formatToDDMMYYYY = (isoDateStr) => {
+  if (!isoDateStr) return '';
+  const parts = String(isoDateStr).slice(0, 10).split('-');
+  if (parts.length === 3) {
+    const [y, m, d] = parts;
+    return `${d}/${m}/${y}`;
+  }
+  return isoDateStr;
+};
+
+// Parse user entered DD/MM/YYYY or DD-MM-YYYY to YYYY-MM-DD
+export const parseFromDDMMYYYY = (displayStr) => {
+  if (!displayStr) return '';
+  const clean = displayStr.trim();
+  const parts = clean.split(/[-/.]/);
+  if (parts.length === 3) {
+    let [d, m, y] = parts;
+    if (d.length === 1) d = '0' + d;
+    if (m.length === 1) m = '0' + m;
+    if (y.length === 2) y = '20' + y;
+    const numD = Number(d);
+    const numM = Number(m);
+    const numY = Number(y);
+    if (numY >= 2000 && numY <= 2100 && numM >= 1 && numM <= 12 && numD >= 1 && numD <= 31) {
+      return `${y}-${m}-${d}`;
+    }
+  }
+  return '';
+};
+
+// Format YYYY-MM-DD to friendly string like "25 Sep 2026"
+export const formatFriendlyDate = (isoDateStr) => {
+  if (!isoDateStr) return '';
+  const parts = String(isoDateStr).slice(0, 10).split('-');
+  if (parts.length === 3) {
+    const [y, m, d] = parts.map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    if (!Number.isNaN(dateObj.getTime())) {
+      return dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+  }
+  return isoDateStr;
+};
+
+// Date input field with DD/MM/YYYY display, direct typing, and calendar picker
+const DateInputField = ({ label, value, onChange, min, max, error }) => {
+  const [displayText, setDisplayText] = useState(() => formatToDDMMYYYY(value));
+  const hiddenInputRef = useRef(null);
+
+  useEffect(() => {
+    setDisplayText(formatToDDMMYYYY(value));
+  }, [value]);
+
+  const handleTextChange = (e) => {
+    const text = e.target.value;
+    setDisplayText(text);
+    const parsed = parseFromDDMMYYYY(text);
+    if (parsed) {
+      onChange(parsed);
+    }
+  };
+
+  const handleNativePickerChange = (e) => {
+    const pickedIso = e.target.value;
+    if (pickedIso) {
+      onChange(pickedIso);
+      setDisplayText(formatToDDMMYYYY(pickedIso));
+    }
+  };
+
+  const openPicker = () => {
+    try {
+      hiddenInputRef.current?.showPicker();
+    } catch {
+      hiddenInputRef.current?.focus();
+    }
+  };
+
+  const friendly = formatFriendlyDate(value);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-[11px] font-bold text-gray-600">
+          {label} <span className="font-normal text-gray-400">(DD/MM/YYYY)</span>
+        </label>
+        {friendly && (
+          <span className="text-[10px] font-bold text-[#0A84FF] bg-blue-50 px-1.5 py-0.5 rounded">
+            {friendly}
+          </span>
+        )}
+      </div>
+
+      <div className="relative flex items-center">
+        <input
+          type="text"
+          placeholder="DD/MM/YYYY"
+          value={displayText}
+          onChange={handleTextChange}
+          maxLength={10}
+          className={`w-full pl-3 pr-10 py-2 text-xs font-bold text-gray-800 bg-white border ${
+            error ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:ring-blue-100 focus:border-[#0A84FF]'
+          } rounded-xl focus:ring-2 outline-none transition-all`}
+        />
+
+        {/* Calendar button and overlay */}
+        <div className="absolute right-1.5 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={openPicker}
+            title="Open calendar picker"
+            className="p-1.5 text-gray-500 hover:text-[#0A84FF] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+          >
+            <FiCalendar className="w-4 h-4" />
+          </button>
+          <input
+            ref={hiddenInputRef}
+            type="date"
+            value={value || ''}
+            min={min || undefined}
+            max={max || undefined}
+            onChange={handleNativePickerChange}
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+        </div>
+      </div>
+      {error && (
+        <p className="text-[10px] font-semibold text-red-500 mt-1 flex items-center gap-1">
+          <FiAlertCircle className="w-3 h-3 flex-shrink-0" /> {error}
+        </p>
+      )}
+    </div>
+  );
+};
 
 const TimePeriodFilter = ({
   selectedPeriod,
@@ -19,6 +168,12 @@ const TimePeriodFilter = ({
     { key: 'year', label: 'This Year' },
   ];
 
+  // Sync state if customRange prop changes externally
+  useEffect(() => {
+    if (customRange.startDate) setStartDate(customRange.startDate);
+    if (customRange.endDate) setEndDate(customRange.endDate);
+  }, [customRange.startDate, customRange.endDate]);
+
   // Close picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -34,22 +189,23 @@ const TimePeriodFilter = ({
     };
   }, [showPicker]);
 
+  const isRangeInvalid = Boolean(startDate && endDate && startDate > endDate);
+
   const handleApplyCustom = () => {
-    if (!startDate || !endDate) return;
+    if (!startDate || !endDate || isRangeInvalid) return;
     onPeriodChange('custom', { startDate, endDate });
     setShowPicker(false);
   };
 
   const applyPreset = (days) => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - days);
+    const now = new Date();
+    const endStr = toLocalIsoDate(now);
+    const startObj = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1));
+    const startStr = toLocalIsoDate(startObj);
 
-    const sStr = start.toISOString().slice(0, 10);
-    const eStr = end.toISOString().slice(0, 10);
-    setStartDate(sStr);
-    setEndDate(eStr);
-    onPeriodChange('custom', { startDate: sStr, endDate: eStr });
+    setStartDate(startStr);
+    setEndDate(endStr);
+    onPeriodChange('custom', { startDate: startStr, endDate: endStr });
     setShowPicker(false);
   };
 
@@ -76,20 +232,19 @@ const TimePeriodFilter = ({
               <FiCalendar className="w-4 h-4" />
               {isCustomActive && customRange.startDate && customRange.endDate && (
                 <span className="text-xs font-bold whitespace-nowrap">
-                  {new Date(customRange.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} -{' '}
-                  {new Date(customRange.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                  {formatToDDMMYYYY(customRange.startDate)} - {formatToDDMMYYYY(customRange.endDate)}
                 </span>
               )}
             </button>
 
             {/* Date Range Popover */}
             {showPicker && (
-              <div className="absolute left-0 top-12 z-50 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 animate-enter">
+              <div className="absolute left-0 top-12 z-50 w-84 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 animate-enter">
                 <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                   <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Custom Date Range</h4>
                   <button
                     onClick={() => setShowPicker(false)}
-                    className="p-1 text-gray-400 hover:text-gray-600 rounded-lg"
+                    className="p-1 text-gray-400 hover:text-gray-600 rounded-lg cursor-pointer"
                   >
                     <FiX className="w-4 h-4" />
                   </button>
@@ -100,60 +255,56 @@ const TimePeriodFilter = ({
                   <button
                     type="button"
                     onClick={() => applyPreset(7)}
-                    className="px-2.5 py-1.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-[#0A84FF] text-xs font-semibold rounded-lg transition-colors text-center"
+                    className="px-2.5 py-1.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-[#0A84FF] text-xs font-bold rounded-lg transition-colors text-center cursor-pointer"
                   >
                     Last 7 Days
                   </button>
                   <button
                     type="button"
                     onClick={() => applyPreset(30)}
-                    className="px-2.5 py-1.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-[#0A84FF] text-xs font-semibold rounded-lg transition-colors text-center"
+                    className="px-2.5 py-1.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-[#0A84FF] text-xs font-bold rounded-lg transition-colors text-center cursor-pointer"
                   >
                     Last 30 Days
                   </button>
                   <button
                     type="button"
                     onClick={() => applyPreset(60)}
-                    className="px-2.5 py-1.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-[#0A84FF] text-xs font-semibold rounded-lg transition-colors text-center"
+                    className="px-2.5 py-1.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-[#0A84FF] text-xs font-bold rounded-lg transition-colors text-center cursor-pointer"
                   >
                     Last 60 Days
                   </button>
                   <button
                     type="button"
                     onClick={() => applyPreset(90)}
-                    className="px-2.5 py-1.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-[#0A84FF] text-xs font-semibold rounded-lg transition-colors text-center"
+                    className="px-2.5 py-1.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-[#0A84FF] text-xs font-bold rounded-lg transition-colors text-center cursor-pointer"
                   >
                     Last 90 Days
                   </button>
                 </div>
 
-                {/* Date Inputs */}
+                {/* Date Inputs in DD/MM/YYYY format */}
                 <div className="space-y-3 pt-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-600 mb-1">From Date</label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A84FF] outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-600 mb-1">To Date</label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0A84FF] outline-none"
-                    />
-                  </div>
+                  <DateInputField
+                    label="From Date"
+                    value={startDate}
+                    onChange={(newStart) => setStartDate(newStart)}
+                    max={endDate || undefined}
+                    error={isRangeInvalid ? 'From Date cannot be after To Date' : ''}
+                  />
+
+                  <DateInputField
+                    label="To Date"
+                    value={endDate}
+                    onChange={(newEnd) => setEndDate(newEnd)}
+                    min={startDate || undefined}
+                  />
 
                   <div className="flex items-center gap-2 pt-2">
                     <button
                       type="button"
                       onClick={handleApplyCustom}
-                      disabled={!startDate || !endDate}
-                      className="flex-1 py-2 bg-[#0A84FF] hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                      disabled={!startDate || !endDate || isRangeInvalid}
+                      className="flex-1 py-2 bg-[#0A84FF] hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <FiCheck className="w-3.5 h-3.5" />
                       Apply Filter
