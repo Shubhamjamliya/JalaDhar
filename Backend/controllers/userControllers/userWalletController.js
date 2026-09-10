@@ -44,21 +44,53 @@ const getWalletBalance = async (req, res) => {
 const getWalletTransactions = async (req, res) => {
   try {
     const userId = req.userId;
-    const { page = 1, limit = 20, type } = req.query;
+    const { page = 1, limit = 10, type = 'ALL', status = 'ALL', search = '' } = req.query;
 
     const query = { user: userId };
-    if (type) {
-      query.type = type;
+
+    if (type && type !== 'ALL') {
+      if (type === 'REFUND') {
+        query.type = 'REFUND';
+      } else if (type === 'WITHDRAWAL') {
+        query.type = { $in: ['WITHDRAWAL_REQUEST', 'WITHDRAWAL_PROCESSED', 'WITHDRAWAL_REJECTED'] };
+      } else {
+        query.type = type;
+      }
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    if (status && status !== 'ALL') {
+      if (status === 'REJECTED' || status === 'FAILED') {
+        query.$or = [{ status: 'FAILED' }, { type: 'WITHDRAWAL_REJECTED' }];
+      } else {
+        query.status = status;
+      }
+    }
+
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      const searchCondition = [
+        { description: searchRegex },
+        { errorMessage: searchRegex }
+      ];
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, { $or: searchCondition }];
+        delete query.$or;
+      } else {
+        query.$or = searchCondition;
+      }
+    }
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 10));
+    const skip = (pageNum - 1) * limitNum;
 
     const [transactions, total] = await Promise.all([
       UserWalletTransaction.find(query)
         .populate('booking', 'service')
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(parseInt(limit)),
+        .limit(limitNum)
+        .lean(),
       UserWalletTransaction.countDocuments(query)
     ]);
 
@@ -68,9 +100,10 @@ const getWalletTransactions = async (req, res) => {
       data: {
         transactions,
         pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(total / parseInt(limit)),
-          totalTransactions: total
+          currentPage: pageNum,
+          totalPages: Math.ceil(total / limitNum) || 1,
+          totalTransactions: total,
+          limit: limitNum
         }
       }
     });
