@@ -195,6 +195,34 @@ const acceptBooking = async (req, res) => {
     }
     await booking.save();
 
+    // Credit travel allowance to vendor wallet upon acceptance (only if customer already paid advance)
+    if (booking.payment?.travelCharges && booking.payment.travelCharges > 0 && booking.payment?.advancePaid) {
+      try {
+        const WalletTransaction = require('../../models/WalletTransaction');
+        const existingTx = await WalletTransaction.findOne({
+          vendor: vendorId,
+          booking: booking._id,
+          type: 'TRAVEL_CHARGES',
+          status: 'SUCCESS'
+        });
+        if (!existingTx) {
+          await creditToVendorWallet(
+            vendorId,
+            booking.payment.travelCharges,
+            'TRAVEL_CHARGES',
+            booking._id,
+            {
+              description: `Travel charges for accepted booking #${booking._id.toString().slice(-6).toUpperCase()}`,
+              bookingId: booking._id.toString(),
+              distance: booking.payment.distance || null
+            }
+          );
+        }
+      } catch (walletErr) {
+        console.error('[acceptBooking] Error crediting travel charges:', walletErr);
+      }
+    }
+
     // Format visit date & time details for user notification
     const visitDateObj = booking.scheduledDate || booking.scheduleDate;
     const formattedDate = visitDateObj 
@@ -410,6 +438,28 @@ const rejectBooking = async (req, res) => {
       }
     } catch (refundErr) {
       console.error('Error auto-refunding to user wallet on rejectBooking:', refundErr);
+    }
+
+    // Claw back travel allowance from vendor wallet if it was credited
+    try {
+      const WalletTransaction = require('../../models/WalletTransaction');
+      const existingTravelTx = await WalletTransaction.findOne({
+        vendor: vendorId,
+        booking: booking._id,
+        type: 'TRAVEL_CHARGES',
+        status: 'SUCCESS'
+      });
+      if (existingTravelTx && booking.payment?.travelCharges > 0) {
+        await debitFromVendorWallet(
+          vendorId,
+          booking.payment.travelCharges,
+          'TRAVEL_CHARGES_REVERSAL',
+          booking._id,
+          { description: `Travel allowance reversed due to rejection of booking #${booking._id.toString().slice(-6).toUpperCase()}` }
+        );
+      }
+    } catch (clawbackErr) {
+      console.error('[rejectBooking] Error clawing back travel allowance:', clawbackErr);
     }
 
     // Notify User
@@ -1845,8 +1895,9 @@ const cancelBooking = async (req, res) => {
         await debitFromVendorWallet(
           vendorId,
           booking.payment.travelCharges,
+          'TRAVEL_CHARGES_REVERSAL',
           booking._id,
-          `Travel allowance reversed due to ${isSameDay ? 'same-day' : 'advance'} cancellation of booking #${booking._id.toString().slice(-6).toUpperCase()}`
+          { description: `Travel allowance reversed due to ${isSameDay ? 'same-day' : 'advance'} cancellation of booking #${booking._id.toString().slice(-6).toUpperCase()}` }
         );
       }
     } catch (walletDebitErr) {

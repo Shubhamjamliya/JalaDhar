@@ -77,8 +77,9 @@ const verifyAdvancePayment = async (req, res) => {
     await booking.save();
 
     // Credit travel charges to vendor wallet when booking is confirmed
-    // Check if travel charges have already been credited to avoid duplicates
-    if (booking.payment.travelCharges && booking.payment.travelCharges > 0) {
+    // Credit travel charges only if booking has already been ACCEPTED by the expert
+    // (If ASSIGNED/PENDING, travel charges are credited upon acceptance in acceptBooking to prevent premature credit)
+    if (booking.status === BOOKING_STATUS.ACCEPTED && booking.payment.travelCharges && booking.payment.travelCharges > 0) {
       try {
         // Check if travel charges were already credited for this booking
         const WalletTransaction = require('../../models/WalletTransaction');

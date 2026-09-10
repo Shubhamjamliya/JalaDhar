@@ -2190,7 +2190,7 @@ const claimFullRefundForExpertCancellation = async (req, res) => {
 
     let refundAmount = 0;
     if (isAdvancePaidOnBooking) {
-      refundAmount = (booking.payment.advanceAmount || 0) + (booking.payment.travelCharges || 0);
+      refundAmount = booking.payment.advanceAmount || 0;
     } else if (completedAdvancePayment) {
       refundAmount = completedAdvancePayment.amount;
     } else if (booking.payment?.totalAmount && booking.payment?.advancePaid) {

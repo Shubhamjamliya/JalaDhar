@@ -1,6 +1,7 @@
 const Vendor = require('../models/Vendor');
 const WalletTransaction = require('../models/WalletTransaction');
 const VendorWithdrawalRequest = require('../models/VendorWithdrawalRequest');
+const mongoose = require('mongoose');
 
 /**
  * Calculate vendor payment breakdown
@@ -202,6 +203,17 @@ const deductPlatformFee = async (vendorId, amount, bookingId = null, description
  * @returns {Object} - Transaction result
  */
 const debitFromVendorWallet = async (vendorId, amount, type, bookingId = null, metadata = {}) => {
+  // Defensive normalization in case caller passes (vendorId, amount, bookingId, description)
+  let resolvedType = type;
+  let resolvedBookingId = bookingId;
+  let resolvedMetadata = typeof metadata === 'object' && metadata !== null ? { ...metadata } : {};
+
+  if (typeof bookingId === 'string' && mongoose.Types.ObjectId.isValid(type) && !mongoose.Types.ObjectId.isValid(bookingId)) {
+    resolvedBookingId = type;
+    resolvedType = 'TRAVEL_CHARGES_REVERSAL';
+    resolvedMetadata.description = bookingId;
+  }
+
   const session = await Vendor.startSession();
   session.startTransaction();
 
@@ -222,14 +234,14 @@ const debitFromVendorWallet = async (vendorId, amount, type, bookingId = null, m
     // Create transaction record
     const transaction = await WalletTransaction.create([{
       vendor: vendorId,
-      booking: bookingId,
-      type,
+      booking: resolvedBookingId,
+      type: resolvedType,
       amount: -amount, // Negative for debit
       balanceBefore,
       balanceAfter,
       status: 'SUCCESS',
-      description: metadata.description || `Deduction for booking #${(metadata.bookingId || bookingId?.toString() || '').slice(-6)}`,
-      metadata
+      description: resolvedMetadata.description || `Deduction for booking #${(resolvedMetadata.bookingId || resolvedBookingId?.toString() || '').slice(-6)}`,
+      metadata: resolvedMetadata
     }], { session });
 
     await session.commitTransaction();
@@ -251,14 +263,14 @@ const debitFromVendorWallet = async (vendorId, amount, type, bookingId = null, m
         const balanceBefore = vendor.paymentCollection.walletBalance || 0;
         await WalletTransaction.create({
           vendor: vendorId,
-          booking: bookingId,
-          type,
+          booking: resolvedBookingId,
+          type: resolvedType,
           amount: -amount,
           balanceBefore,
           balanceAfter: balanceBefore,
           status: 'FAILED',
           errorMessage: error.message,
-          metadata
+          metadata: resolvedMetadata
         });
       }
     } catch (recordError) {

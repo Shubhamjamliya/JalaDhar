@@ -242,24 +242,8 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
 
     await booking.save();
 
-    // Credit travel charges to new vendor if advance payment was already paid
-    if (travelCharges > 0 && booking.payment.advancePaid) {
-      try {
-        await creditToVendorWallet(
-          newVendor._id,
-          travelCharges,
-          'TRAVEL_CHARGES',
-          booking._id,
-          {
-            description: `Travel charges for reassigned booking #${booking._id.toString().slice(-6)}`,
-            bookingId: booking._id.toString(),
-            distance: newDistance
-          }
-        );
-      } catch (creditErr) {
-        console.error('Error crediting new vendor travel charges:', creditErr);
-      }
-    }
+    // Travel charges for the new vendor will be credited upon acceptance in acceptBooking
+    // to prevent premature wallet credits if the reassigned vendor rejects the job.
 
     // Notify the new vendor
     const io = getIO();
