@@ -679,10 +679,20 @@ export default function VendorRequests() {
                 <div className="space-y-4">
 
                     {currentRequests.length === 0 ? (
-                        <div className="rounded-xl bg-white p-8 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                            <p className="text-[#3A3A3A]">
+                        <div className="rounded-xl bg-white p-8 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center space-y-3">
+                            <p className="text-[#3A3A3A] font-medium">
                                 No {activeTab.toLowerCase()} requests available
                             </p>
+                            {activeTab !== "New" && newRequests.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab("New")}
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-[#0A84FF] border border-blue-200 hover:bg-blue-100 active:scale-95 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+                                >
+                                    <IoNotificationsOutline className="text-base shrink-0 animate-bounce" />
+                                    <span>You have {newRequests.length} new booking request{newRequests.length > 1 ? 's' : ''} waiting — View Requests</span>
+                                </button>
+                            )}
                         </div>
                     ) : (
                         currentRequests.map((request) => (
