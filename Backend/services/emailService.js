@@ -82,7 +82,6 @@ const renderEmailShell = ({ title, badgeText, badgeBg = '#EFF6FF', badgeColor = 
                       </td>
                       <td>
                         <div style="font-size: 20px; font-weight: 800; color: #0284C7; letter-spacing: -0.5px; line-height: 1.2;">Jaladhaara</div>
-                        <div style="font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px;">Groundwater Survey & Hydrogeology</div>
                       </td>
                     </tr>
                   </table>
@@ -425,7 +424,7 @@ const sendBookingConfirmationEmail = async ({
 
   const formattedBookingId = displayBookingId || (bookingId && bookingId.startsWith('JLD') ? bookingId : `JLD-${(bookingId || '10245').toString().slice(-5).toUpperCase()}`);
   const viewBookingUrl = bookingUrl || `${frontendUrl}/user/bookings/${bookingId || ''}`;
-  
+
   const formattedDate = surveyDate instanceof Date ? surveyDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : (surveyDate || '12 Aug 2026');
   const formattedPrice = typeof totalAmount === 'number' ? `₹${totalAmount.toLocaleString('en-IN')}` : totalAmount;
 
