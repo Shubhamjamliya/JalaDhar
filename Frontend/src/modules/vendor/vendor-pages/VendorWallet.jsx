@@ -115,6 +115,21 @@ export default function VendorWallet() {
         }
     };
 
+    const handleAmountChange = (e) => {
+        const val = e.target.value;
+        if (val === '') {
+            setWithdrawAmount('');
+            return;
+        }
+        if (val.startsWith('-')) return;
+        const num = parseFloat(val);
+        if (!isNaN(num) && num > walletBalance) {
+            setWithdrawAmount(walletBalance.toString());
+        } else {
+            setWithdrawAmount(val);
+        }
+    };
+
     const handleWithdrawSubmit = async (e) => {
         e.preventDefault();
         const amount = parseFloat(withdrawAmount);
@@ -951,8 +966,10 @@ export default function VendorWallet() {
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xl">₹</span>
                                     <input
                                         type="number"
+                                        step="any"
+                                        max={walletBalance}
                                         value={withdrawAmount}
-                                        onChange={(e) => setWithdrawAmount(e.target.value)}
+                                        onChange={handleAmountChange}
                                         placeholder="e.g. 1000"
                                         className="w-full bg-gray-50/80 border border-gray-200 rounded-2xl pl-9 pr-4 py-3.5 text-xl font-black text-gray-900 focus:outline-none focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100/60 transition-all placeholder:text-gray-300 font-mono"
                                     />
@@ -1252,8 +1269,10 @@ export default function VendorWallet() {
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-xl">₹</span>
                                 <input
                                     type="number"
+                                    step="any"
+                                    max={walletBalance}
                                     value={withdrawAmount}
-                                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                                    onChange={handleAmountChange}
                                     placeholder="0.00"
                                     className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-9 pr-4 py-3.5 text-xl font-black text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all placeholder:text-gray-300 placeholder:font-medium"
                                     autoFocus

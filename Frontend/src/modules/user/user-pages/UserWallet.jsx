@@ -67,6 +67,22 @@ export default function UserWallet() {
         }
     };
 
+    const handleAmountChange = (e) => {
+        const val = e.target.value;
+        if (val === '') {
+            setWithdrawAmount('');
+            return;
+        }
+        if (val.startsWith('-')) return;
+
+        const num = parseFloat(val);
+        if (!isNaN(num) && num > walletBalance) {
+            setWithdrawAmount(walletBalance.toString());
+        } else {
+            setWithdrawAmount(val);
+        }
+    };
+
     const handleWithdrawSubmit = async (e) => {
         if (e) e.preventDefault();
         const amount = parseFloat(withdrawAmount);
@@ -362,20 +378,52 @@ export default function UserWallet() {
                     <form onSubmit={handleWithdrawSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
                         {/* Amount */}
                         <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                Withdrawal Amount <span className="text-red-500">*</span>
-                            </label>
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                    Withdrawal Amount <span className="text-red-500">*</span>
+                                </label>
+                                {walletBalance > 0 && (
+                                    <span className="text-[11px] font-semibold text-slate-400">
+                                        Max: ₹{formatAmount(walletBalance)}
+                                    </span>
+                                )}
+                            </div>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
                                 <input
                                     type="number"
+                                    step="any"
+                                    min="1000"
+                                    max={walletBalance}
                                     value={withdrawAmount}
-                                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                                    onChange={handleAmountChange}
                                     placeholder={`Min: ₹1,000 | Max: ₹${formatAmount(walletBalance)}`}
-                                    className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-[#0A84FF] outline-none text-sm font-semibold text-slate-800"
+                                    className="w-full pl-8 pr-16 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-[#0A84FF] outline-none text-sm font-semibold text-slate-800 transition-all"
                                     required
                                 />
+                                {walletBalance > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setWithdrawAmount(walletBalance.toString())}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 text-xs font-extrabold text-[#0A84FF] bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors cursor-pointer"
+                                        title="Use maximum available balance"
+                                    >
+                                        MAX
+                                    </button>
+                                )}
                             </div>
+
+                            {/* Live Hints */}
+                            {withdrawAmount && parseFloat(withdrawAmount) > walletBalance && (
+                                <p className="text-xs font-bold text-red-500 flex items-center gap-1 mt-1">
+                                    ⚠️ Amount cannot exceed available balance of ₹{formatAmount(walletBalance)}
+                                </p>
+                            )}
+                            {withdrawAmount && parseFloat(withdrawAmount) > 0 && parseFloat(withdrawAmount) < 1000 && (
+                                <p className="text-xs font-bold text-amber-600 flex items-center gap-1 mt-1">
+                                    ℹ️ Minimum withdrawal amount is ₹1,000
+                                </p>
+                            )}
                         </div>
 
                         {/* Payout Mode Tabs */}
@@ -490,8 +538,13 @@ export default function UserWallet() {
                             </button>
                             <button
                                 type="submit"
-                                disabled={processingWithdraw}
-                                className="flex-1 py-3 px-4 rounded-2xl font-bold text-white bg-gradient-to-r from-[#0A84FF] to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all text-xs shadow-md shadow-blue-500/20 active:scale-95 disabled:opacity-50 cursor-pointer"
+                                disabled={
+                                    processingWithdraw ||
+                                    !withdrawAmount ||
+                                    parseFloat(withdrawAmount) < 1000 ||
+                                    parseFloat(withdrawAmount) > walletBalance
+                                }
+                                className="flex-1 py-3 px-4 rounded-2xl font-bold text-white bg-gradient-to-r from-[#0A84FF] to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all text-xs shadow-md shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 {processingWithdraw ? "Submitting..." : "Submit Request"}
                             </button>
