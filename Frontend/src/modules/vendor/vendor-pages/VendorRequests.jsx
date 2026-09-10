@@ -786,23 +786,27 @@ export default function VendorRequests() {
                                         )}
                                     </div>
 
-                                    {/* Payment Amount - Show only service charges + travel charges (no GST) */}
+                                    {/* Payment Amount - Show Total Amount including Service + Travel */}
                                     <div className="text-right">
                                         <p className="text-lg font-bold text-[#00C2A8]">
                                             {formatAmount(
-                                                request.payment?.subtotal !== undefined
-                                                    ? request.payment.subtotal
-                                                    : (request.payment?.baseServiceFee || 0) + (request.payment?.travelCharges || 0) ||
-                                                    request.payment?.amount ||
-                                                    0
+                                                request.payment?.totalAmount ||
+                                                ((request.payment?.baseServiceFee || 0) + (request.payment?.travelCharges || 0)) ||
+                                                request.payment?.amount ||
+                                                0
                                             )}
                                         </p>
                                         <p className="text-xs text-[#6B7280]">
                                             {getPaymentMethod(request.payment)}
+                                            {request.payment?.advancePaid && request.payment?.advanceAmount ? ` (₹${Math.round(request.payment.advanceAmount).toLocaleString('en-IN')})` : ''}
                                         </p>
-                                        {request.payment?.subtotal && request.payment?.totalAmount && (
-                                            <p className="text-xs text-[#6B7280] mt-1">
-                                                Service + Travel
+                                        {request.payment?.travelCharges > 0 ? (
+                                            <p className="text-[11px] text-[#6B7280] mt-0.5">
+                                                Incl. {formatAmount(request.payment.travelCharges)} Travel
+                                            </p>
+                                        ) : (
+                                            <p className="text-[11px] text-[#6B7280] mt-0.5">
+                                                Service Fee
                                             </p>
                                         )}
                                     </div>
