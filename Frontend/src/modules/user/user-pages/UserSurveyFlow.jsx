@@ -1150,9 +1150,17 @@ const ExpertSelection = ({ location, category, onSelect, onBack }) => {
   );
 };
 
-const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
+const SlotAndPayment = ({ surveyData, onDateChange, onConfirm, onBack, isSubmitting }) => {
   const [vendorData, setVendorData] = useState(surveyData.vendor);
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(() => {
+    const savedDate = surveyData?.slot?.scheduledDate || surveyData?.scheduledDate || "";
+    if (savedDate) {
+      const todayStr = new Date().toISOString().split("T")[0];
+      if (savedDate < todayStr) return "";
+      return savedDate;
+    }
+    return "";
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [charges, setCharges] = useState(null);
@@ -1168,6 +1176,24 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
       setVendorData(surveyData.vendor);
     }
   }, [surveyData.vendor]);
+
+  // Keep date in sync with surveyData if updated from outside
+  useEffect(() => {
+    const externalDate = surveyData?.slot?.scheduledDate || surveyData?.scheduledDate || "";
+    if (externalDate && externalDate !== date) {
+      const todayStr = new Date().toISOString().split("T")[0];
+      if (externalDate >= todayStr) {
+        setDate(externalDate);
+      }
+    }
+  }, [surveyData?.slot?.scheduledDate, surveyData?.scheduledDate]);
+
+  const handleDateSelect = (selectedDate) => {
+    setDate(selectedDate);
+    if (onDateChange) {
+      onDateChange(selectedDate);
+    }
+  };
 
   // Fetch the latest fresh vendor profile from server to ensure live availability is always up to date
   useEffect(() => {
@@ -1317,7 +1343,7 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
                     <button
                       key={item.date}
                       type="button"
-                      onClick={() => setDate(item.date)}
+                      onClick={() => handleDateSelect(item.date)}
                       className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
                         isSelected
                           ? "bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-600/20"
@@ -1358,11 +1384,11 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
                 const isAvailable = isExpertAvailableOnDate(activeVendor, selectedDate);
                 if (!isAvailable) {
                   toast.showError(`The expert is not available on ${dayOfWeek}s. Active schedule: ${formatWorkingDays(activeVendor?.workingDays)}.`);
-                  setDate("");
+                  handleDateSelect("");
                   return;
                 }
               }
-              setDate(selectedDate);
+              handleDateSelect(selectedDate);
             }}
           />
         </div>
@@ -1391,9 +1417,34 @@ const SlotAndPayment = ({ surveyData, onConfirm, onBack, isSubmitting }) => {
             <p className="text-xs text-gray-500">Service Provider</p>
             <p className="font-bold text-gray-800">{activeVendor.name}</p>
           </div>
-          <div className="h-10 w-10 bg-gray-200 rounded-full bg-cover bg-center"
-            style={{ backgroundImage: activeVendor.profilePicture ? `url("${activeVendor.profilePicture}")` : '' }}>
-          </div>
+          {(() => {
+            const profileImg = activeVendor.profilePicture?.url || 
+              (typeof activeVendor.profilePicture === 'string' && activeVendor.profilePicture.startsWith('http')
+                ? activeVendor.profilePicture
+                : null);
+
+            return (
+              <div className="h-10 w-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-100 flex items-center justify-center shrink-0 shadow-xs">
+                {profileImg ? (
+                  <img
+                    src={profileImg}
+                    alt={activeVendor.name || "Service Provider"}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(activeVendor.name || 'Expert')}&background=0A84FF&color=fff&bold=true`;
+                    }}
+                  />
+                ) : (
+                  <img
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(activeVendor.name || 'Expert')}&background=0A84FF&color=fff&bold=true`}
+                    alt={activeVendor.name || "Service Provider"}
+                    className="h-full w-full object-cover"
+                  />
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1721,8 +1772,24 @@ export default function UserSurveyFlow() {
 
   // Step 5: Expert Selected (Only for Scenario A)
   const handleExpertSelect = (vendor) => {
-    setSurveyData({ ...surveyData, vendor });
+    const existingDate = surveyData.scheduledDate || surveyData.slot?.scheduledDate;
+    const isDateCompatible = existingDate ? isExpertAvailableOnDate(vendor, existingDate) : false;
+
+    setSurveyData(prev => ({
+      ...prev,
+      vendor,
+      scheduledDate: isDateCompatible ? existingDate : null,
+      slot: isDateCompatible ? prev.slot : null
+    }));
     setStep(5);
+  };
+
+  const handleDateChange = (selectedDate) => {
+    setSurveyData(prev => ({
+      ...prev,
+      scheduledDate: selectedDate,
+      slot: selectedDate ? { scheduledDate: selectedDate, scheduledTime: "TBD" } : null
+    }));
   };
 
   // Step 6: Final Booking
@@ -1851,7 +1918,15 @@ export default function UserSurveyFlow() {
         {step === 2 && <DetailsForm category={surveyData.category} data={surveyData.details} onSubmit={handleDetailsSubmit} onBack={() => setStep(1)} />}
         {step === 3 && <LocationPicker onLocationSelect={handleLocationSelect} onBack={() => setStep(2)} />}
         {step === 4 && <ExpertSelection location={surveyData.location} category={surveyData.category} onSelect={handleExpertSelect} onBack={() => setStep(3)} />}
-        {step === 5 && <SlotAndPayment surveyData={surveyData} onConfirm={handleBooking} onBack={() => isVendorPreSelected ? setStep(3) : setStep(4)} isSubmitting={isSubmitting} />}
+        {step === 5 && (
+          <SlotAndPayment
+            surveyData={surveyData}
+            onDateChange={handleDateChange}
+            onConfirm={handleBooking}
+            onBack={() => isVendorPreSelected ? setStep(3) : setStep(4)}
+            isSubmitting={isSubmitting}
+          />
+        )}
       </div>
 
       {/* Modals */}
