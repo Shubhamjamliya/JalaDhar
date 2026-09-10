@@ -21,6 +21,17 @@ import { getBookingDetails, resolveInfeasibleBooking } from "../../../services/a
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
+import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
+
+const InfoRow = ({ icon: Icon, label, value }) => (
+    <div className="flex items-start gap-3 py-2">
+        <Icon className="text-xl text-gray-400 mt-0.5 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500 mb-1">{label}</p>
+            <p className="text-sm font-medium text-gray-800 break-words">{value || "N/A"}</p>
+        </div>
+    </div>
+);
 
 export default function AdminBookingDetails() {
     const navigate = useNavigate();
@@ -34,10 +45,6 @@ export default function AdminBookingDetails() {
     const [userRefundAmount, setUserRefundAmount] = useState("");
     const [adminNotes, setAdminNotes] = useState("");
     const toast = useToast();
-
-    useEffect(() => {
-        loadBookingDetails();
-    }, [bookingId]);
 
     const loadBookingDetails = async () => {
         try {
@@ -55,6 +62,11 @@ export default function AdminBookingDetails() {
         }
     };
 
+    useEffect(() => {
+        if (bookingId) {
+            loadBookingDetails();
+        }
+    }, [bookingId]);
 
     useEffect(() => {
         if (booking?.payment) {
@@ -108,16 +120,6 @@ export default function AdminBookingDetails() {
         return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
-    const formatAddress = (address) => {
-        if (!address) return "Not provided";
-        const parts = [];
-        if (address.street) parts.push(address.street);
-        if (address.city) parts.push(address.city);
-        if (address.state) parts.push(address.state);
-        if (address.pincode) parts.push(address.pincode);
-        return parts.join(", ") || "Not provided";
-    };
-
     const getStatusColor = (status) => {
         const colors = {
             PENDING: "bg-yellow-100 text-yellow-700",
@@ -135,16 +137,6 @@ export default function AdminBookingDetails() {
         };
         return colors[status] || "bg-gray-100 text-gray-700";
     };
-
-    const InfoRow = ({ icon: Icon, label, value }) => (
-        <div className="flex items-start gap-3 py-2">
-            <Icon className="text-xl text-gray-400 mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-500 mb-1">{label}</p>
-                <p className="text-sm font-medium text-gray-800 break-words">{value || "N/A"}</p>
-            </div>
-        </div>
-    );
 
     if (loading) {
         return <LoadingSpinner message="Loading booking details..." />;
@@ -791,7 +783,7 @@ export default function AdminBookingDetails() {
                         <div className="flex justify-between border-t-2 border-gray-200 pt-3 mt-3">
                             <span className="font-bold text-gray-900 text-base">Expert Earnings:</span>
                             <span className="font-bold text-blue-600 text-lg">
-                                {formatAmount((booking.vendorWalletPayments?.totalVendorPayment) || (booking.payment.baseServiceFee + booking.payment.travelCharges - (booking.vendorWalletPayments?.platformFee || 0)))}
+                                {formatAmount((booking.vendorWalletPayments?.totalVendorPayment) || ((booking.payment?.baseServiceFee || 0) + (booking.payment?.travelCharges || 0) - (booking.vendorWalletPayments?.platformFee || 0)))}
                             </span>
                         </div>
                         {booking.payment.firstInstallment && (
