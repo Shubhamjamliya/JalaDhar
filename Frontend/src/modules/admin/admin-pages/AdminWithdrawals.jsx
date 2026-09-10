@@ -28,6 +28,7 @@ import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import AssignmentHistoryModal from "../admin-component/AssignmentHistoryModal";
+import ProcessDisbursalModal from "../admin-component/ProcessDisbursalModal";
 
 export default function AdminWithdrawals() {
     const toast = useToast();
@@ -163,25 +164,20 @@ export default function AdminWithdrawals() {
         }
     };
 
-    const handleProcessConfirm = async () => {
+    const handleProcessConfirm = async (payoutData) => {
         if (!selectedRequest) return;
-        if (!transactionId.trim()) {
-            toast.showError("Please enter Transaction / Reference ID");
-            return;
-        }
-
         try {
             setProcessing(true);
             const response = await processWithdrawal(
                 selectedRequest.vendorId,
                 selectedRequest._id,
-                transactionId.trim(),
-                notes,
-                paymentMethod,
-                new Date().toISOString()
+                payoutData.transactionId,
+                payoutData.notes || '',
+                payoutData.paymentMethod || 'UPI',
+                payoutData.paymentDate || new Date().toISOString()
             );
             if (response.success) {
-                handleApiSuccess(response, "Withdrawal marked as processed successfully!");
+                handleApiSuccess(response, "Expert disbursal marked as processed & settled!");
                 setShowProcessModal(false);
                 setSelectedRequest(null);
                 setTransactionId("");
@@ -463,6 +459,19 @@ export default function AdminWithdrawals() {
                 availableAdmins={availableFinanceAdmins}
                 onReassign={handleReassignWithdrawal}
                 isSuperAdmin={isSuperAdmin}
+            />
+
+            {/* Process Disbursal Modal */}
+            <ProcessDisbursalModal
+                isOpen={showProcessModal}
+                onClose={() => {
+                    setShowProcessModal(false);
+                    setSelectedRequest(null);
+                }}
+                onConfirm={handleProcessConfirm}
+                request={selectedRequest}
+                processing={processing}
+                isUser={false}
             />
         </div>
     );

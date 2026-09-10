@@ -10,8 +10,10 @@ import {
     IoFilterOutline,
     IoPersonOutline,
     IoSwapHorizontalOutline,
-    IoLockClosedOutline
+    IoLockClosedOutline,
+    IoCashOutline
 } from "react-icons/io5";
+import ProcessDisbursalModal from "../admin-component/ProcessDisbursalModal";
 import {
     getAllUserWithdrawalRequests,
     approveUserWithdrawalRequest,
@@ -45,6 +47,7 @@ export default function AdminUserWithdrawals() {
     // Modal states
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
+    const [showProcessModal, setShowProcessModal] = useState(false);
     const [showAssignmentModal, setShowAssignmentModal] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [rejectionReason, setRejectionReason] = useState("");
@@ -155,6 +158,24 @@ export default function AdminUserWithdrawals() {
             }
         } catch (err) {
             handleApiError(err, "Failed to reject request");
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const handleProcessConfirm = async (payoutData) => {
+        if (!selectedRequest) return;
+        try {
+            setProcessing(true);
+            const response = await processUserWithdrawalRequest(selectedRequest._id, payoutData);
+            if (response.success) {
+                handleApiSuccess(response, "Customer refund payout marked as processed & settled!");
+                setShowProcessModal(false);
+                setSelectedRequest(null);
+                await loadWithdrawalRequests();
+            }
+        } catch (err) {
+            handleApiError(err, "Failed to process withdrawal");
         } finally {
             setProcessing(false);
         }
@@ -360,10 +381,10 @@ export default function AdminUserWithdrawals() {
                                                 {canApproveDisbursals ? (
                                                     <>
                                                         {request.status === "PENDING" && (
-                                                            <>
+                                                            <div className="flex items-center justify-end gap-1.5">
                                                                 <button
                                                                     onClick={() => { setSelectedRequest(request); setShowApproveModal(true); }}
-                                                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs cursor-pointer"
+                                                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs cursor-pointer shadow-xs"
                                                                 >
                                                                     Approve
                                                                 </button>
@@ -373,7 +394,31 @@ export default function AdminUserWithdrawals() {
                                                                 >
                                                                     Reject
                                                                 </button>
-                                                            </>
+                                                            </div>
+                                                        )}
+                                                        {request.status === "APPROVED" && (
+                                                            <button
+                                                                onClick={() => { setSelectedRequest(request); setShowProcessModal(true); }}
+                                                                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                                                            >
+                                                                <IoCashOutline className="text-sm" />
+                                                                <span>Process Disbursal</span>
+                                                            </button>
+                                                        )}
+                                                        {request.status === "PROCESSED" && (
+                                                            <div className="text-right">
+                                                                <span className="text-xs font-bold text-emerald-600 inline-flex items-center gap-1">
+                                                                    <IoCheckmarkCircleOutline className="text-sm" /> Disbursed
+                                                                </span>
+                                                                {request.transactionId && (
+                                                                    <span className="text-[10px] text-gray-400 font-mono block">
+                                                                        Ref: {request.transactionId}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {request.status === "REJECTED" && (
+                                                            <span className="text-[11px] text-rose-500 font-medium italic">Rejected</span>
                                                         )}
                                                     </>
                                                 ) : (
@@ -421,6 +466,19 @@ export default function AdminUserWithdrawals() {
                 availableAdmins={availableFinanceAdmins}
                 onReassign={handleReassignUserWithdrawal}
                 isSuperAdmin={isSuperAdmin}
+            />
+
+            {/* Process Disbursal Modal */}
+            <ProcessDisbursalModal
+                isOpen={showProcessModal}
+                onClose={() => {
+                    setShowProcessModal(false);
+                    setSelectedRequest(null);
+                }}
+                onConfirm={handleProcessConfirm}
+                request={selectedRequest}
+                processing={processing}
+                isUser={true}
             />
         </div>
     );

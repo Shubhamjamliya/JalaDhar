@@ -158,7 +158,14 @@ const processUserWithdrawal = async (req, res) => {
     }
 
     // Use transactionId if provided, otherwise fall back to razorpayPayoutId for backward compatibility
-    const finalTransactionId = transactionId || razorpayPayoutId;
+    const finalTransactionId = (transactionId || razorpayPayoutId || '').trim();
+
+    if (finalTransactionId.length < 8 || finalTransactionId.length > 25) {
+      return res.status(400).json({
+        success: false,
+        message: 'Transaction Reference / UTR ID must be between 8 and 25 characters'
+      });
+    }
 
     // Find the withdrawal request
     const withdrawalRequest = await UserWithdrawalRequest.findById(requestId);
