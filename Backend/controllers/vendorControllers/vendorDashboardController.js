@@ -3,6 +3,7 @@ const Vendor = require('../../models/Vendor');
 const Service = require('../../models/Service');
 const { BOOKING_STATUS } = require('../../utils/constants');
 const { validationResult } = require('express-validator');
+const { sanitizeBookingForVendor } = require('../bookingControllers/vendorBookingController');
 
 /**
  * Get dashboard statistics
@@ -171,7 +172,7 @@ const getNewBookings = async (req, res) => {
       success: true,
       message: 'Bookings retrieved successfully',
       data: {
-        bookings,
+        bookings: bookings.map(b => sanitizeBookingForVendor(b)),
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / parseInt(limit)),
@@ -242,7 +243,7 @@ const getBookingHistory = async (req, res) => {
       success: true,
       message: 'Booking history retrieved successfully',
       data: {
-        bookings,
+        bookings: bookings.map(b => sanitizeBookingForVendor(b)),
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / parseInt(limit)),

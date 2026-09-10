@@ -749,7 +749,9 @@ const bookingSchema = new mongoose.Schema({
     default: null
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // Indexes for faster queries
@@ -758,6 +760,15 @@ bookingSchema.index({ user: 1, status: 1 });
 bookingSchema.index({ scheduledDate: 1 });
 bookingSchema.index({ 'payment.status': 1 });
 
+// Virtual getter & setter for scheduleDate to prevent field mismatch issues
+bookingSchema.virtual('scheduleDate')
+  .get(function () {
+    return this.scheduledDate;
+  })
+  .set(function (value) {
+    this.scheduledDate = value;
+  });
+
 // Virtual for booking duration (if needed)
 bookingSchema.virtual('duration').get(function () {
   if (this.visitedAt && this.completedAt) {
@@ -765,6 +776,22 @@ bookingSchema.virtual('duration').get(function () {
   }
   return null;
 });
+
+// Method to safely serialize booking object for vendor/expert consumption
+bookingSchema.methods.toVendorJSON = function () {
+  const obj = this.toObject({ virtuals: true });
+  if (obj.otp) {
+    if (obj.otp.startSurvey) {
+      delete obj.otp.startSurvey.code;
+    }
+    if (obj.otp.endSurvey) {
+      delete obj.otp.endSurvey.code;
+    }
+  }
+  delete obj.startSurveyOTP;
+  delete obj.endSurveyOTP;
+  return obj;
+};
 
 module.exports = mongoose.model('Booking', bookingSchema);
 

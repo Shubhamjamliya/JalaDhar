@@ -16,6 +16,40 @@ const { getSettings } = require('../../services/settingsService');
 const { getIO } = require('../../sockets');
 
 /**
+ * Sanitize booking object for vendor/expert consumption.
+ * Experts/Vendors should NEVER see secret survey OTP codes (startSurvey.code or endSurvey.code).
+ * OTP verification status and timestamps are preserved.
+ */
+const sanitizeBookingForVendor = (booking) => {
+  if (!booking) return booking;
+  if (typeof booking.toVendorJSON === 'function') {
+    return booking.toVendorJSON();
+  }
+  let b;
+  if (typeof booking.toObject === 'function') {
+    b = booking.toObject({ virtuals: true });
+  } else {
+    b = { ...booking };
+    if (b.otp) {
+      b.otp = { ...b.otp };
+      if (b.otp.startSurvey) b.otp.startSurvey = { ...b.otp.startSurvey };
+      if (b.otp.endSurvey) b.otp.endSurvey = { ...b.otp.endSurvey };
+    }
+  }
+  if (b.otp) {
+    if (b.otp.startSurvey) {
+      delete b.otp.startSurvey.code;
+    }
+    if (b.otp.endSurvey) {
+      delete b.otp.endSurvey.code;
+    }
+  }
+  delete b.startSurveyOTP;
+  delete b.endSurveyOTP;
+  return b;
+};
+
+/**
  * Get vendor bookings
  */
 const getVendorBookings = async (req, res) => {
@@ -75,12 +109,12 @@ const getVendorBookings = async (req, res) => {
       : (parseInt(reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS, 10) || 30);
 
     const formattedBookings = bookings.map(b => {
-      const bObj = b.toObject ? b.toObject() : { ...b };
+      const bObj = b.toObject ? b.toObject({ virtuals: true }) : { ...b };
       bObj.allowReschedule = allowReschedule;
       bObj.maxReschedules = maxReschedules;
       bObj.rescheduleWindowDays = windowDays;
       bObj.reschedulesRemaining = Math.max(0, maxReschedules - (b.rescheduleCount || 0));
-      return bObj;
+      return sanitizeBookingForVendor(bObj);
     });
 
     res.json({
@@ -145,18 +179,24 @@ const acceptBooking = async (req, res) => {
       });
     }
 
-    const { visitDate, scheduledTime } = req.body || {};
+    const resolvedDate = req.body?.scheduledDate || req.body?.scheduleDate || req.body?.visitDate;
+    const resolvedTime = req.body?.scheduledTime || req.body?.scheduleTime || req.body?.visitTime;
 
     booking.status = BOOKING_STATUS.ACCEPTED;
     booking.vendorStatus = BOOKING_STATUS.ACCEPTED;
     booking.userStatus = BOOKING_STATUS.ACCEPTED;
     booking.acceptedAt = new Date();
-    if (visitDate) booking.scheduleDate = new Date(visitDate);
-    if (scheduledTime) booking.scheduledTime = scheduledTime;
+    if (resolvedDate) {
+      booking.scheduledDate = new Date(resolvedDate);
+      booking.scheduleDate = new Date(resolvedDate);
+    }
+    if (resolvedTime) {
+      booking.scheduledTime = resolvedTime;
+    }
     await booking.save();
 
     // Format visit date & time details for user notification
-    const visitDateObj = booking.scheduleDate || booking.scheduledDate;
+    const visitDateObj = booking.scheduledDate || booking.scheduleDate;
     const formattedDate = visitDateObj 
       ? new Date(visitDateObj).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
       : null;
@@ -202,23 +242,33 @@ const acceptBooking = async (req, res) => {
         try {
           const vendorIdStr = booking.vendor._id?.toString() || booking.vendor.toString();
           const userIdStr = booking.user._id?.toString() || booking.user.toString();
-          const bookingPayload = {
+          const sanitizedBooking = sanitizeBookingForVendor(booking);
+          const userBookingPayload = {
             bookingId: booking._id.toString(),
             status: booking.status,
             userStatus: booking.userStatus,
             vendorStatus: booking.vendorStatus,
-            scheduledDate: booking.scheduleDate || booking.scheduledDate,
+            scheduledDate: booking.scheduledDate || booking.scheduleDate,
             scheduledTime: booking.scheduledTime,
             booking
           };
+          const vendorBookingPayload = {
+            bookingId: booking._id.toString(),
+            status: booking.status,
+            userStatus: booking.userStatus,
+            vendorStatus: booking.vendorStatus,
+            scheduledDate: booking.scheduledDate || booking.scheduleDate,
+            scheduledTime: booking.scheduledTime,
+            booking: sanitizedBooking
+          };
 
           // Broadcast to user rooms
-          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', bookingPayload);
-          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', userBookingPayload);
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', userBookingPayload);
 
           // Broadcast to vendor rooms
-          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', bookingPayload);
-          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', vendorBookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', vendorBookingPayload);
         } catch (sockEmitErr) {
           console.error('[acceptBooking] Socket broadcast error:', sockEmitErr);
         }
@@ -254,10 +304,7 @@ const acceptBooking = async (req, res) => {
       success: true,
       message: 'Booking accepted successfully',
       data: {
-        booking: {
-          id: booking._id,
-          status: booking.status
-        }
+        booking: sanitizeBookingForVendor(booking)
       }
     });
   } catch (error) {
@@ -517,7 +564,8 @@ const markAsEnRoute = async (req, res) => {
       if (io) {
         const userIdStr = booking.user?._id?.toString() || booking.user?.toString();
         const vendorIdStr = booking.vendor?._id?.toString() || booking.vendor?.toString();
-        const bookingPayload = {
+        const sanitizedBooking = sanitizeBookingForVendor(booking);
+        const userBookingPayload = {
           bookingId: booking._id,
           status: booking.status,
           userStatus: booking.userStatus,
@@ -525,21 +573,29 @@ const markAsEnRoute = async (req, res) => {
           enRouteAt: booking.enRouteAt,
           booking: booking
         };
+        const vendorBookingPayload = {
+          bookingId: booking._id,
+          status: booking.status,
+          userStatus: booking.userStatus,
+          vendorStatus: booking.vendorStatus,
+          enRouteAt: booking.enRouteAt,
+          booking: sanitizedBooking
+        };
 
-        // Broadcast to booking tracking room
-        io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
-        io.to(`booking_${booking._id}`).emit('booking_status_updated', bookingPayload);
+        // Broadcast to booking tracking room (shared - sanitize so vendor cannot inspect)
+        io.to(`booking_${booking._id}`).emit('booking_updated', vendorBookingPayload);
+        io.to(`booking_${booking._id}`).emit('booking_status_updated', vendorBookingPayload);
 
         // Broadcast to user rooms
         if (userIdStr) {
-          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', bookingPayload);
-          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', userBookingPayload);
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', userBookingPayload);
         }
 
         // Broadcast to vendor rooms
         if (vendorIdStr) {
-          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', bookingPayload);
-          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', vendorBookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', vendorBookingPayload);
         }
 
         // Global fallback broadcast
@@ -552,7 +608,7 @@ const markAsEnRoute = async (req, res) => {
     res.json({
       success: true,
       message: 'Status updated to En Route',
-      data: { booking }
+      data: { booking: sanitizeBookingForVendor(booking) }
     });
   } catch (error) {
     console.error('Mark as En Route error:', error);
@@ -797,24 +853,32 @@ const verifyStartSurveyOTP = async (req, res) => {
     if (io) {
       const userIdStr = booking.user?._id?.toString() || booking.user?.toString();
       const vendorIdStr = booking.vendor?._id?.toString() || booking.vendor?.toString();
-      const bookingPayload = {
+      const sanitizedBooking = sanitizeBookingForVendor(booking);
+      const userBookingPayload = {
         bookingId: booking._id,
         status: booking.status,
         userStatus: booking.userStatus,
         vendorStatus: booking.vendorStatus,
         booking: booking
       };
+      const vendorBookingPayload = {
+        bookingId: booking._id,
+        status: booking.status,
+        userStatus: booking.userStatus,
+        vendorStatus: booking.vendorStatus,
+        booking: sanitizedBooking
+      };
 
-      io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
-      io.to(`booking_${booking._id}`).emit('booking_status_updated', bookingPayload);
+      io.to(`booking_${booking._id}`).emit('booking_updated', vendorBookingPayload);
+      io.to(`booking_${booking._id}`).emit('booking_status_updated', vendorBookingPayload);
 
       if (userIdStr) {
-        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', bookingPayload);
-        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', userBookingPayload);
+        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', userBookingPayload);
       }
       if (vendorIdStr) {
-        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', bookingPayload);
-        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', vendorBookingPayload);
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', vendorBookingPayload);
       }
       io.emit('booking_status_updated', { bookingId: booking._id, status: booking.status });
     }
@@ -822,7 +886,7 @@ const verifyStartSurveyOTP = async (req, res) => {
     res.json({
       success: true,
       message: 'Start Survey OTP verified successfully',
-      data: { booking }
+      data: { booking: sanitizeBookingForVendor(booking) }
     });
   } catch (error) {
     console.error('Verify Start Survey OTP error:', error);
@@ -916,24 +980,32 @@ const verifyEndSurveyOTP = async (req, res) => {
     if (io) {
       const userIdStr = booking.user?._id?.toString() || booking.user?.toString();
       const vendorIdStr = booking.vendor?._id?.toString() || booking.vendor?.toString();
-      const bookingPayload = {
+      const sanitizedBooking = sanitizeBookingForVendor(booking);
+      const userBookingPayload = {
         bookingId: booking._id,
         status: booking.status,
         userStatus: booking.userStatus,
         vendorStatus: booking.vendorStatus,
         booking: booking
       };
+      const vendorBookingPayload = {
+        bookingId: booking._id,
+        status: booking.status,
+        userStatus: booking.userStatus,
+        vendorStatus: booking.vendorStatus,
+        booking: sanitizedBooking
+      };
 
-      io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
-      io.to(`booking_${booking._id}`).emit('booking_status_updated', bookingPayload);
+      io.to(`booking_${booking._id}`).emit('booking_updated', vendorBookingPayload);
+      io.to(`booking_${booking._id}`).emit('booking_status_updated', vendorBookingPayload);
 
       if (userIdStr) {
-        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', bookingPayload);
-        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', userBookingPayload);
+        io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', userBookingPayload);
       }
       if (vendorIdStr) {
-        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', bookingPayload);
-        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', vendorBookingPayload);
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', vendorBookingPayload);
       }
       io.emit('booking_status_updated', { bookingId: booking._id, status: booking.status });
     }
@@ -941,7 +1013,7 @@ const verifyEndSurveyOTP = async (req, res) => {
     res.json({
       success: true,
       message: 'End Survey OTP verified successfully',
-      data: { booking }
+      data: { booking: sanitizeBookingForVendor(booking) }
     });
   } catch (error) {
     console.error('Verify End Survey OTP error:', error);
@@ -1340,24 +1412,32 @@ const markVisitedAndUploadReport = async (req, res) => {
       if (io) {
         const userIdStr = booking.user?._id?.toString() || booking.user?.toString();
         const vendorIdStr = booking.vendor?._id?.toString() || booking.vendor?.toString();
-        const bookingPayload = {
+        const sanitizedBooking = sanitizeBookingForVendor(booking);
+        const userBookingPayload = {
           bookingId: booking._id,
           status: booking.status,
           userStatus: booking.userStatus,
           vendorStatus: booking.vendorStatus,
           booking: booking
         };
+        const vendorBookingPayload = {
+          bookingId: booking._id,
+          status: booking.status,
+          userStatus: booking.userStatus,
+          vendorStatus: booking.vendorStatus,
+          booking: sanitizedBooking
+        };
 
-        io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
-        io.to(`booking_${booking._id}`).emit('booking_status_updated', bookingPayload);
+        io.to(`booking_${booking._id}`).emit('booking_updated', vendorBookingPayload);
+        io.to(`booking_${booking._id}`).emit('booking_status_updated', vendorBookingPayload);
 
         if (userIdStr) {
-          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', bookingPayload);
-          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', userBookingPayload);
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', userBookingPayload);
         }
         if (vendorIdStr) {
-          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', bookingPayload);
-          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', vendorBookingPayload);
+          io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', vendorBookingPayload);
         }
         io.emit('booking_status_updated', { bookingId: booking._id, status: booking.status });
       }
@@ -1499,7 +1579,7 @@ const getBookingDetails = async (req, res) => {
       success: true,
       message: 'Booking details retrieved successfully',
       data: {
-        booking: bookingObj,
+        booking: sanitizeBookingForVendor(bookingObj),
         reschedulePolicy: {
           allowReschedule,
           maxReschedules,
@@ -2058,7 +2138,8 @@ const updateVisitSchedule = async (req, res) => {
     if (io) {
       const vendorIdStr = vendorId.toString();
       const userIdStr = (booking.user._id || booking.user).toString();
-      const bookingPayload = {
+      const sanitizedBooking = sanitizeBookingForVendor(booking);
+      const userBookingPayload = {
         bookingId: booking._id.toString(),
         status: booking.status,
         userStatus: booking.userStatus,
@@ -2067,10 +2148,19 @@ const updateVisitSchedule = async (req, res) => {
         scheduledTime: booking.scheduledTime,
         booking
       };
+      const vendorBookingPayload = {
+        bookingId: booking._id.toString(),
+        status: booking.status,
+        userStatus: booking.userStatus,
+        vendorStatus: booking.vendorStatus,
+        scheduledDate: booking.scheduledDate,
+        scheduledTime: booking.scheduledTime,
+        booking: sanitizedBooking
+      };
 
-      io.to(`booking_${booking._id}`).emit('booking_updated', bookingPayload);
-      io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', bookingPayload);
-      io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', bookingPayload);
+      io.to(`booking_${booking._id}`).emit('booking_updated', vendorBookingPayload);
+      io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', userBookingPayload);
+      io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', vendorBookingPayload);
     }
 
     // Send notification to customer
@@ -2108,7 +2198,7 @@ const updateVisitSchedule = async (req, res) => {
       success: true,
       message: `Visit schedule confirmed for ${scheduledTime}! Customer notified.`,
       data: {
-        booking
+        booking: sanitizeBookingForVendor(booking)
       }
     });
   } catch (error) {
@@ -2137,6 +2227,7 @@ module.exports = {
   getBookingDetails,
   requestTravelCharges,
   downloadInvoice,
-  updateVisitSchedule
+  updateVisitSchedule,
+  sanitizeBookingForVendor
 };
 

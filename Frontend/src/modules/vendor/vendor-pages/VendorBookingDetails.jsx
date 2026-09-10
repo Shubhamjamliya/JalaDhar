@@ -271,8 +271,12 @@ export default function VendorBookingDetails() {
             setActionLoading(true);
 
             const response = await acceptBooking(bookingId, {
+                scheduledDate: acceptScheduleDate,
+                scheduledTime: acceptScheduleTime,
                 scheduleDate: acceptScheduleDate,
                 scheduleTime: acceptScheduleTime,
+                visitDate: acceptScheduleDate,
+                visitTime: acceptScheduleTime,
             });
 
             if (response.success) {
