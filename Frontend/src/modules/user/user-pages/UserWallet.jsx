@@ -362,8 +362,9 @@ export default function UserWallet() {
                     transactions.map((transaction) => {
                         const isCredit = transaction.type === 'REFUND';
                         const isWithdrawal = ['WITHDRAWAL_REQUEST', 'WITHDRAWAL_PROCESSED', 'WITHDRAWAL_REJECTED'].includes(transaction.type);
-                        const isSuccess = transaction.status === 'SUCCESS';
-                        const isPending = transaction.status === 'PENDING';
+                        const isFailed = transaction.status === 'FAILED' || transaction.status === 'REJECTED' || transaction.type === 'WITHDRAWAL_REJECTED';
+                        const isSuccess = transaction.status === 'SUCCESS' && !isFailed;
+                        const isPending = transaction.status === 'PENDING' && !isFailed;
                         
                         return (
                             <div
@@ -371,11 +372,12 @@ export default function UserWallet() {
                                 className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-xs border border-gray-100 hover:border-blue-300 transition-all"
                             >
                                 <div className={`flex h-12 w-12 items-center justify-center rounded-2xl shrink-0 ${
+                                    isFailed ? "bg-rose-50 text-rose-500 border border-rose-100" :
                                     isSuccess ? (isCredit ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : isWithdrawal ? "bg-blue-50 text-[#0A84FF] border border-blue-100" : "bg-gray-50 text-gray-500") : 
                                     isPending ? "bg-amber-50 text-amber-600 border border-amber-100" : "bg-rose-50 text-rose-600 border border-rose-100"
                                 }`}>
                                     <span className="material-symbols-outlined font-bold text-xl">
-                                        {isCredit ? "arrow_downward_alt" : isWithdrawal ? "account_balance_wallet" : "info"}
+                                        {isFailed ? "cancel" : isCredit ? "arrow_downward_alt" : isWithdrawal ? "account_balance_wallet" : "info"}
                                     </span>
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -390,7 +392,12 @@ export default function UserWallet() {
                                             Booking #{transaction.booking._id?.toString().slice(-8).toUpperCase()}
                                         </p>
                                     )}
-                                    {transaction.description && (
+                                    {(transaction.errorMessage || transaction.metadata?.rejectionReason) && (
+                                        <p className="text-xs text-rose-500 mt-0.5 font-semibold">
+                                            Reason: {transaction.errorMessage || transaction.metadata?.rejectionReason}
+                                        </p>
+                                    )}
+                                    {transaction.description && !transaction.errorMessage && (
                                         <p className="text-xs text-gray-500 mt-0.5 italic">
                                             {transaction.description}
                                         </p>
@@ -398,13 +405,16 @@ export default function UserWallet() {
                                 </div>
                                 <div className="text-right shrink-0">
                                     <p className={`font-extrabold text-sm ${
+                                        isFailed ? "text-slate-400 line-through" :
                                         isSuccess ? (isCredit ? "text-emerald-600" : isWithdrawal ? "text-[#0A84FF]" : "text-gray-700") : 
                                         isPending ? "text-amber-600" : "text-rose-600"
                                     }`}>
-                                        {isCredit ? "+" : isWithdrawal ? "-" : ""} ₹{formatAmount(Math.abs(transaction.amount))}
+                                        {isFailed ? "" : isCredit ? "+" : isWithdrawal ? "-" : ""} ₹{formatAmount(Math.abs(transaction.amount))}
                                     </p>
-                                    <span className={`inline-block text-[11px] font-extrabold px-2 py-0.5 rounded-full mt-0.5 ${getStatusColor(transaction.status)}`}>
-                                        {transaction.status}
+                                    <span className={`inline-block text-[11px] font-extrabold px-2 py-0.5 rounded-full mt-0.5 ${
+                                        isFailed ? "text-rose-600" : getStatusColor(transaction.status)
+                                    }`}>
+                                        {isFailed ? "REJECTED" : transaction.status}
                                     </span>
                                 </div>
                             </div>

@@ -120,6 +120,35 @@ const getUserWalletBalance = async (userId) => {
       console.error('Error auto-syncing cancelled booking refunds for wallet:', syncErr);
     }
 
+    // Auto-sync any orphaned PENDING transactions where withdrawal request was REJECTED
+    try {
+      const rejectedRequests = await UserWithdrawalRequest.find({
+        user: userId,
+        status: 'REJECTED'
+      }).select('_id rejectionReason');
+
+      for (const req of rejectedRequests) {
+        await UserWalletTransaction.updateMany(
+          {
+            user: userId,
+            status: 'PENDING',
+            $or: [
+              { 'metadata.withdrawalRequestId': req._id },
+              { type: 'WITHDRAWAL_REQUEST' }
+            ]
+          },
+          {
+            $set: {
+              status: 'FAILED',
+              errorMessage: req.rejectionReason || 'Withdrawal request rejected by admin'
+            }
+          }
+        );
+      }
+    } catch (syncErr) {
+      console.error('Error syncing rejected withdrawal transactions:', syncErr);
+    }
+
     // Calculate total credited from all refund transactions
     const totalCreditedResult = await UserWalletTransaction.aggregate([
       { 
