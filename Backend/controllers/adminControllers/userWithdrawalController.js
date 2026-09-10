@@ -47,9 +47,10 @@ const getAllWithdrawalRequests = async (req, res) => {
       razorpayPayoutId: request.razorpayPayoutId,
       transactionId: request.transactionId,
       paymentMethod: request.paymentMethod,
-      paymentDate: request.paymentDate,
-      payoutType: request.payoutType || 'UPI',
-      upiId: request.upiId || (request.user?.phone ? `${request.user.phone}@upi` : null),
+      payoutType: request.payoutType || (request.accountDetails?.accountNumber ? 'BANK_TRANSFER' : 'UPI'),
+      upiId: (request.payoutType === 'BANK_TRANSFER' || (!request.upiId && request.accountDetails?.accountNumber)) 
+        ? null 
+        : (request.upiId || (request.user?.phone ? `${request.user.phone}@upi` : null)),
       accountDetails: request.accountDetails || null,
       notes: request.notes,
       rejectionReason: request.rejectionReason

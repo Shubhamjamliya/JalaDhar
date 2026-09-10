@@ -1,4 +1,4 @@
-const { getUserWalletBalance, createWithdrawalRequest } = require('../../services/userWalletService');
+const { getUserWalletBalance, createWithdrawalRequest, saveUserPayoutDetails, removeUserPayoutDetails } = require('../../services/userWalletService');
 const UserWalletTransaction = require('../../models/UserWalletTransaction');
 const User = require('../../models/User');
 
@@ -25,6 +25,7 @@ const getWalletBalance = async (req, res) => {
         totalCredited: walletInfo.totalCredited,
         thisMonthEarnings: walletInfo.thisMonthEarnings,
         withdrawalRequests: walletInfo.withdrawalRequests,
+        savedPayoutDetails: walletInfo.savedPayoutDetails || null,
         recentTransactions: transactions
       }
     });
@@ -183,9 +184,76 @@ const getWithdrawalRequests = async (req, res) => {
   }
 };
 
+/**
+ * Update saved payout details (Bank Account or UPI)
+ */
+const updatePayoutDetails = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { payoutType, upiId, accountDetails } = req.body;
+
+    if (payoutType === 'UPI' && (!upiId || !upiId.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid UPI ID is required'
+      });
+    }
+
+    if (payoutType === 'BANK_TRANSFER' && (!accountDetails || !accountDetails.accountNumber || !accountDetails.ifscCode)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account Number and IFSC code are required for bank transfer'
+      });
+    }
+
+    const updatedDetails = await saveUserPayoutDetails(userId, { payoutType, upiId, accountDetails });
+
+    res.json({
+      success: true,
+      message: 'Payout details saved successfully',
+      data: {
+        savedPayoutDetails: updatedDetails
+      }
+    });
+  } catch (error) {
+    console.error('Update payout details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update payout details',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Remove saved payout details
+ */
+const deletePayoutDetails = async (req, res) => {
+  try {
+    const userId = req.userId;
+    await removeUserPayoutDetails(userId);
+
+    res.json({
+      success: true,
+      message: 'Payout details removed successfully'
+    });
+  } catch (error) {
+    console.error('Delete payout details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to remove payout details',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getWalletBalance,
   getWalletTransactions,
   createWithdrawRequest,
-  getWithdrawalRequests
+  getWithdrawalRequests,
+  updatePayoutDetails,
+  deletePayoutDetails
 };
+
+

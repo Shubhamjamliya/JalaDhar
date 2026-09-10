@@ -349,10 +349,25 @@ export default function AdminUserWithdrawals() {
                                                 ₹{formatAmount(request.amount)}
                                             </td>
                                             <td className="px-5 py-3.5">
-                                                <span className="font-medium text-gray-700 block">{request.payoutType}</span>
-                                                <span className="text-[11px] text-gray-400 font-mono">
-                                                    {request.upiId || request.accountDetails?.accountNumber || "N/A"}
+                                                <span className="font-medium text-gray-800 flex items-center gap-1">
+                                                    {request.payoutType === 'BANK_TRANSFER' ? '🏦 Bank Transfer' : '⚡ UPI'}
                                                 </span>
+                                                <span className="text-[11px] text-gray-500 font-mono block mt-0.5">
+                                                    {request.payoutType === 'BANK_TRANSFER' ? (
+                                                        request.accountDetails?.accountNumber ? (
+                                                            <>A/C: {request.accountDetails.accountNumber} {request.accountDetails.ifscCode ? `(${request.accountDetails.ifscCode})` : ''}</>
+                                                        ) : (
+                                                            'Bank Details N/A'
+                                                        )
+                                                    ) : (
+                                                        request.upiId || 'UPI N/A'
+                                                    )}
+                                                </span>
+                                                {request.payoutType === 'BANK_TRANSFER' && request.accountDetails?.bankName && (
+                                                    <span className="text-[10px] text-gray-400 block truncate max-w-[160px]">
+                                                        {request.accountDetails.bankName}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="px-5 py-3.5">
                                                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${badge.bg} ${badge.text}`}>
@@ -434,14 +449,92 @@ export default function AdminUserWithdrawals() {
                 )}
             </div>
 
-            {/* Approve Modal */}
-            <ConfirmModal
-                isOpen={showApproveModal}
-                onClose={() => setShowApproveModal(false)}
-                onConfirm={handleApproveConfirm}
-                title="Approve User Refund"
-                message={`Approve ₹${formatAmount(selectedRequest?.amount)} withdrawal for ${selectedRequest?.userName}?`}
-            />
+            {/* Approve Modal with Bank / Payout Details Verification */}
+            {showApproveModal && selectedRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-outfit">
+                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 transition-all animate-in fade-in zoom-in-95">
+                        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
+                                <IoCheckmarkCircleOutline />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-black text-slate-900 leading-tight">
+                                    Approve Refund Withdrawal
+                                </h3>
+                                <p className="text-xs text-slate-500">
+                                    Verify user payout details before approving for disbursal.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="my-4 p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-slate-500 font-medium">Customer:</span>
+                                <span className="font-bold text-slate-900">{selectedRequest.userName}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-slate-500 font-medium">Refund Amount:</span>
+                                <span className="font-black text-emerald-600 font-mono text-base">₹{formatAmount(selectedRequest.amount)}</span>
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-200/60">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                                    Payout Destination: {selectedRequest.payoutType === 'BANK_TRANSFER' ? '🏦 Bank Transfer' : '⚡ UPI'}
+                                </span>
+                                {selectedRequest.payoutType === 'BANK_TRANSFER' ? (
+                                    <div className="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200 text-xs font-mono text-slate-800">
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-500 font-sans">A/C Name:</span>
+                                            <span className="font-bold">{selectedRequest.accountDetails?.accountHolderName || selectedRequest.userName}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-500 font-sans">A/C Number:</span>
+                                            <span className="font-black text-blue-700">{selectedRequest.accountDetails?.accountNumber || 'N/A'}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-500 font-sans">IFSC Code:</span>
+                                            <span className="font-bold">{selectedRequest.accountDetails?.ifscCode || 'N/A'}</span>
+                                        </div>
+                                        {selectedRequest.accountDetails?.bankName && (
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500 font-sans">Bank:</span>
+                                                <span className="font-medium text-slate-600">{selectedRequest.accountDetails.bankName}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="bg-white p-3 rounded-xl border border-slate-200 text-xs font-mono font-bold text-slate-900 flex items-center justify-between">
+                                        <span className="text-slate-500 font-sans font-medium">UPI ID:</span>
+                                        <span className="text-blue-600">{selectedRequest.upiId || 'N/A'}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2.5 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowApproveModal(false);
+                                    setSelectedRequest(null);
+                                }}
+                                disabled={processing}
+                                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleApproveConfirm}
+                                disabled={processing}
+                                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                                {processing ? 'Approving...' : '✓ Approve Request'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Reject Modal */}
             <InputModal
@@ -476,6 +569,10 @@ export default function AdminUserWithdrawals() {
                     setSelectedRequest(null);
                 }}
                 onConfirm={handleProcessConfirm}
+                onReject={async (reason) => {
+                    await handleRejectConfirm(reason);
+                    setShowProcessModal(false);
+                }}
                 request={selectedRequest}
                 processing={processing}
                 isUser={true}

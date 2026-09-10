@@ -43,6 +43,25 @@ export const getUserWithdrawalRequests = async () => {
 };
 
 /**
+ * Save / update user payout details (UPI / Bank Account)
+ * @param {Object} payoutData - { payoutType, upiId, accountDetails }
+ * @returns {Promise}
+ */
+export const saveUserPayoutDetails = async (payoutData) => {
+  const response = await api.put('/user/wallet/payout-details', payoutData);
+  return response.data;
+};
+
+/**
+ * Remove saved user payout details
+ * @returns {Promise}
+ */
+export const removeUserPayoutDetails = async () => {
+  const response = await api.delete('/user/wallet/payout-details');
+  return response.data;
+};
+
+/**
  * User Dispute API functions
  */
 

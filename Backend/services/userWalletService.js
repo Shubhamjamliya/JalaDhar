@@ -193,11 +193,41 @@ const getUserWalletBalance = async (userId) => {
       .sort({ requestedAt: -1 })
       .lean();
     
+    // Auto backfill savedPayoutDetails from latest UserWithdrawalRequest if not present on user
+    let savedPayoutDetails = user.wallet?.savedPayoutDetails || null;
+    if (!savedPayoutDetails || (!savedPayoutDetails.upiId && !savedPayoutDetails.accountDetails?.accountNumber)) {
+      try {
+        const latestRequest = await UserWithdrawalRequest.findOne({
+          user: userId,
+          $or: [
+            { upiId: { $ne: null } },
+            { 'accountDetails.accountNumber': { $ne: null } }
+          ]
+        }).sort({ requestedAt: -1 });
+
+        if (latestRequest) {
+          savedPayoutDetails = {
+            payoutType: latestRequest.payoutType || 'UPI',
+            upiId: latestRequest.upiId || null,
+            accountDetails: latestRequest.accountDetails || null,
+            updatedAt: latestRequest.requestedAt || new Date()
+          };
+          // Persist backfilled details to user record
+          await User.findByIdAndUpdate(userId, {
+            $set: { 'wallet.savedPayoutDetails': savedPayoutDetails }
+          });
+        }
+      } catch (backfillErr) {
+        console.error('Error backfilling saved payout details:', backfillErr);
+      }
+    }
+
     return {
       walletBalance: walletBalance,
       totalCredited: totalCreditedResult.length > 0 ? totalCreditedResult[0].total : 0,
       thisMonthEarnings: thisMonthEarnings.length > 0 ? thisMonthEarnings[0].total : 0,
-      withdrawalRequests: withdrawalRequests
+      withdrawalRequests: withdrawalRequests,
+      savedPayoutDetails: savedPayoutDetails
     };
   } catch (error) {
     console.error('Get user wallet balance error:', error);
@@ -259,6 +289,20 @@ const createWithdrawalRequest = async (userId, amount, payoutData = {}) => {
       assignedTo: assignment.assignedTo || null,
       assignmentHistory: assignment.auditRecord ? [assignment.auditRecord] : []
     });
+
+    // Update and persist saved payout details on user record
+    try {
+      if (!user.wallet) user.wallet = {};
+      user.wallet.savedPayoutDetails = {
+        payoutType,
+        upiId: payoutType === 'UPI' ? upiId : (user.wallet.savedPayoutDetails?.upiId || null),
+        accountDetails: payoutType === 'BANK_TRANSFER' ? accountDetails : (user.wallet.savedPayoutDetails?.accountDetails || null),
+        updatedAt: new Date()
+      };
+      await user.save();
+    } catch (saveErr) {
+      console.error('Error saving user payout details:', saveErr);
+    }
 
     // Create transaction record
     await UserWalletTransaction.create({
@@ -546,9 +590,52 @@ const processWithdrawalRequest = async (userId, requestId, action, adminId, data
   }
 };
 
+/**
+ * Update saved payout details for user
+ * @param {String} userId
+ * @param {Object} payoutData - { payoutType, upiId, accountDetails }
+ */
+const saveUserPayoutDetails = async (userId, payoutData = {}) => {
+  const { payoutType = 'UPI', upiId = null, accountDetails = null } = payoutData;
+  const user = await User.findById(userId);
+  if (!user) throw new Error('User not found');
+
+  if (!user.wallet) user.wallet = {};
+  user.wallet.savedPayoutDetails = {
+    payoutType,
+    upiId: payoutType === 'UPI' ? (upiId ? upiId.trim() : null) : (user.wallet.savedPayoutDetails?.upiId || null),
+    accountDetails: payoutType === 'BANK_TRANSFER' ? accountDetails : (user.wallet.savedPayoutDetails?.accountDetails || null),
+    updatedAt: new Date()
+  };
+  await user.save();
+  return user.wallet.savedPayoutDetails;
+};
+
+/**
+ * Remove saved payout details for user
+ * @param {String} userId
+ */
+const removeUserPayoutDetails = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) throw new Error('User not found');
+
+  if (user.wallet) {
+    user.wallet.savedPayoutDetails = {
+      payoutType: 'UPI',
+      upiId: null,
+      accountDetails: null,
+      updatedAt: new Date()
+    };
+    await user.save();
+  }
+  return true;
+};
+
 module.exports = {
   creditToUserWallet,
   getUserWalletBalance,
   createWithdrawalRequest,
-  processWithdrawalRequest
+  processWithdrawalRequest,
+  saveUserPayoutDetails,
+  removeUserPayoutDetails
 };

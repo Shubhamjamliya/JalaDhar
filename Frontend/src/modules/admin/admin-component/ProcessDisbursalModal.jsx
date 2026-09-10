@@ -7,13 +7,15 @@ import {
   IoCheckmarkCircleOutline,
   IoQrCodeOutline,
   IoCardOutline,
-  IoInformationCircleOutline
+  IoInformationCircleOutline,
+  IoCloseCircleOutline
 } from "react-icons/io5";
 
 export default function ProcessDisbursalModal({
   isOpen,
   onClose,
   onConfirm,
+  onReject,
   request,
   processing = false,
   isUser = false
@@ -23,6 +25,9 @@ export default function ProcessDisbursalModal({
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [copiedKey, setCopiedKey] = useState("");
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [rejectError, setRejectError] = useState("");
 
   useEffect(() => {
     if (isOpen && request) {
@@ -32,6 +37,9 @@ export default function ProcessDisbursalModal({
       setNotes("");
       setError("");
       setCopiedKey("");
+      setShowRejectForm(false);
+      setRejectionReason("");
+      setRejectError("");
     }
   }, [isOpen, request]);
 
@@ -135,39 +143,18 @@ export default function ProcessDisbursalModal({
           </div>
 
           <div className="pt-3 border-t border-slate-200/60">
-            {request.payoutType === "UPI" || request.upiId ? (
-              <div className="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-2xs">
-                <div className="flex items-center gap-2 min-w-0">
-                  <IoQrCodeOutline className="text-blue-500 text-lg shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-[10px] uppercase font-bold text-slate-400 leading-none">UPI ID</p>
-                    <p className="text-xs font-black text-slate-800 font-mono truncate mt-0.5">
-                      {request.upiId || "N/A"}
-                    </p>
-                  </div>
-                </div>
-                {request.upiId && (
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(request.upiId, "upi")}
-                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors shrink-0 cursor-pointer"
-                  >
-                    {copiedKey === "upi" ? (
-                      <>
-                        <IoCheckmarkOutline className="text-emerald-600" />
-                        <span className="text-emerald-600">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <IoCopyOutline />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            ) : (
+            {request.payoutType === "BANK_TRANSFER" || (!request.upiId && request.accountDetails?.accountNumber) ? (
               <div className="space-y-2">
+                {(request.accountDetails?.bankName || request.accountDetails?.accountHolderName) && (
+                  <div className="flex items-center justify-between text-[11px] px-1 text-slate-500 font-medium">
+                    {request.accountDetails?.bankName && (
+                      <span>Bank: <strong className="text-slate-800">{request.accountDetails.bankName}</strong></span>
+                    )}
+                    {request.accountDetails?.accountHolderName && (
+                      <span>A/C Name: <strong className="text-slate-800">{request.accountDetails.accountHolderName}</strong></span>
+                    )}
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-2xs">
                   <div className="flex items-center gap-2 min-w-0">
                     <IoCardOutline className="text-blue-500 text-lg shrink-0" />
@@ -227,128 +214,277 @@ export default function ProcessDisbursalModal({
                   )}
                 </div>
               </div>
+            ) : (
+              <div className="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <IoQrCodeOutline className="text-blue-500 text-lg shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 leading-none">UPI ID</p>
+                    <p className="text-xs font-black text-slate-800 font-mono truncate mt-0.5">
+                      {request.upiId || "N/A"}
+                    </p>
+                  </div>
+                </div>
+                {request.upiId && (
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(request.upiId, "upi")}
+                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors shrink-0 cursor-pointer"
+                  >
+                    {copiedKey === "upi" ? (
+                      <>
+                        <IoCheckmarkOutline className="text-emerald-600" />
+                        <span className="text-emerald-600">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <IoCopyOutline />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
 
-        {/* Payout Entry Form */}
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-          {/* Payment Method Selector */}
-          <div>
-            <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
-              Payment Mode
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              {["UPI", "IMPS", "NEFT", "RAZORPAY"].map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setPaymentMethod(mode)}
-                  className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                    paymentMethod === mode
-                      ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                      : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+        {/* Disbursal or Rejection Form */}
+        {showRejectForm ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const cleanReason = rejectionReason.trim();
+              if (!cleanReason || cleanReason.length < 10) {
+                setRejectError("Please enter a clear reason for rejecting (minimum 10 characters).");
+                return;
+              }
+              setRejectError("");
+              if (onReject) onReject(cleanReason);
+            }}
+            className="mt-5 space-y-4"
+          >
+            <div className="p-3.5 bg-rose-50/70 border border-rose-200 rounded-2xl">
+              <div className="flex items-center gap-2 text-rose-800 font-bold text-xs">
+                <IoCloseCircleOutline className="text-base text-rose-600 shrink-0" />
+                <span>Reject & Cancel Disbursal</span>
+              </div>
+              <p className="text-[11px] text-rose-700 mt-1 leading-relaxed">
+                If the bank transfer failed or payout cannot be sent, rejecting will keep the user's funds safe in their wallet and email them this reason so they can correct their bank account details.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Quick Reason Options
+              </label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {[
+                  "Bank transfer failed: Invalid Account Number or IFSC",
+                  "Beneficiary bank account inactive or blocked",
+                  "Account holder name mismatch on bank record",
+                  "Bank gateway/server error processing payout"
+                ].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => {
+                      setRejectionReason(tag);
+                      if (rejectError) setRejectError("");
+                    }}
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-left"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+
+              <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
+                Detailed Rejection Reason <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                rows={3}
+                value={rejectionReason}
+                onChange={(e) => {
+                  setRejectionReason(e.target.value);
+                  if (rejectError) setRejectError("");
+                }}
+                placeholder="Explain why the payout failed (e.g. Bank IMPS returned error: Account number does not exist)..."
+                className={`w-full px-3.5 py-2 text-xs font-medium rounded-xl border focus:outline-none transition-all ${
+                  rejectError
+                    ? "border-rose-300 ring-2 ring-rose-100 bg-rose-50/20"
+                    : "border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                }`}
+                required
+              />
+              {rejectError && (
+                <p className="text-[11px] text-rose-500 font-bold mt-1 flex items-center gap-1">
+                  <IoInformationCircleOutline className="text-xs shrink-0" />
+                  {rejectError}
+                </p>
+              )}
+            </div>
+
+            <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowRejectForm(false)}
+                disabled={processing}
+                className="px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              >
+                Back to Disbursal
+              </button>
+              <button
+                type="submit"
+                disabled={processing || rejectionReason.trim().length < 10}
+                className="px-5 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:scale-98 rounded-xl shadow-md shadow-rose-600/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {processing ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Rejecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <IoCloseCircleOutline className="text-base" />
+                    <span>Confirm Rejection</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            {/* Payment Method Selector */}
+            <div>
+              <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                Payment Mode
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {["UPI", "IMPS", "NEFT", "RAZORPAY"].map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setPaymentMethod(mode)}
+                    className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                      paymentMethod === mode
+                        ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Transaction / UTR ID */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                  Bank UTR / Transaction Reference ID <span className="text-rose-500">*</span>
+                </label>
+                <span
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md transition-colors ${
+                    transactionId.length === MAX_UTR_LENGTH
+                      ? "bg-amber-100 text-amber-800"
+                      : transactionId.length >= MIN_UTR_LENGTH
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-slate-100 text-slate-500"
                   }`}
                 >
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Transaction / UTR ID */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-black text-slate-700 uppercase tracking-wider">
-                Bank UTR / Transaction Reference ID <span className="text-rose-500">*</span>
-              </label>
-              <span
-                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md transition-colors ${
-                  transactionId.length === MAX_UTR_LENGTH
-                    ? "bg-amber-100 text-amber-800"
-                    : transactionId.length >= MIN_UTR_LENGTH
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-slate-100 text-slate-500"
+                  {transactionId.length} / {MAX_UTR_LENGTH}
+                </span>
+              </div>
+              <input
+                type="text"
+                autoFocus
+                maxLength={MAX_UTR_LENGTH}
+                value={transactionId}
+                onChange={(e) => {
+                  const cleaned = e.target.value
+                    .replace(/[^a-zA-Z0-9/_-]/g, "")
+                    .slice(0, MAX_UTR_LENGTH)
+                    .toUpperCase();
+                  setTransactionId(cleaned);
+                  if (error) setError("");
+                }}
+                placeholder="e.g. 523910293128 or UTR98234721"
+                className={`w-full px-3.5 py-2.5 text-xs font-mono font-semibold rounded-xl border transition-all tracking-wider focus:outline-none focus:ring-2 ${
+                  error
+                    ? "border-rose-300 ring-2 ring-rose-100 bg-rose-50/20"
+                    : "border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
                 }`}
-              >
-                {transactionId.length} / {MAX_UTR_LENGTH}
-              </span>
-            </div>
-            <input
-              type="text"
-              autoFocus
-              maxLength={MAX_UTR_LENGTH}
-              value={transactionId}
-              onChange={(e) => {
-                const cleaned = e.target.value
-                  .replace(/[^a-zA-Z0-9/_-]/g, "")
-                  .slice(0, MAX_UTR_LENGTH)
-                  .toUpperCase();
-                setTransactionId(cleaned);
-                if (error) setError("");
-              }}
-              placeholder="e.g. 523910293128 or UTR98234721"
-              className={`w-full px-3.5 py-2.5 text-xs font-mono font-semibold rounded-xl border transition-all tracking-wider focus:outline-none focus:ring-2 ${
-                error
-                  ? "border-rose-300 ring-2 ring-rose-100 bg-rose-50/20"
-                  : "border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
-              }`}
-            />
-            {error ? (
-              <p className="text-[11px] text-rose-500 font-bold mt-1 flex items-center gap-1">
-                <IoInformationCircleOutline className="text-xs shrink-0" />
-                {error}
-              </p>
-            ) : (
-              <p className="text-[11px] text-slate-400 mt-1">
-                Standard Bank UTR / UPI RRN is 12 to 22 characters (Min 8, Max 22).
-              </p>
-            )}
-          </div>
-
-          {/* Optional Notes */}
-          <div>
-            <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
-              Internal Remarks (Optional)
-            </label>
-            <input
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Paid via corporate current account..."
-              className="w-full px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-            />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={processing}
-              className="px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={processing}
-              className="px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-98 rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {processing ? (
-                <>
-                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Processing...</span>
-                </>
+              />
+              {error ? (
+                <p className="text-[11px] text-rose-500 font-bold mt-1 flex items-center gap-1">
+                  <IoInformationCircleOutline className="text-xs shrink-0" />
+                  {error}
+                </p>
               ) : (
-                <>
-                  <IoCheckmarkCircleOutline className="text-base" />
-                  <span>Confirm Disbursal (₹{formatAmount(request.amount)})</span>
-                </>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Standard Bank UTR / UPI RRN is 12 to 22 characters (Min 8, Max 22).
+                </p>
               )}
-            </button>
-          </div>
-        </form>
+            </div>
+
+            {/* Optional Notes */}
+            <div>
+              <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
+                Internal Remarks (Optional)
+              </label>
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="e.g. Paid via corporate current account..."
+                className="w-full px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="pt-3 flex items-center justify-between gap-3 border-t border-slate-100">
+              {onReject ? (
+                <button
+                  type="button"
+                  onClick={() => setShowRejectForm(true)}
+                  disabled={processing}
+                  className="px-3.5 py-2 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <IoCloseCircleOutline className="text-sm" />
+                  <span>Payment Failed? Reject</span>
+                </button>
+              ) : <div />}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={processing}
+                  className="px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={processing}
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-98 rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {processing ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <IoCheckmarkCircleOutline className="text-base" />
+                      <span>Confirm Disbursal (₹{formatAmount(request.amount)})</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

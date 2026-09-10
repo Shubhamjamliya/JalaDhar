@@ -98,6 +98,28 @@ const userSchema = new mongoose.Schema({
       default: 0,
       min: [0, 'Total credited cannot be negative']
     },
+    savedPayoutDetails: {
+      payoutType: {
+        type: String,
+        enum: ['UPI', 'BANK_TRANSFER'],
+        default: 'UPI'
+      },
+      upiId: {
+        type: String,
+        trim: true,
+        default: null
+      },
+      accountDetails: {
+        accountHolderName: { type: String, trim: true, default: null },
+        accountNumber: { type: String, trim: true, default: null },
+        ifscCode: { type: String, trim: true, default: null },
+        bankName: { type: String, trim: true, default: null }
+      },
+      updatedAt: {
+        type: Date,
+        default: null
+      }
+    },
     withdrawalRequests: [{
       amount: {
         type: Number,

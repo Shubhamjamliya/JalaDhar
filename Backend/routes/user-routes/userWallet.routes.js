@@ -6,7 +6,9 @@ const {
   getWalletBalance,
   getWalletTransactions,
   createWithdrawRequest,
-  getWithdrawalRequests
+  getWithdrawalRequests,
+  updatePayoutDetails,
+  deletePayoutDetails
 } = require('../../controllers/userControllers/userWalletController');
 
 router.use(authenticate);
@@ -16,6 +18,8 @@ router.get('/', getWalletBalance);
 router.get('/transactions', getWalletTransactions);
 router.post('/withdraw-request', createWithdrawRequest);
 router.get('/withdrawal-requests', getWithdrawalRequests);
+router.put('/payout-details', updatePayoutDetails);
+router.delete('/payout-details', deletePayoutDetails);
 
 module.exports = router;
 

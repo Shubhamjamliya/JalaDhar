@@ -4065,20 +4065,90 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                 inputRequired={true}
             />
 
-            {/* User Withdrawal Request Modals */}
-            <ConfirmModal
-                isOpen={showUserApproveModal}
-                onClose={() => {
-                    setShowUserApproveModal(false);
-                    setSelectedUserWithdrawalRequest(null);
-                }}
-                onConfirm={handleApproveUserWithdrawal}
-                title="Approve User Withdrawal Request"
-                message={`Are you sure you want to approve the withdrawal request of ${formatCurrency(selectedUserWithdrawalRequest?.amount || 0)}?`}
-                confirmText="Approve"
-                cancelText="Cancel"
-                confirmColor="success"
-            />
+            {/* User Withdrawal Request Approval Modal with Bank Details */}
+            {showUserApproveModal && selectedUserWithdrawalRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-outfit">
+                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 transition-all animate-in fade-in zoom-in-95">
+                        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
+                                <span className="material-symbols-outlined">check_circle</span>
+                            </div>
+                            <div>
+                                <h3 className="text-base font-black text-slate-900 leading-tight">
+                                    Approve User Refund Withdrawal
+                                </h3>
+                                <p className="text-xs text-slate-500">
+                                    Verify user payout details before approving for disbursal.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="my-4 p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-slate-500 font-medium">Customer:</span>
+                                <span className="font-bold text-slate-900">{selectedUserWithdrawalRequest.userName}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-slate-500 font-medium">Refund Amount:</span>
+                                <span className="font-black text-emerald-600 font-mono text-base">{formatCurrency(selectedUserWithdrawalRequest.amount || 0)}</span>
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-200/60">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                                    Payout Destination: {selectedUserWithdrawalRequest.payoutType === 'BANK_TRANSFER' ? '🏦 Bank Transfer' : '⚡ UPI'}
+                                </span>
+                                {selectedUserWithdrawalRequest.payoutType === 'BANK_TRANSFER' ? (
+                                    <div className="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200 text-xs font-mono text-slate-800">
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-500 font-sans">A/C Name:</span>
+                                            <span className="font-bold">{selectedUserWithdrawalRequest.accountDetails?.accountHolderName || selectedUserWithdrawalRequest.userName}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-500 font-sans">A/C Number:</span>
+                                            <span className="font-black text-blue-700">{selectedUserWithdrawalRequest.accountDetails?.accountNumber || 'N/A'}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-500 font-sans">IFSC Code:</span>
+                                            <span className="font-bold">{selectedUserWithdrawalRequest.accountDetails?.ifscCode || 'N/A'}</span>
+                                        </div>
+                                        {selectedUserWithdrawalRequest.accountDetails?.bankName && (
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500 font-sans">Bank:</span>
+                                                <span className="font-medium text-slate-600">{selectedUserWithdrawalRequest.accountDetails.bankName}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="bg-white p-3 rounded-xl border border-slate-200 text-xs font-mono font-bold text-slate-900 flex items-center justify-between">
+                                        <span className="text-slate-500 font-sans font-medium">UPI ID:</span>
+                                        <span className="text-blue-600">{selectedUserWithdrawalRequest.upiId || 'N/A'}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2.5 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowUserApproveModal(false);
+                                    setSelectedUserWithdrawalRequest(null);
+                                }}
+                                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleApproveUserWithdrawal}
+                                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer"
+                            >
+                                ✓ Approve Request
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <InputModal
                 isOpen={showUserRejectModal}
