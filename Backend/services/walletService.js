@@ -1,6 +1,8 @@
 const Vendor = require('../models/Vendor');
+const Admin = require('../models/Admin');
 const WalletTransaction = require('../models/WalletTransaction');
 const VendorWithdrawalRequest = require('../models/VendorWithdrawalRequest');
+const { sendNotification } = require('./notificationService');
 const mongoose = require('mongoose');
 
 /**
@@ -484,6 +486,43 @@ const createWithdrawalRequest = async (vendorId, amount) => {
         withdrawalRequestId: withdrawalRequest._id
       }
     });
+
+    // Notify active Finance Admins and Super Admins
+    try {
+      const admins = await Admin.find({
+        isActive: true,
+        $or: [
+          { role: 'SUPER_ADMIN' },
+          { role: 'ADMIN' },
+          { role: 'FINANCE_ADMIN' },
+          { permissions: { $in: ['finance', 'payments', 'all'] } }
+        ]
+      }).select('_id');
+
+      const vendorName = vendor.name || vendor.businessName || 'Expert Partner';
+      for (const admin of admins) {
+        await sendNotification({
+          recipient: admin._id,
+          recipientModel: 'Admin',
+          type: 'WITHDRAWAL_REQUEST',
+          title: 'New Expert Withdrawal Request',
+          message: `Expert ${vendorName} has requested a wallet withdrawal of ₹${Number(amount || 0).toLocaleString('en-IN')}`,
+          relatedEntity: {
+            entityType: 'VendorWithdrawalRequest',
+            entityId: withdrawalRequest._id
+          },
+          actionUrl: '/admin/withdrawals',
+          metadata: {
+            link: '/admin/withdrawals',
+            amount,
+            vendorId: vendor._id.toString(),
+            withdrawalRequestId: withdrawalRequest._id.toString()
+          }
+        });
+      }
+    } catch (notifErr) {
+      console.error('Error sending vendor withdrawal notification to admins:', notifErr);
+    }
 
     return {
       success: true,

@@ -47,6 +47,8 @@ export const NOTIFICATION_TYPE_META = {
   NEW_RATING:                 { label: 'New Rating',        color: 'text-amber-600 bg-amber-50 border-amber-200' },
   PAYMENT_REFUNDED:           { label: 'Refunded',          color: 'text-blue-600 bg-blue-50 border-blue-200' },
   REFUND_PROCESSED:           { label: 'Refund Processed',  color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  WITHDRAWAL_REQUEST:         { label: 'Withdrawal Request',color: 'text-purple-600 bg-purple-50 border-purple-200' },
+  WITHDRAWAL_PROCESSED:       { label: 'Withdrawal Settled',color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
 };
 
 /**
@@ -60,7 +62,10 @@ export function getNotificationUrl(notification, userRole) {
   const isVendor = userRole === 'Vendor' || userRole === 'Expert';
   const isAdmin  = userRole === 'Admin';
 
-  // 1. Explicit link in metadata
+  // 1. Explicit actionUrl or link in metadata
+  if (notification.actionUrl) {
+    return notification.actionUrl;
+  }
   if (notification.metadata?.link) {
     return notification.metadata.link;
   }
@@ -77,7 +82,18 @@ export function getNotificationUrl(notification, userRole) {
   const type = notification.type || '';
   const bookingId = entityId || notification.metadata?.bookingId;
 
-  // 3. Booking related notifications
+  // 3. Withdrawal related notifications
+  if (type.startsWith('WITHDRAWAL_') || entityType === 'UserWithdrawalRequest' || entityType === 'VendorWithdrawalRequest' || entityType === 'Withdrawal') {
+    if (isAdmin) {
+      return (entityType === 'UserWithdrawalRequest' || notification.metadata?.link === '/admin/user-withdrawals' || notification.actionUrl === '/admin/user-withdrawals')
+        ? '/admin/user-withdrawals'
+        : '/admin/withdrawals';
+    }
+    if (isVendor) return '/vendor/wallet';
+    return '/user/wallet';
+  }
+
+  // 4. Booking related notifications
   if (entityType === 'Booking' || type.startsWith('BOOKING_') || type.startsWith('BOREWELL_') || type.startsWith('REPORT_') || type === 'NEW_BOOKING_PENDING' || type === 'EXPERT_CANCELLED' || type === 'UNABLE_TO_COMPLETE') {
     if (isVendor) {
       if (type === 'BOOKING_CREATED' || type === 'NEW_BOOKING_PENDING' || type === 'BOOKING_ASSIGNED') {

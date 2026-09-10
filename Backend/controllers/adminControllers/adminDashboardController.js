@@ -3,6 +3,8 @@ const User = require('../../models/User');
 const Vendor = require('../../models/Vendor');
 const Booking = require('../../models/Booking');
 const Dispute = require('../../models/Dispute');
+const UserWithdrawalRequest = require('../../models/UserWithdrawalRequest');
+const VendorWithdrawalRequest = require('../../models/VendorWithdrawalRequest');
 const { BOOKING_STATUS } = require('../../utils/constants');
 const { getSetting } = require('../../services/settingsService');
 
@@ -178,14 +180,23 @@ exports.getDashboardStats = async (req, res) => {
     const todaysRevenue = todaysRevenueAgg.length > 0 ? todaysRevenueAgg[0].total : 0;
 
     // 7. Pending Actions Counts
-    const [pendingVendorsCount, openDisputesCount, pendingSettlementsCount, unassignedBookingsCount] = await Promise.all([
+    const [
+      pendingVendorsCount,
+      openDisputesCount,
+      pendingSettlementsCount,
+      unassignedBookingsCount,
+      pendingUserWithdrawalsCount,
+      pendingVendorWithdrawalsCount
+    ] = await Promise.all([
       Vendor.countDocuments({ isApproved: false }),
       Dispute.countDocuments({ status: { $in: ['PENDING', 'IN_PROGRESS'] } }),
       Booking.countDocuments({
         'borewellResult.status': { $in: ['SUCCESS', 'FAILED'] },
         vendorStatus: { $ne: BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE }
       }),
-      Booking.countDocuments({ status: BOOKING_STATUS.PENDING })
+      Booking.countDocuments({ status: BOOKING_STATUS.PENDING }),
+      UserWithdrawalRequest.countDocuments({ status: 'PENDING' }),
+      VendorWithdrawalRequest.countDocuments({ status: 'PENDING' })
     ]);
 
     // 8. Platform Fees breakdown (dynamic setting lookup)
@@ -371,6 +382,26 @@ exports.getDashboardStats = async (req, res) => {
         count: pendingSettlementsCount
       });
     }
+    if (pendingUserWithdrawalsCount > 0) {
+      alerts.push({
+        id: 'pending_user_withdrawals',
+        title: 'Pending User Refund Withdrawals',
+        message: `${pendingUserWithdrawalsCount} customer refund withdrawal request(s) awaiting review & disbursal`,
+        type: 'critical',
+        link: '/admin/user-withdrawals',
+        count: pendingUserWithdrawalsCount
+      });
+    }
+    if (pendingVendorWithdrawalsCount > 0) {
+      alerts.push({
+        id: 'pending_vendor_withdrawals',
+        title: 'Pending Expert Withdrawals',
+        message: `${pendingVendorWithdrawalsCount} expert partner withdrawal request(s) awaiting review & disbursal`,
+        type: 'warning',
+        link: '/admin/withdrawals',
+        count: pendingVendorWithdrawalsCount
+      });
+    }
 
     // Return Data
     res.status(200).json({
@@ -406,7 +437,9 @@ exports.getDashboardStats = async (req, res) => {
           pendingVendors: pendingVendorsCount,
           openDisputes: openDisputesCount,
           pendingSettlements: pendingSettlementsCount,
-          unassignedBookings: unassignedBookingsCount
+          unassignedBookings: unassignedBookingsCount,
+          pendingUserWithdrawals: pendingUserWithdrawalsCount,
+          pendingVendorWithdrawals: pendingVendorWithdrawalsCount
         },
         platformFees: {
           totalGrossVolume: totalRevenue,
@@ -777,7 +810,9 @@ exports.getSidebarCounts = async (req, res) => {
       pendingVendors,
       pendingDisputes,
       pendingSettlements,
-      activeBookings
+      activeBookings,
+      pendingUserWithdrawals,
+      pendingVendorWithdrawals
     ] = await Promise.all([
       Vendor.countDocuments({ isApproved: false }),
       Dispute.countDocuments({ status: { $in: ['PENDING', 'IN_PROGRESS'] } }),
@@ -803,7 +838,9 @@ exports.getSidebarCounts = async (req, res) => {
             BOOKING_STATUS.BOREWELL_UPLOADED
           ]
         }
-      })
+      }),
+      UserWithdrawalRequest.countDocuments({ status: 'PENDING' }),
+      VendorWithdrawalRequest.countDocuments({ status: 'PENDING' })
     ]);
 
     res.status(200).json({
@@ -812,7 +849,9 @@ exports.getSidebarCounts = async (req, res) => {
         counts: {
           approvals: pendingVendors,
           disputes: pendingDisputes,
-          payments: pendingSettlements,
+          payments: pendingSettlements + pendingUserWithdrawals + pendingVendorWithdrawals,
+          withdrawals: pendingVendorWithdrawals,
+          userWithdrawals: pendingUserWithdrawals,
           bookings: activeBookings
         }
       }

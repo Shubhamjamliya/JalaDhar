@@ -1,4 +1,5 @@
 const Vendor = require('../../models/Vendor');
+const Admin = require('../../models/Admin');
 const VendorWithdrawalRequest = require('../../models/VendorWithdrawalRequest');
 const VendorBankDetails = require('../../models/VendorBankDetails');
 const { processWithdrawalRequest } = require('../../services/walletService');

@@ -1,6 +1,8 @@
 const User = require('../models/User');
+const Admin = require('../models/Admin');
 const UserWalletTransaction = require('../models/UserWalletTransaction');
 const UserWithdrawalRequest = require('../models/UserWithdrawalRequest');
+const { sendNotification } = require('./notificationService');
 
 /**
  * Credit refund amount to user wallet
@@ -242,6 +244,44 @@ const createWithdrawalRequest = async (userId, amount, payoutData = {}) => {
         withdrawalRequestId: withdrawalRequest._id
       }
     });
+
+    // Notify active Finance Admins and Super Admins
+    try {
+      const admins = await Admin.find({
+        isActive: true,
+        $or: [
+          { role: 'SUPER_ADMIN' },
+          { role: 'ADMIN' },
+          { role: 'FINANCE_ADMIN' },
+          { permissions: { $in: ['finance', 'payments', 'all'] } }
+        ]
+      }).select('_id');
+
+      const userName = user.name || user.mobile || 'Customer';
+      for (const admin of admins) {
+        await sendNotification({
+          recipient: admin._id,
+          recipientModel: 'Admin',
+          type: 'WITHDRAWAL_REQUEST',
+          title: 'New Refund Withdrawal Request',
+          message: `${userName} has requested a wallet refund withdrawal of ₹${Number(amount || 0).toLocaleString('en-IN')}`,
+          relatedEntity: {
+            entityType: 'UserWithdrawalRequest',
+            entityId: withdrawalRequest._id
+          },
+          actionUrl: '/admin/user-withdrawals',
+          metadata: {
+            link: '/admin/user-withdrawals',
+            amount,
+            userId: user._id.toString(),
+            withdrawalRequestId: withdrawalRequest._id.toString(),
+            payoutType
+          }
+        });
+      }
+    } catch (notifErr) {
+      console.error('Error sending withdrawal notification to admins:', notifErr);
+    }
 
     return {
       success: true,

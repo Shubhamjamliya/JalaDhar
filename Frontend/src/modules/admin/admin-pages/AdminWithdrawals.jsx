@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import api from "../../../services/api";
 import {
     IoWalletOutline,
     IoCheckmarkCircleOutline,
@@ -38,6 +40,7 @@ export default function AdminWithdrawals() {
     const [availableFinanceAdmins, setAvailableFinanceAdmins] = useState([]);
     const [activeTab, setActiveTab] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [pendingUserCount, setPendingUserCount] = useState(0);
 
     // Modal states
     const [showApproveModal, setShowApproveModal] = useState(false);
@@ -54,6 +57,13 @@ export default function AdminWithdrawals() {
     useEffect(() => {
         loadWithdrawalRequests();
         loadAvailableFinanceAdmins();
+        api.get('/admin/dashboard/sidebar-counts')
+            .then(res => {
+                if (res.data?.data?.counts?.userWithdrawals !== undefined) {
+                    setPendingUserCount(res.data.data.counts.userWithdrawals);
+                }
+            })
+            .catch(() => {});
     }, []);
 
     useEffect(() => {
@@ -240,10 +250,36 @@ export default function AdminWithdrawals() {
 
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Expert Disbursals & Withdrawals</h1>
-                <p className="text-sm text-gray-500 mt-1">Review, approve, and disburse wallet settlements to expert partners.</p>
+            {/* Header & Page Switcher */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Expert Disbursals & Withdrawals</h1>
+                    <p className="text-sm text-gray-500 mt-1">Review, approve, and disburse wallet settlements to expert partners.</p>
+                </div>
+                <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200">
+                    <Link
+                        to="/admin/withdrawals"
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-white text-blue-600 shadow-sm"
+                    >
+                        <span>👨‍💼 Expert Disbursals</span>
+                        {getStatusCount("pending") > 0 && (
+                            <span className="px-1.5 py-0.5 text-[10px] bg-amber-500 text-white rounded-full font-black">
+                                {getStatusCount("pending")}
+                            </span>
+                        )}
+                    </Link>
+                    <Link
+                        to="/admin/user-withdrawals"
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg text-gray-600 hover:text-gray-900 transition-colors"
+                    >
+                        <span>👤 Customer Refunds</span>
+                        {pendingUserCount > 0 && (
+                            <span className="px-1.5 py-0.5 text-[10px] bg-indigo-600 text-white rounded-full font-black">
+                                {pendingUserCount}
+                            </span>
+                        )}
+                    </Link>
+                </div>
             </div>
 
             {/* Statistics Cards */}

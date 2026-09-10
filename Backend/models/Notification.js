@@ -91,7 +91,7 @@ const notificationSchema = new mongoose.Schema({
   relatedEntity: {
     entityType: {
       type: String,
-      enum: ['Booking', 'Payment', 'Vendor', 'Service', 'Dispute', 'Rating', 'User', 'Wallet'],
+      enum: ['Booking', 'Payment', 'Vendor', 'Service', 'Dispute', 'Rating', 'User', 'Wallet', 'UserWithdrawalRequest', 'VendorWithdrawalRequest', 'Withdrawal'],
       default: null
     },
     entityId: {

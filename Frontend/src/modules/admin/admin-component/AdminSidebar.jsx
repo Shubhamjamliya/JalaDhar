@@ -202,7 +202,9 @@ export default function AdminSidebar() {
         approvals: 0,
         disputes: 0,
         payments: 0,
-        bookings: 0
+        bookings: 0,
+        withdrawals: 0,
+        userWithdrawals: 0
     });
 
     useEffect(() => {
@@ -383,8 +385,11 @@ export default function AdminSidebar() {
                                                                 childCount = counts.approvals;
                                                                 childBadgeStyle = "bg-amber-500/20 text-amber-400 border-amber-500/30";
                                                             } else if (child.to === "/admin/withdrawals") {
-                                                                childCount = counts.payments;
+                                                                childCount = counts.withdrawals;
                                                                 childBadgeStyle = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+                                                            } else if (child.to === "/admin/user-withdrawals") {
+                                                                childCount = counts.userWithdrawals;
+                                                                childBadgeStyle = "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
                                                             } else if (child.to === "/admin/bookings" && child.end) {
                                                                 childCount = counts.bookings;
                                                                 childBadgeStyle = "bg-sky-500/20 text-sky-400 border-sky-500/30";
