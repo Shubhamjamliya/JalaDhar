@@ -12,6 +12,66 @@ const { getSetting } = require('../../services/settingsService');
  */
 exports.getDashboardStats = async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
+
+    let periodStart = null;
+    let periodEnd = null;
+    let periodRevenue = null;
+    let periodBookings = null;
+    let periodCompletedBookings = null;
+    let periodNewUsers = null;
+    let periodNewVendors = null;
+
+    if (startDate && endDate) {
+      periodStart = new Date(startDate);
+      periodEnd = new Date(endDate);
+      periodStart.setHours(0, 0, 0, 0);
+      periodEnd.setHours(23, 59, 59, 999);
+
+      const [pRevAgg, pBookings, pCompleted, pUsers, pVendors] = await Promise.all([
+        Booking.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: periodStart, $lte: periodEnd },
+              status: { $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalRevenue: {
+                $sum: {
+                  $add: [
+                    { $ifNull: ["$payment.advanceAmount", { $multiply: ["$payment.totalAmount", 0.4] }] },
+                    {
+                      $cond: [
+                        { $eq: ["$payment.remainingPaymentStatus", "PAID"] },
+                        { $ifNull: ["$payment.remainingAmount", { $multiply: ["$payment.totalAmount", 0.6] }] },
+                        0
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]),
+        Booking.countDocuments({ createdAt: { $gte: periodStart, $lte: periodEnd } }),
+        Booking.countDocuments({
+          updatedAt: { $gte: periodStart, $lte: periodEnd },
+          status: { $in: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE] }
+        }),
+        User.countDocuments({ createdAt: { $gte: periodStart, $lte: periodEnd }, role: 'USER' }),
+        Vendor.countDocuments({ createdAt: { $gte: periodStart, $lte: periodEnd } })
+      ]);
+
+      periodRevenue = pRevAgg.length > 0 ? pRevAgg[0].totalRevenue : 0;
+      periodBookings = pBookings;
+      periodCompletedBookings = pCompleted;
+      periodNewUsers = pUsers;
+      periodNewVendors = pVendors;
+    }
+
     // 1. Total Users
     const totalUsers = await User.countDocuments({ role: 'USER' });
 
@@ -327,6 +387,11 @@ exports.getDashboardStats = async (req, res) => {
           todaysCompletedBookings,
           todaysNewUsers,
           todaysNewVendors,
+          periodRevenue: periodRevenue !== null ? periodRevenue : totalRevenue,
+          periodBookings: periodBookings !== null ? periodBookings : activeBookings,
+          periodCompletedBookings: periodCompletedBookings !== null ? periodCompletedBookings : completedBookings,
+          periodNewUsers: periodNewUsers !== null ? periodNewUsers : totalUsers,
+          periodNewVendors: periodNewVendors !== null ? periodNewVendors : totalVendors,
           platformFeeEarnings,
           vendorNetPayouts
         },
@@ -388,6 +453,8 @@ exports.getRevenueAnalytics = async (req, res) => {
       dateFormat = '%Y-%m-01'; // Group by YYYY-MM
     } else if (period === 'yearly') {
       dateFormat = '%Y-01-01'; // Group by YYYY
+    } else if (period === 'hourly') {
+      dateFormat = '%Y-%m-%dT%H:00:00'; // Group by YYYY-MM-DDTHH:00:00
     } else {
       dateFormat = '%Y-%m-%d'; // Group by YYYY-MM-DD
     }

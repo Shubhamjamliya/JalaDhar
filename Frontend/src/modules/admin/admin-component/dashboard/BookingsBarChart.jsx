@@ -9,16 +9,26 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { filterByDateRange, getDateRange, formatDate } from '../../utils/adminHelpers';
+const formatChartDateLabel = (dateStr, period) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+
+  if (period === 'today' || dateStr.includes('T')) {
+    return d.toLocaleTimeString('en-IN', { hour: 'numeric', hour12: true });
+  }
+  if (period === 'year') {
+    return d.toLocaleDateString('en-IN', { month: 'short' });
+  }
+  return d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+};
 
 const BookingsBarChart = ({ data, period = 'month' }) => {
-  const filteredData = useMemo(() => {
-    const range = getDateRange(period);
-    const filtered = filterByDateRange(data, range.start, range.end);
-    const daysToShow = period === 'week' ? 7 : 7;
-    return filtered.slice(-daysToShow).map((item) => ({
+  const chartData = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    return data.map((item) => ({
       ...item,
-      dateLabel: formatDate(item.date, { month: 'short', day: 'numeric' }),
+      dateLabel: formatChartDateLabel(item.date, period),
     }));
   }, [data, period]);
 
@@ -58,7 +68,7 @@ const BookingsBarChart = ({ data, period = 'month' }) => {
 
       <div className="w-full overflow-x-auto scrollbar-admin">
         <ResponsiveContainer width="100%" height={250} minHeight={200}>
-          <BarChart data={filteredData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+          <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
             <defs>
               <linearGradient id="colorBookingsAdmin" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.85} />
@@ -81,6 +91,7 @@ const BookingsBarChart = ({ data, period = 'month' }) => {
               fontSize={10}
               tickLine={false}
               axisLine={false}
+              allowDecimals={false}
               width={50}
             />
             <Tooltip content={<CustomTooltip />} />

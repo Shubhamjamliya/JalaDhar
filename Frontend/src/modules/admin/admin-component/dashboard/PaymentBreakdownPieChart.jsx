@@ -2,8 +2,24 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
-const PaymentBreakdownPieChart = ({ bookings = [] }) => {
+const PaymentBreakdownPieChart = ({ bookings = [], vendorPaymentBreakdown = [] }) => {
   const data = useMemo(() => {
+    if (vendorPaymentBreakdown && vendorPaymentBreakdown.length > 0) {
+      let paid = 0;
+      let pending = 0;
+      vendorPaymentBreakdown.forEach((item) => {
+        if ((item._id || '').toUpperCase() === 'PAID') {
+          paid += Number(item.count || 0);
+        } else {
+          pending += Number(item.count || 0);
+        }
+      });
+      return [
+        { name: 'Paid to Expert', value: paid },
+        { name: 'Pending Expert Payment', value: pending },
+      ];
+    }
+
     let paid = 0;
     let pending = 0;
     bookings.forEach((b) => {
@@ -17,7 +33,7 @@ const PaymentBreakdownPieChart = ({ bookings = [] }) => {
       { name: 'Paid to Expert', value: paid },
       { name: 'Pending Expert Payment', value: pending },
     ];
-  }, [bookings]);
+  }, [bookings, vendorPaymentBreakdown]);
 
   const colors = ['#10B981', '#F59E0B'];
 

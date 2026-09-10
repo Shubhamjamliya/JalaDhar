@@ -1,8 +1,8 @@
 import api from './api';
 
-export const getDashboardStats = async () => {
+export const getDashboardStats = async (params = {}) => {
   try {
-    const response = await api.get('/admin/dashboard/stats');
+    const response = await api.get('/admin/dashboard/stats', { params });
     return response.data;
   } catch (error) {
     throw error;

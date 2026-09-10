@@ -9,15 +9,28 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { filterByDateRange, getDateRange, formatDate, formatCurrency } from '../../utils/adminHelpers';
+import { formatCurrency } from '../../utils/adminHelpers';
+
+const formatChartDateLabel = (dateStr, period) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+
+  if (period === 'today' || dateStr.includes('T')) {
+    return d.toLocaleTimeString('en-IN', { hour: 'numeric', hour12: true });
+  }
+  if (period === 'year') {
+    return d.toLocaleDateString('en-IN', { month: 'short' });
+  }
+  return d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+};
 
 const RevenueLineChart = ({ data, period = 'month' }) => {
-  const filteredData = useMemo(() => {
-    const range = getDateRange(period);
-    const filtered = filterByDateRange(data, range.start, range.end);
-    return filtered.map((item) => ({
+  const chartData = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    return data.map((item) => ({
       ...item,
-      dateLabel: formatDate(item.date, { month: 'short', day: 'numeric' }),
+      dateLabel: formatChartDateLabel(item.date, period),
     }));
   }, [data, period]);
 
@@ -57,7 +70,7 @@ const RevenueLineChart = ({ data, period = 'month' }) => {
 
       <div className="w-full overflow-x-auto scrollbar-admin">
         <ResponsiveContainer width="100%" height={250} minHeight={200}>
-          <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
             <defs>
               <linearGradient id="colorRevenueAdmin" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -80,7 +93,11 @@ const RevenueLineChart = ({ data, period = 'month' }) => {
               fontSize={10}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v) => `₹${Math.round(v / 1000)}k`}
+              tickFormatter={(v) => {
+                if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
+                if (v >= 1000) return `₹${Math.round(v / 1000)}k`;
+                return `₹${v}`;
+              }}
               width={50}
             />
             <Tooltip content={<CustomTooltip />} />

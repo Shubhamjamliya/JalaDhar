@@ -9,7 +9,19 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { formatDate, filterByDateRange, getDateRange } from '../../utils/adminHelpers';
+const formatChartDateLabel = (dateStr, period) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+
+  if (period === 'today' || dateStr.includes('T')) {
+    return d.toLocaleTimeString('en-IN', { hour: 'numeric', hour12: true });
+  }
+  if (period === 'year') {
+    return d.toLocaleDateString('en-IN', { month: 'short' });
+  }
+  return d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+};
 
 const getCustomerKey = (booking) => {
   const phone = booking?.user?.phone;
@@ -20,8 +32,7 @@ const getCustomerKey = (booking) => {
 
 const CustomerGrowthAreaChart = ({ timelineData = [], bookings = [], period = 'month' }) => {
   const customerData = useMemo(() => {
-    const range = getDateRange(period);
-    const filteredDays = filterByDateRange(timelineData, range.start, range.end);
+    if (!Array.isArray(timelineData)) return [];
 
     const byDate = new Map();
     bookings.forEach((b) => {
@@ -35,8 +46,9 @@ const CustomerGrowthAreaChart = ({ timelineData = [], bookings = [], period = 'm
     const seen = new Set();
     let cumulative = 0;
 
-    return filteredDays.map((d) => {
-      const dayBookings = byDate.get(d.date) || [];
+    return timelineData.map((d) => {
+      const dayKey = d.date ? d.date.slice(0, 10) : '';
+      const dayBookings = byDate.get(dayKey) || [];
       let newCustomers = 0;
       dayBookings.forEach((b) => {
         const k = getCustomerKey(b);
@@ -49,7 +61,7 @@ const CustomerGrowthAreaChart = ({ timelineData = [], bookings = [], period = 'm
       cumulative += newCustomers;
       return {
         date: d.date,
-        dateLabel: formatDate(d.date, { month: 'short', day: 'numeric' }),
+        dateLabel: formatChartDateLabel(d.date, period),
         customers: cumulative,
         newCustomers,
       };
@@ -113,7 +125,12 @@ const CustomerGrowthAreaChart = ({ timelineData = [], bookings = [], period = 'm
               fontSize={10}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v) => `${Math.round(Number(v || 0) / 1000)}k`}
+              allowDecimals={false}
+              tickFormatter={(v) => {
+                const num = Number(v || 0);
+                if (num >= 1000) return `${Math.round(num / 1000)}k`;
+                return `${num}`;
+              }}
               width={50}
             />
             <Tooltip content={<CustomTooltip />} />

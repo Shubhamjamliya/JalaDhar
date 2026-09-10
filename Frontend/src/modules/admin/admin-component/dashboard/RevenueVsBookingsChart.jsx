@@ -10,16 +10,28 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { filterByDateRange, getDateRange, formatDate, formatCurrency } from '../../utils/adminHelpers';
+import { formatCurrency } from '../../utils/adminHelpers';
+
+const formatChartDateLabel = (dateStr, period) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+
+  if (period === 'today' || dateStr.includes('T')) {
+    return d.toLocaleTimeString('en-IN', { hour: 'numeric', hour12: true });
+  }
+  if (period === 'year') {
+    return d.toLocaleDateString('en-IN', { month: 'short' });
+  }
+  return d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+};
 
 const RevenueVsBookingsChart = ({ data, period = 'month' }) => {
-  const filteredData = useMemo(() => {
-    const range = getDateRange(period);
-    const filtered = filterByDateRange(data, range.start, range.end);
-    const limit = period === 'week' ? 7 : period === 'month' ? 14 : 30;
-    return filtered.slice(-limit).map((item) => ({
+  const chartData = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    return data.map((item) => ({
       ...item,
-      dateLabel: formatDate(item.date, { month: 'short', day: 'numeric' }),
+      dateLabel: formatChartDateLabel(item.date, period),
     }));
   }, [data, period]);
 
@@ -54,7 +66,7 @@ const RevenueVsBookingsChart = ({ data, period = 'month' }) => {
 
       <div className="w-full overflow-x-auto scrollbar-admin">
         <ResponsiveContainer width="100%" height={260} minHeight={200}>
-          <ComposedChart data={filteredData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
             <XAxis
               dataKey="dateLabel"
@@ -72,7 +84,11 @@ const RevenueVsBookingsChart = ({ data, period = 'month' }) => {
               fontSize={10}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v) => `₹${Math.round(v / 1000)}k`}
+              tickFormatter={(v) => {
+                if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
+                if (v >= 1000) return `₹${Math.round(v / 1000)}k`;
+                return `₹${v}`;
+              }}
               width={50}
             />
             <YAxis
@@ -82,6 +98,7 @@ const RevenueVsBookingsChart = ({ data, period = 'month' }) => {
               fontSize={10}
               tickLine={false}
               axisLine={false}
+              allowDecimals={false}
               width={35}
             />
             <Tooltip content={<CustomTooltip />} />

@@ -25,6 +25,7 @@ const AdminDashboard = () => {
     const navigate = useNavigate();
     const { admin } = useAdminAuth();
     const [period, setPeriod] = useState('month');
+    const [customRange, setCustomRange] = useState({ startDate: '', endDate: '' });
     const [revenueData, setRevenueData] = useState([]);
     const [recentBookingsList, setRecentBookingsList] = useState([]);
     const [todaysActivityData, setTodaysActivityData] = useState(null);
@@ -33,6 +34,7 @@ const AdminDashboard = () => {
     const [expertPerformanceData, setExpertPerformanceData] = useState([]);
     const [alertsData, setAlertsData] = useState([]);
     const [statusDistributionData, setStatusDistributionData] = useState([]);
+    const [vendorPaymentBreakdownData, setVendorPaymentBreakdownData] = useState([]);
     const [topServicesData, setTopServicesData] = useState([]);
     const [stats, setStats] = useState({
         totalUsers: 0,
@@ -41,6 +43,11 @@ const AdminDashboard = () => {
         completedBookings: 0,
         totalRevenue: 0,
         todayRevenue: 0,
+        periodRevenue: 0,
+        periodBookings: 0,
+        periodCompletedBookings: 0,
+        periodNewUsers: 0,
+        periodNewVendors: 0,
     });
 
     const canReports = hasAdminPermission(admin, 'reports');
@@ -52,8 +59,50 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Fetch Stats & Dashboard Analytics
-                const statsRes = await getDashboardStats();
+                // Compute range & API grouping
+                const now = new Date();
+                let startDate = new Date();
+                let endDate = new Date();
+                let apiPeriod = 'daily';
+
+                if (period === 'today') {
+                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+                    apiPeriod = 'hourly';
+                } else if (period === 'week') {
+                    const day = now.getDay();
+                    const diffToMonday = day === 0 ? 6 : day - 1;
+                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday, 0, 0, 0, 0);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+                    apiPeriod = 'daily';
+                } else if (period === 'month') {
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+                    apiPeriod = 'daily';
+                } else if (period === 'year') {
+                    startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+                    apiPeriod = 'monthly';
+                } else if (period === 'custom' && customRange.startDate && customRange.endDate) {
+                    startDate = new Date(customRange.startDate);
+                    startDate.setHours(0, 0, 0, 0);
+                    endDate = new Date(customRange.endDate);
+                    endDate.setHours(23, 59, 59, 999);
+                    const diffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                    if (diffDays <= 1) {
+                        apiPeriod = 'hourly';
+                    } else if (diffDays > 60) {
+                        apiPeriod = 'monthly';
+                    } else {
+                        apiPeriod = 'daily';
+                    }
+                }
+
+                const startIso = startDate.toISOString();
+                const endIso = endDate.toISOString();
+
+                // 1. Fetch Stats & Dashboard Analytics with period range
+                const statsRes = await getDashboardStats({ startDate: startIso, endDate: endIso });
                 if (statsRes.success) {
                     const s = statsRes.data.stats;
                     setStats({
@@ -63,6 +112,11 @@ const AdminDashboard = () => {
                         completedBookings: s.completedBookings,
                         totalRevenue: s.totalRevenue,
                         todayRevenue: s.todayRevenue || 0,
+                        periodRevenue: s.periodRevenue,
+                        periodBookings: s.periodBookings,
+                        periodCompletedBookings: s.periodCompletedBookings,
+                        periodNewUsers: s.periodNewUsers,
+                        periodNewVendors: s.periodNewVendors,
                     });
                     setRecentBookingsList(statsRes.data.recentBookings || []);
                     setTodaysActivityData(statsRes.data.todaysActivity || null);
@@ -71,32 +125,15 @@ const AdminDashboard = () => {
                     setExpertPerformanceData(statsRes.data.expertPerformance || []);
                     setAlertsData(statsRes.data.alerts || []);
                     setStatusDistributionData(statsRes.data.bookingStatusDistribution || []);
+                    setVendorPaymentBreakdownData(statsRes.data.vendorPaymentBreakdown || []);
                     setTopServicesData(statsRes.data.topServices || []);
                 }
 
                 // 2. Fetch Revenue Analytics based on Period
-                let apiPeriod = 'monthly';
-                let startDate = new Date();
-                const endDate = new Date().toISOString();
-
-                if (period === 'year') {
-                    apiPeriod = 'monthly';
-                    startDate.setFullYear(startDate.getFullYear() - 1);
-                } else if (period === 'week') {
-                    apiPeriod = 'daily';
-                    startDate.setDate(startDate.getDate() - 7);
-                } else if (period === 'month') {
-                    apiPeriod = 'daily';
-                    startDate.setDate(startDate.getDate() - 30);
-                } else {
-                    apiPeriod = 'daily';
-                    startDate.setDate(startDate.getDate() - 1);
-                }
-
                 const revRes = await getRevenueAnalytics({
                     period: apiPeriod,
-                    startDate: startDate.toISOString(),
-                    endDate
+                    startDate: startIso,
+                    endDate: endIso
                 });
 
                 if (revRes.success) {
@@ -114,7 +151,14 @@ const AdminDashboard = () => {
         };
 
         fetchData();
-    }, [period]);
+    }, [period, customRange.startDate, customRange.endDate]);
+
+    const handlePeriodChange = (newPeriod, newCustomRange) => {
+        setPeriod(newPeriod);
+        if (newCustomRange) {
+            setCustomRange(newCustomRange);
+        }
+    };
 
     const handleExportCsv = () => {
         try {
@@ -151,10 +195,21 @@ const AdminDashboard = () => {
         }
     };
 
+    const periodLabel = period === 'today'
+        ? 'Today'
+        : period === 'week'
+        ? 'This Week'
+        : period === 'month'
+        ? 'This Month'
+        : period === 'year'
+        ? 'This Year'
+        : 'Selected Range';
+
     const statsCards = [
         {
-            title: 'Total Revenue',
-            value: formatCurrency(stats.totalRevenue || 0),
+            title: `Revenue (${periodLabel})`,
+            value: formatCurrency(stats.periodRevenue !== undefined ? stats.periodRevenue : stats.totalRevenue),
+            subtitle: `All-time: ${formatCurrency(stats.totalRevenue || 0)}`,
             change: 0,
             icon: FiDollarSign,
             color: 'text-white',
@@ -164,8 +219,9 @@ const AdminDashboard = () => {
             link: canReports ? '/admin/reports/revenue' : (canPayments ? '/admin/payments' : null)
         },
         {
-            title: 'Pending Bookings',
-            value: (stats.activeBookings || 0).toLocaleString(),
+            title: `Bookings (${periodLabel})`,
+            value: (stats.periodBookings !== undefined ? stats.periodBookings : stats.activeBookings || 0).toLocaleString(),
+            subtitle: `${stats.activeBookings || 0} active now`,
             change: 0,
             icon: FiShoppingBag,
             color: 'text-white',
@@ -175,8 +231,9 @@ const AdminDashboard = () => {
             link: canBookings ? '/admin/bookings' : (canReports ? '/admin/reports/bookings' : null)
         },
         {
-            title: 'Completed Bookings',
-            value: (stats.completedBookings || 0).toLocaleString(),
+            title: `Completed (${periodLabel})`,
+            value: (stats.periodCompletedBookings !== undefined ? stats.periodCompletedBookings : stats.completedBookings || 0).toLocaleString(),
+            subtitle: `${stats.completedBookings || 0} total completed`,
             change: 0,
             icon: FiActivity,
             color: 'text-white',
@@ -186,8 +243,9 @@ const AdminDashboard = () => {
             link: canBookings ? '/admin/bookings' : (canReports ? '/admin/reports/bookings' : null)
         },
         {
-            title: 'Total Users',
-            value: (stats.totalUsers || 0).toLocaleString(),
+            title: `New Users (${periodLabel})`,
+            value: (stats.periodNewUsers !== undefined ? stats.periodNewUsers : stats.totalUsers || 0).toLocaleString(),
+            subtitle: `${stats.totalUsers || 0} total users`,
             change: 0,
             icon: FiUser,
             color: 'text-white',
@@ -197,8 +255,9 @@ const AdminDashboard = () => {
             link: canUsers ? '/admin/users' : null
         },
         {
-            title: 'Total Experts',
-            value: (stats.totalVendors || 0).toLocaleString(),
+            title: `New Experts (${periodLabel})`,
+            value: (stats.periodNewVendors !== undefined ? stats.periodNewVendors : stats.totalVendors || 0).toLocaleString(),
+            subtitle: `${stats.totalVendors || 0} total experts`,
             change: 0,
             icon: FiBriefcase,
             color: 'text-white',
@@ -219,8 +278,9 @@ const AdminDashboard = () => {
                 <div className="w-full">
                     <TimePeriodFilter
                         selectedPeriod={period}
-                        onPeriodChange={setPeriod}
+                        onPeriodChange={handlePeriodChange}
                         onExport={handleExportCsv}
+                        customRange={customRange}
                     />
                 </div>
             </div>
@@ -262,8 +322,11 @@ const AdminDashboard = () => {
                             </div>
 
                             <div className="relative z-10">
-                                <h3 className="text-gray-600 text-[10px] sm:text-xs font-medium mb-0.5">{card.title}</h3>
+                                <h3 className="text-gray-600 text-[10px] sm:text-xs font-medium mb-0.5 truncate">{card.title}</h3>
                                 <p className="text-gray-800 text-lg sm:text-xl font-bold">{card.value}</p>
+                                {card.subtitle && (
+                                    <p className="text-[10px] text-gray-400 font-semibold mt-0.5 truncate">{card.subtitle}</p>
+                                )}
                             </div>
                         </motion.div>
                     );
@@ -293,7 +356,7 @@ const AdminDashboard = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <BookingStatusPieChart bookings={recentBookingsList} statusDistribution={statusDistributionData} />
-                <PaymentBreakdownPieChart bookings={recentBookingsList} />
+                <PaymentBreakdownPieChart bookings={recentBookingsList} vendorPaymentBreakdown={vendorPaymentBreakdownData} />
             </div>
 
             <div className="grid grid-cols-1 gap-4">
