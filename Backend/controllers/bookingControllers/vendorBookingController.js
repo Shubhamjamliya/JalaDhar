@@ -14,6 +14,7 @@ const { autoReassignBooking } = require('../../services/bookingReassignmentServi
 const { creditToVendorWallet, retryFailedCredit, debitFromVendorWallet } = require('../../services/walletService');
 const { getSettings } = require('../../services/settingsService');
 const { getIO } = require('../../sockets');
+const { sendNotification } = require('../../services/notificationService');
 
 /**
  * Sanitize booking object for vendor/expert consumption.
@@ -462,38 +463,74 @@ const rejectBooking = async (req, res) => {
       console.error('[rejectBooking] Error clawing back travel allowance:', clawbackErr);
     }
 
-    // Notify User
-    await sendNotification({
-      recipient: booking.user._id,
-      recipientModel: 'User',
-      type: 'BOOKING_REJECTED',
-      title: 'Booking Rejected',
-      message: `Your booking was rejected by the expert. Reason: ${rejectionReason.trim()}`,
-      relatedEntity: {
-        entityType: 'Booking',
-        entityId: booking._id
-      }
-    });
-
-    // Notify Admins
+    // Notify User & Admins and broadcast status update
     try {
-      const Admin = require('../../models/Admin');
-      const admins = await Admin.find({ isActive: true });
-      for (const admin of admins) {
+      let io = null;
+      try {
+        io = getIO();
+      } catch (ioErr) {
+        // Socket not initialized or unavailable
+      }
+
+      // Notify User
+      if (booking.user?._id) {
         await sendNotification({
-          recipient: admin._id,
-          recipientModel: 'Admin',
+          recipient: booking.user._id,
+          recipientModel: 'User',
           type: 'BOOKING_REJECTED',
           title: 'Booking Rejected',
-          message: `Booking #${booking._id.toString().slice(-6)} was rejected by vendor. Reason: ${rejectionReason.trim()}`,
+          message: `Your booking was rejected by the expert. Reason: ${rejectionReason.trim()}`,
           relatedEntity: {
             entityType: 'Booking',
             entityId: booking._id
           }
-        });
+        }, io);
       }
-    } catch (adminErr) {
-      console.error('Error sending admin notification:', adminErr);
+
+      // Notify Admins
+      try {
+        const Admin = require('../../models/Admin');
+        const admins = await Admin.find({ isActive: true });
+        for (const admin of admins) {
+          await sendNotification({
+            recipient: admin._id,
+            recipientModel: 'Admin',
+            type: 'BOOKING_REJECTED',
+            title: 'Booking Rejected',
+            message: `Booking #${booking._id.toString().slice(-6)} was rejected by vendor. Reason: ${rejectionReason.trim()}`,
+            relatedEntity: {
+              entityType: 'Booking',
+              entityId: booking._id
+            }
+          }, io);
+        }
+      } catch (adminErr) {
+        console.error('Error sending admin notification:', adminErr);
+      }
+
+      // Live socket events to update apps in real-time
+      if (io) {
+        const userIdStr = booking.user?._id?.toString() || booking.user?.toString();
+        const vendorIdStr = vendorId.toString();
+        const payload = {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          userStatus: booking.userStatus,
+          vendorStatus: booking.vendorStatus,
+          rejectionReason: booking.rejectionReason,
+          booking
+        };
+        if (userIdStr) {
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_status_updated', payload);
+          io.to(`user:${userIdStr}`).to(`User_${userIdStr}`).to(userIdStr).emit('booking_updated', payload);
+        }
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_status_updated', payload);
+        io.to(`vendor:${vendorIdStr}`).to(`Vendor_${vendorIdStr}`).to(vendorIdStr).emit('booking_updated', payload);
+        io.to(`booking_${booking._id}`).emit('booking_status_updated', payload);
+        io.to(`booking_${booking._id}`).emit('booking_updated', payload);
+      }
+    } catch (notifErr) {
+      console.error('[rejectBooking] Notification or socket broadcast error:', notifErr);
     }
 
     res.json({
