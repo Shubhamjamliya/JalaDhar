@@ -339,6 +339,22 @@ const processWithdrawalRequest = async (userId, requestId, action, adminId, data
       withdrawalRequest.rejectionReason = data.rejectionReason || 'No reason provided';
       withdrawalRequest.processedAt = new Date();
       await withdrawalRequest.save({ session });
+
+      // Update pending withdrawal transaction to FAILED
+      await UserWalletTransaction.updateMany(
+        {
+          user: userId,
+          'metadata.withdrawalRequestId': withdrawalRequest._id,
+          status: 'PENDING'
+        },
+        {
+          $set: {
+            status: 'FAILED',
+            errorMessage: data.rejectionReason || 'Withdrawal request rejected by admin'
+          }
+        },
+        { session }
+      );
     } else if (action === 'PROCESS') {
       if (withdrawalRequest.status !== 'APPROVED') {
         throw new Error('Only approved requests can be processed');
@@ -388,6 +404,104 @@ const processWithdrawalRequest = async (userId, requestId, action, adminId, data
     if (['REJECT', 'PROCESS'].includes(action) && withdrawalRequest.assignedTo) {
       const { decrementActiveWorkload } = require('./workloadDistributionService');
       await decrementActiveWorkload(withdrawalRequest.assignedTo);
+    }
+
+    // Send notifications and emit real-time socket events to user
+    try {
+      const { sendNotification } = require('./notificationService');
+      const { getIO } = require('../sockets');
+      const formattedAmount = (withdrawalRequest.amount || 0).toLocaleString('en-IN');
+      const strUserId = userId.toString();
+
+      let notifType = null;
+      let notifTitle = '';
+      let notifMessage = '';
+
+      if (action === 'REJECT') {
+        notifType = 'WITHDRAWAL_REJECTED';
+        notifTitle = 'Withdrawal Request Rejected';
+        notifMessage = `Your withdrawal request of ₹${formattedAmount} was rejected. Reason: ${withdrawalRequest.rejectionReason || 'No reason provided'}`;
+      } else if (action === 'APPROVE') {
+        notifType = 'WITHDRAWAL_APPROVED';
+        notifTitle = 'Withdrawal Request Approved';
+        notifMessage = `Your withdrawal request of ₹${formattedAmount} has been approved and is queued for payout disbursal.`;
+      } else if (action === 'PROCESS') {
+        notifType = 'WITHDRAWAL_PROCESSED';
+        notifTitle = 'Withdrawal Payout Processed';
+        const method = withdrawalRequest.paymentMethod || 'bank transfer';
+        const refStr = withdrawalRequest.transactionId ? ` (Ref: ${withdrawalRequest.transactionId})` : '';
+        notifMessage = `Your withdrawal request of ₹${formattedAmount} has been settled via ${method}${refStr}.`;
+      }
+
+      if (notifType) {
+        await sendNotification({
+          recipient: userId,
+          recipientModel: 'User',
+          type: notifType,
+          title: notifTitle,
+          message: notifMessage,
+          relatedEntity: {
+            entityType: 'UserWithdrawalRequest',
+            entityId: withdrawalRequest._id
+          },
+          metadata: {
+            link: '/user/wallet',
+            amount: withdrawalRequest.amount,
+            status: withdrawalRequest.status,
+            rejectionReason: withdrawalRequest.rejectionReason,
+            transactionId: withdrawalRequest.transactionId,
+            requestId: withdrawalRequest._id.toString()
+          }
+        });
+      }
+
+      // Direct socket emit for real-time wallet UI refresh without manual reload
+      const io = typeof getIO === 'function' ? getIO() : null;
+      if (io) {
+        const updatePayload = {
+          type: notifType || `WITHDRAWAL_${action}`,
+          status: withdrawalRequest.status,
+          requestId: withdrawalRequest._id.toString(),
+          amount: withdrawalRequest.amount,
+          rejectionReason: withdrawalRequest.rejectionReason,
+          transactionId: withdrawalRequest.transactionId,
+          timestamp: new Date().toISOString()
+        };
+        io.to(`user:${strUserId}`).emit('wallet_updated', updatePayload);
+        io.to(strUserId).emit('wallet_updated', updatePayload);
+        io.to(`user:${strUserId}`).emit('withdrawal_updated', updatePayload);
+        io.to(strUserId).emit('withdrawal_updated', updatePayload);
+      }
+
+      // Send rejection email if user has email
+      if (action === 'REJECT' && user.email) {
+        try {
+          const { sendEmail } = require('./emailService');
+          await sendEmail({
+            to: user.email,
+            subject: 'Update Regarding Your Withdrawal Request - Jaladhaara',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1e293b; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <h2 style="color: #e11d48; margin-top: 0;">Withdrawal Request Update</h2>
+                <p>Dear <strong>${user.name || 'Customer'}</strong>,</p>
+                <p>We are writing to update you on your withdrawal request for <strong>₹${formattedAmount}</strong>.</p>
+                <div style="background-color: #fff1f2; border-left: 4px solid #e11d48; padding: 14px; margin: 16px 0; border-radius: 6px;">
+                  <p style="margin: 0; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #9f1239;">Reason for Rejection:</p>
+                  <p style="margin: 6px 0 0; font-size: 14px; color: #881337;">${withdrawalRequest.rejectionReason || 'No reason specified'}</p>
+                </div>
+                <p>Your funds remain safe in your wallet balance. You can submit a new withdrawal request with updated bank account or UPI details at any time from your wallet dashboard.</p>
+                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
+                  Need help? Contact our support team directly from the app.
+                </div>
+              </div>
+            `
+          });
+        } catch (emailErr) {
+          console.error('Failed to send rejection email to user:', emailErr);
+        }
+      }
+    } catch (notifErr) {
+      console.error('Failed to dispatch user withdrawal notification/socket:', notifErr);
     }
 
     return {

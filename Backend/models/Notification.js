@@ -66,6 +66,8 @@ const notificationSchema = new mongoose.Schema({
       'SERVICE_REJECTED',
       // Wallet
       'WITHDRAWAL_REQUEST',
+      'WITHDRAWAL_APPROVED',
+      'WITHDRAWAL_REJECTED',
       'WITHDRAWAL_PROCESSED',
       'PLATFORM_FEE_DEDUCTION',
       // Admin

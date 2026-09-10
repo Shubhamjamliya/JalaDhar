@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getUserWalletBalance, getUserWalletTransactions, createUserWithdrawalRequest } from "../../../services/userApi";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
@@ -10,7 +11,9 @@ import InputModal from "../../shared/components/InputModal";
 
 export default function UserWallet() {
     const { user } = useAuth();
+    const { socket } = useNotifications();
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [walletBalance, setWalletBalance] = useState(0);
     const [totalCredited, setTotalCredited] = useState(0);
     const [transactions, setTransactions] = useState([]);
@@ -20,13 +23,13 @@ export default function UserWallet() {
     const [withdrawAmount, setWithdrawAmount] = useState("");
     const [processingWithdraw, setProcessingWithdraw] = useState(false);
 
-    useEffect(() => {
-        loadWalletData();
-    }, []);
-
-    const loadWalletData = async () => {
+    const loadWalletData = async (showLoading = true) => {
         try {
-            setLoading(true);
+            if (showLoading) {
+                setLoading(true);
+            } else {
+                setRefreshing(true);
+            }
             
             // Get wallet balance and summary
             const balanceResponse = await getUserWalletBalance();
@@ -45,8 +48,61 @@ export default function UserWallet() {
             handleApiError(err, "Failed to load wallet data");
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
+
+    useEffect(() => {
+        loadWalletData(true);
+    }, []);
+
+    // Auto-refresh when tab/window gains focus or visibility
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                loadWalletData(false);
+            }
+        };
+        window.addEventListener('focus', handleVisibilityChange);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            window.removeEventListener('focus', handleVisibilityChange);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
+    // Real-time socket updates (auto-updates withdrawal requests & balance without manual refresh)
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleWalletUpdate = (data) => {
+            console.log('[UserWallet] Real-time wallet update received:', data);
+            loadWalletData(false);
+        };
+
+        const handleNotification = (notif) => {
+            if (
+                notif?.type?.startsWith('WITHDRAWAL_') ||
+                notif?.type?.startsWith('WALLET_') ||
+                notif?.relatedEntity?.entityType === 'UserWithdrawalRequest' ||
+                notif?.relatedEntity?.entityType === 'Wallet' ||
+                notif?.metadata?.link === '/user/wallet'
+            ) {
+                console.log('[UserWallet] Withdrawal/wallet notification received:', notif);
+                loadWalletData(false);
+            }
+        };
+
+        socket.on('wallet_updated', handleWalletUpdate);
+        socket.on('withdrawal_updated', handleWalletUpdate);
+        socket.on('new_notification', handleNotification);
+
+        return () => {
+            socket.off('wallet_updated', handleWalletUpdate);
+            socket.off('withdrawal_updated', handleWalletUpdate);
+            socket.off('new_notification', handleNotification);
+        };
+    }, [socket]);
 
     const [payoutType, setPayoutType] = useState("UPI");
     const [upiId, setUpiId] = useState(() => localStorage.getItem("user_withdrawal_upi") || "");
@@ -243,7 +299,15 @@ export default function UserWallet() {
             {/* Withdrawal Requests */}
             {withdrawalRequests.length > 0 && (
                 <>
-                    <h2 className="px-1 pt-2 pb-3 text-lg font-black text-gray-900 tracking-tight">Withdrawal Requests</h2>
+                    <div className="flex items-center justify-between px-1 pt-2 pb-3">
+                        <h2 className="text-lg font-black text-gray-900 tracking-tight">Withdrawal Requests</h2>
+                        {refreshing && (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100 animate-pulse">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
+                                Syncing...
+                            </span>
+                        )}
+                    </div>
                     <div className="flex flex-col gap-3 mb-6">
                         {withdrawalRequests.slice().reverse().map((request) => (
                             <div

@@ -48,6 +48,8 @@ export const NOTIFICATION_TYPE_META = {
   PAYMENT_REFUNDED:           { label: 'Refunded',          color: 'text-blue-600 bg-blue-50 border-blue-200' },
   REFUND_PROCESSED:           { label: 'Refund Processed',  color: 'text-blue-600 bg-blue-50 border-blue-200' },
   WITHDRAWAL_REQUEST:         { label: 'Withdrawal Request',color: 'text-purple-600 bg-purple-50 border-purple-200' },
+  WITHDRAWAL_APPROVED:        { label: 'Withdrawal Approved',color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  WITHDRAWAL_REJECTED:        { label: 'Withdrawal Rejected',color: 'text-rose-600 bg-rose-50 border-rose-200' },
   WITHDRAWAL_PROCESSED:       { label: 'Withdrawal Settled',color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
 };
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { getWalletBalance, getWalletTransactions, createWithdrawalRequest, updateVendorProfile } from "../../../services/vendorApi";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
@@ -29,6 +30,7 @@ import {
 export default function VendorWallet() {
     const location = useLocation();
     const { vendor } = useVendorAuth();
+    const { socket } = useNotifications();
     const [loading, setLoading] = useState(true);
     const [walletBalance, setWalletBalance] = useState(0);
     const [totalCredited, setTotalCredited] = useState(0);
@@ -69,23 +71,9 @@ export default function VendorWallet() {
     const [timeFilter, setTimeFilter] = useState("ALL"); // ALL, WEEK, MONTH, YEAR
 
     // Load data
-    useEffect(() => {
-        loadWalletData();
-    }, [location.pathname]);
-
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                loadWalletData();
-            }
-        };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
-
-    const loadWalletData = async () => {
+    const loadWalletData = async (showLoading = true) => {
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
             const balanceResponse = await getWalletBalance();
             if (balanceResponse.success) {
                 setWalletBalance(balanceResponse.data.walletBalance || 0);
@@ -102,9 +90,60 @@ export default function VendorWallet() {
         } catch (err) {
             handleApiError(err, "Failed to load wallet data");
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     };
+
+    useEffect(() => {
+        loadWalletData(true);
+    }, [location.pathname]);
+
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                loadWalletData(false);
+            }
+        };
+        window.addEventListener('focus', handleVisibilityChange);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            window.removeEventListener('focus', handleVisibilityChange);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
+    // Real-time socket updates for vendor wallet
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleWalletUpdate = (data) => {
+            console.log('[VendorWallet] Real-time wallet update received:', data);
+            loadWalletData(false);
+        };
+
+        const handleNotification = (notif) => {
+            if (
+                notif?.type?.startsWith('WITHDRAWAL_') ||
+                notif?.type?.startsWith('WALLET_') ||
+                notif?.relatedEntity?.entityType === 'VendorWithdrawalRequest' ||
+                notif?.relatedEntity?.entityType === 'Withdrawal' ||
+                notif?.metadata?.link === '/vendor/wallet'
+            ) {
+                console.log('[VendorWallet] Withdrawal/wallet notification received:', notif);
+                loadWalletData(false);
+            }
+        };
+
+        socket.on('wallet_updated', handleWalletUpdate);
+        socket.on('withdrawal_updated', handleWalletUpdate);
+        socket.on('new_notification', handleNotification);
+
+        return () => {
+            socket.off('wallet_updated', handleWalletUpdate);
+            socket.off('withdrawal_updated', handleWalletUpdate);
+            socket.off('new_notification', handleNotification);
+        };
+    }, [socket]);
 
     const handleWithdrawClick = () => {
         if (walletBalance >= 1000) {

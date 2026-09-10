@@ -580,6 +580,22 @@ const processWithdrawalRequest = async (vendorId, requestId, action, adminId, da
       withdrawalRequest.rejectionReason = data.rejectionReason || 'No reason provided';
       withdrawalRequest.processedAt = new Date();
       await withdrawalRequest.save({ session });
+
+      // Update pending withdrawal transaction to FAILED
+      await WalletTransaction.updateMany(
+        {
+          vendor: vendorId,
+          'metadata.withdrawalRequestId': withdrawalRequest._id,
+          status: 'PENDING'
+        },
+        {
+          $set: {
+            status: 'FAILED',
+            errorMessage: data.rejectionReason || 'Withdrawal request rejected by admin'
+          }
+        },
+        { session }
+      );
     } else if (action === 'PROCESS') {
       if (withdrawalRequest.status !== 'APPROVED') {
         throw new Error('Only approved requests can be processed');
@@ -629,6 +645,76 @@ const processWithdrawalRequest = async (vendorId, requestId, action, adminId, da
     if (['REJECT', 'PROCESS'].includes(action) && withdrawalRequest.assignedTo) {
       const { decrementActiveWorkload } = require('./workloadDistributionService');
       await decrementActiveWorkload(withdrawalRequest.assignedTo);
+    }
+
+    // Send notifications and emit real-time socket events to vendor
+    try {
+      const { sendNotification } = require('./notificationService');
+      const { getIO } = require('../sockets');
+      const formattedAmount = (withdrawalRequest.amount || 0).toLocaleString('en-IN');
+      const strVendorId = vendorId.toString();
+
+      let notifType = null;
+      let notifTitle = '';
+      let notifMessage = '';
+
+      if (action === 'REJECT') {
+        notifType = 'WITHDRAWAL_REJECTED';
+        notifTitle = 'Withdrawal Request Rejected';
+        notifMessage = `Your withdrawal request of ₹${formattedAmount} was rejected. Reason: ${withdrawalRequest.rejectionReason || 'No reason provided'}`;
+      } else if (action === 'APPROVE') {
+        notifType = 'WITHDRAWAL_APPROVED';
+        notifTitle = 'Withdrawal Request Approved';
+        notifMessage = `Your withdrawal request of ₹${formattedAmount} has been approved and is queued for payout disbursal.`;
+      } else if (action === 'PROCESS') {
+        notifType = 'WITHDRAWAL_PROCESSED';
+        notifTitle = 'Withdrawal Payout Processed';
+        const method = withdrawalRequest.paymentMethod || 'bank transfer';
+        const refStr = withdrawalRequest.transactionId ? ` (Ref: ${withdrawalRequest.transactionId})` : '';
+        notifMessage = `Your withdrawal request of ₹${formattedAmount} has been settled via ${method}${refStr}.`;
+      }
+
+      if (notifType) {
+        await sendNotification({
+          recipient: vendorId,
+          recipientModel: 'Vendor',
+          type: notifType,
+          title: notifTitle,
+          message: notifMessage,
+          relatedEntity: {
+            entityType: 'VendorWithdrawalRequest',
+            entityId: withdrawalRequest._id
+          },
+          metadata: {
+            link: '/vendor/wallet',
+            amount: withdrawalRequest.amount,
+            status: withdrawalRequest.status,
+            rejectionReason: withdrawalRequest.rejectionReason,
+            transactionId: withdrawalRequest.transactionId,
+            requestId: withdrawalRequest._id.toString()
+          }
+        });
+      }
+
+      // Direct socket emit for real-time wallet UI refresh without manual reload
+      const io = typeof getIO === 'function' ? getIO() : null;
+      if (io) {
+        const updatePayload = {
+          type: notifType || `WITHDRAWAL_${action}`,
+          status: withdrawalRequest.status,
+          requestId: withdrawalRequest._id.toString(),
+          amount: withdrawalRequest.amount,
+          rejectionReason: withdrawalRequest.rejectionReason,
+          transactionId: withdrawalRequest.transactionId,
+          timestamp: new Date().toISOString()
+        };
+        io.to(`vendor:${strVendorId}`).emit('wallet_updated', updatePayload);
+        io.to(strVendorId).emit('wallet_updated', updatePayload);
+        io.to(`vendor:${strVendorId}`).emit('withdrawal_updated', updatePayload);
+        io.to(strVendorId).emit('withdrawal_updated', updatePayload);
+      }
+    } catch (notifErr) {
+      console.error('Failed to dispatch vendor withdrawal notification/socket:', notifErr);
     }
 
     return {
