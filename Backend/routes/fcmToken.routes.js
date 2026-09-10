@@ -10,13 +10,10 @@ const { sendPushNotification, isFirebaseReady } = require('../services/firebaseA
 const getModelFromRole = (role) => {
   if (!role) return null;
   const upperRole = role.toUpperCase();
-  const roleToModel = {
-    'USER': 'User',
-    'VENDOR': 'Vendor',
-    'EXPERT': 'Vendor',
-    'ADMIN': 'Admin'
-  };
-  return roleToModel[upperRole] || null;
+  if (['USER', 'CUSTOMER'].includes(upperRole)) return 'User';
+  if (['VENDOR', 'EXPERT'].includes(upperRole)) return 'Vendor';
+  if (upperRole === 'ADMIN' || upperRole.endsWith('_ADMIN') || upperRole.includes('ADMIN')) return 'Admin';
+  return null;
 };
 
 /**

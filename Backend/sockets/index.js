@@ -54,23 +54,16 @@ const initializeSocket = (server) => {
 
       // Get user based on role
       let user;
-      switch (decoded.role) {
-        case 'USER':
-          user = await User.findById(decoded.userId).select('-password');
-          break;
-        case 'VENDOR':
-          user = await Vendor.findById(decoded.userId).select('-password');
-          break;
-        case 'ADMIN':
-        case 'SUPER_ADMIN':
-        case 'FINANCE_ADMIN':
-        case 'OPERATIONS_ADMIN':
-        case 'VERIFIER_ADMIN':
-        case 'SUPPORT_ADMIN':
-          user = await Admin.findById(decoded.userId).select('-password');
-          break;
-        default:
-          return next(new Error('Authentication error: Invalid role'));
+      const roleUpper = (decoded.role || '').toUpperCase();
+
+      if (roleUpper === 'USER' || roleUpper === 'CUSTOMER') {
+        user = await User.findById(decoded.userId).select('-password');
+      } else if (roleUpper === 'VENDOR' || roleUpper === 'EXPERT') {
+        user = await Vendor.findById(decoded.userId).select('-password');
+      } else if (roleUpper === 'ADMIN' || roleUpper.endsWith('_ADMIN') || roleUpper.includes('ADMIN')) {
+        user = await Admin.findById(decoded.userId).select('-password');
+      } else {
+        return next(new Error('Authentication error: Invalid role'));
       }
 
       if (!user || !user.isActive) {
@@ -80,7 +73,11 @@ const initializeSocket = (server) => {
       // Attach user info to socket
       socket.userId = decoded.userId;
       socket.userRole = decoded.role;
-      socket.userModel = decoded.role === 'USER' ? 'User' : decoded.role === 'VENDOR' ? 'Vendor' : 'Admin';
+      socket.userModel = (roleUpper === 'USER' || roleUpper === 'CUSTOMER')
+        ? 'User'
+        : (roleUpper === 'VENDOR' || roleUpper === 'EXPERT')
+          ? 'Vendor'
+          : 'Admin';
 
       next();
     } catch (error) {

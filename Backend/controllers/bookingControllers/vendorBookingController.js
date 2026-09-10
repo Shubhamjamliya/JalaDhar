@@ -780,8 +780,17 @@ const verifyStartSurveyOTP = async (req, res) => {
         title: 'Survey Started 📍',
         message: `Expert ${booking.vendor?.name || ''} has verified Start OTP and started your groundwater survey.`,
         type: 'BOOKING_UPDATE',
-        bookingId: booking._id,
-        data: { bookingId: booking._id, status: booking.status, userStatus: booking.userStatus, vendorStatus: booking.vendorStatus }
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          userStatus: booking.userStatus,
+          vendorStatus: booking.vendorStatus,
+          link: `/user/booking/${booking._id}`
+        }
       }, io).catch(err => console.error('[verifyStartSurveyOTP] Notification error:', err));
     }
 
@@ -890,8 +899,17 @@ const verifyEndSurveyOTP = async (req, res) => {
         title: 'Survey Completed 🚀',
         message: `Expert ${booking.vendor?.name || ''} has verified End OTP. Site survey is completed! You can now view status.`,
         type: 'BOOKING_UPDATE',
-        bookingId: booking._id,
-        data: { bookingId: booking._id, status: booking.status, userStatus: booking.userStatus, vendorStatus: booking.vendorStatus }
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          userStatus: booking.userStatus,
+          vendorStatus: booking.vendorStatus,
+          link: `/user/booking/${booking._id}`
+        }
       }, io).catch(err => console.error('[verifyEndSurveyOTP] Notification error:', err));
     }
 

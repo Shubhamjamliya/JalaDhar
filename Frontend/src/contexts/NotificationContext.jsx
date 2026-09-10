@@ -165,7 +165,7 @@ export const NotificationProvider = ({ children }) => {
         (notificationRecipientModel.toLowerCase() === 'vendor' && (currentUserRole?.toLowerCase() === 'expert' || currentUserRole?.toLowerCase() === 'vendor')) ||
         (notificationRecipientModel.toLowerCase() === 'expert' && (currentUserRole?.toLowerCase() === 'expert' || currentUserRole?.toLowerCase() === 'vendor')) ||
         (notificationRecipientModel.toLowerCase() === 'user' && currentUserRole?.toLowerCase() === 'user') ||
-        (notificationRecipientModel.toLowerCase() === 'admin' && currentUserRole?.toLowerCase() === 'admin');
+        (notificationRecipientModel.toLowerCase() === 'admin' && (currentUserRole?.toLowerCase() === 'admin' || currentUserRole?.toLowerCase().endsWith('_admin') || currentUserRole?.toLowerCase().includes('admin')));
 
       const isRecipientMatch = notificationRecipientId === currentUserId && roleMatches;
 

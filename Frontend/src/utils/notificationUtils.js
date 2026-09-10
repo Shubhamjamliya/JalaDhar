@@ -7,12 +7,20 @@ export const NOTIFICATION_TYPE_META = {
   BOOKING_CREATED:            { label: 'New Booking',       color: 'text-blue-600 bg-blue-50 border-blue-200' },
   BOOKING_ASSIGNED:           { label: 'Booking Assigned',  color: 'text-blue-600 bg-blue-50 border-blue-200' },
   BOOKING_ACCEPTED:           { label: 'Booking Accepted',  color: 'text-green-600 bg-green-50 border-green-200' },
+  BOOKING_EN_ROUTE:           { label: 'En Route',          color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
   BOOKING_REJECTED:           { label: 'Booking Rejected',  color: 'text-red-600 bg-red-50 border-red-200' },
   BOOKING_VISITED:            { label: 'Site Visited',      color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
   BOOKING_CANCELLED:          { label: 'Booking Cancelled', color: 'text-red-600 bg-red-50 border-red-200' },
   BOOKING_COMPLETED:          { label: 'Completed',         color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
   BOOKING_FAILED:             { label: 'Booking Failed',    color: 'text-red-600 bg-red-50 border-red-200' },
   BOOKING_REASSIGNED:         { label: 'Reassigned',        color: 'text-orange-600 bg-orange-50 border-orange-200' },
+  BOOKING_REASSIGNED_AWAY:    { label: 'Slot Released',     color: 'text-gray-600 bg-gray-50 border-gray-200' },
+  BOOKING_UPDATE:             { label: 'Booking Update',    color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  BOOKING_CONFIRMED:          { label: 'Confirmed',         color: 'text-green-600 bg-green-50 border-green-200' },
+  BOOKING_RESCHEDULED:        { label: 'Rescheduled',       color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  BOOKING_SCHEDULED:          { label: 'Scheduled',         color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
+  EXPERT_CANCELLED:           { label: 'Expert Cancelled',  color: 'text-red-600 bg-red-50 border-red-200' },
+  UNABLE_TO_COMPLETE:         { label: 'Infeasible Site',   color: 'text-red-600 bg-red-50 border-red-200' },
   REPORT_UPLOADED:            { label: 'Report Uploaded',   color: 'text-purple-600 bg-purple-50 border-purple-200' },
   REPORT_APPROVED:            { label: 'Report Approved',   color: 'text-green-600 bg-green-50 border-green-200' },
   REPORT_REJECTED:            { label: 'Report Rejected',   color: 'text-red-600 bg-red-50 border-red-200' },
@@ -22,6 +30,7 @@ export const NOTIFICATION_TYPE_META = {
   PAYMENT_REMAINING_SUCCESS:  { label: 'Payment Success',   color: 'text-green-600 bg-green-50 border-green-200' },
   PAYMENT_FAILED:             { label: 'Payment Failed',    color: 'text-red-600 bg-red-50 border-red-200' },
   PAYMENT_RECEIVED:           { label: 'Payment Received',  color: 'text-green-600 bg-green-50 border-green-200' },
+  PAYMENT_RELEASED:           { label: 'Payout Released',   color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
   FIRST_INSTALLMENT_PAID:     { label: 'Payout Credited',   color: 'text-blue-600 bg-blue-50 border-blue-200' },
   SETTLEMENT_COMPLETED:       { label: 'Settled',           color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
   FINAL_SETTLEMENT_PROCESSED: { label: 'Final Settlement',  color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
@@ -33,6 +42,7 @@ export const NOTIFICATION_TYPE_META = {
   NEW_VENDOR_REGISTRATION:    { label: 'New Vendor',        color: 'text-blue-600 bg-blue-50 border-blue-200' },
   NEW_BOOKING_PENDING:        { label: 'Pending Booking',   color: 'text-orange-600 bg-orange-50 border-orange-200' },
   NEW_DISPUTE:                { label: 'New Dispute',       color: 'text-red-600 bg-red-50 border-red-200' },
+  DISPUTE_CREATED:            { label: 'Dispute Raised',    color: 'text-red-600 bg-red-50 border-red-200' },
   DISPUTE_UPDATED:            { label: 'Dispute Update',    color: 'text-orange-600 bg-orange-50 border-orange-200' },
   NEW_RATING:                 { label: 'New Rating',        color: 'text-amber-600 bg-amber-50 border-amber-200' },
   PAYMENT_REFUNDED:           { label: 'Refunded',          color: 'text-blue-600 bg-blue-50 border-blue-200' },
@@ -68,7 +78,7 @@ export function getNotificationUrl(notification, userRole) {
   const bookingId = entityId || notification.metadata?.bookingId;
 
   // 3. Booking related notifications
-  if (entityType === 'Booking' || type.startsWith('BOOKING_') || type.startsWith('BOREWELL_') || type.startsWith('REPORT_') || type === 'NEW_BOOKING_PENDING') {
+  if (entityType === 'Booking' || type.startsWith('BOOKING_') || type.startsWith('BOREWELL_') || type.startsWith('REPORT_') || type === 'NEW_BOOKING_PENDING' || type === 'EXPERT_CANCELLED' || type === 'UNABLE_TO_COMPLETE') {
     if (isVendor) {
       if (type === 'BOOKING_CREATED' || type === 'NEW_BOOKING_PENDING' || type === 'BOOKING_ASSIGNED') {
         return '/vendor/bookings?tab=new';

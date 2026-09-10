@@ -1,16 +1,28 @@
 const { sendNotification, getUserNotifications, markAsRead, markAllAsRead, getUnreadCount, deleteNotification, clearAllNotifications } = require('../../services/notificationService');
 
 /**
+ * Helper to normalize role to recipient model
+ */
+const getRecipientModel = (role) => {
+  if (!role) return 'User';
+  const r = role.toUpperCase();
+  if (['VENDOR', 'EXPERT'].includes(r)) return 'Vendor';
+  if (['USER', 'CUSTOMER'].includes(r)) return 'User';
+  if (r === 'ADMIN' || r.endsWith('_ADMIN') || r.includes('ADMIN')) return 'Admin';
+  return 'User';
+};
+
+/**
  * Get notifications for authenticated user
  */
 const getNotifications = async (req, res) => {
   try {
     const userId = req.userId;
-    const userRole = req.userRole; // USER, VENDOR, or ADMIN
+    const userRole = req.userRole; // USER, VENDOR, EXPERT, ADMIN, etc.
     const { page = 1, limit = 20, isRead } = req.query;
 
     // Map role to model name
-    const recipientModel = userRole === 'USER' ? 'User' : userRole === 'VENDOR' ? 'Vendor' : 'Admin';
+    const recipientModel = getRecipientModel(userRole);
 
     const result = await getUserNotifications(userId, recipientModel, {
       page: parseInt(page),
@@ -41,7 +53,7 @@ const markNotificationAsRead = async (req, res) => {
     const { id } = req.params;
     const userId = req.userId;
     const userRole = req.userRole;
-    const recipientModel = userRole === 'USER' ? 'User' : userRole === 'VENDOR' ? 'Vendor' : 'Admin';
+    const recipientModel = getRecipientModel(userRole);
 
     const notification = await markAsRead(id, userId, recipientModel);
 
@@ -74,7 +86,7 @@ const markAllNotificationsAsRead = async (req, res) => {
   try {
     const userId = req.userId;
     const userRole = req.userRole;
-    const recipientModel = userRole === 'USER' ? 'User' : userRole === 'VENDOR' ? 'Vendor' : 'Admin';
+    const recipientModel = getRecipientModel(userRole);
 
     const result = await markAllAsRead(userId, recipientModel);
 
@@ -102,7 +114,7 @@ const getUnreadNotificationCount = async (req, res) => {
   try {
     const userId = req.userId;
     const userRole = req.userRole;
-    const recipientModel = userRole === 'USER' ? 'User' : userRole === 'VENDOR' ? 'Vendor' : 'Admin';
+    const recipientModel = getRecipientModel(userRole);
 
     const count = await getUnreadCount(userId, recipientModel);
 
@@ -129,7 +141,7 @@ const deleteNotificationController = async (req, res) => {
     const { id } = req.params;
     const userId = req.userId;
     const userRole = req.userRole;
-    const recipientModel = userRole === 'USER' ? 'User' : userRole === 'VENDOR' ? 'Vendor' : 'Admin';
+    const recipientModel = getRecipientModel(userRole);
 
     const deleted = await deleteNotification(id, userId, recipientModel);
     if (!deleted) {
@@ -160,7 +172,7 @@ const clearAllNotificationsController = async (req, res) => {
   try {
     const userId = req.userId;
     const userRole = req.userRole;
-    const recipientModel = userRole === 'USER' ? 'User' : userRole === 'VENDOR' ? 'Vendor' : 'Admin';
+    const recipientModel = getRecipientModel(userRole);
 
     const result = await clearAllNotifications(userId, recipientModel);
 

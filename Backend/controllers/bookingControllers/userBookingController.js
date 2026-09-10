@@ -2707,82 +2707,87 @@ const rescheduleBooking = async (req, res) => {
       }
     }
 
-    // Notify Previous Expert if reassigned
-    if (isReassigned && previousVendorId) {
-      await sendNotification({
-        recipient: previousVendorId,
-        recipientModel: 'Vendor',
-        type: 'BOOKING_REASSIGNED_AWAY',
-        title: 'Booking Rescheduled to Another Expert ℹ️',
-        message: `Booking #JALA${shortBookingId} was rescheduled by customer to ${formattedNewDate} and reassigned to another available expert. Your calendar slot is now free.`,
-        relatedEntity: {
-          entityType: 'Booking',
-          entityId: booking._id
-        },
-        metadata: {
-          link: '/vendor/bookings',
-          bookingId: booking._id.toString()
-        }
-      }, io);
+    // Send real-time notifications
+    try {
+      // Notify Previous Expert if reassigned
+      if (isReassigned && previousVendorId) {
+        await sendNotification({
+          recipient: previousVendorId,
+          recipientModel: 'Vendor',
+          type: 'BOOKING_REASSIGNED_AWAY',
+          title: 'Booking Rescheduled to Another Expert ℹ️',
+          message: `Booking #JALA${shortBookingId} was rescheduled by customer to ${formattedNewDate} and reassigned to another available expert. Your calendar slot is now free.`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            link: '/vendor/bookings',
+            bookingId: booking._id.toString()
+          }
+        }, io);
 
-      // Notify New Expert (New Request in Requests Tab)
-      await sendNotification({
-        recipient: newVendor._id,
-        recipientModel: 'Vendor',
-        type: 'BOOKING_ASSIGNED',
-        title: 'New Rescheduled Survey Request 📋',
-        message: `New survey request #JALA${shortBookingId} for ${formattedNewDate} (Advance Paid). Please open your Requests tab to review and accept.`,
-        relatedEntity: {
-          entityType: 'Booking',
-          entityId: booking._id
-        },
-        metadata: {
-          link: '/vendor/requests?tab=new',
-          bookingId: booking._id.toString(),
-          newDate: requestedDate,
-          newTime: newFormattedTime
-        }
-      }, io);
-    } else if (booking.vendor) {
-      // Notify same expert
-      await sendNotification({
-        recipient: booking.vendor,
-        recipientModel: 'Vendor',
-        type: 'BOOKING_RESCHEDULED',
-        title: 'Survey Appointment Rescheduled 🗓️',
-        message: `Customer rescheduled booking #JALA${shortBookingId} to ${formattedNewDate}. Please set your visit arrival time slot. Reason: ${reason ? reason.trim() : 'Customer requested date change'}`,
-        relatedEntity: {
-          entityType: 'Booking',
-          entityId: booking._id
-        },
-        metadata: {
-          link: '/vendor/bookings',
-          bookingId: booking._id.toString(),
-          newDate: requestedDate,
-          newTime: newFormattedTime
-        }
-      }, io);
-    }
-
-    // Notify User
-    await sendNotification({
-      recipient: userId,
-      recipientModel: 'User',
-      type: 'BOOKING_RESCHEDULED',
-      title: 'Survey Rescheduled Successfully ✅',
-      message: `Your groundwater survey (#JALA${shortBookingId}) has been successfully moved to ${formattedNewDate}${isReassigned ? ` and assigned to expert ${newVendor?.name}. Waiting for expert arrival time confirmation.` : ' (Time TBD by expert).'}. (Reschedule ${currentCount + 1} of ${maxReschedules} used)`,
-      relatedEntity: {
-        entityType: 'Booking',
-        entityId: booking._id
-      },
-      metadata: {
-        link: `/user/booking/${booking._id}`,
-        bookingId: booking._id.toString(),
-        newDate: requestedDate,
-        newTime: newFormattedTime,
-        vendorId: booking.vendor?.toString()
+        // Notify New Expert (New Request in Requests Tab)
+        await sendNotification({
+          recipient: newVendor._id,
+          recipientModel: 'Vendor',
+          type: 'BOOKING_ASSIGNED',
+          title: 'New Rescheduled Survey Request 📋',
+          message: `New survey request #JALA${shortBookingId} for ${formattedNewDate} (Advance Paid). Please open your Requests tab to review and accept.`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            link: '/vendor/requests?tab=new',
+            bookingId: booking._id.toString(),
+            newDate: requestedDate,
+            newTime: newFormattedTime
+          }
+        }, io);
+      } else if (booking.vendor) {
+        // Notify same expert
+        await sendNotification({
+          recipient: booking.vendor,
+          recipientModel: 'Vendor',
+          type: 'BOOKING_RESCHEDULED',
+          title: 'Survey Appointment Rescheduled 🗓️',
+          message: `Customer rescheduled booking #JALA${shortBookingId} to ${formattedNewDate}. Please set your visit arrival time slot. Reason: ${reason ? reason.trim() : 'Customer requested date change'}`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            link: '/vendor/bookings',
+            bookingId: booking._id.toString(),
+            newDate: requestedDate,
+            newTime: newFormattedTime
+          }
+        }, io);
       }
-    }, io);
+
+      // Notify User
+      await sendNotification({
+        recipient: userId,
+        recipientModel: 'User',
+        type: 'BOOKING_RESCHEDULED',
+        title: 'Survey Rescheduled Successfully ✅',
+        message: `Your groundwater survey (#JALA${shortBookingId}) has been successfully moved to ${formattedNewDate}${isReassigned ? ` and assigned to expert ${newVendor?.name}. Waiting for expert arrival time confirmation.` : ' (Time TBD by expert).'}. (Reschedule ${currentCount + 1} of ${maxReschedules} used)`,
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          link: `/user/booking/${booking._id}`,
+          bookingId: booking._id.toString(),
+          newDate: requestedDate,
+          newTime: newFormattedTime,
+          vendorId: booking.vendor?.toString()
+        }
+      }, io);
+    } catch (notifErr) {
+      console.error('[rescheduleSurveyAppointment] Notification delivery error:', notifErr);
+    }
 
     res.json({
       success: true,

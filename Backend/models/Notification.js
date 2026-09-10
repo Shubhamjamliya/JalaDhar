@@ -26,6 +26,8 @@ const notificationSchema = new mongoose.Schema({
       'BOOKING_COMPLETED',
       'BOOKING_FAILED',
       'BOOKING_REASSIGNED',
+      'BOOKING_REASSIGNED_AWAY',
+      'BOOKING_UPDATE',
       'BOOKING_CONFIRMED',
       'BOOKING_RESCHEDULED',
       'BOOKING_SCHEDULED',
@@ -43,6 +45,7 @@ const notificationSchema = new mongoose.Schema({
       'PAYMENT_FAILED',
       'PAYMENT_REFUNDED',
       'PAYMENT_RECEIVED',
+      'PAYMENT_RELEASED',
       'REFUND_PROCESSED',
       // Settlement
       'FIRST_INSTALLMENT_PAID',
@@ -70,6 +73,7 @@ const notificationSchema = new mongoose.Schema({
       'NEW_BOOKING_PENDING',
       'PAYMENT_DISPUTE',
       'NEW_DISPUTE',
+      'DISPUTE_CREATED',
       'DISPUTE_UPDATED',
       'DISPUTE_COMMENT',
       // Rating
