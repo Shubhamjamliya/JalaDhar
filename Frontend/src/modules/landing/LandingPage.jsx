@@ -658,8 +658,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Founder & Managing Director Section */}
-      <section id="founder" className="scroll-mt-20 sm:scroll-mt-24 py-10 sm:py-14 lg:py-16 px-4 sm:px-6 lg:px-12 xl:px-20 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+      {/* Founder, Leadership & About Us Section */}
+      <section id="about" className="scroll-mt-20 sm:scroll-mt-24 py-10 sm:py-14 lg:py-16 px-4 sm:px-6 lg:px-12 xl:px-20 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+        <span id="founder" className="block -mt-24 pt-24 pointer-events-none invisible" />
         {/* Subtle background ambient glows */}
         <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 -right-20 w-80 h-80 bg-[var(--color-accent)]/15 rounded-full blur-3xl pointer-events-none" />

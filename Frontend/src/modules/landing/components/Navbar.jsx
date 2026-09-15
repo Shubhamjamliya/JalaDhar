@@ -8,9 +8,9 @@ const links = [
   { label: 'Home', href: '#home' },
   { label: 'Services', href: '#services' },
   { label: 'How It Works', href: '#why-us' },
-  { label: 'Apps', href: '#apps' },
-  { label: 'Leadership', href: '#founder' },
+  { label: 'Download App', href: '#apps' },
   { label: 'Reviews', href: '#reviews' },
+  { label: 'About Us', href: '#about' },
   { label: 'Contact Us', href: '#request' },
 ];
 
@@ -60,13 +60,13 @@ export default function Navbar() {
       <nav className="w-full px-6 lg:px-16 xl:px-24 2xl:px-32 h-20 flex items-center justify-between">
         <Logo />
 
-        <ul className="hidden items-center gap-8 lg:flex">
+        <ul className="hidden items-center gap-4 xl:gap-7 2xl:gap-8 lg:flex">
           {links.map((link) => (
             <li key={link.label}>
               <a
                 href={link.href}
                 onClick={() => setActive(link.label)}
-                className={`relative text-sm font-semibold transition-colors py-1 ${
+                className={`relative text-[13px] xl:text-sm font-semibold transition-colors py-1 ${
                   active === link.label
                     ? 'text-[var(--color-text-primary)]'
                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
