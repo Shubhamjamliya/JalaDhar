@@ -326,7 +326,7 @@ export default function LandingPage() {
                 </h1>
 
                 <p className="text-[14px] sm:text-xl text-[var(--color-text-secondary)] mb-2 sm:mb-6 max-w-2xl leading-[1.6] sm:leading-[1.7] font-medium">
-                  {cms('hero.subtitle', "India's Groundwater Experts at Your Fingertips. Find, connect, survey, and protect our vital resources with certified and verified professionals.")}
+                  {cms('hero.subtitle', "Find and connect with verified groundwater experts for Agricultural, Residential, Commercial and Industrial water needs.")}
                 </p>
               </div>
 
@@ -447,26 +447,32 @@ export default function LandingPage() {
 
       {/* How It Works For Users */}
       <section id="why-us" className="min-h-[auto] lg:min-h-screen py-12 sm:py-20 lg:py-32 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden flex flex-col justify-center">
-        <div className="text-center mb-16 reveal">
+        <div className="text-center mb-10 sm:mb-16 reveal">
           <div className="inline-block px-4 py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold uppercase tracking-wider mb-6 border border-[var(--color-primary)]/20">
-            For Customers
+            {cms('howItWorksCustomers.eyebrow', 'FOR USERS')}
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
-            Find Trusted Experts<br />
-            <span className="text-[var(--color-text-secondary)] font-light">in Minutes.</span>
+            {cms('howItWorksCustomers.heading1', 'Find Trusted Groundwater Experts')}<br />
+            <span className="text-[var(--color-text-secondary)] font-light">{cms('howItWorksCustomers.heading2', 'in Minutes.')}</span>
           </h2>
-          <p className="text-[var(--color-text-secondary)] mt-4 text-sm sm:text-lg">Everything you need for groundwater solutions — in one platform.</p>
+          <p className="text-[var(--color-text-secondary)] mt-4 text-sm sm:text-lg max-w-2xl mx-auto">
+            {cms('howItWorksCustomers.subtitle', 'Find and connect with verified groundwater survey professionals for your specific requirements.')}
+          </p>
+
+          <div className="mt-8 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-[var(--color-primary)] text-xs sm:text-sm font-bold tracking-wide border border-blue-100">
+            How It Works
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 reveal mb-16 max-w-6xl mx-auto w-full">
           {cms('howItWorksCustomers.steps', [
-            { step: '1', title: 'Download App', desc: 'Get the Jaladhaara app from Play Store or App Store.' },
-            { step: '2', title: 'Select Service', desc: 'Choose the type and location of groundwater survey you need.' },
-            { step: '3', title: 'Connect', desc: 'Get connected with a verified hydrogeologist in your area.' },
-            { step: '4', title: 'Receive Report', desc: 'Get a professional, digital survey report on your device.' }
+            { step: '01', title: 'Download the App', desc: 'Get the Jaladhaara app from the Play Store or App Store.' },
+            { step: '02', title: 'Select a Service', desc: 'Choose the groundwater survey service you need.' },
+            { step: '03', title: 'Connect with an Expert', desc: 'Get connected with a verified expert in your area.' },
+            { step: '04', title: 'Get Your Report', desc: 'Receive your professional digital survey report.' }
           ]).map((item, i) => (
             <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 sm:p-8 text-center hover:border-[var(--color-primary)]/50 hover:-translate-y-2 transition-all duration-300 shadow-xl shadow-[#0077B6]/10 hover:shadow-2xl hover:shadow-[#0077B6]/20">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-[var(--color-primary)] text-white font-black flex items-center justify-center text-2xl mb-6 shadow-lg shadow-[#0077B6]/30 rotate-3 group-hover:rotate-0 transition-transform">{item.step}</div>
+              <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-[var(--color-primary)] text-white font-black flex items-center justify-center text-xl sm:text-2xl mb-6 shadow-lg shadow-[#0077B6]/30 rotate-3 group-hover:rotate-0 transition-transform">{item.step}</div>
               <h3 className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)] mb-3">{item.title}</h3>
               <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">{item.desc}</p>
             </div>

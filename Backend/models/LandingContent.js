@@ -11,7 +11,7 @@ const HeroSchema = new mongoose.Schema({
   badgeText: { type: String, default: 'Groundwater Survey Platform' },
   headline1: { type: String, default: 'Find Verified Groundwater' },
   headline2: { type: String, default: 'Experts Near You.' },
-  subtitle: { type: String, default: 'Book professional hydrogeologists for scientific borewell surveys — for Agriculture, Residential, Commercial and Industrial needs.' },
+  subtitle: { type: String, default: 'Find and connect with verified groundwater experts for Agricultural, Residential, Commercial and Industrial water needs.' },
   cta1Label: { type: String, default: 'Book a Survey' },
   cta2Label: { type: String, default: 'Join as Expert' },
   bgImage: { type: ImageSchema, default: () => ({}) }
@@ -119,15 +119,15 @@ const LandingContentSchema = new mongoose.Schema({
   howItWorksCustomers: {
     type: HowItWorksSchema,
     default: () => ({
-      eyebrow: 'For Customers',
-      heading1: 'Find Trusted Experts',
+      eyebrow: 'FOR USERS',
+      heading1: 'Find Trusted Groundwater Experts',
       heading2: 'in Minutes.',
-      subtitle: 'Everything you need for groundwater solutions — in one platform.',
+      subtitle: 'Find and connect with verified groundwater survey professionals for your specific requirements.',
       steps: [
-        { step: '1', title: 'Download App', desc: 'Get the Jaladhaara app from Play Store or App Store.' },
-        { step: '2', title: 'Select Service', desc: 'Choose the type and location of groundwater survey you need.' },
-        { step: '3', title: 'Connect', desc: 'Get connected with a verified hydrogeologist in your area.' },
-        { step: '4', title: 'Receive Report', desc: 'Get a professional, digital survey report on your device.' }
+        { step: '01', title: 'Download the App', desc: 'Get the Jaladhaara app from the Play Store or App Store.' },
+        { step: '02', title: 'Select a Service', desc: 'Choose the groundwater survey service you need.' },
+        { step: '03', title: 'Connect with an Expert', desc: 'Get connected with a verified expert in your area.' },
+        { step: '04', title: 'Get Your Report', desc: 'Receive your professional digital survey report.' }
       ]
     })
   },
