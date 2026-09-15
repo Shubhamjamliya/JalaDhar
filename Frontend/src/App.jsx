@@ -108,6 +108,7 @@ const AdminBookingDetails = lazy(() => import("./modules/admin/admin-pages/Admin
 const AdminRatings = lazy(() => import("./modules/admin/admin-pages/AdminRatings"));
 const AdminDisputes = lazy(() => import("./modules/admin/admin-pages/AdminDisputes"));
 const AdminTeamManagement = lazy(() => import("./modules/admin/admin-pages/AdminTeamManagement"));
+const AdminLandingPage = lazy(() => import("./modules/admin/admin-pages/AdminLandingPage"));
 const AdminPolicies = lazy(() => import("./modules/admin/admin-pages/AdminPolicies"));
 const AdminAgreementLogs = lazy(() => import("./modules/admin/admin-pages/AdminAgreementLogs"));
 const AdminExpertAgreementLogs = lazy(() => import("./modules/admin/admin-pages/AdminExpertAgreementLogs"));
@@ -1279,6 +1280,16 @@ function App() {
                                                                             <AdminProtectedRoute requiredRole="SUPER_ADMIN">
                                                                                 <Suspense fallback={<LoadingSpinner />}>
                                                                                     <AdminTeamManagement />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/landing"
+                                                                        element={
+                                                                            <AdminProtectedRoute requiredRole="SUPER_ADMIN">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminLandingPage />
                                                                                 </Suspense>
                                                                             </AdminProtectedRoute>
                                                                         }

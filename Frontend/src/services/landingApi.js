@@ -1,0 +1,36 @@
+import api from './api';
+
+/**
+ * Get the full landing page content (public, no auth required)
+ */
+export const getLandingContent = async () => {
+  const response = await api.get('/landing');
+  return response.data;
+};
+
+/**
+ * Update a specific landing page section (admin only)
+ * @param {string} section - Section name (hero, services, faqs, etc.)
+ * @param {Object} data - Section data object
+ */
+export const updateLandingSection = async (section, data) => {
+  const response = await api.patch(`/admin/landing/${section}`, data);
+  return response.data;
+};
+
+/**
+ * Upload an image for a landing page section (admin only)
+ * @param {File} file - Image file
+ * @param {string} section - Section identifier for Cloudinary folder
+ * @param {string} [oldPublicId] - Previous Cloudinary public ID to delete
+ */
+export const uploadLandingImage = async (file, section = 'general', oldPublicId = null) => {
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('section', section);
+  if (oldPublicId) formData.append('oldPublicId', oldPublicId);
+  const response = await api.post('/admin/landing/upload-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return response.data;
+};

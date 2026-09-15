@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { getLandingContent } from '../../services/landingApi';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import './landing.css';
@@ -204,6 +205,29 @@ export default function LandingPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [activeFaqTab, setActiveFaqTab] = useState('customers');
   const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [landingContent, setLandingContent] = useState(null);
+
+  // Fetch CMS content once on mount — gracefully falls back to hardcoded defaults if unavailable
+  useEffect(() => {
+    getLandingContent()
+      .then(res => { if (res?.success && res?.data) setLandingContent(res.data); })
+      .catch(() => { /* silently use static fallbacks */ });
+  }, []);
+
+  // Helper: resolves a CMS value vs a static fallback
+  const cms = useCallback((path, fallback) => {
+    if (!landingContent) return fallback;
+    const keys = path.split('.');
+    let val = landingContent;
+    for (const k of keys) {
+      if (val == null) return fallback;
+      val = val[k];
+    }
+    // Return fallback for empty strings / empty arrays
+    if (val === '' || val === null || val === undefined) return fallback;
+    if (Array.isArray(val) && val.length === 0) return fallback;
+    return val;
+  }, [landingContent]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -292,17 +316,17 @@ export default function LandingPage() {
               <div className="w-full bg-white/70 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-5 sm:p-8 lg:p-0 rounded-3xl lg:rounded-none border border-white/40 lg:border-none shadow-xl shadow-black/5 lg:shadow-none mb-6 lg:mb-0">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.15em] mb-4 sm:mb-6 border border-[var(--color-primary)]/20">
                   <ShieldCheck className="w-4 h-4" />
-                  EXPLORING AND PROTECTING OUR GROUNDWATER
+                  {cms('hero.badgeText', 'EXPLORING AND PROTECTING OUR GROUNDWATER')}
                 </div>
 
                 <h1 className="text-[28px] sm:text-4xl lg:text-[45px] xl:text-[54px] font-black leading-[1.25] lg:leading-[1.12] tracking-tight mb-3 sm:mb-6 text-[var(--color-text-primary)] font-display">
-                  <span className="block mb-1 lg:mb-2">India's Trusted Platform to</span>
-                  <span className="block mb-1 lg:mb-2 text-[var(--color-primary)]">Book Verified Groundwater</span>
+                  <span className="block mb-1 lg:mb-2">{cms('hero.headline1', "India's Trusted Platform to")}</span>
+                  <span className="block mb-1 lg:mb-2 text-[var(--color-primary)]">{cms('hero.headline2', "Book Verified Groundwater")}</span>
                   <span className="block">Survey Experts</span>
                 </h1>
 
                 <p className="text-[14px] sm:text-xl text-[var(--color-text-secondary)] mb-2 sm:mb-6 max-w-2xl leading-[1.6] sm:leading-[1.7] font-medium">
-                  India's Groundwater Experts at Your Fingertips. Find, connect, survey, and protect our vital resources with certified and verified professionals.
+                  {cms('hero.subtitle', "India's Groundwater Experts at Your Fingertips. Find, connect, survey, and protect our vital resources with certified and verified professionals.")}
                 </p>
               </div>
 
@@ -324,14 +348,14 @@ export default function LandingPage() {
                     href="#apps" 
                     className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 group shadow-lg shadow-[var(--color-primary)]/20"
                   >
-                    Download App Now
+                    {cms('hero.cta1Label', 'Download App Now')}
                     <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                   </a>
                   <a 
                     href="#why-us" 
                     className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-xl bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] font-bold text-sm sm:text-base hover:bg-[var(--color-surface)] transition-all flex items-center justify-center gap-3 group shadow-sm"
                   >
-                    How It Works
+                    {cms('hero.cta2Label', 'How It Works')}
                     <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border border-[var(--color-border)] flex items-center justify-center group-hover:border-[var(--color-text-primary)] transition-colors">
                       <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-0.5 fill-current" />
                     </div>
@@ -397,22 +421,27 @@ export default function LandingPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 reveal">
-          {[
-            { img: cardAgri, title: "Agriculture", desc: "Connect with experts for scientific site selection to ensure reliable irrigation and support rural agricultural development." },
-            { img: cardRes, title: "Residential", desc: "Book verified professionals for groundwater detection for individual homes, gated villas, apartments, and layouts." },
-            { img: cardCom, title: "Commercial", desc: "Access top surveyors for infrastructure development, commercial complexes, hospitals, and educational institutions." },
-            { img: cardInd, title: "Industrial", desc: "Comprehensive groundwater resource assessment and digital documentation for large-scale industrial and manufacturing plants." }
-          ].map((srv, i) => (
+          {cms('services', [
+            { title: "Agriculture", description: "Connect with experts for scientific site selection to ensure reliable irrigation and support rural agricultural development.", image: { url: '' } },
+            { title: "Residential", description: "Book verified professionals for groundwater detection for individual homes, gated villas, apartments, and layouts.", image: { url: '' } },
+            { title: "Commercial", description: "Access top surveyors for infrastructure development, commercial complexes, hospitals, and educational institutions.", image: { url: '' } },
+            { title: "Industrial", description: "Comprehensive groundwater resource assessment and digital documentation for large-scale industrial and manufacturing plants.", image: { url: '' } }
+          ]).map((srv, i) => {
+            // Use Cloudinary URL if set, else fall back to bundled local asset
+            const localImgs = [cardAgri, cardRes, cardCom, cardInd];
+            const imgSrc = srv.image?.url || localImgs[i] || localImgs[0];
+            return (
             <div key={i} className="bg-[var(--color-surface)] backdrop-blur-xl rounded-2xl sm:rounded-[32px] overflow-hidden border border-[var(--color-border)] hover:border-[var(--color-primary)]/40 hover:-translate-y-2 transition-all duration-300 group shadow-lg hover:shadow-2xl hover:shadow-[#0077B6]/15 flex flex-col h-full">
               <div className="w-full h-44 sm:h-48 md:h-56 relative overflow-hidden shrink-0 border-b border-[var(--color-border)] bg-slate-100">
-                <img src={srv.img} alt={srv.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img src={imgSrc} alt={srv.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
               <div className="p-5 sm:p-6 lg:p-7 relative z-10 flex-grow flex flex-col justify-start bg-white">
                 <h3 className="text-lg sm:text-xl font-bold mb-2 text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)] transition-colors leading-tight">{srv.title}</h3>
-                <p className="text-[var(--color-text-secondary)] leading-relaxed text-xs sm:text-sm">{srv.desc}</p>
+                <p className="text-[var(--color-text-secondary)] leading-relaxed text-xs sm:text-sm">{srv.description}</p>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       </section>
 
@@ -430,12 +459,12 @@ export default function LandingPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 reveal mb-16 max-w-6xl mx-auto w-full">
-          {[
+          {cms('howItWorksCustomers.steps', [
             { step: '1', title: 'Download App', desc: 'Get the Jaladhaara app from Play Store or App Store.' },
             { step: '2', title: 'Select Service', desc: 'Choose the type and location of groundwater survey you need.' },
             { step: '3', title: 'Connect', desc: 'Get connected with a verified hydrogeologist in your area.' },
             { step: '4', title: 'Receive Report', desc: 'Get a professional, digital survey report on your device.' }
-          ].map((item, i) => (
+          ]).map((item, i) => (
             <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 sm:p-8 text-center hover:border-[var(--color-primary)]/50 hover:-translate-y-2 transition-all duration-300 shadow-xl shadow-[#0077B6]/10 hover:shadow-2xl hover:shadow-[#0077B6]/20">
               <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-[var(--color-primary)] text-white font-black flex items-center justify-center text-2xl mb-6 shadow-lg shadow-[#0077B6]/30 rotate-3 group-hover:rotate-0 transition-transform">{item.step}</div>
               <h3 className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)] mb-3">{item.title}</h3>
@@ -518,12 +547,12 @@ export default function LandingPage() {
           <div className="bg-[var(--color-bg)] rounded-[32px] sm:rounded-[40px] p-6 sm:p-10 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/10 order-1 lg:order-2">
             <h3 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-[var(--color-text-primary)]">How It Works for Experts</h3>
             <div className="space-y-4 sm:space-y-6">
-              {[
-                { step: 1, title: 'Create Your Profile & Submit Credentials' },
-                { step: 2, title: 'Get Verified & Receive Service Requests' },
-                { step: 3, title: 'Conduct Field Surveys & Submit Digital Reports' },
+              {cms('howItWorksExperts.steps', [
+                { step: 1, title: 'Register & Complete KYC' },
+                { step: 2, title: 'Set Your Availability & Working Zones' },
+                { step: 3, title: 'Accept Bookings & Conduct Surveys' },
                 { step: 4, title: 'Receive Direct & Secure Disbursals' }
-              ].map((s, i) => (
+              ]).map((s, i) => (
                 <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
                   <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[var(--color-primary)] text-white font-bold text-base sm:text-lg shrink-0 shadow-md">
                     {s.step}
@@ -686,13 +715,13 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
-                        Bommala Anjaiah
+                        {cms('founder.name', 'Bommala Anjaiah')}
                       </h3>
                       <p className="text-[11px] sm:text-xs text-[#90E0EF] font-medium mt-0.5">
-                        Founder & Managing Director
+                        {cms('founder.role', 'Founder & Managing Director')}
                       </p>
                       <p className="text-[10px] sm:text-[11px] text-white/80 mt-0.5">
-                        Jaladhaara Groundwater Survey Pvt. Ltd.
+                        {cms('founder.subDesignation', 'Jaladhaara Groundwater Survey Pvt. Ltd.')}
                       </p>
                     </div>
                   </div>
@@ -746,13 +775,13 @@ export default function LandingPage() {
                   {/* Header & Designation */}
                   <div className="mb-3">
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[11px] font-bold uppercase tracking-wider mb-1 border border-[var(--color-primary)]/20">
-                      Founder & Managing Director
+                      {cms('founder.role', 'Founder & Managing Director')}
                     </div>
                     <h3 className="text-2xl sm:text-3xl font-black text-[var(--color-text-primary)] tracking-tight">
-                      Bommala Anjaiah
+                      {cms('founder.name', 'Bommala Anjaiah')}
                     </h3>
                     <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-medium mt-0.5">
-                      Jaladhaara Groundwater Survey Pvt. Ltd.
+                      {cms('founder.subDesignation', 'Jaladhaara Groundwater Survey Pvt. Ltd.')}
                     </p>
                   </div>
 
@@ -760,25 +789,31 @@ export default function LandingPage() {
                   <div className="flex flex-wrap items-center gap-2 mb-3.5">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-[var(--color-primary)] border border-blue-100 text-xs font-bold">
                       <GraduationCap className="w-3.5 h-3.5" />
-                      M.Sc. Geophysics – Osmania University, Hyderabad
+                      {cms('founder.educationBadge', 'M.Sc. Geophysics – Osmania University, Hyderabad')}
                     </span>
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold">
                       <Globe className="w-3.5 h-3.5" />
-                      14+ Years of Professional Experience
+                      {cms('founder.experienceBadge', '14+ Years of Professional Experience')}
                     </span>
                   </div>
 
                   {/* Bio Description Paragraphs */}
                   <div className="space-y-2.5 text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed font-normal">
-                    <p>
-                      A Geophysics professional with over <strong className="text-[var(--color-text-primary)] font-semibold">14 years of experience</strong> in groundwater exploration and geophysical investigations, Bommala Anjaiah brings strong technical and field expertise to Jaladhaara.
-                    </p>
-                    <p>
-                      His experience includes groundwater exploration, <strong className="text-[var(--color-text-primary)] font-semibold">VES, ERT, borewell site assessment, subsurface investigation, hydrogeological studies</strong>, and <strong className="text-[var(--color-text-primary)] font-semibold">geophysical data interpretation</strong>.
-                    </p>
-                    <p>
-                      He founded Jaladhaara with a vision to make professional groundwater survey services <strong className="text-[var(--color-text-primary)] font-semibold">more accessible, transparent and technology-driven</strong>, while connecting customers with qualified groundwater experts across India.
-                    </p>
+                    {cms('founder.bio', '') ? (
+                      <p className="whitespace-pre-line">{cms('founder.bio')}</p>
+                    ) : (
+                      <>
+                        <p>
+                          A Geophysics professional with over <strong className="text-[var(--color-text-primary)] font-semibold">14 years of experience</strong> in groundwater exploration and geophysical investigations, Bommala Anjaiah brings strong technical and field expertise to Jaladhaara.
+                        </p>
+                        <p>
+                          His experience includes groundwater exploration, <strong className="text-[var(--color-text-primary)] font-semibold">VES, ERT, borewell site assessment, subsurface investigation, hydrogeological studies</strong>, and <strong className="text-[var(--color-text-primary)] font-semibold">geophysical data interpretation</strong>.
+                        </p>
+                        <p>
+                          He founded Jaladhaara with a vision to make professional groundwater survey services <strong className="text-[var(--color-text-primary)] font-semibold">more accessible, transparent and technology-driven</strong>, while connecting customers with qualified groundwater experts across India.
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -786,72 +821,49 @@ export default function LandingPage() {
                 <div className="mt-3.5 p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-blue-50/90 via-[#F4F9FF] to-white border-l-4 border-[var(--color-primary)] border border-blue-100 shadow-xs relative">
                   <Quote className="w-6 h-6 text-[var(--color-primary)]/15 absolute top-3 right-3" />
                   <p className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] italic leading-relaxed pr-6">
-                    “Our goal is simple — help people make better-informed groundwater decisions before they drill.”
+                    {cms('founder.quote', '“Our goal is simple — help people make better-informed groundwater decisions before they drill.”')}
                   </p>
                   <div className="mt-1.5 text-xs font-bold text-[var(--color-primary)] flex items-center gap-1.5">
-                    <span>— Bommala Anjaiah</span>
-                    <span className="text-[var(--color-text-secondary)] font-normal text-[11px]">• Founder & Managing Director</span>
+                    <span>— {cms('founder.name', 'Bommala Anjaiah')}</span>
+                    <span className="text-[var(--color-text-secondary)] font-normal text-[11px]">• {cms('founder.role', 'Founder & Managing Director')}</span>
                   </div>
                 </div>
               </div>
 
             </div>
 
-            {/* Bottom Row: 3 Core Pillars (Education, Experience, Vision) spanning full width */}
+            {/* Bottom Row: 3 Core Pillars (Education, Experience, Vision) */}
             <div className="mt-5 pt-5 border-t border-[var(--color-border)] grid sm:grid-cols-3 gap-3">
-              {/* Education Pillar */}
-              <div className="p-3.5 rounded-xl bg-blue-50/40 border border-blue-100 hover:border-[var(--color-primary)]/40 transition-colors flex flex-col justify-between">
-                <div>
-                  <div className="w-7 h-7 rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mb-2">
-                    <GraduationCap className="w-4 h-4" />
+              {cms('founder.pillars', [
+                { icon: '🎓', title: 'Education', subtitle: 'M.Sc. Geophysics', desc: 'Osmania University, Hyderabad, Telangana' },
+                { icon: '🌍', title: 'Experience', subtitle: '14+ Years', desc: 'Geophysics • Groundwater Exploration • Geophysical Investigations' },
+                { icon: '🚀', title: 'Vision', subtitle: 'Technology Platform', desc: 'Pan-India Reach • Building a trusted technology platform for groundwater exploration across India' }
+              ]).map((pillar, i) => {
+                const colorMap = [
+                  { box: 'bg-blue-50/40 border-blue-100 hover:border-[var(--color-primary)]/40', badge: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
+                  { box: 'bg-emerald-50/40 border-emerald-100 hover:border-emerald-300', badge: 'bg-emerald-600/10 text-emerald-700' },
+                  { box: 'bg-sky-50/40 border-sky-100 hover:border-sky-300', badge: 'bg-sky-600/10 text-sky-700' }
+                ];
+                const c = colorMap[i % colorMap.length];
+                return (
+                  <div key={i} className={`p-3.5 rounded-xl ${c.box} border transition-colors flex flex-col justify-between`}>
+                    <div>
+                      <div className={`w-7 h-7 rounded-lg ${c.badge} flex items-center justify-center mb-2 text-sm`}>
+                        {pillar.icon || (i === 0 ? <GraduationCap className="w-4 h-4" /> : i === 1 ? <Globe className="w-4 h-4" /> : <Rocket className="w-4 h-4" />)}
+                      </div>
+                      <div className={`text-[10px] font-bold uppercase tracking-wider ${c.badge.split(' ')[1]}`}>
+                        {pillar.title}
+                      </div>
+                      <div className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)] mt-0.5">
+                        {pillar.subtitle || pillar.title}
+                      </div>
+                    </div>
+                    <div className="text-[10px] sm:text-[11px] text-[var(--color-text-secondary)] mt-1.5 leading-snug">
+                      {pillar.desc}
+                    </div>
                   </div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
-                    Education
-                  </div>
-                  <div className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)] mt-0.5">
-                    M.Sc. Geophysics
-                  </div>
-                </div>
-                <div className="text-[10px] sm:text-[11px] text-[var(--color-text-secondary)] mt-1.5 leading-snug">
-                  Osmania University, Hyderabad, Telangana
-                </div>
-              </div>
-
-              {/* Experience Pillar */}
-              <div className="p-3.5 rounded-xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 transition-colors flex flex-col justify-between">
-                <div>
-                  <div className="w-7 h-7 rounded-lg bg-emerald-600/10 text-emerald-700 flex items-center justify-center mb-2">
-                    <Globe className="w-4 h-4" />
-                  </div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                    Experience
-                  </div>
-                  <div className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)] mt-0.5">
-                    14+ Years
-                  </div>
-                </div>
-                <div className="text-[10px] sm:text-[11px] text-[var(--color-text-secondary)] mt-1.5 leading-snug">
-                  Geophysics • Groundwater Exploration • Geophysical Investigations
-                </div>
-              </div>
-
-              {/* Vision Pillar */}
-              <div className="p-3.5 rounded-xl bg-sky-50/40 border border-sky-100 hover:border-sky-300 transition-colors flex flex-col justify-between">
-                <div>
-                  <div className="w-7 h-7 rounded-lg bg-sky-600/10 text-sky-700 flex items-center justify-center mb-2">
-                    <Rocket className="w-4 h-4" />
-                  </div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-sky-700">
-                    Vision
-                  </div>
-                  <div className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)] mt-0.5">
-                    Technology Platform
-                  </div>
-                </div>
-                <div className="text-[10px] sm:text-[11px] text-[var(--color-text-secondary)] mt-1.5 leading-snug">
-                  Building a trusted technology platform for groundwater exploration across India.
-                </div>
-              </div>
+                );
+              })}
             </div>
 
             {/* Suggested CTA */}
@@ -1010,7 +1022,10 @@ export default function LandingPage() {
             </div>
           )}
 
-          {(activeFaqTab === 'customers' ? customerFaqs : expertFaqs).map((faq, index) => (
+          {(activeFaqTab === 'customers'
+            ? cms('faqs.customer', customerFaqs)
+            : cms('faqs.expert', expertFaqs)
+          ).map((faq, index) => (
             <FaqItem 
               key={`${activeFaqTab}-${index}`} 
               faq={faq} 
@@ -1138,7 +1153,7 @@ export default function LandingPage() {
               <Logo />
             </div>
             <p className="text-[var(--color-text-secondary)] text-sm mb-6 leading-relaxed">
-              Jaladhaara simplifies groundwater surveys by connecting customers with verified experts through secure booking, digital reports, and scientific survey methods.
+              {cms('footer.tagline', 'Jaladhaara simplifies groundwater surveys by connecting customers with verified experts through secure booking, digital reports, and scientific survey methods.')}
             </p>
             <div className="flex gap-4">
               <a href="https://www.instagram.com/jaladhaara_groundwatersurvey?utm_source=qr&igsh=MWVoeDQwcnZ1YzU1OA==" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-secondary)] hover:text-[#E1306C] transition-colors" aria-label="Instagram">

@@ -23,6 +23,8 @@ setTimeout(async () => {
     await initializeDefaultSettings();
     const { initializeLanguageSystem } = require('./controllers/languageController');
     await initializeLanguageSystem();
+    const { seedDefaultLandingContent } = require('./controllers/adminControllers/landingContentController');
+    await seedDefaultLandingContent();
   } catch (err) {
     console.error('Error initializing default settings/languages:', err);
   }
@@ -193,6 +195,11 @@ app.use('/api/admin', require('./routes/payment-routes/adminPayment.routes'));
 app.use('/api/admin/settings', require('./routes/admin-routes/settings.routes'));
 app.use('/api/admin/withdrawals', require('./routes/admin-routes/withdrawal.routes'));
 app.use('/api/admin/user-withdrawals', require('./routes/admin-routes/userWithdrawal.routes'));
+
+// Landing page content routes
+const landingRoutes = require('./routes/admin-routes/landingContent.routes');
+app.use('/api/landing', landingRoutes);                          // Public: GET landing content
+app.use('/api/admin/landing', landingRoutes.adminRouter);        // Admin: PATCH + upload image
 app.use('/api/admin/ratings', require('./routes/admin-routes/rating.routes'));
 app.use('/api/admin/disputes', require('./routes/admin-routes/dispute.routes'));
 app.use('/api/admin/audit-logs', require('./routes/admin-routes/adminAudit.routes'));

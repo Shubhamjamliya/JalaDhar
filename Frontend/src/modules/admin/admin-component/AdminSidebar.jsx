@@ -151,6 +151,14 @@ const navSections = [
         section: "SYSTEM CONFIG",
         items: [
             {
+                id: "landing",
+                label: "Landing Page",
+                to: "/admin/landing",
+                Icon: IoHomeOutline,
+                permission: "settings",
+                roles: ["SUPER_ADMIN"]
+            },
+            {
                 id: "team",
                 label: "Admin Management",
                 to: "/admin/team",
