@@ -29,7 +29,15 @@ import {
   ChevronDown,
   ShieldCheck,
   Award,
-  Phone
+  Phone,
+  GraduationCap,
+  Globe,
+  Rocket,
+  Quote,
+  Sparkles,
+  Layers,
+  Compass,
+  CheckCircle2
 } from 'lucide-react';
 
 const faqs = [
@@ -563,6 +571,256 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Founder & Managing Director Section */}
+      <section id="founder" className="scroll-mt-20 sm:scroll-mt-24 py-10 sm:py-14 lg:py-16 px-4 sm:px-6 lg:px-12 xl:px-20 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+        {/* Subtle background ambient glows */}
+        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 -right-20 w-80 h-80 bg-[var(--color-accent)]/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto relative z-10">
+          {/* Section Header */}
+          <div className="text-center mb-6 sm:mb-8 reveal">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-2.5 border border-[var(--color-primary)]/20">
+              <Award className="w-3.5 h-3.5" />
+              Founder & Leadership
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[var(--color-text-primary)] leading-tight">
+              Grounded in Geophysics.<br className="hidden sm:block" />
+              <span className="text-[var(--color-primary)]">Driven by Scientific Integrity.</span>
+            </h2>
+            <p className="text-[var(--color-text-secondary)] mt-2 text-xs sm:text-sm max-w-2xl mx-auto">
+              Bringing 14+ years of specialized groundwater exploration expertise and scientific geophysical investigations to every borewell decision across India.
+            </p>
+          </div>
+
+          {/* Founder Profile Card */}
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/8 p-5 sm:p-7 lg:p-8 reveal">
+            {/* Top Grid: Executive ID Card & Bio Narrative */}
+            <div className="grid lg:grid-cols-12 gap-5 lg:gap-7 items-stretch">
+              
+              {/* Left Column: Executive Identity Card */}
+              <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl bg-gradient-to-br from-[#023E8A] via-[#0077B6] to-[#03045E] p-5 sm:p-6 text-white relative overflow-hidden shadow-lg border border-white/20">
+                {/* Geological waveform / contour decorative background */}
+                <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
+                <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full bg-[#7FCDFF]/20 blur-2xl pointer-events-none" />
+
+                <div className="relative z-10">
+                  {/* Top Badge */}
+                  <div className="flex items-center justify-between gap-2 mb-3.5">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-md text-[10px] sm:text-[11px] font-bold uppercase tracking-wider border border-white/20 text-white">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#90E0EF]" />
+                      Verified Leader
+                    </span>
+                    <span className="text-[10px] sm:text-[11px] font-semibold text-white/80 bg-black/20 px-2.5 py-0.5 rounded-full">
+                      Osmania Univ. Alum
+                    </span>
+                  </div>
+
+                  {/* Profile Visual / Monogram Emblem */}
+                  <div className="flex items-center gap-3.5 sm:gap-4 mb-4">
+                    <div className="relative shrink-0">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-white/25 to-white/10 backdrop-blur-xl border-2 border-white/40 shadow-inner flex items-center justify-center text-white font-black text-xl sm:text-2xl tracking-tight">
+                        BA
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center shadow-sm">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
+                        Bommala Anjaiah
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-[#90E0EF] font-medium mt-0.5">
+                        Founder & Managing Director
+                      </p>
+                      <p className="text-[10px] sm:text-[11px] text-white/80 mt-0.5">
+                        Jaladhaara Groundwater Survey Pvt. Ltd.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Key Highlights Pill Grid */}
+                  <div className="grid grid-cols-2 gap-2.5 mb-3.5">
+                    <div className="p-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15">
+                      <div className="text-lg sm:text-xl font-extrabold text-white">14+</div>
+                      <div className="text-[10px] sm:text-[11px] text-white/80 font-medium">Years Experience</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15">
+                      <div className="text-lg sm:text-xl font-extrabold text-[#90E0EF]">M.Sc.</div>
+                      <div className="text-[10px] sm:text-[11px] text-white/80 font-medium">Geophysics Postgrad</div>
+                    </div>
+                  </div>
+
+                  {/* Technical Competencies List */}
+                  <div className="pt-3 border-t border-white/15">
+                    <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#90E0EF] mb-2 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5" /> Core Investigation Domains
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        'VES Sounding',
+                        'ERT Tomography',
+                        'Subsurface Mapping',
+                        'Hydrogeological Studies',
+                        'Borewell Site Assessment',
+                        'Data Interpretation'
+                      ].map((skill, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded-md bg-black/20 text-white/90 text-[10px] font-medium border border-white/10">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Note */}
+                <div className="relative z-10 mt-3.5 pt-2.5 border-t border-white/15 flex items-center justify-between text-[11px] text-white/80">
+                  <span className="flex items-center gap-1.5">
+                    <Compass className="w-3.5 h-3.5 text-[#90E0EF]" /> Pan-India Operations
+                  </span>
+                  <span className="font-semibold text-white">Hyderabad, India</span>
+                </div>
+              </div>
+
+              {/* Right Column: Bio Narrative & Quote */}
+              <div className="lg:col-span-7 flex flex-col justify-between">
+                <div>
+                  {/* Header & Designation */}
+                  <div className="mb-3">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[11px] font-bold uppercase tracking-wider mb-1 border border-[var(--color-primary)]/20">
+                      Founder & Managing Director
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl font-black text-[var(--color-text-primary)] tracking-tight">
+                      Bommala Anjaiah
+                    </h3>
+                    <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-medium mt-0.5">
+                      Jaladhaara Groundwater Survey Pvt. Ltd.
+                    </p>
+                  </div>
+
+                  {/* Academic & Experience Badges */}
+                  <div className="flex flex-wrap items-center gap-2 mb-3.5">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-[var(--color-primary)] border border-blue-100 text-xs font-bold">
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      M.Sc. Geophysics – Osmania University, Hyderabad
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold">
+                      <Globe className="w-3.5 h-3.5" />
+                      14+ Years of Professional Experience
+                    </span>
+                  </div>
+
+                  {/* Bio Description Paragraphs */}
+                  <div className="space-y-2.5 text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed font-normal">
+                    <p>
+                      A Geophysics professional with over <strong className="text-[var(--color-text-primary)] font-semibold">14 years of experience</strong> in groundwater exploration and geophysical investigations, Bommala Anjaiah brings strong technical and field expertise to Jaladhaara.
+                    </p>
+                    <p>
+                      His experience includes groundwater exploration, <strong className="text-[var(--color-text-primary)] font-semibold">VES, ERT, borewell site assessment, subsurface investigation, hydrogeological studies</strong>, and <strong className="text-[var(--color-text-primary)] font-semibold">geophysical data interpretation</strong>.
+                    </p>
+                    <p>
+                      He founded Jaladhaara with a vision to make professional groundwater survey services <strong className="text-[var(--color-text-primary)] font-semibold">more accessible, transparent and technology-driven</strong>, while connecting customers with qualified groundwater experts across India.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quote Block */}
+                <div className="mt-3.5 p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-blue-50/90 via-[#F4F9FF] to-white border-l-4 border-[var(--color-primary)] border border-blue-100 shadow-xs relative">
+                  <Quote className="w-6 h-6 text-[var(--color-primary)]/15 absolute top-3 right-3" />
+                  <p className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] italic leading-relaxed pr-6">
+                    “Our goal is simple — help people make better-informed groundwater decisions before they drill.”
+                  </p>
+                  <div className="mt-1.5 text-xs font-bold text-[var(--color-primary)] flex items-center gap-1.5">
+                    <span>— Bommala Anjaiah</span>
+                    <span className="text-[var(--color-text-secondary)] font-normal text-[11px]">• Founder & Managing Director</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Bottom Row: 3 Core Pillars (Education, Experience, Vision) spanning full width */}
+            <div className="mt-5 pt-5 border-t border-[var(--color-border)] grid sm:grid-cols-3 gap-3">
+              {/* Education Pillar */}
+              <div className="p-3.5 rounded-xl bg-blue-50/40 border border-blue-100 hover:border-[var(--color-primary)]/40 transition-colors flex flex-col justify-between">
+                <div>
+                  <div className="w-7 h-7 rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mb-2">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                    Education
+                  </div>
+                  <div className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)] mt-0.5">
+                    M.Sc. Geophysics
+                  </div>
+                </div>
+                <div className="text-[10px] sm:text-[11px] text-[var(--color-text-secondary)] mt-1.5 leading-snug">
+                  Osmania University, Hyderabad, Telangana
+                </div>
+              </div>
+
+              {/* Experience Pillar */}
+              <div className="p-3.5 rounded-xl bg-emerald-50/40 border border-emerald-100 hover:border-emerald-300 transition-colors flex flex-col justify-between">
+                <div>
+                  <div className="w-7 h-7 rounded-lg bg-emerald-600/10 text-emerald-700 flex items-center justify-center mb-2">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                    Experience
+                  </div>
+                  <div className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)] mt-0.5">
+                    14+ Years
+                  </div>
+                </div>
+                <div className="text-[10px] sm:text-[11px] text-[var(--color-text-secondary)] mt-1.5 leading-snug">
+                  Geophysics • Groundwater Exploration • Geophysical Investigations
+                </div>
+              </div>
+
+              {/* Vision Pillar */}
+              <div className="p-3.5 rounded-xl bg-sky-50/40 border border-sky-100 hover:border-sky-300 transition-colors flex flex-col justify-between">
+                <div>
+                  <div className="w-7 h-7 rounded-lg bg-sky-600/10 text-sky-700 flex items-center justify-center mb-2">
+                    <Rocket className="w-4 h-4" />
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-sky-700">
+                    Vision
+                  </div>
+                  <div className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)] mt-0.5">
+                    Technology Platform
+                  </div>
+                </div>
+                <div className="text-[10px] sm:text-[11px] text-[var(--color-text-secondary)] mt-1.5 leading-snug">
+                  Building a trusted technology platform for groundwater exploration across India.
+                </div>
+              </div>
+            </div>
+
+            {/* Suggested CTA */}
+            <div className="mt-4 pt-4 border-t border-[var(--color-border)] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                <a
+                  href="#services"
+                  className="h-10 sm:h-11 px-6 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-sm hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 group shadow-md shadow-[var(--color-primary)]/20"
+                >
+                  Explore Jaladhaara
+                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
+                </a>
+                <a
+                  href="#request"
+                  className="h-10 sm:h-11 px-5 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary)]/40 text-[var(--color-text-primary)] font-bold text-xs sm:text-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-xs"
+                >
+                  Request Borewell Survey
+                </a>
+              </div>
+              <div className="text-[11px] sm:text-xs text-[var(--color-text-secondary)] font-medium text-center sm:text-right hidden md:block">
+                Dedicated Scientific Groundwater Exploration Platform
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Banner / Reviews */}
       <section id="reviews" className="min-h-[auto] py-12 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden flex flex-col justify-center reveal">
         <div className="relative w-full rounded-3xl lg:rounded-[40px] overflow-hidden bg-[var(--color-bg)] border border-[var(--color-border)] p-6 sm:p-10 lg:p-16 grid lg:grid-cols-2 gap-8 items-center shadow-2xl shadow-[#0077B6]/15">
@@ -798,6 +1056,11 @@ export default function LandingPage() {
                 </a>
               </li>
               <li>
+                <a href="#founder" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
+                  Leadership & Founder
+                </a>
+              </li>
+              <li>
                 <button onClick={() => setIsTermsModalOpen(true)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
                   Terms & Conditions
                 </button>
@@ -894,7 +1157,7 @@ export default function LandingPage() {
               <div>
                 <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Founder Story</h3>
                 <p className="text-sm leading-relaxed">
-                  Jaladhaara was founded by Bommala Anjaiah, a postgraduate in Geophysics, with a vision to transform how groundwater survey services are accessed in India. Through years of observing the challenges faced by farmers, homeowners, industries, and groundwater professionals, he recognized the urgent need for a transparent, technology-driven platform that connects customers with verified groundwater survey experts.
+                  Jaladhaara was founded by <strong>Bommala Anjaiah</strong> (M.Sc. Geophysics, Osmania University, Hyderabad), bringing over 14 years of professional experience in groundwater exploration, VES, ERT, and subsurface geophysical investigations. Guided by a mission to help people make better-informed groundwater decisions before drilling, he built Jaladhaara to make scientific survey services transparent, accessible, and technology-driven across India.
                 </p>
               </div>
             </div>
