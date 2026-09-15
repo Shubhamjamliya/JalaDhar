@@ -43,7 +43,7 @@ const getLandingContent = async (req, res) => {
       await content.save();
     }
 
-    res.set('Cache-Control', 'public, max-age=300'); // 5-min CDN / browser cache
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate'); // Ensure instant updates upon admin save
     res.json({
       success: true,
       data: content

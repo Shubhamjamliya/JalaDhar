@@ -4,7 +4,7 @@ import api from './api';
  * Get the full landing page content (public, no auth required)
  */
 export const getLandingContent = async () => {
-  const response = await api.get('/landing');
+  const response = await api.get(`/landing?_t=${Date.now()}`);
   return response.data;
 };
 
