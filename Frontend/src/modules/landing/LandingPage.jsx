@@ -37,10 +37,12 @@ import {
   Sparkles,
   Layers,
   Compass,
-  CheckCircle2
+  CheckCircle2,
+  Users,
+  Briefcase
 } from 'lucide-react';
 
-const faqs = [
+const customerFaqs = [
   {
     q: "What is Jaladhaara?",
     a: "Jaladhaara is India's first dedicated groundwater survey booking platform that connects customers with verified and trained experts for conducting scientific borewell surveys."
@@ -88,6 +90,49 @@ const faqs = [
   {
     q: "How can I contact Jaladhaara?",
     a: "You can contact us through the Jaladhaara app, website, email, phone or WhatsApp for booking assistance and support."
+  }
+];
+
+const expertFaqs = [
+  {
+    q: "What is an Agriculture Groundwater Survey?",
+    a: "An Agriculture Groundwater Survey is conducted for agricultural land and farming activities, including crop fields, plantations, orchards, nurseries and other agricultural properties, to assess groundwater conditions and identify a suitable borewell drilling location."
+  },
+  {
+    q: "What is a Household Groundwater Survey?",
+    a: "A Household Groundwater Survey is conducted for residential properties, including individual houses, residential plots, villas, apartments and residential layouts, to assess the site's groundwater conditions and identify a suitable location for borewell drilling for household water requirements."
+  },
+  {
+    q: "What is a Commercial Groundwater Survey?",
+    a: "A Commercial Groundwater Survey is conducted for properties used for commercial activities, including shops, offices, hotels, restaurants, hospitals, schools, colleges, commercial complexes, malls, apartments used for commercial purposes and other business establishments, to identify suitable borewell drilling locations."
+  },
+  {
+    q: "What is an Industrial Groundwater Survey?",
+    a: "An Industrial Groundwater Survey is conducted for industrial and manufacturing properties, including factories, manufacturing units, industrial plants, warehouses, processing units, industrial parks and other industrial facilities, to assess groundwater conditions and identify suitable borewell drilling locations."
+  },
+  {
+    q: "What should I assess during the survey?",
+    a: "Assess the site using applicable groundwater exploration methods, considering geological, geophysical and subsurface conditions and relevant groundwater indicators, and identify the most suitable drilling location."
+  },
+  {
+    q: "What information should I provide in the survey report?",
+    a: "Record the survey findings, recommended drilling point, estimated drilling depth where technically feasible, observations, applicable technical details and required site evidence as specified in the app."
+  },
+  {
+    q: "What evidence is required after completing the survey?",
+    a: "Submit the required site photographs, survey observations, location details and other supporting evidence through the Jaladhaara app as applicable to the booking."
+  },
+  {
+    q: "Can I recommend multiple drilling points?",
+    a: "Yes, where the customer's selected package includes multiple points. Each recommended point should be clearly identified and documented in the survey report."
+  },
+  {
+    q: "Can I guarantee water or borewell success?",
+    a: "No. You must not guarantee groundwater availability, yield, quality, drilling depth or borewell success. The report should reflect your professional assessment based on the survey findings."
+  },
+  {
+    q: "Is borewell drilling part of my responsibility?",
+    a: "No. Your responsibility is to conduct the assigned groundwater survey professionally and submit the required findings and report through Jaladhaara. Borewell drilling is a separate activity arranged by the customer."
   }
 ];
 
@@ -157,6 +202,7 @@ export default function LandingPage() {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [activeFaqTab, setActiveFaqTab] = useState('customers');
   const [contactSubmitted, setContactSubmitted] = useState(false);
 
   useEffect(() => {
@@ -494,6 +540,18 @@ export default function LandingPage() {
               Join As Expert Today
               <ArrowRight className="w-5 h-5" />
             </Link>
+
+            <button
+              onClick={() => {
+                setActiveFaqTab('experts');
+                setOpenFaqIndex(null);
+                document.getElementById('faqs')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="w-full mt-3 h-10 rounded-xl text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-black/5 transition-all flex items-center justify-center gap-1.5"
+            >
+              Have questions? Read Expert FAQs
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </section>
@@ -882,20 +940,79 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faqs" className="py-12 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden flex flex-col justify-center bg-[var(--color-surface)] border-t border-[var(--color-border)]">
-        <div className="text-center mb-10 sm:mb-16 reveal">
-          <div className="inline-block px-4 py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold uppercase tracking-wider mb-6 border border-[var(--color-primary)]/20">
+      <section id="faqs" className="scroll-mt-20 sm:scroll-mt-24 py-12 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden flex flex-col justify-center bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+        <div className="text-center mb-8 sm:mb-12 reveal">
+          <div className="inline-block px-4 py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold uppercase tracking-wider mb-4 border border-[var(--color-primary)]/20">
             FAQs
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
             Frequently Asked Questions
           </h2>
+          <p className="text-[var(--color-text-secondary)] mt-3 text-sm sm:text-base max-w-xl mx-auto">
+            Find answers to common questions about groundwater surveys, booking procedures, and expert professional standards.
+          </p>
         </div>
-        
+
+        {/* FAQ Tabs for Customers & Experts */}
+        <div className="flex justify-center mb-8 sm:mb-10 reveal">
+          <div className="inline-flex p-1.5 rounded-2xl bg-white border border-[var(--color-border)] shadow-sm">
+            <button
+              onClick={() => {
+                setActiveFaqTab('customers');
+                setOpenFaqIndex(null);
+              }}
+              className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                activeFaqTab === 'customers'
+                  ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/20'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-slate-50'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              For Customers
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeFaqTab === 'customers' ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'
+              }`}>
+                {customerFaqs.length}
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveFaqTab('experts');
+                setOpenFaqIndex(null);
+              }}
+              className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                activeFaqTab === 'experts'
+                  ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/20'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-slate-50'
+              }`}
+            >
+              <Briefcase className="w-4 h-4" />
+              For Experts
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeFaqTab === 'experts' ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'
+              }`}>
+                {expertFaqs.length}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* FAQ List */}
         <div className="max-w-3xl mx-auto w-full reveal">
-          {faqs.map((faq, index) => (
+          {activeFaqTab === 'experts' && (
+            <div className="mb-5 px-4 py-3 rounded-xl bg-blue-50/70 border border-blue-100/80 flex items-center justify-between">
+              <span className="text-xs sm:text-sm font-semibold text-[var(--color-text-primary)]">
+                Groundwater Survey Guidelines & Field FAQs for Surveyors
+              </span>
+              <span className="text-[11px] font-bold text-[var(--color-primary)] bg-white px-2.5 py-0.5 rounded-md border border-blue-200">
+                10 Official FAQs
+              </span>
+            </div>
+          )}
+
+          {(activeFaqTab === 'customers' ? customerFaqs : expertFaqs).map((faq, index) => (
             <FaqItem 
-              key={index} 
+              key={`${activeFaqTab}-${index}`} 
               faq={faq} 
               isOpen={openFaqIndex === index} 
               onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)} 
