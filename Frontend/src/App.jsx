@@ -20,6 +20,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
 // Lazy load all route components for better performance
+const LandingPage = lazy(() => import("./modules/landing/LandingPage"));
 const UserLogin = lazy(() => import("./modules/user/user-pages/UserLogin"));
 const UserSignup = lazy(() => import("./modules/user/user-pages/UserSignup"));
 const UserOTPVerification = lazy(() => import("./modules/user/user-pages/UserOTPVerification"));
@@ -1341,11 +1342,21 @@ function App() {
                                         }
                                     />
 
-                                    {/* ---------- DEFAULT REDIRECT ---------- */}
+                                    {/* ---------- LANDING PAGE ---------- */}
                                     <Route
                                         path="/"
                                         element={
-                                            <Navigate to="/userlogin" replace />
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <LandingPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/landing"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <LandingPage />
+                                            </Suspense>
                                         }
                                     />
                                 </Routes>

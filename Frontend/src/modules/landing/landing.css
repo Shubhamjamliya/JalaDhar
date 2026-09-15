@@ -1,0 +1,141 @@
+/* Scoped Landing Page Design System */
+.landing-page-root {
+  --color-primary: #0077B6;
+  --color-primary-hover: #023E8A;
+  --color-secondary: #03045E;
+  --color-accent: #7FCDFF;
+
+  --color-bg: rgba(244, 249, 255, 0.6);
+  --color-surface: rgba(255, 255, 255, 0.85);
+  --color-surface-light: rgba(223, 247, 255, 0.4);
+
+  --color-text-primary: #011E36;
+  --color-text-secondary: #2C4B6B;
+
+  --color-border: rgba(255, 255, 255, 0.6);
+  --color-border-hover: rgba(255, 255, 255, 0.9);
+  --color-overlay: rgba(223, 247, 255, 0.85);
+
+  --font-display: "Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
+  background: linear-gradient(135deg, #F4F9FF 0%, #E2F2FC 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  position: relative;
+}
+
+.landing-page-root h1,
+.landing-page-root h2,
+.landing-page-root h3,
+.landing-page-root h4,
+.landing-page-root h5,
+.landing-page-root h6,
+.landing-page-root .font-display {
+  font-family: var(--font-display);
+}
+
+/* Glassmorphism filters within landing page */
+.landing-page-root section,
+.landing-page-root .bg-\[var\(--color-surface\)\],
+.landing-page-root .bg-\[var\(--color-bg\)\] {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.landing-page-root .glass-panel {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(18, 48, 99, 0.1);
+  box-shadow: 0 4px 30px rgba(18, 48, 99, 0.08);
+}
+
+.landing-page-root .text-gradient {
+  background: linear-gradient(90deg, #0077B6 0%, #00B4D8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Keyframe Animations */
+@keyframes landing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes landing-float-soft {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes landing-float-softer {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.landing-page-root .animate-fade-up {
+  animation: landing-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.landing-page-root .animate-fade-up-delay-1 {
+  animation: landing-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+.landing-page-root .animate-fade-up-delay-2 {
+  animation: landing-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+.landing-page-root .animate-fade-up-delay-3 {
+  animation: landing-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+}
+
+.landing-page-root .animate-fade-in {
+  animation: landing-fade-in 0.5s ease-out both;
+}
+
+.landing-page-root .animate-float {
+  animation: landing-float-soft 5s ease-in-out infinite;
+}
+
+.landing-page-root .animate-float-slow {
+  animation: landing-float-softer 6s ease-in-out infinite;
+}
+
+/* Reveal on scroll */
+.landing-page-root .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.landing-page-root .reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
