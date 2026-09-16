@@ -121,6 +121,10 @@ export default function VendorRequests() {
     const [acceptScheduleDate, setAcceptScheduleDate] = useState("");
     const [acceptScheduleTime, setAcceptScheduleTime] = useState("");
     const loadAllRequestsRef = useRef(null);
+    // When accepting a booking, we manually call loadAllRequests after switching tabs.
+    // This guard prevents the useEffect([activeTab]) from firing a duplicate (and possibly
+    // stale) fetch before the backend has committed the ACCEPTED status.
+    const skipTabRefetchRef = useRef(false);
 
     // Lock body and html scroll when showAcceptScheduler modal is active
     useEffect(() => {
@@ -318,8 +322,12 @@ export default function VendorRequests() {
         loadAllRequests();
     }, [location.pathname]);
 
-    // Refresh when tab changes
+    // Refresh when tab changes (but skip if we just did an accept/action that switches tab)
     useEffect(() => {
+        if (skipTabRefetchRef.current) {
+            skipTabRefetchRef.current = false;
+            return;
+        }
         loadAllRequests();
     }, [activeTab]);
 
@@ -443,8 +451,13 @@ export default function VendorRequests() {
                         return [acceptedBooking, ...prev];
                     });
                 }
-                // Immediately switch to the Ongoing / In-Progress tab so the expert sees it right away
+                // Immediately switch to the Ongoing / In-Progress tab.
+                // Set skipTabRefetchRef so the useEffect([activeTab]) doesn't
+                // fire a duplicate fetch before the next manual one.
+                skipTabRefetchRef.current = true;
                 setActiveTab("In Progress");
+                // Small delay so the backend write is fully committed before we re-query
+                await new Promise(resolve => setTimeout(resolve, 500));
                 await loadAllRequests(false);
             } else {
                 toast.dismissToast(loadingToast);
