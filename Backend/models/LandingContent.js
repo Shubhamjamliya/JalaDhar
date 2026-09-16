@@ -64,9 +64,103 @@ const FaqSchema = new mongoose.Schema({
   a: { type: String, required: true }
 }, { _id: false });
 
+const DEFAULT_CUSTOMER_FAQS = [
+  {
+    q: "What is Jaladhaara?",
+    a: "Jaladhaara is India's first dedicated groundwater survey booking platform that connects customers with verified and trained experts for conducting scientific borewell surveys."
+  },
+  {
+    q: "How do I book a groundwater survey?",
+    a: "Simply download the Jaladhaara app or use our web portal, select your location, choose a verified expert, and confirm your booking."
+  },
+  {
+    q: "Who can use Jaladhaara app?",
+    a: "Jaladhaara is designed for farmers, home owners, industries, commercial real estate developers, institutions and anyone planning to drill a borewell."
+  },
+  {
+    q: "What survey methods are available?",
+    a: "Our experts conduct Geophysical Investigations using advanced scientific methods such as Electrical resistivity, PQWT, ADMT, 3D locator and other approved groundwater survey techniques depending on the site requirements."
+  },
+  {
+    q: "Can Jaladhaara guarantee borewell success?",
+    a: "No. Groundwater occurrence depends on natural geological conditions. Jaladhaara connects customers with verified experts who use geoscientific survey methods to drastically improve borewell planning and reduce dry-bore risks."
+  },
+  {
+    q: "How are experts verified?",
+    a: "Experts undergo a strict verification process based on their qualifications, field experience, years of service, identity, and background documentation before joining the platform."
+  },
+  {
+    q: "How do I pay for the survey?",
+    a: "Payments are made securely through the Jaladhaara platform using standard digital payment options (UPI, Net Banking, Cards)."
+  },
+  {
+    q: "Will I receive a survey report?",
+    a: "Yes. The expert will provide a comprehensive digital survey report through the Jaladhaara platform after completing the on-site survey."
+  },
+  {
+    q: "Can groundwater survey experts join Jaladhaara?",
+    a: "Yes. Qualified, trained and eligible groundwater survey professionals can register through the Jaladhaara Expert portal and complete the verification process."
+  },
+  {
+    q: "Which sectors does Jaladhaara serve?",
+    a: "Jaladhaara provides bookings for groundwater survey services for:\n1. Agriculture\n2. Residential\n3. Industrial\n4. Commercial (including open plot ventures, gated communities, and real estate developments)"
+  },
+  {
+    q: "Is Jaladhaara available across India?",
+    a: "Jaladhaara is building a nationwide network of verified and trained groundwater survey experts to serve customers across India."
+  },
+  {
+    q: "How can I contact Jaladhaara?",
+    a: "You can contact us through the Jaladhaara app, website, email, phone or WhatsApp for booking assistance and support."
+  }
+];
+
+const DEFAULT_EXPERT_FAQS = [
+  {
+    q: "What is an Agriculture Groundwater Survey?",
+    a: "An Agriculture Groundwater Survey is conducted for agricultural land and farming activities, including crop fields, plantations, orchards, nurseries and other agricultural properties, to assess groundwater conditions and identify a suitable borewell drilling location."
+  },
+  {
+    q: "What is a Household Groundwater Survey?",
+    a: "A Household Groundwater Survey is conducted for residential properties, including individual houses, residential plots, villas, apartments and residential layouts, to assess the site's groundwater conditions and identify a suitable location for borewell drilling for household water requirements."
+  },
+  {
+    q: "What is a Commercial Groundwater Survey?",
+    a: "A Commercial Groundwater Survey is conducted for properties used for commercial activities, including shops, offices, hotels, restaurants, hospitals, schools, colleges, commercial complexes, malls, apartments used for commercial purposes and other business establishments, to identify suitable borewell drilling locations."
+  },
+  {
+    q: "What is an Industrial Groundwater Survey?",
+    a: "An Industrial Groundwater Survey is conducted for industrial and manufacturing properties, including factories, manufacturing units, industrial plants, warehouses, processing units, industrial parks and other industrial facilities, to assess groundwater conditions and identify suitable borewell drilling locations."
+  },
+  {
+    q: "What should I assess during the survey?",
+    a: "Assess the site using applicable groundwater exploration methods, considering geological, geophysical and subsurface conditions and relevant groundwater indicators, and identify the most suitable drilling location."
+  },
+  {
+    q: "What information should I provide in the survey report?",
+    a: "Record the survey findings, recommended drilling point, estimated drilling depth where technically feasible, observations, applicable technical details and required site evidence as specified in the app."
+  },
+  {
+    q: "What evidence is required after completing the survey?",
+    a: "Submit the required site photographs, survey observations, location details and other supporting evidence through the Jaladhaara app as applicable to the booking."
+  },
+  {
+    q: "Can I recommend multiple drilling points?",
+    a: "Yes, where the customer's selected package includes multiple points. Each recommended point should be clearly identified and documented in the survey report."
+  },
+  {
+    q: "Can I guarantee water or borewell success?",
+    a: "No. You must not guarantee groundwater availability, yield, quality, drilling depth or borewell success. The report should reflect your professional assessment based on the survey findings."
+  },
+  {
+    q: "Is borewell drilling part of my responsibility?",
+    a: "No. Your responsibility is to conduct the assigned groundwater survey professionally and submit the required findings and report through Jaladhaara. Borewell drilling is a separate activity arranged by the customer."
+  }
+];
+
 const FaqsSchema = new mongoose.Schema({
-  customer: { type: [FaqSchema], default: [] },
-  expert: { type: [FaqSchema], default: [] }
+  customer: { type: [FaqSchema], default: () => DEFAULT_CUSTOMER_FAQS },
+  expert: { type: [FaqSchema], default: () => DEFAULT_EXPERT_FAQS }
 }, { _id: false });
 
 const AppCardSchema = new mongoose.Schema({
