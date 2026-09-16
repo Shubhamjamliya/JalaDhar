@@ -5,7 +5,8 @@ const { requirePermission } = require('../../middleware/roleMiddleware');
 const {
   getLandingContent,
   updateLandingSection,
-  uploadSectionImage
+  uploadSectionImage,
+  uploadSectionVideo
 } = require('../../controllers/adminControllers/landingContentController');
 
 // ── Public route (no auth) ──────────────────────────────────────────────────
@@ -21,5 +22,6 @@ adminRouter.use(requirePermission('settings'));
 
 adminRouter.patch('/:section', updateLandingSection);
 adminRouter.post('/upload-image', uploadSectionImage);
+adminRouter.post('/upload-video', uploadSectionVideo);
 
 module.exports.adminRouter = adminRouter;

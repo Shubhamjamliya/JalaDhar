@@ -15,8 +15,20 @@ const upload = multer({
   }
 });
 
+const uploadVideo = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB max for video
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('video/')) {
+      return cb(new Error('Only video files (MP4, WebM, etc.) are allowed'));
+    }
+    cb(null, true);
+  }
+});
+
 // Export multer middleware for use in routes
 const uploadMiddleware = upload.single('image');
+const uploadVideoMiddleware = uploadVideo.single('video');
 
 // ─── Seed defaults ───────────────────────────────────────────────────────────
 const seedDefaultLandingContent = async () => {
@@ -67,7 +79,8 @@ const updateLandingSection = async (req, res) => {
 
     const allowedSections = [
       'hero', 'services', 'howItWorksCustomers', 'howItWorksExperts',
-      'founder', 'stats', 'faqs', 'ecosystemApps', 'ctaBanner', 'footer'
+      'founder', 'stats', 'faqs', 'ecosystemApps', 'ctaBanner', 'footer',
+      'whyChoose', 'appVideos'
     ];
 
     if (!allowedSections.includes(section)) {
@@ -161,9 +174,55 @@ const uploadSectionImage = async (req, res) => {
   });
 };
 
+// ─── POST /api/admin/landing/upload-video (admin) ───────────────────────────
+const uploadSectionVideo = async (req, res) => {
+  uploadVideoMiddleware(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No video file provided' });
+    }
+
+    try {
+      const { section = 'app-videos', oldPublicId } = req.body;
+
+      // Delete old Cloudinary video if provided
+      if (oldPublicId) {
+        try {
+          await deleteFromCloudinary(oldPublicId, { resource_type: 'video' });
+        } catch (delErr) {
+          console.warn('[LandingContent] Could not delete old video:', delErr.message);
+        }
+      }
+
+      const result = await uploadToCloudinary(req.file.buffer, `landing-content/${section}`, {
+        resource_type: 'video'
+      });
+
+      res.json({
+        success: true,
+        message: 'Video uploaded successfully',
+        data: {
+          url: result.secure_url,
+          publicId: result.public_id
+        }
+      });
+    } catch (uploadErr) {
+      console.error('[uploadSectionVideo] Error:', uploadErr);
+      res.status(500).json({
+        success: false,
+        message: 'Video upload failed',
+        error: uploadErr.message
+      });
+    }
+  });
+};
+
 module.exports = {
   getLandingContent,
   updateLandingSection,
   uploadSectionImage,
+  uploadSectionVideo,
   seedDefaultLandingContent
 };

@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   IoImageOutline, IoSaveOutline, IoCheckmarkCircle, IoCloseCircle,
   IoRefreshOutline, IoEyeOutline, IoAddCircleOutline, IoTrashOutline,
-  IoChevronDown, IoChevronUp, IoInformationCircleOutline
+  IoChevronDown, IoChevronUp, IoInformationCircleOutline, IoVideocamOutline
 } from 'react-icons/io5';
-import { getLandingContent, updateLandingSection, uploadLandingImage } from '../../../services/landingApi';
+import { getLandingContent, updateLandingSection, uploadLandingImage, uploadLandingVideo } from '../../../services/landingApi';
 
 // ─── Utility Components ──────────────────────────────────────────────────────
 
@@ -121,6 +121,118 @@ function ImageUploadField({ label, hint, currentUrl, section, onUploaded }) {
         </div>
       </div>
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+    </Field>
+  );
+}
+
+function ToggleField({ label, hint, enabled, onChange }) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
+      <div className="space-y-0.5 pr-4">
+        <span className="text-sm font-bold text-slate-800">{label}</span>
+        {hint && <p className="text-xs text-slate-500">{hint}</p>}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(!enabled)}
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+          enabled ? 'bg-blue-600' : 'bg-slate-300'
+        }`}
+      >
+        <span
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+            enabled ? 'translate-x-5' : 'translate-x-0'
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+
+function StringListEditor({ items = [], onChange, placeholder = "Item text...", label = "Item" }) {
+  const add = () => onChange([...items, '']);
+  const remove = (i) => onChange(items.filter((_, idx) => idx !== i));
+  const update = (i, val) => onChange(items.map((item, idx) => idx === i ? val : item));
+
+  return (
+    <div className="space-y-2">
+      {items.map((item, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-400 w-6">#{i + 1}</span>
+          <div className="flex-1">
+            <TextInput value={item} onChange={v => update(i, v)} placeholder={placeholder} maxLength={80} />
+          </div>
+          <button
+            type="button"
+            onClick={() => remove(i)}
+            className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+            title="Remove item"
+          >
+            <IoTrashOutline className="text-base" />
+          </button>
+        </div>
+      ))}
+      {items.length < 15 && (
+        <button
+          type="button"
+          onClick={add}
+          className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 pt-1"
+        >
+          <IoAddCircleOutline className="text-base" /> Add {label}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function VideoUploadField({ label, hint, currentUrl, section, onUploaded }) {
+  const fileRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 100 * 1024 * 1024) {
+      alert('Video file size exceeds the 100MB limit.');
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress('Uploading to Cloudinary (this may take a moment)...');
+    try {
+      const res = await uploadLandingVideo(file, section);
+      if (res.success) {
+        onUploaded(res.data);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Video upload failed. Please try again or paste a YouTube / MP4 URL directly.');
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  return (
+    <Field label={label} hint={hint}>
+      <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors disabled:opacity-50"
+          >
+            {uploading ? <IoRefreshOutline className="animate-spin text-base" /> : <IoVideocamOutline className="text-base" />}
+            {uploading ? 'Uploading Video...' : 'Upload MP4 / WebM File'}
+          </button>
+          {uploadProgress && <p className="text-[11px] text-blue-600 font-medium">{uploadProgress}</p>}
+          <p className="text-[10px] text-slate-400">MP4 / WebM — Max 100 MB. Uploaded securely to Cloudinary.</p>
+        </div>
+      </div>
+      <input ref={fileRef} type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" className="hidden" onChange={handleFile} />
     </Field>
   );
 }
@@ -373,6 +485,223 @@ function FooterEditor({ data, setData }) {
   );
 }
 
+function WhyChooseEditor({ data = {}, setData }) {
+  const set = (k, v) => setData(d => ({ ...d, [k]: v }));
+
+  return (
+    <div className="space-y-6">
+      {/* Master Toggle */}
+      <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl">
+        <ToggleField
+          label="Display This Entire Section on Landing Page"
+          hint="Toggle to show or hide both 'Why Choose Jaladhaara?' and 'Who Is Jaladhaara For?' on the public landing page."
+          enabled={data.enabled ?? true}
+          onChange={val => set('enabled', val)}
+        />
+      </div>
+
+      {/* Why Choose Subsection */}
+      <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50 space-y-4">
+        <ToggleField
+          label="Show 'Why Choose Jaladhaara?' Card"
+          hint="Display the key platform benefits card"
+          enabled={data.whyChooseEnabled ?? true}
+          onChange={val => set('whyChooseEnabled', val)}
+        />
+
+        <Field label="Card Title">
+          <TextInput
+            value={data.title || 'Why Choose Jaladhaara?'}
+            onChange={v => set('title', v)}
+            maxLength={60}
+          />
+        </Field>
+
+        <Field label="Key Benefits / Features" hint="Bullet points displayed with green checkmarks">
+          <StringListEditor
+            items={data.items || []}
+            onChange={v => set('items', v)}
+            placeholder="e.g. Verified Experts"
+            label="Benefit"
+          />
+        </Field>
+      </div>
+
+      {/* Who Is It For Subsection */}
+      <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50 space-y-4">
+        <ToggleField
+          label="Show 'Who Is Jaladhaara For?' Card"
+          hint="Display the target audience / segments card"
+          enabled={data.whoForEnabled ?? true}
+          onChange={val => set('whoForEnabled', val)}
+        />
+
+        <Field label="Card Title">
+          <TextInput
+            value={data.whoForTitle || 'Who Is Jaladhaara For?'}
+            onChange={v => set('whoForTitle', v)}
+            maxLength={60}
+          />
+        </Field>
+
+        <Field label="Audience Categories" hint="Target categories (e.g., Farmers, Homeowners, Industries, etc.)">
+          <StringListEditor
+            items={data.whoForCategories || []}
+            onChange={v => set('whoForCategories', v)}
+            placeholder="e.g. Farmers"
+            label="Category"
+          />
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+function AppVideosEditor({ data = {}, setData }) {
+  const setVideo = (appKey, field, val) => {
+    setData(prev => ({
+      ...prev,
+      [appKey]: {
+        ...(prev?.[appKey] || {}),
+        [field]: val
+      }
+    }));
+  };
+
+  const handleVideoUpload = (appKey, uploadData) => {
+    setData(prev => ({
+      ...prev,
+      [appKey]: {
+        ...(prev?.[appKey] || {}),
+        url: uploadData.url,
+        publicId: uploadData.publicId
+      }
+    }));
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* User App Video */}
+      <div className="border border-slate-200 rounded-2xl p-5 sm:p-6 bg-slate-50 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+          <div>
+            <h3 className="font-bold text-slate-900 text-base">1. Introducing User App</h3>
+            <p className="text-xs text-slate-500">Video shown inside the Customer App card in the Ecosystem section</p>
+          </div>
+          <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-blue-100 text-blue-700">User App</span>
+        </div>
+
+        <ToggleField
+          label="Enable User App Video Button"
+          hint="Show the 'Watch Intro Video' button on the Customer App card"
+          enabled={data.userAppVideo?.enabled ?? true}
+          onChange={val => setVideo('userAppVideo', 'enabled', val)}
+        />
+
+        <Field label="Video Title / Modal Headline">
+          <TextInput
+            value={data.userAppVideo?.title || 'Introducing User App'}
+            onChange={val => setVideo('userAppVideo', 'title', val)}
+            placeholder="e.g. Introducing User App"
+            maxLength={80}
+          />
+        </Field>
+
+        <Field label="Video Source URL" hint="Direct MP4/WebM URL, Cloudinary URL, or YouTube video link (e.g., https://youtube.com/watch?v=... or https://youtu.be/...)">
+          <TextInput
+            value={data.userAppVideo?.url || ''}
+            onChange={val => setVideo('userAppVideo', 'url', val)}
+            placeholder="https://..."
+          />
+        </Field>
+
+        <VideoUploadField
+          label="Or Upload Video Directly"
+          hint="Upload a video file from your computer to Cloudinary"
+          currentUrl={data.userAppVideo?.url}
+          section="user-app-video"
+          onUploaded={uploadData => handleVideoUpload('userAppVideo', uploadData)}
+        />
+
+        {data.userAppVideo?.url && (
+          <div className="p-3 bg-white rounded-xl border border-slate-200 text-xs flex items-center justify-between">
+            <div className="flex items-center gap-2 overflow-hidden mr-3">
+              <IoCheckmarkCircle className="text-emerald-500 text-base shrink-0" />
+              <span className="truncate text-slate-700 font-mono">{data.userAppVideo.url}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setVideo('userAppVideo', 'url', '')}
+              className="text-red-500 hover:text-red-700 font-bold shrink-0"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Expert App Video */}
+      <div className="border border-slate-200 rounded-2xl p-5 sm:p-6 bg-slate-50 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+          <div>
+            <h3 className="font-bold text-slate-900 text-base">2. Introducing Expert App</h3>
+            <p className="text-xs text-slate-500">Video shown inside the Expert App card in the Ecosystem section</p>
+          </div>
+          <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-700">Expert App</span>
+        </div>
+
+        <ToggleField
+          label="Enable Expert App Video Button"
+          hint="Show the 'Watch Intro Video' button on the Expert App card"
+          enabled={data.expertAppVideo?.enabled ?? true}
+          onChange={val => setVideo('expertAppVideo', 'enabled', val)}
+        />
+
+        <Field label="Video Title / Modal Headline">
+          <TextInput
+            value={data.expertAppVideo?.title || 'Introducing Expert App'}
+            onChange={val => setVideo('expertAppVideo', 'title', val)}
+            placeholder="e.g. Introducing Expert App"
+            maxLength={80}
+          />
+        </Field>
+
+        <Field label="Video Source URL" hint="Direct MP4/WebM URL, Cloudinary URL, or YouTube video link (e.g., https://youtube.com/watch?v=... or https://youtu.be/...)">
+          <TextInput
+            value={data.expertAppVideo?.url || ''}
+            onChange={val => setVideo('expertAppVideo', 'url', val)}
+            placeholder="https://..."
+          />
+        </Field>
+
+        <VideoUploadField
+          label="Or Upload Video Directly"
+          hint="Upload a video file from your computer to Cloudinary"
+          currentUrl={data.expertAppVideo?.url}
+          section="expert-app-video"
+          onUploaded={uploadData => handleVideoUpload('expertAppVideo', uploadData)}
+        />
+
+        {data.expertAppVideo?.url && (
+          <div className="p-3 bg-white rounded-xl border border-slate-200 text-xs flex items-center justify-between">
+            <div className="flex items-center gap-2 overflow-hidden mr-3">
+              <IoCheckmarkCircle className="text-emerald-500 text-base shrink-0" />
+              <span className="truncate text-slate-700 font-mono">{data.expertAppVideo.url}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setVideo('expertAppVideo', 'url', '')}
+              className="text-red-500 hover:text-red-700 font-bold shrink-0"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main AdminLandingPage ───────────────────────────────────────────────────
 
 const SECTIONS = [
@@ -381,6 +710,8 @@ const SECTIONS = [
   { id: 'howItWorksCustomers', label: 'How It Works (Customers)', icon: '👤' },
   { id: 'howItWorksExperts', label: 'How It Works (Experts)', icon: '🔧' },
   { id: 'founder', label: 'Founder Profile', icon: '👨‍💼' },
+  { id: 'whyChoose', label: 'Why Choose & Who For', icon: '⭐' },
+  { id: 'appVideos', label: 'App Intro Videos', icon: '🎥' },
   { id: 'stats', label: 'Platform Stats', icon: '📊' },
   { id: 'faqs', label: 'FAQs', icon: '❓' },
   { id: 'footer', label: 'Footer', icon: '🔗' },
@@ -397,6 +728,42 @@ const DEFAULT_DATA = {
   howItWorksCustomers: { eyebrow: '', heading1: '', heading2: '', subtitle: '', steps: [] },
   howItWorksExperts: { eyebrow: '', heading1: '', heading2: '', subtitle: '', steps: [] },
   founder: { name: '', role: '', subDesignation: '', bio: '', quote: '', educationBadge: '', experienceBadge: '', pillars: [] },
+  whyChoose: {
+    enabled: true,
+    whyChooseEnabled: true,
+    title: 'Why Choose Jaladhaara?',
+    items: [
+      'Verified Experts',
+      'Live Expert Tracking',
+      'Transparent Pricing',
+      'Digital Reports',
+      'Secure & Reliable'
+    ],
+    whoForEnabled: true,
+    whoForTitle: 'Who Is Jaladhaara For?',
+    whoForCategories: [
+      'Farmers',
+      'Homeowners',
+      'Industries',
+      'Builders',
+      'Institutions',
+      'Commercial'
+    ]
+  },
+  appVideos: {
+    userAppVideo: {
+      enabled: true,
+      title: 'Introducing User App',
+      url: '',
+      publicId: ''
+    },
+    expertAppVideo: {
+      enabled: true,
+      title: 'Introducing Expert App',
+      url: '',
+      publicId: ''
+    }
+  },
   stats: [{ number: '', label: '' }, { number: '', label: '' }, { number: '', label: '' }],
   faqs: { customer: [], expert: [] },
   footer: { tagline: '', socialLinks: {} },
@@ -423,6 +790,8 @@ export default function AdminLandingPage() {
             howItWorksCustomers: d.howItWorksCustomers || DEFAULT_DATA.howItWorksCustomers,
             howItWorksExperts: d.howItWorksExperts || DEFAULT_DATA.howItWorksExperts,
             founder: d.founder || DEFAULT_DATA.founder,
+            whyChoose: d.whyChoose || DEFAULT_DATA.whyChoose,
+            appVideos: d.appVideos || DEFAULT_DATA.appVideos,
             stats: d.stats?.length ? d.stats : DEFAULT_DATA.stats,
             faqs: d.faqs || DEFAULT_DATA.faqs,
             footer: d.footer || DEFAULT_DATA.footer,
@@ -464,6 +833,8 @@ export default function AdminLandingPage() {
       case 'howItWorksCustomers': return <HowItWorksEditor data={d} setData={set} label="Customer" />;
       case 'howItWorksExperts':   return <HowItWorksEditor data={d} setData={set} label="Expert" />;
       case 'founder':       return <FounderEditor data={d} setData={set} />;
+      case 'whyChoose':     return <WhyChooseEditor data={d} setData={set} />;
+      case 'appVideos':     return <AppVideosEditor data={d} setData={set} />;
       case 'stats':         return <StatsEditor data={d} setData={set} />;
       case 'faqs':          return <FaqsEditor data={d} setData={set} />;
       case 'footer':        return <FooterEditor data={d} setData={set} />;

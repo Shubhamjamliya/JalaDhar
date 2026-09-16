@@ -34,3 +34,20 @@ export const uploadLandingImage = async (file, section = 'general', oldPublicId 
   });
   return response.data;
 };
+
+/**
+ * Upload a video for a landing page section (admin only)
+ * @param {File} file - Video file (MP4, WebM, etc.)
+ * @param {string} section - Section identifier for Cloudinary folder
+ * @param {string} [oldPublicId] - Previous Cloudinary public ID to delete
+ */
+export const uploadLandingVideo = async (file, section = 'app-videos', oldPublicId = null) => {
+  const formData = new FormData();
+  formData.append('video', file);
+  formData.append('section', section);
+  if (oldPublicId) formData.append('oldPublicId', oldPublicId);
+  const response = await api.post('/admin/landing/upload-video', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return response.data;
+};

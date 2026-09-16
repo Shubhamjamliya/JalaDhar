@@ -49,9 +49,9 @@ const uploadFileToCloudinary = async (filePath, options = {}) => {
  * @param {String} publicId - Cloudinary public ID
  * @returns {Promise<Object>} Deletion result
  */
-const deleteFromCloudinary = async (publicId) => {
+const deleteFromCloudinary = async (publicId, options = {}) => {
   try {
-    const result = await cloudinary.uploader.destroy(publicId);
+    const result = await cloudinary.uploader.destroy(publicId, options);
     return result;
   } catch (error) {
     throw new Error(`Cloudinary deletion failed: ${error.message}`);

@@ -196,12 +196,43 @@ const reviewsData = [
   }
 ];
 
+function getEmbedUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return null;
+
+  // YouTube match
+  const ytMatch = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/i);
+  if (ytMatch) {
+    return {
+      type: 'youtube',
+      url: `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&rel=0&modestbranding=1`
+    };
+  }
+
+  // Vimeo match
+  const vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+  if (vimeoMatch) {
+    return {
+      type: 'vimeo',
+      url: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`
+    };
+  }
+
+  // Direct video file or URL
+  return {
+    type: 'video',
+    url: trimmed
+  };
+}
+
 export default function LandingPage() {
   const appsScrollRef = useRef(null);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [activeVideo, setActiveVideo] = useState(null);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [activeFaqTab, setActiveFaqTab] = useState('customers');
   const [contactSubmitted, setContactSubmitted] = useState(false);
@@ -479,44 +510,59 @@ export default function LandingPage() {
           ))}
         </div>
 
-        <div className="max-w-5xl mx-auto reveal mb-14 sm:mb-16">
-          <h3 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-center text-[var(--color-text-primary)]">
-            Why Choose Jaladhaara?
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            {[
-              'Verified Experts',
-              'Live Expert Tracking',
-              'Transparent Pricing',
-              'Digital Reports',
-              'Secure & Reliable'
-            ].map((benefit, i) => (
-              <div 
-                key={i} 
-                className="flex items-center justify-center sm:justify-start gap-2.5 sm:gap-3 p-4 sm:p-5 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/50 transition-all last:col-span-2 md:last:col-span-1"
-              >
-                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--color-primary)] shrink-0" />
-                <span className="text-xs sm:text-sm lg:text-base font-bold text-[var(--color-text-primary)]">{benefit}</span>
+        {cms('whyChoose.enabled', true) && (
+          <>
+            {cms('whyChoose.whyChooseEnabled', true) && (
+              <div className="max-w-5xl mx-auto reveal mb-14 sm:mb-16">
+                <h3 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-center text-[var(--color-text-primary)]">
+                  {cms('whyChoose.title', 'Why Choose Jaladhaara?')}
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                  {cms('whyChoose.items', [
+                    'Verified Experts',
+                    'Live Expert Tracking',
+                    'Transparent Pricing',
+                    'Digital Reports',
+                    'Secure & Reliable'
+                  ]).map((benefit, i) => (
+                    <div 
+                      key={i} 
+                      className="flex items-center justify-center sm:justify-start gap-2.5 sm:gap-3 p-4 sm:p-5 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/50 transition-all last:col-span-2 md:last:col-span-1"
+                    >
+                      <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--color-primary)] shrink-0" />
+                      <span className="text-xs sm:text-sm lg:text-base font-bold text-[var(--color-text-primary)]">{benefit}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
 
-        <div className="max-w-5xl mx-auto reveal text-center">
-          <h3 className="text-xl sm:text-2xl font-bold mb-6 text-[var(--color-text-primary)]">
-            Who Is Jaladhaara For?
-          </h3>
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
-            {['Farmers', 'Homeowners', 'Industries', 'Builders', 'Institutions', 'Commercial'].map((userType, i) => (
-              <div 
-                key={i} 
-                className="px-5 py-2.5 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-sm sm:text-base font-semibold text-[var(--color-text-primary)] shadow-sm hover:border-[var(--color-primary)]/50 hover:shadow-md transition-all"
-              >
-                {userType}
+            {cms('whyChoose.whoForEnabled', true) && (
+              <div className="max-w-5xl mx-auto reveal text-center">
+                <h3 className="text-xl sm:text-2xl font-bold mb-6 text-[var(--color-text-primary)]">
+                  {cms('whyChoose.whoForTitle', 'Who Is Jaladhaara For?')}
+                </h3>
+                <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+                  {cms('whyChoose.whoForCategories', [
+                    'Farmers',
+                    'Homeowners',
+                    'Industries',
+                    'Builders',
+                    'Institutions',
+                    'Commercial'
+                  ]).map((userType, i) => (
+                    <div 
+                      key={i} 
+                      className="px-5 py-2.5 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-sm sm:text-base font-semibold text-[var(--color-text-primary)] shadow-sm hover:border-[var(--color-primary)]/50 hover:shadow-md transition-all"
+                    >
+                      {userType}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
+          </>
+        )}
       </section>
 
       {/* For Experts Section */}
@@ -670,13 +716,53 @@ export default function LandingPage() {
           {/* User App */}
           <div className="w-full bg-gradient-to-br from-[#0077B6] to-[#023E8A] rounded-3xl lg:rounded-[40px] p-6 sm:p-10 lg:p-12 border border-[#0096C7]/30 text-white flex flex-col justify-between relative overflow-hidden shadow-2xl shadow-[#023E8A]/30">
             <div>
-              <div className="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider mb-4">
-                For Customers
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div className="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider">
+                  For Customers
+                </div>
+                {cms('appVideos.userAppVideo.enabled', true) && (
+                  <button
+                    onClick={() => setActiveVideo({
+                      title: cms('appVideos.userAppVideo.title', 'Introducing User App'),
+                      url: cms('appVideos.userAppVideo.url', '')
+                    })}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/30 text-xs font-semibold text-white transition-all hover:scale-105"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current text-[#7FCDFF]" />
+                    <span>Watch Intro Video</span>
+                  </button>
+                )}
               </div>
               <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 text-white leading-tight">Jaladhaara App</h3>
-              <p className="text-white/80 text-sm sm:text-base leading-relaxed mb-8 max-w-md">
+              <p className="text-white/80 text-sm sm:text-base leading-relaxed mb-6 max-w-md">
                 Find and book verified groundwater survey experts near you for agricultural, residential, industrial and commercial needs. Track surveys and download digital reports anytime.
               </p>
+
+              {/* Video Preview Banner */}
+              {cms('appVideos.userAppVideo.enabled', true) && (
+                <div 
+                  onClick={() => setActiveVideo({
+                    title: cms('appVideos.userAppVideo.title', 'Introducing User App'),
+                    url: cms('appVideos.userAppVideo.url', '')
+                  })}
+                  className="mb-8 p-3.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-sm cursor-pointer transition-all duration-300 group flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                      <Play className="w-5 h-5 fill-current text-[#7FCDFF]" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-white/70 font-medium">1. Platform Video</p>
+                      <h4 className="text-sm font-bold text-white group-hover:text-[#90E0EF] transition-colors line-clamp-1">
+                        {cms('appVideos.userAppVideo.title', 'Introducing User App')}
+                      </h4>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-semibold text-white/90 px-2.5 py-1 rounded-lg bg-white/15 border border-white/20 shrink-0">
+                    Watch
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-3 relative z-10 w-full mt-auto pt-4">
@@ -699,13 +785,53 @@ export default function LandingPage() {
           {/* Expert App */}
           <div className="w-full bg-gradient-to-br from-[#03045E] to-[#0077B6] rounded-3xl lg:rounded-[40px] p-6 sm:p-10 lg:p-12 border border-[#0096C7]/30 text-white flex flex-col justify-between relative overflow-hidden shadow-2xl shadow-[#03045E]/30">
             <div>
-              <div className="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider mb-4">
-                For Surveyors
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div className="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider">
+                  For Surveyors
+                </div>
+                {cms('appVideos.expertAppVideo.enabled', true) && (
+                  <button
+                    onClick={() => setActiveVideo({
+                      title: cms('appVideos.expertAppVideo.title', 'Introducing Expert App'),
+                      url: cms('appVideos.expertAppVideo.url', '')
+                    })}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/30 text-xs font-semibold text-white transition-all hover:scale-105"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current text-[#90E0EF]" />
+                    <span>Watch Intro Video</span>
+                  </button>
+                )}
               </div>
               <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 text-white leading-tight">Jaladhaara <span className="text-[#90E0EF]">Expert</span></h3>
-              <p className="text-white/80 text-sm sm:text-base leading-relaxed mb-8 max-w-md">
+              <p className="text-white/80 text-sm sm:text-base leading-relaxed mb-6 max-w-md">
                 A dedicated workspace for verified groundwater experts to manage bookings, conduct field surveys, submit geoscientific digital reports, and build a trusted professional profile.
               </p>
+
+              {/* Video Preview Banner */}
+              {cms('appVideos.expertAppVideo.enabled', true) && (
+                <div 
+                  onClick={() => setActiveVideo({
+                    title: cms('appVideos.expertAppVideo.title', 'Introducing Expert App'),
+                    url: cms('appVideos.expertAppVideo.url', '')
+                  })}
+                  className="mb-8 p-3.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-sm cursor-pointer transition-all duration-300 group flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                      <Play className="w-5 h-5 fill-current text-[#90E0EF]" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-white/70 font-medium">2. Platform Video</p>
+                      <h4 className="text-sm font-bold text-white group-hover:text-[#90E0EF] transition-colors line-clamp-1">
+                        {cms('appVideos.expertAppVideo.title', 'Introducing Expert App')}
+                      </h4>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-semibold text-white/90 px-2.5 py-1 rounded-lg bg-white/15 border border-white/20 shrink-0">
+                    Watch
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-3 relative z-10 w-full mt-auto pt-4">
@@ -1491,6 +1617,75 @@ export default function LandingPage() {
 
               <h4 className="font-bold text-[var(--color-text-primary)] text-base pt-2">3. Inquiries</h4>
               <p>For data inquiries or account deletion requests, write to: <a href="mailto:info@jaladhaaraapp.com" className="text-[var(--color-primary)] font-semibold">info@jaladhaaraapp.com</a></p>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Video Modal */}
+      {activeVideo && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md transition-all duration-300"
+          onClick={() => setActiveVideo(null)}
+        >
+          <div 
+            className="relative w-full max-w-4xl bg-slate-900 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col animate-fade-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-white/10 bg-slate-950/60">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-primary)] animate-pulse" />
+                <h3 className="text-white font-bold text-sm sm:text-base">{activeVideo.title}</h3>
+              </div>
+              <button
+                onClick={() => setActiveVideo(null)}
+                className="p-1.5 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Close video"
+              >
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </div>
+
+            {/* Video Player */}
+            <div className="relative w-full aspect-video bg-black flex items-center justify-center">
+              {(() => {
+                const embed = getEmbedUrl(activeVideo.url);
+                if (!embed) {
+                  return (
+                    <div className="p-8 text-center text-white/70 space-y-3">
+                      <div className="w-12 h-12 mx-auto rounded-full bg-white/10 flex items-center justify-center text-white/50">
+                        <Play className="w-6 h-6" />
+                      </div>
+                      <p className="text-sm sm:text-base font-semibold text-white">Video Coming Soon</p>
+                      <p className="text-xs text-white/50 max-w-sm mx-auto">
+                        The intro video for this app is being updated. Please check back shortly or explore the portal directly.
+                      </p>
+                    </div>
+                  );
+                }
+                if (embed.type === 'youtube' || embed.type === 'vimeo') {
+                  return (
+                    <iframe
+                      src={embed.url}
+                      title={activeVideo.title}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  );
+                }
+                return (
+                  <video
+                    src={embed.url}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-contain"
+                  >
+                    Your browser does not support HTML5 video playback.
+                  </video>
+                );
+              })()}
             </div>
           </div>
         </div>

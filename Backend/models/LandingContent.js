@@ -97,6 +97,63 @@ const FooterSchema = new mongoose.Schema({
   socialLinks: { type: SocialLinksSchema, default: () => ({}) }
 }, { _id: false });
 
+const WhyChooseSchema = new mongoose.Schema({
+  enabled: { type: Boolean, default: true },
+  whyChooseEnabled: { type: Boolean, default: true },
+  title: { type: String, default: 'Why Choose Jaladhaara?' },
+  items: {
+    type: [String],
+    default: () => [
+      'Verified Experts',
+      'Live Expert Tracking',
+      'Transparent Pricing',
+      'Digital Reports',
+      'Secure & Reliable'
+    ]
+  },
+  whoForEnabled: { type: Boolean, default: true },
+  whoForTitle: { type: String, default: 'Who Is Jaladhaara For?' },
+  whoForCategories: {
+    type: [String],
+    default: () => [
+      'Farmers',
+      'Homeowners',
+      'Industries',
+      'Builders',
+      'Institutions',
+      'Commercial'
+    ]
+  }
+}, { _id: false });
+
+const VideoItemSchema = new mongoose.Schema({
+  enabled: { type: Boolean, default: true },
+  title: { type: String, default: '' },
+  url: { type: String, default: '' },
+  publicId: { type: String, default: '' }
+}, { _id: false });
+
+const AppVideosSchema = new mongoose.Schema({
+  userAppVideo: { 
+    type: VideoItemSchema, 
+    default: () => ({
+      enabled: true,
+      title: 'Introducing User App',
+      url: '',
+      publicId: ''
+    }) 
+  },
+  expertAppVideo: { 
+    type: VideoItemSchema, 
+    default: () => ({
+      enabled: true,
+      title: 'Introducing Expert App',
+      url: '',
+      publicId: ''
+    }) 
+  }
+}, { _id: false });
+
 // ─── Main Schema ─────────────────────────────────────────────────────────────
 
 const LandingContentSchema = new mongoose.Schema({
@@ -202,6 +259,8 @@ const LandingContentSchema = new mongoose.Schema({
     })
   },
   footer: { type: FooterSchema, default: () => ({}) },
+  whyChoose: { type: WhyChooseSchema, default: () => ({}) },
+  appVideos: { type: AppVideosSchema, default: () => ({}) },
   updatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin',
