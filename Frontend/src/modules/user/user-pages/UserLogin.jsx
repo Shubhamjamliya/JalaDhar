@@ -69,7 +69,18 @@ export default function UserLogin() {
             }
         } catch (err) {
             toast.dismissToast(loadingToast);
-            toast.showError(err.response?.data?.message || "No account found with this mobile number. Please click Sign Up to create an account.");
+            if (err.response?.status === 404) {
+                toast.showInfo("Welcome to Jaladhaara! Looks like you're new here — let's quickly create your account.");
+                setTimeout(() => {
+                    navigate("/usersignup", {
+                        state: {
+                            phone: cleanPhone
+                        }
+                    });
+                }, 700);
+                return;
+            }
+            toast.showError(err.response?.data?.message || "Failed to send OTP");
         } finally {
             setLoading(false);
         }

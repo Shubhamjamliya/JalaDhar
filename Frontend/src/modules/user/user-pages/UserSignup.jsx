@@ -48,7 +48,10 @@ export default function UserSignup() {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-    }, []);
+        if (location.state?.phone) {
+            setFormData(prev => ({ ...prev, phone: location.state.phone }));
+        }
+    }, [location.state?.phone]);
 
     // Auto-save draft on input change
     useEffect(() => {

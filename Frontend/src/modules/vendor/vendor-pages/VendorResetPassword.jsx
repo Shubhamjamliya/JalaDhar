@@ -9,8 +9,17 @@ import logo from "@/assets/AppLogo.png";
 export default function VendorResetPassword() {
     const navigate = useNavigate();
     const location = useLocation();
-    const [identifier, setIdentifier] = useState(location.state?.email || "");
-    const [otp, setOtp] = useState(location.state?.otp || "");
+
+    const savedAuth = (() => {
+        try {
+            return JSON.parse(sessionStorage.getItem('vendor_reset_auth') || '{}');
+        } catch {
+            return {};
+        }
+    })();
+
+    const [identifier, setIdentifier] = useState(location.state?.email || savedAuth.email || "");
+    const [otp, setOtp] = useState(location.state?.otp || savedAuth.otp || "");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -56,6 +65,11 @@ export default function VendorResetPassword() {
             toast.dismissToast(loadingToast);
 
             if (response.success) {
+                try {
+                    sessionStorage.removeItem('vendor_reset_auth');
+                } catch (e) {
+                    console.error("Failed to clear reset auth:", e);
+                }
                 toast.showSuccess("Password reset successful!");
                 setSuccess(true);
                 setTimeout(() => {

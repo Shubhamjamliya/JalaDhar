@@ -109,15 +109,11 @@ export default function UserOTPVerification() {
 
             if (result.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess(result.message || "Account created successfully! Redirecting to login...");
+                toast.showSuccess(result.message || "Account created! Welcome to Jaladhaara.");
                 setRegistrationSuccess(true);
                 setTimeout(() => {
-                    navigate("/userlogin", {
-                        state: {
-                            message: "Account created successfully! Please log in to continue."
-                        }
-                    });
-                }, 1800);
+                    navigate("/user/home", { replace: true });
+                }, 1400);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(result.message || "Verification failed. Please try again.");
@@ -145,10 +141,10 @@ export default function UserOTPVerification() {
                     <main className="w-full rounded-3xl bg-white p-8 shadow-xl border border-gray-100/80 text-center">
                         <IoCheckmarkCircle className="text-6xl text-emerald-500 mx-auto mb-4" />
                         <h2 className="text-2xl font-extrabold text-gray-800 mb-2">
-                            Account Created!
+                            Welcome to Jaladhaara!
                         </h2>
                         <p className="text-sm text-gray-600 mb-6">
-                            Your account has been created successfully. Redirecting you to login...
+                            Your account is ready. Taking you directly to your dashboard...
                         </p>
                         <div className="animate-spin rounded-full h-8 w-8 border-3 border-t-transparent border-[#0A84FF] mx-auto"></div>
                     </main>

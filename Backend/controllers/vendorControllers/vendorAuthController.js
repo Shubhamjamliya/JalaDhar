@@ -911,6 +911,28 @@ const forgotPassword = async (req, res) => {
       });
     }
 
+    // Enterprise Rate Limiting & Cooldown Protection (60s Cooldown)
+    const existingToken = await Token.findOne({
+      userId: vendor._id,
+      userModel: 'Vendor',
+      type: TOKEN_TYPES.PASSWORD_RESET,
+      isUsed: false,
+      expiresAt: { $gt: new Date() }
+    }).sort({ createdAt: -1 });
+
+    const COOLDOWN_SECONDS = 60;
+    if (existingToken && (Date.now() - new Date(existingToken.createdAt).getTime() < COOLDOWN_SECONDS * 1000)) {
+      const remainingSeconds = Math.ceil((COOLDOWN_SECONDS * 1000 - (Date.now() - new Date(existingToken.createdAt).getTime())) / 1000);
+      return res.json({
+        success: true,
+        reused: true,
+        message: `Password reset OTP already sent recently. Please wait ${remainingSeconds}s before requesting again.`,
+        data: {
+          cooldownRemaining: remainingSeconds
+        }
+      });
+    }
+
     // Create password reset OTP
     const { otp } = await createOTPToken({
       userId: vendor._id,
@@ -940,7 +962,10 @@ const forgotPassword = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Password reset OTP sent to your registered mobile number / email'
+      message: 'Password reset OTP sent to your registered mobile number / email',
+      data: {
+        cooldownRemaining: 60
+      }
     });
   } catch (error) {
     console.error('Vendor forgot password error:', error);

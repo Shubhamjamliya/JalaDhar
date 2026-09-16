@@ -228,16 +228,43 @@ const register = async (req, res) => {
       }).catch(err => console.error('Welcome email send error:', err));
     }
 
+    // Generate token pair for instant auto-login
+    const { accessToken, refreshToken } = generateTokenPair({
+      userId: user._id,
+      role: user.role,
+      email: user.email
+    });
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+
     res.status(201).json({
       success: true,
-      message: 'Registration successful. Email verified.',
+      message: 'Registration successful. Welcome to Jaladhaara!',
       data: {
+        tokens: {
+          accessToken,
+          refreshToken
+        },
         user: {
           id: user._id,
           name: user.name,
           email: user.email,
           phone: user.phone,
-          isEmailVerified: user.isEmailVerified
+          role: user.role,
+          profilePicture: user.profilePicture,
+          preferredLanguage: user.preferredLanguage || 'en'
         }
       }
     });

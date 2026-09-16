@@ -46,10 +46,20 @@ export const AuthProvider = ({ children }) => {
       const response = await userRegister(userData);
 
       if (response.success) {
-        // Registration successful - user needs to verify email
+        if (response.data?.tokens) {
+          const { tokens, user: userData } = response.data;
+          localStorage.setItem('accessToken', tokens.accessToken);
+          localStorage.setItem('refreshToken', tokens.refreshToken);
+          localStorage.setItem('user', JSON.stringify(userData));
+
+          setToken(tokens.accessToken);
+          setUser(userData);
+          registerFCMToken('user');
+        }
+
         return {
           success: true,
-          message: response.message || 'Registration successful. Please verify your email.',
+          message: response.message || 'Registration successful',
           data: response.data
         };
       } else {

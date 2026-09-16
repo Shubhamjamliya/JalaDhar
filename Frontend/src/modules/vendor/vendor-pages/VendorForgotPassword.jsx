@@ -10,9 +10,18 @@ export default function VendorForgotPassword() {
     const [identifier, setIdentifier] = useState("");
     const [otp, setOtp] = useState("");
     const [step, setStep] = useState(1); // 1 = Send OTP, 2 = Verify OTP
+    const [otpCountdown, setOtpCountdown] = useState(60);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const toast = useToast();
+
+    useEffect(() => {
+        let timer;
+        if (step === 2 && otpCountdown > 0) {
+            timer = setTimeout(() => setOtpCountdown(prev => prev - 1), 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [step, otpCountdown]);
 
     const handleIdentifierChange = (e) => {
         const val = e.target.value;
@@ -49,6 +58,7 @@ export default function VendorForgotPassword() {
             if (response.success) {
                 toast.showSuccess(response.message || "OTP sent successfully!");
                 setStep(2);
+                setOtpCountdown(response.data?.cooldownRemaining || 60);
             } else {
                 toast.showError(response.message || "Failed to send OTP");
             }
@@ -81,6 +91,14 @@ export default function VendorForgotPassword() {
 
             if (response.success) {
                 toast.showSuccess("OTP verified! Set your new password.");
+                try {
+                    sessionStorage.setItem('vendor_reset_auth', JSON.stringify({
+                        email: identifier.trim(),
+                        otp: otp.trim()
+                    }));
+                } catch (e) {
+                    console.error("Failed to store reset auth:", e);
+                }
                 setTimeout(() => {
                     navigate("/vendor/reset-password", {
                         state: { email: identifier.trim(), otp: otp.trim() }
@@ -207,10 +225,10 @@ export default function VendorForgotPassword() {
                                 <button
                                     type="button"
                                     onClick={handleSendOTP}
-                                    disabled={loading}
-                                    className="text-[#0A84FF] font-semibold hover:underline"
+                                    disabled={loading || otpCountdown > 0}
+                                    className="text-[#0A84FF] font-semibold hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
                                 >
-                                    Resend OTP
+                                    {otpCountdown > 0 ? `Resend OTP in ${otpCountdown}s` : "Resend OTP"}
                                 </button>
                             </div>
                         </form>
