@@ -16,6 +16,7 @@ import {
     IoBusinessOutline,
     IoLockClosedOutline,
     IoChevronDown,
+    IoMailOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -133,6 +134,13 @@ const navSections = [
                 roles: ["SUPER_ADMIN", "SUPPORT_ADMIN"]
             },
             {
+                id: "inquiries",
+                label: "Contact Inquiries",
+                to: "/admin/inquiries",
+                Icon: IoMailOutline,
+                roles: ["SUPER_ADMIN", "ADMIN", "SUPPORT_ADMIN", "OPERATIONS_ADMIN"]
+            },
+            {
                 id: "agreement-logs",
                 label: "Audit Logs",
                 to: "/admin/agreements",
@@ -214,7 +222,8 @@ export default function AdminSidebar() {
         payments: 0,
         bookings: 0,
         withdrawals: 0,
-        userWithdrawals: 0
+        userWithdrawals: 0,
+        inquiries: 0
     });
 
     useEffect(() => {
@@ -299,6 +308,7 @@ export default function AdminSidebar() {
         if (id === "disputes") badgeStyle = "bg-rose-500/20 text-rose-400 border-rose-500/30";
         if (id === "payments") badgeStyle = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
         if (id === "bookings") badgeStyle = "bg-sky-500/20 text-sky-400 border-sky-500/30";
+        if (id === "inquiries") badgeStyle = "bg-blue-500/20 text-blue-400 border-blue-500/30";
 
         return (
             <span className={`px-1.5 py-0.2 text-[10px] font-black rounded-full border shadow-sm ${badgeStyle}`}>

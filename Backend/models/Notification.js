@@ -79,7 +79,9 @@ const notificationSchema = new mongoose.Schema({
       'DISPUTE_UPDATED',
       'DISPUTE_COMMENT',
       // Rating
-      'NEW_RATING'
+      'NEW_RATING',
+      // Inquiries
+      'NEW_CONTACT_INQUIRY'
     ]
   },
   title: {
@@ -93,7 +95,7 @@ const notificationSchema = new mongoose.Schema({
   relatedEntity: {
     entityType: {
       type: String,
-      enum: ['Booking', 'Payment', 'Vendor', 'Service', 'Dispute', 'Rating', 'User', 'Wallet', 'UserWithdrawalRequest', 'VendorWithdrawalRequest', 'Withdrawal'],
+      enum: ['Booking', 'Payment', 'Vendor', 'Service', 'Dispute', 'Rating', 'User', 'Wallet', 'UserWithdrawalRequest', 'VendorWithdrawalRequest', 'Withdrawal', 'ContactInquiry'],
       default: null
     },
     entityId: {

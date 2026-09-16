@@ -42,8 +42,10 @@ import {
   CheckCircle2,
   Users,
   Briefcase,
-  Download
+  Download,
+  Loader2
 } from 'lucide-react';
+import { submitContactInquiry } from '../../services/inquiryApi';
 
 const customerFaqs = [
   {
@@ -242,6 +244,8 @@ export default function LandingPage() {
   const [isUserTypeDropdownOpen, setIsUserTypeDropdownOpen] = useState(false);
   const userTypeDropdownRef = useRef(null);
   const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [contactError, setContactError] = useState('');
   const [landingContent, setLandingContent] = useState(null);
 
   // Fetch CMS content once on mount — gracefully falls back to hardcoded defaults if unavailable
@@ -334,14 +338,36 @@ export default function LandingPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleContactSubmit = (e) => {
+  const handleContactSubmit = async (e) => {
     e.preventDefault();
-    setContactSubmitted(true);
-    setTimeout(() => {
-      e.target.reset();
-      setSelectedUserType('');
-      setContactSubmitted(false);
-    }, 4000);
+    setContactError('');
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const name = formData.get('name')?.toString().trim();
+    const mobile = formData.get('mobile')?.toString().trim();
+    const email = formData.get('email')?.toString().trim();
+    const userType = selectedUserType || formData.get('userType')?.toString() || 'Customer / User';
+    const message = formData.get('message')?.toString().trim();
+
+    if (!name || !mobile || !email || !message) {
+      setContactError('Please fill in all required fields.');
+      return;
+    }
+
+    setContactSubmitting(true);
+    try {
+      await submitContactInquiry({ name, mobile, email, userType, message });
+      setContactSubmitted(true);
+      setTimeout(() => {
+        if (form) form.reset();
+        setSelectedUserType('');
+        setContactSubmitted(false);
+      }, 5000);
+    } catch (err) {
+      setContactError(err.response?.data?.message || 'Failed to submit inquiry. Please try again or reach us via WhatsApp.');
+    } finally {
+      setContactSubmitting(false);
+    }
   };
 
   return (
@@ -1270,12 +1296,28 @@ export default function LandingPage() {
                 />
               </div>
 
+              {contactError && (
+                <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm rounded-xl flex items-center gap-2">
+                  <span className="font-semibold">Error:</span> {contactError}
+                </div>
+              )}
+
               <button 
                 type="submit" 
-                className="w-full h-11 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 cursor-pointer"
+                disabled={contactSubmitting}
+                className="w-full h-11 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-                Send Message
+                {contactSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Sending Message...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Send Message
+                  </>
+                )}
               </button>
             </form>
           )}

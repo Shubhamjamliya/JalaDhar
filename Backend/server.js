@@ -204,6 +204,11 @@ app.use('/api/admin/ratings', require('./routes/admin-routes/rating.routes'));
 app.use('/api/admin/disputes', require('./routes/admin-routes/dispute.routes'));
 app.use('/api/admin/audit-logs', require('./routes/admin-routes/adminAudit.routes'));
 
+// Contact inquiries routes
+const contactRoutes = require('./routes/contact.routes');
+app.use('/api/contact', contactRoutes.publicRouter);             // Public: POST inquiry
+app.use('/api/admin/inquiries', contactRoutes.adminRouter);       // Admin: GET/PATCH/DELETE inquiries
+
 // Booking routes
 app.use('/api/bookings', require('./routes/booking-routes/userBooking.routes'));
 app.use('/api/vendors/bookings', require('./routes/booking-routes/vendorBooking.routes'));

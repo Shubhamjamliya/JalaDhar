@@ -812,7 +812,8 @@ exports.getSidebarCounts = async (req, res) => {
       pendingSettlements,
       activeBookings,
       pendingUserWithdrawals,
-      pendingVendorWithdrawals
+      pendingVendorWithdrawals,
+      pendingInquiries
     ] = await Promise.all([
       Vendor.countDocuments({ isApproved: false }),
       Dispute.countDocuments({ status: { $in: ['PENDING', 'IN_PROGRESS'] } }),
@@ -840,7 +841,8 @@ exports.getSidebarCounts = async (req, res) => {
         }
       }),
       UserWithdrawalRequest.countDocuments({ status: 'PENDING' }),
-      VendorWithdrawalRequest.countDocuments({ status: 'PENDING' })
+      VendorWithdrawalRequest.countDocuments({ status: 'PENDING' }),
+      require('../../models/ContactInquiry').countDocuments({ status: 'NEW' })
     ]);
 
     res.status(200).json({
@@ -852,7 +854,8 @@ exports.getSidebarCounts = async (req, res) => {
           payments: pendingSettlements + pendingUserWithdrawals + pendingVendorWithdrawals,
           withdrawals: pendingVendorWithdrawals,
           userWithdrawals: pendingUserWithdrawals,
-          bookings: activeBookings
+          bookings: activeBookings,
+          inquiries: pendingInquiries || 0
         }
       }
     });

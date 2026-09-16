@@ -759,6 +759,71 @@ const sendSettlementNotificationEmail = async ({ email, name, bookingId, settlem
   return await sendEmail({ to: email, subject, html });
 };
 
+/**
+ * Send Contact Inquiry Notification Email to Admin
+ */
+const sendContactInquiryAdminEmail = async ({ inquiry }) => {
+  const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS
+    ? process.env.ADMIN_NOTIFICATION_EMAILS.split(',').map(e => e.trim())
+    : [process.env.EMAIL_USER || 'jaladhaaragroundwatersurvey@gmail.com'];
+
+  const subject = `🔔 New Contact Inquiry: ${inquiry.name} (${inquiry.userType})`;
+
+  const contentHtml = `
+    <p style="margin: 0 0 16px; color: #334155; font-size: 14px; line-height: 1.6;">
+      A new customer inquiry has just been submitted via the Jaladhaara Landing Page contact form:
+    </p>
+    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 6px 0; color: #64748B; width: 120px;"><strong>Full Name:</strong></td>
+          <td style="padding: 6px 0; color: #0F172A; font-weight: 600;">${inquiry.name}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #64748B;"><strong>Mobile Number:</strong></td>
+          <td style="padding: 6px 0; color: #0077B6; font-weight: 600;">
+            <a href="tel:${inquiry.mobile}" style="color: #0077B6; text-decoration: none;">${inquiry.mobile}</a>
+            &nbsp;|&nbsp;
+            <a href="https://wa.me/91${inquiry.mobile.replace(/\D/g, '')}" style="color: #16A34A; text-decoration: none; font-size: 12px;">Chat on WhatsApp 💬</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #64748B;"><strong>Email Address:</strong></td>
+          <td style="padding: 6px 0; color: #0F172A;">
+            <a href="mailto:${inquiry.email}" style="color: #0077B6; text-decoration: none;">${inquiry.email}</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #64748B;"><strong>User Category:</strong></td>
+          <td style="padding: 6px 0; color: #0F172A;"><span style="display: inline-block; padding: 2px 8px; background: #E0F2FE; color: #0284C7; border-radius: 6px; font-weight: 600; font-size: 12px;">${inquiry.userType}</span></td>
+        </tr>
+      </table>
+    </div>
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; margin-bottom: 6px;">Message:</div>
+      <div style="background: #FFFFFF; border-left: 4px solid #0077B6; border-radius: 4px; padding: 14px 16px; font-size: 14px; color: #1E293B; line-height: 1.6; white-space: pre-wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">${inquiry.message}</div>
+    </div>
+    <p style="margin: 0; color: #94A3B8; font-size: 12px; line-height: 1.5;">
+      You can review and manage this lead directly inside the Jaladhaara Admin Portal under <strong>Contact Inquiries</strong>.
+    </p>
+  `;
+
+  const html = renderEmailShell({
+    title: subject,
+    badgeText: 'New Lead Alert',
+    badgeBg: '#E0F2FE',
+    badgeColor: '#0284C7',
+    heroTitle: 'New Contact Inquiry Received',
+    heroSubtitle: `${inquiry.name} • ${inquiry.userType}`,
+    contentHtml
+  });
+
+  const results = await Promise.allSettled(
+    adminEmails.map(adminEmail => sendEmail({ to: adminEmail, subject, html }))
+  );
+  return results;
+};
+
 module.exports = {
   sendEmail,
   sendOTPEmail,
@@ -768,6 +833,7 @@ module.exports = {
   sendBookingConfirmationEmail,
   sendBookingStatusUpdateEmail,
   sendPaymentConfirmationEmail,
-  sendSettlementNotificationEmail
+  sendSettlementNotificationEmail,
+  sendContactInquiryAdminEmail
 };
 
