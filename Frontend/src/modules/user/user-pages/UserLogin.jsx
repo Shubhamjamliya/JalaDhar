@@ -144,7 +144,7 @@ export default function UserLogin() {
                         </p>
                     </div>
 
-                    <form className="space-y-4" onSubmit={handleSendLoginOTP}>
+                    <form className="space-y-4" onSubmit={handleSendLoginOTP} autoComplete="off">
                         {/* Pill Tag */}
                         <div className="flex justify-center mb-2">
                             <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-50 text-[#0A84FF] text-xs font-extrabold border border-blue-200/80 tracking-wide shadow-2xs">

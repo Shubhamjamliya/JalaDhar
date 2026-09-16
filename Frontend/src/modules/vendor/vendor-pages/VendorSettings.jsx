@@ -539,6 +539,7 @@ export default function VendorSettings() {
                                     value={settings.currentPassword}
                                     onChange={(e) => setSettings({ ...settings, currentPassword: e.target.value })}
                                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0A84FF]"
+                                    autoComplete="new-password"
                                 />
                                 <input
                                     type="password"
@@ -546,6 +547,7 @@ export default function VendorSettings() {
                                     value={settings.newPassword}
                                     onChange={(e) => setSettings({ ...settings, newPassword: e.target.value })}
                                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0A84FF]"
+                                    autoComplete="new-password"
                                 />
                             </div>
 

@@ -2472,6 +2472,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 type="password"
                                                 className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                 placeholder="Enter current password"
+                                                autoComplete="new-password"
                                             />
                                         </div>
                                         <div>
@@ -2482,6 +2483,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 type="password"
                                                 className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                 placeholder="Enter new password"
+                                                autoComplete="new-password"
                                             />
                                         </div>
                                         <div>
@@ -2492,6 +2494,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 type="password"
                                                 className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                                                 placeholder="Confirm new password"
+                                                autoComplete="new-password"
                                             />
                                         </div>
                                         <div className="flex justify-end">

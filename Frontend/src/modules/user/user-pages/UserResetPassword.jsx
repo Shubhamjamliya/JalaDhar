@@ -120,7 +120,7 @@ export default function UserResetPassword() {
                     </div>
 
                     {/* Reset Form */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
                         {/* New Password Input */}
                         <div>
                             <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
@@ -136,6 +136,7 @@ export default function UserResetPassword() {
                                     className="w-full pl-11 pr-11 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 text-sm font-medium focus:outline-none focus:border-[#0A84FF] focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all"
                                     disabled={loading}
                                     required
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"
@@ -162,6 +163,7 @@ export default function UserResetPassword() {
                                     className="w-full pl-11 pr-11 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 text-sm font-medium focus:outline-none focus:border-[#0A84FF] focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all"
                                     disabled={loading}
                                     required
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"
