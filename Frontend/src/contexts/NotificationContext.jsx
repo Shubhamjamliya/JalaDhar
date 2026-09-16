@@ -358,18 +358,21 @@ export const NotificationProvider = ({ children }) => {
     };
   }, [isAuthenticated, refreshNotifications]);
 
-  // Load notifications on mount and when user changes
+  // Load notifications on mount and when user identity changes
+  // IMPORTANT: use currentUser?._id (a stable primitive) not the full object,
+  // which creates a new reference on every render and would cause an infinite re-fetch loop.
+  const currentUserId = currentUser?._id;
   useEffect(() => {
     const isPublicRoute = pathname === '/' || pathname === '/landing' || pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
 
-    if (isAuthenticated && currentUser && !isPublicRoute) {
+    if (isAuthenticated && currentUserId && !isPublicRoute) {
       loadNotifications();
       loadUnreadCount();
     } else {
       setNotifications([]);
       setUnreadCount(0);
     }
-  }, [isAuthenticated, currentUser, pathname, loadNotifications, loadUnreadCount]);
+  }, [isAuthenticated, currentUserId, pathname, loadNotifications, loadUnreadCount]);
 
   const value = {
     notifications,

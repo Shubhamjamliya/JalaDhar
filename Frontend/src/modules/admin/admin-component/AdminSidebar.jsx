@@ -240,17 +240,17 @@ export default function AdminSidebar() {
         };
 
         fetchCounts();
-        if (refreshProfile) refreshProfile();
+        if (refreshProfile) refreshProfile(); // sync profile once on mount
 
         const interval = setInterval(() => {
-            fetchCounts();
-            if (refreshProfile) refreshProfile();
+            fetchCounts(); // only refresh counts on a schedule, NOT profile
         }, 20000);
 
         if (socket) {
             const handleSocketRefresh = () => {
                 fetchCounts();
-                if (refreshProfile) refreshProfile();
+                // Do NOT call refreshProfile here — it triggers a re-render loop
+                // via AdminAuthContext -> setAdmin -> currentUser dep -> loadNotifications
             };
             socket.on('admin_counts_updated', handleSocketRefresh);
             socket.on('new_notification', handleSocketRefresh);

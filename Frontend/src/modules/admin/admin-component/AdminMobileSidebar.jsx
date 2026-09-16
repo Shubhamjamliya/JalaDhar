@@ -216,11 +216,10 @@ export default function AdminMobileSidebar({ isOpen, onClose }) {
         };
 
         fetchCounts();
-        if (refreshProfile) refreshProfile();
+        if (refreshProfile) refreshProfile(); // sync profile once on mount
 
         const interval = setInterval(() => {
-            fetchCounts();
-            if (refreshProfile) refreshProfile();
+            fetchCounts(); // only counts on schedule, NOT profile (causes re-render loop)
         }, 20000);
 
         return () => {

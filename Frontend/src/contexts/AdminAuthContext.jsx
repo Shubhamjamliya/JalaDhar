@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { adminLogin, adminLogout, adminRegister } from '../services/adminApi';
 import { registerFCMToken, unregisterFCMToken } from '../services/pushNotificationService';
 import api from '../services/api';
@@ -33,6 +33,9 @@ export const AdminAuthProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(false);
 
+  // Guard to run profile refresh only once on mount, not on every admin state change
+  const hasSynced = useRef(false);
+
   const refreshProfile = useCallback(async () => {
     try {
       const response = await api.get('/admin/auth/profile');
@@ -48,9 +51,10 @@ export const AdminAuthProvider = ({ children }) => {
     return null;
   }, []);
 
-  // Background profile sync & FCM registration on mount if authenticated
+  // Background profile sync & FCM registration — only once on mount if authenticated
   useEffect(() => {
-    if (token && admin) {
+    if (token && !hasSynced.current) {
+      hasSynced.current = true;
       try {
         registerFCMToken('admin');
       } catch (e) {
@@ -58,7 +62,9 @@ export const AdminAuthProvider = ({ children }) => {
       }
       refreshProfile();
     }
-  }, [token, admin, refreshProfile]);
+  // Only token and refreshProfile are needed — admin must NOT be a dep or it causes infinite loop
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, refreshProfile]);
 
   /**
    * Register new admin
