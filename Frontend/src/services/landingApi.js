@@ -1,10 +1,16 @@
+import axios from 'axios';
 import api from './api';
+
+// Plain axios instance for public routes — no auth token, no 401 redirect interceptor
+const publicApi = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+});
 
 /**
  * Get the full landing page content (public, no auth required)
  */
 export const getLandingContent = async () => {
-  const response = await api.get(`/landing?_t=${Date.now()}`);
+  const response = await publicApi.get(`/landing?_t=${Date.now()}`);
   return response.data;
 };
 
