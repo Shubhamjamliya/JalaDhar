@@ -235,6 +235,7 @@ export default function LandingPage() {
   const [activeVideo, setActiveVideo] = useState(null);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [activeFaqTab, setActiveFaqTab] = useState('customers');
+  const [activeFooterTab, setActiveFooterTab] = useState('customer');
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [landingContent, setLandingContent] = useState(null);
 
@@ -1268,33 +1269,32 @@ export default function LandingPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label htmlFor="email" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
-                    Email Address <span className="text-[var(--color-primary)]">*</span>
-                  </label>
-                  <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    required 
-                    placeholder="Enter your email address" 
-                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white/80 rounded-lg sm:rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)]" 
-                  />
-                </div>
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label htmlFor="mobile" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
-                    Mobile Number <span className="text-[var(--color-primary)]">*</span>
-                  </label>
-                  <input 
-                    type="tel" 
-                    id="mobile" 
-                    name="mobile" 
-                    required 
-                    placeholder="Enter your 10-digit mobile number" 
-                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white/80 rounded-lg sm:rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)]" 
-                  />
-                </div>
+              <div className="space-y-1.5 sm:space-y-2">
+                <label htmlFor="mobile" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
+                  Mobile Number <span className="text-[var(--color-primary)]">*</span>
+                </label>
+                <input 
+                  type="tel" 
+                  id="mobile" 
+                  name="mobile" 
+                  required 
+                  placeholder="Enter your 10-digit mobile number" 
+                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white/80 rounded-lg sm:rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)]" 
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:space-y-2">
+                <label htmlFor="email" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
+                  Email Address <span className="text-[var(--color-primary)]">*</span>
+                </label>
+                <input 
+                  type="email" 
+                  id="email" 
+                  name="email" 
+                  required 
+                  placeholder="Enter your email address" 
+                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white/80 rounded-lg sm:rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)]" 
+                />
               </div>
 
               <div className="space-y-1.5 sm:space-y-2">
@@ -1422,7 +1422,7 @@ export default function LandingPage() {
           {/* Column 3: Contact Us */}
           <div>
             <h4 className="font-bold mb-6 text-[var(--color-text-primary)]">Contact Us</h4>
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               <div>
                 <span className="block text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-1.5">
                   Registered Office
@@ -1430,12 +1430,15 @@ export default function LandingPage() {
                 <div className="flex items-start gap-2.5">
                   <MapPin className="w-4 h-4 text-[var(--color-primary)] shrink-0 mt-1" />
                   <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
-                    2-41/13/PMR/5F, 5th Floor, Melkiors Pride, Khanamet, Hitex Road, Hyderabad, Telangana state - 500081.
+                    2-41/13/PMR/5F, 5th Floor,<br />
+                    Melkiors Pride, Khanamet,<br />
+                    Hitex Road, Hyderabad,<br />
+                    Telangana - 500081.
                   </p>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-[var(--color-border)]">
+              <div className="pt-2 border-t border-[var(--color-border)]">
                 <a 
                   href="mailto:info@jaladhaaraapp.com" 
                   className="inline-flex items-center gap-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm font-semibold transition-colors group"
@@ -1447,32 +1450,104 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Column 4: Download the Jaladhaara app */}
-          <div className="bg-[var(--color-surface)] rounded-3xl p-5 sm:p-6 border border-[var(--color-border)] shadow-sm">
-            <h4 className="font-bold text-sm sm:text-base mb-1.5 text-[var(--color-text-primary)]">
-              Download the Jaladhaara app
-            </h4>
-            <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-2">
-              Get started Today
+          {/* Column 4: Download App (Customer & Expert) */}
+          <div className="bg-[var(--color-surface)] rounded-3xl p-5 sm:p-6 border border-[var(--color-border)] shadow-sm flex flex-col justify-between">
+            <div>
+              {/* Audience Tab Switcher */}
+              <div className="flex p-1 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] mb-4">
+                <button
+                  type="button"
+                  onClick={() => setActiveFooterTab('customer')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
+                    activeFooterTab === 'customer'
+                      ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                  }`}
+                >
+                  For Customers
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveFooterTab('expert')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
+                    activeFooterTab === 'expert'
+                      ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                  }`}
+                >
+                  For Experts
+                </button>
+              </div>
+
+              {activeFooterTab === 'customer' ? (
+                <div>
+                  <h4 className="font-bold text-sm sm:text-base mb-1 text-[var(--color-text-primary)]">
+                    Download the Jaladhaara app
+                  </h4>
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-2">
+                    Get started Today
+                  </div>
+                  <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed mb-5 min-h-[48px]">
+                    Find verified groundwater survey experts, book your survey, and receive your digital report- all in one app.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <h4 className="font-bold text-sm sm:text-base mb-1 text-[var(--color-text-primary)]">
+                    Download Jaladhaara Expert
+                  </h4>
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-2">
+                    For Surveyors
+                  </div>
+                  <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed mb-5 min-h-[48px]">
+                    Manage survey bookings, conduct field investigations, submit geoscientific digital reports, and grow your practice.
+                  </p>
+                </div>
+              )}
             </div>
-            <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed mb-5">
-              Find verified groundwater survey experts, book your survey, and receive your digital report- all in one app.
-            </p>
 
             <div className="space-y-2.5">
-              <Link 
-                to="/userlogin"
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-primary)] text-white text-xs sm:text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-all shadow-md shadow-[var(--color-primary)]/20"
-              >
-                Book Survey Online
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-              <button 
-                onClick={() => alert("Mobile app download links will be available shortly on Google Play and App Store.")}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
-              >
-                Download Mobile App
-              </button>
+              {activeFooterTab === 'customer' ? (
+                <>
+                  <Link 
+                    to="/userlogin"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-primary)] text-white text-xs sm:text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-all shadow-md shadow-[var(--color-primary)]/20"
+                  >
+                    Book Survey Online
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <button 
+                    onClick={() => alert("Customer mobile app download links will be available shortly on Google Play and App Store.")}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
+                  >
+                    Download Mobile App
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link 
+                    to="/vendorsignup"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-primary)] text-white text-xs sm:text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-all shadow-md shadow-[var(--color-primary)]/20"
+                  >
+                    Join as an Expert
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <button 
+                    onClick={() => alert("Expert mobile app download links will be available shortly on Google Play and App Store.")}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
+                  >
+                    Download Expert App
+                  </button>
+                  <div className="text-center pt-0.5">
+                    <Link 
+                      to="/vendorlogin" 
+                      className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] font-medium transition-colors"
+                    >
+                      Already registered? <span className="underline font-semibold text-[var(--color-primary)]">Expert Login</span>
+                    </Link>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
