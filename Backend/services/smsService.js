@@ -19,16 +19,22 @@ const formatIndianPhoneNumber = (phone) => {
 
 /**
  * Send SMS Text message using SMS India API Driver
- * @param {Object} params - { phone, text, templateId }
+ * @param {Object} params - { phone, text, templateId, entityId }
  */
-const sendSMS = async ({ phone, text, templateId = null }) => {
+const sendSMS = async ({ phone, text, templateId = null, entityId = null }) => {
   const mobileNumber = formatIndianPhoneNumber(phone);
   const isEnabled = process.env.ENABLE_SMS === 'true';
+
+  const dltTemplateId = templateId || process.env.SMS_INDIA_OTP_TEMPLATE_ID || process.env.SMS_INDIA_DEFAULT_DLT_TE_ID || '1077187260026633978';
+  const dltEntityId = entityId || process.env.SMS_INDIA_ENTITY_ID || process.env.SMS_INDIA_PE_ID || '1001495841758168605';
+  const senderId = process.env.SMS_INDIA_SENDER_ID || 'JALDHR';
 
   console.log('📱 [SMS India Service] Dispatch Request:', {
     phone: mobileNumber,
     text,
-    templateId: templateId || process.env.SMS_INDIA_DEFAULT_DLT_TE_ID || 'N/A',
+    senderId,
+    entityId: dltEntityId,
+    templateId: dltTemplateId,
     enabled: isEnabled
   });
 
@@ -39,33 +45,48 @@ const sendSMS = async ({ phone, text, templateId = null }) => {
 
   try {
     const apiKey = process.env.SMS_INDIA_API_KEY;
-    const senderId = process.env.SMS_INDIA_SENDER_ID || 'JALADH';
-    const apiBaseUrl = process.env.SMS_INDIA_API_URL || 'https://api.smsindiahub.in/api/v2/SendSMS';
+    const apiBaseUrl = process.env.SMS_INDIA_API_URL || 'https://cloud.smsindiahub.in/api/mt/SendSMS';
 
     if (!apiKey) {
       console.log('⚠️ [SMS India Service] SMS_INDIA_API_KEY is not set in .env. Message logged locally.');
       return { success: true, mocked: true, text };
     }
 
+    // Exact parameters expected by SMSIndiaHub / MTController endpoint
     const payload = {
-      ApiKey: apiKey,
-      SenderId: senderId,
-      mobile: mobileNumber,
-      message: text
+      APIKey: apiKey,
+      senderid: senderId,
+      channel: process.env.SMS_INDIA_CHANNEL || '2',
+      DCS: '0',
+      flashsms: '0',
+      number: mobileNumber,
+      text: text,
+      route: process.env.SMS_INDIA_ROUTE || '1',
+      EntityId: dltEntityId,
+      DltTemplateId: dltTemplateId
     };
-
-    if (templateId || process.env.SMS_INDIA_DEFAULT_DLT_TE_ID) {
-      payload.dltTemplateId = templateId || process.env.SMS_INDIA_DEFAULT_DLT_TE_ID;
-    }
 
     const response = await axios.get(apiBaseUrl, { params: payload });
 
-    console.log('✅ [SMS India Service] Sent successfully:', response.data);
-    return { 
-      success: true, 
-      provider: 'sms_india', 
-      data: response.data 
-    };
+    const isSuccess = response.data?.ErrorCode === '000' || 
+                      (typeof response.data === 'string' && response.data.toLowerCase().includes('success'));
+
+    if (isSuccess || response.data?.JobId) {
+      console.log('✅ [SMS India Service] Sent successfully:', response.data);
+      return { 
+        success: true, 
+        provider: 'sms_india', 
+        data: response.data 
+      };
+    } else {
+      console.warn('⚠️ [SMS India Service] Gateway response with error:', response.data);
+      return {
+        success: false,
+        provider: 'sms_india',
+        error: response.data?.ErrorMessage || 'Failed to dispatch SMS',
+        data: response.data
+      };
+    }
   } catch (error) {
     console.error('❌ [SMS India Service] Dispatch Error:', error.response?.data || error.message);
     return { success: false, error: error.message };
@@ -74,10 +95,20 @@ const sendSMS = async ({ phone, text, templateId = null }) => {
 
 /**
  * Send OTP via SMS India
+ * Approved DLT Template:
+ * "Your Jaladhaara app login OTP is ##var##. It is valid for 10 minutes. Never share this OTP with anyone."
+ * Template ID: 1077187260026633978
+ * Entity ID: 1001495841758168605
+ * Sender ID: JALDHR
  */
-const sendSMSOTP = async ({ phone, otp, type = 'verification' }) => {
-  const text = `Your Jaladhaara ${type === 'password_reset' ? 'Password Reset' : 'Verification'} OTP is: ${otp}. Valid for 10 minutes. Do not share it with anyone.`;
-  return await sendSMS({ phone, text });
+const sendSMSOTP = async ({ phone, otp }) => {
+  const text = `Your Jaladhaara app login OTP is ${otp}. It is valid for 10 minutes. Never share this OTP with anyone.`;
+  return await sendSMS({ 
+    phone, 
+    text,
+    templateId: process.env.SMS_INDIA_OTP_TEMPLATE_ID || '1077187260026633978',
+    entityId: process.env.SMS_INDIA_ENTITY_ID || '1001495841758168605'
+  });
 };
 
 /**
