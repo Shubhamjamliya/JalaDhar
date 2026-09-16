@@ -142,13 +142,11 @@ const expertFaqs = [
 ];
 
 function FaqItem({ faq, isOpen, onClick }) {
-  const contentRef = useRef(null);
-  
   return (
-    <div className="border border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md rounded-2xl mb-4 overflow-hidden shadow-sm transition-all duration-300">
+    <div className="border border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md rounded-2xl mb-3 overflow-hidden shadow-sm transition-all duration-300">
       <button 
         onClick={onClick} 
-        className="w-full text-left px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50"
+        className="w-full text-left px-4 py-3.5 sm:px-6 sm:py-4 flex items-center justify-between focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50"
       >
         <span className="font-bold text-[var(--color-text-primary)] pr-4 text-sm sm:text-base">{faq.q}</span>
         <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[var(--color-bg)] flex items-center justify-center shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 bg-[var(--color-primary)] text-white' : 'text-[var(--color-text-secondary)]'}`}>
@@ -156,16 +154,12 @@ function FaqItem({ faq, isOpen, onClick }) {
         </div>
       </button>
       <div 
-        className="transition-all duration-300 ease-in-out px-5 sm:px-6"
-        style={{ 
-          maxHeight: isOpen ? (contentRef.current?.scrollHeight ? `${contentRef.current.scrollHeight + 40}px` : '300px') : '0px',
-          opacity: isOpen ? 1 : 0,
-          paddingBottom: isOpen ? '1.25rem' : '0'
-        }}
-        ref={contentRef}
+        className={`grid transition-all duration-300 ease-in-out px-5 sm:px-6 ${isOpen ? 'grid-rows-[1fr] opacity-100 pb-5' : 'grid-rows-[0fr] opacity-0 pb-0'}`}
       >
-        <div className="text-[var(--color-text-secondary)] text-sm sm:text-base leading-relaxed whitespace-pre-wrap pt-2">
-          {faq.a}
+        <div className="overflow-hidden">
+          <div className="text-[var(--color-text-secondary)] text-sm sm:text-base leading-relaxed whitespace-pre-wrap pt-2">
+            {faq.a}
+          </div>
         </div>
       </div>
     </div>
@@ -375,7 +369,7 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section id="home" className="relative lg:min-h-screen flex flex-col lg:justify-center overflow-hidden bg-[var(--color-bg)]">
+      <section id="home" className="relative flex flex-col justify-center overflow-hidden bg-[var(--color-bg)]">
         {/* Gradient Background */}
         <div className="absolute inset-0 w-full h-full z-0 bg-gradient-to-br from-[#E2F2FC] via-[#F4F9FF] to-[#7FCDFF]/30">
           {/* Decorative blur blobs */}
@@ -384,17 +378,17 @@ export default function LandingPage() {
         </div>
 
         {/* Content Container */}
-        <div className="w-full px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 relative z-10 flex flex-col pt-20 sm:pt-24 lg:py-0 pb-8 sm:pb-12 lg:pb-0">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 flex flex-col pt-24 sm:pt-28 lg:pt-32 pb-14 sm:pb-18 lg:pb-20">
           <div className="w-full grid lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-center">
-            <div className="lg:col-span-8 flex flex-col justify-center items-start py-4 sm:py-8 lg:py-24 relative">
+            <div className="lg:col-span-8 flex flex-col justify-center items-start py-2 sm:py-4 lg:py-6 relative">
               {/* Text Block */}
-              <div className="w-full bg-white/80 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-4 sm:p-8 lg:p-0 rounded-2xl sm:rounded-3xl lg:rounded-none border border-white/50 lg:border-none shadow-lg shadow-black/5 lg:shadow-none mb-3 sm:mb-6 lg:mb-0">
-                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] sm:text-xs font-extrabold uppercase tracking-[0.12em] sm:tracking-[0.15em] mb-2 sm:mb-6 border border-[var(--color-primary)]/20">
+              <div className="w-full bg-white/80 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-4 sm:p-8 lg:p-0 rounded-2xl sm:rounded-3xl lg:rounded-none border border-white/50 lg:border-none shadow-lg shadow-black/5 lg:shadow-none mb-3 sm:mb-5 lg:mb-0">
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] sm:text-xs font-extrabold uppercase tracking-[0.12em] sm:tracking-[0.15em] mb-2.5 sm:mb-4 border border-[var(--color-primary)]/20">
                   <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                   <span>{cms('hero.badgeText', 'Dedicated Scientific Groundwater Survey Booking Platform')}</span>
                 </div>
 
-                <h1 className="text-[22px] sm:text-3xl md:text-4xl lg:text-[45px] xl:text-[52px] font-black leading-[1.2] lg:leading-[1.12] tracking-tight mb-2 sm:mb-5 text-[var(--color-text-primary)] font-display">
+                <h1 className="text-[22px] sm:text-3xl md:text-4xl lg:text-[45px] xl:text-[52px] font-black leading-[1.2] lg:leading-[1.12] tracking-tight mb-2.5 sm:mb-4 text-[var(--color-text-primary)] font-display">
                   <span className="block mb-1 lg:mb-2">{cms('hero.headline1', "India's Trusted Platform to")}</span>
                   <span className="block text-[var(--color-primary)]">{cms('hero.headline2', "Book Verified Groundwater Survey Experts")}</span>
                   {cms('hero.headline3', '') && (
@@ -402,14 +396,14 @@ export default function LandingPage() {
                   )}
                 </h1>
 
-                <p className="text-[13px] sm:text-base lg:text-xl text-[var(--color-text-secondary)] mb-1 sm:mb-6 max-w-2xl leading-relaxed sm:leading-[1.7] font-medium">
+                <p className="text-[13px] sm:text-base lg:text-xl text-[var(--color-text-secondary)] mb-3 sm:mb-5 max-w-2xl leading-relaxed sm:leading-[1.7] font-medium">
                   {cms('hero.subtitle', "Find and connect with verified groundwater experts for Agricultural, Residential, Commercial and Industrial water needs.")}
                 </p>
               </div>
 
               {/* Action Block */}
-              <div className="w-full mt-2 sm:mt-4 lg:mt-6 pt-1 sm:pt-2 lg:pt-0">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-4 sm:mb-8">
+              <div className="w-full mt-2 sm:mt-3 lg:mt-4 pt-1 sm:pt-2 lg:pt-0">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-4 sm:mb-6">
                   {['FIND', 'CONNECT', 'SURVEY', 'PROTECT'].map((word, i) => (
                     <div 
                       key={i} 
@@ -428,14 +422,14 @@ export default function LandingPage() {
                 <div className="flex flex-row gap-2.5 sm:gap-4 w-full sm:w-auto">
                   <a 
                     href="#apps" 
-                    className="flex-1 sm:flex-initial h-11 sm:h-14 px-3 sm:px-8 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 group shadow-lg shadow-[var(--color-primary)]/20 text-center"
+                    className="flex-1 sm:flex-initial h-11 sm:h-13 px-3 sm:px-8 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 group shadow-lg shadow-[var(--color-primary)]/20 text-center"
                   >
                     <span>{cms('hero.cta1Label') === 'Book a Survey' ? 'Download app' : cms('hero.cta1Label', 'Download app')}</span>
                     <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform shrink-0" />
                   </a>
                   <a 
                     href="#why-us" 
-                    className="flex-1 sm:flex-initial h-11 sm:h-14 px-3 sm:px-8 rounded-xl bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] font-bold text-xs sm:text-base hover:bg-[var(--color-surface)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 group shadow-xs text-center"
+                    className="flex-1 sm:flex-initial h-11 sm:h-13 px-3 sm:px-8 rounded-xl bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] font-bold text-xs sm:text-base hover:bg-[var(--color-surface)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 group shadow-xs text-center"
                   >
                     <span>{cms('hero.cta2Label', 'How It Works')}</span>
                     <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full border border-[var(--color-border)] flex items-center justify-center group-hover:border-[var(--color-text-primary)] transition-colors shrink-0">
@@ -447,7 +441,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right Card / Visual */}
-            <div className="lg:col-span-4 relative h-full min-h-[auto] lg:min-h-[360px] flex items-center justify-center mt-8 sm:mt-10 lg:mt-0 w-full reveal animate-fade-up-delay-2">
+            <div className="lg:col-span-4 relative flex items-center justify-center mt-6 sm:mt-8 lg:mt-0 w-full reveal animate-fade-up-delay-2">
               <div className="relative w-full max-w-sm sm:max-w-md lg:max-w-sm rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/95 to-white/70 p-5 sm:p-7 lg:p-8 border border-white/80 shadow-xl lg:shadow-2xl backdrop-blur-xl">
                 <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] flex items-center justify-center text-white shrink-0 shadow-md shadow-[var(--color-primary)]/20">
@@ -487,422 +481,430 @@ export default function LandingPage() {
       </section>
 
       {/* Our Services Section */}
-      <section id="services" className="min-h-[auto] lg:min-h-screen py-10 sm:py-16 lg:py-28 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden bg-[var(--color-surface)] flex flex-col justify-center rounded-t-[32px] sm:rounded-t-[40px] lg:rounded-t-[60px] -mt-6 sm:-mt-8 lg:-mt-12 z-20 border-t border-[var(--color-border)] shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
-        <div className="text-center mb-8 sm:mb-16 reveal">
-          <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-3 sm:mb-6 border border-[var(--color-primary)]/20">
-            Sectors We Serve
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
-            Tailored Groundwater Solutions
-          </h2>
-          <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-4 text-xs sm:text-base lg:text-lg max-w-3xl mx-auto">
-            Specialized groundwater survey services for agriculture, residential, commercial and industrial needs.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 reveal">
-          {cms('services', [
-            { title: "Agriculture", description: "Connect with experts for scientific site selection to ensure reliable irrigation and support rural agricultural development.", image: { url: '' } },
-            { title: "Residential", description: "Book verified professionals for groundwater detection for individual homes, gated villas, apartments, and layouts.", image: { url: '' } },
-            { title: "Commercial", description: "Access top surveyors for infrastructure development, commercial complexes, hospitals, and educational institutions.", image: { url: '' } },
-            { title: "Industrial", description: "Comprehensive groundwater resource assessment and digital documentation for large-scale industrial and manufacturing plants.", image: { url: '' } }
-          ]).map((srv, i) => {
-            // Use Cloudinary URL if set, else fall back to bundled local asset
-            const localImgs = [cardAgri, cardRes, cardCom, cardInd];
-            const imgSrc = srv.image?.url || localImgs[i] || localImgs[0];
-            return (
-            <div key={i} className="bg-[var(--color-surface)] backdrop-blur-xl rounded-2xl sm:rounded-[32px] overflow-hidden border border-[var(--color-border)] hover:border-[var(--color-primary)]/40 hover:-translate-y-2 transition-all duration-300 group shadow-lg hover:shadow-2xl hover:shadow-[#0077B6]/15 flex flex-col h-full">
-              <div className="w-full aspect-[16/9] relative overflow-hidden shrink-0 border-b border-[var(--color-border)] bg-slate-100">
-                <img src={imgSrc} alt={srv.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700" />
-              </div>
-              <div className="p-4 sm:p-6 lg:p-7 relative z-10 flex-grow flex flex-col justify-start bg-white">
-                <h3 className="text-base sm:text-xl font-bold mb-1.5 sm:mb-2 text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)] transition-colors leading-tight">{srv.title}</h3>
-                <p className="text-[var(--color-text-secondary)] leading-relaxed text-xs sm:text-sm">{srv.description}</p>
-              </div>
+      <section id="services" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] rounded-t-[32px] sm:rounded-t-[40px] lg:rounded-t-[48px] -mt-6 sm:-mt-8 lg:-mt-10 z-20 border-t border-[var(--color-border)] shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="text-center mb-6 sm:mb-10 lg:mb-12 reveal">
+            <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2.5 sm:mb-3.5 border border-[var(--color-primary)]/20">
+              Sectors We Serve
             </div>
-          );
-          })}
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
+              Tailored Groundwater Solutions
+            </h2>
+            <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-3 text-xs sm:text-base lg:text-lg max-w-3xl mx-auto">
+              Specialized groundwater survey services for agriculture, residential, commercial and industrial needs.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 reveal">
+            {cms('services', [
+              { title: "Agriculture", description: "Connect with experts for scientific site selection to ensure reliable irrigation and support rural agricultural development.", image: { url: '' } },
+              { title: "Residential", description: "Book verified professionals for groundwater detection for individual homes, gated villas, apartments, and layouts.", image: { url: '' } },
+              { title: "Commercial", description: "Access top surveyors for infrastructure development, commercial complexes, hospitals, and educational institutions.", image: { url: '' } },
+              { title: "Industrial", description: "Comprehensive groundwater resource assessment and digital documentation for large-scale industrial and manufacturing plants.", image: { url: '' } }
+            ]).map((srv, i) => {
+              // Use Cloudinary URL if set, else fall back to bundled local asset
+              const localImgs = [cardAgri, cardRes, cardCom, cardInd];
+              const imgSrc = srv.image?.url || localImgs[i] || localImgs[0];
+              return (
+              <div key={i} className="bg-[var(--color-surface)] backdrop-blur-xl rounded-2xl sm:rounded-[32px] overflow-hidden border border-[var(--color-border)] hover:border-[var(--color-primary)]/40 hover:-translate-y-2 transition-all duration-300 group shadow-lg hover:shadow-2xl hover:shadow-[#0077B6]/15 flex flex-col h-full">
+                <div className="w-full aspect-[16/9] relative overflow-hidden shrink-0 border-b border-[var(--color-border)] bg-slate-100">
+                  <img src={imgSrc} alt={srv.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700" />
+                </div>
+                <div className="p-4 sm:p-5 lg:p-6 relative z-10 flex-grow flex flex-col justify-start bg-white">
+                  <h3 className="text-base sm:text-xl font-bold mb-1.5 sm:mb-2 text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)] transition-colors leading-tight">{srv.title}</h3>
+                  <p className="text-[var(--color-text-secondary)] leading-relaxed text-xs sm:text-sm">{srv.description}</p>
+                </div>
+              </div>
+            );
+            })}
+          </div>
         </div>
       </section>
 
       {/* How It Works For Users */}
-      <section id="why-us" className="min-h-[auto] lg:min-h-screen py-10 sm:py-16 lg:py-28 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden flex flex-col justify-center">
-        <div className="text-center mb-6 sm:mb-14 reveal">
-          <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-3 sm:mb-6 border border-[var(--color-primary)]/20">
-            {cms('howItWorksCustomers.eyebrow', 'FOR USERS')}
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
-            {cms('howItWorksCustomers.heading1', 'Find Trusted Groundwater Experts')}<br />
-            <span className="text-[var(--color-text-secondary)] font-light">{cms('howItWorksCustomers.heading2', 'in Minutes.')}</span>
-          </h2>
-          <p className="text-[var(--color-text-secondary)] mt-2.5 sm:mt-4 text-xs sm:text-base max-w-2xl mx-auto">
-            {cms('howItWorksCustomers.subtitle', 'Find and connect with verified groundwater survey professionals for your specific requirements.')}
-          </p>
-
-          <div className="mt-4 sm:mt-8 inline-flex items-center gap-2 px-3.5 sm:px-4 py-1 sm:py-1.5 rounded-full bg-blue-50 text-[var(--color-primary)] text-xs sm:text-sm font-bold tracking-wide border border-blue-100">
-            How It Works
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 reveal mb-8 sm:mb-16 max-w-6xl mx-auto w-full">
-          {cms('howItWorksCustomers.steps', [
-            { step: '01', title: 'Download the App', desc: 'Get the Jaladhaara app from the Play Store or App Store.' },
-            { step: '02', title: 'Select a Service', desc: 'Choose the groundwater survey service you need.' },
-            { step: '03', title: 'Connect with an Expert', desc: 'Get connected with a verified expert in your area.' },
-            { step: '04', title: 'Get Your Report', desc: 'Receive your professional digital survey report.' }
-          ]).map((item, i) => (
-            <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl sm:rounded-3xl p-4 sm:p-8 text-center hover:border-[var(--color-primary)]/50 hover:-translate-y-2 transition-all duration-300 shadow-xl shadow-[#0077B6]/10 hover:shadow-2xl hover:shadow-[#0077B6]/20">
-              <div className="w-11 h-11 sm:w-16 sm:h-16 mx-auto rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black flex items-center justify-center text-lg sm:text-2xl mb-3 sm:mb-6 shadow-lg shadow-[#0077B6]/30 rotate-3 group-hover:rotate-0 transition-transform">{item.step}</div>
-              <h3 className="text-base sm:text-xl font-bold text-[var(--color-text-primary)] mb-1 sm:mb-3">{item.title}</h3>
-              <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed">{item.desc}</p>
+      <section id="why-us" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="text-center mb-6 sm:mb-10 reveal">
+            <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2.5 sm:mb-3.5 border border-[var(--color-primary)]/20">
+              {cms('howItWorksCustomers.eyebrow', 'FOR USERS')}
             </div>
-          ))}
-        </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
+              {cms('howItWorksCustomers.heading1', 'Find Trusted Groundwater Experts')}<br />
+              <span className="text-[var(--color-text-secondary)] font-light">{cms('howItWorksCustomers.heading2', 'in Minutes.')}</span>
+            </h2>
+            <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-3 text-xs sm:text-base max-w-2xl mx-auto">
+              {cms('howItWorksCustomers.subtitle', 'Find and connect with verified groundwater survey professionals for your specific requirements.')}
+            </p>
 
-        {cms('whyChoose.enabled', true) && (
-          <>
-            {cms('whyChoose.whyChooseEnabled', true) && (
-              <div className="max-w-5xl mx-auto reveal mb-8 sm:mb-16">
-                <h3 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-8 text-center text-[var(--color-text-primary)]">
-                  {cms('whyChoose.title', 'Why Choose Jaladhaara?')}
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
-                  {cms('whyChoose.items', [
-                    'Verified Experts',
-                    'Live Expert Tracking',
-                    'Transparent Pricing',
-                    'Digital Reports',
-                    'Secure & Reliable'
-                  ]).map((benefit, i) => (
-                    <div 
-                      key={i} 
-                      className="flex items-center justify-center sm:justify-start gap-2 sm:gap-3 p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/50 transition-all last:col-span-2 md:last:col-span-1"
-                    >
-                      <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6 text-[var(--color-primary)] shrink-0" />
-                      <span className="text-xs sm:text-sm lg:text-base font-bold text-[var(--color-text-primary)]">{benefit}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {cms('whyChoose.whoForEnabled', true) && (
-              <div className="max-w-5xl mx-auto reveal text-center">
-                <h3 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-6 text-[var(--color-text-primary)]">
-                  {cms('whyChoose.whoForTitle', 'Who Is Jaladhaara For?')}
-                </h3>
-                <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
-                  {cms('whyChoose.whoForCategories', [
-                    'Farmers',
-                    'Homeowners',
-                    'Industries',
-                    'Builders',
-                    'Institutions',
-                    'Commercial'
-                  ]).map((userType, i) => (
-                    <div 
-                      key={i} 
-                      className="px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-xs sm:text-base font-semibold text-[var(--color-text-primary)] shadow-sm hover:border-[var(--color-primary)]/50 hover:shadow-md transition-all"
-                    >
-                      {userType}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </section>      {/* For Experts Section */}
-      <section id="experts" className="py-10 sm:py-16 lg:py-28 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-b border-[var(--color-border)]">
-        <div className="text-center mb-6 sm:mb-16 reveal">
-          <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-3 sm:mb-6 border border-[var(--color-primary)]/20">
-            For Professionals
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold tracking-tight max-w-3xl mx-auto text-[var(--color-text-primary)] leading-[1.2]">
-            Join India's Growing Groundwater Expert Network<br />
-            <span className="block mt-2.5 sm:mt-4 text-xs sm:text-lg lg:text-2xl text-[var(--color-text-secondary)] font-medium leading-[1.5]">
-              Be part of a growing community of verified hydrogeologists, geophysicists and groundwater professionals.
-            </span>
-          </h2>
-          <p className="text-[var(--color-text-secondary)] mt-3 sm:mt-6 text-xs sm:text-lg">Grow your business. Expand your reach. Make a bigger impact.</p>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-6 sm:gap-10 max-w-6xl mx-auto items-start reveal">
-          <div className="space-y-3 sm:space-y-5 order-2 lg:order-1">
-            <h3 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-5 text-[var(--color-text-primary)]">Why Join Jaladhaara?</h3>
-            <div className="grid gap-2.5 sm:gap-3.5">
-              {[
-                { title: 'More Genuine Client Leads', desc: 'Connect with customers looking for professional groundwater survey services.' },
-                { title: 'Professional Digital Profile', desc: 'Showcase your qualifications, expertise, experience and service areas.' },
-                { title: 'Secure Digital Payments', desc: 'Receive payments securely through the Jaladhaara platform.' },
-                { title: 'Grow Your Practice', desc: 'Expand your reach and discover new professional opportunities.' }
-              ].map((b, i) => (
-                <div key={i} className="flex items-start gap-3 sm:gap-4 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 transition-all shadow-md hover:shadow-lg">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[var(--color-primary)]/15 flex items-center justify-center shrink-0">
-                    <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-primary)] rotate-180" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-sm sm:text-base mb-0.5 text-[var(--color-text-primary)]">{b.title}</h4>
-                    <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm">{b.desc}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="mt-3 sm:mt-5 inline-flex items-center gap-2 px-3.5 sm:px-4 py-1 sm:py-1.5 rounded-full bg-blue-50 text-[var(--color-primary)] text-xs sm:text-sm font-bold tracking-wide border border-blue-100">
+              How It Works
             </div>
           </div>
 
-          <div className="bg-[var(--color-bg)] rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-8 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/10 order-1 lg:order-2">
-            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3.5 sm:mb-5 text-center text-[var(--color-text-primary)]">How It Works for Experts</h3>
-            <div className="space-y-2.5 sm:space-y-3.5">
-              {cms('howItWorksExperts.steps', [
-                { step: '01', title: 'Create Your Profile', desc: 'Showcase your qualifications, expertise and service areas.' },
-                { step: '02', title: 'Receive Service Requests', desc: 'Get relevant groundwater survey opportunities in your area.' },
-                { step: '03', title: 'Connect & Deliver', desc: 'Connect with customers and provide professional survey services.' },
-                { step: '04', title: 'Receive Secure Payments', desc: 'Get paid securely through the Jaladhaara platform.' }
-              ]).map((s, i) => (
-                <div key={i} className="flex items-start gap-3 sm:gap-3.5 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
-                  <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-sm shrink-0 shadow-md">
-                    {s.step}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-xs sm:text-sm lg:text-base text-[var(--color-text-primary)] mb-0.5">{s.title}</div>
-                    {s.desc && (
-                      <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">{s.desc}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Link 
-              to="/vendorsignup" 
-              className="w-full mt-4 sm:mt-5 h-11 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20"
-            >
-              Join as an Expert
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-            </Link>
-
-            <button
-              onClick={() => {
-                setActiveFaqTab('experts');
-                setOpenFaqIndex(null);
-                document.getElementById('faqs')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="w-full mt-2 sm:mt-2.5 h-8 sm:h-9 rounded-xl text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-black/5 transition-all flex items-center justify-center gap-1.5"
-            >
-              Have questions? Read Expert FAQs
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Who Can Join Jaladhaara? & Final Expert CTA */}
-        <div className="max-w-4xl mx-auto mt-8 sm:mt-16 pt-6 sm:pt-14 border-t border-[var(--color-border)] text-center reveal">
-          <h3 className="text-xl sm:text-3xl font-bold mb-2 sm:mb-3 text-[var(--color-text-primary)]">
-            Who Can Join Jaladhaara?
-          </h3>
-          <p className="text-[var(--color-text-secondary)] text-xs sm:text-base max-w-xl mx-auto mb-4 sm:mb-6">
-            Open to verified and experienced groundwater professionals across India.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3.5 mb-6 sm:mb-10">
-            {[
-              'Hydrogeologists',
-              'Geophysicists',
-              'Groundwater Professionals',
-              'Water Resource Consultants',
-              'Qualified Earth Science Professionals'
-            ].map((prof, i) => (
-              <div 
-                key={i} 
-                className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 sm:px-5 sm:py-3 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] shadow-sm hover:border-[var(--color-primary)]/50 hover:shadow-md transition-all"
-              >
-                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--color-primary)] shrink-0" />
-                <span>{prof}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 reveal mb-8 sm:mb-12 max-w-6xl mx-auto w-full">
+            {cms('howItWorksCustomers.steps', [
+              { step: '01', title: 'Download the App', desc: 'Get the Jaladhaara app from the Play Store or App Store.' },
+              { step: '02', title: 'Select a Service', desc: 'Choose the groundwater survey service you need.' },
+              { step: '03', title: 'Connect with an Expert', desc: 'Get connected with a verified expert in your area.' },
+              { step: '04', title: 'Get Your Report', desc: 'Receive your professional digital survey report.' }
+            ]).map((item, i) => (
+              <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-center hover:border-[var(--color-primary)]/50 hover:-translate-y-2 transition-all duration-300 shadow-xl shadow-[#0077B6]/10 hover:shadow-2xl hover:shadow-[#0077B6]/20">
+                <div className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black flex items-center justify-center text-lg sm:text-2xl mb-3 sm:mb-4 shadow-lg shadow-[#0077B6]/30 rotate-3 group-hover:rotate-0 transition-transform">{item.step}</div>
+                <h3 className="text-base sm:text-xl font-bold text-[var(--color-text-primary)] mb-1 sm:mb-2">{item.title}</h3>
+                <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
 
-          {/* CTA Box */}
-          <div className="rounded-2xl sm:rounded-[36px] p-4 sm:p-10 bg-gradient-to-br from-[var(--color-primary)]/10 via-[var(--color-surface)] to-[var(--color-primary)]/5 border border-[var(--color-primary)]/20 text-center relative overflow-hidden shadow-xl shadow-[#0077B6]/10">
-            <div className="inline-block px-3 py-0.5 sm:px-3.5 sm:py-1 rounded-full bg-[var(--color-primary)]/15 text-[var(--color-primary)] text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-2 sm:mb-3 border border-[var(--color-primary)]/20">
-              Ready to Join?
+          {cms('whyChoose.enabled', true) && (
+            <>
+              {cms('whyChoose.whyChooseEnabled', true) && (
+                <div className="max-w-5xl mx-auto reveal mb-6 sm:mb-10">
+                  <h3 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-5 text-center text-[var(--color-text-primary)]">
+                    {cms('whyChoose.title', 'Why Choose Jaladhaara?')}
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
+                    {cms('whyChoose.items', [
+                      'Verified Experts',
+                      'Live Expert Tracking',
+                      'Transparent Pricing',
+                      'Digital Reports',
+                      'Secure & Reliable'
+                    ]).map((benefit, i) => (
+                      <div 
+                        key={i} 
+                        className="flex items-center justify-center sm:justify-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/50 transition-all last:col-span-2 md:last:col-span-1"
+                      >
+                        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-primary)] shrink-0" />
+                        <span className="text-xs sm:text-sm lg:text-base font-bold text-[var(--color-text-primary)]">{benefit}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {cms('whyChoose.whoForEnabled', true) && (
+                <div className="max-w-5xl mx-auto reveal text-center">
+                  <h3 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4 text-[var(--color-text-primary)]">
+                    {cms('whyChoose.whoForTitle', 'Who Is Jaladhaara For?')}
+                  </h3>
+                  <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+                    {cms('whyChoose.whoForCategories', [
+                      'Farmers',
+                      'Homeowners',
+                      'Industries',
+                      'Builders',
+                      'Institutions',
+                      'Commercial'
+                    ]).map((userType, i) => (
+                      <div 
+                        key={i} 
+                        className="px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-xs sm:text-base font-semibold text-[var(--color-text-primary)] shadow-sm hover:border-[var(--color-primary)]/50 hover:shadow-md transition-all"
+                      >
+                        {userType}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>      {/* For Experts Section */}
+      <section id="experts" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-b border-[var(--color-border)]">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="text-center mb-6 sm:mb-10 lg:mb-12 reveal">
+            <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2.5 sm:mb-3.5 border border-[var(--color-primary)]/20">
+              For Professionals
             </div>
-            <h4 className="text-xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] tracking-tight">
-              Your Expertise. Your Opportunities.
-            </h4>
-            <p className="text-[var(--color-text-secondary)] mt-1.5 sm:mt-3 max-w-xl mx-auto text-xs sm:text-base leading-relaxed">
-              Turn your professional expertise into new opportunities with Jaladhaara.
-            </p>
-            <div className="mt-4 sm:mt-8 flex justify-center">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold tracking-tight max-w-3xl mx-auto text-[var(--color-text-primary)] leading-[1.2]">
+              Join India's Growing Groundwater Expert Network<br />
+              <span className="block mt-2 sm:mt-3 text-xs sm:text-lg lg:text-2xl text-[var(--color-text-secondary)] font-medium leading-[1.5]">
+                Be part of a growing community of verified hydrogeologists, geophysicists and groundwater professionals.
+              </span>
+            </h2>
+            <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-3 text-xs sm:text-lg">Grow your business. Expand your reach. Make a bigger impact.</p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 max-w-6xl mx-auto items-start reveal">
+            <div className="space-y-3 sm:space-y-4 order-2 lg:order-1">
+              <h3 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-4 text-[var(--color-text-primary)]">Why Join Jaladhaara?</h3>
+              <div className="grid gap-2.5 sm:gap-3">
+                {[
+                  { title: 'More Genuine Client Leads', desc: 'Connect with customers looking for professional groundwater survey services.' },
+                  { title: 'Professional Digital Profile', desc: 'Showcase your qualifications, expertise, experience and service areas.' },
+                  { title: 'Secure Digital Payments', desc: 'Receive payments securely through the Jaladhaara platform.' },
+                  { title: 'Grow Your Practice', desc: 'Expand your reach and discover new professional opportunities.' }
+                ].map((b, i) => (
+                  <div key={i} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 transition-all shadow-md hover:shadow-lg">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--color-primary)]/15 flex items-center justify-center shrink-0">
+                      <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-primary)] rotate-180" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm sm:text-base mb-0.5 text-[var(--color-text-primary)]">{b.title}</h4>
+                      <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm">{b.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-[var(--color-bg)] rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-7 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/10 order-1 lg:order-2">
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 text-center text-[var(--color-text-primary)]">How It Works for Experts</h3>
+              <div className="space-y-2.5 sm:space-y-3">
+                {cms('howItWorksExperts.steps', [
+                  { step: '01', title: 'Create Your Profile', desc: 'Showcase your qualifications, expertise and service areas.' },
+                  { step: '02', title: 'Receive Service Requests', desc: 'Get relevant groundwater survey opportunities in your area.' },
+                  { step: '03', title: 'Connect & Deliver', desc: 'Connect with customers and provide professional survey services.' },
+                  { step: '04', title: 'Receive Secure Payments', desc: 'Get paid securely through the Jaladhaara platform.' }
+                ]).map((s, i) => (
+                  <div key={i} className="flex items-start gap-3 sm:gap-3.5 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
+                    <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-sm shrink-0 shadow-md">
+                      {s.step}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-xs sm:text-sm lg:text-base text-[var(--color-text-primary)] mb-0.5">{s.title}</div>
+                      {s.desc && (
+                        <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">{s.desc}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               <Link 
-                to="/vendorsignup"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all shadow-lg shadow-[var(--color-primary)]/25 hover:shadow-xl hover:-translate-y-0.5 duration-200"
+                to="/vendorsignup" 
+                className="w-full mt-4 sm:mt-5 h-11 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20"
               >
                 Join as an Expert
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
+
+              <button
+                onClick={() => {
+                  setActiveFaqTab('experts');
+                  setOpenFaqIndex(null);
+                  document.getElementById('faqs')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full mt-2 sm:mt-2.5 h-8 sm:h-9 rounded-xl text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-black/5 transition-all flex items-center justify-center gap-1.5"
+              >
+                Have questions? Read Expert FAQs
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Who Can Join Jaladhaara? & Final Expert CTA */}
+          <div className="max-w-4xl mx-auto mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-[var(--color-border)] text-center reveal">
+            <h3 className="text-xl sm:text-3xl font-bold mb-2 sm:mb-3 text-[var(--color-text-primary)]">
+              Who Can Join Jaladhaara?
+            </h3>
+            <p className="text-[var(--color-text-secondary)] text-xs sm:text-base max-w-xl mx-auto mb-4 sm:mb-5">
+              Open to verified and experienced groundwater professionals across India.
+            </p>
+
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-5 sm:mb-7">
+              {[
+                'Hydrogeologists',
+                'Geophysicists',
+                'Groundwater Professionals',
+                'Water Resource Consultants',
+                'Qualified Earth Science Professionals'
+              ].map((prof, i) => (
+                <div 
+                  key={i} 
+                  className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2.5 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] shadow-sm hover:border-[var(--color-primary)]/50 hover:shadow-md transition-all"
+                >
+                  <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--color-primary)] shrink-0" />
+                  <span>{prof}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA Box */}
+            <div className="rounded-2xl sm:rounded-3xl p-5 sm:p-8 lg:p-10 bg-gradient-to-br from-[var(--color-primary)]/10 via-[var(--color-surface)] to-[var(--color-primary)]/5 border border-[var(--color-primary)]/20 text-center relative overflow-hidden shadow-xl shadow-[#0077B6]/10">
+              <div className="inline-block px-3 py-0.5 sm:px-3.5 sm:py-1 rounded-full bg-[var(--color-primary)]/15 text-[var(--color-primary)] text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-2 sm:mb-2.5 border border-[var(--color-primary)]/20">
+                Ready to Join?
+              </div>
+              <h4 className="text-xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] tracking-tight">
+                Your Expertise. Your Opportunities.
+              </h4>
+              <p className="text-[var(--color-text-secondary)] mt-1.5 sm:mt-2.5 max-w-xl mx-auto text-xs sm:text-base leading-relaxed">
+                Turn your professional expertise into new opportunities with Jaladhaara.
+              </p>
+              <div className="mt-4 sm:mt-6 flex justify-center">
+                <Link 
+                  to="/vendorsignup"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all shadow-lg shadow-[var(--color-primary)]/25 hover:shadow-xl hover:-translate-y-0.5 duration-200"
+                >
+                  Join as an Expert
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Ecosystem Apps */}
-      <section id="apps" className="min-h-[auto] py-10 sm:py-16 lg:py-28 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden bg-[var(--color-surface)] flex flex-col justify-center border-t border-[var(--color-border)]">
-        <div className="text-center mb-6 sm:mb-14 reveal relative z-10">
-          <div className="inline-block px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] sm:text-sm font-bold uppercase tracking-wider mb-3 sm:mb-6 border border-[var(--color-primary)]/20">
-            Ecosystem
+      <section id="apps" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="text-center mb-6 sm:mb-10 reveal relative z-10">
+            <div className="inline-block px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] sm:text-sm font-bold uppercase tracking-wider mb-2.5 sm:mb-3.5 border border-[var(--color-primary)]/20">
+              Ecosystem
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold tracking-tight max-w-3xl mx-auto text-[var(--color-text-primary)] leading-tight">
+              One platform.<br />
+              <span className="text-[var(--color-text-secondary)] font-light">Two powerful apps.</span>
+            </h2>
           </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold tracking-tight max-w-3xl mx-auto text-[var(--color-text-primary)] leading-tight">
-            One platform.<br />
-            <span className="text-[var(--color-text-secondary)] font-light">Two powerful apps.</span>
-          </h2>
-        </div>
 
-        <div ref={appsScrollRef} className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-12 max-w-6xl mx-auto w-full reveal">
-          {/* User App */}
-          <div className="w-full bg-gradient-to-br from-[#0077B6] to-[#023E8A] rounded-2xl sm:rounded-3xl lg:rounded-[40px] p-4 sm:p-8 lg:p-12 border border-[#0096C7]/30 text-white flex flex-col justify-between relative overflow-hidden shadow-2xl shadow-[#023E8A]/30">
-            <div>
-              <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
-                <div className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/20 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-                  For Customers
+          <div ref={appsScrollRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-6xl mx-auto w-full reveal">
+            {/* User App */}
+            <div className="w-full bg-gradient-to-br from-[#0077B6] to-[#023E8A] rounded-2xl sm:rounded-3xl lg:rounded-[36px] p-5 sm:p-7 lg:p-9 border border-[#0096C7]/30 text-white flex flex-col justify-between relative overflow-hidden shadow-2xl shadow-[#023E8A]/30">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3 sm:mb-3.5">
+                  <div className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/20 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+                    For Customers
+                  </div>
+                  {cms('appVideos.userAppVideo.enabled', true) && (
+                    <button
+                      onClick={() => setActiveVideo({
+                        title: cms('appVideos.userAppVideo.title', 'Introducing User App'),
+                        url: cms('appVideos.userAppVideo.url', '')
+                      })}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/30 text-[11px] sm:text-xs font-semibold text-white transition-all hover:scale-105"
+                    >
+                      <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current text-[#7FCDFF]" />
+                      <span>Watch Intro Video</span>
+                    </button>
+                  )}
                 </div>
+                <h3 className="text-xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-2.5 text-white leading-tight">Jaladhaara App</h3>
+                <p className="text-white/80 text-xs sm:text-base leading-relaxed mb-3.5 sm:mb-5 max-w-md">
+                  Find and book verified groundwater survey experts near you for agricultural, residential, industrial and commercial needs. Track surveys and download digital reports anytime.
+                </p>
+
+                {/* Video Preview Banner */}
                 {cms('appVideos.userAppVideo.enabled', true) && (
-                  <button
+                  <div 
                     onClick={() => setActiveVideo({
                       title: cms('appVideos.userAppVideo.title', 'Introducing User App'),
                       url: cms('appVideos.userAppVideo.url', '')
                     })}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/30 text-[11px] sm:text-xs font-semibold text-white transition-all hover:scale-105"
+                    className="mb-4 sm:mb-5 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-sm cursor-pointer transition-all duration-300 group flex items-center justify-between gap-3 sm:gap-4"
                   >
-                    <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current text-[#7FCDFF]" />
-                    <span>Watch Intro Video</span>
-                  </button>
+                    <div className="flex items-center gap-2.5 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform shrink-0">
+                        <Play className="w-4 h-4 sm:w-4.5 sm:h-4.5 fill-current text-[#7FCDFF]" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] sm:text-[11px] text-white/70 font-medium">1. Platform Video</p>
+                        <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-[#90E0EF] transition-colors line-clamp-1">
+                          {cms('appVideos.userAppVideo.title', 'Introducing User App')}
+                        </h4>
+                      </div>
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] font-semibold text-white/90 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-white/15 border border-white/20 shrink-0">
+                      Watch
+                    </span>
+                  </div>
                 )}
               </div>
-              <h3 className="text-xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 text-white leading-tight">Jaladhaara App</h3>
-              <p className="text-white/80 text-xs sm:text-base leading-relaxed mb-4 sm:mb-6 max-w-md">
-                Find and book verified groundwater survey experts near you for agricultural, residential, industrial and commercial needs. Track surveys and download digital reports anytime.
-              </p>
 
-              {/* Video Preview Banner */}
-              {cms('appVideos.userAppVideo.enabled', true) && (
-                <div 
-                  onClick={() => setActiveVideo({
-                    title: cms('appVideos.userAppVideo.title', 'Introducing User App'),
-                    url: cms('appVideos.userAppVideo.url', '')
-                  })}
-                  className="mb-4 sm:mb-8 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-sm cursor-pointer transition-all duration-300 group flex items-center justify-between gap-3 sm:gap-4"
+              <div className="relative z-10 w-full mt-auto pt-3 sm:pt-4">
+                <a 
+                  href={cms('appVideos.userPlayStoreUrl') || '#'}
+                  target={cms('appVideos.userPlayStoreUrl') ? "_blank" : undefined}
+                  rel={cms('appVideos.userPlayStoreUrl') ? "noopener noreferrer" : undefined}
+                  onClick={(e) => {
+                    if (!cms('appVideos.userPlayStoreUrl')) {
+                      e.preventDefault();
+                      alert("Jaladhaara App will be available shortly on Google Play Store!");
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-5 py-3 sm:py-3.5 bg-white text-[#0077B6] rounded-xl hover:bg-white/95 hover:shadow-xl transition-all text-sm sm:text-base font-bold shadow-lg group cursor-pointer"
                 >
-                  <div className="flex items-center gap-2.5 sm:gap-3">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform shrink-0">
-                      <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current text-[#7FCDFF]" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] sm:text-[11px] text-white/70 font-medium">1. Platform Video</p>
-                      <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-[#90E0EF] transition-colors line-clamp-1">
-                        {cms('appVideos.userAppVideo.title', 'Introducing User App')}
-                      </h4>
-                    </div>
+                  <Download className="w-4 h-4 text-[#0077B6] group-hover:translate-y-0.5 transition-transform shrink-0" />
+                  <span>Download App</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Expert App */}
+            <div className="w-full bg-gradient-to-br from-[#03045E] to-[#0077B6] rounded-2xl sm:rounded-3xl lg:rounded-[36px] p-5 sm:p-7 lg:p-9 border border-[#0096C7]/30 text-white flex flex-col justify-between relative overflow-hidden shadow-2xl shadow-[#03045E]/30">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3 sm:mb-3.5">
+                  <div className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/20 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+                    For Surveyors
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-semibold text-white/90 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-white/15 border border-white/20 shrink-0">
-                    Watch
-                  </span>
+                  {cms('appVideos.expertAppVideo.enabled', true) && (
+                    <button
+                      onClick={() => setActiveVideo({
+                        title: cms('appVideos.expertAppVideo.title', 'Introducing Expert App'),
+                        url: cms('appVideos.expertAppVideo.url', '')
+                      })}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/30 text-[11px] sm:text-xs font-semibold text-white transition-all hover:scale-105"
+                    >
+                      <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current text-[#90E0EF]" />
+                      <span>Watch Intro Video</span>
+                    </button>
+                  )}
                 </div>
-              )}
-            </div>
+                <h3 className="text-xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-2.5 text-white leading-tight">Jaladhaara <span className="text-[#90E0EF]">Expert</span></h3>
+                <p className="text-white/80 text-xs sm:text-base leading-relaxed mb-3.5 sm:mb-5 max-w-md">
+                  A dedicated workspace for verified groundwater experts to manage bookings, conduct field surveys, submit geoscientific digital reports, and build a trusted professional profile.
+                </p>
 
-            <div className="relative z-10 w-full mt-auto pt-3 sm:pt-4">
-              <a 
-                href={cms('appVideos.userPlayStoreUrl') || '#'}
-                target={cms('appVideos.userPlayStoreUrl') ? "_blank" : undefined}
-                rel={cms('appVideos.userPlayStoreUrl') ? "noopener noreferrer" : undefined}
-                onClick={(e) => {
-                  if (!cms('appVideos.userPlayStoreUrl')) {
-                    e.preventDefault();
-                    alert("Jaladhaara App will be available shortly on Google Play Store!");
-                  }
-                }}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3 sm:py-3.5 bg-white text-[#0077B6] rounded-xl hover:bg-white/95 hover:shadow-xl transition-all text-sm sm:text-base font-bold shadow-lg group cursor-pointer"
-              >
-                <Download className="w-4 h-4 text-[#0077B6] group-hover:translate-y-0.5 transition-transform shrink-0" />
-                <span>Download App</span>
-              </a>
-            </div>
-          </div>
-
-          {/* Expert App */}
-          <div className="w-full bg-gradient-to-br from-[#03045E] to-[#0077B6] rounded-2xl sm:rounded-3xl lg:rounded-[40px] p-4 sm:p-8 lg:p-12 border border-[#0096C7]/30 text-white flex flex-col justify-between relative overflow-hidden shadow-2xl shadow-[#03045E]/30">
-            <div>
-              <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
-                <div className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/20 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-                  For Surveyors
-                </div>
+                {/* Video Preview Banner */}
                 {cms('appVideos.expertAppVideo.enabled', true) && (
-                  <button
+                  <div 
                     onClick={() => setActiveVideo({
                       title: cms('appVideos.expertAppVideo.title', 'Introducing Expert App'),
                       url: cms('appVideos.expertAppVideo.url', '')
                     })}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/30 text-[11px] sm:text-xs font-semibold text-white transition-all hover:scale-105"
+                    className="mb-4 sm:mb-5 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-sm cursor-pointer transition-all duration-300 group flex items-center justify-between gap-3 sm:gap-4"
                   >
-                    <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current text-[#90E0EF]" />
-                    <span>Watch Intro Video</span>
-                  </button>
+                    <div className="flex items-center gap-2.5 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform shrink-0">
+                        <Play className="w-4 h-4 sm:w-4.5 sm:h-4.5 fill-current text-[#90E0EF]" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] sm:text-[11px] text-white/70 font-medium">2. Platform Video</p>
+                        <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-[#90E0EF] transition-colors line-clamp-1">
+                          {cms('appVideos.expertAppVideo.title', 'Introducing Expert App')}
+                        </h4>
+                      </div>
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] font-semibold text-white/90 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-white/15 border border-white/20 shrink-0">
+                      Watch
+                    </span>
+                  </div>
                 )}
               </div>
-              <h3 className="text-xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 text-white leading-tight">Jaladhaara <span className="text-[#90E0EF]">Expert</span></h3>
-              <p className="text-white/80 text-xs sm:text-base leading-relaxed mb-4 sm:mb-6 max-w-md">
-                A dedicated workspace for verified groundwater experts to manage bookings, conduct field surveys, submit geoscientific digital reports, and build a trusted professional profile.
-              </p>
 
-              {/* Video Preview Banner */}
-              {cms('appVideos.expertAppVideo.enabled', true) && (
-                <div 
-                  onClick={() => setActiveVideo({
-                    title: cms('appVideos.expertAppVideo.title', 'Introducing Expert App'),
-                    url: cms('appVideos.expertAppVideo.url', '')
-                  })}
-                  className="mb-4 sm:mb-8 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 backdrop-blur-sm cursor-pointer transition-all duration-300 group flex items-center justify-between gap-3 sm:gap-4"
+              <div className="flex flex-wrap gap-2.5 sm:gap-3 relative z-10 w-full mt-auto pt-3 sm:pt-4">
+                <Link 
+                  to="/vendorlogin" 
+                  className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3.5 bg-[#7FCDFF] text-[#03045E] rounded-xl hover:bg-[#7FCDFF]/90 transition-all text-xs sm:text-base font-bold shadow-lg"
                 >
-                  <div className="flex items-center gap-2.5 sm:gap-3">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform shrink-0">
-                      <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current text-[#90E0EF]" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] sm:text-[11px] text-white/70 font-medium">2. Platform Video</p>
-                      <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-[#90E0EF] transition-colors line-clamp-1">
-                        {cms('appVideos.expertAppVideo.title', 'Introducing Expert App')}
-                      </h4>
-                    </div>
-                  </div>
-                  <span className="text-[10px] sm:text-[11px] font-semibold text-white/90 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-white/15 border border-white/20 shrink-0">
-                    Watch
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2.5 sm:gap-3 relative z-10 w-full mt-auto pt-3 sm:pt-4">
-              <Link 
-                to="/vendorlogin" 
-                className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3.5 bg-[#7FCDFF] text-[#03045E] rounded-xl hover:bg-[#7FCDFF]/90 transition-all text-xs sm:text-base font-bold shadow-lg"
-              >
-                Expert Login
-                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </Link>
-              <Link 
-                to="/vendorsignup" 
-                className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all text-xs sm:text-base font-semibold shadow-lg border border-white/20"
-              >
-                Register as an Expert
-              </Link>
+                  Expert Login
+                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </Link>
+                <Link 
+                  to="/vendorsignup" 
+                  className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all text-xs sm:text-base font-semibold shadow-lg border border-white/20"
+                >
+                  Register as an Expert
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Founder, Leadership & About Us Section */}
-      <section id="about" className="scroll-mt-20 sm:scroll-mt-24 py-10 sm:py-14 lg:py-16 px-4 sm:px-6 lg:px-12 xl:px-20 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+      <section id="about" className="scroll-mt-20 sm:scroll-mt-24 py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
         <span id="founder" className="block -mt-24 pt-24 pointer-events-none invisible" />
         {/* Subtle background ambient glows */}
         <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none" />
@@ -974,7 +976,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Vision Statement */}
-                <div className="mt-4 p-3.5 sm:p-4 rounded-xl bg-sky-50/70 border border-sky-100/80 flex items-start sm:items-center gap-3 shadow-2xs">
+                <div className="mt-3.5 sm:mt-4 p-3.5 sm:p-4 rounded-xl bg-sky-50/70 border border-sky-100/80 flex items-start sm:items-center gap-3 shadow-2xs">
                   <div className="w-8 h-8 rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center shrink-0">
                     <Rocket className="w-4 h-4" />
                   </div>
@@ -990,7 +992,7 @@ export default function LandingPage() {
               </div>
 
               {/* Quote Block */}
-              <div className="mt-5 p-4 sm:p-5 rounded-xl bg-gradient-to-r from-blue-50/90 via-[#F4F9FF] to-white border-l-4 border-[var(--color-primary)] border border-blue-100 shadow-xs relative">
+              <div className="mt-4 sm:mt-5 p-4 sm:p-5 rounded-xl bg-gradient-to-r from-blue-50/90 via-[#F4F9FF] to-white border-l-4 border-[var(--color-primary)] border border-blue-100 shadow-xs relative">
                 <Quote className="w-6 h-6 text-[var(--color-primary)]/15 absolute top-3 right-3" />
                 <p className="text-xs sm:text-sm lg:text-base font-bold text-[var(--color-text-primary)] italic leading-relaxed pr-6">
                   {cms('founder.quote', '“Our goal is simple — help people make better-informed groundwater decisions before they drill.”')}
@@ -1007,31 +1009,31 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Banner / Reviews */}
-      <section id="reviews" className="min-h-[auto] py-10 sm:py-16 lg:py-28 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden flex flex-col justify-center reveal">
-        <div className="relative w-full rounded-2xl sm:rounded-3xl lg:rounded-[40px] overflow-hidden bg-[var(--color-bg)] border border-[var(--color-border)] p-4 sm:p-10 lg:p-16 grid lg:grid-cols-2 gap-6 sm:gap-8 items-center shadow-2xl shadow-[#0077B6]/15">
+      <section id="reviews" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden reveal">
+        <div className="relative w-full max-w-6xl mx-auto rounded-2xl sm:rounded-3xl lg:rounded-[36px] overflow-hidden bg-[var(--color-bg)] border border-[var(--color-border)] p-6 sm:p-8 lg:p-10 grid lg:grid-cols-2 gap-6 sm:gap-8 items-center shadow-2xl shadow-[#0077B6]/15">
           <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#7FCDFF]/20 to-[#E2F2FC] pointer-events-none">
             <img src={heroBg} alt="Team Background" className="w-full h-full object-cover opacity-20 transition-opacity duration-300" />
           </div>
 
-          <div className="relative z-10 bg-white/80 backdrop-blur-md p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-white/60 shadow-xl max-w-lg">
+          <div className="relative z-10 bg-white/80 backdrop-blur-md p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-white/60 shadow-xl max-w-lg">
             <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold mb-2 sm:mb-3 leading-tight text-[var(--color-text-primary)]">
               Get Started with <br className="hidden sm:block" /> Jaladhaara Today.
             </h2>
-            <p className="text-[var(--color-text-secondary)] mb-4 sm:mb-6 text-xs sm:text-base font-medium leading-relaxed">
+            <p className="text-[var(--color-text-secondary)] mb-3.5 sm:mb-5 text-xs sm:text-base font-medium leading-relaxed">
               Find, connect, survey, and plan with India's first dedicated groundwater survey booking platform.
             </p>
 
             <div className="flex flex-row gap-2.5 sm:gap-3 w-full">
               <Link
                 to="/userlogin"
-                className="flex-1 h-11 sm:h-14 px-3 sm:px-6 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg shadow-[var(--color-primary)]/20 text-center"
+                className="flex-1 h-11 sm:h-12 px-3 sm:px-6 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg shadow-[var(--color-primary)]/20 text-center"
               >
                 <span>Customer Portal</span>
                 <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
               </Link>
               <Link
                 to="/vendorlogin"
-                className="flex-1 h-11 sm:h-14 px-3 sm:px-6 rounded-xl bg-black text-white font-bold text-xs sm:text-base hover:bg-gray-800 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg text-center"
+                className="flex-1 h-11 sm:h-12 px-3 sm:px-6 rounded-xl bg-black text-white font-bold text-xs sm:text-base hover:bg-gray-800 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg text-center"
               >
                 <span>Expert Portal</span>
                 <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -1041,13 +1043,13 @@ export default function LandingPage() {
 
           {/* Testimonials Card */}
           <div className="relative z-10 flex justify-center lg:justify-end">
-            <div className="glass-panel p-4 sm:p-8 rounded-2xl sm:rounded-3xl w-full max-w-md shadow-2xl border border-[var(--color-border)]">
+            <div className="glass-panel p-5 sm:p-7 rounded-2xl sm:rounded-3xl w-full max-w-md shadow-2xl border border-[var(--color-border)]">
               <div className="flex gap-1 mb-3 sm:mb-4">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-[var(--color-primary)] text-[var(--color-primary)]" />
                 ))}
               </div>
-              <p className="text-xs sm:text-base text-[var(--color-text-primary)] font-medium mb-4 sm:mb-6 leading-relaxed italic">
+              <p className="text-xs sm:text-base text-[var(--color-text-primary)] font-medium mb-3.5 sm:mb-5 leading-relaxed italic">
                 "{reviewsData[currentReviewIndex].text}"
               </p>
               <div className="flex items-center gap-2.5 sm:gap-3 pt-3 sm:pt-4 border-t border-[var(--color-border)]">
@@ -1067,268 +1069,272 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faqs" className="scroll-mt-20 sm:scroll-mt-24 py-10 sm:py-16 lg:py-28 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden flex flex-col justify-center bg-[var(--color-surface)] border-t border-[var(--color-border)]">
-        <div className="text-center mb-6 sm:mb-12 reveal">
-          <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2.5 sm:mb-4 border border-[var(--color-primary)]/20">
-            FAQs
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
-            Frequently Asked Questions
-          </h2>
-          <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-3 text-xs sm:text-base max-w-xl mx-auto">
-            Find answers to common questions about groundwater surveys, booking procedures, and expert professional standards.
-          </p>
-        </div>
-
-        {/* FAQ Tabs for Customers & Experts */}
-        <div className="flex justify-center mb-6 sm:mb-10 reveal">
-          <div className="inline-flex p-1 sm:p-1.5 rounded-xl sm:rounded-2xl bg-white border border-[var(--color-border)] shadow-sm">
-            <button
-              onClick={() => {
-                setActiveFaqTab('customers');
-                setOpenFaqIndex(null);
-              }}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all ${
-                activeFaqTab === 'customers'
-                  ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/20'
-                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-slate-50'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>For Customers</span>
-              <span className={`text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold ${
-                activeFaqTab === 'customers' ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'
-              }`}>
-                {customerFaqs.length}
-              </span>
-            </button>
-            <button
-              onClick={() => {
-                setActiveFaqTab('experts');
-                setOpenFaqIndex(null);
-              }}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all ${
-                activeFaqTab === 'experts'
-                  ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/20'
-                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-slate-50'
-              }`}
-            >
-              <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>For Experts</span>
-              <span className={`text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold ${
-                activeFaqTab === 'experts' ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'
-              }`}>
-                {expertFaqs.length}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* FAQ List */}
-        <div className="max-w-3xl mx-auto w-full reveal">
-          {activeFaqTab === 'experts' && (
-            <div className="mb-4 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl bg-blue-50/70 border border-blue-100/80 flex items-center justify-between">
-              <span className="text-xs sm:text-sm font-semibold text-[var(--color-text-primary)]">
-                Groundwater Survey Guidelines & Field FAQs
-              </span>
-              <span className="text-[10px] sm:text-[11px] font-bold text-[var(--color-primary)] bg-white px-2 py-0.5 rounded-md border border-blue-200">
-                10 FAQs
-              </span>
+      <section id="faqs" className="scroll-mt-20 sm:scroll-mt-24 py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="text-center mb-5 sm:mb-8 reveal">
+            <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2 sm:mb-3 border border-[var(--color-primary)]/20">
+              FAQs
             </div>
-          )}
+            <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-3 text-xs sm:text-base max-w-xl mx-auto">
+              Find answers to common questions about groundwater surveys, booking procedures, and expert professional standards.
+            </p>
+          </div>
 
-          {(activeFaqTab === 'customers'
-            ? cms('faqs.customer', customerFaqs)
-            : cms('faqs.expert', expertFaqs)
-          ).map((faq, index) => (
-            <FaqItem 
-              key={`${activeFaqTab}-${index}`} 
-              faq={faq} 
-              isOpen={openFaqIndex === index} 
-              onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)} 
-            />
-          ))}
+          {/* FAQ Tabs for Customers & Experts */}
+          <div className="flex justify-center mb-5 sm:mb-7 reveal">
+            <div className="inline-flex p-1 sm:p-1.5 rounded-xl sm:rounded-2xl bg-white border border-[var(--color-border)] shadow-sm">
+              <button
+                onClick={() => {
+                  setActiveFaqTab('customers');
+                  setOpenFaqIndex(null);
+                }}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                  activeFaqTab === 'customers'
+                    ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/20'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-slate-50'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>For Customers</span>
+                <span className={`text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold ${
+                  activeFaqTab === 'customers' ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {customerFaqs.length}
+                </span>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveFaqTab('experts');
+                  setOpenFaqIndex(null);
+                }}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                  activeFaqTab === 'experts'
+                    ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/20'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-slate-50'
+                }`}
+              >
+                <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>For Experts</span>
+                <span className={`text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold ${
+                  activeFaqTab === 'experts' ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {expertFaqs.length}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* FAQ List */}
+          <div className="max-w-3xl mx-auto w-full reveal">
+            {activeFaqTab === 'experts' && (
+              <div className="mb-4 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl bg-blue-50/70 border border-blue-100/80 flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-semibold text-[var(--color-text-primary)]">
+                  Groundwater Survey Guidelines & Field FAQs
+                </span>
+                <span className="text-[10px] sm:text-[11px] font-bold text-[var(--color-primary)] bg-white px-2 py-0.5 rounded-md border border-blue-200">
+                  10 FAQs
+                </span>
+              </div>
+            )}
+
+            {(activeFaqTab === 'customers'
+              ? cms('faqs.customer', customerFaqs)
+              : cms('faqs.expert', expertFaqs)
+            ).map((faq, index) => (
+              <FaqItem 
+                key={`${activeFaqTab}-${index}`} 
+                faq={faq} 
+                isOpen={openFaqIndex === index} 
+                onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)} 
+              />
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Request / Contact Form Section */}
-      <section id="request" className="py-10 sm:py-16 lg:py-28 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden flex flex-col justify-center reveal bg-[var(--color-bg)]">
-        <div className="text-center mb-6 sm:mb-12">
-          <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-3 sm:mb-6 border border-[var(--color-primary)]/20">
-            CONTACT US
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
-            We’re Here to Help
-          </h2>
-          <p className="text-[var(--color-text-secondary)] mt-2.5 sm:mt-4 text-xs sm:text-base lg:text-lg max-w-2xl mx-auto leading-relaxed">
-            Have a question about groundwater surveys, bookings, or joining Jaladhaara? Send us a message and our team will get back to you.
-          </p>
-        </div>
-
-        <div className="max-w-2xl mx-auto w-full bg-[var(--color-surface)] backdrop-blur-xl rounded-2xl sm:rounded-[32px] p-4 sm:p-10 lg:p-12 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/10">
-          {contactSubmitted ? (
-            <div className="p-6 sm:p-8 text-center bg-emerald-50 rounded-2xl border border-emerald-200">
-              <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-600 mx-auto mb-2.5 sm:mb-3" />
-              <h3 className="text-lg sm:text-xl font-bold text-emerald-900 mb-1">Thank You!</h3>
-              <p className="text-emerald-700 text-xs sm:text-sm">Your message has been received. Our team will get back to you shortly.</p>
+      <section id="request" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden reveal bg-[var(--color-bg)]">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="text-center mb-5 sm:mb-8">
+            <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2 sm:mb-3 border border-[var(--color-primary)]/20">
+              CONTACT US
             </div>
-          ) : (
-            <form onSubmit={handleContactSubmit} className="space-y-4 sm:space-y-6">
-              <div className="space-y-1.5 sm:space-y-2">
-                <label htmlFor="name" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
-                  Full Name <span className="text-[var(--color-primary)]">*</span>
-                </label>
-                <input 
-                  type="text" 
-                  id="name" 
-                  name="name" 
-                  required 
-                  placeholder="Enter your full name" 
-                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
-                />
+            <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
+              We’re Here to Help
+            </h2>
+            <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-3 text-xs sm:text-base lg:text-lg max-w-2xl mx-auto leading-relaxed">
+              Have a question about groundwater surveys, bookings, or joining Jaladhaara? Send us a message and our team will get back to you.
+            </p>
+          </div>
+
+          <div className="max-w-2xl mx-auto w-full bg-[var(--color-surface)] backdrop-blur-xl rounded-2xl sm:rounded-[32px] p-5 sm:p-8 lg:p-9 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/10">
+            {contactSubmitted ? (
+              <div className="p-6 sm:p-8 text-center bg-emerald-50 rounded-2xl border border-emerald-200">
+                <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-600 mx-auto mb-2.5 sm:mb-3" />
+                <h3 className="text-lg sm:text-xl font-bold text-emerald-900 mb-1">Thank You!</h3>
+                <p className="text-emerald-700 text-xs sm:text-sm">Your message has been received. Our team will get back to you shortly.</p>
               </div>
+            ) : (
+              <form onSubmit={handleContactSubmit} className="space-y-3.5 sm:space-y-4">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label htmlFor="name" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
+                    Full Name <span className="text-[var(--color-primary)]">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    id="name" 
+                    name="name" 
+                    required 
+                    placeholder="Enter your full name" 
+                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
+                  />
+                </div>
 
-              <div className="space-y-1.5 sm:space-y-2">
-                <label htmlFor="mobile" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
-                  Mobile Number <span className="text-[var(--color-primary)]">*</span>
-                </label>
-                <input 
-                  type="tel" 
-                  id="mobile" 
-                  name="mobile" 
-                  required 
-                  placeholder="Enter your 10-digit mobile number" 
-                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
-                />
-              </div>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label htmlFor="mobile" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
+                    Mobile Number <span className="text-[var(--color-primary)]">*</span>
+                  </label>
+                  <input 
+                    type="tel" 
+                    id="mobile" 
+                    name="mobile" 
+                    required 
+                    placeholder="Enter your 10-digit mobile number" 
+                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
+                  />
+                </div>
 
-              <div className="space-y-1.5 sm:space-y-2">
-                <label htmlFor="email" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
-                  Email Address <span className="text-[var(--color-primary)]">*</span>
-                </label>
-                <input 
-                  type="email" 
-                  id="email" 
-                  name="email" 
-                  required 
-                  placeholder="Enter your email address" 
-                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
-                />
-              </div>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label htmlFor="email" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
+                    Email Address <span className="text-[var(--color-primary)]">*</span>
+                  </label>
+                  <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    required 
+                    placeholder="Enter your email address" 
+                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
+                  />
+                </div>
 
-              <div className="space-y-1.5 sm:space-y-2 relative" ref={userTypeDropdownRef}>
-                <label htmlFor="userType" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
-                  I am a <span className="text-[var(--color-primary)]">*</span>
-                </label>
-                
-                {/* Hidden input to ensure native form submission captures the field */}
-                <input 
-                  type="hidden" 
-                  name="userType" 
-                  value={selectedUserType} 
-                  required 
-                />
+                <div className="space-y-1.5 sm:space-y-2 relative" ref={userTypeDropdownRef}>
+                  <label htmlFor="userType" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
+                    I am a <span className="text-[var(--color-primary)]">*</span>
+                  </label>
+                  
+                  {/* Hidden input to ensure native form submission captures the field */}
+                  <input 
+                    type="hidden" 
+                    name="userType" 
+                    value={selectedUserType} 
+                    required 
+                  />
 
-                <button
-                  type="button"
-                  id="userType"
-                  onClick={() => setIsUserTypeDropdownOpen(prev => !prev)}
-                  className={`w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border transition-all flex items-center justify-between shadow-xs cursor-pointer text-left ${
-                    isUserTypeDropdownOpen 
-                      ? 'border-[var(--color-primary)] ring-4 ring-[var(--color-primary)]/10' 
-                      : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <span className={selectedUserType ? 'text-[var(--color-text-primary)] font-medium' : 'text-gray-400'}>
-                    {selectedUserType || 'Select an option'}
-                  </span>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
-                    isUserTypeDropdownOpen ? 'rotate-180 text-[var(--color-primary)]' : ''
-                  }`} />
-                </button>
+                  <button
+                    type="button"
+                    id="userType"
+                    onClick={() => setIsUserTypeDropdownOpen(prev => !prev)}
+                    className={`w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border transition-all flex items-center justify-between shadow-xs cursor-pointer text-left ${
+                      isUserTypeDropdownOpen 
+                        ? 'border-[var(--color-primary)] ring-4 ring-[var(--color-primary)]/10' 
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <span className={selectedUserType ? 'text-[var(--color-text-primary)] font-medium' : 'text-gray-400'}>
+                      {selectedUserType || 'Select an option'}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                      isUserTypeDropdownOpen ? 'rotate-180 text-[var(--color-primary)]' : ''
+                    }`} />
+                  </button>
 
-                {/* Dropdown Options Menu */}
-                {isUserTypeDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl shadow-slate-900/10 p-1.5 animate-fade-in">
-                    {[
-                      { value: 'Customer / User', label: 'Customer / User', desc: 'Looking for groundwater survey services' },
-                      { value: 'Groundwater Expert', label: 'Groundwater Expert', desc: 'Qualified surveyor or geologist' },
-                      { value: 'Business / Organization', label: 'Business / Organization', desc: 'Commercial or corporate inquiries' },
-                      { value: 'Other', label: 'Other', desc: 'General queries & partnerships' }
-                    ].map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => {
-                          setSelectedUserType(opt.value);
-                          setIsUserTypeDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-3.5 py-2.5 rounded-lg sm:rounded-xl text-sm transition-all flex items-center justify-between group cursor-pointer ${
-                          selectedUserType === opt.value
-                            ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-semibold'
-                            : 'text-[var(--color-text-primary)] hover:bg-slate-50'
-                        }`}
-                      >
-                        <div>
-                          <div className="font-medium text-xs sm:text-sm">{opt.label}</div>
-                          <div className="text-[11px] text-gray-400 font-normal">{opt.desc}</div>
-                        </div>
-                        {selectedUserType === opt.value && (
-                          <Check className="w-4 h-4 text-[var(--color-primary)] shrink-0 ml-2" />
-                        )}
-                      </button>
-                    ))}
+                  {/* Dropdown Options Menu */}
+                  {isUserTypeDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl shadow-slate-900/10 p-1.5 animate-fade-in">
+                      {[
+                        { value: 'Customer / User', label: 'Customer / User', desc: 'Looking for groundwater survey services' },
+                        { value: 'Groundwater Expert', label: 'Groundwater Expert', desc: 'Qualified surveyor or geologist' },
+                        { value: 'Business / Organization', label: 'Business / Organization', desc: 'Commercial or corporate inquiries' },
+                        { value: 'Other', label: 'Other', desc: 'General queries & partnerships' }
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setSelectedUserType(opt.value);
+                            setIsUserTypeDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3.5 py-2.5 rounded-lg sm:rounded-xl text-sm transition-all flex items-center justify-between group cursor-pointer ${
+                            selectedUserType === opt.value
+                              ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-semibold'
+                              : 'text-[var(--color-text-primary)] hover:bg-slate-50'
+                          }`}
+                        >
+                          <div>
+                            <div className="font-medium text-xs sm:text-sm">{opt.label}</div>
+                            <div className="text-[11px] text-gray-400 font-normal">{opt.desc}</div>
+                          </div>
+                          {selectedUserType === opt.value && (
+                            <Check className="w-4 h-4 text-[var(--color-primary)] shrink-0 ml-2" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label htmlFor="message" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
+                    How can we help? <span className="text-[var(--color-primary)]">*</span>
+                  </label>
+                  <textarea 
+                    id="message" 
+                    name="message" 
+                    required 
+                    rows={4} 
+                    placeholder="Tell us how we can help you..." 
+                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] resize-none shadow-xs" 
+                  />
+                </div>
+
+                {contactError && (
+                  <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm rounded-xl flex items-center gap-2">
+                    <span className="font-semibold">Error:</span> {contactError}
                   </div>
                 )}
-              </div>
 
-              <div className="space-y-1.5 sm:space-y-2">
-                <label htmlFor="message" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
-                  How can we help? <span className="text-[var(--color-primary)]">*</span>
-                </label>
-                <textarea 
-                  id="message" 
-                  name="message" 
-                  required 
-                  rows={4} 
-                  placeholder="Tell us how we can help you..." 
-                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] resize-none shadow-xs" 
-                />
-              </div>
-
-              {contactError && (
-                <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm rounded-xl flex items-center gap-2">
-                  <span className="font-semibold">Error:</span> {contactError}
-                </div>
-              )}
-
-              <button 
-                type="submit" 
-                disabled={contactSubmitting}
-                className="w-full h-11 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {contactSubmitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Sending Message...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Send Message
-                  </>
-                )}
-              </button>
-            </form>
-          )}
+                <button 
+                  type="submit" 
+                  disabled={contactSubmitting}
+                  className="w-full h-11 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {contactSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Sending Message...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                      Send Message
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg)] pt-8 sm:pt-16 pb-8 sm:pb-10 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full">
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10 mb-8 sm:mb-16">
+      <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg)] pt-10 sm:pt-14 pb-8 sm:pb-10 px-4 sm:px-6 lg:px-8 xl:px-12 w-full">
+        <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10 mb-8 sm:mb-10">
           {/* Column 1: Brand & Social */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
               <Logo />
             </div>
@@ -1336,10 +1342,10 @@ export default function LandingPage() {
               {cms('footer.tagline', 'Simplifying groundwater exploration by connecting customers with verified experts through secure booking, professional surveys, and digital reports.')}
             </p>
             <div>
-              <h5 className="font-bold text-xs uppercase tracking-wider text-[var(--color-text-primary)] mb-3">
+              <h5 className="font-bold text-xs uppercase tracking-wider text-[var(--color-text-primary)] mb-2.5">
                 Follow Us
               </h5>
-              <div className="flex gap-3">
+              <div className="flex gap-2.5">
                 <a href="https://www.instagram.com/jaladhaara_groundwatersurvey?utm_source=qr&igsh=MWVoeDQwcnZ1YzU1OA==" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[#E1306C] hover:border-[#E1306C]/40 transition-all shadow-sm" aria-label="Instagram">
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
                 </a>
@@ -1361,8 +1367,8 @@ export default function LandingPage() {
 
           {/* Column 2: Quick Links */}
           <div>
-            <h4 className="font-bold mb-6 text-[var(--color-text-primary)]">Quick Links</h4>
-            <ul className="space-y-3">
+            <h4 className="font-bold mb-3 sm:mb-4 text-[var(--color-text-primary)]">Quick Links</h4>
+            <ul className="space-y-2.5">
               <li>
                 <button onClick={() => setIsAboutModalOpen(true)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors text-left cursor-pointer">
                   About us
@@ -1403,14 +1409,14 @@ export default function LandingPage() {
 
           {/* Column 3: Contact Us */}
           <div>
-            <h4 className="font-bold mb-6 text-[var(--color-text-primary)]">Contact Us</h4>
-            <div className="space-y-2.5">
+            <h4 className="font-bold mb-3 sm:mb-4 text-[var(--color-text-primary)]">Contact Us</h4>
+            <div className="space-y-2">
               <div>
-                <span className="block text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-1.5">
+                <span className="block text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-1">
                   Registered Office
                 </span>
-                <div className="flex items-start gap-2.5">
-                  <MapPin className="w-4 h-4 text-[var(--color-primary)] shrink-0 mt-1" />
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-[var(--color-primary)] shrink-0 mt-0.5" />
                   <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
                     2-41/13/PMR/5F, 5th Floor,<br />
                     Melkiors Pride, Khanamet,<br />
@@ -1423,7 +1429,7 @@ export default function LandingPage() {
               <div className="pt-2 border-t border-[var(--color-border)]">
                 <a 
                   href="mailto:info@jaladhaaraapp.com" 
-                  className="inline-flex items-center gap-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm font-semibold transition-colors group"
+                  className="inline-flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm font-semibold transition-colors group"
                 >
                   <MessageCircle className="w-4 h-4 text-[var(--color-primary)] shrink-0 group-hover:scale-110 transition-transform" />
                   <span>info@jaladhaaraapp.com</span>
@@ -1433,10 +1439,10 @@ export default function LandingPage() {
           </div>
 
           {/* Column 4: Download App (Customer & Expert) */}
-          <div className="bg-[var(--color-surface)] rounded-3xl p-5 sm:p-6 border border-[var(--color-border)] shadow-sm flex flex-col justify-between">
+          <div className="bg-[var(--color-surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-[var(--color-border)] shadow-sm flex flex-col justify-between">
             <div>
               {/* Audience Tab Switcher */}
-              <div className="flex p-1 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] mb-4">
+              <div className="flex p-1 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] mb-3 sm:mb-4">
                 <button
                   type="button"
                   onClick={() => setActiveFooterTab('customer')}
@@ -1466,10 +1472,10 @@ export default function LandingPage() {
                   <h4 className="font-bold text-sm sm:text-base mb-1 text-[var(--color-text-primary)]">
                     Download the Jaladhaara app
                   </h4>
-                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-2">
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-1.5">
                     Get started Today
                   </div>
-                  <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed mb-5 min-h-[48px]">
+                  <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed mb-4 min-h-[40px]">
                     Find verified groundwater survey experts, book your survey, and receive your digital report- all in one app.
                   </p>
                 </div>
@@ -1478,22 +1484,22 @@ export default function LandingPage() {
                   <h4 className="font-bold text-sm sm:text-base mb-1 text-[var(--color-text-primary)]">
                     Download Jaladhaara Expert
                   </h4>
-                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-2">
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-1.5">
                     For Surveyors
                   </div>
-                  <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed mb-5 min-h-[48px]">
+                  <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed mb-4 min-h-[40px]">
                     Manage survey bookings, conduct field investigations, submit geoscientific digital reports, and grow your practice.
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {activeFooterTab === 'customer' ? (
                 <>
                   <Link 
-                    to="/userlogin"
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-primary)] text-white text-xs sm:text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-all shadow-md shadow-[var(--color-primary)]/20"
+                    to="/userlogin" 
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-[var(--color-primary)] text-white text-xs sm:text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-all shadow-md shadow-[var(--color-primary)]/20"
                   >
                     Book Survey Online
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -1508,7 +1514,7 @@ export default function LandingPage() {
                         alert("Customer mobile app will be available shortly on Google Play Store.");
                       }
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5 text-[var(--color-primary)]" />
                     Download Mobile App
@@ -1517,8 +1523,8 @@ export default function LandingPage() {
               ) : (
                 <>
                   <Link 
-                    to="/vendorsignup"
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-primary)] text-white text-xs sm:text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-all shadow-md shadow-[var(--color-primary)]/20"
+                    to="/vendorsignup" 
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-[var(--color-primary)] text-white text-xs sm:text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-all shadow-md shadow-[var(--color-primary)]/20"
                   >
                     Join as an Expert
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -1533,7 +1539,7 @@ export default function LandingPage() {
                         alert("Expert mobile app will be available shortly on Google Play Store.");
                       }
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5 text-[var(--color-primary)]" />
                     Download Expert App

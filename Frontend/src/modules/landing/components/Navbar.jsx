@@ -60,7 +60,7 @@ export default function Navbar() {
           : 'bg-white/70 backdrop-blur-md border-b border-white/50'
       }`}
     >
-      <nav className="w-full px-4 sm:px-6 lg:px-8 xl:px-16 2xl:px-24 h-16 sm:h-20 flex items-center justify-between gap-2">
+      <nav className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
         <Logo />
 
         <ul className="hidden items-center gap-2 xl:gap-5 2xl:gap-7 lg:flex">
