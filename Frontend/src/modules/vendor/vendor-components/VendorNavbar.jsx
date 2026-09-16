@@ -73,6 +73,7 @@ const navItems = [
 export default function VendorNavbar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
     const toggleRef = useRef(null);
     const { logout, vendor, updateOnlineStatus, allowAvailabilityToggle } = useVendorAuth();
     const location = useLocation();
@@ -83,6 +84,20 @@ export default function VendorNavbar() {
     const [showPauseModal, setShowPauseModal] = useState(false);
     const [pauseLoading, setPauseLoading] = useState(false);
     const liveStatus = getExpertLiveStatus(vendor);
+
+    // Hide bottom nav when virtual keyboard is open (mobile)
+    useEffect(() => {
+        const viewport = window.visualViewport;
+        if (!viewport) return;
+
+        const handleViewportResize = () => {
+            const keyboardVisible = window.innerHeight - viewport.height > 150;
+            setIsKeyboardOpen(keyboardVisible);
+        };
+
+        viewport.addEventListener('resize', handleViewportResize);
+        return () => viewport.removeEventListener('resize', handleViewportResize);
+    }, []);
 
 
     const handleToggleClick = () => {
@@ -402,7 +417,7 @@ export default function VendorNavbar() {
             </div>
 
             {/* Bottom Navigation — Mobile Only (Redesigned Senior UI) */}
-            <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden">
+            <nav className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden transition-transform duration-200 ${isKeyboardOpen ? 'translate-y-full pointer-events-none' : 'translate-y-0'}`}>
                 <div className="flex items-center justify-around gap-1 max-w-md mx-auto">
                     {navItems.map(({ id, label, to, Icon, ActiveIcon }) => (
                         <NavLink
