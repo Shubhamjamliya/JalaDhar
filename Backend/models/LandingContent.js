@@ -93,7 +93,7 @@ const SocialLinksSchema = new mongoose.Schema({
 }, { _id: false });
 
 const FooterSchema = new mongoose.Schema({
-  tagline: { type: String, default: 'Making groundwater decisions easier for every Indian.' },
+  tagline: { type: String, default: 'Simplifying groundwater exploration by connecting customers with verified experts through secure booking, professional surveys, and digital reports.' },
   socialLinks: { type: SocialLinksSchema, default: () => ({}) }
 }, { _id: false });
 
@@ -139,10 +139,10 @@ const LandingContentSchema = new mongoose.Schema({
       heading2: 'with Jaladhaara.',
       subtitle: "Join India's largest groundwater professional network.",
       steps: [
-        { step: '1', title: 'Register & KYC', desc: 'Sign up and complete your professional KYC verification.' },
-        { step: '2', title: 'Set Availability', desc: 'Define your working zones and available time slots.' },
-        { step: '3', title: 'Accept Bookings', desc: 'Receive booking assignments directly on the Expert app.' },
-        { step: '4', title: 'Receive Direct & Secure Disbursals', desc: 'Get paid directly and securely after every successful survey.' }
+        { step: '01', title: 'Create Your Profile', desc: 'Showcase your qualifications, expertise and service areas.' },
+        { step: '02', title: 'Receive Service Requests', desc: 'Get relevant groundwater survey opportunities in your area.' },
+        { step: '03', title: 'Connect & Deliver', desc: 'Connect with customers and provide professional survey services.' },
+        { step: '04', title: 'Receive Secure Payments', desc: 'Get paid securely through the Jaladhaara platform.' }
       ]
     })
   },

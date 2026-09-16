@@ -479,20 +479,39 @@ export default function LandingPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 max-w-5xl mx-auto reveal mb-16">
-          {['Verified Experts', 'Accurate Reports', 'Transparent Pricing', 'Fast Service', 'Digital Reports', 'Secure & Reliable'].map((benefit, i) => (
-            <div key={i} className="flex items-center justify-center sm:justify-start gap-3 p-4 sm:p-6 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-md hover:shadow-lg transition-shadow">
-              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--color-primary)] shrink-0" />
-              <span className="text-xs sm:text-base font-bold text-[var(--color-text-primary)]">{benefit}</span>
-            </div>
-          ))}
+        <div className="max-w-5xl mx-auto reveal mb-14 sm:mb-16">
+          <h3 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-center text-[var(--color-text-primary)]">
+            Why Choose Jaladhaara?
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            {[
+              'Verified Experts',
+              'Live Expert Tracking',
+              'Transparent Pricing',
+              'Digital Reports',
+              'Secure & Reliable'
+            ].map((benefit, i) => (
+              <div 
+                key={i} 
+                className="flex items-center justify-center sm:justify-start gap-2.5 sm:gap-3 p-4 sm:p-5 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/50 transition-all last:col-span-2 md:last:col-span-1"
+              >
+                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--color-primary)] shrink-0" />
+                <span className="text-xs sm:text-sm lg:text-base font-bold text-[var(--color-text-primary)]">{benefit}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="max-w-5xl mx-auto reveal text-center">
-          <h3 className="text-xl sm:text-2xl font-bold mb-6 text-[var(--color-text-primary)]">Who Can Benefit?</h3>
+          <h3 className="text-xl sm:text-2xl font-bold mb-6 text-[var(--color-text-primary)]">
+            Who Is Jaladhaara For?
+          </h3>
           <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
-            {['Farmers', 'Home Owners', 'Industries', 'Builders', 'Institutions'].map((userType, i) => (
-              <div key={i} className="px-5 py-2.5 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-sm sm:text-base font-semibold text-[var(--color-text-primary)] shadow-sm">
+            {['Farmers', 'Homeowners', 'Industries', 'Builders', 'Institutions', 'Commercial'].map((userType, i) => (
+              <div 
+                key={i} 
+                className="px-5 py-2.5 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-sm sm:text-base font-semibold text-[var(--color-text-primary)] shadow-sm hover:border-[var(--color-primary)]/50 hover:shadow-md transition-all"
+              >
                 {userType}
               </div>
             ))}
@@ -507,23 +526,23 @@ export default function LandingPage() {
             For Professionals
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight max-w-3xl mx-auto text-[var(--color-text-primary)] leading-[1.2]">
-            Join India's First Groundwater Experts Network<br />
+            Join India's Growing Groundwater Expert Network<br />
             <span className="block mt-4 text-base sm:text-xl lg:text-2xl text-[var(--color-text-secondary)] font-medium leading-[1.5]">
-              Be part of India's growing community of verified hydrogeologists, geophysicists, and groundwater survey professionals.
+              Be part of a growing community of verified hydrogeologists, geophysicists and groundwater professionals.
             </span>
           </h2>
-          <p className="text-[var(--color-text-secondary)] mt-6 text-base sm:text-xl">Grow your business. Make a bigger impact.</p>
+          <p className="text-[var(--color-text-secondary)] mt-6 text-base sm:text-xl">Grow your business. Expand your reach. Make a bigger impact.</p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-10 sm:gap-16 max-w-6xl mx-auto items-start reveal">
           <div className="space-y-6 sm:space-y-8 order-2 lg:order-1">
-            <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Why Join Us?</h3>
+            <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-[var(--color-text-primary)]">Why Join Jaladhaara?</h3>
             <div className="grid gap-4 sm:gap-6">
               {[
-                { title: 'More Client Leads', desc: 'Get connected with verified customers across your service region.' },
-                { title: 'Digital Profile', desc: 'Showcase your expertise, equipment, qualifications & experience.' },
-                { title: 'Secure Payments', desc: 'Receive survey payments digitally and reliably.' },
-                { title: 'Business Growth', desc: 'Expand your practice with continuous opportunities.' }
+                { title: 'More Genuine Client Leads', desc: 'Connect with customers looking for professional groundwater survey services.' },
+                { title: 'Professional Digital Profile', desc: 'Showcase your qualifications, expertise, experience and service areas.' },
+                { title: 'Secure Digital Payments', desc: 'Receive payments securely through the Jaladhaara platform.' },
+                { title: 'Grow Your Practice', desc: 'Expand your reach and discover new professional opportunities.' }
               ].map((b, i) => (
                 <div key={i} className="flex items-start gap-4 p-5 sm:p-6 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 transition-all shadow-md hover:shadow-lg">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[var(--color-primary)]/15 flex items-center justify-center shrink-0">
@@ -537,33 +556,27 @@ export default function LandingPage() {
               ))}
             </div>
 
-            <div className="mt-8 pt-8 border-t border-[var(--color-border)]">
-              <h3 className="text-xl sm:text-2xl font-bold mb-5 text-[var(--color-text-primary)]">Who Can Join?</h3>
-              <div className="flex flex-wrap gap-2 sm:gap-3">
-                {['Hydrogeologists', 'Geophysicists', 'Water Resource Consultants', 'Groundwater Professionals'].map((prof, i) => (
-                  <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-xs sm:text-sm font-medium shadow-sm">
-                    <CheckCircle className="w-3.5 h-3.5 text-[var(--color-primary)] shrink-0" />
-                    {prof}
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           <div className="bg-[var(--color-bg)] rounded-[32px] sm:rounded-[40px] p-6 sm:p-10 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/10 order-1 lg:order-2">
             <h3 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-[var(--color-text-primary)]">How It Works for Experts</h3>
             <div className="space-y-4 sm:space-y-6">
               {cms('howItWorksExperts.steps', [
-                { step: 1, title: 'Register & Complete KYC' },
-                { step: 2, title: 'Set Your Availability & Working Zones' },
-                { step: 3, title: 'Accept Bookings & Conduct Surveys' },
-                { step: 4, title: 'Receive Direct & Secure Disbursals' }
+                { step: '01', title: 'Create Your Profile', desc: 'Showcase your qualifications, expertise and service areas.' },
+                { step: '02', title: 'Receive Service Requests', desc: 'Get relevant groundwater survey opportunities in your area.' },
+                { step: '03', title: 'Connect & Deliver', desc: 'Connect with customers and provide professional survey services.' },
+                { step: '04', title: 'Receive Secure Payments', desc: 'Get paid securely through the Jaladhaara platform.' }
               ]).map((s, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
-                  <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[var(--color-primary)] text-white font-bold text-base sm:text-lg shrink-0 shadow-md">
+                <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
+                  <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base shrink-0 shadow-md">
                     {s.step}
                   </div>
-                  <div className="font-bold text-sm sm:text-base text-[var(--color-text-primary)]">{s.title}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm sm:text-base text-[var(--color-text-primary)] mb-0.5">{s.title}</div>
+                    {s.desc && (
+                      <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">{s.desc}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -572,7 +585,7 @@ export default function LandingPage() {
               to="/vendorsignup"
               className="w-full mt-8 h-14 rounded-2xl bg-[var(--color-primary)] text-white font-bold text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20"
             >
-              Join As Expert Today
+              Join as an Expert
               <ArrowRight className="w-5 h-5" />
             </Link>
 
@@ -587,6 +600,56 @@ export default function LandingPage() {
               Have questions? Read Expert FAQs
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
+          </div>
+        </div>
+
+        {/* Who Can Join Jaladhaara? & Final Expert CTA */}
+        <div className="max-w-4xl mx-auto mt-12 sm:mt-16 pt-10 sm:pt-14 border-t border-[var(--color-border)] text-center reveal">
+          <h3 className="text-2xl sm:text-3xl font-bold mb-3 text-[var(--color-text-primary)]">
+            Who Can Join Jaladhaara?
+          </h3>
+          <p className="text-[var(--color-text-secondary)] text-sm sm:text-base max-w-xl mx-auto mb-6">
+            Open to verified and experienced groundwater professionals across India.
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3.5 mb-10">
+            {[
+              'Hydrogeologists',
+              'Geophysicists',
+              'Groundwater Professionals',
+              'Water Resource Consultants',
+              'Qualified Earth Science Professionals'
+            ].map((prof, i) => (
+              <div 
+                key={i} 
+                className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] shadow-sm hover:border-[var(--color-primary)]/50 hover:shadow-md transition-all"
+              >
+                <CheckCircle className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
+                <span>{prof}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA Box */}
+          <div className="rounded-3xl sm:rounded-[36px] p-6 sm:p-10 bg-gradient-to-br from-[var(--color-primary)]/10 via-[var(--color-surface)] to-[var(--color-primary)]/5 border border-[var(--color-primary)]/20 text-center relative overflow-hidden shadow-xl shadow-[#0077B6]/10">
+            <div className="inline-block px-3.5 py-1 rounded-full bg-[var(--color-primary)]/15 text-[var(--color-primary)] text-xs font-bold uppercase tracking-wider mb-3 border border-[var(--color-primary)]/20">
+              Ready to Join?
+            </div>
+            <h4 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] tracking-tight">
+              Your Expertise. Your Opportunities.
+            </h4>
+            <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-3 max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
+              Turn your professional expertise into new opportunities with Jaladhaara.
+            </p>
+            <div className="mt-6 sm:mt-8 flex justify-center">
+              <Link 
+                to="/vendorsignup"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 sm:py-4 rounded-2xl bg-[var(--color-primary)] text-white font-bold text-base hover:bg-[var(--color-primary-hover)] transition-all shadow-lg shadow-[var(--color-primary)]/25 hover:shadow-xl hover:-translate-y-0.5 duration-200"
+              >
+                Join as an Expert
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -1047,12 +1110,14 @@ export default function LandingPage() {
       <section id="request" className="py-12 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full relative overflow-hidden flex flex-col justify-center reveal bg-[var(--color-bg)]">
         <div className="text-center mb-10 sm:mb-16">
           <div className="inline-block px-4 py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold uppercase tracking-wider mb-6 border border-[var(--color-primary)]/20">
-            Contact Us
+            CONTACT US
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
-            Find Help for Your Queries
+            We’re Here to Help
           </h2>
-          <p className="text-[var(--color-text-secondary)] mt-4 text-sm sm:text-lg">Fill out the form below and our team will get in touch shortly.</p>
+          <p className="text-[var(--color-text-secondary)] mt-4 text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed">
+            Have a question about groundwater surveys, bookings, or joining Jaladhaara? Send us a message and our team will get back to you.
+          </p>
         </div>
 
         <div className="max-w-2xl mx-auto w-full bg-[var(--color-surface)] backdrop-blur-xl rounded-[32px] p-6 sm:p-12 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/10">
@@ -1060,20 +1125,20 @@ export default function LandingPage() {
             <div className="p-8 text-center bg-emerald-50 rounded-2xl border border-emerald-200">
               <CheckCircle className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
               <h3 className="text-xl font-bold text-emerald-900 mb-1">Thank You!</h3>
-              <p className="text-emerald-700 text-sm">Your query has been received. Our team will contact you soon.</p>
+              <p className="text-emerald-700 text-sm">Your message has been received. Our team will get back to you shortly.</p>
             </div>
           ) : (
             <form onSubmit={handleContactSubmit} className="space-y-5 sm:space-y-6">
               <div className="space-y-2">
                 <label htmlFor="name" className="text-sm font-bold text-[var(--color-text-primary)]">
-                  Name <span className="text-[var(--color-primary)]">*</span>
+                  Full Name <span className="text-[var(--color-primary)]">*</span>
                 </label>
                 <input 
                   type="text" 
                   id="name" 
                   name="name" 
                   required 
-                  placeholder="Enter your name" 
+                  placeholder="Enter your full name" 
                   className="w-full px-4 py-3 bg-white/80 rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)]" 
                 />
               </div>
@@ -1088,7 +1153,7 @@ export default function LandingPage() {
                     id="email" 
                     name="email" 
                     required 
-                    placeholder="Enter your email" 
+                    placeholder="Enter your email address" 
                     className="w-full px-4 py-3 bg-white/80 rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)]" 
                   />
                 </div>
@@ -1101,7 +1166,7 @@ export default function LandingPage() {
                     id="mobile" 
                     name="mobile" 
                     required 
-                    placeholder="Enter your mobile number" 
+                    placeholder="Enter your 10-digit mobile number" 
                     className="w-full px-4 py-3 bg-white/80 rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)]" 
                   />
                 </div>
@@ -1109,7 +1174,7 @@ export default function LandingPage() {
 
               <div className="space-y-2">
                 <label htmlFor="userType" className="text-sm font-bold text-[var(--color-text-primary)]">
-                  You are a <span className="text-[var(--color-primary)]">*</span>
+                  I am a <span className="text-[var(--color-primary)]">*</span>
                 </label>
                 <select 
                   id="userType" 
@@ -1118,34 +1183,34 @@ export default function LandingPage() {
                   defaultValue="" 
                   className="w-full px-4 py-3 bg-white/80 rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all text-[var(--color-text-primary)] cursor-pointer"
                 >
-                  <option value="" disabled>- Select your category -</option>
-                  <option value="farmer">Farmer</option>
-                  <option value="individual">Individual Home Owner</option>
-                  <option value="commercial">Commercial / Builder</option>
-                  <option value="industrial">Industry / Factory</option>
-                  <option value="expert">Groundwater Survey Expert</option>
+                  <option value="" disabled>Select an option</option>
+                  <option value="Customer / User">Customer / User</option>
+                  <option value="Groundwater Expert">Groundwater Expert</option>
+                  <option value="Business / Organization">Business / Organization</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
 
               <div className="space-y-2">
                 <label htmlFor="message" className="text-sm font-bold text-[var(--color-text-primary)]">
-                  Message / Requirements
+                  How can we help? <span className="text-[var(--color-primary)]">*</span>
                 </label>
                 <textarea 
                   id="message" 
                   name="message" 
-                  rows={3} 
-                  placeholder="Tell us about your location and requirement..." 
-                  className="w-full px-4 py-3 bg-white/80 rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] resize-none"
+                  required
+                  rows={4} 
+                  placeholder="Tell us how we can help you..." 
+                  className="w-full px-4 py-3 bg-white/80 rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] resize-none" 
                 />
               </div>
 
               <button 
                 type="submit" 
-                className="w-full h-14 rounded-2xl bg-[var(--color-primary)] text-white font-bold text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20"
+                className="w-full h-14 rounded-2xl bg-[var(--color-primary)] text-white font-bold text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 cursor-pointer"
               >
                 <Send className="w-5 h-5" />
-                Submit Enquiry
+                Send Message
               </button>
             </form>
           )}
@@ -1154,86 +1219,136 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg)] pt-12 sm:pt-20 pb-8 sm:pb-10 px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 w-full">
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 mb-12 sm:mb-16">
-          <div className="md:col-span-2 lg:col-span-1">
-            <div className="mb-4 sm:mb-6">
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10 mb-12 sm:mb-16">
+          {/* Column 1: Brand & Social */}
+          <div className="space-y-6">
+            <div>
               <Logo />
             </div>
-            <p className="text-[var(--color-text-secondary)] text-sm mb-6 leading-relaxed">
-              {cms('footer.tagline', 'Jaladhaara simplifies groundwater surveys by connecting customers with verified experts through secure booking, digital reports, and scientific survey methods.')}
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+              {cms('footer.tagline', 'Simplifying groundwater exploration by connecting customers with verified experts through secure booking, professional surveys, and digital reports.')}
             </p>
-            <div className="flex gap-4">
-              <a href="https://www.instagram.com/jaladhaara_groundwatersurvey?utm_source=qr&igsh=MWVoeDQwcnZ1YzU1OA==" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-secondary)] hover:text-[#E1306C] transition-colors" aria-label="Instagram">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
-              </a>
-              <a href="https://youtube.com/@jaladhaaragroundwatersurvey?si=4AdCDECSZdqOP6Cs" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-secondary)] hover:text-[#FF0000] transition-colors" aria-label="YouTube">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" /></svg>
-              </a>
-              <a href="https://www.facebook.com/share/1Dpw3CdKWk/" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-secondary)] hover:text-[#1877F2] transition-colors" aria-label="Facebook">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" /></svg>
-              </a>
-              <a href="https://www.linkedin.com/in/jaladhaara-groundwater-survey-pvt-ltd-097617350?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-secondary)] hover:text-[#0A66C2] transition-colors" aria-label="LinkedIn">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
-              </a>
-              <a href="https://x.com/jaladhaara" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-secondary)] hover:text-[#1DA1F2] transition-colors" aria-label="Twitter">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" /></svg>
-              </a>
+            <div>
+              <h5 className="font-bold text-xs uppercase tracking-wider text-[var(--color-text-primary)] mb-3">
+                Follow Us
+              </h5>
+              <div className="flex gap-3">
+                <a href="https://www.instagram.com/jaladhaara_groundwatersurvey?utm_source=qr&igsh=MWVoeDQwcnZ1YzU1OA==" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[#E1306C] hover:border-[#E1306C]/40 transition-all shadow-sm" aria-label="Instagram">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
+                </a>
+                <a href="https://youtube.com/@jaladhaaragroundwatersurvey?si=4AdCDECSZdqOP6Cs" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[#FF0000] hover:border-[#FF0000]/40 transition-all shadow-sm" aria-label="YouTube">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" /></svg>
+                </a>
+                <a href="https://www.facebook.com/share/1Dpw3CdKWk/" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[#1877F2] hover:border-[#1877F2]/40 transition-all shadow-sm" aria-label="Facebook">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" /></svg>
+                </a>
+                <a href="https://www.linkedin.com/in/jaladhaara-groundwater-survey-pvt-ltd-097617350?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[#0A66C2] hover:border-[#0A66C2]/40 transition-all shadow-sm" aria-label="LinkedIn">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                </a>
+                <a href="https://x.com/jaladhaara" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[#1DA1F2] hover:border-[#1DA1F2]/40 transition-all shadow-sm" aria-label="Twitter">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" /></svg>
+                </a>
+              </div>
             </div>
           </div>
 
+          {/* Column 2: Quick Links */}
           <div>
             <h4 className="font-bold mb-6 text-[var(--color-text-primary)]">Quick Links</h4>
-            <ul className="space-y-3.5">
+            <ul className="space-y-3">
               <li>
-                <button onClick={() => setIsAboutModalOpen(true)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
-                  About Us
+                <button onClick={() => setIsAboutModalOpen(true)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors text-left cursor-pointer">
+                  About us
                 </button>
               </li>
               <li>
                 <a href="#services" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
-                  Our Services
+                  Our services
                 </a>
               </li>
               <li>
-                <a href="#founder" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
-                  Leadership & Founder
+                <a href="#why-us" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
+                  How it works
                 </a>
               </li>
               <li>
-                <button onClick={() => setIsTermsModalOpen(true)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
-                  Terms & Conditions
+                <a href="#experts" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
+                  For professionals
+                </a>
+              </li>
+              <li>
+                <a href="#why-us" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
+                  For customers
+                </a>
+              </li>
+              <li>
+                <button onClick={() => setIsTermsModalOpen(true)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors text-left cursor-pointer">
+                  Terms and conditions
                 </button>
               </li>
               <li>
-                <button onClick={() => setIsPrivacyModalOpen(true)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
+                <button onClick={() => setIsPrivacyModalOpen(true)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors text-left cursor-pointer">
                   Privacy Policy
                 </button>
-              </li>
-              <li>
-                <Link to="/vendorlogin" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
-                  Surveyor Portal
-                </Link>
               </li>
             </ul>
           </div>
 
-          <div className="md:col-span-2 lg:col-span-2">
-            <h4 className="font-bold mb-6 text-[var(--color-text-primary)]">Contact Information</h4>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-[var(--color-primary)] shrink-0 mt-0.5" />
-                <span className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
-                  2-41/13/PMR/5F, 5th Floor, MELKIORS PRIDE,<br />
-                  Khanamet, Hitex road, Hyderabad, Telangana 500081
+          {/* Column 3: Contact Us */}
+          <div>
+            <h4 className="font-bold mb-6 text-[var(--color-text-primary)]">Contact Us</h4>
+            <div className="space-y-4">
+              <div>
+                <span className="block text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-1.5">
+                  Registered Office
                 </span>
-              </li>
-              <li className="flex items-start gap-3">
-                <MessageCircle className="w-5 h-5 text-[var(--color-primary)] shrink-0 mt-0.5" />
-                <a href="mailto:info@jaladhaaraapp.in" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
-                  info@jaladhaaraapp.in
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="w-4 h-4 text-[var(--color-primary)] shrink-0 mt-1" />
+                  <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+                    2-41/13/PMR/5F, 5th Floor, Melkiors Pride, Khanamet, Hitex Road, Hyderabad, Telangana state - 500081.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-[var(--color-border)]">
+                <a 
+                  href="mailto:info@jaladhaaraapp.com" 
+                  className="inline-flex items-center gap-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm font-semibold transition-colors group"
+                >
+                  <MessageCircle className="w-4 h-4 text-[var(--color-primary)] shrink-0 group-hover:scale-110 transition-transform" />
+                  <span>info@jaladhaaraapp.com</span>
                 </a>
-              </li>
-            </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 4: Download the Jaladhaara app */}
+          <div className="bg-[var(--color-surface)] rounded-3xl p-5 sm:p-6 border border-[var(--color-border)] shadow-sm">
+            <h4 className="font-bold text-sm sm:text-base mb-1.5 text-[var(--color-text-primary)]">
+              Download the Jaladhaara app
+            </h4>
+            <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-2">
+              Get started Today
+            </div>
+            <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed mb-5">
+              Find verified groundwater survey experts, book your survey, and receive your digital report- all in one app.
+            </p>
+
+            <div className="space-y-2.5">
+              <Link 
+                to="/userlogin"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-primary)] text-white text-xs sm:text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-all shadow-md shadow-[var(--color-primary)]/20"
+              >
+                Book Survey Online
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+              <button 
+                onClick={() => alert("Mobile app download links will be available shortly on Google Play and App Store.")}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
+              >
+                Download Mobile App
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1338,7 +1453,7 @@ export default function LandingPage() {
               <p>Users must provide accurate property access, site details, and ensure peaceful entry for the assigned survey expert.</p>
 
               <h4 className="font-bold text-[var(--color-text-primary)] text-base pt-2">4. Contact & Support</h4>
-              <p>For any queries regarding terms or bookings, contact us at: <a href="mailto:info@jaladhaaraapp.in" className="text-[var(--color-primary)] font-semibold">info@jaladhaaraapp.in</a></p>
+              <p>For any queries regarding terms or bookings, contact us at: <a href="mailto:info@jaladhaaraapp.com" className="text-[var(--color-primary)] font-semibold">info@jaladhaaraapp.com</a></p>
             </div>
           </div>
         </div>
@@ -1375,7 +1490,7 @@ export default function LandingPage() {
               <p>We never sell or rent your personal data to advertisers. Information is only shared with the specific verified expert assigned to your survey and certified payment gateways for transaction processing.</p>
 
               <h4 className="font-bold text-[var(--color-text-primary)] text-base pt-2">3. Inquiries</h4>
-              <p>For data inquiries or account deletion requests, write to: <a href="mailto:info@jaladhaaraapp.in" className="text-[var(--color-primary)] font-semibold">info@jaladhaaraapp.in</a></p>
+              <p>For data inquiries or account deletion requests, write to: <a href="mailto:info@jaladhaaraapp.com" className="text-[var(--color-primary)] font-semibold">info@jaladhaaraapp.com</a></p>
             </div>
           </div>
         </div>
