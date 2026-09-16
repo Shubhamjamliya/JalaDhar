@@ -133,6 +133,24 @@ function App() {
                             <NotificationProvider>
                                 <LocationPermissionModal />
                                 <Routes>
+                                    {/* ---------- LANDING PAGE ---------- */}
+                                    <Route
+                                        path="/"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <LandingPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/landing"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <LandingPage />
+                                            </Suspense>
+                                        }
+                                    />
+
                                     <Route path="/notifications" element={<NotificationsRedirect />} />
                                     <Route path="/notification" element={<NotificationsRedirect />} />
                                     {/* ---------- PUBLIC VERIFY (QR Scan) ---------- */}
@@ -1353,23 +1371,6 @@ function App() {
                                         }
                                     />
 
-                                    {/* ---------- LANDING PAGE ---------- */}
-                                    <Route
-                                        path="/"
-                                        element={
-                                            <Suspense fallback={<LoadingSpinner />}>
-                                                <LandingPage />
-                                            </Suspense>
-                                        }
-                                    />
-                                    <Route
-                                        path="/landing"
-                                        element={
-                                            <Suspense fallback={<LoadingSpinner />}>
-                                                <LandingPage />
-                                            </Suspense>
-                                        }
-                                    />
                                 </Routes>
                             </NotificationProvider>
                         </Router>

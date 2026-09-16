@@ -148,8 +148,10 @@ api.interceptors.response.use(
 
     // Handle 401 Unauthorized - Token expired or invalid
     if (error.response?.status === 401) {
-      const isVendorRoute = window.location.pathname.startsWith('/vendor');
-      const isAdminRoute = window.location.pathname.startsWith('/admin');
+      const pathname = window.location.pathname;
+      const isVendorRoute = pathname.startsWith('/vendor');
+      const isAdminRoute = pathname.startsWith('/admin');
+      const isUserRoute = pathname.startsWith('/user/') || pathname.startsWith('/booking');
 
       if (isAdminRoute) {
         // Clear admin tokens
@@ -158,7 +160,7 @@ api.interceptors.response.use(
         localStorage.removeItem('admin');
 
         // Redirect to admin login if not already there
-        if (window.location.pathname !== '/adminlogin') {
+        if (pathname !== '/adminlogin') {
           window.location.href = '/adminlogin';
         }
       } else if (isVendorRoute) {
@@ -168,19 +170,25 @@ api.interceptors.response.use(
         localStorage.removeItem('vendor');
 
         // Redirect to vendor login if not already there
-        if (window.location.pathname !== '/vendorlogin' && window.location.pathname !== '/vendorsignup') {
+        if (pathname !== '/vendorlogin' && pathname !== '/vendorsignup') {
           window.location.href = '/vendorlogin';
         }
-      } else {
+      } else if (isUserRoute) {
         // Clear user tokens
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
 
         // Redirect to user login if not already there
-        if (window.location.pathname !== '/userlogin' && window.location.pathname !== '/usersignup') {
+        if (pathname !== '/userlogin' && pathname !== '/usersignup') {
           window.location.href = '/userlogin';
         }
+      } else {
+        // Public pages (like '/', '/landing', '/verify/*'):
+        // Just clear stale tokens if any exist, NEVER redirect away from public page!
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
       }
     }
 

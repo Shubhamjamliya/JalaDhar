@@ -77,10 +77,10 @@ export const NotificationProvider = ({ children }) => {
 
   // Initialize Socket.io connection
   useEffect(() => {
-    const isPublicAuthRoute = pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
+    const isPublicRoute = pathname === '/' || pathname === '/landing' || pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
 
-    if (!isAuthenticated || !currentUser || isPublicAuthRoute) {
-      // Disconnect if not authenticated or on public auth routes
+    if (!isAuthenticated || !currentUser || isPublicRoute) {
+      // Disconnect if not authenticated or on public routes
       if (socket) {
         socket.disconnect();
         setSocket(null);
@@ -360,9 +360,9 @@ export const NotificationProvider = ({ children }) => {
 
   // Load notifications on mount and when user changes
   useEffect(() => {
-    const isPublicAuthRoute = pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
+    const isPublicRoute = pathname === '/' || pathname === '/landing' || pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
 
-    if (isAuthenticated && currentUser && !isPublicAuthRoute) {
+    if (isAuthenticated && currentUser && !isPublicRoute) {
       loadNotifications();
       loadUnreadCount();
     } else {
