@@ -52,6 +52,9 @@ export default defineConfig(({ mode }) => ({
       manifestFilename: 'manifest.webmanifest',
       strategies: 'generateSW',
       workbox: {
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
