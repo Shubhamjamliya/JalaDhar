@@ -8,11 +8,11 @@ const ImageSchema = new mongoose.Schema({
 }, { _id: false });
 
 const HeroSchema = new mongoose.Schema({
-  badgeText: { type: String, default: 'Groundwater Survey Platform' },
+  badgeText: { type: String, default: 'Dedicated Scientific Groundwater Survey Booking Platform' },
   headline1: { type: String, default: 'Find Verified Groundwater' },
   headline2: { type: String, default: 'Experts Near You.' },
   subtitle: { type: String, default: 'Find and connect with verified groundwater experts for Agricultural, Residential, Commercial and Industrial water needs.' },
-  cta1Label: { type: String, default: 'Book a Survey' },
+  cta1Label: { type: String, default: 'Download app' },
   cta2Label: { type: String, default: 'Join as Expert' },
   bgImage: { type: ImageSchema, default: () => ({}) }
 }, { _id: false });
@@ -151,7 +151,9 @@ const AppVideosSchema = new mongoose.Schema({
       url: '',
       publicId: ''
     }) 
-  }
+  },
+  userPlayStoreUrl: { type: String, default: '' },
+  expertPlayStoreUrl: { type: String, default: '' }
 }, { _id: false });
 
 // ─── Main Schema ─────────────────────────────────────────────────────────────

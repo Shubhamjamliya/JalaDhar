@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Menu, X, ArrowRight, User } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
 import Button from './Button';
@@ -12,6 +12,7 @@ const links = [
   { label: 'Reviews', href: '#reviews' },
   { label: 'About Us', href: '#about' },
   { label: 'Contact Us', href: '#request' },
+  { label: 'Join as Expert', href: '/vendorsignup', isRoute: true },
 ];
 
 export default function Navbar() {
@@ -39,8 +40,10 @@ export default function Navbar() {
     );
 
     links.forEach((link) => {
-      const el = document.querySelector(link.href);
-      if (el) observer.observe(el);
+      if (!link.isRoute && link.href.startsWith('#')) {
+        const el = document.querySelector(link.href);
+        if (el) observer.observe(el);
+      }
     });
 
     return () => {
@@ -57,40 +60,42 @@ export default function Navbar() {
           : 'bg-white/70 backdrop-blur-md border-b border-white/50'
       }`}
     >
-      <nav className="w-full px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 h-16 sm:h-20 flex items-center justify-between">
+      <nav className="w-full px-4 sm:px-6 lg:px-8 xl:px-16 2xl:px-24 h-16 sm:h-20 flex items-center justify-between gap-2">
         <Logo />
 
-        <ul className="hidden items-center gap-4 xl:gap-7 2xl:gap-8 lg:flex">
+        <ul className="hidden items-center gap-2 xl:gap-5 2xl:gap-7 lg:flex">
           {links.map((link) => (
             <li key={link.label}>
-              <a
-                href={link.href}
-                onClick={() => setActive(link.label)}
-                className={`relative text-[13px] xl:text-sm font-semibold transition-colors py-1 ${
-                  active === link.label
-                    ? 'text-[var(--color-text-primary)]'
-                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                }`}
-              >
-                {link.label}
-                {active === link.label && (
-                  <span className="absolute -bottom-1.5 left-0 h-[3px] w-full rounded-t-full bg-[var(--color-primary)] shadow-[0_0_8px_rgba(0,119,182,0.6)]" />
-                )}
-              </a>
+              {link.isRoute ? (
+                <Link
+                  to={link.href}
+                  className="relative text-[12px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors py-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] whitespace-nowrap"
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <a
+                  href={link.href}
+                  onClick={() => setActive(link.label)}
+                  className={`relative text-[12px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors py-1 whitespace-nowrap ${
+                    active === link.label
+                      ? 'text-[var(--color-text-primary)]'
+                      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                  }`}
+                >
+                  {link.label}
+                  {active === link.label && (
+                    <span className="absolute -bottom-1.5 left-0 h-[3px] w-full rounded-t-full bg-[var(--color-primary)] shadow-[0_0_8px_rgba(0,119,182,0.6)]" />
+                  )}
+                </a>
+              )}
             </li>
           ))}
         </ul>
 
-        <div className="hidden lg:flex items-center gap-3">
-          <Link
-            to="/userlogin"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-[var(--color-text-primary)] hover:bg-black/5 transition-colors"
-          >
-            <User className="w-4 h-4 text-[var(--color-primary)]" />
-            Login
-          </Link>
-          <Button href="#request">
-            Request Borewell
+        <div className="hidden lg:flex items-center">
+          <Button href="#request" className="whitespace-nowrap px-4 xl:px-5 py-2.5 text-xs xl:text-sm shadow-md">
+            Book Groundwater Survey
           </Button>
         </div>
 
@@ -135,36 +140,38 @@ export default function Navbar() {
           <ul className="flex flex-col gap-2">
             {links.map((link) => (
               <li key={link.label}>
-                <a
-                  href={link.href}
-                  onClick={() => {
-                    setActive(link.label);
-                    setOpen(false);
-                  }}
-                  className={`block rounded-xl px-4 py-3.5 text-base font-semibold transition-colors ${
-                    active === link.label
-                      ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                      : 'text-[var(--color-text-secondary)] hover:bg-black/5 hover:text-[var(--color-text-primary)]'
-                  }`}
-                >
-                  {link.label}
-                </a>
+                {link.isRoute ? (
+                  <Link
+                    to={link.href}
+                    onClick={() => setOpen(false)}
+                    className="block rounded-xl px-4 py-3.5 text-base font-semibold text-[var(--color-text-secondary)] hover:bg-black/5 hover:text-[var(--color-text-primary)]"
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <a
+                    href={link.href}
+                    onClick={() => {
+                      setActive(link.label);
+                      setOpen(false);
+                    }}
+                    className={`block rounded-xl px-4 py-3.5 text-base font-semibold transition-colors ${
+                      active === link.label
+                        ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                        : 'text-[var(--color-text-secondary)] hover:bg-black/5 hover:text-[var(--color-text-primary)]'
+                    }`}
+                  >
+                    {link.label}
+                  </a>
+                )}
               </li>
             ))}
           </ul>
         </div>
         
         <div className="p-6 border-t border-[var(--color-border)] pb-8 flex flex-col gap-3">
-          <Link
-            to="/userlogin"
-            className="w-full flex items-center justify-center gap-2 h-12 rounded-xl border border-[var(--color-border)] text-[var(--color-text-primary)] font-bold text-sm hover:bg-black/5 transition-colors"
-            onClick={() => setOpen(false)}
-          >
-            <User className="w-4 h-4 text-[var(--color-primary)]" />
-            Login to Portal
-          </Link>
           <Button href="#request" className="w-full justify-center h-12 text-sm" onClick={() => setOpen(false)}>
-            Request Borewell
+            Book Groundwater Survey
           </Button>
         </div>
       </div>

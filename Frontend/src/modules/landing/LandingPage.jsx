@@ -6,10 +6,10 @@ import './landing.css';
 import { Link } from 'react-router-dom';
 
 import heroBg from './assets/hero_new.jpg';
-import cardAgri from './assets/Agriculture.png';
-import cardRes from './assets/Residential.png';
-import cardCom from './assets/Commercial.png';
-import cardInd from './assets/Industrial.png';
+import cardAgri from './assets/Agriculture.jpg';
+import cardRes from './assets/Residential.jpg';
+import cardCom from './assets/Commercial.jpg';
+import cardInd from './assets/Industrial.jpg';
 
 import Navbar from './components/Navbar';
 import Logo from './components/Logo';
@@ -18,6 +18,7 @@ import {
   MapPin,
   Droplets,
   CheckCircle,
+  Check,
   TrendingDown,
   Crosshair,
   Activity,
@@ -40,7 +41,8 @@ import {
   Compass,
   CheckCircle2,
   Users,
-  Briefcase
+  Briefcase,
+  Download
 } from 'lucide-react';
 
 const customerFaqs = [
@@ -236,6 +238,9 @@ export default function LandingPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [activeFaqTab, setActiveFaqTab] = useState('customers');
   const [activeFooterTab, setActiveFooterTab] = useState('customer');
+  const [selectedUserType, setSelectedUserType] = useState('');
+  const [isUserTypeDropdownOpen, setIsUserTypeDropdownOpen] = useState(false);
+  const userTypeDropdownRef = useRef(null);
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [landingContent, setLandingContent] = useState(null);
 
@@ -318,11 +323,23 @@ export default function LandingPage() {
     };
   }, []);
 
+  // Dismiss custom dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (userTypeDropdownRef.current && !userTypeDropdownRef.current.contains(event.target)) {
+        setIsUserTypeDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleContactSubmit = (e) => {
     e.preventDefault();
     setContactSubmitted(true);
     setTimeout(() => {
       e.target.reset();
+      setSelectedUserType('');
       setContactSubmitted(false);
     }, 4000);
   };
@@ -348,7 +365,7 @@ export default function LandingPage() {
               <div className="w-full bg-white/80 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-4 sm:p-8 lg:p-0 rounded-2xl sm:rounded-3xl lg:rounded-none border border-white/50 lg:border-none shadow-lg shadow-black/5 lg:shadow-none mb-3 sm:mb-6 lg:mb-0">
                 <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] sm:text-xs font-extrabold uppercase tracking-[0.12em] sm:tracking-[0.15em] mb-2 sm:mb-6 border border-[var(--color-primary)]/20">
                   <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                  <span>{cms('hero.badgeText', 'EXPLORING AND PROTECTING OUR GROUNDWATER')}</span>
+                  <span>{cms('hero.badgeText', 'Dedicated Scientific Groundwater Survey Booking Platform')}</span>
                 </div>
 
                 <h1 className="text-[22px] sm:text-3xl md:text-4xl lg:text-[45px] xl:text-[52px] font-black leading-[1.2] lg:leading-[1.12] tracking-tight mb-2 sm:mb-5 text-[var(--color-text-primary)] font-display">
@@ -366,13 +383,18 @@ export default function LandingPage() {
 
               {/* Action Block */}
               <div className="w-full mt-2 sm:mt-4 lg:mt-6 pt-1 sm:pt-2 lg:pt-0">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3.5 sm:mb-8 max-w-lg w-full">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-4 sm:mb-8">
                   {['FIND', 'CONNECT', 'SURVEY', 'PROTECT'].map((word, i) => (
-                    <div key={i} className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-white/90 border border-[var(--color-border)] shadow-xs">
-                      <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center shrink-0">
-                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-[var(--color-primary)]" />
+                    <div 
+                      key={i} 
+                      className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/90 backdrop-blur-sm border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-[var(--color-primary)]/50 hover:shadow-md transition-all duration-200 group cursor-default"
+                    >
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center shrink-0 group-hover:bg-[var(--color-primary)] group-hover:text-white transition-all">
+                        <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
                       </div>
-                      <span className="text-[10px] sm:text-xs font-bold text-[var(--color-text-primary)] tracking-wider">{word}</span>
+                      <span className="text-[11px] sm:text-xs font-extrabold text-slate-700 tracking-wider">
+                        {word}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -382,7 +404,7 @@ export default function LandingPage() {
                     href="#apps" 
                     className="flex-1 sm:flex-initial h-11 sm:h-14 px-3 sm:px-8 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 group shadow-lg shadow-[var(--color-primary)]/20 text-center"
                   >
-                    <span>{cms('hero.cta1Label', 'Download App Now')}</span>
+                    <span>{cms('hero.cta1Label') === 'Book a Survey' ? 'Download app' : cms('hero.cta1Label', 'Download app')}</span>
                     <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform shrink-0" />
                   </a>
                   <a 
@@ -399,41 +421,37 @@ export default function LandingPage() {
             </div>
 
             {/* Right Card / Visual */}
-            <div className="lg:col-span-4 relative h-full min-h-[360px] hidden lg:flex items-center justify-center reveal animate-fade-up-delay-2">
-              <div className="relative w-full max-w-sm rounded-3xl bg-gradient-to-br from-white/90 to-white/60 p-8 border border-white/80 shadow-2xl backdrop-blur-xl">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary)] flex items-center justify-center text-white">
-                    <Droplets className="w-6 h-6" />
+            <div className="lg:col-span-4 relative h-full min-h-[auto] lg:min-h-[360px] flex items-center justify-center mt-8 sm:mt-10 lg:mt-0 w-full reveal animate-fade-up-delay-2">
+              <div className="relative w-full max-w-sm sm:max-w-md lg:max-w-sm rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/95 to-white/70 p-5 sm:p-7 lg:p-8 border border-white/80 shadow-xl lg:shadow-2xl backdrop-blur-xl">
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] flex items-center justify-center text-white shrink-0 shadow-md shadow-[var(--color-primary)]/20">
+                    <Droplets className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-base text-[var(--color-text-primary)]">Precision Survey</h3>
-                    <p className="text-xs text-[var(--color-text-secondary)]">Scientific Geoscientific Methods</p>
+                    <h3 className="font-bold text-sm sm:text-base text-[var(--color-text-primary)] leading-snug">Precision Groundwater Survey</h3>
+                    <p className="text-[11px] sm:text-xs text-[var(--color-text-secondary)]">Advanced Geophysical Methods</p>
                   </div>
                 </div>
 
-                <div className="space-y-4 text-sm text-[var(--color-text-secondary)]">
-                  <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center justify-between">
-                    <span className="font-semibold text-[var(--color-text-primary)]">Survey Accuracy</span>
-                    <span className="font-bold text-[var(--color-primary)]">Verified</span>
+                <div className="space-y-2.5 sm:space-y-3.5 text-xs sm:text-sm text-[var(--color-text-secondary)]">
+                  <div className="p-2.5 sm:p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center justify-between gap-2">
+                    <span className="font-semibold text-[var(--color-text-primary)]">Qualified Experts</span>
+                    <span className="font-bold text-[var(--color-primary)] text-[11px] sm:text-xs text-right">Screened & Approved</span>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center justify-between">
-                    <span className="font-semibold text-[var(--color-text-primary)]">Expert Qualification</span>
-                    <span className="font-bold text-[var(--color-primary)]">Certified</span>
-                  </div>
-                  <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center justify-between">
-                    <span className="font-semibold text-[var(--color-text-primary)]">Digital Report</span>
-                    <span className="font-bold text-[var(--color-primary)]">Instant</span>
+                  <div className="p-2.5 sm:p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center justify-between gap-2">
+                    <span className="font-semibold text-[var(--color-text-primary)]">Digital Reports</span>
+                    <span className="font-bold text-[var(--color-primary)] text-[11px] sm:text-xs text-right">Secure & Accessible</span>
                   </div>
                 </div>
 
                 {/* Floating Badge */}
-                <div className="mt-6 pt-5 border-t border-[var(--color-border)] flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center">
-                    <Award className="w-5 h-5" />
+                <div className="mt-4 sm:mt-6 pt-3.5 sm:pt-5 border-t border-[var(--color-border)] flex items-center gap-2.5 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <div className="text-xs">
-                    <div className="font-bold text-[var(--color-text-primary)]">100% Verified Surveyors</div>
-                    <div className="text-[var(--color-text-secondary)]">Pan India Professional Network</div>
+                  <div className="text-[11px] sm:text-xs">
+                    <div className="font-bold text-[var(--color-text-primary)]">Pan-India Network</div>
+                    <div className="text-[var(--color-text-secondary)]">Local Expertise, Wider Reach</div>
                   </div>
                 </div>
               </div>
@@ -451,7 +469,9 @@ export default function LandingPage() {
           <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
             Tailored Groundwater Solutions
           </h2>
-          <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-4 text-xs sm:text-base lg:text-lg">Specialized survey techniques designed for diverse land and water requirements.</p>
+          <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-4 text-xs sm:text-base lg:text-lg max-w-3xl mx-auto">
+            Specialized groundwater survey services for agriculture, residential, commercial and industrial needs.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 reveal">
@@ -466,8 +486,8 @@ export default function LandingPage() {
             const imgSrc = srv.image?.url || localImgs[i] || localImgs[0];
             return (
             <div key={i} className="bg-[var(--color-surface)] backdrop-blur-xl rounded-2xl sm:rounded-[32px] overflow-hidden border border-[var(--color-border)] hover:border-[var(--color-primary)]/40 hover:-translate-y-2 transition-all duration-300 group shadow-lg hover:shadow-2xl hover:shadow-[#0077B6]/15 flex flex-col h-full">
-              <div className="w-full h-40 sm:h-48 md:h-56 relative overflow-hidden shrink-0 border-b border-[var(--color-border)] bg-slate-100">
-                <img src={imgSrc} alt={srv.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="w-full aspect-[16/9] relative overflow-hidden shrink-0 border-b border-[var(--color-border)] bg-slate-100">
+                <img src={imgSrc} alt={srv.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700" />
               </div>
               <div className="p-4 sm:p-6 lg:p-7 relative z-10 flex-grow flex flex-col justify-start bg-white">
                 <h3 className="text-base sm:text-xl font-bold mb-1.5 sm:mb-2 text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)] transition-colors leading-tight">{srv.title}</h3>
@@ -581,22 +601,22 @@ export default function LandingPage() {
           <p className="text-[var(--color-text-secondary)] mt-3 sm:mt-6 text-xs sm:text-lg">Grow your business. Expand your reach. Make a bigger impact.</p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 sm:gap-12 max-w-6xl mx-auto items-start reveal">
-          <div className="space-y-4 sm:space-y-8 order-2 lg:order-1">
-            <h3 className="text-xl sm:text-3xl font-bold mb-4 sm:mb-8 text-[var(--color-text-primary)]">Why Join Jaladhaara?</h3>
-            <div className="grid gap-3 sm:gap-6">
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-10 max-w-6xl mx-auto items-start reveal">
+          <div className="space-y-3 sm:space-y-5 order-2 lg:order-1">
+            <h3 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-5 text-[var(--color-text-primary)]">Why Join Jaladhaara?</h3>
+            <div className="grid gap-2.5 sm:gap-3.5">
               {[
                 { title: 'More Genuine Client Leads', desc: 'Connect with customers looking for professional groundwater survey services.' },
                 { title: 'Professional Digital Profile', desc: 'Showcase your qualifications, expertise, experience and service areas.' },
                 { title: 'Secure Digital Payments', desc: 'Receive payments securely through the Jaladhaara platform.' },
                 { title: 'Grow Your Practice', desc: 'Expand your reach and discover new professional opportunities.' }
               ].map((b, i) => (
-                <div key={i} className="flex items-start gap-3 sm:gap-4 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 transition-all shadow-md hover:shadow-lg">
-                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-[var(--color-primary)]/15 flex items-center justify-center shrink-0">
-                    <TrendingDown className="w-4 h-4 sm:w-6 sm:h-6 text-[var(--color-primary)] rotate-180" />
+                <div key={i} className="flex items-start gap-3 sm:gap-4 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 transition-all shadow-md hover:shadow-lg">
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[var(--color-primary)]/15 flex items-center justify-center shrink-0">
+                    <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-primary)] rotate-180" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 text-[var(--color-text-primary)]">{b.title}</h4>
+                    <h4 className="font-bold text-sm sm:text-base mb-0.5 text-[var(--color-text-primary)]">{b.title}</h4>
                     <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm">{b.desc}</p>
                   </div>
                 </div>
@@ -604,21 +624,21 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="bg-[var(--color-bg)] rounded-2xl sm:rounded-[40px] p-4 sm:p-10 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/10 order-1 lg:order-2">
-            <h3 className="text-xl sm:text-3xl font-bold mb-4 sm:mb-8 text-center text-[var(--color-text-primary)]">How It Works for Experts</h3>
-            <div className="space-y-2.5 sm:space-y-6">
+          <div className="bg-[var(--color-bg)] rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-8 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/10 order-1 lg:order-2">
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3.5 sm:mb-5 text-center text-[var(--color-text-primary)]">How It Works for Experts</h3>
+            <div className="space-y-2.5 sm:space-y-3.5">
               {cms('howItWorksExperts.steps', [
                 { step: '01', title: 'Create Your Profile', desc: 'Showcase your qualifications, expertise and service areas.' },
                 { step: '02', title: 'Receive Service Requests', desc: 'Get relevant groundwater survey opportunities in your area.' },
                 { step: '03', title: 'Connect & Deliver', desc: 'Connect with customers and provide professional survey services.' },
                 { step: '04', title: 'Receive Secure Payments', desc: 'Get paid securely through the Jaladhaara platform.' }
               ]).map((s, i) => (
-                <div key={i} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
-                  <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-base shrink-0 shadow-md">
+                <div key={i} className="flex items-start gap-3 sm:gap-3.5 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
+                  <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-sm shrink-0 shadow-md">
                     {s.step}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-xs sm:text-base text-[var(--color-text-primary)] mb-0.5">{s.title}</div>
+                    <div className="font-bold text-xs sm:text-sm lg:text-base text-[var(--color-text-primary)] mb-0.5">{s.title}</div>
                     {s.desc && (
                       <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">{s.desc}</p>
                     )}
@@ -629,7 +649,7 @@ export default function LandingPage() {
 
             <Link 
               to="/vendorsignup" 
-              className="w-full mt-5 sm:mt-8 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20"
+              className="w-full mt-4 sm:mt-5 h-11 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20"
             >
               Join as an Expert
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -641,7 +661,7 @@ export default function LandingPage() {
                 setOpenFaqIndex(null);
                 document.getElementById('faqs')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="w-full mt-2.5 sm:mt-3 h-9 sm:h-10 rounded-xl text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-black/5 transition-all flex items-center justify-center gap-1.5"
+              className="w-full mt-2 sm:mt-2.5 h-8 sm:h-9 rounded-xl text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-black/5 transition-all flex items-center justify-center gap-1.5"
             >
               Have questions? Read Expert FAQs
               <ArrowRight className="w-3.5 h-3.5" />
@@ -708,7 +728,7 @@ export default function LandingPage() {
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold tracking-tight max-w-3xl mx-auto text-[var(--color-text-primary)] leading-tight">
             One platform.<br />
-            <span className="text-[var(--color-text-secondary)] font-light">Two powerful portals.</span>
+            <span className="text-[var(--color-text-secondary)] font-light">Two powerful apps.</span>
           </h2>
         </div>
 
@@ -765,20 +785,22 @@ export default function LandingPage() {
               )}
             </div>
 
-            <div className="flex flex-wrap gap-2.5 sm:gap-3 relative z-10 w-full mt-auto pt-3 sm:pt-4">
-              <Link 
-                to="/userlogin" 
-                className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3.5 bg-white text-[#0077B6] rounded-xl hover:bg-white/90 transition-all text-xs sm:text-base font-bold shadow-lg"
+            <div className="relative z-10 w-full mt-auto pt-3 sm:pt-4">
+              <a 
+                href={cms('appVideos.userPlayStoreUrl') || '#'}
+                target={cms('appVideos.userPlayStoreUrl') ? "_blank" : undefined}
+                rel={cms('appVideos.userPlayStoreUrl') ? "noopener noreferrer" : undefined}
+                onClick={(e) => {
+                  if (!cms('appVideos.userPlayStoreUrl')) {
+                    e.preventDefault();
+                    alert("Jaladhaara App will be available shortly on Google Play Store!");
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 px-5 py-3 sm:py-3.5 bg-white text-[#0077B6] rounded-xl hover:bg-white/95 hover:shadow-xl transition-all text-sm sm:text-base font-bold shadow-lg group cursor-pointer"
               >
-                Access Portal
-                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </Link>
-              <button 
-                onClick={() => alert("Mobile app download links will be available shortly on the app store.")} 
-                className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3.5 bg-black/60 text-white rounded-xl hover:bg-black/80 transition-all text-xs sm:text-base font-semibold shadow-lg border border-white/20"
-              >
-                Get App
-              </button>
+                <Download className="w-4 h-4 text-[#0077B6] group-hover:translate-y-0.5 transition-transform shrink-0" />
+                <span>Download App</span>
+              </a>
             </div>
           </div>
 
@@ -844,9 +866,9 @@ export default function LandingPage() {
               </Link>
               <Link 
                 to="/vendorsignup" 
-                className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3.5 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all text-xs sm:text-base font-semibold shadow-lg border border-white/20"
+                className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all text-xs sm:text-base font-semibold shadow-lg border border-white/20"
               >
-                Register Now
+                Register as an Expert
               </Link>
             </div>
           </div>
@@ -878,211 +900,82 @@ export default function LandingPage() {
 
           {/* Founder Profile Card */}
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/8 p-5 sm:p-7 lg:p-8 reveal">
-            {/* Top Grid: Executive ID Card & Bio Narrative */}
-            <div className="grid lg:grid-cols-12 gap-5 lg:gap-7 items-stretch">
-              
-              {/* Left Column: Executive Identity Card */}
-              <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl bg-gradient-to-br from-[#023E8A] via-[#0077B6] to-[#03045E] p-5 sm:p-6 text-white relative overflow-hidden shadow-lg border border-white/20">
-                {/* Geological waveform / contour decorative background */}
-                <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
-                <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full bg-[#7FCDFF]/20 blur-2xl pointer-events-none" />
-
-                <div className="relative z-10">
-                  {/* Top Badge */}
-                  <div className="flex items-center justify-between gap-2 mb-3.5">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-md text-[10px] sm:text-[11px] font-bold uppercase tracking-wider border border-white/20 text-white">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#90E0EF]" />
-                      Verified Leader
-                    </span>
-                    <span className="text-[10px] sm:text-[11px] font-semibold text-white/80 bg-black/20 px-2.5 py-0.5 rounded-full">
-                      Osmania Univ. Alum
-                    </span>
+            {/* Bio Narrative & Quote */}
+            <div className="flex flex-col justify-between">
+              <div>
+                {/* Header & Designation */}
+                <div className="mb-3.5">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[11px] font-bold uppercase tracking-wider mb-1.5 border border-[var(--color-primary)]/20">
+                    {cms('founder.role', 'Founder & Managing Director')}
                   </div>
-
-                  {/* Profile Visual / Monogram Emblem */}
-                  <div className="flex items-center gap-3.5 sm:gap-4 mb-4">
-                    <div className="relative shrink-0">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-white/25 to-white/10 backdrop-blur-xl border-2 border-white/40 shadow-inner flex items-center justify-center text-white font-black text-xl sm:text-2xl tracking-tight">
-                        BA
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center shadow-sm">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
-                        {cms('founder.name', 'Bommala Anjaiah')}
-                      </h3>
-                      <p className="text-[11px] sm:text-xs text-[#90E0EF] font-medium mt-0.5">
-                        {cms('founder.role', 'Founder & Managing Director')}
-                      </p>
-                      <p className="text-[10px] sm:text-[11px] text-white/80 mt-0.5">
-                        {cms('founder.subDesignation', 'Jaladhaara Groundwater Survey Pvt. Ltd.')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Key Highlights Pill Grid */}
-                  <div className="grid grid-cols-2 gap-2.5 mb-3.5">
-                    <div className="p-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15">
-                      <div className="text-lg sm:text-xl font-extrabold text-white">14+</div>
-                      <div className="text-[10px] sm:text-[11px] text-white/80 font-medium">Years Experience</div>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15">
-                      <div className="text-lg sm:text-xl font-extrabold text-[#90E0EF]">M.Sc.</div>
-                      <div className="text-[10px] sm:text-[11px] text-white/80 font-medium">Geophysics Postgrad</div>
-                    </div>
-                  </div>
-
-                  {/* Technical Competencies List */}
-                  <div className="pt-3 border-t border-white/15">
-                    <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#90E0EF] mb-2 flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5" /> Core Investigation Domains
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        'VES Sounding',
-                        'ERT Tomography',
-                        'Subsurface Mapping',
-                        'Hydrogeological Studies',
-                        'Borewell Site Assessment',
-                        'Data Interpretation'
-                      ].map((skill, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded-md bg-black/20 text-white/90 text-[10px] font-medium border border-white/10">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--color-text-primary)] tracking-tight">
+                    {cms('founder.name', 'Bommala Anjaiah')}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-medium mt-0.5">
+                    {cms('founder.subDesignation', 'Jaladhaara Groundwater Survey Pvt. Ltd.')}
+                  </p>
                 </div>
 
-                {/* Footer Note */}
-                <div className="relative z-10 mt-3.5 pt-2.5 border-t border-white/15 flex items-center justify-between text-[11px] text-white/80">
-                  <span className="flex items-center gap-1.5">
-                    <Compass className="w-3.5 h-3.5 text-[#90E0EF]" /> Pan-India Operations
+                {/* Academic & Experience Badges */}
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-[var(--color-primary)] border border-blue-100 text-xs font-bold">
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    {cms('founder.educationBadge', 'M.Sc. Geophysics – Osmania University, Hyderabad')}
                   </span>
-                  <span className="font-semibold text-white">Hyderabad, India</span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold">
+                    <Globe className="w-3.5 h-3.5" />
+                    {cms('founder.experienceBadge', '14+ Years of Professional Experience')}
+                  </span>
                 </div>
-              </div>
 
-              {/* Right Column: Bio Narrative & Quote */}
-              <div className="lg:col-span-7 flex flex-col justify-between">
-                <div>
-                  {/* Header & Designation */}
-                  <div className="mb-3">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[11px] font-bold uppercase tracking-wider mb-1 border border-[var(--color-primary)]/20">
-                      {cms('founder.role', 'Founder & Managing Director')}
+                {/* Bio Description Paragraphs */}
+                <div className="space-y-3 text-xs sm:text-sm lg:text-base text-[var(--color-text-secondary)] leading-relaxed font-normal">
+                  {cms('founder.bio', '') ? (
+                    <p className="whitespace-pre-line">{cms('founder.bio')}</p>
+                  ) : (
+                    <>
+                      <p>
+                        A Geophysics professional with over <strong className="text-[var(--color-text-primary)] font-semibold">14 years of experience</strong> in groundwater exploration and geophysical investigations, Bommala Anjaiah brings strong technical and field expertise to Jaladhaara.
+                      </p>
+                      <p>
+                        His experience includes groundwater exploration, <strong className="text-[var(--color-text-primary)] font-semibold">VES, ERT, borewell site assessment, subsurface investigation, hydrogeological studies</strong>, and <strong className="text-[var(--color-text-primary)] font-semibold">geophysical data interpretation</strong>.
+                      </p>
+                      <p>
+                        He founded Jaladhaara with a vision to make professional groundwater survey services <strong className="text-[var(--color-text-primary)] font-semibold">more accessible, transparent and technology-driven</strong>, while connecting customers with qualified groundwater experts across India.
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                {/* Vision Statement */}
+                <div className="mt-4 p-3.5 sm:p-4 rounded-xl bg-sky-50/70 border border-sky-100/80 flex items-start sm:items-center gap-3 shadow-2xs">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center shrink-0">
+                    <Rocket className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)] mb-0.5">
+                      Vision
                     </div>
-                    <h3 className="text-2xl sm:text-3xl font-black text-[var(--color-text-primary)] tracking-tight">
-                      {cms('founder.name', 'Bommala Anjaiah')}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-medium mt-0.5">
-                      {cms('founder.subDesignation', 'Jaladhaara Groundwater Survey Pvt. Ltd.')}
+                    <p className="text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] leading-snug">
+                      {cms('founder.vision', 'Building a trusted technology platform for groundwater exploration across India')}
                     </p>
                   </div>
-
-                  {/* Academic & Experience Badges */}
-                  <div className="flex flex-wrap items-center gap-2 mb-3.5">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-[var(--color-primary)] border border-blue-100 text-xs font-bold">
-                      <GraduationCap className="w-3.5 h-3.5" />
-                      {cms('founder.educationBadge', 'M.Sc. Geophysics – Osmania University, Hyderabad')}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold">
-                      <Globe className="w-3.5 h-3.5" />
-                      {cms('founder.experienceBadge', '14+ Years of Professional Experience')}
-                    </span>
-                  </div>
-
-                  {/* Bio Description Paragraphs */}
-                  <div className="space-y-2.5 text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed font-normal">
-                    {cms('founder.bio', '') ? (
-                      <p className="whitespace-pre-line">{cms('founder.bio')}</p>
-                    ) : (
-                      <>
-                        <p>
-                          A Geophysics professional with over <strong className="text-[var(--color-text-primary)] font-semibold">14 years of experience</strong> in groundwater exploration and geophysical investigations, Bommala Anjaiah brings strong technical and field expertise to Jaladhaara.
-                        </p>
-                        <p>
-                          His experience includes groundwater exploration, <strong className="text-[var(--color-text-primary)] font-semibold">VES, ERT, borewell site assessment, subsurface investigation, hydrogeological studies</strong>, and <strong className="text-[var(--color-text-primary)] font-semibold">geophysical data interpretation</strong>.
-                        </p>
-                        <p>
-                          He founded Jaladhaara with a vision to make professional groundwater survey services <strong className="text-[var(--color-text-primary)] font-semibold">more accessible, transparent and technology-driven</strong>, while connecting customers with qualified groundwater experts across India.
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Quote Block */}
-                <div className="mt-3.5 p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-blue-50/90 via-[#F4F9FF] to-white border-l-4 border-[var(--color-primary)] border border-blue-100 shadow-xs relative">
-                  <Quote className="w-6 h-6 text-[var(--color-primary)]/15 absolute top-3 right-3" />
-                  <p className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] italic leading-relaxed pr-6">
-                    {cms('founder.quote', '“Our goal is simple — help people make better-informed groundwater decisions before they drill.”')}
-                  </p>
-                  <div className="mt-1.5 text-xs font-bold text-[var(--color-primary)] flex items-center gap-1.5">
-                    <span>— {cms('founder.name', 'Bommala Anjaiah')}</span>
-                    <span className="text-[var(--color-text-secondary)] font-normal text-[11px]">• {cms('founder.role', 'Founder & Managing Director')}</span>
-                  </div>
                 </div>
               </div>
 
-            </div>
-
-            {/* Bottom Row: 3 Core Pillars (Education, Experience, Vision) */}
-            <div className="mt-5 pt-5 border-t border-[var(--color-border)] grid sm:grid-cols-3 gap-3">
-              {cms('founder.pillars', [
-                { icon: '🎓', title: 'Education', subtitle: 'M.Sc. Geophysics', desc: 'Osmania University, Hyderabad, Telangana' },
-                { icon: '🌍', title: 'Experience', subtitle: '14+ Years', desc: 'Geophysics • Groundwater Exploration • Geophysical Investigations' },
-                { icon: '🚀', title: 'Vision', subtitle: 'Technology Platform', desc: 'Pan-India Reach • Building a trusted technology platform for groundwater exploration across India' }
-              ]).map((pillar, i) => {
-                const colorMap = [
-                  { box: 'bg-blue-50/40 border-blue-100 hover:border-[var(--color-primary)]/40', badge: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
-                  { box: 'bg-emerald-50/40 border-emerald-100 hover:border-emerald-300', badge: 'bg-emerald-600/10 text-emerald-700' },
-                  { box: 'bg-sky-50/40 border-sky-100 hover:border-sky-300', badge: 'bg-sky-600/10 text-sky-700' }
-                ];
-                const c = colorMap[i % colorMap.length];
-                return (
-                  <div key={i} className={`p-3.5 rounded-xl ${c.box} border transition-colors flex flex-col justify-between`}>
-                    <div>
-                      <div className={`w-7 h-7 rounded-lg ${c.badge} flex items-center justify-center mb-2 text-sm`}>
-                        {pillar.icon || (i === 0 ? <GraduationCap className="w-4 h-4" /> : i === 1 ? <Globe className="w-4 h-4" /> : <Rocket className="w-4 h-4" />)}
-                      </div>
-                      <div className={`text-[10px] font-bold uppercase tracking-wider ${c.badge.split(' ')[1]}`}>
-                        {pillar.title}
-                      </div>
-                      <div className="text-xs sm:text-sm font-extrabold text-[var(--color-text-primary)] mt-0.5">
-                        {pillar.subtitle || pillar.title}
-                      </div>
-                    </div>
-                    <div className="text-[10px] sm:text-[11px] text-[var(--color-text-secondary)] mt-1.5 leading-snug">
-                      {pillar.desc}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Suggested CTA */}
-            <div className="mt-4 pt-4 border-t border-[var(--color-border)] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-                <a
-                  href="#services"
-                  className="h-10 sm:h-11 px-6 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-sm hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 group shadow-md shadow-[var(--color-primary)]/20"
-                >
-                  Explore Jaladhaara
-                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
-                </a>
-                <a
-                  href="#request"
-                  className="h-10 sm:h-11 px-5 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary)]/40 text-[var(--color-text-primary)] font-bold text-xs sm:text-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-xs"
-                >
-                  Request Borewell Survey
-                </a>
-              </div>
-              <div className="text-[11px] sm:text-xs text-[var(--color-text-secondary)] font-medium text-center sm:text-right hidden md:block">
-                Dedicated Scientific Groundwater Exploration Platform
+              {/* Quote Block */}
+              <div className="mt-5 p-4 sm:p-5 rounded-xl bg-gradient-to-r from-blue-50/90 via-[#F4F9FF] to-white border-l-4 border-[var(--color-primary)] border border-blue-100 shadow-xs relative">
+                <Quote className="w-6 h-6 text-[var(--color-primary)]/15 absolute top-3 right-3" />
+                <p className="text-xs sm:text-sm lg:text-base font-bold text-[var(--color-text-primary)] italic leading-relaxed pr-6">
+                  {cms('founder.quote', '“Our goal is simple — help people make better-informed groundwater decisions before they drill.”')}
+                </p>
+                <div className="mt-2 text-xs font-bold text-[var(--color-primary)] flex items-center gap-1.5">
+                  <span>— {cms('founder.name', 'Bommala Anjaiah')}</span>
+                  <span className="text-[var(--color-text-secondary)] font-normal text-[11px]">• {cms('founder.role', 'Founder & Managing Director')}</span>
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </section>
@@ -1265,7 +1158,7 @@ export default function LandingPage() {
                   name="name" 
                   required 
                   placeholder="Enter your full name" 
-                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white/80 rounded-lg sm:rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)]" 
+                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
                 />
               </div>
 
@@ -1279,7 +1172,7 @@ export default function LandingPage() {
                   name="mobile" 
                   required 
                   placeholder="Enter your 10-digit mobile number" 
-                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white/80 rounded-lg sm:rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)]" 
+                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
                 />
               </div>
 
@@ -1293,27 +1186,74 @@ export default function LandingPage() {
                   name="email" 
                   required 
                   placeholder="Enter your email address" 
-                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white/80 rounded-lg sm:rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)]" 
+                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
                 />
               </div>
 
-              <div className="space-y-1.5 sm:space-y-2">
+              <div className="space-y-1.5 sm:space-y-2 relative" ref={userTypeDropdownRef}>
                 <label htmlFor="userType" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
                   I am a <span className="text-[var(--color-primary)]">*</span>
                 </label>
-                <select 
-                  id="userType" 
+                
+                {/* Hidden input to ensure native form submission captures the field */}
+                <input 
+                  type="hidden" 
                   name="userType" 
+                  value={selectedUserType} 
                   required 
-                  defaultValue="" 
-                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white/80 rounded-lg sm:rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all text-[var(--color-text-primary)] cursor-pointer"
+                />
+
+                <button
+                  type="button"
+                  id="userType"
+                  onClick={() => setIsUserTypeDropdownOpen(prev => !prev)}
+                  className={`w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border transition-all flex items-center justify-between shadow-xs cursor-pointer text-left ${
+                    isUserTypeDropdownOpen 
+                      ? 'border-[var(--color-primary)] ring-4 ring-[var(--color-primary)]/10' 
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
                 >
-                  <option value="" disabled>Select an option</option>
-                  <option value="Customer / User">Customer / User</option>
-                  <option value="Groundwater Expert">Groundwater Expert</option>
-                  <option value="Business / Organization">Business / Organization</option>
-                  <option value="Other">Other</option>
-                </select>
+                  <span className={selectedUserType ? 'text-[var(--color-text-primary)] font-medium' : 'text-gray-400'}>
+                    {selectedUserType || 'Select an option'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                    isUserTypeDropdownOpen ? 'rotate-180 text-[var(--color-primary)]' : ''
+                  }`} />
+                </button>
+
+                {/* Dropdown Options Menu */}
+                {isUserTypeDropdownOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl shadow-slate-900/10 p-1.5 animate-fade-in">
+                    {[
+                      { value: 'Customer / User', label: 'Customer / User', desc: 'Looking for groundwater survey services' },
+                      { value: 'Groundwater Expert', label: 'Groundwater Expert', desc: 'Qualified surveyor or geologist' },
+                      { value: 'Business / Organization', label: 'Business / Organization', desc: 'Commercial or corporate inquiries' },
+                      { value: 'Other', label: 'Other', desc: 'General queries & partnerships' }
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setSelectedUserType(opt.value);
+                          setIsUserTypeDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3.5 py-2.5 rounded-lg sm:rounded-xl text-sm transition-all flex items-center justify-between group cursor-pointer ${
+                          selectedUserType === opt.value
+                            ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-semibold'
+                            : 'text-[var(--color-text-primary)] hover:bg-slate-50'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-medium text-xs sm:text-sm">{opt.label}</div>
+                          <div className="text-[11px] text-gray-400 font-normal">{opt.desc}</div>
+                        </div>
+                        {selectedUserType === opt.value && (
+                          <Check className="w-4 h-4 text-[var(--color-primary)] shrink-0 ml-2" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5 sm:space-y-2">
@@ -1326,7 +1266,7 @@ export default function LandingPage() {
                   required 
                   rows={4} 
                   placeholder="Tell us how we can help you..." 
-                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white/80 rounded-lg sm:rounded-xl border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] resize-none" 
+                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] resize-none shadow-xs" 
                 />
               </div>
 
@@ -1516,12 +1456,21 @@ export default function LandingPage() {
                     Book Survey Online
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
-                  <button 
-                    onClick={() => alert("Customer mobile app download links will be available shortly on Google Play and App Store.")}
+                  <a 
+                    href={cms('appVideos.userPlayStoreUrl') || '#'}
+                    target={cms('appVideos.userPlayStoreUrl') ? "_blank" : undefined}
+                    rel={cms('appVideos.userPlayStoreUrl') ? "noopener noreferrer" : undefined}
+                    onClick={(e) => {
+                      if (!cms('appVideos.userPlayStoreUrl')) {
+                        e.preventDefault();
+                        alert("Customer mobile app will be available shortly on Google Play Store.");
+                      }
+                    }}
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
                   >
+                    <Download className="w-3.5 h-3.5 text-[var(--color-primary)]" />
                     Download Mobile App
-                  </button>
+                  </a>
                 </>
               ) : (
                 <>
@@ -1532,12 +1481,21 @@ export default function LandingPage() {
                     Join as an Expert
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
-                  <button 
-                    onClick={() => alert("Expert mobile app download links will be available shortly on Google Play and App Store.")}
+                  <a 
+                    href={cms('appVideos.expertPlayStoreUrl') || '#'}
+                    target={cms('appVideos.expertPlayStoreUrl') ? "_blank" : undefined}
+                    rel={cms('appVideos.expertPlayStoreUrl') ? "noopener noreferrer" : undefined}
+                    onClick={(e) => {
+                      if (!cms('appVideos.expertPlayStoreUrl')) {
+                        e.preventDefault();
+                        alert("Expert mobile app will be available shortly on Google Play Store.");
+                      }
+                    }}
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
                   >
+                    <Download className="w-3.5 h-3.5 text-[var(--color-primary)]" />
                     Download Expert App
-                  </button>
+                  </a>
                   <div className="text-center pt-0.5">
                     <Link 
                       to="/vendorlogin" 

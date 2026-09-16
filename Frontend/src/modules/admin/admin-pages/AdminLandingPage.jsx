@@ -638,6 +638,20 @@ function AppVideosEditor({ data = {}, setData }) {
             </button>
           </div>
         )}
+
+        {/* Play Store Link */}
+        <div className="pt-3 border-t border-slate-200">
+          <Field 
+            label="Customer App Google Play Store URL" 
+            hint="URL opened when visitors click 'Download App' in the Customer card or footer (e.g., https://play.google.com/store/apps/details?id=com.jaladhaara.app)"
+          >
+            <TextInput
+              value={data.userPlayStoreUrl || ''}
+              onChange={val => setData(prev => ({ ...prev, userPlayStoreUrl: val }))}
+              placeholder="https://play.google.com/store/apps/details?id=com.jaladhaara.app"
+            />
+          </Field>
+        </div>
       </div>
 
       {/* Expert App Video */}
@@ -697,6 +711,20 @@ function AppVideosEditor({ data = {}, setData }) {
             </button>
           </div>
         )}
+
+        {/* Play Store Link */}
+        <div className="pt-3 border-t border-slate-200">
+          <Field 
+            label="Expert App Google Play Store URL" 
+            hint="URL opened when visitors click 'Download App' in the Expert card or footer (e.g., https://play.google.com/store/apps/details?id=com.jaladhaara.expert)"
+          >
+            <TextInput
+              value={data.expertPlayStoreUrl || ''}
+              onChange={val => setData(prev => ({ ...prev, expertPlayStoreUrl: val }))}
+              placeholder="https://play.google.com/store/apps/details?id=com.jaladhaara.expert"
+            />
+          </Field>
+        </div>
       </div>
     </div>
   );
@@ -711,7 +739,7 @@ const SECTIONS = [
   { id: 'howItWorksExperts', label: 'How It Works (Experts)', icon: '🔧' },
   { id: 'founder', label: 'Founder Profile', icon: '👨‍💼' },
   { id: 'whyChoose', label: 'Why Choose & Who For', icon: '⭐' },
-  { id: 'appVideos', label: 'App Intro Videos', icon: '🎥' },
+  { id: 'appVideos', label: 'App Downloads & Videos', icon: '📱' },
   { id: 'stats', label: 'Platform Stats', icon: '📊' },
   { id: 'faqs', label: 'FAQs', icon: '❓' },
   { id: 'footer', label: 'Footer', icon: '🔗' },
@@ -762,7 +790,9 @@ const DEFAULT_DATA = {
       title: 'Introducing Expert App',
       url: '',
       publicId: ''
-    }
+    },
+    userPlayStoreUrl: '',
+    expertPlayStoreUrl: ''
   },
   stats: [{ number: '', label: '' }, { number: '', label: '' }, { number: '', label: '' }],
   faqs: { customer: [], expert: [] },
@@ -791,7 +821,12 @@ export default function AdminLandingPage() {
             howItWorksExperts: d.howItWorksExperts || DEFAULT_DATA.howItWorksExperts,
             founder: d.founder || DEFAULT_DATA.founder,
             whyChoose: d.whyChoose || DEFAULT_DATA.whyChoose,
-            appVideos: d.appVideos || DEFAULT_DATA.appVideos,
+            appVideos: {
+              ...DEFAULT_DATA.appVideos,
+              ...(d.appVideos || {}),
+              userAppVideo: { ...DEFAULT_DATA.appVideos.userAppVideo, ...(d.appVideos?.userAppVideo || {}) },
+              expertAppVideo: { ...DEFAULT_DATA.appVideos.expertAppVideo, ...(d.appVideos?.expertAppVideo || {}) },
+            },
             stats: d.stats?.length ? d.stats : DEFAULT_DATA.stats,
             faqs: d.faqs || DEFAULT_DATA.faqs,
             footer: d.footer || DEFAULT_DATA.footer,
