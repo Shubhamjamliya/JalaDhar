@@ -57,7 +57,7 @@ export default function Navbar() {
           : 'bg-white/70 backdrop-blur-md border-b border-white/50'
       }`}
     >
-      <nav className="w-full px-6 lg:px-16 xl:px-24 2xl:px-32 h-20 flex items-center justify-between">
+      <nav className="w-full px-4 sm:px-6 lg:px-16 xl:px-24 2xl:px-32 h-16 sm:h-20 flex items-center justify-between">
         <Logo />
 
         <ul className="hidden items-center gap-4 xl:gap-7 2xl:gap-8 lg:flex">
@@ -120,7 +120,7 @@ export default function Navbar() {
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between px-6 h-20 border-b border-[var(--color-border)]">
+        <div className="flex items-center justify-between px-5 sm:px-6 h-16 sm:h-20 border-b border-[var(--color-border)]">
           <span className="text-[var(--color-text-primary)] font-bold text-lg">Menu</span>
           <button
             type="button"
