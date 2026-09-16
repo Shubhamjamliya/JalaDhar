@@ -234,6 +234,15 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/home"
+                                                                element={
+                                                                    <Navigate
+                                                                        to="/user/dashboard"
+                                                                        replace
+                                                                    />
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/dashboard"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
@@ -441,6 +450,15 @@ function App() {
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <UserSettingsPage />
                                                                     </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="*"
+                                                                element={
+                                                                    <Navigate
+                                                                        to="/user/dashboard"
+                                                                        replace
+                                                                    />
                                                                 }
                                                             />
                                                         </Routes>

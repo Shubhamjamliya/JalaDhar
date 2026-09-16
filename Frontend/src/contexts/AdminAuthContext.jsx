@@ -14,9 +14,24 @@ export const useAdminAuth = () => {
 };
 
 export const AdminAuthProvider = ({ children }) => {
-  const [admin, setAdmin] = useState(null);
-  const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem('adminAccessToken') || null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [admin, setAdmin] = useState(() => {
+    try {
+      const storedAdmin = localStorage.getItem('admin');
+      return storedAdmin && storedAdmin !== 'undefined' ? JSON.parse(storedAdmin) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [loading, setLoading] = useState(false);
 
   const refreshProfile = useCallback(async () => {
     try {
@@ -33,28 +48,17 @@ export const AdminAuthProvider = ({ children }) => {
     return null;
   }, []);
 
-  // Check for existing auth on mount
+  // Background profile sync & FCM registration on mount if authenticated
   useEffect(() => {
-    const storedToken = localStorage.getItem('adminAccessToken');
-    const storedAdmin = localStorage.getItem('admin');
-
-    if (storedToken && storedAdmin) {
+    if (token && admin) {
       try {
-        setToken(storedToken);
-        setAdmin(JSON.parse(storedAdmin));
-        // Register push token if authenticated
         registerFCMToken('admin');
-        // Synchronize fresh permissions from server
-        refreshProfile();
-      } catch (error) {
-        console.error('Error parsing stored admin:', error);
-        localStorage.removeItem('adminAccessToken');
-        localStorage.removeItem('adminRefreshToken');
-        localStorage.removeItem('admin');
+      } catch (e) {
+        console.warn('Admin FCM error:', e);
       }
+      refreshProfile();
     }
-    setLoading(false);
-  }, [refreshProfile]);
+  }, [token, admin, refreshProfile]);
 
   /**
    * Register new admin

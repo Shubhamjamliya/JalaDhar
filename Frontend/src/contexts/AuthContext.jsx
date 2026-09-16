@@ -13,30 +13,35 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem('accessToken') || null;
+    } catch {
+      return null;
+    }
+  });
 
-  // Check for existing auth on mount
+  const [user, setUser] = useState(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      return storedUser && storedUser !== 'undefined' ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  // Background registration on mount if authenticated
   useEffect(() => {
-    const storedToken = localStorage.getItem('accessToken');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedToken && storedUser) {
+    if (token && user) {
       try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        // Register push token if authenticated
         registerFCMToken('user');
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
+      } catch (e) {
+        console.warn('FCM registration error:', e);
       }
     }
-    setLoading(false);
-  }, []);
+  }, [token, user]);
 
   /**
    * Register new user

@@ -53,6 +53,7 @@ api.interceptors.request.use(
 
     // Determine which token to use based on the API endpoint
     let token = null;
+    let authRole = null;
     const url = config.url || '';
 
     // Public auth endpoints don't need tokens
@@ -69,41 +70,71 @@ api.interceptors.request.use(
       // 1. Explicit admin endpoint or active admin UI path -> use admin token
       if (url.startsWith('/admin/') || url === '/admin' || url.startsWith('/admin?') || currentPath.startsWith('/admin')) {
         token = localStorage.getItem('adminAccessToken') || localStorage.getItem('accessToken');
+        authRole = 'admin';
       }
       // 2. Explicit vendor endpoint, vendor ratings, or active vendor UI path -> use vendor token
       else if (url.startsWith('/vendors/') || url.startsWith('/ratings/my-ratings') || currentPath.startsWith('/vendor')) {
         token = localStorage.getItem('vendorAccessToken') || localStorage.getItem('accessToken');
+        authRole = 'vendor';
       }
       // 3. User endpoints or active user UI path -> use user token
-      else if (url.startsWith('/users/') || url.startsWith('/bookings/') || url.startsWith('/ratings/')) {
+      else if (url.startsWith('/users/') || url.startsWith('/user/') || url.startsWith('/bookings/') || url.startsWith('/ratings/')) {
         token = localStorage.getItem('accessToken');
+        authRole = 'user';
       }
       // 4. Shared Notification / Dispute Endpoints -> resolve via path context
       else if (url.startsWith('/notifications') || url.includes('/notifications') || url.startsWith('/disputes')) {
         if (currentPath.startsWith('/admin')) {
           token = localStorage.getItem('adminAccessToken');
+          authRole = 'admin';
         } else if (currentPath.startsWith('/vendor')) {
           token = localStorage.getItem('vendorAccessToken');
+          authRole = 'vendor';
         } else if (currentPath.startsWith('/user')) {
           token = localStorage.getItem('accessToken');
+          authRole = 'user';
         } else {
-          token = localStorage.getItem('accessToken') || localStorage.getItem('vendorAccessToken') || localStorage.getItem('adminAccessToken');
+          if (localStorage.getItem('accessToken')) {
+            token = localStorage.getItem('accessToken');
+            authRole = 'user';
+          } else if (localStorage.getItem('vendorAccessToken')) {
+            token = localStorage.getItem('vendorAccessToken');
+            authRole = 'vendor';
+          } else if (localStorage.getItem('adminAccessToken')) {
+            token = localStorage.getItem('adminAccessToken');
+            authRole = 'admin';
+          }
         }
       }
       // 5. General Fallback
       else {
         if (currentPath.startsWith('/admin')) {
           token = localStorage.getItem('adminAccessToken');
+          authRole = 'admin';
         } else if (currentPath.startsWith('/vendor')) {
           token = localStorage.getItem('vendorAccessToken');
-        } else {
+          authRole = 'vendor';
+        } else if (currentPath.startsWith('/user') || currentPath.startsWith('/booking')) {
           token = localStorage.getItem('accessToken');
+          authRole = 'user';
+        } else {
+          if (localStorage.getItem('accessToken')) {
+            token = localStorage.getItem('accessToken');
+            authRole = 'user';
+          } else if (localStorage.getItem('vendorAccessToken')) {
+            token = localStorage.getItem('vendorAccessToken');
+            authRole = 'vendor';
+          } else if (localStorage.getItem('adminAccessToken')) {
+            token = localStorage.getItem('adminAccessToken');
+            authRole = 'admin';
+          }
         }
       }
     }
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      config.__authRole = authRole;
     }
     return config;
   },
@@ -149,47 +180,35 @@ api.interceptors.response.use(
     // Handle 401 Unauthorized - Token expired or invalid
     if (error.response?.status === 401) {
       const pathname = window.location.pathname;
-      const isVendorRoute = pathname.startsWith('/vendor');
-      const isAdminRoute = pathname.startsWith('/admin');
-      const isUserRoute = pathname.startsWith('/user/') || pathname.startsWith('/booking');
+      const failedAuthRole = error.config?.__authRole;
 
-      if (isAdminRoute) {
-        // Clear admin tokens
+      if (failedAuthRole === 'admin') {
         localStorage.removeItem('adminAccessToken');
         localStorage.removeItem('adminRefreshToken');
         localStorage.removeItem('admin');
 
-        // Redirect to admin login if not already there
-        if (pathname !== '/adminlogin') {
+        if (pathname.startsWith('/admin') && pathname !== '/adminlogin') {
           window.location.href = '/adminlogin';
         }
-      } else if (isVendorRoute) {
-        // Clear vendor tokens
+      } else if (failedAuthRole === 'vendor') {
         localStorage.removeItem('vendorAccessToken');
         localStorage.removeItem('vendorRefreshToken');
         localStorage.removeItem('vendor');
 
-        // Redirect to vendor login if not already there
-        if (pathname !== '/vendorlogin' && pathname !== '/vendorsignup') {
+        if (pathname.startsWith('/vendor') && pathname !== '/vendorlogin' && pathname !== '/vendorsignup') {
           window.location.href = '/vendorlogin';
         }
-      } else if (isUserRoute) {
-        // Clear user tokens
+      } else if (failedAuthRole === 'user') {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
 
-        // Redirect to user login if not already there
-        if (pathname !== '/userlogin' && pathname !== '/usersignup') {
+        if ((pathname.startsWith('/user') || pathname.startsWith('/booking')) &&
+            pathname !== '/userlogin' && pathname !== '/usersignup') {
           window.location.href = '/userlogin';
         }
-      } else {
-        // Public pages (like '/', '/landing', '/verify/*'):
-        // Just clear stale tokens if any exist, NEVER redirect away from public page!
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
       }
+      // Critical: If no token was sent, or on non-authenticated public calls, never wipe session or redirect!
     }
 
     return Promise.reject(error);

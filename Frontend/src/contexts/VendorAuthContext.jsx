@@ -14,9 +14,24 @@ export const useVendorAuth = () => {
 };
 
 export const VendorAuthProvider = ({ children }) => {
-  const [vendor, setVendor] = useState(null);
-  const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem('vendorAccessToken') || null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [vendor, setVendor] = useState(() => {
+    try {
+      const storedVendor = localStorage.getItem('vendor');
+      return storedVendor && storedVendor !== 'undefined' ? JSON.parse(storedVendor) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [loading, setLoading] = useState(false);
   const [availabilitySettings, setAvailabilitySettings] = useState({
     allowToggle: true,
     allowRestOfToday: true,
@@ -43,28 +58,17 @@ export const VendorAuthProvider = ({ children }) => {
     }
   };
 
-
-  // Check for existing auth and load policy on mount
+  // Background registration & policy on mount if authenticated
   useEffect(() => {
-    const storedToken = localStorage.getItem('vendorAccessToken');
-    const storedVendor = localStorage.getItem('vendor');
-
-    if (storedToken && storedVendor) {
+    if (token && vendor) {
       try {
-        setToken(storedToken);
-        setVendor(JSON.parse(storedVendor));
-        // Register push token if authenticated
         registerFCMToken('vendor');
-      } catch (error) {
-        console.error('Error parsing stored vendor:', error);
-        localStorage.removeItem('vendorAccessToken');
-        localStorage.removeItem('vendorRefreshToken');
-        localStorage.removeItem('vendor');
+      } catch (e) {
+        console.warn('FCM registration error:', e);
       }
     }
-    setLoading(false);
     loadAvailabilityPolicy();
-  }, []);
+  }, [token, vendor]);
 
 
   /**

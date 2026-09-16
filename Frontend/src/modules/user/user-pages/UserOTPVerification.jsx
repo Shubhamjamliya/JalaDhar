@@ -112,7 +112,7 @@ export default function UserOTPVerification() {
                 toast.showSuccess(result.message || "Account created! Welcome to Jaladhaara.");
                 setRegistrationSuccess(true);
                 setTimeout(() => {
-                    navigate("/user/home", { replace: true });
+                    navigate("/user/dashboard", { replace: true });
                 }, 1400);
             } else {
                 toast.dismissToast(loadingToast);
