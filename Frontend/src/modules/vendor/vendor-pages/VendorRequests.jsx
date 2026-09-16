@@ -19,6 +19,7 @@ import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal, { VENDOR_REJECTION_REASONS } from "../../shared/components/InputModal";
 import OTPInputModal from "../../shared/components/OTPInputModal";
 import VendorOngoingBookingCard from "../vendor-components/VendorOngoingBookingCard";
+import ErrorBoundary from "../../shared/components/ErrorBoundary";
 import { getExpertLiveStatus } from "../../../utils/availabilityUtils";
 import {
     IoNotificationsOutline,
@@ -47,10 +48,10 @@ export default function VendorRequests() {
         const urlTab = searchParams.get("tab") || location.state?.tab;
 
         if (urlTab) {
-            const normalized = urlTab.toLowerCase().replace(/_/g, " ");
-            if (normalized.includes("progress")) return "In Progress";
+            const normalized = urlTab.toLowerCase().replace(/[_-]/g, " ");
+            if (normalized.includes("progress") || normalized.includes("active")) return "In Progress";
             if (normalized.includes("complete")) return "Completed";
-            if (normalized.includes("history")) return "History";
+            if (normalized.includes("history") || normalized.includes("cancel") || normalized.includes("reject")) return "History";
             if (normalized.includes("new") || normalized.includes("request")) return "New";
         }
         const savedTab = sessionStorage.getItem("vendor_active_tab");
@@ -69,11 +70,11 @@ export default function VendorRequests() {
     useEffect(() => {
         const urlTab = searchParams.get("tab") || location.state?.tab;
         if (urlTab) {
-            const normalized = urlTab.toLowerCase().replace(/_/g, " ");
+            const normalized = urlTab.toLowerCase().replace(/[_-]/g, " ");
             let target = "New";
-            if (normalized.includes("progress")) target = "In Progress";
+            if (normalized.includes("progress") || normalized.includes("active")) target = "In Progress";
             else if (normalized.includes("complete")) target = "Completed";
-            else if (normalized.includes("history")) target = "History";
+            else if (normalized.includes("history") || normalized.includes("cancel") || normalized.includes("reject")) target = "History";
             else if (normalized.includes("new") || normalized.includes("request")) target = "New";
 
             if (target !== activeTab) {
@@ -431,12 +432,20 @@ export default function VendorRequests() {
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Booking accepted! Visit scheduled for " + acceptScheduleTime + " on " + new Date(acceptScheduleDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }));
-                setNewRequests(
-                    newRequests.filter((req) => req._id !== bookingId)
-                );
+                const acceptedBooking = response.data?.booking;
+                setNewRequests(prev => prev.filter((req) => req._id !== bookingId));
+                if (acceptedBooking) {
+                    setConfirmedRequests(prev => {
+                        const exists = prev.some(b => (b._id || b.id) === (acceptedBooking._id || acceptedBooking.id));
+                        if (exists) {
+                            return prev.map(b => (b._id || b.id) === (acceptedBooking._id || acceptedBooking.id) ? { ...b, ...acceptedBooking } : b);
+                        }
+                        return [acceptedBooking, ...prev];
+                    });
+                }
                 // Immediately switch to the Ongoing / In-Progress tab so the expert sees it right away
-                setActiveTab('in-progress');
-                await loadAllRequests();
+                setActiveTab("In Progress");
+                await loadAllRequests(false);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to accept booking");
@@ -610,7 +619,7 @@ export default function VendorRequests() {
                             onClick={() => {
                                 setActiveTab(tab.id);
                                 if (["In Progress", "Completed", "History"].includes(tab.id)) {
-                                    setTimeout(() => loadAllRequests(), 100);
+                                    setTimeout(() => loadAllRequests(false), 50);
                                 }
                             }}
                             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-2xl transition-all duration-300 ${activeTab === tab.id
@@ -697,22 +706,23 @@ export default function VendorRequests() {
                     ) : (
                         currentRequests.map((request) => (
                             activeTab === "In Progress" ? (
-                                <VendorOngoingBookingCard
-                                    key={request._id}
-                                    booking={request}
-                                    onMarkEnRoute={handleMarkEnRoute}
-                                    onViewStatus={(id) => navigate(`/vendor/bookings/${id}`)}
-                                    onUploadReport={(b) => navigate(`/vendor/bookings/${b._id}/upload-report`)}
-                                    onVerifyStartOTP={(b) => {
-                                        setSelectedBookingId(b._id);
-                                        setShowStartOTPModal(true);
-                                    }}
-                                    onVerifyEndOTP={(b) => {
-                                        setSelectedBookingId(b._id);
-                                        setShowEndOTPModal(true);
-                                    }}
-                                    onUploadPhotos={(b) => navigate(`/vendor/bookings/${b._id}`)}
-                                />
+                                <ErrorBoundary key={request._id} title="Unable to render booking card">
+                                    <VendorOngoingBookingCard
+                                        booking={request}
+                                        onMarkEnRoute={handleMarkEnRoute}
+                                        onViewStatus={(id) => navigate(`/vendor/bookings/${id}`)}
+                                        onUploadReport={(b) => navigate(`/vendor/bookings/${b._id}/upload-report`)}
+                                        onVerifyStartOTP={(b) => {
+                                            setSelectedBookingId(b._id);
+                                            setShowStartOTPModal(true);
+                                        }}
+                                        onVerifyEndOTP={(b) => {
+                                            setSelectedBookingId(b._id);
+                                            setShowEndOTPModal(true);
+                                        }}
+                                        onUploadPhotos={(b) => navigate(`/vendor/bookings/${b._id}`)}
+                                    />
+                                </ErrorBoundary>
                             ) : (
                                 <div
                                     key={request._id}

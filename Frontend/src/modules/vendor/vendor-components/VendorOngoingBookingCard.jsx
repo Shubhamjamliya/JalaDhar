@@ -24,6 +24,7 @@ import { useToast } from "../../../hooks/useToast";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { updateVisitSchedule, getPublicNotificationSettings } from "../../../services/vendorApi";
 import WhatsAppTemplateModal from "../../shared/components/WhatsAppTemplateModal";
+import { maskPhone } from "../../../utils/phoneMasker";
 
 /**
  * Ongoing Survey Booking Card for Expert App
@@ -194,12 +195,20 @@ export default function VendorOngoingBookingCard({
 
     // Survey Date & Time
     const surveyDate = currentBooking.scheduledDate
-        ? new Date(currentBooking.scheduledDate).toLocaleDateString("en-IN", {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-            year: "numeric"
-        })
+        ? (() => {
+            try {
+                const parsed = new Date(currentBooking.scheduledDate);
+                if (isNaN(parsed.getTime())) return "Scheduled";
+                return parsed.toLocaleDateString("en-IN", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric"
+                });
+            } catch {
+                return "Scheduled";
+            }
+        })()
         : "Scheduled";
     const surveyTime = currentBooking.scheduledTime || "Time slot not specified";
     const isTimeTBD = !currentBooking.scheduledTime || currentBooking.scheduledTime === "Time TBD by Expert" || currentBooking.scheduledTime === "TBD";

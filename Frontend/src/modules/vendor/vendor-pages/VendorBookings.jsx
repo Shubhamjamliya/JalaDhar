@@ -18,6 +18,7 @@ import { handleApiError } from "../../../utils/toastHelper";
 import OTPInputModal from "../../shared/components/OTPInputModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import VendorOngoingBookingCard from "../vendor-components/VendorOngoingBookingCard";
+import ErrorBoundary from "../../shared/components/ErrorBoundary";
 
 export default function VendorBookings() {
     const navigate = useNavigate();
@@ -511,22 +512,23 @@ export default function VendorBookings() {
                     currentBookings.map((booking) => {
                         if (activeTab === "Active") {
                             return (
-                                <VendorOngoingBookingCard
-                                    key={booking._id}
-                                    booking={booking}
-                                    onMarkEnRoute={handleMarkEnRoute}
-                                    onViewStatus={(id) => navigate(`/vendor/bookings/${id}`)}
-                                    onUploadReport={(b) => navigate(`/vendor/bookings/${b._id}/upload-report`)}
-                                    onVerifyStartOTP={(b) => {
-                                        setSelectedBookingId(b._id);
-                                        setShowStartOTPModal(true);
-                                    }}
-                                    onVerifyEndOTP={(b) => {
-                                        setSelectedBookingId(b._id);
-                                        setShowEndOTPModal(true);
-                                    }}
-                                    onUploadPhotos={(b) => navigate(`/vendor/bookings/${b._id}`)}
-                                />
+                                <ErrorBoundary key={booking._id} title="Unable to render booking card">
+                                    <VendorOngoingBookingCard
+                                        booking={booking}
+                                        onMarkEnRoute={handleMarkEnRoute}
+                                        onViewStatus={(id) => navigate(`/vendor/bookings/${id}`)}
+                                        onUploadReport={(b) => navigate(`/vendor/bookings/${b._id}/upload-report`)}
+                                        onVerifyStartOTP={(b) => {
+                                            setSelectedBookingId(b._id);
+                                            setShowStartOTPModal(true);
+                                        }}
+                                        onVerifyEndOTP={(b) => {
+                                            setSelectedBookingId(b._id);
+                                            setShowEndOTPModal(true);
+                                        }}
+                                        onUploadPhotos={(b) => navigate(`/vendor/bookings/${b._id}`)}
+                                    />
+                                </ErrorBoundary>
                             );
                         }
 
