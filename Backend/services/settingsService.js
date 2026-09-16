@@ -183,7 +183,7 @@ const initializeDefaultSettings = async () => {
     },
     {
       key: 'BILLING_COMPANY_NAME',
-      value: 'Jaladhaara Hydrogeological Services Pvt. Ltd.',
+      value: 'Jaladhaara Groundwater Survey Pvt. Ltd.',
       label: 'Company Name',
       description: 'Business name shown on invoices',
       type: 'string',

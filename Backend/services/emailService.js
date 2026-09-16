@@ -127,7 +127,7 @@ const renderEmailShell = ({ title, badgeText, badgeBg = '#EFF6FF', badgeColor = 
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td align="left" style="font-size: 12px; color: #64748B; line-height: 1.5;">
-                  <strong style="color: #0F172A; font-weight: 700;">Jaladhaara Hydrogeological Services Pvt. Ltd.</strong><br>
+                  <strong style="color: #0F172A; font-weight: 700;">Jaladhaara Groundwater Survey Pvt. Ltd.</strong><br>
                   India's Premier Groundwater Survey & Borewell QA Platform<br>
                   Raipur, Chhattisgarh, India • <a href="mailto:support@jaladhaaraapp.com" style="color: #0284C7; text-decoration: none;">support@jaladhaaraapp.com</a>
                 </td>

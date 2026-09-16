@@ -26,7 +26,7 @@ const generateInvoice = async (booking) => {
         'BILLING_DECLARATION'
       ]);
 
-      const companyName = settings.BILLING_COMPANY_NAME || 'Jaladhaara Hydrogeological Services Pvt. Ltd.';
+      const companyName = settings.BILLING_COMPANY_NAME || 'Jaladhaara Groundwater Survey Pvt. Ltd.';
       const companyAddress = settings.BILLING_ADDRESS || '123, Water Tower Complex, Near Borewell Circle, Civil Lines, Raipur, Chhattisgarh - 492001';
       const companyGstin = settings.BILLING_GSTIN || '22AAAAA0000A1Z5';
       const companyPan = settings.BILLING_PAN || 'AAACJ1234F';
