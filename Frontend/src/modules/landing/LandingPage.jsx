@@ -3,7 +3,6 @@ import { getLandingContent } from '../../services/landingApi';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import './landing.css';
-import { Link } from 'react-router-dom';
 
 import heroBg from './assets/hero_new.jpg';
 import cardAgri from './assets/Agriculture.jpg';
@@ -55,7 +54,7 @@ const customerFaqs = [
   },
   {
     q: "How do I book a groundwater survey?",
-    a: "Simply download the Jaladhaara app or use our web portal, select your location, choose a verified expert, and confirm your booking."
+    a: "Simply download the Jaladhaara app from the Google Play Store or Apple App Store, select your location, choose a verified expert, and confirm your booking."
   },
   {
     q: "Who can use Jaladhaara app?",
@@ -83,7 +82,7 @@ const customerFaqs = [
   },
   {
     q: "Can groundwater survey experts join Jaladhaara?",
-    a: "Yes. Qualified, trained and eligible groundwater survey professionals can register through the Jaladhaara Expert portal and complete the verification process."
+    a: "Yes. Qualified, trained and eligible groundwater survey professionals can download the Jaladhaara Expert app and complete the verification process."
   },
   {
     q: "Which sectors does Jaladhaara serve?",
@@ -673,13 +672,13 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              <Link 
-                to="/vendorsignup" 
+              <a 
+                href="#apps" 
                 className="w-full mt-4 sm:mt-5 h-11 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20"
               >
-                Join as an Expert
+                Download Expert App
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-              </Link>
+              </a>
 
               <button
                 onClick={() => {
@@ -734,13 +733,13 @@ export default function LandingPage() {
                 Turn your professional expertise into new opportunities with Jaladhaara.
               </p>
               <div className="mt-4 sm:mt-6 flex justify-center">
-                <Link 
-                  to="/vendorsignup"
+                <a 
+                  href="#apps"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all shadow-lg shadow-[var(--color-primary)]/25 hover:shadow-xl hover:-translate-y-0.5 duration-200"
                 >
-                  Join as an Expert
+                  Download Expert App
                   <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                </Link>
+                </a>
               </div>
             </div>
           </div>
@@ -882,39 +881,20 @@ export default function LandingPage() {
                 )}
               </div>
 
-              <div className="relative z-10 w-full mt-auto pt-3 sm:pt-4 space-y-2.5">
-                <div className="flex flex-wrap gap-2.5 sm:gap-3">
-                  <Link 
-                    to="/vendorlogin" 
-                    className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-[#7FCDFF] text-[#03045E] rounded-xl hover:bg-[#7FCDFF]/90 transition-all text-xs sm:text-sm font-bold shadow-lg"
-                  >
-                    Expert Login
-                    <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </Link>
-                  <Link 
-                    to="/vendorsignup" 
-                    className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all text-xs sm:text-sm font-semibold shadow-lg border border-white/20"
-                  >
-                    Register as an Expert
-                  </Link>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 pt-0.5">
-                  <GooglePlayBadge 
-                    url={cms('appVideos.expertPlayStoreUrl')} 
-                    appName="Jaladhaara Expert App"
-                    variant="white"
-                    compact={true}
-                    className="flex-1 justify-center"
-                  />
-                  <AppStoreBadge 
-                    url={cms('appVideos.expertAppStoreUrl')} 
-                    appName="Jaladhaara Expert App"
-                    variant="glass"
-                    compact={true}
-                    className="flex-1 justify-center"
-                    showSoonBadge={true}
-                  />
-                </div>
+              <div className="relative z-10 w-full mt-auto pt-3 sm:pt-4 flex flex-col sm:flex-row gap-2.5 sm:gap-3">
+                <GooglePlayBadge 
+                  url={cms('appVideos.expertPlayStoreUrl')} 
+                  appName="Jaladhaara Expert App"
+                  variant="white"
+                  className="flex-1 justify-center"
+                />
+                <AppStoreBadge 
+                  url={cms('appVideos.expertAppStoreUrl')} 
+                  appName="Jaladhaara Expert App"
+                  variant="glass"
+                  className="flex-1 justify-center"
+                  showSoonBadge={true}
+                />
               </div>
             </div>
           </div>
@@ -1052,21 +1032,21 @@ export default function LandingPage() {
               Find, connect, survey, and plan with India's first dedicated groundwater survey booking platform.
             </p>
 
-            <div className="flex flex-row gap-2.5 sm:gap-3 w-full">
-              <Link
-                to="/userlogin"
-                className="flex-1 h-11 sm:h-12 px-3 sm:px-6 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg shadow-[var(--color-primary)]/20 text-center"
+            <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full">
+              <a
+                href="#apps"
+                className="flex-1 h-11 sm:h-12 px-4 sm:px-6 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-sm hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 text-center"
               >
-                <span>Customer Portal</span>
-                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              </Link>
-              <Link
-                to="/vendorlogin"
-                className="flex-1 h-11 sm:h-12 px-3 sm:px-6 rounded-xl bg-black text-white font-bold text-xs sm:text-base hover:bg-gray-800 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg text-center"
+                <Download className="w-4 h-4 shrink-0" />
+                <span>Download Customer App</span>
+              </a>
+              <a
+                href="#apps"
+                className="flex-1 h-11 sm:h-12 px-4 sm:px-6 rounded-xl bg-slate-900 text-white font-bold text-xs sm:text-sm hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg text-center"
               >
-                <span>Expert Portal</span>
-                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              </Link>
+                <Download className="w-4 h-4 shrink-0" />
+                <span>Download Expert App</span>
+              </a>
             </div>
           </div>
 
@@ -1531,67 +1511,41 @@ export default function LandingPage() {
 
             <div className="space-y-2">
               {activeFooterTab === 'customer' ? (
-                <>
-                  <Link 
-                    to="/userlogin" 
-                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-[var(--color-primary)] text-white text-xs sm:text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-all shadow-md shadow-[var(--color-primary)]/20"
-                  >
-                    Book Survey Online
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                  <div className="flex flex-col gap-1.5 pt-1">
-                    <GooglePlayBadge 
-                      url={cms('appVideos.userPlayStoreUrl')} 
-                      appName="Customer App"
-                      variant="dark"
-                      compact={true}
-                      className="w-full justify-center"
-                    />
-                    <AppStoreBadge 
-                      url={cms('appVideos.userAppStoreUrl')} 
-                      appName="Customer App"
-                      variant="dark"
-                      compact={true}
-                      className="w-full justify-center"
-                      showSoonBadge={true}
-                    />
-                  </div>
-                </>
+                <div className="flex flex-col gap-2">
+                  <GooglePlayBadge 
+                    url={cms('appVideos.userPlayStoreUrl')} 
+                    appName="Customer App"
+                    variant="dark"
+                    compact={true}
+                    className="w-full justify-center"
+                  />
+                  <AppStoreBadge 
+                    url={cms('appVideos.userAppStoreUrl')} 
+                    appName="Customer App"
+                    variant="dark"
+                    compact={true}
+                    className="w-full justify-center"
+                    showSoonBadge={true}
+                  />
+                </div>
               ) : (
-                <>
-                  <Link 
-                    to="/vendorsignup" 
-                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-[var(--color-primary)] text-white text-xs sm:text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-all shadow-md shadow-[var(--color-primary)]/20"
-                  >
-                    Join as an Expert
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                  <div className="flex flex-col gap-1.5 pt-1">
-                    <GooglePlayBadge 
-                      url={cms('appVideos.expertPlayStoreUrl')} 
-                      appName="Expert App"
-                      variant="dark"
-                      compact={true}
-                      className="w-full justify-center"
-                    />
-                    <AppStoreBadge 
-                      url={cms('appVideos.expertAppStoreUrl')} 
-                      appName="Expert App"
-                      variant="dark"
-                      compact={true}
-                      className="w-full justify-center"
-                      showSoonBadge={true}
-                    />
-                  </div>
-                  <div className="text-center pt-1">
-                    <Link 
-                      to="/vendorlogin" 
-                      className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] font-medium transition-colors"
-                    >
-                      Already registered? <span className="underline font-semibold text-[var(--color-primary)]">Expert Login</span>
-                    </Link>
-                  </div>
-                </>
+                <div className="flex flex-col gap-2">
+                  <GooglePlayBadge 
+                    url={cms('appVideos.expertPlayStoreUrl')} 
+                    appName="Expert App"
+                    variant="dark"
+                    compact={true}
+                    className="w-full justify-center"
+                  />
+                  <AppStoreBadge 
+                    url={cms('appVideos.expertAppStoreUrl')} 
+                    appName="Expert App"
+                    variant="dark"
+                    compact={true}
+                    className="w-full justify-center"
+                    showSoonBadge={true}
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -1777,7 +1731,7 @@ export default function LandingPage() {
                       </div>
                       <p className="text-sm sm:text-base font-semibold text-white">Video Coming Soon</p>
                       <p className="text-xs text-white/50 max-w-sm mx-auto">
-                        The intro video for this app is being updated. Please check back shortly or explore the portal directly.
+                        The intro video for this app is being updated. Please check back shortly or download the app directly.
                       </p>
                     </div>
                   );

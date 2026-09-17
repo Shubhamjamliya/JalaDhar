@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import Logo from './Logo';
 import Button from './Button';
 
@@ -8,11 +7,9 @@ const links = [
   { label: 'Home', href: '#home' },
   { label: 'Services', href: '#services' },
   { label: 'How It Works', href: '#why-us' },
-  { label: 'Download App', href: '#apps' },
   { label: 'Reviews', href: '#reviews' },
   { label: 'About Us', href: '#about' },
   { label: 'Contact Us', href: '#request' },
-  { label: 'Join as Expert', href: '/vendorsignup', isRoute: true },
 ];
 
 export default function Navbar() {
@@ -40,7 +37,7 @@ export default function Navbar() {
     );
 
     links.forEach((link) => {
-      if (!link.isRoute && link.href.startsWith('#')) {
+      if (link.href.startsWith('#')) {
         const el = document.querySelector(link.href);
         if (el) observer.observe(el);
       }
@@ -66,36 +63,27 @@ export default function Navbar() {
         <ul className="hidden items-center gap-2 xl:gap-5 2xl:gap-7 lg:flex">
           {links.map((link) => (
             <li key={link.label}>
-              {link.isRoute ? (
-                <Link
-                  to={link.href}
-                  className="relative text-[12px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors py-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] whitespace-nowrap"
-                >
-                  {link.label}
-                </Link>
-              ) : (
-                <a
-                  href={link.href}
-                  onClick={() => setActive(link.label)}
-                  className={`relative text-[12px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors py-1 whitespace-nowrap ${
-                    active === link.label
-                      ? 'text-[var(--color-text-primary)]'
-                      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                  }`}
-                >
-                  {link.label}
-                  {active === link.label && (
-                    <span className="absolute -bottom-1.5 left-0 h-[3px] w-full rounded-t-full bg-[var(--color-primary)] shadow-[0_0_8px_rgba(0,119,182,0.6)]" />
-                  )}
-                </a>
-              )}
+              <a
+                href={link.href}
+                onClick={() => setActive(link.label)}
+                className={`relative text-[12px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors py-1 whitespace-nowrap ${
+                  active === link.label
+                    ? 'text-[var(--color-text-primary)]'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
+              >
+                {link.label}
+                {active === link.label && (
+                  <span className="absolute -bottom-1.5 left-0 h-[3px] w-full rounded-t-full bg-[var(--color-primary)] shadow-[0_0_8px_rgba(0,119,182,0.6)]" />
+                )}
+              </a>
             </li>
           ))}
         </ul>
 
         <div className="hidden lg:flex items-center">
-          <Button href="#request" className="whitespace-nowrap px-4 xl:px-5 py-2.5 text-xs xl:text-sm shadow-md">
-            Book Groundwater Survey
+          <Button href="#apps" className="whitespace-nowrap px-4 xl:px-5 py-2.5 text-xs xl:text-sm shadow-md">
+            Download App
           </Button>
         </div>
 
@@ -140,38 +128,28 @@ export default function Navbar() {
           <ul className="flex flex-col gap-2">
             {links.map((link) => (
               <li key={link.label}>
-                {link.isRoute ? (
-                  <Link
-                    to={link.href}
-                    onClick={() => setOpen(false)}
-                    className="block rounded-xl px-4 py-3.5 text-base font-semibold text-[var(--color-text-secondary)] hover:bg-black/5 hover:text-[var(--color-text-primary)]"
-                  >
-                    {link.label}
-                  </Link>
-                ) : (
-                  <a
-                    href={link.href}
-                    onClick={() => {
-                      setActive(link.label);
-                      setOpen(false);
-                    }}
-                    className={`block rounded-xl px-4 py-3.5 text-base font-semibold transition-colors ${
-                      active === link.label
-                        ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                        : 'text-[var(--color-text-secondary)] hover:bg-black/5 hover:text-[var(--color-text-primary)]'
-                    }`}
-                  >
-                    {link.label}
-                  </a>
-                )}
+                <a
+                  href={link.href}
+                  onClick={() => {
+                    setActive(link.label);
+                    setOpen(false);
+                  }}
+                  className={`block rounded-xl px-4 py-3.5 text-base font-semibold transition-colors ${
+                    active === link.label
+                      ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                      : 'text-[var(--color-text-secondary)] hover:bg-black/5 hover:text-[var(--color-text-primary)]'
+                  }`}
+                >
+                  {link.label}
+                </a>
               </li>
             ))}
           </ul>
         </div>
         
         <div className="p-6 border-t border-[var(--color-border)] pb-8 flex flex-col gap-3">
-          <Button href="#request" className="w-full justify-center h-12 text-sm" onClick={() => setOpen(false)}>
-            Book Groundwater Survey
+          <Button href="#apps" className="w-full justify-center h-12 text-sm" onClick={() => setOpen(false)}>
+            Download App
           </Button>
         </div>
       </div>
