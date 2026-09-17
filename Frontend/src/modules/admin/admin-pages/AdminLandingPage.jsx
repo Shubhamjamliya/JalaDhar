@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion as Motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+const Motion = motion;
 import {
   IoImageOutline, IoSaveOutline, IoCheckmarkCircle, IoCloseCircle,
   IoRefreshOutline, IoEyeOutline, IoAddCircleOutline, IoTrashOutline,
