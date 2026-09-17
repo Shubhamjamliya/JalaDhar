@@ -233,7 +233,6 @@ export default function LandingPage() {
   const [activeVideo, setActiveVideo] = useState(null);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [activeFaqTab, setActiveFaqTab] = useState('customers');
-  const [activeFooterTab, setActiveFooterTab] = useState('customer');
   const [selectedUserType, setSelectedUserType] = useState('');
   const [isUserTypeDropdownOpen, setIsUserTypeDropdownOpen] = useState(false);
   const userTypeDropdownRef = useRef(null);
@@ -1347,9 +1346,9 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg)] pt-10 sm:pt-14 pb-8 sm:pb-10 px-4 sm:px-6 lg:px-8 xl:px-12 w-full">
-        <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10 mb-8 sm:mb-10">
+        <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-8 xl:gap-10 mb-8 sm:mb-10">
           {/* Column 1: Brand & Social */}
-          <div className="space-y-4">
+          <div className="lg:col-span-3 space-y-4">
             <div>
               <Logo />
             </div>
@@ -1381,7 +1380,7 @@ export default function LandingPage() {
           </div>
 
           {/* Column 2: Quick Links */}
-          <div>
+          <div className="lg:col-span-2">
             <h4 className="font-bold mb-3 sm:mb-4 text-[var(--color-text-primary)]">Quick Links</h4>
             <ul className="space-y-2.5">
               <li>
@@ -1423,7 +1422,7 @@ export default function LandingPage() {
           </div>
 
           {/* Column 3: Contact Us */}
-          <div>
+          <div className="lg:col-span-3">
             <h4 className="font-bold mb-3 sm:mb-4 text-[var(--color-text-primary)]">Contact Us</h4>
             <div className="space-y-2">
               <div>
@@ -1453,100 +1452,52 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Column 4: Download App (Customer & Expert) */}
-          <div className="bg-[var(--color-surface)] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-[var(--color-border)] shadow-sm flex flex-col justify-between">
-            <div>
-              {/* Audience Tab Switcher */}
-              <div className="flex p-1 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] mb-3 sm:mb-4">
-                <button
-                  type="button"
-                  onClick={() => setActiveFooterTab('customer')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
-                    activeFooterTab === 'customer'
-                      ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                  }`}
-                >
-                  For Customers
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveFooterTab('expert')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
-                    activeFooterTab === 'expert'
-                      ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                  }`}
-                >
-                  For Experts
-                </button>
-              </div>
-
-              {activeFooterTab === 'customer' ? (
-                <div>
-                  <h4 className="font-bold text-sm sm:text-base mb-1 text-[var(--color-text-primary)]">
-                    Download the Jaladhaara app
-                  </h4>
-                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-1.5">
-                    Get started Today
-                  </div>
-                  <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed mb-4 min-h-[40px]">
-                    Find verified groundwater survey experts, book your survey, and receive your digital report- all in one app.
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <h4 className="font-bold text-sm sm:text-base mb-1 text-[var(--color-text-primary)]">
-                    Download Jaladhaara Expert
-                  </h4>
-                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] mb-1.5">
-                    For Surveyors
-                  </div>
-                  <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm leading-relaxed mb-4 min-h-[40px]">
-                    Manage survey bookings, conduct field investigations, submit geoscientific digital reports, and grow your practice.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              {activeFooterTab === 'customer' ? (
-                <div className="flex flex-col gap-2">
+          {/* Column 4: App Downloads (Customer app & Expert app) */}
+          <div className="lg:col-span-4">
+            <div className="grid grid-cols-2 gap-4 sm:gap-6">
+              {/* Customer app */}
+              <div>
+                <h4 className="font-bold text-sm sm:text-base text-[var(--color-text-primary)] mb-3 sm:mb-4">
+                  Customer app
+                </h4>
+                <div className="flex flex-col gap-2.5">
                   <GooglePlayBadge 
                     url={cms('appVideos.userPlayStoreUrl')} 
-                    appName="Customer App"
+                    appName="Jaladhaara Customer App"
                     variant="dark"
-                    compact={true}
-                    className="w-full justify-center"
+                    className="w-full justify-start"
                   />
                   <AppStoreBadge 
                     url={cms('appVideos.userAppStoreUrl')} 
-                    appName="Customer App"
+                    appName="Jaladhaara Customer App"
                     variant="dark"
-                    compact={true}
-                    className="w-full justify-center"
-                    showSoonBadge={true}
+                    showSoonBadge={false}
+                    className="w-full justify-start"
                   />
                 </div>
-              ) : (
-                <div className="flex flex-col gap-2">
+              </div>
+
+              {/* Expert app */}
+              <div>
+                <h4 className="font-bold text-sm sm:text-base text-[var(--color-text-primary)] mb-3 sm:mb-4">
+                  Expert app
+                </h4>
+                <div className="flex flex-col gap-2.5">
                   <GooglePlayBadge 
                     url={cms('appVideos.expertPlayStoreUrl')} 
-                    appName="Expert App"
+                    appName="Jaladhaara Expert App"
                     variant="dark"
-                    compact={true}
-                    className="w-full justify-center"
+                    className="w-full justify-start"
                   />
                   <AppStoreBadge 
                     url={cms('appVideos.expertAppStoreUrl')} 
-                    appName="Expert App"
+                    appName="Jaladhaara Expert App"
                     variant="dark"
-                    compact={true}
-                    className="w-full justify-center"
-                    showSoonBadge={true}
+                    showSoonBadge={false}
+                    className="w-full justify-start"
                   />
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>

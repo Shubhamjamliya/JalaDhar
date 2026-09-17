@@ -31,8 +31,8 @@ export function GooglePlayLogo({ className = "w-5 h-5 sm:w-6 sm:h-6 shrink-0" })
  */
 export function AppleLogo({ className = "w-5 h-5 sm:w-6 sm:h-6 shrink-0 fill-current" }) {
   return (
-    <svg className={className} viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg">
-      <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.07-7.75-7.85-12.14-14.34-6.43-9.58-11.41-20.47-14.93-32.67-3.52-12.2-5.28-23.75-5.28-34.65 0-14.42 3.65-26.37 10.95-35.85 7.3-9.48 16.48-14.31 27.54-14.5 5.26 0 11.01 1.49 17.25 4.48 6.24 2.99 10.15 4.54 11.73 4.65 1.8 0 6.01-1.63 12.63-4.9 6.62-3.26 12.44-4.74 17.46-4.43 13.53.64 24.36 5.66 32.48 15.07-11.83 7.18-17.63 17.1-17.4 29.77.23 10.12 4.09 18.57 11.58 25.35 7.49 6.78 16.32 10.42 26.5 10.92-2.54 7.6-5.59 15.07-9.14 22.42zm-35.88-113.88c0 4.12-1.37 8.3-4.11 12.54-2.74 4.24-6.39 7.42-10.95 9.54-.74.1-1.58.15-2.53.15-.32 0-.64-.02-.95-.05-.11-.53-.16-1.11-.16-1.74 0-4.12 1.42-8.3 4.27-12.54 2.85-4.24 6.58-7.39 11.2-9.45.63-.11 1.43-.16 2.38-.16.32 0 .63.02.95.05.1.53.15 1.1.15 1.69z" />
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
     </svg>
   );
 }
@@ -56,7 +56,7 @@ export function GooglePlayBadge({
 
   const variantStyles = {
     white: 'bg-white text-slate-900 hover:bg-white/95 border border-slate-200 shadow-md hover:shadow-lg',
-    dark: 'bg-slate-900 text-white hover:bg-black border border-slate-800 shadow-md hover:shadow-xl',
+    dark: 'bg-black text-white hover:bg-neutral-900 border border-neutral-700 hover:border-neutral-500 shadow-sm',
     glass: 'bg-white/15 text-white hover:bg-white/25 border border-white/30 backdrop-blur-md shadow-md'
   }[variant] || 'bg-white text-slate-900';
 
@@ -64,10 +64,10 @@ export function GooglePlayBadge({
     <>
       <GooglePlayLogo className={compact ? 'w-4 h-4 shrink-0' : 'w-5 h-5 sm:w-6 sm:h-6 shrink-0'} />
       <div className="flex flex-col text-left leading-tight">
-        <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wider opacity-75">
+        <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wider opacity-75 whitespace-nowrap">
           GET IT ON
         </span>
-        <span className={`${compact ? 'text-xs font-bold' : 'text-xs sm:text-sm font-extrabold'} tracking-tight`}>
+        <span className={`${compact ? 'text-xs font-bold' : 'text-xs sm:text-sm font-extrabold'} tracking-tight whitespace-nowrap`}>
           Google Play
         </span>
       </div>
@@ -124,7 +124,7 @@ export function AppStoreBadge({
 
   const variantStyles = {
     white: 'bg-white text-slate-900 hover:bg-white/95 border border-slate-200 shadow-md hover:shadow-lg',
-    dark: 'bg-slate-900 text-white hover:bg-black border border-slate-800 shadow-md hover:shadow-xl',
+    dark: 'bg-black text-white hover:bg-neutral-900 border border-neutral-700 hover:border-neutral-500 shadow-sm',
     glass: 'bg-white/15 text-white hover:bg-white/25 border border-white/30 backdrop-blur-md shadow-md'
   }[variant] || 'bg-white text-slate-900';
 
@@ -132,10 +132,10 @@ export function AppStoreBadge({
     <>
       <AppleLogo className={compact ? 'w-4 h-4 shrink-0 fill-current' : 'w-5 h-5 sm:w-6 sm:h-6 shrink-0 fill-current'} />
       <div className="flex flex-col text-left leading-tight">
-        <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider opacity-75">
+        <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider opacity-75 whitespace-nowrap">
           Download on the
         </span>
-        <span className={`${compact ? 'text-xs font-bold' : 'text-xs sm:text-sm font-extrabold'} tracking-tight`}>
+        <span className={`${compact ? 'text-xs font-bold' : 'text-xs sm:text-sm font-extrabold'} tracking-tight whitespace-nowrap`}>
           App Store
         </span>
       </div>
