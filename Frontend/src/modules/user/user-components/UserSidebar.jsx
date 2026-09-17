@@ -13,7 +13,8 @@ import {
   IoAlertCircleOutline,
   IoHelpCircleOutline,
   IoSettingsOutline,
-  IoChevronForwardOutline
+  IoChevronForwardOutline,
+  IoGiftOutline
 } from "react-icons/io5";
 import { useAuth } from "../../../contexts/AuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -48,6 +49,13 @@ const menuSections = [
         to: "/user/wallet",
         Icon: IoWalletOutline,
         iconBg: "bg-emerald-500"
+      },
+      {
+        id: "rewards",
+        label: "Rewards & Benefits",
+        to: "/user/rewards",
+        Icon: IoGiftOutline,
+        iconBg: "bg-rose-500"
       },
       {
         id: "payments",

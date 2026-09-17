@@ -73,6 +73,7 @@ const VendorBookings = lazy(() => import("./modules/vendor/vendor-pages/VendorBo
 const VendorStatus = lazy(() => import("./modules/vendor/vendor-pages/VendorStatus"));
 const VendorAllBookingsStatus = lazy(() => import("./modules/vendor/vendor-pages/VendorAllBookingsStatus"));
 const VendorWallet = lazy(() => import("./modules/vendor/vendor-pages/VendorWallet"));
+const VendorRewards = lazy(() => import("./modules/vendor/vendor-pages/VendorRewards"));
 const VendorProfile = lazy(() => import("./modules/vendor/vendor-pages/VendorProfile"));
 const VendorRequests = lazy(() => import("./modules/vendor/vendor-pages/VendorRequests"));
 
@@ -385,6 +386,14 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/rewards"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorRewards />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/vendor-profile/:vendorId"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
@@ -640,6 +649,14 @@ function App() {
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <VendorWallet />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/rewards"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorRewards />
                                                                     </Suspense>
                                                                 }
                                                             />

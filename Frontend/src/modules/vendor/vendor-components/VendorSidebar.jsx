@@ -15,7 +15,9 @@ import {
     IoDocumentTextOutline,
     IoShieldCheckmarkOutline,
     IoSettingsOutline,
-    IoInformationCircleOutline
+    IoInformationCircleOutline,
+    IoGiftOutline,
+    IoChevronForwardOutline
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -86,14 +88,24 @@ export default function VendorSidebar({ isOpen, onClose }) {
             ]
         },
         {
-            title: "Earnings",
+            title: "Earnings & Benefits",
             items: [
-                { label: "Wallet", to: "/vendor/wallet", icon: IoWalletOutline, exact: true }
+                { label: "Payments & Wallet", to: "/vendor/wallet", icon: IoWalletOutline, exact: true },
+                { 
+                    label: "Rewards & Benefits", 
+                    to: "/vendor/rewards", 
+                    icon: IoGiftOutline, 
+                    exact: true,
+                    highlight: true,
+                    showChevron: true,
+                    badge: "10 Surveys"
+                }
             ]
         },
         {
-            title: "Support",
+            title: "Support & Ratings",
             items: [
+                { label: "Ratings & Reviews", to: "/vendor/reviews", icon: IoStarOutline },
                 { label: "Notifications", to: "/vendor/notifications", icon: IoNotificationsOutline },
                 { label: "Help & Support", to: "/vendor/disputes", icon: IoHelpBuoyOutline }
             ]
@@ -218,18 +230,32 @@ export default function VendorSidebar({ isOpen, onClose }) {
                                                 key={itemIdx}
                                                 to={item.to}
                                                 onClick={onClose}
-                                                className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group active:scale-[0.98] ${
+                                                className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-200 group active:scale-[0.98] ${
                                                     isActive
                                                         ? "bg-[#E3F2FD] font-bold text-[#0A84FF]"
+                                                        : item.highlight
+                                                        ? "bg-gradient-to-r from-blue-50/70 to-indigo-50/40 hover:bg-blue-50 text-slate-700 font-semibold hover:text-[#0A84FF] border border-blue-100/70"
                                                         : "hover:bg-slate-50 text-slate-600 font-semibold hover:text-slate-900"
                                                 }`}
                                             >
-                                                <Icon className={`text-base transition-colors ${
-                                                    isActive ? "text-[#0A84FF]" : "text-slate-400 group-hover:text-blue-500"
-                                                }`} />
-                                                <span className="text-xs font-semibold tracking-wide">
-                                                    {item.label}
-                                                </span>
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <Icon className={`text-base shrink-0 transition-colors ${
+                                                        isActive ? "text-[#0A84FF]" : item.highlight ? "text-[#0A84FF]" : "text-slate-400 group-hover:text-blue-500"
+                                                    }`} />
+                                                    <span className="text-xs font-semibold tracking-wide truncate">
+                                                        {item.label}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    {item.badge && (
+                                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 text-[#0A84FF]">
+                                                            {item.badge}
+                                                        </span>
+                                                    )}
+                                                    {item.showChevron && (
+                                                        <IoChevronForwardOutline className="text-xs text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                                                    )}
+                                                </div>
                                             </NavLink>
                                         );
                                     })}
