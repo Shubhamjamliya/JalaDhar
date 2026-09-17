@@ -79,27 +79,33 @@ function getEmbedUrl(rawUrl) {
   const trimmed = rawUrl.trim();
   if (!trimmed) return null;
 
-  // YouTube match
-  const ytMatch = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/i);
+  // YouTube Shorts are always vertical 9:16
+  const isShorts = /youtube\.com\/shorts\//.test(trimmed);
+
+  // YouTube match (including Shorts)
+  const ytMatch = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\/\w-]{11})/i);
   if (ytMatch) {
     return {
       type: 'youtube',
+      isPortrait: isShorts,
       url: `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&rel=0&modestbranding=1`
     };
   }
 
-  // Vimeo match
-  const vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+  // Vimeo match (always landscape by default)
+  const vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?([0-9]+)/i);
   if (vimeoMatch) {
     return {
       type: 'vimeo',
+      isPortrait: false,
       url: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`
     };
   }
 
-  // Direct video file or URL
+  // Direct video file — orientation resolved later via onLoadedMetadata
   return {
     type: 'video',
+    isPortrait: null, // null = unknown until metadata loads
     url: trimmed
   };
 }
@@ -107,7 +113,41 @@ function getEmbedUrl(rawUrl) {
 export default function LandingPage() {
   const appsScrollRef = useRef(null);
   const [activeVideo, setActiveVideo] = useState(null);
+  // 'landscape' | 'portrait' | 'detecting' — drives modal shape
+  const [videoOrientation, setVideoOrientation] = useState('landscape');
   const [landingContent, setLandingContent] = useState(null);
+
+  /** Open modal: immediately set orientation from URL hint, or 'detecting' for raw files */
+  const openVideo = useCallback((videoData) => {
+    const embed = getEmbedUrl(videoData?.url);
+    if (embed?.isPortrait === true) {
+      setVideoOrientation('portrait');
+    } else if (embed?.isPortrait === false) {
+      setVideoOrientation('landscape');
+    } else {
+      // null = direct video file; orientation resolved in onLoadedMetadata
+      setVideoOrientation('detecting');
+    }
+    setActiveVideo(videoData);
+  }, []);
+
+  const closeVideo = useCallback(() => {
+    setActiveVideo(null);
+    setVideoOrientation('landscape');
+  }, []);
+
+  // ESC to close + body scroll lock while modal is open
+  useEffect(() => {
+    if (!activeVideo) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => { if (e.key === 'Escape') closeVideo(); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [activeVideo, closeVideo]);
 
   // Fetch CMS content once on mount — gracefully falls back to hardcoded defaults if unavailable
   useEffect(() => {
@@ -375,18 +415,6 @@ export default function LandingPage() {
                   <div className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/20 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
                     For Customers
                   </div>
-                  {cms('appVideos.userAppVideo.enabled', true) && (
-                    <button
-                      onClick={() => setActiveVideo({
-                        title: cms('appVideos.userAppVideo.title', 'Introducing User App'),
-                        url: cms('appVideos.userAppVideo.url', '')
-                      })}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/30 text-[11px] sm:text-xs font-semibold text-white transition-all hover:scale-105"
-                    >
-                      <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current text-[#7FCDFF]" />
-                      <span>Watch Intro Video</span>
-                    </button>
-                  )}
                 </div>
                 <h3 className="text-xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-2.5 text-white leading-tight">Jaladhaara App</h3>
                 <p className="text-white/80 text-xs sm:text-base leading-relaxed mb-3.5 sm:mb-5 max-w-md">
@@ -396,7 +424,7 @@ export default function LandingPage() {
                 {/* Video Preview Banner */}
                 {cms('appVideos.userAppVideo.enabled', true) && (
                   <div 
-                    onClick={() => setActiveVideo({
+                    onClick={() => openVideo({
                       title: cms('appVideos.userAppVideo.title', 'Introducing User App'),
                       url: cms('appVideos.userAppVideo.url', '')
                     })}
@@ -430,9 +458,8 @@ export default function LandingPage() {
                 <AppStoreBadge 
                   url={cms('appVideos.userAppStoreUrl')} 
                   appName="Jaladhaara App"
-                  variant="glass"
+                  variant="white"
                   className="flex-1 justify-center"
-                  showSoonBadge={true}
                 />
               </div>
             </div>
@@ -444,18 +471,6 @@ export default function LandingPage() {
                   <div className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/20 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
                     For Surveyors
                   </div>
-                  {cms('appVideos.expertAppVideo.enabled', true) && (
-                    <button
-                      onClick={() => setActiveVideo({
-                        title: cms('appVideos.expertAppVideo.title', 'Introducing Expert App'),
-                        url: cms('appVideos.expertAppVideo.url', '')
-                      })}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/30 text-[11px] sm:text-xs font-semibold text-white transition-all hover:scale-105"
-                    >
-                      <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current text-[#90E0EF]" />
-                      <span>Watch Intro Video</span>
-                    </button>
-                  )}
                 </div>
                 <h3 className="text-xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-2.5 text-white leading-tight">Jaladhaara <span className="text-[#90E0EF]">Expert</span></h3>
                 <p className="text-white/80 text-xs sm:text-base leading-relaxed mb-3.5 sm:mb-5 max-w-md">
@@ -465,7 +480,7 @@ export default function LandingPage() {
                 {/* Video Preview Banner */}
                 {cms('appVideos.expertAppVideo.enabled', true) && (
                   <div 
-                    onClick={() => setActiveVideo({
+                    onClick={() => openVideo({
                       title: cms('appVideos.expertAppVideo.title', 'Introducing Expert App'),
                       url: cms('appVideos.expertAppVideo.url', '')
                     })}
@@ -499,9 +514,8 @@ export default function LandingPage() {
                 <AppStoreBadge 
                   url={cms('appVideos.expertAppStoreUrl')} 
                   appName="Jaladhaara Expert App"
-                  variant="glass"
+                  variant="white"
                   className="flex-1 justify-center"
-                  showSoonBadge={true}
                 />
               </div>
             </div>
@@ -587,74 +601,95 @@ export default function LandingPage() {
       {/* Shared Footer with Store Badges, Quick Links & Policy Modals */}
       <Footer cms={cms} />
       {/* Video Modal */}
-      {activeVideo && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md transition-all duration-300"
-          onClick={() => setActiveVideo(null)}
-        >
-          <div 
-            className="relative w-full max-w-4xl bg-slate-900 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col animate-fade-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-white/10 bg-slate-950/60">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-primary)] animate-pulse" />
-                <h3 className="text-white font-bold text-sm sm:text-base">{activeVideo.title}</h3>
-              </div>
-              <button
-                onClick={() => setActiveVideo(null)}
-                className="p-1.5 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                aria-label="Close video"
-              >
-                <X className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-            </div>
+      {activeVideo && (() => {
+        const embed = getEmbedUrl(activeVideo.url);
+        const isPortrait = videoOrientation === 'portrait';
 
-            {/* Video Player */}
-            <div className="relative w-full aspect-video bg-black flex items-center justify-center">
-              {(() => {
-                const embed = getEmbedUrl(activeVideo.url);
-                if (!embed) {
-                  return (
-                    <div className="p-8 text-center text-white/70 space-y-3">
-                      <div className="w-12 h-12 mx-auto rounded-full bg-white/10 flex items-center justify-center text-white/50">
-                        <Play className="w-6 h-6" />
-                      </div>
-                      <p className="text-sm sm:text-base font-semibold text-white">Video Coming Soon</p>
-                      <p className="text-xs text-white/50 max-w-sm mx-auto">
-                        The intro video for this app is being updated. Please check back shortly or download the app directly.
-                      </p>
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md"
+            onClick={closeVideo}
+            role="dialog"
+            aria-modal="true"
+            aria-label={activeVideo.title}
+          >
+            <div
+              className={[
+                'relative w-full bg-slate-900 rounded-2xl sm:rounded-3xl overflow-hidden',
+                'shadow-2xl border border-white/10 flex flex-col animate-fade-up transition-all duration-300',
+                isPortrait ? 'max-w-[360px] sm:max-w-[400px]' : 'max-w-4xl',
+              ].join(' ')}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-3.5 border-b border-white/10 bg-slate-950/70 backdrop-blur-sm shrink-0">
+                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 pr-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-primary)] animate-pulse shrink-0" />
+                  <h3 className="text-white font-bold text-xs sm:text-sm truncate">{activeVideo.title}</h3>
+                </div>
+                <button
+                  onClick={closeVideo}
+                  className="p-1.5 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+                  aria-label="Close video"
+                >
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+
+              {/* Video Player — aspect ratio adapts to detected orientation */}
+              <div
+                className={[
+                  'relative w-full bg-black flex items-center justify-center overflow-hidden',
+                  isPortrait ? 'aspect-[9/16] max-h-[78vh]' : 'aspect-video',
+                ].join(' ')}
+              >
+                {videoOrientation === 'detecting' && (
+                  // Spinner shown while direct video metadata loads
+                  <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                    <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  </div>
+                )}
+
+                {!embed ? (
+                  <div className="p-8 text-center text-white/70 space-y-3">
+                    <div className="w-12 h-12 mx-auto rounded-full bg-white/10 flex items-center justify-center text-white/50">
+                      <Play className="w-6 h-6" />
                     </div>
-                  );
-                }
-                if (embed.type === 'youtube' || embed.type === 'vimeo') {
-                  return (
-                    <iframe
-                      src={embed.url}
-                      title={activeVideo.title}
-                      className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
-                  );
-                }
-                return (
+                    <p className="text-sm sm:text-base font-semibold text-white">Video Coming Soon</p>
+                    <p className="text-xs text-white/50 max-w-sm mx-auto">
+                      The intro video for this app is being updated. Please check back shortly or download the app directly.
+                    </p>
+                  </div>
+                ) : (embed.type === 'youtube' || embed.type === 'vimeo') ? (
+                  <iframe
+                    src={embed.url}
+                    title={activeVideo.title}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                ) : (
                   <video
                     src={embed.url}
                     controls
                     autoPlay
                     playsInline
                     className="w-full h-full object-contain"
+                    onLoadedMetadata={(e) => {
+                      const { videoWidth, videoHeight } = e.currentTarget;
+                      if (videoWidth && videoHeight) {
+                        setVideoOrientation(videoHeight > videoWidth ? 'portrait' : 'landscape');
+                      }
+                    }}
                   >
                     Your browser does not support HTML5 video playback.
                   </video>
-                );
-              })()}
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

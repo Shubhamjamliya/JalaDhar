@@ -114,7 +114,7 @@ export function AppStoreBadge({
   variant = 'white', // 'white' | 'dark' | 'glass'
   className = '',
   compact = false,
-  showSoonBadge = true
+  showSoonBadge = false
 }) {
   const handleClick = (e) => {
     if (!url) {
