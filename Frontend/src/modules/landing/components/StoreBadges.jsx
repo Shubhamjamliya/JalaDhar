@@ -74,7 +74,10 @@ export function GooglePlayBadge({
     </>
   );
 
-  const baseClasses = `inline-flex items-center gap-2.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-200 cursor-pointer group select-none ${variantStyles} ${className}`;
+  const padClasses = compact 
+    ? 'gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2' 
+    : 'gap-2.5 px-3.5 sm:px-4 py-2 sm:py-2.5';
+  const baseClasses = `inline-flex items-center ${padClasses} rounded-xl transition-all duration-200 cursor-pointer group select-none ${variantStyles} ${className}`;
 
   if (url) {
     return (
@@ -147,7 +150,10 @@ export function AppStoreBadge({
     </>
   );
 
-  const baseClasses = `inline-flex items-center gap-2.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-200 cursor-pointer group select-none ${variantStyles} ${className}`;
+  const padClasses = compact 
+    ? 'gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2' 
+    : 'gap-2.5 px-3.5 sm:px-4 py-2 sm:py-2.5';
+  const baseClasses = `inline-flex items-center ${padClasses} rounded-xl transition-all duration-200 cursor-pointer group select-none ${variantStyles} ${className}`;
 
   if (url) {
     return (
