@@ -21,7 +21,9 @@ import {
   TrendingDown,
   Award,
   Clock,
-  CreditCard
+  CreditCard,
+  CheckCircle,
+  HelpCircle
 } from 'lucide-react';
 
 const customerSteps = [
@@ -90,28 +92,104 @@ const expertSteps = [
   }
 ];
 
-const faqs = [
+const customerFaqs = [
   {
-    q: 'How long does an on-site groundwater survey take?',
-    a: 'A standard agricultural or residential geophysical survey typically takes 1 to 3 hours depending on property size, terrain, and the geophysical method used (VES, ERT, or electromagnetic scanning).'
+    q: "What is Jaladhaara?",
+    a: "Jaladhaara is India's first dedicated groundwater survey booking platform that connects customers with verified and trained experts for conducting scientific borewell surveys."
   },
   {
-    q: 'What should the property owner prepare prior to the expert’s arrival?',
-    a: 'Ensure clear access to the property, approximate boundary markings, and information on any existing or neighboring borewells. For electrical resistivity sounding (VES), having access to a small amount of water to moisten dry electrode contact points can be helpful.'
+    q: "How do I book a groundwater survey?",
+    a: "Simply download the Jaladhaara app from the Google Play Store or Apple App Store, select your location, choose a verified expert, and confirm your booking."
   },
   {
-    q: 'How are survey charges determined?',
-    a: 'Charges are fixed transparently according to property type, acreage, package tier (single-point vs multi-point), and required geophysical methodology. There are no hidden fees.'
+    q: "Who can use Jaladhaara app?",
+    a: "Jaladhaara is designed for farmers, home owners, industries, commercial real estate developers, institutions and anyone planning to drill a borewell."
   },
   {
-    q: 'What are the eligibility criteria for experts to join Jaladhaara?',
-    a: 'Experts must hold formal academic degrees in Geophysics, Geology, Earth Sciences, or Hydrogeology, possess calibrated electronic survey instruments (VES, ERT, PQWT, ADMT), and pass our verification screening.'
+    q: "What survey methods are available?",
+    a: "Our experts conduct Geophysical Investigations using advanced scientific methods such as Electrical resistivity, PQWT, ADMT, 3D locator and other approved groundwater survey techniques depending on the site requirements."
+  },
+  {
+    q: "Can Jaladhaara guarantee borewell success?",
+    a: "No. Groundwater occurrence depends on natural geological conditions. Jaladhaara connects customers with verified experts who use geoscientific survey methods to drastically improve borewell planning and reduce dry-bore risks."
+  },
+  {
+    q: "How are experts verified?",
+    a: "Experts undergo a strict verification process based on their qualifications, field experience, years of service, identity, and background documentation before joining the platform."
+  },
+  {
+    q: "How do I pay for the survey?",
+    a: "Payments are made securely through the Jaladhaara platform using standard digital payment options (UPI, Net Banking, Cards)."
+  },
+  {
+    q: "Will I receive a survey report?",
+    a: "Yes. The expert will provide a comprehensive digital survey report through the Jaladhaara platform after completing the on-site survey."
+  },
+  {
+    q: "Can groundwater survey experts join Jaladhaara?",
+    a: "Yes. Qualified, trained and eligible groundwater survey professionals can download the Jaladhaara Expert app and complete the verification process."
+  },
+  {
+    q: "Which sectors does Jaladhaara serve?",
+    a: "Jaladhaara provides bookings for groundwater survey services for:\n1. Agriculture\n2. Residential\n3. Industrial\n4. Commercial (including open plot ventures, gated communities, and real estate developments)"
+  },
+  {
+    q: "Is Jaladhaara available across India?",
+    a: "Jaladhaara is building a nationwide network of verified and trained groundwater survey experts to serve customers across India."
+  },
+  {
+    q: "How can I contact Jaladhaara?",
+    a: "You can contact us through the Jaladhaara app, website, email, phone or WhatsApp for booking assistance and support."
+  }
+];
+
+const expertFaqs = [
+  {
+    q: "What is an Agriculture Groundwater Survey?",
+    a: "An Agriculture Groundwater Survey is conducted for agricultural land and farming activities, including crop fields, plantations, orchards, nurseries and other agricultural properties, to assess groundwater conditions and identify a suitable borewell drilling location."
+  },
+  {
+    q: "What is a Household Groundwater Survey?",
+    a: "A Household Groundwater Survey is conducted for residential properties, including individual houses, residential plots, villas, apartments and residential layouts, to assess the site's groundwater conditions and identify a suitable location for borewell drilling for household water requirements."
+  },
+  {
+    q: "What is a Commercial Groundwater Survey?",
+    a: "A Commercial Groundwater Survey is conducted for properties used for commercial activities, including shops, offices, hotels, restaurants, hospitals, schools, colleges, commercial complexes, malls, apartments used for commercial purposes and other business establishments, to identify suitable borewell drilling locations."
+  },
+  {
+    q: "What is an Industrial Groundwater Survey?",
+    a: "An Industrial Groundwater Survey is conducted for industrial and manufacturing properties, including factories, manufacturing units, industrial plants, warehouses, processing units, industrial parks and other industrial facilities, to assess groundwater conditions and identify suitable borewell drilling locations."
+  },
+  {
+    q: "What should I assess during the survey?",
+    a: "Assess the site using applicable groundwater exploration methods, considering geological, geophysical and subsurface conditions and relevant groundwater indicators, and identify the most suitable drilling location."
+  },
+  {
+    q: "What information should I provide in the survey report?",
+    a: "Record the survey findings, recommended drilling point, estimated drilling depth where technically feasible, observations, applicable technical details and required site evidence as specified in the app."
+  },
+  {
+    q: "What evidence is required after completing the survey?",
+    a: "Submit the required site photographs, survey observations, location details and other supporting evidence through the Jaladhaara app as applicable to the booking."
+  },
+  {
+    q: "Can I recommend multiple drilling points?",
+    a: "Yes, where the customer's selected package includes multiple points. Each recommended point should be clearly identified and documented in the survey report."
+  },
+  {
+    q: "Can I guarantee water or borewell success?",
+    a: "No. You must not guarantee groundwater availability, yield, quality, drilling depth or borewell success. The report should reflect your professional assessment based on the survey findings."
+  },
+  {
+    q: "Is borewell drilling part of my responsibility?",
+    a: "No. Your responsibility is to conduct the assigned groundwater survey professionally and submit the required findings and report through Jaladhaara. Borewell drilling is a separate activity arranged by the customer."
   }
 ];
 
 export default function HowItWorksPage() {
   const { cms } = useLandingContent();
   const [activeTab, setActiveTab] = useState('customers'); // 'customers' | 'experts'
+  const [faqTab, setFaqTab] = useState('customers');
   const [openFaq, setOpenFaq] = useState(null);
 
   useEffect(() => {
@@ -120,6 +198,7 @@ export default function HowItWorksPage() {
   }, []);
 
   const steps = activeTab === 'customers' ? customerSteps : expertSteps;
+  const currentFaqs = faqTab === 'customers' ? customerFaqs : expertFaqs;
 
   return (
     <div className="landing-page-root min-h-screen text-[var(--color-text-primary)] selection:bg-[var(--color-primary)] selection:text-white flex flex-col justify-between">
@@ -218,6 +297,143 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
+        {/* Why Choose Jaladhaara & Who Is It For (Customers View) */}
+        {activeTab === 'customers' && (
+          <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-7xl mx-auto mb-16 sm:mb-20">
+            <div className="bg-[var(--color-surface)] backdrop-blur-xl rounded-3xl p-6 sm:p-10 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/5">
+              <div className="max-w-5xl mx-auto mb-10 text-center">
+                <h3 className="text-xl sm:text-3xl font-bold mb-3 text-[var(--color-text-primary)]">
+                  {cms('whyChoose.title', 'Why Choose Jaladhaara?')}
+                </h3>
+                <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] max-w-2xl mx-auto mb-6">
+                  {cms('whyChoose.subtitle', 'Built to replace uncertainty with scientific verification, digital transparency, and direct expert access.')}
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {cms('whyChoose.items', [
+                    'Verified Experts',
+                    'Live Expert Tracking',
+                    'Transparent Pricing',
+                    'Digital Reports',
+                    'Secure & Reliable'
+                  ]).map((benefit, i) => (
+                    <div 
+                      key={i} 
+                      className="flex items-center justify-center sm:justify-start gap-2.5 p-3.5 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-xs hover:border-[var(--color-primary)]/50 transition-all last:col-span-2 md:last:col-span-1"
+                    >
+                      <CheckCircle className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
+                      <span className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="max-w-4xl mx-auto text-center pt-8 border-t border-[var(--color-border)]">
+                <h4 className="text-lg sm:text-xl font-bold mb-3 text-[var(--color-text-primary)]">
+                  {cms('whyChoose.whoForTitle', 'Who Is Jaladhaara For?')}
+                </h4>
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+                  {cms('whyChoose.whoForCategories', [
+                    'Farmers',
+                    'Homeowners',
+                    'Industries',
+                    'Builders',
+                    'Institutions',
+                    'Commercial'
+                  ]).map((cat, i) => (
+                    <span 
+                      key={i} 
+                      className="px-4 py-2 rounded-full bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] shadow-xs"
+                    >
+                      {cat}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Why Join for Professionals (Experts View) */}
+        {activeTab === 'experts' && (
+          <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-7xl mx-auto mb-16 sm:mb-20">
+            <div className="bg-[var(--color-surface)] backdrop-blur-xl rounded-3xl p-6 sm:p-10 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/5">
+              <div className="text-center mb-8">
+                <h3 className="text-xl sm:text-3xl font-bold text-[var(--color-text-primary)] mb-2">
+                  Why Join Jaladhaara as a Groundwater Expert?
+                </h3>
+                <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+                  Grow your independent consulting practice with genuine leads, digital scheduling, and guaranteed payouts.
+                </p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  {
+                    title: 'More Genuine Client Leads',
+                    desc: 'Connect directly with customers actively seeking professional borewell surveys in your service districts.'
+                  },
+                  {
+                    title: 'Professional Digital Profile',
+                    desc: 'Showcase your degrees, instrument specializations, experience, and verified customer reviews.'
+                  },
+                  {
+                    title: 'Secure Digital Payments',
+                    desc: 'No chasing customer payments. Advance deposits are held securely and released directly to your account.'
+                  },
+                  {
+                    title: 'Grow Your Practice',
+                    desc: 'Expand your operating territory and build a scalable geoscientific reputation backed by our platform.'
+                  }
+                ].map((item, i) => (
+                  <div key={i} className="p-5 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-xs">
+                    <div className="w-9 h-9 rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mb-3">
+                      <TrendingDown className="w-5 h-5 rotate-180" />
+                    </div>
+                    <h4 className="font-bold text-sm sm:text-base text-[var(--color-text-primary)] mb-1.5">{item.title}</h4>
+                    <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Who Can Join Jaladhaara? */}
+              <div className="max-w-4xl mx-auto mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-[var(--color-border)] text-center">
+                <h4 className="text-lg sm:text-2xl font-bold mb-2 text-[var(--color-text-primary)]">
+                  Who Can Join Jaladhaara?
+                </h4>
+                <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm max-w-xl mx-auto mb-5">
+                  Open to verified and experienced groundwater professionals across India.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6">
+                  {[
+                    'Hydrogeologists',
+                    'Geophysicists',
+                    'Groundwater Professionals',
+                    'Water Resource Consultants',
+                    'Qualified Earth Science Professionals'
+                  ].map((prof, i) => (
+                    <div 
+                      key={i} 
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] shadow-xs"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5 text-[var(--color-primary)] shrink-0" />
+                      <span>{prof}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-blue-50/70 p-5 rounded-2xl border border-blue-100 max-w-2xl mx-auto">
+                  <h5 className="font-bold text-sm sm:text-base text-[var(--color-text-primary)] mb-1">
+                    Your Expertise. Your Opportunities.
+                  </h5>
+                  <p className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
+                    Turn your professional expertise into new opportunities with Jaladhaara.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* The 4-Point Expert Quality Standard */}
         <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-6xl mx-auto mb-16 sm:mb-20">
           <div className="bg-gradient-to-br from-[#011E36] to-[#023E8A] text-white rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
@@ -265,28 +481,52 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        {/* FAQs Accordion */}
+        {/* Complete FAQs Accordion (Both Customer & Expert Categories) */}
         <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-4xl mx-auto mb-16 sm:mb-20">
           <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)]">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs font-bold uppercase tracking-wider mb-2 border border-[var(--color-primary)]/20">
+              <HelpCircle className="w-3.5 h-3.5" />
               Frequently Asked Questions
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)]">
+              Got Questions? We Have Answers.
             </h2>
             <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] mt-1">
-              Common questions about booking and surveying with Jaladhaara.
+              Select an audience category below to read common questions.
             </p>
+
+            {/* FAQ Category Selector */}
+            <div className="mt-5 inline-flex p-1 rounded-xl bg-slate-200/70 border border-[var(--color-border)]">
+              <button
+                onClick={() => { setFaqTab('customers'); setOpenFaq(null); }}
+                className={`px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+                  faqTab === 'customers' ? 'bg-white text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-secondary)]'
+                }`}
+              >
+                Customer FAQs ({customerFaqs.length})
+              </button>
+              <button
+                onClick={() => { setFaqTab('experts'); setOpenFaq(null); }}
+                className={`px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+                  faqTab === 'experts' ? 'bg-white text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-secondary)]'
+                }`}
+              >
+                Expert FAQs ({expertFaqs.length})
+              </button>
+            </div>
           </div>
 
           <div className="space-y-3">
-            {faqs.map((faq, i) => {
+            {currentFaqs.map((faq, i) => {
               const isOpen = openFaq === i;
               return (
                 <div
                   key={i}
-                  className="border border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md rounded-2xl overflow-hidden shadow-sm"
+                  className="border border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md rounded-2xl overflow-hidden shadow-sm transition-all"
                 >
                   <button
                     onClick={() => setOpenFaq(isOpen ? null : i)}
-                    className="w-full text-left px-5 py-4 flex items-center justify-between focus:outline-none"
+                    className="w-full text-left px-5 py-4 flex items-center justify-between focus:outline-none cursor-pointer"
                   >
                     <span className="font-bold text-sm sm:text-base text-[var(--color-text-primary)] pr-4">
                       {faq.q}
@@ -298,42 +538,13 @@ export default function HowItWorksPage() {
                     />
                   </button>
                   {isOpen && (
-                    <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed border-t border-[var(--color-border)]/50">
+                    <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed border-t border-[var(--color-border)]/50 whitespace-pre-line">
                       {faq.a}
                     </div>
                   )}
                 </div>
               );
             })}
-          </div>
-        </section>
-
-        {/* Dual CTA Section */}
-        <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-6xl mx-auto">
-          <div className="bg-gradient-to-r from-[#011E36] via-[#023E8A] to-[#0077B6] rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden text-center">
-            <div className="max-w-3xl mx-auto relative z-10">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-4">
-                Get Started on Jaladhaara Today
-              </h2>
-              <p className="text-white/85 text-sm sm:text-base leading-relaxed mb-8 max-w-xl mx-auto">
-                Download the Customer App to find water scientifically, or download the Expert App to grow your professional survey practice.
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Link
-                  to="/#apps"
-                  className="px-6 py-3.5 rounded-xl bg-white text-[var(--color-primary)] font-bold text-sm shadow-xl hover:bg-slate-100 hover:scale-105 transition-all inline-flex items-center gap-2"
-                >
-                  Download Mobile Apps
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  to="/contact"
-                  className="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-sm backdrop-blur-md hover:scale-105 transition-all inline-flex items-center gap-2"
-                >
-                  Contact Support
-                </Link>
-              </div>
-            </div>
           </div>
         </section>
       </main>

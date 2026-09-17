@@ -77,7 +77,7 @@ export const NotificationProvider = ({ children }) => {
 
   // Initialize Socket.io connection
   useEffect(() => {
-    const isPublicRoute = pathname === '/' || pathname === '/landing' || pathname === '/about' || pathname === '/services' || pathname === '/how-it-works' || pathname === '/contact' || pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
+    const isPublicRoute = pathname === '/' || pathname === '/landing' || pathname === '/about' || pathname === '/services' || pathname === '/how-it-works' || pathname === '/faqs' || pathname === '/contact' || pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
 
     if (!isAuthenticated || !currentUser || isPublicRoute) {
       // Disconnect if not authenticated or on public routes
@@ -363,7 +363,7 @@ export const NotificationProvider = ({ children }) => {
   // which creates a new reference on every render and would cause an infinite re-fetch loop.
   const currentUserId = currentUser?._id;
   useEffect(() => {
-    const isPublicRoute = pathname === '/' || pathname === '/landing' || pathname === '/about' || pathname === '/services' || pathname === '/how-it-works' || pathname === '/contact' || pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
+    const isPublicRoute = pathname === '/' || pathname === '/landing' || pathname === '/about' || pathname === '/services' || pathname === '/how-it-works' || pathname === '/faqs' || pathname === '/contact' || pathname.includes('login') || pathname.includes('signup') || pathname.includes('verify') || pathname.includes('forgot');
 
     if (isAuthenticated && currentUserId && !isPublicRoute) {
       loadNotifications();

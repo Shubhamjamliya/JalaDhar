@@ -373,36 +373,6 @@ export default function ServicesPage() {
             })}
           </div>
         </section>
-
-        {/* CTA Banner */}
-        <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-6xl mx-auto">
-          <div className="bg-gradient-to-r from-[#011E36] via-[#023E8A] to-[#0077B6] rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden text-center">
-            <div className="max-w-3xl mx-auto relative z-10">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-4">
-                Schedule a Scientific Groundwater Survey
-              </h2>
-              <p className="text-white/85 text-sm sm:text-base leading-relaxed mb-8 max-w-xl mx-auto">
-                Download the Jaladhaara Customer App to find verified hydrogeologists near you and book an accurate site survey.
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Link
-                  to="/#apps"
-                  className="px-6 py-3.5 rounded-xl bg-white text-[var(--color-primary)] font-bold text-sm shadow-xl hover:bg-slate-100 hover:scale-105 transition-all inline-flex items-center gap-2"
-                >
-                  <Droplets className="w-4 h-4" />
-                  Download Mobile Apps
-                </Link>
-                <Link
-                  to="/how-it-works"
-                  className="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-sm backdrop-blur-md hover:scale-105 transition-all inline-flex items-center gap-2"
-                >
-                  See How It Works
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       <Footer cms={cms} />

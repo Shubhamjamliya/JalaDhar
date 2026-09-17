@@ -110,6 +110,41 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* Mission, Vision & Platform Philosophy */}
+        <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-7xl mx-auto mb-16 sm:mb-20">
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-[var(--color-surface)] backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-[var(--color-border)] shadow-lg shadow-[#0077B6]/5 flex flex-col">
+              <div className="w-10 h-10 rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mb-4">
+                <Target className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Our Mission</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                To become India's most trusted groundwater survey booking platform by connecting customers with verified groundwater experts through technology for reliable borewell planning.
+              </p>
+            </div>
+
+            <div className="bg-[var(--color-surface)] backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-[var(--color-border)] shadow-lg shadow-[#0077B6]/5 flex flex-col">
+              <div className="w-10 h-10 rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mb-4">
+                <Activity className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Our Vision</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                To revolutionize groundwater survey services by building a nationwide network of verified experts and empowering borewell decisions through scientific geophysical methods.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-50/80 to-sky-50/80 rounded-3xl p-6 sm:p-8 border border-blue-100 shadow-lg shadow-[#0077B6]/5 flex flex-col">
+              <div className="w-10 h-10 rounded-xl bg-[var(--color-primary)] text-white flex items-center justify-center mb-4 shadow-md shadow-[var(--color-primary)]/20">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Why Jaladhaara</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                Jaladhaara is India's first dedicated groundwater survey booking platform, connecting customers with verified and trained groundwater experts through a transparent, technology driven, and seamless booking experience. We make scientific groundwater surveys more accessible, reliable and convenient.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Founder & Leadership Section */}
         <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-6xl mx-auto mb-16 sm:mb-20">
           <div className="text-center mb-8">
@@ -250,36 +285,6 @@ export default function AboutPage() {
                 </p>
               </div>
             ))}
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-6xl mx-auto">
-          <div className="bg-gradient-to-r from-[#011E36] via-[#023E8A] to-[#0077B6] rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden text-center">
-            <div className="max-w-3xl mx-auto relative z-10">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-4">
-                Ready to Experience Scientific Groundwater Exploration?
-              </h2>
-              <p className="text-white/85 text-sm sm:text-base leading-relaxed mb-8 max-w-xl mx-auto">
-                Download the Jaladhaara Customer App to schedule your survey with a verified expert, or download the Expert App if you are a qualified geoscientist.
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Link
-                  to="/#apps"
-                  className="px-6 py-3.5 rounded-xl bg-white text-[var(--color-primary)] font-bold text-sm shadow-xl hover:bg-slate-100 hover:scale-105 transition-all inline-flex items-center gap-2"
-                >
-                  <Droplets className="w-4 h-4" />
-                  Download Mobile Apps
-                </Link>
-                <Link
-                  to="/services"
-                  className="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-sm backdrop-blur-md hover:scale-105 transition-all inline-flex items-center gap-2"
-                >
-                  Explore Survey Services
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
           </div>
         </section>
       </main>

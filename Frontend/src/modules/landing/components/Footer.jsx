@@ -64,6 +64,11 @@ export default function Footer({ cms = (path, fallback) => fallback }) {
                 </Link>
               </li>
               <li>
+                <Link to="/faqs" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
+                  FAQs
+                </Link>
+              </li>
+              <li>
                 <Link to="/contact" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm transition-colors">
                   Contact us
                 </Link>

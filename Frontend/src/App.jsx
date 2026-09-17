@@ -24,6 +24,7 @@ const LandingPage = lazy(() => import("./modules/landing/LandingPage"));
 const AboutPage = lazy(() => import("./modules/landing/pages/AboutPage"));
 const ServicesPage = lazy(() => import("./modules/landing/pages/ServicesPage"));
 const HowItWorksPage = lazy(() => import("./modules/landing/pages/HowItWorksPage"));
+const FaqsPage = lazy(() => import("./modules/landing/pages/FaqsPage"));
 const ContactPage = lazy(() => import("./modules/landing/pages/ContactPage"));
 const UserLogin = lazy(() => import("./modules/user/user-pages/UserLogin"));
 const UserSignup = lazy(() => import("./modules/user/user-pages/UserSignup"));
@@ -176,6 +177,14 @@ function App() {
                                         element={
                                             <Suspense fallback={<LoadingSpinner />}>
                                                 <HowItWorksPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/faqs"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <FaqsPage />
                                             </Suspense>
                                         }
                                     />
