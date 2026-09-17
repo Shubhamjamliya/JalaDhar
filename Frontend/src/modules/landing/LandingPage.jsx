@@ -481,7 +481,7 @@ export default function LandingPage() {
       </section>
 
       {/* Our Services Section */}
-      <section id="services" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] rounded-t-[32px] sm:rounded-t-[40px] lg:rounded-t-[48px] -mt-6 sm:-mt-8 lg:-mt-10 z-20 border-t border-[var(--color-border)] shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+      <section id="services" className="scroll-mt-20 sm:scroll-mt-24 py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] rounded-t-[32px] sm:rounded-t-[40px] lg:rounded-t-[48px] -mt-6 sm:-mt-8 lg:-mt-10 z-20 border-t border-[var(--color-border)] shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-6 sm:mb-10 lg:mb-12 reveal">
             <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2.5 sm:mb-3.5 border border-[var(--color-primary)]/20">
@@ -522,7 +522,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works For Users */}
-      <section id="why-us" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden">
+      <section id="why-us" className="scroll-mt-20 sm:scroll-mt-24 py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden">
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-6 sm:mb-10 reveal">
             <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2.5 sm:mb-3.5 border border-[var(--color-primary)]/20">
@@ -747,7 +747,7 @@ export default function LandingPage() {
       </section>
 
       {/* Ecosystem Apps */}
-      <section id="apps" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+      <section id="apps" className="scroll-mt-20 sm:scroll-mt-24 py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-6 sm:mb-10 reveal relative z-10">
             <div className="inline-block px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] sm:text-sm font-bold uppercase tracking-wider mb-2.5 sm:mb-3.5 border border-[var(--color-primary)]/20">
@@ -904,8 +904,7 @@ export default function LandingPage() {
       </section>
 
       {/* Founder, Leadership & About Us Section */}
-      <section id="about" className="scroll-mt-20 sm:scroll-mt-24 py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
-        <span id="founder" className="block -mt-24 pt-24 pointer-events-none invisible" />
+      <section id="about" className="scroll-mt-20 sm:scroll-mt-24 pt-8 sm:pt-10 lg:pt-12 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
         {/* Subtle background ambient glows */}
         <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 -right-20 w-80 h-80 bg-[var(--color-accent)]/15 rounded-full blur-3xl pointer-events-none" />
@@ -1009,7 +1008,19 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Banner / Reviews */}
-      <section id="reviews" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden reveal">
+      <section id="reviews" className="scroll-mt-20 sm:scroll-mt-24 pt-8 sm:pt-10 lg:pt-12 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden reveal">
+        <div className="max-w-6xl mx-auto mb-6 sm:mb-8 text-center">
+          <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2 sm:mb-2.5 border border-[var(--color-primary)]/20">
+            Reviews & Testimonials
+          </div>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
+            What People Say About Us
+          </h2>
+          <p className="text-[var(--color-text-secondary)] mt-1.5 sm:mt-2 text-xs sm:text-base max-w-2xl mx-auto">
+            Real experiences from farmers, homeowners, and groundwater survey experts across India.
+          </p>
+        </div>
+
         <div className="relative w-full max-w-6xl mx-auto rounded-2xl sm:rounded-3xl lg:rounded-[36px] overflow-hidden bg-[var(--color-bg)] border border-[var(--color-border)] p-6 sm:p-8 lg:p-10 grid lg:grid-cols-2 gap-6 sm:gap-8 items-center shadow-2xl shadow-[#0077B6]/15">
           <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#7FCDFF]/20 to-[#E2F2FC] pointer-events-none">
             <img src={heroBg} alt="Team Background" className="w-full h-full object-cover opacity-20 transition-opacity duration-300" />
@@ -1069,7 +1080,7 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faqs" className="scroll-mt-20 sm:scroll-mt-24 py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+      <section id="faqs" className="scroll-mt-20 sm:scroll-mt-24 pt-8 sm:pt-10 lg:pt-12 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-5 sm:mb-8 reveal">
             <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2 sm:mb-3 border border-[var(--color-primary)]/20">
@@ -1156,21 +1167,21 @@ export default function LandingPage() {
       </section>
 
       {/* Request / Contact Form Section */}
-      <section id="request" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden reveal bg-[var(--color-bg)]">
+      <section id="request" className="scroll-mt-20 sm:scroll-mt-24 pt-8 sm:pt-10 lg:pt-12 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden reveal bg-[var(--color-bg)]">
         <div className="max-w-7xl mx-auto w-full">
-          <div className="text-center mb-5 sm:mb-8">
-            <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2 sm:mb-3 border border-[var(--color-primary)]/20">
+          <div className="text-center mb-4 sm:mb-6">
+            <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2 border border-[var(--color-primary)]/20">
               CONTACT US
             </div>
-            <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
               We’re Here to Help
             </h2>
-            <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-3 text-xs sm:text-base lg:text-lg max-w-2xl mx-auto leading-relaxed">
+            <p className="text-[var(--color-text-secondary)] mt-1.5 sm:mt-2 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">
               Have a question about groundwater surveys, bookings, or joining Jaladhaara? Send us a message and our team will get back to you.
             </p>
           </div>
 
-          <div className="max-w-2xl mx-auto w-full bg-[var(--color-surface)] backdrop-blur-xl rounded-2xl sm:rounded-[32px] p-5 sm:p-8 lg:p-9 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/10">
+          <div className="max-w-3xl mx-auto w-full bg-[var(--color-surface)] backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-8 border border-[var(--color-border)] shadow-xl shadow-[#0077B6]/10">
             {contactSubmitted ? (
               <div className="p-6 sm:p-8 text-center bg-emerald-50 rounded-2xl border border-emerald-200">
                 <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-600 mx-auto mb-2.5 sm:mb-3" />
@@ -1178,116 +1189,122 @@ export default function LandingPage() {
                 <p className="text-emerald-700 text-xs sm:text-sm">Your message has been received. Our team will get back to you shortly.</p>
               </div>
             ) : (
-              <form onSubmit={handleContactSubmit} className="space-y-3.5 sm:space-y-4">
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label htmlFor="name" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
-                    Full Name <span className="text-[var(--color-primary)]">*</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    id="name" 
-                    name="name" 
-                    required 
-                    placeholder="Enter your full name" 
-                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
-                  />
+              <form onSubmit={handleContactSubmit} className="space-y-3 sm:space-y-3.5">
+                {/* 2-Column Grid: Name & Mobile */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-1 sm:space-y-1.5">
+                    <label htmlFor="name" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
+                      Full Name <span className="text-[var(--color-primary)]">*</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      id="name" 
+                      name="name" 
+                      required 
+                      placeholder="Enter your full name" 
+                      className="w-full px-3.5 py-2 sm:py-2.5 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
+                    />
+                  </div>
+
+                  <div className="space-y-1 sm:space-y-1.5">
+                    <label htmlFor="mobile" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
+                      Mobile Number <span className="text-[var(--color-primary)]">*</span>
+                    </label>
+                    <input 
+                      type="tel" 
+                      id="mobile" 
+                      name="mobile" 
+                      required 
+                      placeholder="Enter 10-digit mobile number" 
+                      className="w-full px-3.5 py-2 sm:py-2.5 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label htmlFor="mobile" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
-                    Mobile Number <span className="text-[var(--color-primary)]">*</span>
-                  </label>
-                  <input 
-                    type="tel" 
-                    id="mobile" 
-                    name="mobile" 
-                    required 
-                    placeholder="Enter your 10-digit mobile number" 
-                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
-                  />
+                {/* 2-Column Grid: Email & User Type */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-1 sm:space-y-1.5">
+                    <label htmlFor="email" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
+                      Email Address <span className="text-[var(--color-primary)]">*</span>
+                    </label>
+                    <input 
+                      type="email" 
+                      id="email" 
+                      name="email" 
+                      required 
+                      placeholder="Enter your email address" 
+                      className="w-full px-3.5 py-2 sm:py-2.5 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
+                    />
+                  </div>
+
+                  <div className="space-y-1 sm:space-y-1.5 relative" ref={userTypeDropdownRef}>
+                    <label htmlFor="userType" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
+                      I am a <span className="text-[var(--color-primary)]">*</span>
+                    </label>
+                    
+                    {/* Hidden input to ensure native form submission captures the field */}
+                    <input 
+                      type="hidden" 
+                      name="userType" 
+                      value={selectedUserType} 
+                      required 
+                    />
+
+                    <button
+                      type="button"
+                      id="userType"
+                      onClick={() => setIsUserTypeDropdownOpen(prev => !prev)}
+                      className={`w-full px-3.5 py-2 sm:py-2.5 text-sm bg-white rounded-lg sm:rounded-xl border transition-all flex items-center justify-between shadow-xs cursor-pointer text-left ${
+                        isUserTypeDropdownOpen 
+                          ? 'border-[var(--color-primary)] ring-4 ring-[var(--color-primary)]/10' 
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className={selectedUserType ? 'text-[var(--color-text-primary)] font-medium text-xs sm:text-sm' : 'text-gray-400 text-xs sm:text-sm'}>
+                        {selectedUserType || 'Select an option'}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                        isUserTypeDropdownOpen ? 'rotate-180 text-[var(--color-primary)]' : ''
+                      }`} />
+                    </button>
+
+                    {/* Dropdown Options Menu */}
+                    {isUserTypeDropdownOpen && (
+                      <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl shadow-slate-900/10 p-1.5 animate-fade-in">
+                        {[
+                          { value: 'Customer / User', label: 'Customer / User', desc: 'Looking for groundwater survey services' },
+                          { value: 'Groundwater Expert', label: 'Groundwater Expert', desc: 'Qualified surveyor or geologist' },
+                          { value: 'Business / Organization', label: 'Business / Organization', desc: 'Commercial or corporate inquiries' },
+                          { value: 'Other', label: 'Other', desc: 'General queries & partnerships' }
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => {
+                              setSelectedUserType(opt.value);
+                              setIsUserTypeDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center justify-between group cursor-pointer ${
+                              selectedUserType === opt.value
+                                ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-semibold'
+                                : 'text-[var(--color-text-primary)] hover:bg-slate-50'
+                            }`}
+                          >
+                            <div>
+                              <div className="font-medium text-xs sm:text-sm">{opt.label}</div>
+                              <div className="text-[11px] text-gray-400 font-normal">{opt.desc}</div>
+                            </div>
+                            {selectedUserType === opt.value && (
+                              <Check className="w-4 h-4 text-[var(--color-primary)] shrink-0 ml-2" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label htmlFor="email" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
-                    Email Address <span className="text-[var(--color-primary)]">*</span>
-                  </label>
-                  <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    required 
-                    placeholder="Enter your email address" 
-                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] shadow-xs" 
-                  />
-                </div>
-
-                <div className="space-y-1.5 sm:space-y-2 relative" ref={userTypeDropdownRef}>
-                  <label htmlFor="userType" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
-                    I am a <span className="text-[var(--color-primary)]">*</span>
-                  </label>
-                  
-                  {/* Hidden input to ensure native form submission captures the field */}
-                  <input 
-                    type="hidden" 
-                    name="userType" 
-                    value={selectedUserType} 
-                    required 
-                  />
-
-                  <button
-                    type="button"
-                    id="userType"
-                    onClick={() => setIsUserTypeDropdownOpen(prev => !prev)}
-                    className={`w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border transition-all flex items-center justify-between shadow-xs cursor-pointer text-left ${
-                      isUserTypeDropdownOpen 
-                        ? 'border-[var(--color-primary)] ring-4 ring-[var(--color-primary)]/10' 
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <span className={selectedUserType ? 'text-[var(--color-text-primary)] font-medium' : 'text-gray-400'}>
-                      {selectedUserType || 'Select an option'}
-                    </span>
-                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
-                      isUserTypeDropdownOpen ? 'rotate-180 text-[var(--color-primary)]' : ''
-                    }`} />
-                  </button>
-
-                  {/* Dropdown Options Menu */}
-                  {isUserTypeDropdownOpen && (
-                    <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl shadow-slate-900/10 p-1.5 animate-fade-in">
-                      {[
-                        { value: 'Customer / User', label: 'Customer / User', desc: 'Looking for groundwater survey services' },
-                        { value: 'Groundwater Expert', label: 'Groundwater Expert', desc: 'Qualified surveyor or geologist' },
-                        { value: 'Business / Organization', label: 'Business / Organization', desc: 'Commercial or corporate inquiries' },
-                        { value: 'Other', label: 'Other', desc: 'General queries & partnerships' }
-                      ].map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => {
-                            setSelectedUserType(opt.value);
-                            setIsUserTypeDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3.5 py-2.5 rounded-lg sm:rounded-xl text-sm transition-all flex items-center justify-between group cursor-pointer ${
-                            selectedUserType === opt.value
-                              ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-semibold'
-                              : 'text-[var(--color-text-primary)] hover:bg-slate-50'
-                          }`}
-                        >
-                          <div>
-                            <div className="font-medium text-xs sm:text-sm">{opt.label}</div>
-                            <div className="text-[11px] text-gray-400 font-normal">{opt.desc}</div>
-                          </div>
-                          {selectedUserType === opt.value && (
-                            <Check className="w-4 h-4 text-[var(--color-primary)] shrink-0 ml-2" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-1.5 sm:space-y-2">
+                <div className="space-y-1 sm:space-y-1.5">
                   <label htmlFor="message" className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">
                     How can we help? <span className="text-[var(--color-primary)]">*</span>
                   </label>
@@ -1295,14 +1312,14 @@ export default function LandingPage() {
                     id="message" 
                     name="message" 
                     required 
-                    rows={4} 
+                    rows={3} 
                     placeholder="Tell us how we can help you..." 
-                    className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] resize-none shadow-xs" 
+                    className="w-full px-3.5 py-2 sm:py-2.5 text-sm bg-white rounded-lg sm:rounded-xl border border-slate-200 hover:border-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/10 outline-none transition-all placeholder:text-gray-400 text-[var(--color-text-primary)] resize-none shadow-xs" 
                   />
                 </div>
 
                 {contactError && (
-                  <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm rounded-xl flex items-center gap-2">
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm rounded-xl flex items-center gap-2">
                     <span className="font-semibold">Error:</span> {contactError}
                   </div>
                 )}
@@ -1310,16 +1327,16 @@ export default function LandingPage() {
                 <button 
                   type="submit" 
                   disabled={contactSubmitting}
-                  className="w-full h-11 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full h-10 sm:h-11 rounded-xl bg-[var(--color-primary)] text-white font-bold text-sm sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-2"
                 >
                   {contactSubmitting ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       Sending Message...
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <Send className="w-4 h-4" />
                       Send Message
                     </>
                   )}
