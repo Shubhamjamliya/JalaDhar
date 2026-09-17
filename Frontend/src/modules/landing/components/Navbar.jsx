@@ -100,8 +100,8 @@ export default function Navbar() {
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
         scrolled || open
-          ? 'bg-white/95 backdrop-blur-xl border-b border-[#7FCDFF]/40 shadow-sm'
-          : 'bg-white/70 backdrop-blur-md border-b border-white/50'
+          ? 'bg-white/95 backdrop-blur-xl border-b border-slate-200/90 shadow-[0_2px_12px_rgba(0,0,0,0.06)]'
+          : 'bg-white/90 backdrop-blur-lg border-b border-slate-200/60 shadow-[0_1px_4px_rgba(0,0,0,0.02)]'
       }`}
     >
       <nav className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
@@ -139,14 +139,25 @@ export default function Navbar() {
           </Button>
         </div>
 
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex items-center gap-2 sm:gap-2.5 lg:hidden">
+          {/* Quick Mobile App Download Pill */}
           <button
             type="button"
-            className="rounded-lg p-2 text-[var(--color-text-primary)] hover:bg-black/5 transition-colors cursor-pointer"
+            onClick={handleDownloadAppClick}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] active:scale-95 text-white text-[11px] sm:text-xs font-bold shadow-xs shadow-[var(--color-primary)]/20 transition-all cursor-pointer"
+          >
+            <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <span>App</span>
+          </button>
+
+          {/* Styled Tactile Hamburger Button */}
+          <button
+            type="button"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200/80 border border-slate-200/80 text-[var(--color-text-primary)] flex items-center justify-center shadow-2xs active:scale-95 transition-all cursor-pointer"
             aria-label="Open menu"
             onClick={() => setOpen(true)}
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-slate-700" />
           </button>
         </div>
       </nav>

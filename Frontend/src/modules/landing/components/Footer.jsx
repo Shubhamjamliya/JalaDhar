@@ -10,7 +10,7 @@ export default function Footer({ cms = (path, fallback) => fallback }) {
 
   return (
     <>
-      <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg)] pt-7 sm:pt-11 pb-5 sm:pb-8 px-4 sm:px-6 lg:px-8 xl:px-12 w-full">
+      <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg)] pt-5 sm:pt-8 pb-5 sm:pb-8 px-4 sm:px-6 lg:px-8 xl:px-12 w-full">
         <div className="w-full max-w-7xl mx-auto">
           {/* Main Footer Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-8 xl:gap-10 mb-2 sm:mb-3.5 lg:mb-5">
