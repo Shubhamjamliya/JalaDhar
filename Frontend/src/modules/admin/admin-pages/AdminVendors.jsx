@@ -276,6 +276,13 @@ export default function AdminVendors() {
                                             <IoLocationOutline className="text-blue-500 shrink-0 mt-0.5" />
                                             <span className="line-clamp-1">{vendor.address?.geoLocation?.formattedAddress || vendor.address?.city || vendor.address?.state || 'Address unlisted'}</span>
                                         </div>
+
+                                        <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                                            <span className="text-gray-500 font-medium">Completed Surveys:</span>
+                                            <span className="font-extrabold text-blue-600 bg-blue-50 border border-blue-100/80 px-2.5 py-0.5 rounded-full">
+                                                {vendor.completedBookings ?? vendor.surveysCompleted ?? 0}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
 

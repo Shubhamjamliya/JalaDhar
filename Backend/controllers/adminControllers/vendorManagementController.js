@@ -57,11 +57,29 @@ const getAllVendors = async (req, res) => {
       Vendor.countDocuments(query)
     ]);
 
+    // Live completed survey count for each expert
+    const vendorIds = vendors.map(v => v._id);
+    const completedCounts = await Booking.aggregate([
+      { $match: { vendor: { $in: vendorIds }, status: 'COMPLETED' } },
+      { $group: { _id: '$vendor', count: { $sum: 1 } } }
+    ]);
+    const completedMap = {};
+    completedCounts.forEach(c => {
+      completedMap[c._id.toString()] = c.count;
+    });
+
+    const vendorsWithCounts = vendors.map(v => {
+      const doc = v.toObject();
+      const dbCount = completedMap[v._id.toString()] || 0;
+      doc.completedBookings = Math.max(dbCount, Number(doc.surveysCompleted) || 0);
+      return doc;
+    });
+
     res.json({
       success: true,
       message: 'Vendors retrieved successfully',
       data: {
-        vendors,
+        vendors: vendorsWithCounts,
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / parseInt(limit)),
