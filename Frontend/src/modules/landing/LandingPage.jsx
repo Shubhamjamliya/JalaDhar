@@ -4,7 +4,6 @@ import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import './landing.css';
 
-import heroBg from './assets/hero_new.jpg';
 import cardAgri from './assets/Agriculture.jpg';
 import cardRes from './assets/Residential.jpg';
 import cardCom from './assets/Commercial.jpg';
@@ -107,7 +106,6 @@ function getEmbedUrl(rawUrl) {
 
 export default function LandingPage() {
   const appsScrollRef = useRef(null);
-  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [activeVideo, setActiveVideo] = useState(null);
   const [landingContent, setLandingContent] = useState(null);
 
@@ -132,13 +130,6 @@ export default function LandingPage() {
     if (Array.isArray(val) && val.length === 0) return fallback;
     return val;
   }, [landingContent]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentReviewIndex((prev) => (prev + 1) % reviewsData.length);
-    }, 4500);
-    return () => clearInterval(interval);
-  }, []);
 
   // Initialize Lenis for smooth scrolling
   useEffect(() => {
@@ -308,16 +299,16 @@ export default function LandingPage() {
       </section>
 
       {/* Our Services Section */}
-      <section id="services" className="scroll-mt-20 sm:scroll-mt-24 pt-12 sm:pt-16 lg:pt-20 pb-4 sm:pb-6 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] rounded-t-[32px] sm:rounded-t-[40px] lg:rounded-t-[48px] -mt-6 sm:-mt-8 lg:-mt-10 z-20 border-t border-[var(--color-border)] shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+      <section id="services" className="scroll-mt-20 sm:scroll-mt-24 pt-10 sm:pt-14 lg:pt-16 pb-4 sm:pb-6 lg:pb-8 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] rounded-t-[32px] sm:rounded-t-[40px] lg:rounded-t-[48px] -mt-6 sm:-mt-8 lg:-mt-10 z-20 border-t border-[var(--color-border)] shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
         <div className="max-w-7xl mx-auto w-full">
-          <div className="text-center mb-6 sm:mb-10 lg:mb-12 reveal">
-            <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2.5 sm:mb-3.5 border border-[var(--color-primary)]/20">
+          <div className="text-center mb-6 sm:mb-8 lg:mb-10 reveal">
+            <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2 sm:mb-2.5 border border-[var(--color-primary)]/20">
               Sectors We Serve
             </div>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
               Tailored Groundwater Solutions
             </h2>
-            <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-3 text-xs sm:text-base lg:text-lg max-w-3xl mx-auto">
+            <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-2.5 text-xs sm:text-base lg:text-lg max-w-3xl mx-auto">
               Specialized groundwater survey services for agriculture, residential, commercial and industrial needs.
             </p>
           </div>
@@ -333,33 +324,36 @@ export default function LandingPage() {
               const localImgs = [cardAgri, cardRes, cardCom, cardInd];
               const imgSrc = srv.image?.url || localImgs[i] || localImgs[0];
               return (
-              <div key={i} className="bg-[var(--color-surface)] backdrop-blur-xl rounded-2xl sm:rounded-[32px] overflow-hidden border border-[var(--color-border)] hover:border-[var(--color-primary)]/40 hover:-translate-y-2 transition-all duration-300 group shadow-lg hover:shadow-2xl hover:shadow-[#0077B6]/15 flex flex-col h-full">
+              <Link
+                key={i}
+                to="/services"
+                className="bg-[var(--color-surface)] backdrop-blur-xl rounded-2xl sm:rounded-[32px] overflow-hidden border border-[var(--color-border)] hover:border-[var(--color-primary)]/40 hover:-translate-y-2 transition-all duration-300 group shadow-lg hover:shadow-2xl hover:shadow-[#0077B6]/15 flex flex-col h-full cursor-pointer"
+              >
                 <div className="w-full aspect-[16/9] relative overflow-hidden shrink-0 border-b border-[var(--color-border)] bg-slate-100">
                   <img src={imgSrc} alt={srv.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700" />
                 </div>
-                <div className="p-4 sm:p-5 lg:p-6 relative z-10 flex-grow flex flex-col justify-start bg-white">
-                  <h3 className="text-base sm:text-xl font-bold mb-1.5 sm:mb-2 text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)] transition-colors leading-tight">{srv.title}</h3>
-                  <p className="text-[var(--color-text-secondary)] leading-relaxed text-xs sm:text-sm">{srv.description}</p>
+                <div className="p-4 sm:p-5 lg:p-6 relative z-10 flex-grow flex flex-col justify-between bg-white">
+                  <div>
+                    <h3 className="text-base sm:text-xl font-bold mb-1.5 sm:mb-2 text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)] transition-colors leading-tight flex items-center justify-between">
+                      <span>{srv.title}</span>
+                      <ArrowRight className="w-4 h-4 text-[var(--color-primary)] opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                    </h3>
+                    <p className="text-[var(--color-text-secondary)] leading-relaxed text-xs sm:text-sm">{srv.description}</p>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center text-[11px] sm:text-xs font-bold text-[var(--color-primary)] group-hover:translate-x-0.5 transition-transform">
+                    <span>Learn more</span>
+                    <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                  </div>
                 </div>
-              </div>
+              </Link>
             );
             })}
-          </div>
-
-          <div className="mt-6 sm:mt-8 text-center reveal">
-            <Link
-              to="/services"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#0077B6]/20 transition-all hover:scale-105 group"
-            >
-              Explore All 4 Sectors & Methodologies
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
           </div>
         </div>
       </section>
 
       {/* Ecosystem Apps */}
-      <section id="apps" className="scroll-mt-20 sm:scroll-mt-24 pt-6 sm:pt-8 lg:pt-10 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+      <section id="apps" className="scroll-mt-20 sm:scroll-mt-24 pt-4 sm:pt-6 lg:pt-8 pb-10 sm:pb-14 lg:pb-16 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-gradient-to-b from-[#F0F7FD] via-[#E8F3FA] to-[#F0F7FD] border-t border-b border-blue-100/70">
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-6 sm:mb-10 reveal relative z-10">
             <div className="inline-block px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] sm:text-sm font-bold uppercase tracking-wider mb-2.5 sm:mb-3.5 border border-[var(--color-primary)]/20">
@@ -513,74 +507,77 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Banner / Reviews */}
-      <section id="reviews" className="scroll-mt-20 sm:scroll-mt-24 pt-8 sm:pt-10 lg:pt-12 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden reveal">
-        <div className="max-w-6xl mx-auto mb-6 sm:mb-8 text-center">
+      {/* Reviews & Social Proof Section */}
+      <section id="reviews" className="scroll-mt-20 sm:scroll-mt-24 pt-10 sm:pt-14 lg:pt-16 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)]">
+        <div className="max-w-6xl mx-auto mb-6 sm:mb-8 lg:mb-10 text-center reveal">
           <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-2 sm:mb-2.5 border border-[var(--color-primary)]/20">
             Reviews & Testimonials
           </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto text-[var(--color-text-primary)]">
             What People Say About Us
           </h2>
-          <p className="text-[var(--color-text-secondary)] mt-1.5 sm:mt-2 text-xs sm:text-base max-w-2xl mx-auto">
+          <p className="text-[var(--color-text-secondary)] mt-2 sm:mt-2.5 text-xs sm:text-base lg:text-lg max-w-2xl mx-auto">
             Real experiences from farmers, homeowners, and groundwater survey experts across India.
           </p>
         </div>
 
-        <div className="relative w-full max-w-6xl mx-auto rounded-2xl sm:rounded-3xl lg:rounded-[36px] overflow-hidden bg-[var(--color-bg)] border border-[var(--color-border)] p-6 sm:p-8 lg:p-10 grid lg:grid-cols-2 gap-6 sm:gap-8 items-center shadow-2xl shadow-[#0077B6]/15">
-          <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#7FCDFF]/20 to-[#E2F2FC] pointer-events-none">
-            <img src={heroBg} alt="Team Background" className="w-full h-full object-cover opacity-20 transition-opacity duration-300" />
-          </div>
+        {/* Testimonials 3-Card Showcase */}
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 reveal">
+          {reviewsData.slice(0, 3).map((review, idx) => (
+            <div 
+              key={idx} 
+              className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-lg shadow-blue-900/5 flex flex-col justify-between hover:-translate-y-1.5 hover:shadow-xl hover:border-[var(--color-primary)]/40 transition-all duration-300 group"
+            >
+              <div>
+                {/* 5-Star Rating */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex gap-1 text-amber-400">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                    Verified
+                  </span>
+                </div>
 
-          <div className="relative z-10 bg-white/80 backdrop-blur-md p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-white/60 shadow-xl max-w-lg">
-            <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold mb-2 sm:mb-3 leading-tight text-[var(--color-text-primary)]">
-              Get Started with <br className="hidden sm:block" /> Jaladhaara Today.
-            </h2>
-            <p className="text-[var(--color-text-secondary)] mb-3.5 sm:mb-5 text-xs sm:text-base font-medium leading-relaxed">
-              Find, connect, survey, and plan with India's first dedicated groundwater survey booking platform.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full">
-              <a
-                href="#apps"
-                className="flex-1 h-11 sm:h-12 px-4 sm:px-6 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-sm hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 text-center"
-              >
-                <Download className="w-4 h-4 shrink-0" />
-                <span>Download Customer App</span>
-              </a>
-              <a
-                href="#apps"
-                className="flex-1 h-11 sm:h-12 px-4 sm:px-6 rounded-xl bg-slate-900 text-white font-bold text-xs sm:text-sm hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg text-center"
-              >
-                <Download className="w-4 h-4 shrink-0" />
-                <span>Download Expert App</span>
-              </a>
-            </div>
-          </div>
-
-          {/* Testimonials Card */}
-          <div className="relative z-10 flex justify-center lg:justify-end">
-            <div className="glass-panel p-5 sm:p-7 rounded-2xl sm:rounded-3xl w-full max-w-md shadow-2xl border border-[var(--color-border)]">
-              <div className="flex gap-1 mb-3 sm:mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-[var(--color-primary)] text-[var(--color-primary)]" />
-                ))}
+                {/* Review Text */}
+                <p className="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed italic mb-6">
+                  "{review.text}"
+                </p>
               </div>
-              <p className="text-xs sm:text-base text-[var(--color-text-primary)] font-medium mb-3.5 sm:mb-5 leading-relaxed italic">
-                "{reviewsData[currentReviewIndex].text}"
-              </p>
-              <div className="flex items-center gap-2.5 sm:gap-3 pt-3 sm:pt-4 border-t border-[var(--color-border)]">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--color-primary)] shrink-0 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
-                  {reviewsData[currentReviewIndex].name.substring(0, 2).toUpperCase()}
+
+              {/* Author Info */}
+              <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0077B6] to-[#023E8A] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm shadow-[#0077B6]/30">
+                  {review.name.substring(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <div className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">{reviewsData[currentReviewIndex].name}</div>
-                  {reviewsData[currentReviewIndex].role && (
-                    <div className="text-[11px] sm:text-xs text-[var(--color-text-secondary)]">{reviewsData[currentReviewIndex].role}</div>
-                  )}
+                  <div className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">{review.name}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">{review.role}</div>
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+
+        {/* Trust Metrics Strip */}
+        <div className="mt-10 sm:mt-14 max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 text-center reveal">
+          <div className="p-4 sm:p-5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs">
+            <div className="text-2xl sm:text-3xl font-black text-[var(--color-primary)] font-display">100%</div>
+            <div className="text-[11px] sm:text-xs font-bold text-slate-700 mt-1">Screened Geoscientists</div>
+          </div>
+          <div className="p-4 sm:p-5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs">
+            <div className="text-2xl sm:text-3xl font-black text-[var(--color-primary)] font-display">VES & ERT</div>
+            <div className="text-[11px] sm:text-xs font-bold text-slate-700 mt-1">Scientific Equipment</div>
+          </div>
+          <div className="p-4 sm:p-5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs">
+            <div className="text-2xl sm:text-3xl font-black text-[var(--color-primary)] font-display">Digital</div>
+            <div className="text-[11px] sm:text-xs font-bold text-slate-700 mt-1">Certified Survey Reports</div>
+          </div>
+          <div className="p-4 sm:p-5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs">
+            <div className="text-2xl sm:text-3xl font-black text-[var(--color-primary)] font-display">Zero</div>
+            <div className="text-[11px] sm:text-xs font-bold text-slate-700 mt-1">False Guarantees</div>
           </div>
         </div>
       </section>
