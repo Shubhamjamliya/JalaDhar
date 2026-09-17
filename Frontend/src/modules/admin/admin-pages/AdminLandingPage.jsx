@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import {
   IoImageOutline, IoSaveOutline, IoCheckmarkCircle, IoCloseCircle,
   IoRefreshOutline, IoEyeOutline, IoAddCircleOutline, IoTrashOutline,
@@ -78,9 +78,8 @@ function TextArea({ value, onChange, placeholder, rows = 4, maxLength }) {
 function ImageUploadField({ label, hint, currentUrl, section, onUploaded }) {
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState(currentUrl || '');
-
-  useEffect(() => { setPreview(currentUrl || ''); }, [currentUrl]);
+  const [localPreview, setLocalPreview] = useState(null);
+  const preview = localPreview !== null ? localPreview : (currentUrl || '');
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
@@ -89,7 +88,7 @@ function ImageUploadField({ label, hint, currentUrl, section, onUploaded }) {
     try {
       const res = await uploadLandingImage(file, section);
       if (res.success) {
-        setPreview(res.data.url);
+        setLocalPreview(res.data.url);
         onUploaded(res.data);
       }
     } catch {
@@ -185,7 +184,7 @@ function StringListEditor({ items = [], onChange, placeholder = "Item text...", 
   );
 }
 
-function VideoUploadField({ label, hint, currentUrl, section, onUploaded }) {
+function VideoUploadField({ label, hint, section, onUploaded }) {
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(null);
@@ -639,16 +638,27 @@ function AppVideosEditor({ data = {}, setData }) {
           </div>
         )}
 
-        {/* Play Store Link */}
-        <div className="pt-3 border-t border-slate-200">
+        {/* Store Links (Google Play & Apple App Store) */}
+        <div className="pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field 
             label="Customer App Google Play Store URL" 
-            hint="URL opened when visitors click 'Download App' in the Customer card or footer (e.g., https://play.google.com/store/apps/details?id=com.jaladhaara.app)"
+            hint="Opened when visitors click 'Google Play' (e.g., https://play.google.com/store/apps/details?id=com.jaladhaara.app)"
           >
             <TextInput
               value={data.userPlayStoreUrl || ''}
               onChange={val => setData(prev => ({ ...prev, userPlayStoreUrl: val }))}
               placeholder="https://play.google.com/store/apps/details?id=com.jaladhaara.app"
+            />
+          </Field>
+
+          <Field 
+            label="Customer App Apple App Store URL" 
+            hint="Opened when visitors click 'App Store' (Leave blank for 'Coming Soon' badge)"
+          >
+            <TextInput
+              value={data.userAppStoreUrl || ''}
+              onChange={val => setData(prev => ({ ...prev, userAppStoreUrl: val }))}
+              placeholder="https://apps.apple.com/app/jaladhaara/id..."
             />
           </Field>
         </div>
@@ -712,16 +722,27 @@ function AppVideosEditor({ data = {}, setData }) {
           </div>
         )}
 
-        {/* Play Store Link */}
-        <div className="pt-3 border-t border-slate-200">
+        {/* Store Links (Google Play & Apple App Store) */}
+        <div className="pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field 
             label="Expert App Google Play Store URL" 
-            hint="URL opened when visitors click 'Download App' in the Expert card or footer (e.g., https://play.google.com/store/apps/details?id=com.jaladhaara.expert)"
+            hint="Opened when visitors click 'Google Play' (e.g., https://play.google.com/store/apps/details?id=com.jaladhaara.expert)"
           >
             <TextInput
               value={data.expertPlayStoreUrl || ''}
               onChange={val => setData(prev => ({ ...prev, expertPlayStoreUrl: val }))}
               placeholder="https://play.google.com/store/apps/details?id=com.jaladhaara.expert"
+            />
+          </Field>
+
+          <Field 
+            label="Expert App Apple App Store URL" 
+            hint="Opened when visitors click 'App Store' (Leave blank for 'Coming Soon' badge)"
+          >
+            <TextInput
+              value={data.expertAppStoreUrl || ''}
+              onChange={val => setData(prev => ({ ...prev, expertAppStoreUrl: val }))}
+              placeholder="https://apps.apple.com/app/jaladhaara-expert/id..."
             />
           </Field>
         </div>
@@ -886,7 +907,9 @@ const DEFAULT_DATA = {
       publicId: ''
     },
     userPlayStoreUrl: '',
-    expertPlayStoreUrl: ''
+    userAppStoreUrl: '',
+    expertPlayStoreUrl: '',
+    expertAppStoreUrl: ''
   },
   stats: [{ number: '', label: '' }, { number: '', label: '' }, { number: '', label: '' }],
   faqs: {
@@ -906,7 +929,6 @@ export default function AdminLandingPage() {
 
   // Load current content
   useEffect(() => {
-    setLoading(true);
     getLandingContent()
       .then(res => {
         if (res?.success && res?.data) {
@@ -1033,7 +1055,7 @@ export default function AdminLandingPage() {
       {/* Save status banner */}
       <AnimatePresence>
         {saveStatus && (
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -1047,7 +1069,7 @@ export default function AdminLandingPage() {
               ? <><IoCheckmarkCircle className="text-lg shrink-0" /> Section saved successfully! The public landing page now reflects your changes.</>
               : <><IoCloseCircle className="text-lg shrink-0" /> Save failed. Please try again or check your connection.</>
             }
-          </motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
 

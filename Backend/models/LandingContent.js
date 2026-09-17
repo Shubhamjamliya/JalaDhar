@@ -247,7 +247,9 @@ const AppVideosSchema = new mongoose.Schema({
     }) 
   },
   userPlayStoreUrl: { type: String, default: '' },
-  expertPlayStoreUrl: { type: String, default: '' }
+  userAppStoreUrl: { type: String, default: '' },
+  expertPlayStoreUrl: { type: String, default: '' },
+  expertAppStoreUrl: { type: String, default: '' }
 }, { _id: false });
 
 // ─── Main Schema ─────────────────────────────────────────────────────────────

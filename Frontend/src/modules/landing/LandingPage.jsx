@@ -13,6 +13,7 @@ import cardInd from './assets/Industrial.jpg';
 
 import Navbar from './components/Navbar';
 import Logo from './components/Logo';
+import { GooglePlayBadge, AppStoreBadge } from './components/StoreBadges';
 
 import {
   MapPin,
@@ -812,22 +813,20 @@ export default function LandingPage() {
                 )}
               </div>
 
-              <div className="relative z-10 w-full mt-auto pt-3 sm:pt-4">
-                <a 
-                  href={cms('appVideos.userPlayStoreUrl') || '#'}
-                  target={cms('appVideos.userPlayStoreUrl') ? "_blank" : undefined}
-                  rel={cms('appVideos.userPlayStoreUrl') ? "noopener noreferrer" : undefined}
-                  onClick={(e) => {
-                    if (!cms('appVideos.userPlayStoreUrl')) {
-                      e.preventDefault();
-                      alert("Jaladhaara App will be available shortly on Google Play Store!");
-                    }
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-5 py-3 sm:py-3.5 bg-white text-[#0077B6] rounded-xl hover:bg-white/95 hover:shadow-xl transition-all text-sm sm:text-base font-bold shadow-lg group cursor-pointer"
-                >
-                  <Download className="w-4 h-4 text-[#0077B6] group-hover:translate-y-0.5 transition-transform shrink-0" />
-                  <span>Download App</span>
-                </a>
+              <div className="relative z-10 w-full mt-auto pt-3 sm:pt-4 flex flex-col sm:flex-row gap-2.5 sm:gap-3">
+                <GooglePlayBadge 
+                  url={cms('appVideos.userPlayStoreUrl')} 
+                  appName="Jaladhaara App"
+                  variant="white"
+                  className="flex-1 justify-center"
+                />
+                <AppStoreBadge 
+                  url={cms('appVideos.userAppStoreUrl')} 
+                  appName="Jaladhaara App"
+                  variant="glass"
+                  className="flex-1 justify-center"
+                  showSoonBadge={true}
+                />
               </div>
             </div>
 
@@ -883,20 +882,39 @@ export default function LandingPage() {
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-2.5 sm:gap-3 relative z-10 w-full mt-auto pt-3 sm:pt-4">
-                <Link 
-                  to="/vendorlogin" 
-                  className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3.5 bg-[#7FCDFF] text-[#03045E] rounded-xl hover:bg-[#7FCDFF]/90 transition-all text-xs sm:text-base font-bold shadow-lg"
-                >
-                  Expert Login
-                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Link>
-                <Link 
-                  to="/vendorsignup" 
-                  className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all text-xs sm:text-base font-semibold shadow-lg border border-white/20"
-                >
-                  Register as an Expert
-                </Link>
+              <div className="relative z-10 w-full mt-auto pt-3 sm:pt-4 space-y-2.5">
+                <div className="flex flex-wrap gap-2.5 sm:gap-3">
+                  <Link 
+                    to="/vendorlogin" 
+                    className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-[#7FCDFF] text-[#03045E] rounded-xl hover:bg-[#7FCDFF]/90 transition-all text-xs sm:text-sm font-bold shadow-lg"
+                  >
+                    Expert Login
+                    <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </Link>
+                  <Link 
+                    to="/vendorsignup" 
+                    className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all text-xs sm:text-sm font-semibold shadow-lg border border-white/20"
+                  >
+                    Register as an Expert
+                  </Link>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 pt-0.5">
+                  <GooglePlayBadge 
+                    url={cms('appVideos.expertPlayStoreUrl')} 
+                    appName="Jaladhaara Expert App"
+                    variant="white"
+                    compact={true}
+                    className="flex-1 justify-center"
+                  />
+                  <AppStoreBadge 
+                    url={cms('appVideos.expertAppStoreUrl')} 
+                    appName="Jaladhaara Expert App"
+                    variant="glass"
+                    compact={true}
+                    className="flex-1 justify-center"
+                    showSoonBadge={true}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1521,21 +1539,23 @@ export default function LandingPage() {
                     Book Survey Online
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
-                  <a 
-                    href={cms('appVideos.userPlayStoreUrl') || '#'}
-                    target={cms('appVideos.userPlayStoreUrl') ? "_blank" : undefined}
-                    rel={cms('appVideos.userPlayStoreUrl') ? "noopener noreferrer" : undefined}
-                    onClick={(e) => {
-                      if (!cms('appVideos.userPlayStoreUrl')) {
-                        e.preventDefault();
-                        alert("Customer mobile app will be available shortly on Google Play Store.");
-                      }
-                    }}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                    Download Mobile App
-                  </a>
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    <GooglePlayBadge 
+                      url={cms('appVideos.userPlayStoreUrl')} 
+                      appName="Customer App"
+                      variant="dark"
+                      compact={true}
+                      className="w-full justify-center"
+                    />
+                    <AppStoreBadge 
+                      url={cms('appVideos.userAppStoreUrl')} 
+                      appName="Customer App"
+                      variant="dark"
+                      compact={true}
+                      className="w-full justify-center"
+                      showSoonBadge={true}
+                    />
+                  </div>
                 </>
               ) : (
                 <>
@@ -1546,22 +1566,24 @@ export default function LandingPage() {
                     Join as an Expert
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
-                  <a 
-                    href={cms('appVideos.expertPlayStoreUrl') || '#'}
-                    target={cms('appVideos.expertPlayStoreUrl') ? "_blank" : undefined}
-                    rel={cms('appVideos.expertPlayStoreUrl') ? "noopener noreferrer" : undefined}
-                    onClick={(e) => {
-                      if (!cms('appVideos.expertPlayStoreUrl')) {
-                        e.preventDefault();
-                        alert("Expert mobile app will be available shortly on Google Play Store.");
-                      }
-                    }}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                    Download Expert App
-                  </a>
-                  <div className="text-center pt-0.5">
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    <GooglePlayBadge 
+                      url={cms('appVideos.expertPlayStoreUrl')} 
+                      appName="Expert App"
+                      variant="dark"
+                      compact={true}
+                      className="w-full justify-center"
+                    />
+                    <AppStoreBadge 
+                      url={cms('appVideos.expertAppStoreUrl')} 
+                      appName="Expert App"
+                      variant="dark"
+                      compact={true}
+                      className="w-full justify-center"
+                      showSoonBadge={true}
+                    />
+                  </div>
+                  <div className="text-center pt-1">
                     <Link 
                       to="/vendorlogin" 
                       className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] font-medium transition-colors"
