@@ -139,6 +139,7 @@ export default function LandingPage() {
         duration: 1.2,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       });
+      window.__lenis = lenis;
 
       function raf(time) {
         lenis.raf(time);
@@ -151,6 +152,7 @@ export default function LandingPage() {
     }
 
     return () => {
+      if (window.__lenis === lenis) window.__lenis = null;
       if (lenis) lenis.destroy();
     };
   }, []);

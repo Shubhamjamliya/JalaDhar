@@ -1,16 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { 
+  Menu, 
+  X, 
+  Home, 
+  Droplets, 
+  Compass, 
+  Users, 
+  HelpCircle, 
+  PhoneCall, 
+  ChevronRight, 
+  Smartphone, 
+  Download, 
+  Mail 
+} from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import Button from './Button';
 
 const navItems = [
-  { label: 'Home', path: '/' },
-  { label: 'Services', path: '/services' },
-  { label: 'How It Works', path: '/how-it-works' },
-  { label: 'About Us', path: '/about' },
-  { label: 'FAQs', path: '/faqs' },
-  { label: 'Contact Us', path: '/contact' },
+  { label: 'Home', path: '/', icon: Home },
+  { label: 'Services', path: '/services', icon: Droplets },
+  { label: 'How It Works', path: '/how-it-works', icon: Compass },
+  { label: 'About Us', path: '/about', icon: Users },
+  { label: 'FAQs', path: '/faqs', icon: HelpCircle },
+  { label: 'Contact Us', path: '/contact', icon: PhoneCall },
 ];
 
 export default function Navbar() {
@@ -25,6 +39,42 @@ export default function Navbar() {
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Lock background body scroll completely when mobile drawer is open
+  useEffect(() => {
+    if (open) {
+      const scrollY = window.scrollY;
+      const originalPosition = document.body.style.position;
+      const originalTop = document.body.style.top;
+      const originalWidth = document.body.style.width;
+      const originalOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+
+      // Lock body scroll in place
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
+      if (window.__lenis && typeof window.__lenis.stop === 'function') {
+        window.__lenis.stop();
+      }
+
+      return () => {
+        document.body.style.position = originalPosition;
+        document.body.style.top = originalTop;
+        document.body.style.width = originalWidth;
+        document.body.style.overflow = originalOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+        window.scrollTo(0, scrollY);
+
+        if (window.__lenis && typeof window.__lenis.start === 'function') {
+          window.__lenis.start();
+        }
+      };
+    }
+  }, [open]);
 
   const isItemActive = (path) => {
     if (path === '/') {
@@ -92,7 +142,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2 lg:hidden">
           <button
             type="button"
-            className="rounded-lg p-2 text-[var(--color-text-primary)] hover:bg-black/5 transition-colors"
+            className="rounded-lg p-2 text-[var(--color-text-primary)] hover:bg-black/5 transition-colors cursor-pointer"
             aria-label="Open menu"
             onClick={() => setOpen(true)}
           >
@@ -101,63 +151,106 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Drawer Overlay */}
-      <div
-        className={`fixed inset-0 z-40 bg-[var(--color-overlay)] backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={() => setOpen(false)}
-      ></div>
-
-      {/* Mobile Drawer Menu */}
-      <div
-        className={`fixed top-0 right-0 z-50 h-screen w-[280px] sm:w-[320px] bg-white border-l border-[var(--color-border)] shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${
-          open ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        <div className="flex items-center justify-between px-5 sm:px-6 h-16 sm:h-20 border-b border-[var(--color-border)]">
-          <span className="text-[var(--color-text-primary)] font-bold text-lg">Menu</span>
-          <button
-            type="button"
-            className="rounded-lg p-2 text-[var(--color-text-primary)] hover:bg-black/10 transition-colors"
+      {/* Portaled Mobile Drawer to Document Body (Ensures True Fullscreen Coverage & Isolation) */}
+      {typeof document !== 'undefined' && createPortal(
+        <>
+          {/* Mobile Drawer Overlay - Background Blur OFF, Clean Dimmed Backdrop */}
+          <div
+            className={`fixed inset-0 z-[9998] bg-black/50 transition-opacity duration-300 lg:hidden ${
+              open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
             onClick={() => setOpen(false)}
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
+            onTouchMove={(e) => e.preventDefault()}
+          />
 
-        <div className="flex-1 overflow-y-auto px-4 py-6">
-          <ul className="flex flex-col gap-2">
-            {navItems.map((item) => {
-              const active = isItemActive(item.path);
-              return (
-                <li key={item.label}>
-                  <Link
-                    to={item.path}
-                    onClick={() => setOpen(false)}
-                    className={`block rounded-xl px-4 py-3.5 text-base font-semibold transition-colors ${
-                      active
-                        ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                        : 'text-[var(--color-text-secondary)] hover:bg-black/5 hover:text-[var(--color-text-primary)]'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-        
-        <div className="p-6 border-t border-[var(--color-border)] pb-8 flex flex-col gap-3">
-          <Button 
-            onClick={handleDownloadAppClick}
-            className="w-full justify-center h-12 text-sm cursor-pointer"
+          {/* Mobile Drawer Menu */}
+          <div
+            className={`fixed top-0 right-0 z-[9999] h-screen h-[100dvh] w-[85vw] max-w-[340px] bg-white border-l border-slate-200/80 shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${
+              open ? 'translate-x-0' : 'translate-x-full'
+            }`}
           >
-            Download App
-          </Button>
-        </div>
-      </div>
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-5 h-16 sm:h-20 border-b border-slate-100 bg-slate-50/50">
+              <div className="scale-90 origin-left">
+                <Logo />
+              </div>
+              <button
+                type="button"
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
+                onClick={() => setOpen(false)}
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Drawer Nav Links */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4" data-lenis-prevent>
+              <ul className="flex flex-col gap-1.5">
+                {navItems.map((item) => {
+                  const active = isItemActive(item.path);
+                  const IconComponent = item.icon;
+                  return (
+                    <li key={item.label}>
+                      <Link
+                        to={item.path}
+                        onClick={() => setOpen(false)}
+                        className={`flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold transition-all group ${
+                          active
+                            ? 'bg-blue-50 text-[var(--color-primary)] font-bold border border-blue-200/60 shadow-xs'
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-[var(--color-primary)]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          {IconComponent && (
+                            <IconComponent className={`w-4 h-4 ${active ? 'text-[var(--color-primary)]' : 'text-slate-400 group-hover:text-[var(--color-primary)]'} transition-colors`} />
+                          )}
+                          <span>{item.label}</span>
+                        </div>
+                        <ChevronRight className={`w-4 h-4 ${active ? 'text-[var(--color-primary)]' : 'text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5'} transition-all`} />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* App Platform Info Box */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-50/80 via-sky-50/50 to-indigo-50/60 border border-blue-100 shadow-xs">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Smartphone className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">Verified Mobile Platform</span>
+                </div>
+                <p className="text-xs font-bold text-slate-800">Groundwater Survey Booking</p>
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                  Connect with certified geophysicists & receive verified digital reports.
+                </p>
+              </div>
+            </div>
+            
+            {/* Drawer Footer CTA & Support */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-3">
+              <Button 
+                onClick={handleDownloadAppClick}
+                className="w-full justify-center h-11 text-xs sm:text-sm font-bold shadow-md cursor-pointer flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Mobile App</span>
+              </Button>
+
+              <div className="flex items-center justify-center pt-0.5 text-[11px] text-slate-500">
+                <a 
+                  href="mailto:info@jaladhaaraapp.com" 
+                  className="flex items-center gap-1.5 hover:text-[var(--color-primary)] transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                  <span>info@jaladhaaraapp.com</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
     </header>
   );
 }
