@@ -21,6 +21,10 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 
 // Lazy load all route components for better performance
 const LandingPage = lazy(() => import("./modules/landing/LandingPage"));
+const AboutPage = lazy(() => import("./modules/landing/pages/AboutPage"));
+const ServicesPage = lazy(() => import("./modules/landing/pages/ServicesPage"));
+const HowItWorksPage = lazy(() => import("./modules/landing/pages/HowItWorksPage"));
+const ContactPage = lazy(() => import("./modules/landing/pages/ContactPage"));
 const UserLogin = lazy(() => import("./modules/user/user-pages/UserLogin"));
 const UserSignup = lazy(() => import("./modules/user/user-pages/UserSignup"));
 const UserOTPVerification = lazy(() => import("./modules/user/user-pages/UserOTPVerification"));
@@ -148,6 +152,38 @@ function App() {
                                         element={
                                             <Suspense fallback={<LoadingSpinner />}>
                                                 <LandingPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/about"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <AboutPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/services"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <ServicesPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/how-it-works"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <HowItWorksPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/contact"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <ContactPage />
                                             </Suspense>
                                         }
                                     />

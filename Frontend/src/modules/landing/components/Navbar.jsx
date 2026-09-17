@@ -1,53 +1,49 @@
 import React, { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import Button from './Button';
 
-const links = [
-  { label: 'Home', href: '#home' },
-  { label: 'Services', href: '#services' },
-  { label: 'How It Works', href: '#why-us' },
-  { label: 'Reviews', href: '#reviews' },
-  { label: 'About Us', href: '#about' },
-  { label: 'Contact Us', href: '#request' },
+const navItems = [
+  { label: 'Home', path: '/' },
+  { label: 'Services', path: '/services' },
+  { label: 'How It Works', path: '/how-it-works' },
+  { label: 'About Us', path: '/about' },
+  { label: 'Contact Us', path: '/contact' },
 ];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState('Home');
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener('scroll', onScroll);
-
-    // Scroll spy for active section highlight
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const id = entry.target.getAttribute('id');
-            const matchingLink = links.find((link) => link.href === `#${id}`);
-            if (matchingLink) setActive(matchingLink.label);
-          }
-        });
-      },
-      { rootMargin: '-20% 0px -70% 0px' }
-    );
-
-    links.forEach((link) => {
-      if (link.href.startsWith('#')) {
-        const el = document.querySelector(link.href);
-        if (el) observer.observe(el);
-      }
-    });
-
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      observer.disconnect();
-    };
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const isItemActive = (path) => {
+    if (path === '/') {
+      return location.pathname === '/' || location.pathname === '/landing';
+    }
+    return location.pathname === path;
+  };
+
+  const handleDownloadAppClick = (e) => {
+    if (location.pathname === '/' || location.pathname === '/landing') {
+      e.preventDefault();
+      const el = document.getElementById('apps');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      navigate('/#apps');
+    }
+    if (open) setOpen(false);
+  };
 
   return (
     <header
@@ -61,28 +57,33 @@ export default function Navbar() {
         <Logo />
 
         <ul className="hidden items-center gap-2 xl:gap-5 2xl:gap-7 lg:flex">
-          {links.map((link) => (
-            <li key={link.label}>
-              <a
-                href={link.href}
-                onClick={() => setActive(link.label)}
-                className={`relative text-[12px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors py-1 whitespace-nowrap ${
-                  active === link.label
-                    ? 'text-[var(--color-text-primary)]'
-                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                }`}
-              >
-                {link.label}
-                {active === link.label && (
-                  <span className="absolute -bottom-1.5 left-0 h-[3px] w-full rounded-t-full bg-[var(--color-primary)] shadow-[0_0_8px_rgba(0,119,182,0.6)]" />
-                )}
-              </a>
-            </li>
-          ))}
+          {navItems.map((item) => {
+            const active = isItemActive(item.path);
+            return (
+              <li key={item.label}>
+                <Link
+                  to={item.path}
+                  className={`relative text-[12px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors py-1 whitespace-nowrap ${
+                    active
+                      ? 'text-[var(--color-text-primary)]'
+                      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                  }`}
+                >
+                  {item.label}
+                  {active && (
+                    <span className="absolute -bottom-1.5 left-0 h-[3px] w-full rounded-t-full bg-[var(--color-primary)] shadow-[0_0_8px_rgba(0,119,182,0.6)]" />
+                  )}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="hidden lg:flex items-center">
-          <Button href="#apps" className="whitespace-nowrap px-4 xl:px-5 py-2.5 text-xs xl:text-sm shadow-md">
+          <Button 
+            onClick={handleDownloadAppClick}
+            className="whitespace-nowrap px-4 xl:px-5 py-2.5 text-xs xl:text-sm shadow-md cursor-pointer"
+          >
             Download App
           </Button>
         </div>
@@ -126,29 +127,32 @@ export default function Navbar() {
 
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <ul className="flex flex-col gap-2">
-            {links.map((link) => (
-              <li key={link.label}>
-                <a
-                  href={link.href}
-                  onClick={() => {
-                    setActive(link.label);
-                    setOpen(false);
-                  }}
-                  className={`block rounded-xl px-4 py-3.5 text-base font-semibold transition-colors ${
-                    active === link.label
-                      ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                      : 'text-[var(--color-text-secondary)] hover:bg-black/5 hover:text-[var(--color-text-primary)]'
-                  }`}
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))}
+            {navItems.map((item) => {
+              const active = isItemActive(item.path);
+              return (
+                <li key={item.label}>
+                  <Link
+                    to={item.path}
+                    onClick={() => setOpen(false)}
+                    className={`block rounded-xl px-4 py-3.5 text-base font-semibold transition-colors ${
+                      active
+                        ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                        : 'text-[var(--color-text-secondary)] hover:bg-black/5 hover:text-[var(--color-text-primary)]'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
         
         <div className="p-6 border-t border-[var(--color-border)] pb-8 flex flex-col gap-3">
-          <Button href="#apps" className="w-full justify-center h-12 text-sm" onClick={() => setOpen(false)}>
+          <Button 
+            onClick={handleDownloadAppClick}
+            className="w-full justify-center h-12 text-sm cursor-pointer"
+          >
             Download App
           </Button>
         </div>

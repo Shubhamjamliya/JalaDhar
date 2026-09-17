@@ -11,8 +11,10 @@ import cardCom from './assets/Commercial.jpg';
 import cardInd from './assets/Industrial.jpg';
 
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Logo from './components/Logo';
 import { GooglePlayBadge, AppStoreBadge } from './components/StoreBadges';
+import { Link } from 'react-router-dom';
 
 import {
   MapPin,
@@ -227,9 +229,6 @@ function getEmbedUrl(rawUrl) {
 export default function LandingPage() {
   const appsScrollRef = useRef(null);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
-  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
-  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
-  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [activeVideo, setActiveVideo] = useState(null);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [activeFaqTab, setActiveFaqTab] = useState('customers');
@@ -517,6 +516,16 @@ export default function LandingPage() {
             );
             })}
           </div>
+
+          <div className="mt-8 sm:mt-10 text-center reveal">
+            <Link
+              to="/services"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#0077B6]/20 transition-all hover:scale-105 group"
+            >
+              Explore All 4 Sectors & Methodologies
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -608,8 +617,20 @@ export default function LandingPage() {
               )}
             </>
           )}
+
+          <div className="mt-8 sm:mt-10 text-center reveal">
+            <Link
+              to="/how-it-works"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-50 text-[var(--color-primary)] hover:bg-blue-100 border border-blue-200 font-bold text-xs sm:text-sm transition-all hover:scale-105 group"
+            >
+              See Complete 5-Step Process & Expert Standards
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
-      </section>      {/* For Experts Section */}
+      </section>
+
+      {/* For Experts Section */}
       <section id="experts" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-12 w-full relative overflow-hidden bg-[var(--color-surface)] border-t border-b border-[var(--color-border)]">
         <div className="max-w-7xl mx-auto w-full">
           <div className="text-center mb-6 sm:mb-10 lg:mb-12 reveal">
@@ -997,6 +1018,20 @@ export default function LandingPage() {
                   <span>— {cms('founder.name', 'Bommala Anjaiah')}</span>
                   <span className="text-[var(--color-text-secondary)] font-normal text-[11px]">• {cms('founder.role', 'Founder & Managing Director')}</span>
                 </div>
+              </div>
+
+              {/* Teaser CTA linking to dedicated /about */}
+              <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
+                  Want to learn more about our geophysical principles, credentials, and mission?
+                </p>
+                <Link
+                  to="/about"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white text-xs sm:text-sm font-bold shadow-md transition-all hover:scale-105 group"
+                >
+                  Read Full Story & About Us
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </div>
             </div>
 
