@@ -79,20 +79,30 @@ function getEmbedUrl(rawUrl) {
   const trimmed = rawUrl.trim();
   if (!trimmed) return null;
 
-  // YouTube Shorts are always vertical 9:16
-  const isShorts = /youtube\.com\/shorts\//.test(trimmed);
+  // YouTube Shorts — cannot be reliably embedded (controls don't work in iframe)
+  // Return type 'shorts' so the modal shows a preview + open-on-YouTube CTA
+  const shortsMatch = trimmed.match(/youtube\.com\/shorts\/([-\w]{11})/i);
+  if (shortsMatch) {
+    return {
+      type: 'shorts',
+      isPortrait: true,
+      videoId: shortsMatch[1],
+      url: `https://www.youtube.com/shorts/${shortsMatch[1]}`,
+      thumb: `https://i.ytimg.com/vi/${shortsMatch[1]}/hqdefault.jpg`,
+    };
+  }
 
-  // YouTube match (including Shorts)
-  const ytMatch = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\/\w-]{11})/i);
+  // Regular YouTube (non-Shorts) — embeds fine with full controls
+  const ytMatch = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
   if (ytMatch) {
     return {
       type: 'youtube',
-      isPortrait: isShorts,
+      isPortrait: false,
       url: `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&rel=0&modestbranding=1`
     };
   }
 
-  // Vimeo match (always landscape by default)
+  // Vimeo
   const vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?([0-9]+)/i);
   if (vimeoMatch) {
     return {
@@ -105,7 +115,7 @@ function getEmbedUrl(rawUrl) {
   // Direct video file — orientation resolved later via onLoadedMetadata
   return {
     type: 'video',
-    isPortrait: null, // null = unknown until metadata loads
+    isPortrait: null,
     url: trimmed
   };
 }
@@ -143,9 +153,15 @@ export default function LandingPage() {
     document.body.style.overflow = 'hidden';
     const onKey = (e) => { if (e.key === 'Escape') closeVideo(); };
     window.addEventListener('keydown', onKey);
+
+    // Pause Lenis smooth scroll so it doesn't swallow touch events inside the modal
+    window.__lenis?.stop();
+
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener('keydown', onKey);
+      // Resume Lenis when modal closes
+      window.__lenis?.start();
     };
   }, [activeVideo, closeVideo]);
 
@@ -608,7 +624,8 @@ export default function LandingPage() {
         return (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md"
-            onClick={closeVideo}
+            // Only close when clicking the BACKDROP itself, not any child element
+            onClick={(e) => { if (e.target === e.currentTarget) closeVideo(); }}
             role="dialog"
             aria-modal="true"
             aria-label={activeVideo.title}
@@ -616,10 +633,12 @@ export default function LandingPage() {
             <div
               className={[
                 'relative w-full bg-slate-900 rounded-2xl sm:rounded-3xl overflow-hidden',
-                'shadow-2xl border border-white/10 flex flex-col animate-fade-up transition-all duration-300',
-                isPortrait ? 'max-w-[360px] sm:max-w-[400px]' : 'max-w-4xl',
+                'shadow-2xl border border-white/10 flex flex-col animate-fade-up',
+                isPortrait ? 'max-w-[360px] sm:max-w-[400px] max-h-[90vh]' : 'max-w-4xl',
               ].join(' ')}
+              // Stop both click and touch from bubbling to backdrop
               onClick={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
               <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-3.5 border-b border-white/10 bg-slate-950/70 backdrop-blur-sm shrink-0">
@@ -639,18 +658,18 @@ export default function LandingPage() {
               {/* Video Player — aspect ratio adapts to detected orientation */}
               <div
                 className={[
-                  'relative w-full bg-black flex items-center justify-center overflow-hidden',
-                  isPortrait ? 'aspect-[9/16] max-h-[78vh]' : 'aspect-video',
+                  'relative w-full bg-black flex items-center justify-center',
+                  isPortrait ? 'aspect-[9/16]' : 'aspect-video',
                 ].join(' ')}
               >
                 {videoOrientation === 'detecting' && (
-                  // Spinner shown while direct video metadata loads
-                  <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                  <div className="flex items-center justify-center">
                     <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                   </div>
                 )}
 
                 {!embed ? (
+                  /* No URL configured */
                   <div className="p-8 text-center text-white/70 space-y-3">
                     <div className="w-12 h-12 mx-auto rounded-full bg-white/10 flex items-center justify-center text-white/50">
                       <Play className="w-6 h-6" />
@@ -660,21 +679,62 @@ export default function LandingPage() {
                       The intro video for this app is being updated. Please check back shortly or download the app directly.
                     </p>
                   </div>
+
+                ) : embed.type === 'shorts' ? (
+                  /* YouTube Shorts — controls don't work when embedded; show preview + open on YouTube */
+                  <div className="absolute inset-0 flex flex-col">
+                    {/* Thumbnail */}
+                    <div className="relative flex-1 overflow-hidden">
+                      <img
+                        src={embed.thumb}
+                        alt={activeVideo.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      {/* Shorts badge */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-full">
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="#FF0000"><path d="M17.77 10.32l-1.2-.5L18 9.06c1.84-.96 2.53-3.23 1.56-5.06s-3.24-2.53-5.07-1.56L6 6.94c-1.29.68-2.07 2.04-2 3.49.07 1.42.93 2.67 2.22 3.25L7.42 14 6 14.75c-1.84.96-2.53 3.23-1.56 5.06.97 1.83 3.24 2.53 5.07 1.56l8.5-4.5c1.29-.68 2.07-2.04 2-3.49-.07-1.42-.93-2.68-2.24-3.06zM10 14.65v-5.3L15 12l-5 2.65z"/></svg>
+                        <span className="text-white text-[10px] font-bold tracking-wide">Shorts</span>
+                      </div>
+                    </div>
+                    {/* CTA */}
+                    <div className="shrink-0 bg-black/90 px-5 py-4 flex flex-col items-center gap-3">
+                      <p className="text-white/60 text-xs text-center">
+                        YouTube Shorts open in the YouTube app for the best experience
+                      </p>
+                      <a
+                        href={embed.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2.5 bg-[#FF0000] hover:bg-[#cc0000] active:bg-[#aa0000] text-white font-bold text-sm py-3 px-5 rounded-xl transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Play className="w-4 h-4 fill-white" />
+                        Watch on YouTube
+                      </a>
+                    </div>
+                  </div>
+
                 ) : (embed.type === 'youtube' || embed.type === 'vimeo') ? (
+                  /* Regular YouTube / Vimeo — embeds with full controls */
                   <iframe
                     src={embed.url}
                     title={activeVideo.title}
-                    className="w-full h-full border-0"
+                    className="absolute inset-0 w-full h-full border-0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                   />
+
                 ) : (
+                  /* Direct video file */
                   <video
                     src={embed.url}
                     controls
                     autoPlay
                     playsInline
-                    className="w-full h-full object-contain"
+                    className="absolute inset-0 w-full h-full object-contain"
                     onLoadedMetadata={(e) => {
                       const { videoWidth, videoHeight } = e.currentTarget;
                       if (videoWidth && videoHeight) {
