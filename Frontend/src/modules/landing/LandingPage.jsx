@@ -245,16 +245,19 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section id="home" className="relative flex flex-col justify-center overflow-hidden bg-[var(--color-bg)]">
+      <section id="home" className="relative flex flex-col justify-center bg-[var(--color-bg)]">
         {/* Gradient Background */}
-        <div className="absolute inset-0 w-full h-full z-0 bg-gradient-to-br from-[#E2F2FC] via-[#F4F9FF] to-[#7FCDFF]/30">
+        <div className="absolute inset-0 w-full h-full z-0 overflow-hidden bg-gradient-to-br from-[#E2F2FC] via-[#F4F9FF] to-[#7FCDFF]/30 pointer-events-none">
           {/* Decorative blur blobs */}
           <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[50%] bg-[var(--color-accent)] opacity-20 blur-[100px] rounded-full pointer-events-none"></div>
           <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[60%] bg-[var(--color-primary)] opacity-10 blur-[120px] rounded-full pointer-events-none"></div>
         </div>
 
         {/* Content Container */}
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 flex flex-col pt-24 sm:pt-28 lg:pt-32 pb-14 sm:pb-18 lg:pb-20">
+        <div 
+          style={{ paddingTop: 'calc(var(--landing-header-height, 80px) + 20px)' }}
+          className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 flex flex-col pb-14 sm:pb-18 lg:pb-20"
+        >
           <div className="w-full grid lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-center">
             <div className="lg:col-span-8 flex flex-col justify-center items-start py-2 sm:py-4 lg:py-6 relative">
               {/* Text Block */}

@@ -67,6 +67,8 @@ const setSetting = async (key, value, label, description, type = 'string', categ
         finalCategory = existing.category;
       } else if (key.includes('policy') || key.includes('RESCHEDULE') || key.includes('CANCELLATION') || ['ALLOW_CUSTOMER_RESCHEDULE', 'MAX_FREE_RESCHEDULES', 'RESCHEDULE_WINDOW_DAYS'].includes(key)) {
         finalCategory = 'policy';
+      } else if (key.startsWith('PLATFORM_ANNOUNCEMENT_')) {
+        finalCategory = 'general';
       } else {
         finalCategory = 'general';
       }
@@ -478,6 +480,54 @@ const initializeDefaultSettings = async () => {
       description: 'Maximum permitted hours for an expert to pause availability during a single shift',
       type: 'number',
       category: 'policy'
+    },
+    {
+      key: 'PLATFORM_ANNOUNCEMENT_ENABLED',
+      value: true,
+      label: 'Enable Platform Announcement Notice',
+      description: 'Toggle the top announcement notice banner across selected platform portals',
+      type: 'boolean',
+      category: 'general'
+    },
+    {
+      key: 'PLATFORM_ANNOUNCEMENT_TEXT',
+      value: 'Survey bookings will be open from 1st  November, 2026 onwards ',
+      label: 'Platform Announcement Notice Text',
+      description: 'Notice message displayed across the top banner of designated portals',
+      type: 'string',
+      category: 'general'
+    },
+    {
+      key: 'PLATFORM_ANNOUNCEMENT_SHOW_LANDING',
+      value: true,
+      label: 'Show Notice on Landing Page',
+      description: 'Display top notice banner on public Landing Page',
+      type: 'boolean',
+      category: 'general'
+    },
+    {
+      key: 'PLATFORM_ANNOUNCEMENT_SHOW_USER',
+      value: true,
+      label: 'Show Notice on User Portal',
+      description: 'Display top notice banner on User Portal dashboard & header',
+      type: 'boolean',
+      category: 'general'
+    },
+    {
+      key: 'PLATFORM_ANNOUNCEMENT_SHOW_VENDOR',
+      value: true,
+      label: 'Show Notice on Expert / Vendor Portal',
+      description: 'Display top notice banner on Expert Portal dashboard & header',
+      type: 'boolean',
+      category: 'general'
+    },
+    {
+      key: 'PLATFORM_ANNOUNCEMENT_TYPE',
+      value: 'info',
+      label: 'Announcement Banner Style',
+      description: 'Visual accent theme for the banner (info, warning, or success)',
+      type: 'string',
+      category: 'general'
     }
   ];
 

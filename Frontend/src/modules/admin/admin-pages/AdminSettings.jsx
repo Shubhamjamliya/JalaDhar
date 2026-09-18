@@ -28,7 +28,8 @@ import {
     IoChevronDownOutline,
     IoCalendarOutline,
     IoTimeOutline,
-    IoLogoWhatsapp
+    IoLogoWhatsapp,
+    IoMegaphoneOutline
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import {
@@ -226,6 +227,17 @@ export default function AdminSettings({ defaultTab = "general" }) {
     ]);
     const [newDisputeType, setNewDisputeType] = useState("");
     const [disputeTypesLoading, setDisputeTypesLoading] = useState(false);
+
+    // Platform Announcement Notice State
+    const [announcementSettings, setAnnouncementSettings] = useState({
+        enabled: true,
+        text: "Survey bookings will be open from 1st  November, 2026 onwards ",
+        showLanding: true,
+        showUser: true,
+        showVendor: true,
+        type: "info"
+    });
+    const [announcementLoading, setAnnouncementLoading] = useState(false);
 
     // Languages & AI Localization State
     const [langConfig, setLangConfig] = useState({
@@ -628,7 +640,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
             }
         }, [activeTab]);
 
-        // Load general (dispute types) settings
+        // Load general (dispute types & platform announcement) settings
         useEffect(() => {
             const loadGeneralSettings = async () => {
                 try {
@@ -638,6 +650,23 @@ export default function AdminSettings({ defaultTab = "general" }) {
                         if (dtSetting && Array.isArray(dtSetting.value) && dtSetting.value.length > 0) {
                             setDisputeTypesList(dtSetting.value);
                         }
+
+                        // Load Announcement settings
+                        const enabledSetting = response.data.settings.find(s => s.key === 'PLATFORM_ANNOUNCEMENT_ENABLED');
+                        const textSetting = response.data.settings.find(s => s.key === 'PLATFORM_ANNOUNCEMENT_TEXT');
+                        const landingSetting = response.data.settings.find(s => s.key === 'PLATFORM_ANNOUNCEMENT_SHOW_LANDING');
+                        const userSetting = response.data.settings.find(s => s.key === 'PLATFORM_ANNOUNCEMENT_SHOW_USER');
+                        const vendorSetting = response.data.settings.find(s => s.key === 'PLATFORM_ANNOUNCEMENT_SHOW_VENDOR');
+                        const typeSetting = response.data.settings.find(s => s.key === 'PLATFORM_ANNOUNCEMENT_TYPE');
+
+                        setAnnouncementSettings({
+                            enabled: enabledSetting ? (enabledSetting.value === true || enabledSetting.value === 'true' || enabledSetting.value === 1 || enabledSetting.value === '1') : true,
+                            text: textSetting?.value || "Survey bookings will be open from 1st  November, 2026 onwards ",
+                            showLanding: landingSetting ? (landingSetting.value === true || landingSetting.value === 'true' || landingSetting.value === 1 || landingSetting.value === '1') : true,
+                            showUser: userSetting ? (userSetting.value === true || userSetting.value === 'true' || userSetting.value === 1 || userSetting.value === '1') : true,
+                            showVendor: vendorSetting ? (vendorSetting.value === true || vendorSetting.value === 'true' || vendorSetting.value === 1 || vendorSetting.value === '1') : true,
+                            type: typeSetting?.value || "info"
+                        });
                     }
                 } catch (err) {
                     console.error('Error loading general settings:', err);
@@ -681,6 +710,33 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 setError(err.response?.data?.message || "Failed to update dispute types. Please try again.");
             } finally {
                 setDisputeTypesLoading(false);
+            }
+        };
+
+        const handleSaveAnnouncementSettings = async (e) => {
+            if (e) e.preventDefault();
+            setError("");
+            setAnnouncementLoading(true);
+
+            try {
+                const response = await updateMultipleSettings([
+                    { key: 'PLATFORM_ANNOUNCEMENT_ENABLED', value: Boolean(announcementSettings.enabled), label: 'Enable Platform Announcement Notice', category: 'general', type: 'boolean' },
+                    { key: 'PLATFORM_ANNOUNCEMENT_TEXT', value: announcementSettings.text.trim(), label: 'Platform Announcement Notice Text', category: 'general', type: 'string' },
+                    { key: 'PLATFORM_ANNOUNCEMENT_SHOW_LANDING', value: Boolean(announcementSettings.showLanding), label: 'Show Notice on Landing Page', category: 'general', type: 'boolean' },
+                    { key: 'PLATFORM_ANNOUNCEMENT_SHOW_USER', value: Boolean(announcementSettings.showUser), label: 'Show Notice on User Portal', category: 'general', type: 'boolean' },
+                    { key: 'PLATFORM_ANNOUNCEMENT_SHOW_VENDOR', value: Boolean(announcementSettings.showVendor), label: 'Show Notice on Expert / Vendor Portal', category: 'general', type: 'boolean' },
+                    { key: 'PLATFORM_ANNOUNCEMENT_TYPE', value: announcementSettings.type, label: 'Announcement Banner Style', category: 'general', type: 'string' }
+                ]);
+                if (response.success) {
+                    toast.showSuccess("Platform announcement settings updated successfully!");
+                } else {
+                    setError(response.message || "Failed to update announcement settings");
+                }
+            } catch (err) {
+                console.error("Update announcement settings error:", err);
+                setError(err.response?.data?.message || "Failed to update announcement settings. Please try again.");
+            } finally {
+                setAnnouncementLoading(false);
             }
         };
 
@@ -1319,6 +1375,208 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 >
                                                     {disputeTypesLoading ? "Saving..." : "Save Dispute Types"}
                                                 </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Platform Announcement Notice Banner Configuration */}
+                                        <div className="pt-6 border-t border-gray-100">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-2 rounded-xl bg-blue-50 text-[#0A84FF] border border-blue-100">
+                                                        <IoMegaphoneOutline className="text-lg" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-sm font-semibold text-gray-800">
+                                                            Platform Top Notice & Announcement Banner
+                                                        </h3>
+                                                        <p className="text-xs text-gray-400">
+                                                            Configure the broadcast announcement banner shown across the Landing Page, User Portal, and Expert Portal.
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Enable Toggle */}
+                                                <label className="relative inline-flex items-center cursor-pointer select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={announcementSettings.enabled}
+                                                        onChange={(e) =>
+                                                            setAnnouncementSettings({
+                                                                ...announcementSettings,
+                                                                enabled: e.target.checked
+                                                            })
+                                                        }
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0A84FF]"></div>
+                                                    <span className="ml-2.5 text-xs font-semibold text-gray-700">
+                                                        {announcementSettings.enabled ? "Active" : "Disabled"}
+                                                    </span>
+                                                </label>
+                                            </div>
+
+                                            {/* Banner Settings Body */}
+                                            <div className="space-y-4 mt-4 bg-gray-50/70 p-4 rounded-xl border border-gray-200/80">
+                                                {/* Notice Text Input */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-1.5">
+                                                        <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                                            Notice Message Text
+                                                        </label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setAnnouncementSettings({
+                                                                    ...announcementSettings,
+                                                                    text: "Survey bookings will be open from 1st  November, 2026 onwards "
+                                                                })
+                                                            }
+                                                            className="text-xs text-[#0A84FF] hover:underline font-medium cursor-pointer"
+                                                        >
+                                                            Reset to Default
+                                                        </button>
+                                                    </div>
+                                                    <textarea
+                                                        rows={2}
+                                                        value={announcementSettings.text}
+                                                        onChange={(e) =>
+                                                            setAnnouncementSettings({
+                                                                ...announcementSettings,
+                                                                text: e.target.value
+                                                            })
+                                                        }
+                                                        placeholder="e.g. Survey bookings will be open from 1st  November, 2026 onwards "
+                                                        className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white resize-none"
+                                                    />
+                                                    <span className="text-[11px] text-gray-400">
+                                                        {announcementSettings.text.length} characters
+                                                    </span>
+                                                </div>
+
+                                                {/* Target Portals */}
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                                                        Display On Portals
+                                                    </label>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                        <label className="flex items-center gap-2 bg-white p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={announcementSettings.showLanding}
+                                                                onChange={(e) =>
+                                                                    setAnnouncementSettings({
+                                                                        ...announcementSettings,
+                                                                        showLanding: e.target.checked
+                                                                    })
+                                                                }
+                                                                className="rounded border-gray-300 text-[#0A84FF] focus:ring-[#0A84FF] w-4 h-4 cursor-pointer"
+                                                            />
+                                                            <span className="text-xs font-semibold text-gray-700">Landing Page</span>
+                                                        </label>
+
+                                                        <label className="flex items-center gap-2 bg-white p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={announcementSettings.showUser}
+                                                                onChange={(e) =>
+                                                                    setAnnouncementSettings({
+                                                                        ...announcementSettings,
+                                                                        showUser: e.target.checked
+                                                                    })
+                                                                }
+                                                                className="rounded border-gray-300 text-[#0A84FF] focus:ring-[#0A84FF] w-4 h-4 cursor-pointer"
+                                                            />
+                                                            <span className="text-xs font-semibold text-gray-700">User Portal</span>
+                                                        </label>
+
+                                                        <label className="flex items-center gap-2 bg-white p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition-colors">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={announcementSettings.showVendor}
+                                                                onChange={(e) =>
+                                                                    setAnnouncementSettings({
+                                                                        ...announcementSettings,
+                                                                        showVendor: e.target.checked
+                                                                    })
+                                                                }
+                                                                className="rounded border-gray-300 text-[#0A84FF] focus:ring-[#0A84FF] w-4 h-4 cursor-pointer"
+                                                            />
+                                                            <span className="text-xs font-semibold text-gray-700">Expert / Vendor Portal</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                {/* Theme Selector */}
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                                                        Banner Accent Theme
+                                                    </label>
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {[
+                                                            { id: 'warning', label: 'Amber Yellow (Naukri Style)', style: 'bg-amber-100 text-amber-950 border-amber-300' },
+                                                            { id: 'info', label: 'Royal Blue (Corporate)', style: 'bg-blue-100 text-blue-950 border-blue-300' },
+                                                            { id: 'success', label: 'Emerald Mint (Active)', style: 'bg-emerald-100 text-emerald-950 border-emerald-300' }
+                                                        ].map((theme) => (
+                                                            <button
+                                                                key={theme.id}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setAnnouncementSettings({
+                                                                        ...announcementSettings,
+                                                                        type: theme.id
+                                                                    })
+                                                                }
+                                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                                                                    announcementSettings.type === theme.id
+                                                                        ? 'ring-2 ring-offset-1 ring-blue-500 shadow-xs'
+                                                                        : 'opacity-70 hover:opacity-100'
+                                                                } ${theme.style}`}
+                                                            >
+                                                                {theme.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Live Interactive Preview */}
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                                                        Live Preview (Naukri Sub-Navbar Style)
+                                                    </label>
+                                                    <div
+                                                        className={`rounded-lg p-2.5 sm:p-3 text-xs sm:text-sm font-medium border transition-all flex items-center justify-center gap-2 text-center ${
+                                                            announcementSettings.type === 'info'
+                                                                ? 'bg-[#EFF6FF] border-[#BFDBFE] text-blue-950'
+                                                                : announcementSettings.type === 'success'
+                                                                ? 'bg-[#F0FDF4] border-[#BBF7D0] text-emerald-950'
+                                                                : 'bg-[#FFF9E6] border-[#FDE68A] text-amber-950'
+                                                        }`}
+                                                    >
+                                                        <IoWarningOutline className={`w-4 h-4 shrink-0 inline-block -mt-0.5 ${
+                                                            announcementSettings.type === 'info'
+                                                                ? 'text-blue-600'
+                                                                : announcementSettings.type === 'success'
+                                                                ? 'text-emerald-600'
+                                                                : 'text-amber-600'
+                                                        }`} />
+                                                        <span className="leading-snug">
+                                                            <strong className="font-bold mr-1">Notice:</strong>
+                                                            <span className="text-slate-800 font-semibold">{announcementSettings.text || "Enter notice text..."}</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Save Button */}
+                                                <div className="flex justify-end pt-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleSaveAnnouncementSettings}
+                                                        disabled={announcementLoading}
+                                                        className="px-5 py-2.5 text-sm bg-[#0A84FF] text-white rounded-lg hover:bg-[#005BBB] transition-all font-bold shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                                                    >
+                                                        {announcementLoading ? "Saving..." : "Save Announcement Settings"}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

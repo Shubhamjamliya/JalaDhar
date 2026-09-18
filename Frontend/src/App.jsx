@@ -330,7 +330,7 @@ function App() {
                                                 <Suspense fallback={<LoadingSpinner />}>
                                                     <UserNavbar />
                                                 </Suspense>
-                                                <main className="px-4 pb-16 pt-16 md:pb-8 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
+                                                <main style={{ paddingTop: 'calc(var(--user-header-height, 60px) + 6px)' }} className="px-4 pb-16 md:pb-8 md:px-6 md:max-w-7xl md:mx-auto">
                                                     <Suspense fallback={<LoadingSpinner />}>
                                                         <Routes>
                                                             <Route
@@ -647,7 +647,7 @@ function App() {
                                                 <Suspense fallback={<LoadingSpinner />}>
                                                     <VendorNavbar />
                                                 </Suspense>
-                                                <main className="px-4 pb-20 pt-20 md:pb-12 md:pt-28 md:px-6 md:max-w-7xl md:mx-auto">
+                                                <main style={{ paddingTop: 'calc(var(--vendor-header-height, 60px) + 6px)' }} className="px-4 pb-20 md:pb-12 md:px-6 md:max-w-7xl md:mx-auto">
                                                     <Suspense fallback={<LoadingSpinner />}>
                                                         <Routes>
                                                             <Route

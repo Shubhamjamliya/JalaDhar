@@ -145,7 +145,10 @@ export default function ServicesPage() {
     <div className="landing-page-root min-h-screen text-[var(--color-text-primary)] selection:bg-[var(--color-primary)] selection:text-white flex flex-col justify-between">
       <Navbar />
 
-      <main className="flex-grow pt-24 sm:pt-28 pb-16">
+      <main 
+        style={{ paddingTop: 'calc(var(--landing-header-height, 80px) + 14px)' }}
+        className="flex-grow pb-16"
+      >
         {/* Breadcrumb & Header */}
         <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-7xl mx-auto mb-12 sm:mb-16">
           <div className="flex items-center gap-2 text-xs sm:text-sm text-[var(--color-text-secondary)] mb-4">

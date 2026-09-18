@@ -28,6 +28,7 @@ import logo from "@/assets/Header-logoo.png";
 import VendorSidebar from "./VendorSidebar";
 import ExpertAgreementModal from "./ExpertAgreementModal";
 import VendorAvailabilityModal from "./VendorAvailabilityModal";
+import LandingNoticeSpotlight from "../../landing/components/LandingNoticeSpotlight";
 import { getExpertLiveStatus } from "../../../utils/availabilityUtils";
 import { useToast } from "../../../hooks/useToast";
 import api from "../../../services/api";
@@ -75,10 +76,35 @@ export default function VendorNavbar() {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
     const toggleRef = useRef(null);
+    const headerRef = useRef(null);
     const { logout, vendor, updateOnlineStatus, allowAvailabilityToggle } = useVendorAuth();
+    const isPendingAgreement = Boolean(vendor && (vendor.verificationStatus === 'VERIFIED_PENDING_AGREEMENT'));
     const location = useLocation();
     const navigate = useNavigate();
     const toast = useToast();
+
+    // Dynamically track header height to adjust layout padding smoothly across notice states
+    useEffect(() => {
+        const el = headerRef.current;
+        if (!el) return;
+
+        const updateHeight = () => {
+            if (el) {
+                const totalH = el.offsetHeight + (isPendingAgreement ? 32 : 0);
+                document.documentElement.style.setProperty('--vendor-header-height', `${totalH}px`);
+            }
+        };
+
+        updateHeight();
+        const ro = new ResizeObserver(updateHeight);
+        ro.observe(el);
+        window.addEventListener('resize', updateHeight);
+
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', updateHeight);
+        };
+    }, [isPendingAgreement]);
 
     // Availability State
     const [showPauseModal, setShowPauseModal] = useState(false);
@@ -184,9 +210,6 @@ export default function VendorNavbar() {
     const [agreementText, setAgreementText] = useState('');
     const [agreementVersion, setAgreementVersion] = useState('v1.0');
 
-    // Check if Expert requires agreement acceptance
-    const isPendingAgreement = vendor && (vendor.verificationStatus === 'VERIFIED_PENDING_AGREEMENT');
-
     useEffect(() => {
         const checkExpertAgreement = async () => {
             if (!vendor) return;
@@ -240,171 +263,176 @@ export default function VendorNavbar() {
             )}
 
             {/* Top Navbar - Mobile & Desktop */}
-            <header className={`fixed inset-x-0 z-50 flex items-center justify-between bg-[#F6F7F9] px-4 py-2.5 md:px-6 md:py-3.5 border-b border-gray-200/60 shadow-sm ${isPendingAgreement ? 'top-8' : 'top-0'}`}>
-                {/* Left Section: Back Button + Logo */}
-                <div className="flex items-center gap-2 sm:gap-3">
-                    {/* Back Button - Only for sub-pages */}
-                    {!navItems.some(item => item.to === location.pathname) && (
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="flex items-center justify-center w-8 h-8 rounded-full bg-white text-gray-700 hover:text-[#0A84FF] shadow-sm border border-gray-200 transition-all active:scale-95 shrink-0"
-                            aria-label="Go Back"
-                        >
-                            <IoChevronBackOutline className="text-lg" />
-                        </button>
-                    )}
+            <header ref={headerRef} className={`fixed inset-x-0 z-50 bg-[#F6F7F9] border-b border-gray-200/60 shadow-xs ${isPendingAgreement ? 'top-8' : 'top-0'}`}>
+                <div className="flex items-center justify-between px-4 py-2.5 md:px-6 md:py-3.5">
+                    {/* Left Section: Back Button + Logo */}
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        {/* Back Button - Only for sub-pages */}
+                        {!navItems.some(item => item.to === location.pathname) && (
+                            <button
+                                onClick={() => navigate(-1)}
+                                className="flex items-center justify-center w-8 h-8 rounded-full bg-white text-gray-700 hover:text-[#0A84FF] shadow-sm border border-gray-200 transition-all active:scale-95 shrink-0"
+                                aria-label="Go Back"
+                            >
+                                <IoChevronBackOutline className="text-lg" />
+                            </button>
+                        )}
 
-                    {/* Logo */}
-                    <div className="flex items-center">
-                        <img
-                            src={logo}
-                            alt="Jaladhaara Logo"
-                            className="h-9 sm:h-10 md:h-12 w-auto max-w-[140px] sm:max-w-[170px] md:max-w-[200px] object-contain"
-                        />
+                        {/* Logo */}
+                        <div className="flex items-center">
+                            <img
+                                src={logo}
+                                alt="Jaladhaara Logo"
+                                className="h-9 sm:h-10 md:h-12 w-auto max-w-[140px] sm:max-w-[170px] md:max-w-[200px] object-contain"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Desktop Navigation Links - Hidden on Mobile */}
+                    <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
+                        {navItems.map(({ id, label, to, Icon }) => (
+                            <NavLink
+                                key={id}
+                                to={to}
+                                className={({ isActive }) =>
+                                    `flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${isActive
+                                        ? "text-[#0A84FF] bg-[#E7F0FB] font-semibold"
+                                        : "text-gray-700 hover:text-[#0A84FF] hover:bg-[#E7F0FB]"
+                                    }`
+                                }
+                                end={id === "dashboard"}
+                            >
+                                <Icon className="text-xl" />
+                                <span className="text-sm font-medium">{label}</span>
+                            </NavLink>
+                        ))}
+                    </nav>
+
+                    {/* Right Icons */}
+                    <div className="flex items-center gap-2 sm:gap-3.5">
+                        {/* Real-time Online / Offline Availability Toggle Pill */}
+                        {vendor && (
+                            allowAvailabilityToggle !== false ? (
+                                <button
+                                    onClick={handleToggleClick}
+                                    disabled={pauseLoading}
+                                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold transition-all shadow-2xs border cursor-pointer ${
+                                        liveStatus.status === 'ONLINE'
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                            : liveStatus.status === 'PAUSED'
+                                            ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                                            : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                                    }`}
+                                    title={liveStatus.label}
+                                >
+                                    <span
+                                        className={`w-2 h-2 rounded-full shrink-0 ${
+                                            liveStatus.status === 'ONLINE'
+                                                ? 'bg-emerald-500 animate-pulse'
+                                                : liveStatus.status === 'PAUSED'
+                                                ? 'bg-amber-500'
+                                                : 'bg-slate-400'
+                                        }`}
+                                    />
+                                    <span className="hidden xs:inline sm:inline">
+                                        {liveStatus.status === 'ONLINE'
+                                            ? 'Online'
+                                            : liveStatus.status === 'PAUSED'
+                                            ? 'Paused'
+                                            : 'Offline'}
+                                    </span>
+                                    {pauseLoading ? (
+                                        <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
+                                    ) : (
+                                        <span
+                                            className={`inline-block w-6 h-3.5 rounded-full transition-colors relative shrink-0 ${
+                                                liveStatus.status === 'ONLINE' ? 'bg-emerald-500' : 'bg-slate-300'
+                                            }`}
+                                        >
+                                            <span
+                                                className={`absolute top-0.5 left-0.5 bg-white w-2.5 h-2.5 rounded-full transition-transform ${
+                                                    liveStatus.status === 'ONLINE' ? 'translate-x-2.5' : 'translate-x-0'
+                                                }`}
+                                            />
+                                        </span>
+                                    )}
+                                </button>
+                            ) : (
+                                <div
+                                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold border bg-emerald-50/90 text-emerald-800 border-emerald-200 shadow-2xs"
+                                    title="Operating shift active (Centrally scheduled by Platform Policy)"
+                                >
+                                    <span className="w-2 h-2 rounded-full shrink-0 bg-emerald-500 animate-pulse" />
+                                    <span className="hidden xs:inline sm:inline">On-Duty</span>
+                                </div>
+                            )
+                        )}
+
+                        {/* Expert Name - Desktop Only */}
+                        {vendor && (
+                            <span className="hidden lg:block text-sm font-medium text-gray-700">
+                                {vendor.name}
+                            </span>
+                        )}
+
+                        {/* Language Switcher */}
+                        {isLanguageEnabled && (
+                            <div className="relative" ref={langDropdownRef}>
+                                <button
+                                    onClick={() => setShowLangMenu(!showLangMenu)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200/90 text-xs font-bold text-gray-700 hover:border-blue-300 transition-all cursor-pointer shadow-2xs"
+                                    title="Change Language"
+                                >
+                                    <IoGlobeOutline className="text-[#0A84FF] text-base" />
+                                    <span className="hidden sm:inline">{currentLangObj.nativeName}</span>
+                                </button>
+
+                                {showLangMenu && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                                        {supportedLanguages.map((lang) => (
+                                            <button
+                                                key={lang.code}
+                                                onClick={() => {
+                                                    setLanguage(lang.code);
+                                                    setShowLangMenu(false);
+                                                }}
+                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left cursor-pointer ${
+                                                    language === lang.code ? "bg-blue-50 text-[#0A84FF]" : "text-gray-700 hover:bg-gray-50"
+                                                }`}
+                                            >
+                                                <span>{lang.nativeName}</span>
+                                                <span className="text-[10px] text-gray-400 font-mono">{lang.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <NotificationDropdown disablePopup={true} />
+
+                        {/* Logout Button - Desktop Only */}
+                        <button
+                            onClick={handleLogoutClick}
+                            className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Logout"
+                        >
+                            <IoLogOutOutline className="text-xl" />
+                            <span>Logout</span>
+                        </button>
+
+                        {/* Mobile Menu Button - Hidden on Desktop */}
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="md:hidden"
+                        >
+                            <IoMenuOutline className="text-3xl text-[#0A84FF]" />
+                        </button>
                     </div>
                 </div>
 
-                {/* Desktop Navigation Links - Hidden on Mobile */}
-                <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
-                    {navItems.map(({ id, label, to, Icon }) => (
-                        <NavLink
-                            key={id}
-                            to={to}
-                            className={({ isActive }) =>
-                                `flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${isActive
-                                    ? "text-[#0A84FF] bg-[#E7F0FB] font-semibold"
-                                    : "text-gray-700 hover:text-[#0A84FF] hover:bg-[#E7F0FB]"
-                                }`
-                            }
-                            end={id === "dashboard"}
-                        >
-                            <Icon className="text-xl" />
-                            <span className="text-sm font-medium">{label}</span>
-                        </NavLink>
-                    ))}
-                </nav>
-
-                {/* Right Icons */}
-                <div className="flex items-center gap-2 sm:gap-3.5">
-                    {/* Real-time Online / Offline Availability Toggle Pill */}
-                    {vendor && (
-                        allowAvailabilityToggle !== false ? (
-                            <button
-                                onClick={handleToggleClick}
-                                disabled={pauseLoading}
-                                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold transition-all shadow-2xs border cursor-pointer ${
-                                    liveStatus.status === 'ONLINE'
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                        : liveStatus.status === 'PAUSED'
-                                        ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-                                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                                }`}
-                                title={liveStatus.label}
-                            >
-                                <span
-                                    className={`w-2 h-2 rounded-full shrink-0 ${
-                                        liveStatus.status === 'ONLINE'
-                                            ? 'bg-emerald-500 animate-pulse'
-                                            : liveStatus.status === 'PAUSED'
-                                            ? 'bg-amber-500'
-                                            : 'bg-slate-400'
-                                    }`}
-                                />
-                                <span className="hidden xs:inline sm:inline">
-                                    {liveStatus.status === 'ONLINE'
-                                        ? 'Online'
-                                        : liveStatus.status === 'PAUSED'
-                                        ? 'Paused'
-                                        : 'Offline'}
-                                </span>
-                                {pauseLoading ? (
-                                    <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
-                                ) : (
-                                    <span
-                                        className={`inline-block w-6 h-3.5 rounded-full transition-colors relative shrink-0 ${
-                                            liveStatus.status === 'ONLINE' ? 'bg-emerald-500' : 'bg-slate-300'
-                                        }`}
-                                    >
-                                        <span
-                                            className={`absolute top-0.5 left-0.5 bg-white w-2.5 h-2.5 rounded-full transition-transform ${
-                                                liveStatus.status === 'ONLINE' ? 'translate-x-2.5' : 'translate-x-0'
-                                            }`}
-                                        />
-                                    </span>
-                                )}
-                            </button>
-                        ) : (
-                            <div
-                                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold border bg-emerald-50/90 text-emerald-800 border-emerald-200 shadow-2xs"
-                                title="Operating shift active (Centrally scheduled by Platform Policy)"
-                            >
-                                <span className="w-2 h-2 rounded-full shrink-0 bg-emerald-500 animate-pulse" />
-                                <span className="hidden xs:inline sm:inline">On-Duty</span>
-                            </div>
-                        )
-                    )}
-
-                    {/* Expert Name - Desktop Only */}
-                    {vendor && (
-                        <span className="hidden lg:block text-sm font-medium text-gray-700">
-                            {vendor.name}
-                        </span>
-                    )}
-
-                    {/* Language Switcher */}
-                    {isLanguageEnabled && (
-                        <div className="relative" ref={langDropdownRef}>
-                            <button
-                                onClick={() => setShowLangMenu(!showLangMenu)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200/90 text-xs font-bold text-gray-700 hover:border-blue-300 transition-all cursor-pointer shadow-2xs"
-                                title="Change Language"
-                            >
-                                <IoGlobeOutline className="text-[#0A84FF] text-base" />
-                                <span className="hidden sm:inline">{currentLangObj.nativeName}</span>
-                            </button>
-
-                            {showLangMenu && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
-                                    {supportedLanguages.map((lang) => (
-                                        <button
-                                            key={lang.code}
-                                            onClick={() => {
-                                                setLanguage(lang.code);
-                                                setShowLangMenu(false);
-                                            }}
-                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left cursor-pointer ${
-                                                language === lang.code ? "bg-blue-50 text-[#0A84FF]" : "text-gray-700 hover:bg-gray-50"
-                                            }`}
-                                        >
-                                            <span>{lang.nativeName}</span>
-                                            <span className="text-[10px] text-gray-400 font-mono">{lang.name}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    <NotificationDropdown disablePopup={true} />
-
-                    {/* Logout Button - Desktop Only */}
-                    <button
-                        onClick={handleLogoutClick}
-                        className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Logout"
-                    >
-                        <IoLogOutOutline className="text-xl" />
-                        <span>Logout</span>
-                    </button>
-
-                    {/* Mobile Menu Button - Hidden on Desktop */}
-                    <button
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="md:hidden"
-                    >
-                        <IoMenuOutline className="text-3xl text-[#0A84FF]" />
-                    </button>
-                </div>
+                {/* Sub-Navbar Announcement Bar */}
+                <LandingNoticeSpotlight portal="vendor" />
             </header>
 
             {/* Sidebar - Mobile Only */}

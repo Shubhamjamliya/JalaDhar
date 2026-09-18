@@ -37,6 +37,7 @@ import NotificationDropdown from "../../../components/NotificationDropdown";
 import logo from "@/assets/Header-logoo.png";
 import UserSidebar from "./UserSidebar";
 import UserAgreementModal from "./UserAgreementModal";
+import LandingNoticeSpotlight from "../../landing/components/LandingNoticeSpotlight";
 import api from "../../../services/api";
 import { getUserBookings } from "../../../services/bookingApi";
 
@@ -94,9 +95,32 @@ export default function UserNavbar() {
 
     const langDropdownRef = useRef(null);
     const toggleRef = useRef(null);
+    const headerRef = useRef(null);
     const { logout, user } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+
+    // Dynamically track header height to adjust layout padding smoothly across notice states
+    useEffect(() => {
+        const el = headerRef.current;
+        if (!el) return;
+
+        const updateHeight = () => {
+            if (el) {
+                document.documentElement.style.setProperty('--user-header-height', `${el.offsetHeight}px`);
+            }
+        };
+
+        updateHeight();
+        const ro = new ResizeObserver(updateHeight);
+        ro.observe(el);
+        window.addEventListener('resize', updateHeight);
+
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', updateHeight);
+        };
+    }, []);
 
     // Hide bottom nav when virtual keyboard is open (mobile)
     useEffect(() => {
@@ -208,100 +232,105 @@ export default function UserNavbar() {
     return (
         <>
             {/* Top Navbar - Mobile & Desktop */}
-            <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-white/95 backdrop-blur-md px-4 py-2.5 shadow-sm border-b border-gray-100 md:px-6 md:py-3">
-                {/* Left Section: Logo */}
-                <NavLink to="/user/dashboard" className="flex items-center">
-                    <img
-                        src={logo}
-                        alt="Jaladhaara Logo"
-                        className="h-10 md:h-12 w-auto object-contain"
-                    />
-                </NavLink>
+            <header ref={headerRef} className="fixed inset-x-0 top-0 z-50 bg-white/95 backdrop-blur-md shadow-xs border-b border-gray-100">
+                <div className="flex items-center justify-between px-4 py-2.5 md:px-6 md:py-3">
+                    {/* Left Section: Logo */}
+                    <NavLink to="/user/dashboard" className="flex items-center">
+                        <img
+                            src={logo}
+                            alt="Jaladhaara Logo"
+                            className="h-10 md:h-12 w-auto object-contain"
+                        />
+                    </NavLink>
 
-                {/* Desktop Navigation Links - Hidden on Mobile */}
-                <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
-                    {navItems.map(({ id, labelKey, fallbackLabel, to, Icon }) => (
-                        <NavLink
-                            key={id}
-                            to={to}
-                            className={({ isActive }) =>
-                                `flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${isActive
-                                    ? "text-[#0A84FF] bg-[#E7F0FB] font-semibold"
-                                    : "text-gray-700 hover:text-[#0A84FF] hover:bg-[#E7F0FB]"
-                                }`
-                            }
-                            end={id === "dashboard"}
-                        >
-                            <Icon className="text-xl" />
-                            <span className="text-sm font-medium">{t(labelKey, fallbackLabel)}</span>
-                        </NavLink>
-                    ))}
-                </nav>
-
-                {/* Right Icons */}
-                <div className="flex items-center gap-3">
-                    {/* User Name - Desktop Only */}
-                    {user && (
-                        <span className="hidden md:block text-sm font-semibold text-gray-800">
-                            {user.name}
-                        </span>
-                    )}
-
-                    {/* Language Switcher */}
-                    {isLanguageEnabled && (
-                        <div className="relative" ref={langDropdownRef}>
-                            <button
-                                onClick={() => setShowLangMenu(!showLangMenu)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-gray-200/90 text-xs font-bold text-gray-700 hover:border-blue-300 transition-all cursor-pointer shadow-2xs"
-                                title="Change Language"
+                    {/* Desktop Navigation Links - Hidden on Mobile */}
+                    <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
+                        {navItems.map(({ id, labelKey, fallbackLabel, to, Icon }) => (
+                            <NavLink
+                                key={id}
+                                to={to}
+                                className={({ isActive }) =>
+                                    `flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${isActive
+                                        ? "text-[#0A84FF] bg-[#E7F0FB] font-semibold"
+                                        : "text-gray-700 hover:text-[#0A84FF] hover:bg-[#E7F0FB]"
+                                    }`
+                                }
+                                end={id === "dashboard"}
                             >
-                                <IoGlobeOutline className="text-[#0A84FF] text-base" />
-                                <span className="hidden sm:inline">{currentLangObj.nativeName}</span>
-                            </button>
+                                <Icon className="text-xl" />
+                                <span className="text-sm font-medium">{t(labelKey, fallbackLabel)}</span>
+                            </NavLink>
+                        ))}
+                    </nav>
 
-                            {showLangMenu && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
-                                    {supportedLanguages.map((lang) => (
-                                        <button
-                                            key={lang.code}
-                                            onClick={() => {
-                                                setLanguage(lang.code);
-                                                setShowLangMenu(false);
-                                            }}
-                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left cursor-pointer ${
-                                                language === lang.code ? "bg-blue-50 text-[#0A84FF]" : "text-gray-700 hover:bg-gray-50"
-                                            }`}
-                                        >
-                                            <span>{lang.nativeName}</span>
-                                            <span className="text-[10px] text-gray-400 font-mono">{lang.name}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    {/* Right Icons */}
+                    <div className="flex items-center gap-3">
+                        {/* User Name - Desktop Only */}
+                        {user && (
+                            <span className="hidden md:block text-sm font-semibold text-gray-800">
+                                {user.name}
+                            </span>
+                        )}
 
-                    <NotificationDropdown disablePopup={true} />
+                        {/* Language Switcher */}
+                        {isLanguageEnabled && (
+                            <div className="relative" ref={langDropdownRef}>
+                                <button
+                                    onClick={() => setShowLangMenu(!showLangMenu)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-gray-200/90 text-xs font-bold text-gray-700 hover:border-blue-300 transition-all cursor-pointer shadow-2xs"
+                                    title="Change Language"
+                                >
+                                    <IoGlobeOutline className="text-[#0A84FF] text-base" />
+                                    <span className="hidden sm:inline">{currentLangObj.nativeName}</span>
+                                </button>
 
-                    {/* Logout Button - Desktop Only */}
-                    <button
-                        onClick={handleLogoutClick}
-                        className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Logout"
-                    >
-                        <IoLogOutOutline className="text-xl" />
-                        <span>Logout</span>
-                    </button>
+                                {showLangMenu && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                                        {supportedLanguages.map((lang) => (
+                                            <button
+                                                key={lang.code}
+                                                onClick={() => {
+                                                    setLanguage(lang.code);
+                                                    setShowLangMenu(false);
+                                                }}
+                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left cursor-pointer ${
+                                                    language === lang.code ? "bg-blue-50 text-[#0A84FF]" : "text-gray-700 hover:bg-gray-50"
+                                                }`}
+                                            >
+                                                <span>{lang.nativeName}</span>
+                                                <span className="text-[10px] text-gray-400 font-mono">{lang.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
-                    {/* Mobile Menu Button - Hidden on Desktop */}
-                    <button
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-gray-50 hover:bg-blue-50 text-[#0A84FF] border border-gray-200/80 transition-all active:scale-95 shrink-0"
-                        aria-label="Open Menu"
-                    >
-                        <IoMenuOutline className="text-2xl" />
-                    </button>
+                        <NotificationDropdown disablePopup={true} />
+
+                        {/* Logout Button - Desktop Only */}
+                        <button
+                            onClick={handleLogoutClick}
+                            className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Logout"
+                        >
+                            <IoLogOutOutline className="text-xl" />
+                            <span>Logout</span>
+                        </button>
+
+                        {/* Mobile Menu Button - Hidden on Desktop */}
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-gray-50 hover:bg-blue-50 text-[#0A84FF] border border-gray-200/80 transition-all active:scale-95 shrink-0"
+                            aria-label="Open Menu"
+                        >
+                            <IoMenuOutline className="text-2xl" />
+                        </button>
+                    </div>
                 </div>
+
+                {/* Sub-Navbar Announcement Bar */}
+                <LandingNoticeSpotlight portal="user" />
             </header>
 
             {/* Sidebar - Mobile Only */}

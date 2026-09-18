@@ -6,7 +6,8 @@ import api from './api';
  */
 export const getPublicSettings = async (category) => {
   try {
-    const url = category ? `/settings?category=${category}` : '/settings';
+    const cat = (category && typeof category === 'object' && category.category) ? category.category : (typeof category === 'string' ? category : null);
+    const url = cat ? `/settings?category=${cat}` : '/settings';
     const response = await api.get(url);
     return response.data;
   } catch (error) {

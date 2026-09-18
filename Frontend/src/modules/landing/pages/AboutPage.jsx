@@ -30,7 +30,10 @@ export default function AboutPage() {
     <div className="landing-page-root min-h-screen text-[var(--color-text-primary)] selection:bg-[var(--color-primary)] selection:text-white flex flex-col justify-between">
       <Navbar />
 
-      <main className="flex-grow pt-20 sm:pt-28 pb-5 sm:pb-8">
+      <main 
+        style={{ paddingTop: 'calc(var(--landing-header-height, 80px) + 14px)' }}
+        className="flex-grow pb-5 sm:pb-8"
+      >
         {/* Foundation & Leadership Hero Section */}
         <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-6xl mx-auto mb-10 sm:mb-16">
           {/* Breadcrumb */}
