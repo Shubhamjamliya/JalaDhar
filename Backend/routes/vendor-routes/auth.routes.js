@@ -7,6 +7,7 @@ const {
   sendRegistrationOTP,
   register,
   login,
+  refreshToken,
   forgotPassword,
   verifyResetOTP,
   resetPassword,
@@ -143,6 +144,7 @@ const registerWithOTPValidation = [
 router.post('/register/send-otp', otpRateLimiter, sendOTPValidation, sendRegistrationOTP);
 router.post('/register', authRateLimiter, uploadDocuments, registerWithOTPValidation, register);
 router.post('/login', authRateLimiter, loginValidation, login);
+router.post('/refresh-token', authRateLimiter, refreshToken);
 router.post('/forgot-password', otpRateLimiter, forgotPasswordValidation, forgotPassword);
 router.post('/verify-reset-otp', authRateLimiter, verifyResetOTP);
 router.post('/reset-password', authRateLimiter, resetPasswordValidation, resetPassword);

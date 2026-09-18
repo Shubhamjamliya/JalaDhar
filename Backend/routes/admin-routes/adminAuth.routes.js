@@ -4,6 +4,7 @@ const { body } = require('express-validator');
 const {
   register,
   login,
+  refreshToken,
   logout,
   getProfile,
   forgotPassword,
@@ -63,6 +64,7 @@ const registerAdminWithOTPValidation = [
 // Routes
 router.post('/register', authRateLimiter, registerValidation, register);
 router.post('/login', authRateLimiter, loginValidation, login);
+router.post('/refresh-token', authRateLimiter, refreshToken);
 router.post('/logout', authenticate, isAdmin, logout);
 router.get('/profile', authenticate, isAdmin, getProfile);
 router.post('/forgot-password', otpRateLimiter, forgotPasswordValidation, forgotPassword);

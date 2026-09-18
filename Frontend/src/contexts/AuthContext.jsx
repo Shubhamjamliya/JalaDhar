@@ -41,6 +41,22 @@ export const AuthProvider = ({ children }) => {
         console.warn('FCM registration error:', e);
       }
     }
+
+    // Cross-tab and background token sync
+    const handleStorageChange = (e) => {
+      if (e.key === 'accessToken' || e.key === 'user') {
+        const storedToken = localStorage.getItem('accessToken');
+        const storedUser = localStorage.getItem('user');
+        setToken(storedToken || null);
+        try {
+          setUser(storedUser && storedUser !== 'undefined' ? JSON.parse(storedUser) : null);
+        } catch {
+          setUser(null);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [token, user]);
 
   /**
@@ -175,6 +191,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      localStorage.removeItem('lastActiveRoute');
 
       // Clear state
       setToken(null);

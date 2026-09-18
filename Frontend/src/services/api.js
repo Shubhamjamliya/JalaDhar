@@ -147,6 +147,62 @@ api.interceptors.request.use(
   }
 );
 
+// Concurrency queue and state per role
+let isRefreshing = {
+  vendor: false,
+  user: false,
+  admin: false
+};
+
+let failedQueue = {
+  vendor: [],
+  user: [],
+  admin: []
+};
+
+const processQueue = (role, error, token = null) => {
+  if (failedQueue[role]) {
+    failedQueue[role].forEach((prom) => {
+      if (error) {
+        prom.reject(error);
+      } else {
+        prom.resolve(token);
+      }
+    });
+    failedQueue[role] = [];
+  }
+};
+
+const purgeSessionAndRedirect = (role) => {
+  const pathname = window.location.pathname;
+  if (role === 'admin') {
+    localStorage.removeItem('adminAccessToken');
+    localStorage.removeItem('adminRefreshToken');
+    localStorage.removeItem('admin');
+    localStorage.removeItem('lastActiveRoute');
+    if (pathname.startsWith('/admin') && pathname !== '/adminlogin') {
+      window.location.href = '/adminlogin';
+    }
+  } else if (role === 'vendor') {
+    localStorage.removeItem('vendorAccessToken');
+    localStorage.removeItem('vendorRefreshToken');
+    localStorage.removeItem('vendor');
+    localStorage.removeItem('lastActiveRoute');
+    if (pathname.startsWith('/vendor') && pathname !== '/vendorlogin' && pathname !== '/vendorsignup') {
+      window.location.href = '/vendorlogin';
+    }
+  } else if (role === 'user') {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('lastActiveRoute');
+    if ((pathname.startsWith('/user') || pathname.startsWith('/booking')) &&
+        pathname !== '/userlogin' && pathname !== '/usersignup') {
+      window.location.href = '/userlogin';
+    }
+  }
+};
+
 // Response interceptor - Handle errors globally and cache responses
 api.interceptors.response.use(
   (response) => {
@@ -200,38 +256,89 @@ api.interceptors.response.use(
       }
     }
 
+    // Concurrency queue and state per role
+    const originalRequest = error.config;
+    const url = (originalRequest?.url || '').toLowerCase();
+
+    // Check if the call was already a retry or a public auth endpoint
+    const isAuthEndpoint =
+      url.includes('/auth/login') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/refresh-token') ||
+      url.includes('/auth/forgot-password') ||
+      url.includes('/auth/reset-password');
+
     // Handle 401 Unauthorized - Token expired or invalid
-    if (error.response?.status === 401) {
-      const pathname = window.location.pathname;
-      const failedAuthRole = error.config?.__authRole;
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthEndpoint) {
+      const failedAuthRole = originalRequest.__authRole;
 
-      if (failedAuthRole === 'admin') {
-        localStorage.removeItem('adminAccessToken');
-        localStorage.removeItem('adminRefreshToken');
-        localStorage.removeItem('admin');
+      if (failedAuthRole && ['vendor', 'user', 'admin'].includes(failedAuthRole)) {
+        const refreshTokenKey = failedAuthRole === 'user' ? 'refreshToken' : `${failedAuthRole}RefreshToken`;
+        const accessTokenKey = failedAuthRole === 'user' ? 'accessToken' : `${failedAuthRole}AccessToken`;
+        const refreshToken = localStorage.getItem(refreshTokenKey);
 
-        if (pathname.startsWith('/admin') && pathname !== '/adminlogin') {
-          window.location.href = '/adminlogin';
+        if (!refreshToken) {
+          purgeSessionAndRedirect(failedAuthRole);
+          return Promise.reject(error);
         }
-      } else if (failedAuthRole === 'vendor') {
-        localStorage.removeItem('vendorAccessToken');
-        localStorage.removeItem('vendorRefreshToken');
-        localStorage.removeItem('vendor');
 
-        if (pathname.startsWith('/vendor') && pathname !== '/vendorlogin' && pathname !== '/vendorsignup') {
-          window.location.href = '/vendorlogin';
+        if (isRefreshing[failedAuthRole]) {
+          // If already refreshing for this role, queue this request
+          return new Promise((resolve, reject) => {
+            failedQueue[failedAuthRole].push({ resolve, reject });
+          })
+            .then((newToken) => {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              return api(originalRequest);
+            })
+            .catch((err) => {
+              return Promise.reject(err);
+            });
         }
-      } else if (failedAuthRole === 'user') {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
 
-        if ((pathname.startsWith('/user') || pathname.startsWith('/booking')) &&
-            pathname !== '/userlogin' && pathname !== '/usersignup') {
-          window.location.href = '/userlogin';
-        }
+        originalRequest._retry = true;
+        isRefreshing[failedAuthRole] = true;
+
+        const refreshEndpointMap = {
+          vendor: '/vendors/auth/refresh-token',
+          user: '/users/auth/refresh-token',
+          admin: '/admin/auth/refresh-token'
+        };
+
+        const refreshUrl = `${API_BASE_URL}${refreshEndpointMap[failedAuthRole]}`;
+
+        return new Promise((resolve, reject) => {
+          axios
+            .post(refreshUrl, { refreshToken }, { withCredentials: true })
+            .then((res) => {
+              const newTokens = res.data?.data?.tokens;
+              if (newTokens?.accessToken) {
+                localStorage.setItem(accessTokenKey, newTokens.accessToken);
+                if (newTokens.refreshToken) {
+                  localStorage.setItem(refreshTokenKey, newTokens.refreshToken);
+                }
+                originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
+                processQueue(failedAuthRole, null, newTokens.accessToken);
+                resolve(api(originalRequest));
+              } else {
+                throw new Error('No tokens returned from refresh endpoint');
+              }
+            })
+            .catch((refreshErr) => {
+              processQueue(failedAuthRole, refreshErr, null);
+              purgeSessionAndRedirect(failedAuthRole);
+              reject(refreshErr);
+            })
+            .finally(() => {
+              isRefreshing[failedAuthRole] = false;
+            });
+        });
       }
-      // Critical: If no token was sent, or on non-authenticated public calls, never wipe session or redirect!
+    } else if (error.response?.status === 401 && (originalRequest?._retry || isAuthEndpoint)) {
+      const failedAuthRole = originalRequest?.__authRole;
+      if (failedAuthRole) {
+        purgeSessionAndRedirect(failedAuthRole);
+      }
     }
 
     return Promise.reject(error);

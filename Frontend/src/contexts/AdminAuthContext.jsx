@@ -62,6 +62,21 @@ export const AdminAuthProvider = ({ children }) => {
       }
       refreshProfile();
     }
+    // Cross-tab and background token sync
+    const handleStorageChange = (e) => {
+      if (e.key === 'adminAccessToken' || e.key === 'admin') {
+        const storedToken = localStorage.getItem('adminAccessToken');
+        const storedAdmin = localStorage.getItem('admin');
+        setToken(storedToken || null);
+        try {
+          setAdmin(storedAdmin && storedAdmin !== 'undefined' ? JSON.parse(storedAdmin) : null);
+        } catch {
+          setAdmin(null);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   // Only token and refreshProfile are needed — admin must NOT be a dep or it causes infinite loop
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, refreshProfile]);
@@ -153,6 +168,7 @@ export const AdminAuthProvider = ({ children }) => {
       localStorage.removeItem('adminAccessToken');
       localStorage.removeItem('adminRefreshToken');
       localStorage.removeItem('admin');
+      localStorage.removeItem('lastActiveRoute');
       
       // Clear state
       setToken(null);

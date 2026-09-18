@@ -11,9 +11,13 @@ import {
   PhoneCall, 
   ChevronRight, 
   Download, 
-  Mail 
+  Mail,
+  LayoutDashboard 
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useVendorAuth } from '../../../contexts/VendorAuthContext';
+import { useAdminAuth } from '../../../contexts/AdminAuthContext';
 import Logo from './Logo';
 import Button from './Button';
 
@@ -31,6 +35,18 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const { isAuthenticated: isVendorAuth } = useVendorAuth();
+  const { isAuthenticated: isUserAuth } = useAuth();
+  const { isAuthenticated: isAdminAuth } = useAdminAuth();
+
+  const authenticatedDashboardPath = isVendorAuth
+    ? '/vendor/dashboard'
+    : isUserAuth
+    ? '/user/dashboard'
+    : isAdminAuth
+    ? '/admin/dashboard'
+    : null;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -95,6 +111,15 @@ export default function Navbar() {
     if (open) setOpen(false);
   };
 
+  const handleActionClick = (e) => {
+    if (authenticatedDashboardPath) {
+      navigate(authenticatedDashboardPath);
+      if (open) setOpen(false);
+      return;
+    }
+    handleDownloadAppClick(e);
+  };
+
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
@@ -131,22 +156,38 @@ export default function Navbar() {
 
         <div className="hidden lg:flex items-center">
           <Button 
-            onClick={handleDownloadAppClick}
-            className="whitespace-nowrap px-4 xl:px-5 py-2.5 text-xs xl:text-sm shadow-md cursor-pointer"
+            onClick={handleActionClick}
+            className="whitespace-nowrap px-4 xl:px-5 py-2.5 text-xs xl:text-sm shadow-md cursor-pointer flex items-center gap-1.5"
           >
-            Download App
+            {authenticatedDashboardPath ? (
+              <>
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Dashboard</span>
+              </>
+            ) : (
+              'Download App'
+            )}
           </Button>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-2.5 lg:hidden">
-          {/* Quick Mobile App Download Pill */}
+          {/* Quick Mobile Action Pill */}
           <button
             type="button"
-            onClick={handleDownloadAppClick}
+            onClick={handleActionClick}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] active:scale-95 text-white text-[11px] sm:text-xs font-bold shadow-xs shadow-[var(--color-primary)]/20 transition-all cursor-pointer"
           >
-            <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span>App</span>
+            {authenticatedDashboardPath ? (
+              <>
+                <LayoutDashboard className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span>Dashboard</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span>App</span>
+              </>
+            )}
           </button>
 
           {/* Styled Tactile Hamburger Button */}
@@ -229,11 +270,20 @@ export default function Navbar() {
             {/* Drawer Footer CTA & Support */}
             <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-3">
               <Button 
-                onClick={handleDownloadAppClick}
+                onClick={handleActionClick}
                 className="w-full justify-center h-11 text-xs sm:text-sm font-bold shadow-md cursor-pointer flex items-center gap-2"
               >
-                <Download className="w-4 h-4" />
-                <span>Download Mobile App</span>
+                {authenticatedDashboardPath ? (
+                  <>
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span>Go to Dashboard</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download Mobile App</span>
+                  </>
+                )}
               </Button>
 
               <div className="flex items-center justify-center pt-0.5 text-[11px] text-slate-500">

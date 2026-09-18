@@ -8,6 +8,7 @@ import {
 import { sendUserLoginOTP } from "../../../services/authApi";
 import { useToast } from "../../../hooks/useToast";
 import { useLanguage } from "../../../contexts/LanguageContext";
+import { useAuth } from "../../../contexts/AuthContext";
 import PolicyModal from "../../shared/components/PolicyModal";
 
 import logo from "@/assets/AppLogo.png";
@@ -24,10 +25,14 @@ export default function UserLogin() {
     
     const navigate = useNavigate();
     const toast = useToast();
+    const { isAuthenticated } = useAuth();
 
     useEffect(() => {
         window.scrollTo(0, 0);
-    }, []);
+        if (isAuthenticated) {
+            navigate("/user/dashboard", { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     // Handle Mobile OTP Login
     const handleSendLoginOTP = async (e) => {

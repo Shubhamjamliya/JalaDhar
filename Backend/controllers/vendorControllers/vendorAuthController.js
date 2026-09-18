@@ -4,7 +4,7 @@ const VendorBankDetails = require('../../models/VendorBankDetails');
 const VendorDocument = require('../../models/VendorDocument');
 const Token = require('../../models/Token');
 const Service = require('../../models/Service');
-const { generateTokenPair } = require('../../utils/tokenService');
+const { generateTokenPair, verifyRefreshToken } = require('../../utils/tokenService');
 const { createOTPToken, verifyOTPToken, markTokenAsUsed } = require('../../services/otpService');
 const { sendOTPEmail, sendWelcomeEmail } = require('../../services/emailService');
 const { sendSMSOTP } = require('../../services/smsService');
@@ -1270,10 +1270,91 @@ const verifyResetOTP = async (req, res) => {
   }
 };
 
+/**
+ * Refresh vendor access token (Dual-token rotation)
+ */
+const refreshToken = async (req, res) => {
+  try {
+    const token = req.body?.refreshToken || req.cookies?.refreshToken || req.headers['x-refresh-token'];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token is required'
+      });
+    }
+
+    let decoded;
+    try {
+      decoded = verifyRefreshToken(token);
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token. Please log in again.'
+      });
+    }
+
+    if (decoded.role !== 'VENDOR') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token role'
+      });
+    }
+
+    const vendor = await Vendor.findById(decoded.userId);
+    if (!vendor || vendor.isActive === false) {
+      return res.status(401).json({
+        success: false,
+        message: 'Vendor not found or deactivated'
+      });
+    }
+
+    // Generate new token pair (Token Rotation)
+    const { accessToken, refreshToken: newRefreshToken } = generateTokenPair({
+      userId: vendor._id,
+      role: vendor.role,
+      email: vendor.email
+    });
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+
+    return res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+      data: {
+        tokens: {
+          accessToken,
+          refreshToken: newRefreshToken
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Vendor refresh token error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to refresh token',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   sendRegistrationOTP,
   register,
   login,
+  refreshToken,
   forgotPassword,
   verifyResetOTP,
   resetPassword,

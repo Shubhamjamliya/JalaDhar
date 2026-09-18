@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('../../models/User');
 const Token = require('../../models/Token');
-const { generateTokenPair } = require('../../utils/tokenService');
+const { generateTokenPair, verifyRefreshToken } = require('../../utils/tokenService');
 const { createOTPToken, verifyOTPToken, markTokenAsUsed } = require('../../services/otpService');
 const { sendOTPEmail, sendWelcomeEmail } = require('../../services/emailService');
 const { sendSMSOTP } = require('../../services/smsService');
@@ -976,9 +976,91 @@ const verifyResetOTP = async (req, res) => {
   }
 };
 
+/**
+ * Refresh user access token (Dual-token rotation)
+ */
+const refreshToken = async (req, res) => {
+  try {
+    const token = req.body?.refreshToken || req.cookies?.refreshToken || req.headers['x-refresh-token'];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token is required'
+      });
+    }
+
+    let decoded;
+    try {
+      decoded = verifyRefreshToken(token);
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token. Please log in again.'
+      });
+    }
+
+    if (decoded.role !== 'USER') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token role'
+      });
+    }
+
+    const user = await User.findById(decoded.userId);
+    if (!user || user.isActive === false) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found or deactivated'
+      });
+    }
+
+    // Generate new token pair (Token Rotation)
+    const { accessToken, refreshToken: newRefreshToken } = generateTokenPair({
+      userId: user._id,
+      role: user.role,
+      phone: user.phone,
+      email: user.email
+    });
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+
+    return res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+      data: {
+        tokens: {
+          accessToken,
+          refreshToken: newRefreshToken
+        }
+      }
+    });
+  } catch (error) {
+    console.error('User refresh token error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to refresh token',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
+  refreshToken,
   sendLoginOTP,
   verifyLoginOTP,
   forgotPassword,

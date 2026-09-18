@@ -1,13 +1,14 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import {
     BrowserRouter as Router,
     Routes,
     Route,
     Navigate,
+    useLocation
 } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { VendorAuthProvider } from "./contexts/VendorAuthContext";
-import { AdminAuthProvider } from "./contexts/AdminAuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { VendorAuthProvider, useVendorAuth } from "./contexts/VendorAuthContext";
+import { AdminAuthProvider, useAdminAuth } from "./contexts/AdminAuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -127,6 +128,67 @@ const AdminNavbar = lazy(() => import("./modules/admin/admin-component/AdminNavb
 import NotificationsRedirect from "./components/NotificationsRedirect";
 const VerifyReport = lazy(() => import("./modules/shared/pages/VerifyReport"));
 
+// RouteTracker records active authenticated routes for deep state resumption on app restart
+function RouteTracker() {
+    const location = useLocation();
+
+    useEffect(() => {
+        const path = location.pathname;
+        const isAuthRoute =
+            (path.startsWith('/vendor/') && !path.includes('/vendorlogin') && !path.includes('/vendorsignup')) ||
+            (path.startsWith('/user/') && !path.includes('/userlogin') && !path.includes('/usersignup')) ||
+            (path.startsWith('/admin/') && !path.includes('/adminlogin')) ||
+            path.startsWith('/live-tracking/') ||
+            path.startsWith('/booking/');
+
+        if (isAuthRoute) {
+            try {
+                localStorage.setItem('lastActiveRoute', path + location.search);
+            } catch {
+                // Ignore storage quota errors
+            }
+        }
+    }, [location]);
+
+    return null;
+}
+
+// AppRootGateway: Cold-boots the app into the active role workspace or deep-restores the last route
+function AppRootGateway() {
+    const { isAuthenticated: isVendorAuth, loading: vendorLoading } = useVendorAuth();
+    const { isAuthenticated: isUserAuth, loading: userLoading } = useAuth();
+    const { isAuthenticated: isAdminAuth, loading: adminLoading } = useAdminAuth();
+
+    if (vendorLoading || userLoading || adminLoading) {
+        return <LoadingSpinner />;
+    }
+
+    const lastActiveRoute = localStorage.getItem('lastActiveRoute');
+
+    if (isVendorAuth) {
+        if (lastActiveRoute && (lastActiveRoute.startsWith('/vendor/') || lastActiveRoute.startsWith('/live-tracking/')) && !lastActiveRoute.includes('/vendorlogin')) {
+            return <Navigate to={lastActiveRoute} replace />;
+        }
+        return <Navigate to="/vendor/dashboard" replace />;
+    }
+
+    if (isUserAuth) {
+        if (lastActiveRoute && (lastActiveRoute.startsWith('/user/') || lastActiveRoute.startsWith('/booking/') || lastActiveRoute.startsWith('/live-tracking/')) && !lastActiveRoute.includes('/userlogin')) {
+            return <Navigate to={lastActiveRoute} replace />;
+        }
+        return <Navigate to="/user/dashboard" replace />;
+    }
+
+    if (isAdminAuth) {
+        if (lastActiveRoute && lastActiveRoute.startsWith('/admin/') && !lastActiveRoute.includes('/adminlogin')) {
+            return <Navigate to={lastActiveRoute} replace />;
+        }
+        return <Navigate to="/admin/dashboard" replace />;
+    }
+
+    return <LandingPage />;
+}
+
 function App() {
     return (
         <ThemeProvider>
@@ -137,15 +199,16 @@ function App() {
                     <AdminAuthProvider>
                         <Router>
                             <ScrollToTop />
+                            <RouteTracker />
                             <NotificationProvider>
                                 <LocationPermissionModal />
                                 <Routes>
-                                    {/* ---------- LANDING PAGE ---------- */}
+                                    {/* ---------- LANDING PAGE & ROOT GATEWAY ---------- */}
                                     <Route
                                         path="/"
                                         element={
                                             <Suspense fallback={<LoadingSpinner />}>
-                                                <LandingPage />
+                                                <AppRootGateway />
                                             </Suspense>
                                         }
                                     />

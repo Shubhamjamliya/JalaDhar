@@ -68,6 +68,22 @@ export const VendorAuthProvider = ({ children }) => {
       }
     }
     loadAvailabilityPolicy();
+
+    // Cross-tab and background token sync
+    const handleStorageChange = (e) => {
+      if (e.key === 'vendorAccessToken' || e.key === 'vendor') {
+        const storedToken = localStorage.getItem('vendorAccessToken');
+        const storedVendor = localStorage.getItem('vendor');
+        setToken(storedToken || null);
+        try {
+          setVendor(storedVendor && storedVendor !== 'undefined' ? JSON.parse(storedVendor) : null);
+        } catch {
+          setVendor(null);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [token, vendor]);
 
 
@@ -204,6 +220,7 @@ export const VendorAuthProvider = ({ children }) => {
       localStorage.removeItem('vendorAccessToken');
       localStorage.removeItem('vendorRefreshToken');
       localStorage.removeItem('vendor');
+      localStorage.removeItem('lastActiveRoute');
 
       // Clear state
       setToken(null);

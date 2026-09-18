@@ -15,12 +15,15 @@ export default function AdminLogin() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const { login } = useAdminAuth();
+    const { login, isAuthenticated } = useAdminAuth();
     const toast = useToast();
 
     useEffect(() => {
         window.scrollTo(0, 0);
-    }, []);
+        if (isAuthenticated) {
+            navigate("/admin/dashboard", { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleAdminLogin = async (e) => {
         e?.preventDefault();

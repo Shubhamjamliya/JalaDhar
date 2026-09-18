@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Admin = require('../../models/Admin');
 const Token = require('../../models/Token');
-const { generateTokenPair } = require('../../utils/tokenService');
+const { generateTokenPair, verifyRefreshToken } = require('../../utils/tokenService');
 const { validationResult } = require('express-validator');
 const { createOTPToken, verifyOTPToken, markTokenAsUsed } = require('../../services/otpService');
 const { sendOTPEmail } = require('../../services/emailService');
@@ -971,9 +971,83 @@ const getTeamPerformanceStats = async (req, res) => {
   }
 };
 
+/**
+ * Refresh admin access token (Dual-token rotation)
+ */
+const refreshToken = async (req, res) => {
+  try {
+    const token = req.body?.refreshToken || req.cookies?.refreshToken || req.headers['x-refresh-token'];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token is required'
+      });
+    }
+
+    let decoded;
+    try {
+      decoded = verifyRefreshToken(token);
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token. Please log in again.'
+      });
+    }
+
+    const admin = await Admin.findById(decoded.userId);
+    if (!admin || admin.isActive === false) {
+      return res.status(401).json({
+        success: false,
+        message: 'Admin not found or deactivated'
+      });
+    }
+
+    // Generate new token pair (Token Rotation)
+    const { accessToken, refreshToken: newRefreshToken } = generateTokenPair({
+      userId: admin._id,
+      role: admin.role,
+      email: admin.email
+    });
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+
+    return res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+      data: {
+        tokens: {
+          accessToken,
+          refreshToken: newRefreshToken
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Admin refresh token error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to refresh token',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
+  refreshToken,
   logout,
   getProfile,
   forgotPassword,

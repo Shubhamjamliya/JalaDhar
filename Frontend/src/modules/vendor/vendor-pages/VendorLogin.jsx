@@ -21,12 +21,15 @@ export default function VendorLogin() {
     const [loading, setLoading] = useState(false);
     const [showTermsModal, setShowTermsModal] = useState(false);
     const navigate = useNavigate();
-    const { login } = useVendorAuth();
+    const { login, isAuthenticated } = useVendorAuth();
     const toast = useToast();
 
     useEffect(() => {
         window.scrollTo(0, 0);
-    }, []);
+        if (isAuthenticated) {
+            navigate("/vendor/dashboard", { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleIdentifierChange = (e) => {
         const val = e.target.value;
