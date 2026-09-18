@@ -18,11 +18,13 @@ import {
     IoCheckmarkOutline,
     IoShieldCheckmarkOutline,
     IoChevronForwardOutline,
-    IoTrashOutline
+    IoTrashOutline,
+    IoShareSocialOutline,
+    IoDownloadOutline
 } from "react-icons/io5";
 import { getBookingDetails, uploadVisitReport } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
-import { stampImageWithGeotag } from "../../../utils/imageGeotagWatermark";
+import { stampImageWithGeotag, formatViewerHeaderDate } from "../../../utils/imageGeotagWatermark";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import PageContainer from "../../shared/components/PageContainer";
@@ -960,54 +962,115 @@ export default function VendorUploadReport() {
                 </div>
             )}
 
-            {/* Full Geotagged Image Viewer Modal */}
-            {viewingImageIndex !== null && formData.images[viewingImageIndex] && (
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-150"
-                    onClick={() => setViewingImageIndex(null)}
-                >
+            {/* Full GPS Map Camera Image Viewer Modal */}
+            {viewingImageIndex !== null && formData.images[viewingImageIndex] && (() => {
+                const currentImg = formData.images[viewingImageIndex];
+                const captureDate = currentImg?._captureTime ? new Date(currentImg._captureTime) : new Date();
+                const { dateStr, timeStr } = formatViewerHeaderDate(captureDate);
+                const imgUrl = URL.createObjectURL(currentImg);
+
+                const handleShareOrDownload = async () => {
+                    try {
+                        if (navigator.share && navigator.canShare && navigator.canShare({ files: [currentImg] })) {
+                            await navigator.share({
+                                files: [currentImg],
+                                title: "Jaladhaara GPS Evidence",
+                                text: currentImg._locationTitle || "Site Survey Evidence"
+                            });
+                        } else {
+                            const a = document.createElement("a");
+                            a.href = imgUrl;
+                            a.download = currentImg.name || "gps-evidence.jpg";
+                            a.click();
+                            toast.showSuccess("Image downloaded!");
+                        }
+                    } catch (e) {
+                        console.warn("Share/Download action:", e);
+                    }
+                };
+
+                return (
                     <div
-                        className="relative max-w-4xl w-full max-h-[92vh] flex flex-col items-center"
-                        onClick={(e) => e.stopPropagation()}
+                        className="fixed inset-0 z-[100] flex flex-col justify-between bg-black/95 backdrop-blur-lg animate-in fade-in duration-200 select-none"
+                        onClick={() => setViewingImageIndex(null)}
                     >
-                        {/* Header Controls */}
-                        <div className="w-full flex items-center justify-between pb-3 px-1 text-white">
+                        {/* Top Bar matching screenshot */}
+                        <div
+                            className="w-full bg-black/75 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-white/10 z-10"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setViewingImageIndex(null)}
+                                    className="w-10 h-10 rounded-full hover:bg-white/15 text-white flex items-center justify-center transition-colors cursor-pointer"
+                                    aria-label="Back"
+                                >
+                                    <IoChevronBackOutline className="text-2xl" />
+                                </button>
+                                <div>
+                                    <h3 className="text-white text-base font-bold leading-tight">{dateStr}</h3>
+                                    <p className="text-white/70 text-xs font-medium leading-none mt-0.5">{timeStr}</p>
+                                </div>
+                            </div>
+
                             <div className="flex items-center gap-2">
-                                <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm shadow-xs">
-                                    Evidence #{viewingImageIndex + 1} of {formData.images.length}
-                                </span>
-                                <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
-                                    <IoShieldCheckmarkOutline className="text-sm" /> Verified Geotag
+                                <span className="bg-white/15 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1.5">
+                                    <IoImageOutline className="text-sm text-cyan-400" />
+                                    {viewingImageIndex + 1} of {formData.images.length}
                                 </span>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setViewingImageIndex(null)}
-                                className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
-                                aria-label="Close image preview"
-                            >
-                                <IoCloseCircleOutline className="text-2xl" />
-                            </button>
                         </div>
 
-                        {/* Stamped Image Container */}
-                        <div className="relative w-full max-h-[72vh] flex items-center justify-center overflow-hidden rounded-2xl bg-black/60 border border-white/10 shadow-2xl p-1">
+                        {/* Central Photo View */}
+                        <div
+                            className="relative flex-1 flex items-center justify-center p-2 sm:p-4 overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Prev Button */}
+                            {formData.images.length > 1 && (
+                                <button
+                                    type="button"
+                                    disabled={viewingImageIndex <= 0}
+                                    onClick={() => setViewingImageIndex((prev) => Math.max(0, prev - 1))}
+                                    className="absolute left-2 sm:left-4 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 disabled:opacity-20 text-white flex items-center justify-center transition-all cursor-pointer border border-white/15"
+                                >
+                                    <IoChevronBackOutline className="text-xl" />
+                                </button>
+                            )}
+
                             <img
-                                src={URL.createObjectURL(formData.images[viewingImageIndex])}
+                                src={imgUrl}
                                 alt={`evidence-full-${viewingImageIndex + 1}`}
-                                className="max-w-full max-h-[70vh] object-contain rounded-xl select-none"
+                                className="max-w-full max-h-[76vh] object-contain rounded-lg shadow-2xl"
                             />
+
+                            {/* Next Button */}
+                            {formData.images.length > 1 && (
+                                <button
+                                    type="button"
+                                    disabled={viewingImageIndex >= formData.images.length - 1}
+                                    onClick={() => setViewingImageIndex((prev) => Math.min(formData.images.length - 1, prev + 1))}
+                                    className="absolute right-2 sm:right-4 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 disabled:opacity-20 text-white flex items-center justify-center transition-all cursor-pointer border border-white/15"
+                                >
+                                    <IoChevronForwardOutline className="text-xl" />
+                                </button>
+                            )}
                         </div>
 
-                        {/* Footer Controls & Navigation */}
-                        <div className="w-full flex items-center justify-between pt-3 px-1">
+                        {/* Bottom Action Bar matching screenshot */}
+                        <div
+                            className="w-full bg-black/80 backdrop-blur-md py-3 px-6 flex items-center justify-around border-t border-white/10 z-10"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <button
                                 type="button"
-                                disabled={viewingImageIndex <= 0}
-                                onClick={() => setViewingImageIndex((prev) => Math.max(0, prev - 1))}
-                                className="px-4 py-2 bg-white/15 hover:bg-white/25 disabled:opacity-25 disabled:pointer-events-none text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                                onClick={handleShareOrDownload}
+                                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors cursor-pointer px-4 py-1"
+                                title="Share photo"
                             >
-                                <IoChevronBackOutline className="text-sm" /> Prev
+                                <IoShareSocialOutline className="text-2xl" />
+                                <span className="text-[11px] font-medium">Share</span>
                             </button>
 
                             <button
@@ -1017,23 +1080,31 @@ export default function VendorUploadReport() {
                                     setViewingImageIndex(null);
                                     handleRemoveImage(curr);
                                 }}
-                                className="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
+                                className="flex flex-col items-center gap-1 text-red-400 hover:text-red-300 transition-colors cursor-pointer px-4 py-1"
+                                title="Delete & Retake"
                             >
-                                <IoTrashOutline className="text-sm" /> Delete & Retake
+                                <IoTrashOutline className="text-2xl" />
+                                <span className="text-[11px] font-medium">Delete</span>
                             </button>
 
                             <button
                                 type="button"
-                                disabled={viewingImageIndex >= formData.images.length - 1}
-                                onClick={() => setViewingImageIndex((prev) => Math.min(formData.images.length - 1, prev + 1))}
-                                className="px-4 py-2 bg-white/15 hover:bg-white/25 disabled:opacity-25 disabled:pointer-events-none text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                                onClick={() => {
+                                    const a = document.createElement("a");
+                                    a.href = imgUrl;
+                                    a.download = currentImg.name || "gps-evidence.jpg";
+                                    a.click();
+                                }}
+                                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors cursor-pointer px-4 py-1"
+                                title="Save to device"
                             >
-                                Next <IoChevronForwardOutline className="text-sm" />
+                                <IoDownloadOutline className="text-2xl" />
+                                <span className="text-[11px] font-medium">Save</span>
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
         </PageContainer>
     );
 }

@@ -26,7 +26,8 @@ import {
     IoCameraOutline,
     IoShieldCheckmarkOutline,
     IoChevronForwardOutline,
-    IoTrashOutline
+    IoTrashOutline,
+    IoShareSocialOutline
 } from "react-icons/io5";
 import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, reportUnableToComplete, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice, verifyStartOTP, verifyEndOTP, resendSurveyOTP, updateVisitSchedule, getPublicNotificationSettings } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
@@ -37,7 +38,7 @@ import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import { maskPhone } from "../../../utils/phoneMasker";
-import { stampImageWithGeotag } from "../../../utils/imageGeotagWatermark";
+import { stampImageWithGeotag, formatViewerHeaderDate } from "../../../utils/imageGeotagWatermark";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal, { VENDOR_REJECTION_REASONS } from "../../shared/components/InputModal";
 import OTPInputModal from "../../shared/components/OTPInputModal";
@@ -3084,54 +3085,116 @@ export default function VendorBookingDetails() {
                 templatesConfig={templatesConfig}
             />
 
-            {/* Full Geotagged Unable Evidence Viewer Modal */}
-            {viewingUnableIndex !== null && unableImages[viewingUnableIndex] && (
-                <div
-                    className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-150"
-                    onClick={() => setViewingUnableIndex(null)}
-                >
+            {/* Full GPS Map Camera Unable Evidence Viewer Modal */}
+            {viewingUnableIndex !== null && unableImages[viewingUnableIndex] && (() => {
+                const currentImgObj = unableImages[viewingUnableIndex];
+                const currentFile = currentImgObj.file;
+                const captureDate = currentFile?._captureTime ? new Date(currentFile._captureTime) : new Date();
+                const { dateStr, timeStr } = formatViewerHeaderDate(captureDate);
+                const imgUrl = currentImgObj.preview;
+
+                const handleShareOrDownload = async () => {
+                    try {
+                        if (currentFile && navigator.share && navigator.canShare && navigator.canShare({ files: [currentFile] })) {
+                            await navigator.share({
+                                files: [currentFile],
+                                title: "Jaladhaara Site Evidence",
+                                text: currentFile._locationTitle || "On-site survey evidence"
+                            });
+                        } else {
+                            const a = document.createElement("a");
+                            a.href = imgUrl;
+                            a.download = currentFile?.name || "gps-evidence.jpg";
+                            a.click();
+                            toast.showSuccess("Image downloaded!");
+                        }
+                    } catch (e) {
+                        console.warn("Share action:", e);
+                    }
+                };
+
+                return (
                     <div
-                        className="relative max-w-4xl w-full max-h-[92vh] flex flex-col items-center"
-                        onClick={(e) => e.stopPropagation()}
+                        className="fixed inset-0 z-[120] flex flex-col justify-between bg-black/95 backdrop-blur-lg animate-in fade-in duration-200 select-none"
+                        onClick={() => setViewingUnableIndex(null)}
                     >
-                        {/* Header Controls */}
-                        <div className="w-full flex items-center justify-between pb-3 px-1 text-white">
+                        {/* Top Bar matching screenshot */}
+                        <div
+                            className="w-full bg-black/75 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-white/10 z-10"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setViewingUnableIndex(null)}
+                                    className="w-10 h-10 rounded-full hover:bg-white/15 text-white flex items-center justify-center transition-colors cursor-pointer"
+                                    aria-label="Back"
+                                >
+                                    <IoChevronBackOutline className="text-2xl" />
+                                </button>
+                                <div>
+                                    <h3 className="text-white text-base font-bold leading-tight">{dateStr}</h3>
+                                    <p className="text-white/70 text-xs font-medium leading-none mt-0.5">{timeStr}</p>
+                                </div>
+                            </div>
+
                             <div className="flex items-center gap-2">
-                                <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm shadow-xs">
-                                    Evidence #{viewingUnableIndex + 1} of {unableImages.length}
-                                </span>
-                                <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
-                                    <IoShieldCheckmarkOutline className="text-sm" /> Verified Geotag
+                                <span className="bg-white/15 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1.5">
+                                    <IoImageOutline className="text-sm text-cyan-400" />
+                                    {viewingUnableIndex + 1} of {unableImages.length}
                                 </span>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setViewingUnableIndex(null)}
-                                className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
-                                aria-label="Close image preview"
-                            >
-                                <IoCloseCircleOutline className="text-2xl" />
-                            </button>
                         </div>
 
-                        {/* Stamped Image Container */}
-                        <div className="relative w-full max-h-[72vh] flex items-center justify-center overflow-hidden rounded-2xl bg-black/60 border border-white/10 shadow-2xl p-1">
+                        {/* Central Photo View */}
+                        <div
+                            className="relative flex-1 flex items-center justify-center p-2 sm:p-4 overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Prev Button */}
+                            {unableImages.length > 1 && (
+                                <button
+                                    type="button"
+                                    disabled={viewingUnableIndex <= 0}
+                                    onClick={() => setViewingUnableIndex((prev) => Math.max(0, prev - 1))}
+                                    className="absolute left-2 sm:left-4 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 disabled:opacity-20 text-white flex items-center justify-center transition-all cursor-pointer border border-white/15"
+                                >
+                                    <IoChevronBackOutline className="text-xl" />
+                                </button>
+                            )}
+
                             <img
-                                src={unableImages[viewingUnableIndex].preview}
+                                src={imgUrl}
                                 alt={`unable-evidence-${viewingUnableIndex + 1}`}
-                                className="max-w-full max-h-[70vh] object-contain rounded-xl select-none"
+                                className="max-w-full max-h-[76vh] object-contain rounded-lg shadow-2xl"
                             />
+
+                            {/* Next Button */}
+                            {unableImages.length > 1 && (
+                                <button
+                                    type="button"
+                                    disabled={viewingUnableIndex >= unableImages.length - 1}
+                                    onClick={() => setViewingUnableIndex((prev) => Math.min(unableImages.length - 1, prev + 1))}
+                                    className="absolute right-2 sm:right-4 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 disabled:opacity-20 text-white flex items-center justify-center transition-all cursor-pointer border border-white/15"
+                                >
+                                    <IoChevronForwardOutline className="text-xl" />
+                                </button>
+                            )}
                         </div>
 
-                        {/* Footer Controls & Navigation */}
-                        <div className="w-full flex items-center justify-between pt-3 px-1">
+                        {/* Bottom Action Bar matching screenshot */}
+                        <div
+                            className="w-full bg-black/80 backdrop-blur-md py-3 px-6 flex items-center justify-around border-t border-white/10 z-10"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <button
                                 type="button"
-                                disabled={viewingUnableIndex <= 0}
-                                onClick={() => setViewingUnableIndex((prev) => Math.max(0, prev - 1))}
-                                className="px-4 py-2 bg-white/15 hover:bg-white/25 disabled:opacity-25 disabled:pointer-events-none text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                                onClick={handleShareOrDownload}
+                                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors cursor-pointer px-4 py-1"
+                                title="Share photo"
                             >
-                                <IoChevronBackOutline className="text-sm" /> Prev
+                                <IoShareSocialOutline className="text-2xl" />
+                                <span className="text-[11px] font-medium">Share</span>
                             </button>
 
                             <button
@@ -3141,23 +3204,31 @@ export default function VendorBookingDetails() {
                                     setViewingUnableIndex(null);
                                     handleRemoveUnableImage(curr);
                                 }}
-                                className="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
+                                className="flex flex-col items-center gap-1 text-red-400 hover:text-red-300 transition-colors cursor-pointer px-4 py-1"
+                                title="Delete & Retake"
                             >
-                                <IoTrashOutline className="text-sm" /> Delete & Retake
+                                <IoTrashOutline className="text-2xl" />
+                                <span className="text-[11px] font-medium">Delete</span>
                             </button>
 
                             <button
                                 type="button"
-                                disabled={viewingUnableIndex >= unableImages.length - 1}
-                                onClick={() => setViewingUnableIndex((prev) => Math.min(unableImages.length - 1, prev + 1))}
-                                className="px-4 py-2 bg-white/15 hover:bg-white/25 disabled:opacity-25 disabled:pointer-events-none text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                                onClick={() => {
+                                    const a = document.createElement("a");
+                                    a.href = imgUrl;
+                                    a.download = currentFile?.name || "gps-evidence.jpg";
+                                    a.click();
+                                }}
+                                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors cursor-pointer px-4 py-1"
+                                title="Save to device"
                             >
-                                Next <IoChevronForwardOutline className="text-sm" />
+                                <IoDownloadOutline className="text-2xl" />
+                                <span className="text-[11px] font-medium">Save</span>
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
         </PageContainer>
     );
 }
