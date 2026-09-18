@@ -28,6 +28,10 @@ const CACHEABLE_ENDPOINTS = [
 
 // Check if request should be cached
 const shouldCache = (config) => {
+  if (config.skipCache || config.headers?.['x-skip-cache']) {
+    return false;
+  }
+
   if (!CACHEABLE_METHODS.includes(config.method?.toUpperCase())) {
     return false;
   }
@@ -146,6 +150,25 @@ api.interceptors.request.use(
 // Response interceptor - Handle errors globally and cache responses
 api.interceptors.response.use(
   (response) => {
+    // Clear cache on successful mutations to ensure fresh data
+    const method = response.config?.method?.toUpperCase();
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      const url = (response.config?.url || '').toLowerCase();
+      if (url.includes('booking')) {
+        clearCache('booking');
+      }
+      if (url.includes('vendor')) {
+        clearCache('vendor');
+      }
+      if (url.includes('user')) {
+        clearCache('user');
+      }
+      if (url.includes('payment') || url.includes('wallet')) {
+        clearCache('payment');
+        clearCache('wallet');
+      }
+    }
+
     // Cache successful GET responses
     if (shouldCache(response.config)) {
       setCachedResponse(response.config, response.data);

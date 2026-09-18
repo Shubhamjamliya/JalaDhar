@@ -18,8 +18,8 @@ export const getDashboardStats = async () => {
  * @param {Object} params - { page, limit, status }
  * @returns {Promise}
  */
-export const getVendorBookings = async (params = {}) => {
-  const response = await api.get('/vendors/bookings/my-bookings', { params });
+export const getVendorBookings = async (params = {}, options = {}) => {
+  const response = await api.get('/vendors/bookings/my-bookings', { params, ...options });
   return response.data;
 };
 

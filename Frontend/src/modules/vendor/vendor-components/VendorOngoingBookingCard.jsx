@@ -91,7 +91,7 @@ export default function VendorOngoingBookingCard({
     // Reset local override whenever parent prop booking changes
     useEffect(() => {
         setLocalOverride(null);
-    }, [booking?._id, booking?.scheduledDate, booking?.scheduledTime, booking?.rescheduleCount, booking?.status]);
+    }, [booking?._id, booking?.scheduledDate, booking?.scheduledTime, booking?.rescheduleCount, booking?.status, booking?.otp?.startSurvey?.verified, booking?.otp?.endSurvey?.verified]);
 
     // Sockets and rooms rely on the internal MongoDB _id
     const currentBooking = localOverride ? { ...booking, ...localOverride } : (booking || {});

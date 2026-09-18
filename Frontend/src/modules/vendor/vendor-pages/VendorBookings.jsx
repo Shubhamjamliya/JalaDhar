@@ -19,6 +19,7 @@ import OTPInputModal from "../../shared/components/OTPInputModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import VendorOngoingBookingCard from "../vendor-components/VendorOngoingBookingCard";
 import ErrorBoundary from "../../shared/components/ErrorBoundary";
+import { clearCache } from "../../../utils/apiCache";
 
 export default function VendorBookings() {
     const navigate = useNavigate();
@@ -100,8 +101,10 @@ export default function VendorBookings() {
             setVerifyingOTP(true);
             const response = await verifyStartOTP(currentTargetId, otpCode);
             if (response.success) {
-                toast.showSuccess("Start Survey OTP verified successfully!");
+                toast.showSuccess("Start Survey OTP verified! Starting survey...");
                 setShowStartOTPModal(false);
+                clearCache('/bookings');
+                clearCache('/vendors');
                 const updated = response.data?.booking;
                 setActiveBookings(prev => prev.map(b => (b._id === currentTargetId || b.id === currentTargetId || (updated && (b._id === updated._id || b.id === updated._id))) ? {
                     ...b,
@@ -118,7 +121,8 @@ export default function VendorBookings() {
                     startSurveyVerifiedAt: new Date()
                 } : b));
                 setSelectedBookingId(null);
-                await loadAllBookings(false);
+                await loadAllBookings(false, true);
+                navigate(`/vendor/bookings/${currentTargetId}`);
             } else {
                 toast.showError(response.message || "Invalid OTP code");
             }
@@ -136,8 +140,10 @@ export default function VendorBookings() {
             setVerifyingOTP(true);
             const response = await verifyEndOTP(currentTargetId, otpCode);
             if (response.success) {
-                toast.showSuccess("End Survey OTP verified successfully!");
+                toast.showSuccess("End Survey OTP verified! Please upload the survey report.");
                 setShowEndOTPModal(false);
+                clearCache('/bookings');
+                clearCache('/vendors');
                 const updated = response.data?.booking;
                 setActiveBookings(prev => prev.map(b => (b._id === currentTargetId || b.id === currentTargetId || (updated && (b._id === updated._id || b.id === updated._id))) ? {
                     ...b,
@@ -150,7 +156,8 @@ export default function VendorBookings() {
                     endSurveyVerifiedAt: new Date()
                 } : b));
                 setSelectedBookingId(null);
-                await loadAllBookings(false);
+                await loadAllBookings(false, true);
+                navigate(`/vendor/bookings/${currentTargetId}/upload-report`);
             } else {
                 toast.showError(response.message || "Invalid OTP code");
             }
@@ -195,6 +202,8 @@ export default function VendorBookings() {
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Status updated to En Route! Customer notified.");
+                clearCache('/bookings');
+                clearCache('/vendors');
                 const updated = response.data?.booking;
                 if (updated) {
                     setActiveBookings(prev => prev.map(item => (item._id === targetId || item.id === targetId) ? {
@@ -202,10 +211,11 @@ export default function VendorBookings() {
                         ...updated,
                         status: "EN_ROUTE",
                         vendorStatus: "EN_ROUTE",
-                        userStatus: "EN_ROUTE"
+                        userStatus: "EN_ROUTE",
+                        enRouteAt: new Date()
                     } : item));
                 }
-                await loadAllBookings(false);
+                await loadAllBookings(false, true);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to update status");
@@ -301,12 +311,19 @@ export default function VendorBookings() {
         };
     }, [socket]);
 
-    const loadAllBookings = async (showLoading = true) => {
+    const loadAllBookings = async (showLoading = true, bypassCache = false) => {
         try {
             if (showLoading) setLoading(true);
+            if (bypassCache) {
+                clearCache('/bookings');
+                clearCache('/vendors');
+            }
 
             // Load all bookings at once, then categorize on the frontend
-            const allResponse = await getVendorBookings({ limit: 200, sortBy: "createdAt", sortOrder: "desc" });
+            const allResponse = await getVendorBookings(
+                { limit: 200, sortBy: "createdAt", sortOrder: "desc" },
+                bypassCache ? { skipCache: true } : {}
+            );
 
             if (allResponse.success) {
                 const bookings = allResponse.data.bookings || [];

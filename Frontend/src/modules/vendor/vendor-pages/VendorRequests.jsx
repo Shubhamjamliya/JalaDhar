@@ -20,6 +20,7 @@ import InputModal, { VENDOR_REJECTION_REASONS } from "../../shared/components/In
 import OTPInputModal from "../../shared/components/OTPInputModal";
 import VendorOngoingBookingCard from "../vendor-components/VendorOngoingBookingCard";
 import ErrorBoundary from "../../shared/components/ErrorBoundary";
+import { clearCache } from "../../../utils/apiCache";
 import { getExpertLiveStatus } from "../../../utils/availabilityUtils";
 import {
     IoNotificationsOutline,
@@ -147,8 +148,10 @@ export default function VendorRequests() {
             setVerifyingOTP(true);
             const response = await verifyStartOTP(currentTargetId, otpCode);
             if (response.success) {
-                toast.showSuccess("Start Survey OTP verified successfully!");
+                toast.showSuccess("Start Survey OTP verified! Starting survey...");
                 setShowStartOTPModal(false);
+                clearCache('/bookings');
+                clearCache('/vendors');
                 const updated = response.data?.booking;
                 setConfirmedRequests(prev => prev.map(b => (b._id === currentTargetId || b.id === currentTargetId || (updated && (b._id === updated._id || b.id === updated._id))) ? {
                     ...b,
@@ -166,6 +169,7 @@ export default function VendorRequests() {
                 } : b));
                 setSelectedBookingId(null);
                 await loadAllRequests(false);
+                navigate(`/vendor/bookings/${currentTargetId}`);
             } else {
                 toast.showError(response.message || "Invalid OTP code");
             }
@@ -183,8 +187,10 @@ export default function VendorRequests() {
             setVerifyingOTP(true);
             const response = await verifyEndOTP(currentTargetId, otpCode);
             if (response.success) {
-                toast.showSuccess("End Survey OTP verified successfully!");
+                toast.showSuccess("End Survey OTP verified! Please upload the survey report.");
                 setShowEndOTPModal(false);
+                clearCache('/bookings');
+                clearCache('/vendors');
                 const updated = response.data?.booking;
                 setConfirmedRequests(prev => prev.map(b => (b._id === currentTargetId || b.id === currentTargetId || (updated && (b._id === updated._id || b.id === updated._id))) ? {
                     ...b,
@@ -198,6 +204,7 @@ export default function VendorRequests() {
                 } : b));
                 setSelectedBookingId(null);
                 await loadAllRequests(false);
+                navigate(`/vendor/bookings/${currentTargetId}/upload-report`);
             } else {
                 toast.showError(response.message || "Invalid OTP code");
             }

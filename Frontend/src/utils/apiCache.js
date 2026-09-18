@@ -64,8 +64,9 @@ export const clearCache = (urlPattern) => {
     return;
   }
   
+  const pattern = urlPattern.toLowerCase();
   for (const key of cache.keys()) {
-    if (key.includes(urlPattern)) {
+    if (key.toLowerCase().includes(pattern)) {
       cache.delete(key);
     }
   }
