@@ -203,12 +203,12 @@ function App() {
                             <NotificationProvider>
                                 <LocationPermissionModal />
                                 <Routes>
-                                    {/* ---------- LANDING PAGE & ROOT GATEWAY ---------- */}
+                                    {/* ---------- LANDING PAGE ---------- */}
                                     <Route
                                         path="/"
                                         element={
                                             <Suspense fallback={<LoadingSpinner />}>
-                                                <AppRootGateway />
+                                                <LandingPage />
                                             </Suspense>
                                         }
                                     />
