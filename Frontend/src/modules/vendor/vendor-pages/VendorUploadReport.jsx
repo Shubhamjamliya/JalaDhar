@@ -16,7 +16,9 @@ import {
     IoAddOutline,
     IoChevronDownOutline,
     IoCheckmarkOutline,
-    IoShieldCheckmarkOutline
+    IoShieldCheckmarkOutline,
+    IoChevronForwardOutline,
+    IoTrashOutline
 } from "react-icons/io5";
 import { getBookingDetails, uploadVisitReport } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
@@ -64,6 +66,7 @@ export default function VendorUploadReport() {
     const [booking, setBooking] = useState(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [isDraftRestored, setIsDraftRestored] = useState(false);
+    const [viewingImageIndex, setViewingImageIndex] = useState(null);
 
     const [formData, setFormData] = useState({
         // Booking & Customer Details
@@ -697,12 +700,20 @@ export default function VendorUploadReport() {
                                 />
                             </label>
                             {formData.images.map((img, idx) => (
-                                <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border border-gray-200 group shadow-xs">
+                                <div
+                                    key={idx}
+                                    onClick={() => setViewingImageIndex(idx)}
+                                    className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-200 hover:border-[#0A84FF] group shadow-xs cursor-pointer transition-all active:scale-95"
+                                    title="Click to view full geotagged photo"
+                                >
                                     <img src={URL.createObjectURL(img)} alt={`evidence-${idx + 1}`} className="w-full h-full object-cover" />
                                     <button
                                         type="button"
-                                        onClick={() => handleRemoveImage(idx)}
-                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveImage(idx);
+                                        }}
+                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors z-10"
                                         title="Remove photo"
                                     >
                                         <IoCloseCircleOutline className="text-base" />
@@ -710,9 +721,14 @@ export default function VendorUploadReport() {
                                     <span className="absolute bottom-1 left-1 bg-black/75 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
                                         #{idx + 1}
                                     </span>
-                                    <span className="absolute bottom-1 right-1 bg-emerald-600/90 text-white text-[8px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-xs">
+                                    <span className="absolute bottom-1 right-1 bg-emerald-600/90 text-white text-[8px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5 shadow-xs">
                                         📍 GPS
                                     </span>
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 flex items-center justify-center transition-colors pointer-events-none">
+                                        <span className="opacity-0 group-hover:opacity-100 bg-white/90 text-slate-800 text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs">
+                                            View
+                                        </span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -938,6 +954,81 @@ export default function VendorUploadReport() {
                             </button>
                             <button onClick={handleFinalSubmit} disabled={submitting} className="flex-[2] bg-green-500 text-white font-bold py-3.5 px-6 rounded-[12px] hover:bg-green-600 transition-colors shadow-lg shadow-green-200 flex items-center justify-center gap-2">
                                 {submitting ? "Submitting..." : "Submit Final Report"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Full Geotagged Image Viewer Modal */}
+            {viewingImageIndex !== null && formData.images[viewingImageIndex] && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-150"
+                    onClick={() => setViewingImageIndex(null)}
+                >
+                    <div
+                        className="relative max-w-4xl w-full max-h-[92vh] flex flex-col items-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header Controls */}
+                        <div className="w-full flex items-center justify-between pb-3 px-1 text-white">
+                            <div className="flex items-center gap-2">
+                                <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm shadow-xs">
+                                    Evidence #{viewingImageIndex + 1} of {formData.images.length}
+                                </span>
+                                <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                                    <IoShieldCheckmarkOutline className="text-sm" /> Verified Geotag
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setViewingImageIndex(null)}
+                                className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
+                                aria-label="Close image preview"
+                            >
+                                <IoCloseCircleOutline className="text-2xl" />
+                            </button>
+                        </div>
+
+                        {/* Stamped Image Container */}
+                        <div className="relative w-full max-h-[72vh] flex items-center justify-center overflow-hidden rounded-2xl bg-black/60 border border-white/10 shadow-2xl p-1">
+                            <img
+                                src={URL.createObjectURL(formData.images[viewingImageIndex])}
+                                alt={`evidence-full-${viewingImageIndex + 1}`}
+                                className="max-w-full max-h-[70vh] object-contain rounded-xl select-none"
+                            />
+                        </div>
+
+                        {/* Footer Controls & Navigation */}
+                        <div className="w-full flex items-center justify-between pt-3 px-1">
+                            <button
+                                type="button"
+                                disabled={viewingImageIndex <= 0}
+                                onClick={() => setViewingImageIndex((prev) => Math.max(0, prev - 1))}
+                                className="px-4 py-2 bg-white/15 hover:bg-white/25 disabled:opacity-25 disabled:pointer-events-none text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                                <IoChevronBackOutline className="text-sm" /> Prev
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const curr = viewingImageIndex;
+                                    setViewingImageIndex(null);
+                                    handleRemoveImage(curr);
+                                }}
+                                className="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
+                            >
+                                <IoTrashOutline className="text-sm" /> Delete & Retake
+                            </button>
+
+                            <button
+                                type="button"
+                                disabled={viewingImageIndex >= formData.images.length - 1}
+                                onClick={() => setViewingImageIndex((prev) => Math.min(formData.images.length - 1, prev + 1))}
+                                className="px-4 py-2 bg-white/15 hover:bg-white/25 disabled:opacity-25 disabled:pointer-events-none text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                                Next <IoChevronForwardOutline className="text-sm" />
                             </button>
                         </div>
                     </div>

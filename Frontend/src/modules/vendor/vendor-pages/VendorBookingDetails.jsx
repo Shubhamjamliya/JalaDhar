@@ -23,7 +23,10 @@ import {
     IoLogoGoogle,
     IoWaterOutline,
     IoLogoWhatsapp,
-    IoCameraOutline
+    IoCameraOutline,
+    IoShieldCheckmarkOutline,
+    IoChevronForwardOutline,
+    IoTrashOutline
 } from "react-icons/io5";
 import { getBookingDetails, acceptBooking, rejectBooking, cancelBooking, reportUnableToComplete, markBookingAsVisited, markBookingAsEnRoute, requestTravelCharges, downloadInvoice, verifyStartOTP, verifyEndOTP, resendSurveyOTP, updateVisitSchedule, getPublicNotificationSettings } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
@@ -96,6 +99,7 @@ export default function VendorBookingDetails() {
     const [unableCategory, setUnableCategory] = useState("LAND_ACCESS_DENIED");
     const [unableDescription, setUnableDescription] = useState("");
     const [unableImages, setUnableImages] = useState([]);
+    const [viewingUnableIndex, setViewingUnableIndex] = useState(null);
     const [submittingUnable, setSubmittingUnable] = useState(false);
     const [showMapPicker, setShowMapPicker] = useState(false);
     const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
@@ -2954,18 +2958,35 @@ export default function VendorBookingDetails() {
                                 {unableImages.length > 0 && (
                                     <div className="grid grid-cols-3 gap-2 mt-3">
                                         {unableImages.map((img, idx) => (
-                                            <div key={idx} className="relative rounded-lg overflow-hidden border border-gray-200">
+                                            <div
+                                                key={idx}
+                                                onClick={() => setViewingUnableIndex(idx)}
+                                                className="relative rounded-lg overflow-hidden border border-gray-200 group cursor-pointer hover:border-amber-500 transition-all active:scale-95"
+                                                title="Click to view full geotagged photo"
+                                            >
                                                 <img src={img.preview} alt="evidence" className="w-full h-20 object-cover" />
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleRemoveUnableImage(idx)}
-                                                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow-sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleRemoveUnableImage(idx);
+                                                    }}
+                                                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow-sm hover:bg-red-700 transition-colors z-10"
+                                                    title="Remove photo"
                                                 >
                                                     <IoCloseOutline className="text-xs" />
                                                 </button>
+                                                <span className="absolute bottom-1 left-1 bg-black/75 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                                    #{idx + 1}
+                                                </span>
                                                 <span className="absolute bottom-1 right-1 bg-emerald-600/90 text-white text-[8px] font-bold px-1 py-0.5 rounded shadow-xs">
                                                     📍 GPS
                                                 </span>
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 flex items-center justify-center transition-colors pointer-events-none">
+                                                    <span className="opacity-0 group-hover:opacity-100 bg-white/95 text-slate-800 text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs">
+                                                        View
+                                                    </span>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -3062,6 +3083,81 @@ export default function VendorBookingDetails() {
                 vendor={vendor}
                 templatesConfig={templatesConfig}
             />
+
+            {/* Full Geotagged Unable Evidence Viewer Modal */}
+            {viewingUnableIndex !== null && unableImages[viewingUnableIndex] && (
+                <div
+                    className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-150"
+                    onClick={() => setViewingUnableIndex(null)}
+                >
+                    <div
+                        className="relative max-w-4xl w-full max-h-[92vh] flex flex-col items-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header Controls */}
+                        <div className="w-full flex items-center justify-between pb-3 px-1 text-white">
+                            <div className="flex items-center gap-2">
+                                <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm shadow-xs">
+                                    Evidence #{viewingUnableIndex + 1} of {unableImages.length}
+                                </span>
+                                <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                                    <IoShieldCheckmarkOutline className="text-sm" /> Verified Geotag
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setViewingUnableIndex(null)}
+                                className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
+                                aria-label="Close image preview"
+                            >
+                                <IoCloseCircleOutline className="text-2xl" />
+                            </button>
+                        </div>
+
+                        {/* Stamped Image Container */}
+                        <div className="relative w-full max-h-[72vh] flex items-center justify-center overflow-hidden rounded-2xl bg-black/60 border border-white/10 shadow-2xl p-1">
+                            <img
+                                src={unableImages[viewingUnableIndex].preview}
+                                alt={`unable-evidence-${viewingUnableIndex + 1}`}
+                                className="max-w-full max-h-[70vh] object-contain rounded-xl select-none"
+                            />
+                        </div>
+
+                        {/* Footer Controls & Navigation */}
+                        <div className="w-full flex items-center justify-between pt-3 px-1">
+                            <button
+                                type="button"
+                                disabled={viewingUnableIndex <= 0}
+                                onClick={() => setViewingUnableIndex((prev) => Math.max(0, prev - 1))}
+                                className="px-4 py-2 bg-white/15 hover:bg-white/25 disabled:opacity-25 disabled:pointer-events-none text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                                <IoChevronBackOutline className="text-sm" /> Prev
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const curr = viewingUnableIndex;
+                                    setViewingUnableIndex(null);
+                                    handleRemoveUnableImage(curr);
+                                }}
+                                className="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
+                            >
+                                <IoTrashOutline className="text-sm" /> Delete & Retake
+                            </button>
+
+                            <button
+                                type="button"
+                                disabled={viewingUnableIndex >= unableImages.length - 1}
+                                onClick={() => setViewingUnableIndex((prev) => Math.min(unableImages.length - 1, prev + 1))}
+                                className="px-4 py-2 bg-white/15 hover:bg-white/25 disabled:opacity-25 disabled:pointer-events-none text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                                Next <IoChevronForwardOutline className="text-sm" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </PageContainer>
     );
 }
