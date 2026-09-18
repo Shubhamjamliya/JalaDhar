@@ -1,20 +1,11 @@
 /**
  * Live GPS Map Camera Geotag & Timestamp Watermark Engine
- * Produces authentic, compact "GPS Map Camera" card overlay matching reference proportions:
- * 
- * Target for a 504 × 1114 mobile screen (and responsive to any camera resolution):
- * - Overall GPS overlay height: ~150–165px (approx 14% of height)
- * - Overall overlay width: ~80–85% of screen (83% of width)
- * - Position: centered horizontally with ~40px gap above bottom navigation
- * - Left section: satellite/map thumbnail occupying ~24–25% of overlay width (proportional, not squashed)
- * - Right section: semi-transparent dark/black information panel (75% black)
- * - Typography:
- *   - Location title: 18–20px bold, white ("Indore, Madhya Pradesh, India 🇮🇳", never truncated)
- *   - Address: 12–13px, crisp white/light gray
- *   - Lat/Long: 12–13px, semibold white
- *   - Date/time: 11–12px
- *   - GPS Map Camera badge: 9–10px
- * - Comfortable line height and spacing throughout.
+ * Produces authentic, modern dual-card split layout:
+ * - Card 1 (Left): Independent 1:1 squarish satellite map widget
+ * - Card 2 (Right): Independent floating dark info panel
+ * - Reduced left/right and bottom gaps for an ultra-clean, compact footprint
+ * - Both cards aligned to identical top and bottom baselines with matching rounded corners
+ * - Large, readable typography with zero truncation.
  */
 
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
@@ -151,9 +142,9 @@ const reverseGeocode = async (lat, lng, apiKey) => {
 };
 
 /**
- * Load Google Static Hybrid Satellite Map image with matching aspect ratio
+ * Load Google Static Hybrid Satellite Map image with matching square aspect ratio
  */
-const loadStaticMapImage = (lat, lng, apiKey, width = 300, height = 380) => {
+const loadStaticMapImage = (lat, lng, apiKey, size = 350) => {
   if (!apiKey || !lat || !lng) return Promise.resolve(null);
   return new Promise((resolve) => {
     const img = new Image();
@@ -169,9 +160,8 @@ const loadStaticMapImage = (lat, lng, apiKey, width = 300, height = 380) => {
       resolve(null);
     };
 
-    const reqW = Math.min(640, Math.max(200, Math.round(width)));
-    const reqH = Math.min(640, Math.max(200, Math.round(height)));
-    img.src = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=17&size=${reqW}x${reqH}&scale=2&maptype=hybrid&markers=color:red%7C${lat},${lng}&key=${apiKey}`;
+    const reqSize = Math.min(640, Math.max(250, Math.round(size)));
+    img.src = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=17&size=${reqSize}x${reqSize}&scale=2&maptype=hybrid&markers=color:red%7C${lat},${lng}&key=${apiKey}`;
   });
 };
 
@@ -289,15 +279,12 @@ const drawFallbackMap = (ctx, x, y, width, height) => {
 };
 
 /**
- * Stamp image with exact "GPS Map Camera" card overlay
+ * Stamp image with squarish dual-card split GPS Map Camera overlay
  * 
- * Target Proportions for a 504 × 1114 mobile screen:
- * - Height: ~150–165px
- * - Width: ~80–85% of screen
- * - Centered with a comfortable gap above bottom navigation
- * - Left map: ~24–25% of overlay width
- * - Right panel: ~75–76% of overlay width
- * - Typography: Title ~18–20px bold, Address ~12–13px, Lat/Long ~12–13px, Date ~11–12px, Badge ~9–10px
+ * Layout:
+ * - Card 1 (Left): 1:1 squarish satellite map widget
+ * - Card 2 (Right): Floating dark info panel
+ * - Reduced left/right and bottom gaps for an ultra-clean, compact footprint
  * 
  * @param {File|Blob} file - Captured photo from camera
  * @param {Object} options
@@ -325,7 +312,7 @@ export const stampImageWithGeotag = async (file, options = {}) => {
     try {
       const [geoRes, mapRes] = await Promise.all([
         reverseGeocode(coords.lat, coords.lng, GOOGLE_API_KEY),
-        loadStaticMapImage(coords.lat, coords.lng, GOOGLE_API_KEY, 300, 390)
+        loadStaticMapImage(coords.lat, coords.lng, GOOGLE_API_KEY, 350)
       ]);
       geoData = geoRes;
       mapImg = mapRes;
@@ -382,72 +369,91 @@ export const stampImageWithGeotag = async (file, options = {}) => {
           // 1. Draw base camera photo
           ctx.drawImage(img, 0, 0, width, height);
 
-          // 2. Responsive Proportions based on 504px mobile reference:
-          // Target on 504 × 1114 mobile screen:
-          // - Width: ~83% of screen (~418px)
-          // - Height: ~155px (within requested 150–165px range)
-          // - Gap from bottom: ~42px (leaving bottom navigation bar clearly visible)
-          // - Centered horizontally
+          // 2. Compact Proportions with Decreased Margins:
+          // - Total width: 91% of width (only ~4.5% gap from left and right edges)
+          // - Bottom margin: 1.8% of height (~20px on 1114h, decreased bottom gap)
+          // - Height: ~140px on 504px reference
           const baseWidth = 504;
           const scale = Math.max(0.75, width / baseWidth);
 
-          const cardWidth = Math.round(width * 0.83);
-          const cardHeight = Math.round(155 * scale);
-          const cardMarginBottom = Math.round(height * 0.038);
-          const cardX = Math.round((width - cardWidth) / 2);
+          const totalWidth = Math.round(width * 0.91);
+          const startX = Math.round((width - totalWidth) / 2);
+          const cardHeight = Math.round(140 * scale);
+          const gap = Math.round(8 * scale); // tight 8px gap
+          const cardMarginBottom = Math.round(height * 0.018); // ~20px gap from bottom
           const cardY = height - cardHeight - cardMarginBottom;
           const cardRadius = Math.round(10 * scale);
 
-          // 3. Draw Dark Translucent Card Background (75% black with subtle border)
+          // Card 1: Squarish 1:1 Satellite Map Widget
+          const mapCardWidth = cardHeight; // True 1:1 square
+          const mapCardX = startX;
+          const mapCardY = cardY;
+          const mapCardHeight = cardHeight;
+
+          // Card 2: Right Information Card
+          const textCardX = mapCardX + mapCardWidth + gap;
+          const textCardWidth = totalWidth - mapCardWidth - gap;
+          const textCardY = cardY;
+          const textCardHeight = cardHeight;
+
+          // 3. Draw Left Satellite Map Card (1:1 Squarish Floating Widget)
           ctx.save();
-          drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, cardRadius);
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.76)';
+          // Drop Shadow
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = Math.round(8 * scale);
+          ctx.shadowOffsetY = Math.round(2 * scale);
+
+          drawRoundedRect(ctx, mapCardX, mapCardY, mapCardWidth, mapCardHeight, cardRadius);
+          ctx.fillStyle = '#1e293b';
           ctx.fill();
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
           ctx.restore();
 
-          // 4. Left Section: Satellite / Map thumbnail occupying ~24–25% of overlay width
-          const padding = Math.round(8 * scale);
-          const mapWidth = Math.round(cardWidth * 0.245);
-          const mapHeight = cardHeight - padding * 2;
-          const mapX = cardX + padding;
-          const mapY = cardY + padding;
-          const mapRadius = Math.round(8 * scale);
-
+          // Clip and draw square satellite imagery inside Card 1
           ctx.save();
-          drawRoundedRect(ctx, mapX, mapY, mapWidth, mapHeight, mapRadius);
+          drawRoundedRect(ctx, mapCardX, mapCardY, mapCardWidth, mapCardHeight, cardRadius);
           ctx.clip();
 
           if (mapImg) {
-            ctx.drawImage(mapImg, mapX, mapY, mapWidth, mapHeight);
+            ctx.drawImage(mapImg, mapCardX, mapCardY, mapCardWidth, mapCardHeight);
           } else {
-            drawFallbackMap(ctx, mapX, mapY, mapWidth, mapHeight);
+            drawFallbackMap(ctx, mapCardX, mapCardY, mapCardWidth, mapCardHeight);
           }
           ctx.restore();
 
-          // Map subtle border
+          // Card 1 Subtle Border
           ctx.save();
-          drawRoundedRect(ctx, mapX, mapY, mapWidth, mapHeight, mapRadius);
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+          drawRoundedRect(ctx, mapCardX, mapCardY, mapCardWidth, mapCardHeight, cardRadius);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
           ctx.lineWidth = 1;
           ctx.stroke();
           ctx.restore();
 
+          // 4. Draw Right Information Card (Standalone Floating Dark Panel)
+          ctx.save();
+          // Drop Shadow
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = Math.round(8 * scale);
+          ctx.shadowOffsetY = Math.round(2 * scale);
 
+          drawRoundedRect(ctx, textCardX, textCardY, textCardWidth, textCardHeight, cardRadius);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.76)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
 
-          // 6. Right Section: Information Panel with generous, breathable spacing
-          const textX = mapX + mapWidth + Math.round(10 * scale);
-          const textRightLimit = cardX + cardWidth - Math.round(10 * scale);
-          const textWidth = textRightLimit - textX;
+          // 5. Draw Content inside Right Information Card
+          const textPaddingX = Math.round(12 * scale);
+          const textPaddingY = Math.round(9 * scale);
+          const contentX = textCardX + textPaddingX;
+          const contentWidth = textCardWidth - textPaddingX * 2;
 
-          // Typography Hierarchy:
-          const targetTitleSize = Math.round(19 * scale);    // 18–20px on mobile
-          const addressSize = Math.round(12.5 * scale);      // 12–13px on mobile
+          const targetTitleSize = Math.round(18 * scale);   // 18px bold
+          const addressSize = Math.round(12 * scale);       // 12px
           const addressLineHeight = Math.round(addressSize * 1.34);
-          const coordSize = Math.round(12.5 * scale);        // 12–13px on mobile
-          const timeSize = Math.round(11.5 * scale);         // 11–12px on mobile
+          const coordSize = Math.round(12 * scale);         // 12px semibold
+          const timeSize = Math.round(11 * scale);          // 11px
 
           ctx.save();
           ctx.textBaseline = 'top';
@@ -456,51 +462,49 @@ export const stampImageWithGeotag = async (file, options = {}) => {
           ctx.shadowOffsetX = 1;
           ctx.shadowOffsetY = 1;
 
-          let currentY = cardY + padding + Math.round(3 * scale);
+          let currentY = textCardY + textPaddingY;
 
-          // Line 1: Location Title: “Indore, Madhya Pradesh, India 🇮🇳”
-          // Rendered bold and large without premature truncation
+          // Line 1: Location Title (bold, never truncated)
           const titleLocation = `${city}${state ? ', ' + state : ''}, ${country} 🇮🇳`;
           let currentTitleSize = targetTitleSize;
           ctx.font = `700 ${currentTitleSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-          // Dynamically adjust font slightly if unusually long so it never truncates with ellipsis
-          while (ctx.measureText(titleLocation).width > textWidth && currentTitleSize > Math.round(15 * scale)) {
+          while (ctx.measureText(titleLocation).width > contentWidth && currentTitleSize > Math.round(14 * scale)) {
             currentTitleSize -= 0.5;
             ctx.font = `700 ${currentTitleSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
           }
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillText(titleLocation, textX, currentY);
+          ctx.fillText(titleLocation, contentX, currentY);
 
           currentY += currentTitleSize + Math.round(5 * scale);
 
-          // Line 2: Full Address (word-wrapped to 2 lines, comfortable line height)
+          // Line 2: Full Address (word-wrapped to 2 lines)
           ctx.font = `400 ${addressSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
           ctx.fillStyle = '#F1F5F9';
-          const addressLines = wrapText(ctx, fullAddress, textWidth, 2);
+          const addressLines = wrapText(ctx, fullAddress, contentWidth, 2);
           addressLines.forEach((line) => {
-            ctx.fillText(line, textX, currentY);
+            ctx.fillText(line, contentX, currentY);
             currentY += addressLineHeight;
           });
 
           currentY += Math.round(5 * scale);
 
-          // Line 3: Lat / Long Coordinates: "Lat 22.717364° Long 75.871613°"
+          // Line 3: Lat / Long Coordinates
           ctx.font = `600 ${coordSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
           ctx.fillStyle = '#FFFFFF';
           const latText = coords ? `Lat ${coords.lat.toFixed(6)}° Long ${coords.lng.toFixed(6)}°` : 'Lat --.------° Long --.------°';
-          ctx.fillText(latText, textX, currentY);
+          ctx.fillText(latText, contentX, currentY);
 
           currentY += coordSize + Math.round(4 * scale);
 
-          // Line 4: Date & Time: "Friday, 18/09/2026 12:57 PM GMT +05:30"
+          // Line 4: Date & Time
           ctx.font = `400 ${timeSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
           ctx.fillStyle = '#CBD5E1';
           const timestampText = formatGpsTimestamp(captureTimestamp);
-          ctx.fillText(timestampText, textX, currentY);
+          ctx.fillText(timestampText, contentX, currentY);
 
           ctx.restore();
 
-          // 7. Export High-Quality Stamped JPEG File
+          // 6. Export High-Quality Stamped JPEG File
           canvas.toBlob(
             (blob) => {
               if (!blob) {
@@ -534,7 +538,7 @@ export const stampImageWithGeotag = async (file, options = {}) => {
             0.94
           );
         } catch (stampErr) {
-          console.error('Error stamping photo with GPS Map Camera card:', stampErr);
+          console.error('Error stamping photo with squarish dual-card GPS overlay:', stampErr);
           resolve({ file, coords, timestamp: captureTimestamp, addressInfo: geoData });
         }
       };
