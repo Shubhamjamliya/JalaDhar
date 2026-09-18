@@ -619,11 +619,14 @@ export default function VendorBookingDetails() {
 
     const handleUnableImageUpload = (e) => {
         const files = Array.from(e.target.files);
-        const newImgs = files.map((file) => ({
-            file,
-            preview: URL.createObjectURL(file),
-        }));
-        setUnableImages((prev) => [...prev, ...newImgs]);
+        if (files.length > 0) {
+            const newImgs = files.map((file) => ({
+                file,
+                preview: URL.createObjectURL(file),
+            }));
+            setUnableImages((prev) => [...prev, ...newImgs]);
+        }
+        e.target.value = "";
     };
 
     const handleRemoveUnableImage = (index) => {
@@ -2892,17 +2895,17 @@ export default function VendorBookingDetails() {
                                 <input
                                     type="file"
                                     accept="image/*"
-                                    multiple
+                                    capture="environment"
                                     onChange={handleUnableImageUpload}
                                     id="unable-photos-input"
                                     className="hidden"
                                 />
                                 <label
                                     htmlFor="unable-photos-input"
-                                    className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:border-amber-500 transition-colors bg-gray-50"
+                                    className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:border-amber-500 transition-colors bg-gray-50 active:scale-95"
                                 >
                                     <IoCameraOutline className="text-3xl text-gray-400 mb-1" />
-                                    <span className="text-xs font-bold text-gray-600">Click to upload on-site evidence photos</span>
+                                    <span className="text-xs font-bold text-gray-600">Click to capture on-site evidence photo</span>
                                     <span className="text-[10px] text-gray-400">JPEG, PNG up to 10MB</span>
                                 </label>
 

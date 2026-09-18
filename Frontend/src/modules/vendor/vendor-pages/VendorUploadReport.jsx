@@ -4,6 +4,7 @@ import {
     IoChevronBackOutline,
     IoDocumentTextOutline,
     IoImageOutline,
+    IoCameraOutline,
     IoCheckmarkCircleOutline,
     IoCloseCircleOutline,
     IoWaterOutline,
@@ -317,10 +318,13 @@ export default function VendorUploadReport() {
 
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
-        setFormData((prev) => ({
-            ...prev,
-            images: [...prev.images, ...files],
-        }));
+        if (files.length > 0) {
+            setFormData((prev) => ({
+                ...prev,
+                images: [...prev.images, ...files],
+            }));
+        }
+        e.target.value = "";
     };
 
     const handleRemoveImage = (index) => {
@@ -609,20 +613,38 @@ export default function VendorUploadReport() {
                         </div>
                         {formData.evidence.gpsLocation.lat && <p className="text-xs text-green-600 font-bold mb-3">✓ GPS Coordinates Captured</p>}
                         <div className="flex flex-wrap gap-4 items-center">
-                            <label className="flex flex-col items-center justify-center w-24 h-24 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 cursor-pointer hover:border-[#0A84FF] hover:bg-blue-50/50 transition-all">
-                                <IoImageOutline className="text-2xl text-gray-400" />
-                                <span className="text-xs text-gray-500 mt-1 font-medium">Add Photo</span>
-                                <input type="file" multiple accept="image/*" onChange={handleImageChange} className="hidden" />
+                            <label className="flex flex-col items-center justify-center w-24 h-24 bg-blue-50/40 rounded-xl border-2 border-dashed border-blue-300 cursor-pointer hover:border-[#0A84FF] hover:bg-blue-50 transition-all active:scale-95 shadow-xs">
+                                <IoCameraOutline className="text-2xl text-[#0A84FF]" />
+                                <span className="text-xs text-[#0A84FF] mt-1 font-bold">Take Photo</span>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    onChange={handleImageChange}
+                                    className="hidden"
+                                />
                             </label>
                             {formData.images.map((img, idx) => (
-                                <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border border-gray-200 group">
-                                    <img src={URL.createObjectURL(img)} alt="preview" className="w-full h-full object-cover" />
-                                    <button type="button" onClick={() => handleRemoveImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors">
+                                <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border border-gray-200 group shadow-xs">
+                                    <img src={URL.createObjectURL(img)} alt={`evidence-${idx + 1}`} className="w-full h-full object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveImage(idx)}
+                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                                        title="Remove photo"
+                                    >
                                         <IoCloseCircleOutline className="text-base" />
                                     </button>
+                                    <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                        #{idx + 1}
+                                    </span>
                                 </div>
                             ))}
                         </div>
+                        <p className="text-[11px] text-gray-500 mt-2 flex items-center gap-1 font-medium">
+                            <IoCameraOutline className="text-[#0A84FF] text-sm shrink-0" />
+                            <span>Live camera capture only (Gallery photo selection is disabled for site verification).</span>
+                        </p>
                     </div>
                     
                     <div className="mb-6">
