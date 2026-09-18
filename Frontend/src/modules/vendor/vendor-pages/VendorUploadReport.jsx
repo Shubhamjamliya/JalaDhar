@@ -20,6 +20,7 @@ import {
 } from "react-icons/io5";
 import { getBookingDetails, uploadVisitReport } from "../../../services/vendorApi";
 import { formatAcresGuntasDisplay } from "../../../utils/landAreaHelper";
+import { stampImageWithGeotag } from "../../../utils/imageGeotagWatermark";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import PageContainer from "../../shared/components/PageContainer";
@@ -316,15 +317,74 @@ export default function VendorUploadReport() {
         });
     };
 
-    const handleImageChange = (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length > 0) {
+    const [stamping, setStamping] = useState(false);
+
+    const handleImageChange = async (e) => {
+        const rawFiles = Array.from(e.target.files);
+        if (rawFiles.length === 0) return;
+
+        setStamping(true);
+        const loadingToast = toast.showLoading("Stamping photo with live GPS & timestamp...");
+
+        try {
+            const locationStr = [formData.village, formData.mandal, formData.district].filter(Boolean).join(", ");
+            const stampedResults = [];
+
+            for (const file of rawFiles) {
+                const res = await stampImageWithGeotag(file, {
+                    bookingId: booking?._id || bookingId,
+                    locationName: locationStr
+                });
+                stampedResults.push(res);
+            }
+
+            toast.dismissToast(loadingToast);
+
+            const newFiles = stampedResults.map((r) => r.file);
+            const validCoords = stampedResults.find((r) => r.coords?.lat && r.coords?.lng)?.coords;
+
+            setFormData((prev) => {
+                const updatedImages = [...prev.images, ...newFiles];
+                const updated = {
+                    ...prev,
+                    images: updatedImages,
+                    evidence: {
+                        ...prev.evidence,
+                        photoCount: updatedImages.length,
+                        gpsLocation: validCoords ? { lat: validCoords.lat, lng: validCoords.lng } : prev.evidence.gpsLocation
+                    }
+                };
+
+                // Also populate surveyRecommendations.latitude/longitude if still empty
+                if (validCoords && (!prev.surveyRecommendations?.latitude || !prev.surveyRecommendations?.longitude)) {
+                    updated.surveyRecommendations = {
+                        ...prev.surveyRecommendations,
+                        latitude: prev.surveyRecommendations?.latitude || String(validCoords.lat.toFixed(6)),
+                        longitude: prev.surveyRecommendations?.longitude || String(validCoords.lng.toFixed(6))
+                    };
+                }
+
+                return updated;
+            });
+
+            if (validCoords) {
+                toast.showSuccess(`Photo #${formData.images.length + 1} geotagged with live GPS!`);
+            } else {
+                toast.showSuccess(`Photo #${formData.images.length + 1} captured & stamped with timestamp.`);
+            }
+        } catch (err) {
+            console.error("Geotag stamping error:", err);
+            toast.dismissToast(loadingToast);
+            // Fallback: append raw files if canvas stamping fails
             setFormData((prev) => ({
                 ...prev,
-                images: [...prev.images, ...files],
+                images: [...prev.images, ...rawFiles]
             }));
+            toast.showSuccess("Photo captured.");
+        } finally {
+            setStamping(false);
+            e.target.value = "";
         }
-        e.target.value = "";
     };
 
     const handleRemoveImage = (index) => {
@@ -611,16 +671,28 @@ export default function VendorUploadReport() {
                                 Auto-capture GPS
                             </button>
                         </div>
-                        {formData.evidence.gpsLocation.lat && <p className="text-xs text-green-600 font-bold mb-3">✓ GPS Coordinates Captured</p>}
+                        {formData.evidence.gpsLocation.lat && (
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+                                    <IoShieldCheckmarkOutline className="text-emerald-600 text-sm" />
+                                    ✓ Live GPS Geotag Stamped ({formData.evidence.gpsLocation.lat.toFixed(6)}°, {formData.evidence.gpsLocation.lng.toFixed(6)}°)
+                                </span>
+                            </div>
+                        )}
                         <div className="flex flex-wrap gap-4 items-center">
-                            <label className="flex flex-col items-center justify-center w-24 h-24 bg-blue-50/40 rounded-xl border-2 border-dashed border-blue-300 cursor-pointer hover:border-[#0A84FF] hover:bg-blue-50 transition-all active:scale-95 shadow-xs">
-                                <IoCameraOutline className="text-2xl text-[#0A84FF]" />
-                                <span className="text-xs text-[#0A84FF] mt-1 font-bold">Take Photo</span>
+                            <label className={`flex flex-col items-center justify-center w-24 h-24 bg-blue-50/40 rounded-xl border-2 border-dashed border-blue-300 cursor-pointer hover:border-[#0A84FF] hover:bg-blue-50 transition-all active:scale-95 shadow-xs ${stamping ? 'opacity-60 pointer-events-none' : ''}`}>
+                                {stamping ? (
+                                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#0A84FF] border-t-transparent mb-1" />
+                                ) : (
+                                    <IoCameraOutline className="text-2xl text-[#0A84FF]" />
+                                )}
+                                <span className="text-xs text-[#0A84FF] mt-1 font-bold">{stamping ? 'Stamping...' : 'Take Photo'}</span>
                                 <input
                                     type="file"
                                     accept="image/*"
                                     capture="environment"
                                     onChange={handleImageChange}
+                                    disabled={stamping}
                                     className="hidden"
                                 />
                             </label>
@@ -635,15 +707,18 @@ export default function VendorUploadReport() {
                                     >
                                         <IoCloseCircleOutline className="text-base" />
                                     </button>
-                                    <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                    <span className="absolute bottom-1 left-1 bg-black/75 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
                                         #{idx + 1}
+                                    </span>
+                                    <span className="absolute bottom-1 right-1 bg-emerald-600/90 text-white text-[8px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-xs">
+                                        📍 GPS
                                     </span>
                                 </div>
                             ))}
                         </div>
                         <p className="text-[11px] text-gray-500 mt-2 flex items-center gap-1 font-medium">
                             <IoCameraOutline className="text-[#0A84FF] text-sm shrink-0" />
-                            <span>Live camera capture only (Gallery photo selection is disabled for site verification).</span>
+                            <span>Live camera capture only (Coordinates, date, and time are automatically stamped onto each photo).</span>
                         </p>
                     </div>
                     

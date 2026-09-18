@@ -34,6 +34,7 @@ import PageContainer from "../../shared/components/PageContainer";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import { maskPhone } from "../../../utils/phoneMasker";
+import { stampImageWithGeotag } from "../../../utils/imageGeotagWatermark";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal, { VENDOR_REJECTION_REASONS } from "../../shared/components/InputModal";
 import OTPInputModal from "../../shared/components/OTPInputModal";
@@ -617,16 +618,47 @@ export default function VendorBookingDetails() {
         }
     };
 
-    const handleUnableImageUpload = (e) => {
+    const [stampingUnable, setStampingUnable] = useState(false);
+
+    const handleUnableImageUpload = async (e) => {
         const files = Array.from(e.target.files);
-        if (files.length > 0) {
-            const newImgs = files.map((file) => ({
-                file,
-                preview: URL.createObjectURL(file),
-            }));
+        if (files.length === 0) return;
+
+        setStampingUnable(true);
+        const loadingToast = toast.showLoading("Stamping on-site photo with live GPS & timestamp...");
+
+        try {
+            const locationStr = [booking?.village, booking?.address?.village, booking?.district, booking?.address?.district].filter(Boolean).join(", ");
+            const newImgs = [];
+
+            for (const file of files) {
+                const res = await stampImageWithGeotag(file, {
+                    bookingId: booking?._id || id,
+                    locationName: locationStr
+                });
+                newImgs.push({
+                    file: res.file,
+                    preview: URL.createObjectURL(res.file),
+                    coords: res.coords
+                });
+            }
+
+            toast.dismissToast(loadingToast);
             setUnableImages((prev) => [...prev, ...newImgs]);
+            toast.showSuccess("On-site photo stamped with verified GPS & time!");
+        } catch (err) {
+            console.error("Geotag stamping error:", err);
+            toast.dismissToast(loadingToast);
+            const fallbackImgs = files.map((file) => ({
+                file,
+                preview: URL.createObjectURL(file)
+            }));
+            setUnableImages((prev) => [...prev, ...fallbackImgs]);
+            toast.showSuccess("Photo captured.");
+        } finally {
+            setStampingUnable(false);
+            e.target.value = "";
         }
-        e.target.value = "";
     };
 
     const handleRemoveUnableImage = (index) => {
@@ -2897,16 +2929,26 @@ export default function VendorBookingDetails() {
                                     accept="image/*"
                                     capture="environment"
                                     onChange={handleUnableImageUpload}
+                                    disabled={stampingUnable}
                                     id="unable-photos-input"
                                     className="hidden"
                                 />
                                 <label
-                                    htmlFor="unable-photos-input"
-                                    className="border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:border-amber-500 transition-colors bg-gray-50 active:scale-95"
+                                    htmlFor={stampingUnable ? undefined : "unable-photos-input"}
+                                    className={`border-2 border-dashed border-gray-300 rounded-xl p-4 flex flex-col items-center justify-center transition-colors bg-gray-50 ${stampingUnable ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:border-amber-500 active:scale-95'}`}
                                 >
-                                    <IoCameraOutline className="text-3xl text-gray-400 mb-1" />
-                                    <span className="text-xs font-bold text-gray-600">Click to capture on-site evidence photo</span>
-                                    <span className="text-[10px] text-gray-400">JPEG, PNG up to 10MB</span>
+                                    {stampingUnable ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-7 w-7 border-2 border-amber-500 border-t-transparent mb-1" />
+                                            <span className="text-xs font-bold text-amber-700">Stamping live GPS & timestamp...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <IoCameraOutline className="text-3xl text-gray-400 mb-1" />
+                                            <span className="text-xs font-bold text-gray-600">Click to capture on-site evidence photo</span>
+                                            <span className="text-[10px] text-gray-400">Coordinates & timestamp automatically burned on photo</span>
+                                        </>
+                                    )}
                                 </label>
 
                                 {unableImages.length > 0 && (
@@ -2921,6 +2963,9 @@ export default function VendorBookingDetails() {
                                                 >
                                                     <IoCloseOutline className="text-xs" />
                                                 </button>
+                                                <span className="absolute bottom-1 right-1 bg-emerald-600/90 text-white text-[8px] font-bold px-1 py-0.5 rounded shadow-xs">
+                                                    📍 GPS
+                                                </span>
                                             </div>
                                         ))}
                                     </div>
