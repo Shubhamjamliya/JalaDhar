@@ -10,7 +10,6 @@ import {
   HelpCircle, 
   PhoneCall, 
   ChevronRight, 
-  Smartphone, 
   Download, 
   Mail 
 } from 'lucide-react';
@@ -225,17 +224,6 @@ export default function Navbar() {
                 })}
               </ul>
 
-              {/* App Platform Info Box */}
-              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-50/80 via-sky-50/50 to-indigo-50/60 border border-blue-100 shadow-xs">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Smartphone className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">Verified Mobile Platform</span>
-                </div>
-                <p className="text-xs font-bold text-slate-800">Groundwater Survey Booking</p>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Connect with certified geophysicists & receive verified digital reports.
-                </p>
-              </div>
             </div>
             
             {/* Drawer Footer CTA & Support */}
