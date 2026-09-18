@@ -2362,6 +2362,85 @@ const updateVisitSchedule = async (req, res) => {
   }
 };
 
+/**
+ * Update vendor live location (HTTP REST heartbeat fallback)
+ */
+const updateVendorLocation = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { lat, lng, speed, heading } = req.body;
+
+    if (!lat || !lng) {
+      return res.status(400).json({
+        success: false,
+        message: 'Coordinates (lat, lng) are required'
+      });
+    }
+
+    const numLat = Number(lat);
+    const numLng = Number(lng);
+    const numSpeed = Number(speed) || 0;
+    const numHeading = Number(heading) || 0;
+    const now = new Date();
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Update booking vendorLocation in MongoDB
+    booking.vendorLocation = {
+      lat: numLat,
+      lng: numLng,
+      speed: numSpeed,
+      heading: numHeading,
+      updatedAt: now
+    };
+    await booking.save();
+
+    // Broadcast real-time update via Socket.io if available
+    try {
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      if (io) {
+        const payload = {
+          bookingId: booking._id.toString(),
+          lat: numLat,
+          lng: numLng,
+          speed: numSpeed,
+          heading: numHeading,
+          updatedAt: now
+        };
+        io.to(`booking_${booking._id}`).emit('expert_location_updated', payload);
+        if (booking.user) {
+          const userId = booking.user._id ? booking.user._id.toString() : booking.user.toString();
+          io.to(`User_${userId}`).to(`user:${userId}`).emit('expert_location_updated', payload);
+        }
+      }
+    } catch (sockErr) {
+      // Non-critical socket broadcast error
+    }
+
+    res.json({
+      success: true,
+      message: 'Location updated successfully',
+      data: {
+        vendorLocation: booking.vendorLocation
+      }
+    });
+  } catch (error) {
+    console.error('updateVendorLocation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update location',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getVendorBookings,
   acceptBooking,
@@ -2379,6 +2458,8 @@ module.exports = {
   requestTravelCharges,
   downloadInvoice,
   updateVisitSchedule,
+  updateVendorLocation,
   sanitizeBookingForVendor
 };
+
 

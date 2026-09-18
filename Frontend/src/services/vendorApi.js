@@ -177,6 +177,17 @@ export const resendSurveyOTP = async (bookingId, type = 'end') => {
 };
 
 /**
+ * Update vendor live location (HTTP fallback)
+ * @param {string} bookingId
+ * @param {Object} locationData - { lat, lng, speed, heading }
+ * @returns {Promise}
+ */
+export const updateVendorLocation = async (bookingId, locationData) => {
+  const response = await api.post(`/vendors/bookings/${bookingId}/location`, locationData, { skipCache: true });
+  return response.data;
+};
+
+/**
  * Mark booking as visited
  * @param {string} bookingId 
  * @returns {Promise}

@@ -97,6 +97,23 @@ const bookingSchema = new mongoose.Schema({
     },
     landmark: String
   },
+  // Real-time live GPS tracking location of assigned expert
+  vendorLocation: {
+    lat: Number,
+    lng: Number,
+    speed: {
+      type: Number,
+      default: 0
+    },
+    heading: {
+      type: Number,
+      default: 0
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
   // Customer Enquiry Form fields
   village: {
     type: String,

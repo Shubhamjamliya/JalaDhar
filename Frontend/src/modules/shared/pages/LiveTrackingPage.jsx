@@ -20,6 +20,7 @@ import {
     getBookingDetails as getVendorBookingDetails,
     verifyStartOTP,
     resendSurveyOTP,
+    updateVendorLocation,
 } from "../../../services/vendorApi";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { useToast } from "../../../hooks/useToast";
@@ -104,17 +105,38 @@ export default function LiveTrackingPage({ role = "User" }) {
                     const destObj = { lat: destLat, lng: destLng };
                     setDestination(destObj);
 
-                    // Initial expert position: vendorLocation from booking or fallback near destination
-                    let initialExpertLat = bData.vendorLocation?.lat || bData.vendor?.lastKnownLocation?.lat || bData.vendor?.location?.coordinates?.[1];
-                    let initialExpertLng = bData.vendorLocation?.lng || bData.vendor?.lastKnownLocation?.lng || bData.vendor?.location?.coordinates?.[0];
+                    // ─── Instant State Hydration (Zero Wait Time) ─────────────────────
+                    let expertLat = null;
+                    let expertLng = null;
 
-                    if (!initialExpertLat || !initialExpertLng) {
-                        initialExpertLat = destLat + 0.02;
-                        initialExpertLng = destLng + 0.015;
+                    if (bData.vendorLocation?.lat && bData.vendorLocation?.lng) {
+                        expertLat = Number(bData.vendorLocation.lat);
+                        expertLng = Number(bData.vendorLocation.lng);
+
+                        // If position is fresh (updated in last 15 minutes), mark as live immediately
+                        const updatedAt = new Date(bData.vendorLocation.updatedAt || Date.now()).getTime();
+                        if (Date.now() - updatedAt < 15 * 60 * 1000) {
+                            setIsLive(true);
+                        }
+                    } else if (bData.vendor?.lastKnownLocation?.lat && bData.vendor?.lastKnownLocation?.lng) {
+                        expertLat = Number(bData.vendor?.lastKnownLocation?.lat);
+                        expertLng = Number(bData.vendor?.lastKnownLocation?.lng);
+                    } else if (bData.vendor?.location?.coordinates?.length === 2) {
+                        expertLng = Number(bData.vendor.location.coordinates[0]);
+                        expertLat = Number(bData.vendor.location.coordinates[1]);
                     }
 
-                    const initLoc = { lat: Number(initialExpertLat), lng: Number(initialExpertLng) };
+                    // Fallback near destination if brand new booking before any movement
+                    if (!expertLat || !expertLng) {
+                        expertLat = destLat + 0.02;
+                        expertLng = destLng + 0.015;
+                    }
+
+                    const initLoc = { lat: expertLat, lng: expertLng };
                     setExpertLocation(initLoc);
+
+                    // Pre-calculate route and ETA on Frame 1 (< 100ms)
+                    fetchRoadRouteAndETA(initLoc, destObj);
                 }
 
                 if (bData.otp?.startSurvey?.otpCode) setStartOtp(bData.otp.startSurvey.otpCode);
@@ -191,7 +213,44 @@ export default function LiveTrackingPage({ role = "User" }) {
         }
     }, [expertLocation, destination, fetchRoadRouteAndETA]);
 
-    // ─── Expert Role: Stream Own GPS via Socket & Auto-Center Map ─────────────
+    // ─── Screen Wake Lock (Prevent screen auto-lock for Expert) ────────────────
+    useEffect(() => {
+        if (!isExpert) return;
+        let wakeLock = null;
+
+        const requestWakeLock = async () => {
+            try {
+                if ("wakeLock" in navigator) {
+                    wakeLock = await navigator.wakeLock.request("screen");
+                    console.log("[LiveTracking] 💡 Screen Wake Lock active");
+                }
+            } catch (err) {
+                console.warn("[LiveTracking] Wake lock error:", err.message);
+            }
+        };
+
+        requestWakeLock();
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "visible") {
+                requestWakeLock();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            if (wakeLock) {
+                wakeLock.release().catch(() => {});
+            }
+        };
+    }, [isExpert]);
+
+    // Track last HTTP fallback timestamp to throttle to every 10 seconds
+    const lastHttpPingRef = useRef(0);
+
+    // ─── Expert Role: Dual-Channel Telemetry (Socket.io + HTTP Fallback) ──────
     useEffect(() => {
         if (!isExpert || !socket || !bookingId) return;
         if (!("geolocation" in navigator)) {
@@ -206,14 +265,32 @@ export default function LiveTrackingPage({ role = "User" }) {
             setExpertLocation(newLoc);
             setIsLive(true);
 
-            socket.emit("vendor_location_update", {
+            const speedKmh = speed ? Math.round(speed * 3.6) : 30;
+            const headingDeg = heading || 0;
+
+            const payload = {
                 bookingId,
                 lat,
                 lng,
-                speed: speed ? Math.round(speed * 3.6) : 30,
-                heading: heading || 0,
+                speed: speedKmh,
+                heading: headingDeg,
                 userId: booking?.user?._id,
-            });
+            };
+
+            // Channel 1: Real-time Socket stream
+            socket.emit("vendor_location_update", payload);
+
+            // Channel 2: HTTP Heartbeat Fallback (every 10 seconds guaranteed)
+            const now = Date.now();
+            if (now - lastHttpPingRef.current > 10000) {
+                lastHttpPingRef.current = now;
+                updateVendorLocation(bookingId, {
+                    lat,
+                    lng,
+                    speed: speedKmh,
+                    heading: headingDeg,
+                }).catch(() => {});
+            }
 
             if (mapRef.current) {
                 mapRef.current.panTo(newLoc);
@@ -221,33 +298,27 @@ export default function LiveTrackingPage({ role = "User" }) {
         };
 
         const handleError = (err) => {
-            console.warn("[LiveTracking] Expert GPS error:", err.message);
-            // In case of error (e.g. desktop), still flag as active so UI is not blocked
+            console.warn("[LiveTracking] Expert GPS warning:", err.message);
             setIsLive(true);
         };
 
-        // 1. Immediate GPS reading
-        navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+        // Geolocation config: 10s maximumAge for instantaneous lock, 15s timeout
+        const geoOptions = {
             enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 8000,
-        });
+            maximumAge: 10000,
+            timeout: 15000,
+        };
+
+        // 1. Immediate GPS reading
+        navigator.geolocation.getCurrentPosition(handleSuccess, handleError, geoOptions);
 
         // 2. 5-second interval heartbeat
         const intervalId = setInterval(() => {
-            navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
-                enableHighAccuracy: true,
-                maximumAge: 5000,
-                timeout: 5000,
-            });
+            navigator.geolocation.getCurrentPosition(handleSuccess, handleError, geoOptions);
         }, 5000);
 
         // 3. Motion watcher
-        const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, {
-            enableHighAccuracy: true,
-            maximumAge: 3000,
-            timeout: 8000,
-        });
+        const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, geoOptions);
 
         return () => {
             clearInterval(intervalId);

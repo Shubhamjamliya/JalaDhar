@@ -22,7 +22,7 @@ import {
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import { useNotifications } from "../../../contexts/NotificationContext";
-import { updateVisitSchedule, getPublicNotificationSettings } from "../../../services/vendorApi";
+import { updateVisitSchedule, getPublicNotificationSettings, updateVendorLocation } from "../../../services/vendorApi";
 import WhatsAppTemplateModal from "../../shared/components/WhatsAppTemplateModal";
 import { maskPhone } from "../../../utils/phoneMasker";
 
@@ -51,6 +51,7 @@ export default function VendorOngoingBookingCard({
     const toast = useToast();
     const { socket } = useNotifications();
     const gpsWatchIdRef = useRef(null);
+    const lastHttpPingRef = useRef(0);
 
     const [localOverride, setLocalOverride] = useState(null);
     const [showTimePickerModal, setShowTimePickerModal] = useState(false);
@@ -121,24 +122,42 @@ export default function VendorOngoingBookingCard({
         // Join the booking tracking room as the sender too
         socket.emit("join_booking_tracking", bookingId);
 
-        // Function to fetch and emit current position via Socket
+        // Function to fetch and emit current position via Socket & HTTP fallback
         const emitCurrentLocation = () => {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const { latitude, longitude, speed, heading } = pos.coords;
+                    const speedKmh = speed ? Math.round(speed * 3.6) : 30;
+                    const headingDeg = heading || 0;
+
                     const payload = {
                         bookingId,
                         lat: latitude,
                         lng: longitude,
-                        speed: speed ? Math.round(speed * 3.6) : 30,
-                        heading: heading || 0,
+                        speed: speedKmh,
+                        heading: headingDeg,
                         userId,
                     };
+
+                    // Channel 1: Real-time Socket stream
                     socket.emit("vendor_location_update", payload);
-                    console.log(`[VendorCard] 🚗 Emitted 5s location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+
+                    // Channel 2: HTTP Heartbeat Fallback (every 10s)
+                    const now = Date.now();
+                    if (now - lastHttpPingRef.current > 10000) {
+                        lastHttpPingRef.current = now;
+                        updateVendorLocation(bookingId, {
+                            lat: latitude,
+                            lng: longitude,
+                            speed: speedKmh,
+                            heading: headingDeg,
+                        }).catch(() => {});
+                    }
+
+                    console.log(`[VendorCard] 🚗 Emitted GPS location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
                 },
-                (err) => console.warn("[VendorCard] GPS error:", err.message),
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                (err) => console.warn("[VendorCard] GPS warning:", err.message),
+                { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
             );
         };
 
@@ -152,18 +171,33 @@ export default function VendorOngoingBookingCard({
         gpsWatchIdRef.current = navigator.geolocation.watchPosition(
             (pos) => {
                 const { latitude, longitude, speed, heading } = pos.coords;
+                const speedKmh = speed ? Math.round(speed * 3.6) : 30;
+                const headingDeg = heading || 0;
+
                 const payload = {
                     bookingId,
                     lat: latitude,
                     lng: longitude,
-                    speed: speed ? Math.round(speed * 3.6) : 30,
-                    heading: heading || 0,
+                    speed: speedKmh,
+                    heading: headingDeg,
                     userId,
                 };
+
                 socket.emit("vendor_location_update", payload);
+
+                const now = Date.now();
+                if (now - lastHttpPingRef.current > 10000) {
+                    lastHttpPingRef.current = now;
+                    updateVendorLocation(bookingId, {
+                        lat: latitude,
+                        lng: longitude,
+                        speed: speedKmh,
+                        heading: headingDeg,
+                    }).catch(() => {});
+                }
             },
-            (err) => console.warn("[VendorCard] Watch GPS error:", err.message),
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+            (err) => console.warn("[VendorCard] Watch GPS warning:", err.message),
+            { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
         );
 
         return () => {

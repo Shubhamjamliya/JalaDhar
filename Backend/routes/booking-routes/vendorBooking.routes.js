@@ -18,7 +18,8 @@ const {
   getBookingDetails,
   requestTravelCharges,
   downloadInvoice,
-  updateVisitSchedule
+  updateVisitSchedule,
+  updateVendorLocation
 } = require('../../controllers/bookingControllers/vendorBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isVendor } = require('../../middleware/roleMiddleware');
@@ -100,6 +101,7 @@ router.post(
   reportUnableToComplete
 );
 router.patch('/:bookingId/en-route', authenticate, isVendor, markAsEnRoute);
+router.post('/:bookingId/location', authenticate, isVendor, updateVendorLocation);
 router.post('/:bookingId/verify-start-otp', authenticate, isVendor, verifyStartSurveyOTP);
 router.post('/:bookingId/verify-end-otp', authenticate, isVendor, verifyEndSurveyOTP);
 router.post('/:bookingId/resend-otp', authenticate, isVendor, resendSurveyOTP);

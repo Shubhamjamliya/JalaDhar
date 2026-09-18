@@ -3,6 +3,7 @@ const { verifyAccessToken } = require('../utils/tokenService');
 const User = require('../models/User');
 const Vendor = require('../models/Vendor');
 const Admin = require('../models/Admin');
+const Booking = require('../models/Booking');
 const { getRoomName } = require('../services/notificationService');
 
 let io = null;
@@ -107,24 +108,58 @@ const initializeSocket = (server) => {
     // Handle live vendor/expert GPS location updates
     socket.on('vendor_location_update', (data) => {
       if (!data?.bookingId || !data?.lat || !data?.lng) return;
-      console.log(`[Socket] 📍 Live location for booking ${data.bookingId}: ${data.lat}, ${data.lng}`);
+      const lat = Number(data.lat);
+      const lng = Number(data.lng);
+      const speed = Number(data.speed) || 0;
+      const heading = Number(data.heading) || 0;
+      const now = new Date();
 
-      // Broadcast ONLY to the booking tracking room (not globally)
-      socket.to(`booking_${data.bookingId}`).emit('expert_location_updated', {
+      console.log(`[Socket] 📍 Live location for booking ${data.bookingId}: ${lat}, ${lng} (speed: ${speed}km/h)`);
+
+      const payload = {
         bookingId: data.bookingId,
-        lat: data.lat,
-        lng: data.lng,
-        speed: data.speed || 0,
-        heading: data.heading || 0,
-      });
+        lat,
+        lng,
+        speed,
+        heading,
+        updatedAt: now,
+      };
 
-      // Also notify the specific user if userId provided
+      // 1. Broadcast to the booking tracking room
+      socket.to(`booking_${data.bookingId}`).emit('expert_location_updated', payload);
+
+      // 2. Also notify the specific user if userId provided
       if (data.userId) {
-        socket.to(`User_${data.userId}`).emit('expert_location_updated', {
-          bookingId: data.bookingId,
-          lat: data.lat,
-          lng: data.lng,
-        });
+        socket.to(`User_${data.userId}`).to(`user:${data.userId}`).emit('expert_location_updated', payload);
+      }
+
+      // 3. Persist to Booking in MongoDB (Enterprise State Hydration)
+      try {
+        Booking.findByIdAndUpdate(data.bookingId, {
+          $set: {
+            vendorLocation: {
+              lat,
+              lng,
+              speed,
+              heading,
+              updatedAt: now,
+            },
+          },
+        }).exec().catch((dbErr) => console.error('[Socket] Failed to persist vendorLocation to Booking:', dbErr.message));
+
+        if (socket.userId && (socket.userModel === 'Vendor' || socket.userRole === 'VENDOR' || socket.userRole === 'EXPERT')) {
+          Vendor.findByIdAndUpdate(socket.userId, {
+            $set: {
+              lastKnownLocation: {
+                lat,
+                lng,
+                updatedAt: now,
+              },
+            },
+          }).exec().catch((vErr) => console.error('[Socket] Failed to update Vendor lastKnownLocation:', vErr.message));
+        }
+      } catch (persistErr) {
+        console.error('[Socket] Error in location persistence:', persistErr.message);
       }
     });
 
