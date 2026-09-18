@@ -626,6 +626,25 @@ const markAsEnRoute = async (req, res) => {
         }
       }, io);
 
+      // Send confirmation notification to Vendor as well
+      if (booking.vendor?._id || booking.vendor) {
+        await sendNotification({
+          recipient: booking.vendor._id || booking.vendor,
+          recipientModel: 'Vendor',
+          type: 'BOOKING_EN_ROUTE',
+          title: 'Journey Started 🚗',
+          message: `You are en route to ${booking.user?.name || 'Customer'}'s survey site. Live GPS tracking is active.`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          },
+          metadata: {
+            bookingId: booking._id.toString(),
+            link: `/vendor/bookings/${booking._id}`
+          }
+        }, io).catch(err => console.error('[markAsEnRoute] Vendor notification error:', err));
+      }
+
       // Dispatch Start Survey OTP & Automated WhatsApp On The Way Alert
       if (booking.user?.phone || booking.user?.email) {
         dispatchSurveyOTP({
@@ -937,6 +956,28 @@ const verifyStartSurveyOTP = async (req, res) => {
       }, io).catch(err => console.error('[verifyStartSurveyOTP] Notification error:', err));
     }
 
+    // Send confirmation notification to Vendor
+    if (booking.vendor?._id || booking.vendor) {
+      await sendNotification({
+        recipient: booking.vendor._id || booking.vendor,
+        recipientModel: 'Vendor',
+        title: 'Survey Started 📍',
+        message: `Start Survey OTP verified for ${booking.user?.name || 'Customer'}. Survey is officially in progress.`,
+        type: 'BOOKING_UPDATE',
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          userStatus: booking.userStatus,
+          vendorStatus: booking.vendorStatus,
+          link: `/vendor/bookings/${booking._id}`
+        }
+      }, io).catch(err => console.error('[verifyStartSurveyOTP] Vendor notification error:', err));
+    }
+
     if (io) {
       const userIdStr = booking.user?._id?.toString() || booking.user?.toString();
       const vendorIdStr = booking.vendor?._id?.toString() || booking.vendor?.toString();
@@ -1062,6 +1103,28 @@ const verifyEndSurveyOTP = async (req, res) => {
           link: `/user/booking/${booking._id}`
         }
       }, io).catch(err => console.error('[verifyEndSurveyOTP] Notification error:', err));
+    }
+
+    // Send confirmation notification to Vendor
+    if (booking.vendor?._id || booking.vendor) {
+      await sendNotification({
+        recipient: booking.vendor._id || booking.vendor,
+        recipientModel: 'Vendor',
+        title: 'Survey Completed 🏁',
+        message: `End Survey OTP verified for ${booking.user?.name || 'Customer'}. Please upload the technical survey report.`,
+        type: 'BOOKING_UPDATE',
+        relatedEntity: {
+          entityType: 'Booking',
+          entityId: booking._id
+        },
+        metadata: {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          userStatus: booking.userStatus,
+          vendorStatus: booking.vendorStatus,
+          link: `/vendor/bookings/${booking._id}/upload-report`
+        }
+      }, io).catch(err => console.error('[verifyEndSurveyOTP] Vendor notification error:', err));
     }
 
     if (io) {
