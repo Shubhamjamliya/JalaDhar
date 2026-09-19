@@ -146,11 +146,7 @@ export default function VendorStatus() {
         };
     }, [socket, bookingId]);
 
-    // Pull-to-refresh functionality
-    const { isRefreshing, pullDistance, containerRef, canRefresh } = usePullToRefresh(
-        loadBookingDetails,
-        { threshold: 80, resistance: 2.5 }
-    );
+
 
     const [acceptScheduleDate, setAcceptScheduleDate] = useState("");
     const [acceptScheduleTime, setAcceptScheduleTime] = useState("");
@@ -587,14 +583,7 @@ export default function VendorStatus() {
     const hasReport = !isEarlyStage && !!(booking?.reportUploadedAt || (booking?.report && (booking?.report.uploadedAt || booking?.report.waterFound !== undefined)));
 
     return (
-        <div
-            ref={containerRef}
-            className="min-h-screen bg-[#F6F7F9] pb-10"
-            style={{
-                transform: pullDistance > 0 ? `translateY(${Math.min(pullDistance, 100)}px)` : 'none',
-                transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none',
-            }}
-        >
+        <PageContainer onRefresh={loadBookingDetails} className="pb-10">
             {/* Header with Title and "View Details" button */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pt-4">
                 <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Booking Status</h1>
@@ -606,34 +595,6 @@ export default function VendorStatus() {
                     Full Booking Details
                 </button>
             </div>
-            {/* Pull-to-refresh indicator */}
-            {(pullDistance > 0 || isRefreshing) && (
-                <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-transparent pointer-events-none"
-                    style={{
-                        height: `${Math.min(pullDistance, 100)}px`,
-                        transform: `translateY(${Math.min(pullDistance - 60, 0)}px)`
-                    }}
-                >
-                    <div className={`flex flex-col items-center gap-2 ${canRefresh || isRefreshing ? 'text-[#0A84FF]' : 'text-gray-400'}`}>
-                        {isRefreshing ? (
-                            <>
-                                <div className="w-6 h-6 border-2 border-[#0A84FF] border-t-transparent rounded-full animate-spin"></div>
-                                <span className="text-sm font-medium">Refreshing...</span>
-                            </>
-                        ) : (
-                            <>
-                                <IoRefreshOutline
-                                    className={`text-2xl transition-transform ${canRefresh ? 'rotate-180' : ''}`}
-                                    style={{ transform: `rotate(${Math.min(pullDistance * 2, 180)}deg)` }}
-                                />
-                                <span className="text-sm font-medium">
-                                    {canRefresh ? 'Release to refresh' : 'Pull to refresh'}
-                                </span>
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
 
             {/* Removed Back Button from here as it's now in VendorNavbar */}
 
@@ -1234,6 +1195,6 @@ export default function VendorStatus() {
                 cancelText="Cancel"
                 confirmColor="primary"
             />
-        </div>
+        </PageContainer>
     );
 }

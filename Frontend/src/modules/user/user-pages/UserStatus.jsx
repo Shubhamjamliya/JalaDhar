@@ -284,11 +284,7 @@ export default function UserStatus() {
         };
     }, [socket, currentBooking]);
 
-    // Pull-to-refresh functionality
-    const { isRefreshing, pullDistance, containerRef, canRefresh } = usePullToRefresh(
-        loadCurrentBooking,
-        { threshold: 80, resistance: 2.5 }
-    );
+
 
     const getStatusSteps = () => {
         if (!currentBooking) return [];
@@ -747,42 +743,7 @@ export default function UserStatus() {
 
 
     return (
-        <div
-            ref={containerRef}
-            className="w-full max-w-7xl mx-auto overflow-y-auto pb-12"
-            style={{
-                transform: pullDistance > 0 ? `translateY(${Math.min(pullDistance, 100)}px)` : 'none',
-                transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none',
-            }}
-        >
-            {/* Pull-to-refresh indicator */}
-            {(pullDistance > 0 || isRefreshing) && (
-                <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-transparent pointer-events-none"
-                    style={{
-                        height: `${Math.min(pullDistance, 100)}px`,
-                        transform: `translateY(${Math.min(pullDistance - 60, 0)}px)`
-                    }}
-                >
-                    <div className={`flex flex-col items-center gap-2 ${canRefresh || isRefreshing ? 'text-[#0A84FF]' : 'text-gray-400'}`}>
-                        {isRefreshing ? (
-                            <>
-                                <div className="w-6 h-6 border-2 border-[#0A84FF] border-t-transparent rounded-full animate-spin"></div>
-                                <span className="text-sm font-medium">Refreshing...</span>
-                            </>
-                        ) : (
-                            <>
-                                <IoRefreshOutline
-                                    className={`text-2xl transition-transform ${canRefresh ? 'rotate-180' : ''}`}
-                                    style={{ transform: `rotate(${Math.min(pullDistance * 2, 180)}deg)` }}
-                                />
-                                <span className="text-sm font-medium">
-                                    {canRefresh ? 'Release to refresh' : 'Pull to refresh'}
-                                </span>
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
+        <PageContainer onRefresh={loadCurrentBooking} className="pb-12">
 
             {/* Back button removed - handled by UserNavbar */}
 
@@ -1797,6 +1758,6 @@ export default function UserStatus() {
                 maxReschedules={currentBooking?.maxReschedules}
                 isLoading={rescheduling}
             />
-        </div>
+        </PageContainer>
     );
 }

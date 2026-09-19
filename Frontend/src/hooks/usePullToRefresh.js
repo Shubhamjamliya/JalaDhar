@@ -1,136 +1,124 @@
 import { useState, useEffect, useRef } from 'react';
 
 /**
- * Custom hook for pull-to-refresh functionality
- * @param {Function} onRefresh - Callback function to execute on refresh
- * @param {Object} options - Configuration options
- * @returns {Object} - { isRefreshing, pullDistance, containerProps }
+ * Custom hook for smooth, native app-like pull-to-refresh functionality.
+ * Works seamlessly with whole-page scrolling and single-item/empty-state lists.
+ * 
+ * @param {Function} onRefresh - Async callback function to execute on refresh
+ * @param {Object} options - { threshold, disabled }
+ * @returns {Object} - { isRefreshing, pullDistance, containerRef, canRefresh }
  */
 export const usePullToRefresh = (onRefresh, options = {}) => {
   const {
-    threshold = 80, // Distance in pixels to trigger refresh
-    resistance = 2.5, // Resistance factor for pull (higher = harder to pull)
+    threshold = 65, // Distance in pixels required to trigger refresh
     disabled = false,
   } = options;
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const pullDistanceRef = useRef(0);
-  const isPulling = useRef(false);
+  const isPullingRef = useRef(false);
   const containerRef = useRef(null);
 
-  // Update ref when state changes
   useEffect(() => {
     pullDistanceRef.current = pullDistance;
   }, [pullDistance]);
 
   useEffect(() => {
-    if (disabled || !containerRef.current) return;
+    if (disabled || typeof window === 'undefined') return;
 
-    const container = containerRef.current;
+    const el = containerRef.current || document.body;
     let touchStartY = 0;
-    let scrollTop = 0;
-    let mouseStartY = 0;
-    let mouseScrollTop = 0;
-    let isMousePulling = false;
+    let touchStartX = 0;
+    let isEligible = false;
+
+    const getScrollTop = () => {
+      return (
+        window.scrollY ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        (containerRef.current ? containerRef.current.scrollTop : 0) ||
+        0
+      );
+    };
 
     const handleTouchStart = (e) => {
+      // Only allow pull-down when user is at the very top of the page
+      if (getScrollTop() > 2) {
+        isEligible = false;
+        return;
+      }
       touchStartY = e.touches[0].clientY;
-      scrollTop = container.scrollTop;
-      isPulling.current = false;
+      touchStartX = e.touches[0].clientX;
+      isEligible = true;
+      isPullingRef.current = false;
     };
 
     const handleTouchMove = (e) => {
-      if (scrollTop > 0) {
-        // User is scrolling down, not at top
+      if (!isEligible) return;
+
+      const touchY = e.touches[0].clientY;
+      const touchX = e.touches[0].clientX;
+      const diffY = touchY - touchStartY;
+      const diffX = Math.abs(touchX - touchStartX);
+
+      // If user is swiping horizontally (e.g. tabs or carousels), ignore
+      if (diffX > Math.abs(diffY)) {
         return;
       }
 
-      const touchY = e.touches[0].clientY;
-      const currentPullDistance = Math.max(0, (touchY - touchStartY) / resistance);
+      if (diffY > 0 && getScrollTop() <= 2) {
+        isPullingRef.current = true;
+        // Natural cubic/exponential resistance curve
+        const dist = Math.min(85, Math.pow(diffY, 0.82) * 1.5);
+        setPullDistance(dist);
 
-      if (currentPullDistance > 0) {
-        isPulling.current = true;
-        e.preventDefault(); // Prevent default scroll
-        setPullDistance(currentPullDistance);
+        // Prevent browser rubber-banding/scroll conflict if pulling down
+        if (e.cancelable && dist > 8) {
+          e.preventDefault();
+        }
+      } else {
+        if (isPullingRef.current) {
+          setPullDistance(0);
+          isPullingRef.current = false;
+        }
       }
     };
 
-    const handleTouchEnd = () => {
-      const currentPullDistance = pullDistanceRef.current;
-      if (isPulling.current && currentPullDistance >= threshold) {
+    const handleTouchEnd = async () => {
+      isEligible = false;
+      const currentDist = pullDistanceRef.current;
+      if (isPullingRef.current && currentDist >= threshold) {
         setIsRefreshing(true);
-        setPullDistance(0);
-        
-        // Call refresh callback
-        Promise.resolve(onRefresh()).finally(() => {
+        setPullDistance(threshold); // Hold spinner in view while refreshing
+        try {
+          if (typeof onRefresh === 'function') {
+            await Promise.resolve(onRefresh());
+          }
+        } catch (err) {
+          console.error('[usePullToRefresh] Refresh error:', err);
+        } finally {
           setIsRefreshing(false);
-        });
+          setPullDistance(0);
+        }
       } else {
         setPullDistance(0);
       }
-      
-      isPulling.current = false;
+      isPullingRef.current = false;
     };
 
-    // Mouse events for desktop (optional, for testing)
-    const handleMouseDown = (e) => {
-      if (container.scrollTop > 0) return;
-      mouseStartY = e.clientY;
-      mouseScrollTop = container.scrollTop;
-      isMousePulling = false;
-    };
-
-    const handleMouseMove = (e) => {
-      if (mouseScrollTop > 0 || !mouseStartY) return;
-      
-      const mouseY = e.clientY;
-      const pullDist = Math.max(0, (mouseY - mouseStartY) / resistance);
-
-      if (pullDist > 0) {
-        isMousePulling = true;
-        setPullDistance(pullDist);
-      }
-    };
-
-    const handleMouseUp = () => {
-      const currentPullDistance = pullDistanceRef.current;
-      if (isMousePulling && currentPullDistance >= threshold) {
-        setIsRefreshing(true);
-        setPullDistance(0);
-        
-        Promise.resolve(onRefresh()).finally(() => {
-          setIsRefreshing(false);
-        });
-      } else {
-        setPullDistance(0);
-      }
-      
-      isMousePulling = false;
-      mouseStartY = 0;
-    };
-
-    // Add touch event listeners
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd);
-
-    // Add mouse event listeners for desktop
-    container.addEventListener('mousedown', handleMouseDown);
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('mouseup', handleMouseUp);
-    container.addEventListener('mouseleave', handleMouseUp);
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+    el.addEventListener('touchcancel', handleTouchEnd, { passive: true });
 
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('mousedown', handleMouseDown);
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('mouseup', handleMouseUp);
-      container.removeEventListener('mouseleave', handleMouseUp);
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
+      el.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [onRefresh, threshold, resistance, disabled]);
+  }, [onRefresh, threshold, disabled]);
 
   return {
     isRefreshing,
@@ -140,3 +128,4 @@ export const usePullToRefresh = (onRefresh, options = {}) => {
   };
 };
 
+export default usePullToRefresh;

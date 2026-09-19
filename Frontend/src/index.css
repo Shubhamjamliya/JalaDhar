@@ -28,6 +28,7 @@ body {
   background-color: #F3F7FA;
   overflow-x: clip;
   max-width: 100vw;
+  overscroll-behavior-y: none;
 }
 
 /* Disable spin buttons on Chrome, Safari, Edge, Opera */
