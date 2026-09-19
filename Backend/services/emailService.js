@@ -1,4 +1,6 @@
 const nodemailer = require('nodemailer');
+const path = require('path');
+const fs = require('fs');
 
 // Create transporter
 const createTransporter = () => {
@@ -15,20 +17,46 @@ const createTransporter = () => {
 
 /**
  * Send email
- * @param {Object} options - { to, subject, html, text }
+ * @param {Object} options - { to, subject, html, text, attachments }
  */
-const sendEmail = async ({ to, subject, html, text }) => {
+const sendEmail = async ({ to, subject, html, text, attachments = [] }) => {
   try {
     const transporter = createTransporter();
 
-    const fromEmail = process.env.EMAIL_FROM || (process.env.EMAIL_USER ? `"Jaladhaara" <${process.env.EMAIL_USER}>` : '"Jaladhaara" <noreply@jaladhaaraapp.com>');
+    let fromEmail = process.env.EMAIL_FROM || (process.env.EMAIL_USER ? `"Jaladhaara" <${process.env.EMAIL_USER}>` : '"Jaladhaara" <noreply@jaladhaaraapp.com>');
+
+    // Normalize display name to "Jaladhaara" if it's currently "jaladhar" or unbranded
+    const emailMatch = fromEmail.match(/<([^>]+)>/);
+    if (emailMatch) {
+      const emailAddress = emailMatch[1].trim();
+      const displayName = fromEmail.substring(0, fromEmail.indexOf('<')).replace(/["']/g, '').trim();
+      if (!displayName || displayName.toLowerCase() === 'jaladhar' || displayName.toLowerCase() === 'noreply') {
+        fromEmail = `"Jaladhaara" <${emailAddress}>`;
+      }
+    } else {
+      fromEmail = `"Jaladhaara" <${fromEmail.replace(/["']/g, '').trim()}>`;
+    }
+
+    // Automatically attach official brand logo as inline CID if referenced in html
+    const mailAttachments = [...attachments];
+    const logoPath = path.join(__dirname, '../assets/Header-logoo.png');
+    if (html && html.includes('cid:jaladhaara-logo') && fs.existsSync(logoPath)) {
+      if (!mailAttachments.some(a => a.cid === 'jaladhaara-logo')) {
+        mailAttachments.push({
+          filename: 'logo.png',
+          path: logoPath,
+          cid: 'jaladhaara-logo'
+        });
+      }
+    }
 
     const mailOptions = {
       from: fromEmail,
       to,
       subject,
       html,
-      text
+      text,
+      attachments: mailAttachments
     };
 
     console.log('📧 Sending email:', {
@@ -58,6 +86,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
  * Shared Jaladhaara Brand Email Shell
  */
 const renderEmailShell = ({ title, badgeText, badgeBg = '#EFF6FF', badgeColor = '#0284C7', heroTitle, heroSubtitle, contentHtml }) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'https://jaladhaaraapp.com';
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -75,16 +104,9 @@ const renderEmailShell = ({ title, badgeText, badgeBg = '#EFF6FF', badgeColor = 
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td align="left" vertical-align="middle">
-                  <table cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="padding-right: 12px;">
-                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%); border-radius: 12px; text-align: center; line-height: 40px; color: #FFFFFF; font-size: 20px; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);">💧</div>
-                      </td>
-                      <td>
-                        <div style="font-size: 20px; font-weight: 800; color: #0284C7; letter-spacing: -0.5px; line-height: 1.2;">Jaladhaara</div>
-                      </td>
-                    </tr>
-                  </table>
+                  <a href="${frontendUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
+                    <img src="cid:jaladhaara-logo" alt="Jaladhaara" style="height: 38px; max-height: 42px; width: auto; max-width: 175px; display: block; border: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 20px; font-weight: 800; color: #0284C7;" />
+                  </a>
                 </td>
                 ${badgeText ? `
                 <td align="right" vertical-align="middle">
@@ -443,17 +465,9 @@ const sendBookingConfirmationEmail = async ({
         <table width="100%" cellpadding="0" cellspacing="0" style="padding: 24px 30px; border-bottom: 1px solid #F1F5F9; background: #ffffff;">
           <tr>
             <td align="left" vertical-align="middle">
-              <table cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="padding-right: 10px;">
-                    <div style="width: 38px; height: 38px; background: #0284C7; border-radius: 50%; text-align: center; line-height: 38px; color: #ffffff; font-weight: bold; font-size: 20px;">💧</div>
-                  </td>
-                  <td>
-                    <div style="font-size: 22px; font-weight: 800; color: #0284C7; letter-spacing: -0.5px;">Jaladhaara</div>
-                    <div style="font-size: 11px; color: #64748B; font-weight: 600; margin-top: 1px;">India's First Groundwater Survey Booking Platform</div>
-                  </td>
-                </tr>
-              </table>
+              <a href="${frontendUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
+                <img src="cid:jaladhaara-logo" alt="Jaladhaara" style="height: 38px; max-height: 42px; width: auto; max-width: 175px; display: block; border: 0; font-family: Arial, sans-serif; font-size: 22px; font-weight: 800; color: #0284C7;" />
+              </a>
             </td>
             <td align="right" vertical-align="middle">
               <div style="font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Booking ID</div>
@@ -596,7 +610,7 @@ const sendBookingConfirmationEmail = async ({
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td align="left" vertical-align="top" width="45%">
-                <div style="font-size: 16px; font-weight: 800; color: #0284C7;">💧 Jaladhaara</div>
+                <img src="cid:jaladhaara-logo" alt="Jaladhaara" style="height: 24px; max-height: 28px; width: auto; max-width: 120px; display: block; border: 0; margin-bottom: 6px;" />
                 <div style="font-size: 11px; color: #64748B; margin-top: 4px; line-height: 1.4;">
                   India's First Groundwater Survey Booking Platform
                 </div>
