@@ -77,7 +77,7 @@ export default function UserSettingsPage() {
                         <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-2xl">
                             <IoSettingsOutline className="text-2xl text-white" />
                         </div>
-                        <h1 className="text-2xl font-bold">Account Settings & Preferences</h1>
+                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Account Settings &amp; Preferences</h1>
                     </div>
                     <p className="text-gray-300 text-sm">
                         Manage your profile details, security preferences, notification alerts, and platform policies.

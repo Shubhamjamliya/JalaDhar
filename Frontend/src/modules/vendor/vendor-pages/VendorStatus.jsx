@@ -597,7 +597,7 @@ export default function VendorStatus() {
         >
             {/* Header with Title and "View Details" button */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pt-4">
-                <h1 className="text-2xl font-black text-gray-800 tracking-tight">Booking Status</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Booking Status</h1>
                 <button
                     onClick={() => navigate(`/vendor/bookings/${bookingId}`)}
                     className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-[#0A84FF] rounded-xl text-base font-bold shadow-sm border border-blue-50 hover:bg-blue-50 transition-all active:scale-95"

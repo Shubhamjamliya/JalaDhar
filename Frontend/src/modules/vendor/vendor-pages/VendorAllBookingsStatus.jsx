@@ -174,7 +174,7 @@ export default function VendorAllBookingsStatus() {
       <ErrorMessage message={error} />
 
       {/* Heading */}
-      <h1 className="text-2xl font-bold text-[#3A3A3A] mt-4 pt-4 mb-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight pt-3 sm:pt-4 mb-3 sm:mb-4">
         Submitted Reports
       </h1>
 

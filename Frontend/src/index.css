@@ -9,6 +9,7 @@
   --color-text-light: #6B7280;
 
   --font-display: "Inter", sans-serif;
+  --font-handwriting: "Caveat", cursive, sans-serif;
 
   --radius: 1rem;
   --radius-lg: 1.25rem;
@@ -56,6 +57,10 @@ input[type="number"] {
 
 .button-white {
   background: white;
+}
+
+.font-handwriting {
+  font-family: 'Caveat', cursive, sans-serif;
 }
 
 .text-gradient {

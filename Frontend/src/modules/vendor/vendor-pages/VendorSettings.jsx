@@ -163,7 +163,7 @@ export default function VendorSettings() {
             {/* Header Title */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                         <span>Expert Settings</span>
                         <span className="text-[10px] font-extrabold bg-blue-100 text-[#0A84FF] px-2.5 py-0.5 rounded-full border border-blue-200">
                             Partner Preferences

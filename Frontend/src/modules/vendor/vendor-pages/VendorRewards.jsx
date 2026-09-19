@@ -125,7 +125,7 @@ export default function VendorRewards() {
                     >
                         <IoChevronBackOutline className="text-xl text-slate-800" />
                     </button>
-                    <h1 className="text-lg font-black text-slate-900 tracking-tight">
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                         Rewards &amp; Benefits
                     </h1>
                     

@@ -107,15 +107,13 @@ export default function UserRatings() {
         <PageContainer className="pb-16">
             <ErrorMessage message={error} />
 
-            {/* Header */}
-            <div className="bg-gray-100 rounded-t-[12px] px-4 py-3 flex items-center justify-between mb-0">
-                {/* Back button removed - handled by UserNavbar */}
-                <h1 className="text-lg font-bold text-gray-800">My Ratings & Reviews</h1>
-                <div className="w-10"></div>
-            </div>
+            {/* Page Heading */}
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight pt-3 sm:pt-4 mb-3 sm:mb-4">
+                My Ratings &amp; Reviews
+            </h1>
 
             {/* Statistics Card */}
-            <div className="bg-white rounded-b-[12px] mb-4 shadow-[0px_4px_10px_rgba(0,0,0,0.05)] p-6">
+            <div className="bg-white rounded-2xl mb-4 shadow-xs border border-gray-100 p-6">
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                     {/* Overall Rating */}
                     <div className="text-center md:text-left">

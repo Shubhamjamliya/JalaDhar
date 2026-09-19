@@ -87,7 +87,7 @@ export default function UserNotificationsPage() {
                             <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl">
                                 <IoNotificationsOutline className="text-2xl text-white" />
                             </div>
-                            <h1 className="text-2xl font-bold">Notification Center</h1>
+                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Notification Center</h1>
                         </div>
                         <p className="text-blue-100 text-sm">
                             Stay updated on your booking status, report releases, disputes, and payments in real-time.

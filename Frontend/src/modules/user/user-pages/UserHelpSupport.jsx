@@ -81,7 +81,7 @@ export default function UserHelpSupport() {
                         <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl">
                             <IoHelpCircleOutline className="text-2xl text-white" />
                         </div>
-                        <h1 className="text-2xl font-bold">Customer Support & FAQs</h1>
+                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Customer Support &amp; FAQs</h1>
                     </div>
                     <p className="text-purple-100 text-sm max-w-xl">
                         Have questions or need assistance with your booking? We are here to support you 24/7.

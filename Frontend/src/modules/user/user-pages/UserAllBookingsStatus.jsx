@@ -209,7 +209,7 @@ export default function UserAllBookingsStatus() {
       {/* Heading */}
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             My Bookings
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-0.5">

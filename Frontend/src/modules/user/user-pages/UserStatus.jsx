@@ -788,23 +788,28 @@ export default function UserStatus() {
 
             {/* Inner Compact Container */}
             <div className="max-w-2xl mx-auto space-y-3">
-            {/* Booking Info Header Card (Light Professional Theme) */}
-            {currentBooking && (
-                <div className="rounded-2xl bg-white p-3.5 sm:p-4 shadow-2xs border border-[#E1F5FE] relative overflow-hidden">
-                    <div className="flex items-start justify-between gap-2.5 mb-2.5">
-                        <div>
-                            <div className="flex items-center gap-1.5 mb-1">
-                                <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-[#0A84FF] border border-blue-100">
-                                    #{currentBooking.id ? currentBooking.id.slice(-8) : (currentBooking._id ? currentBooking._id.toString().slice(-8) : 'N/A')}
-                                </span>
-                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">
-                                    Verified
-                                </span>
+                {/* Page Heading */}
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight pt-2 sm:pt-3 mb-1 sm:mb-2">
+                    Booking Status
+                </h1>
+
+                {/* Booking Info Header Card (Light Professional Theme) */}
+                {currentBooking && (
+                    <div className="rounded-2xl bg-white p-3.5 sm:p-4 shadow-2xs border border-[#E1F5FE] relative overflow-hidden">
+                        <div className="flex items-start justify-between gap-2.5 mb-2.5">
+                            <div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                    <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-[#0A84FF] border border-blue-100">
+                                        #{currentBooking.id ? currentBooking.id.slice(-8) : (currentBooking._id ? currentBooking._id.toString().slice(-8) : 'N/A')}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">
+                                        Verified
+                                    </span>
+                                </div>
+                                <h2 className="text-sm sm:text-base font-bold tracking-tight text-slate-900 leading-snug">
+                                    {currentBooking.service?.name || "Hydrogeological Groundwater Survey"}
+                                </h2>
                             </div>
-                            <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 leading-snug">
-                                {currentBooking.service?.name || "Hydrogeological Groundwater Survey"}
-                            </h1>
-                        </div>
                         {currentBooking.payment?.totalAmount && (
                             <div className="text-right flex-shrink-0">
                                 <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Total Fee</span>

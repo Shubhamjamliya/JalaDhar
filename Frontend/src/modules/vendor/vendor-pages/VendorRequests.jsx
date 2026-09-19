@@ -59,9 +59,13 @@ export default function VendorRequests() {
         return savedTab || "New";
     };
 
+    const hasUserManuallySwitchedTabRef = useRef(false);
     const [activeTab, setActiveTabState] = useState(getInitialTab);
 
-    const setActiveTab = (tab) => {
+    const setActiveTab = (tab, isManual = false) => {
+        if (isManual) {
+            hasUserManuallySwitchedTabRef.current = true;
+        }
         setActiveTabState(tab);
         sessionStorage.setItem("vendor_active_tab", tab);
         setSearchParams({ tab: tab.toLowerCase().replace(/\s+/g, "_") }, { replace: true });
@@ -305,6 +309,19 @@ export default function VendorRequests() {
                 inProgress.push(...(confirmedResponse.data.bookings || []));
             }
             setConfirmedRequests(inProgress);
+
+            // If the vendor navigated to Bookings without an explicit tab,
+            // and has 0 new requests but has active in-progress bookings,
+            // smartly switch to "In Progress" so they immediately see their ongoing job
+            const urlTab = searchParams.get("tab") || location.state?.tab;
+            if (!urlTab && !hasUserManuallySwitchedTabRef.current) {
+                const assignedCount = (assignedResponse?.data?.bookings || []).length;
+                if (assignedCount === 0 && inProgress.length > 0 && activeTab === "New") {
+                    setActiveTabState("In Progress");
+                    sessionStorage.setItem("vendor_active_tab", "In Progress");
+                    setSearchParams({ tab: "in_progress" }, { replace: true });
+                }
+            }
 
             if (completedResponse && completedResponse.success) {
                 setCompletedRequests(completedResponse.data.bookings || []);
@@ -623,8 +640,8 @@ export default function VendorRequests() {
             <PageContainer>
 
                 {/* Heading */}
-                <h1 className="text-2xl font-bold text-[#3A3A3A] pt-4 mb-4">
-                    Your Booking
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight pt-3 sm:pt-4 mb-3 sm:mb-4">
+                    Your Bookings
                 </h1>
 
                 <div className="flex bg-[#F6F7F9] sticky top-[52px] sm:top-[56px] md:top-[64px] z-30 py-3 mb-6 border-b border-gray-200/80 shadow-2xs overflow-x-auto no-scrollbar gap-2 w-full max-w-full">
@@ -632,31 +649,31 @@ export default function VendorRequests() {
                         { id: "New", label: "Requests", count: newRequests.length, icon: <IoNotificationsOutline /> },
                         { id: "In Progress", label: "In Progress", count: confirmedRequests.length, icon: <IoBriefcaseOutline /> },
                         { id: "Completed", label: "Completed", count: completedRequests.length, icon: <IoStarOutline /> },
-                        { id: "History", label: "Cancelled / Rejected", count: historyRequests.length, icon: <IoCloseCircleOutline /> }
+                        { id: "History", label: "Cancelled", count: historyRequests.length, icon: <IoCloseCircleOutline /> }
                     ].map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => {
-                                setActiveTab(tab.id);
+                                setActiveTab(tab.id, true);
                                 if (["In Progress", "Completed", "History"].includes(tab.id)) {
                                     setTimeout(() => loadAllRequests(false), 50);
                                 }
                             }}
-                            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-2xl transition-all duration-300 ${activeTab === tab.id
-                                ? "bg-[#0A84FF] text-white shadow-lg shadow-blue-200"
-                                : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                            className={`shrink-0 sm:flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all duration-200 ${activeTab === tab.id
+                                ? "bg-[#0A84FF] text-white shadow-sm shadow-blue-500/25"
+                                : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/80"
                                 }`}
                         >
-                            <span className={`text-lg transition-transform ${activeTab === tab.id ? "rotate-12" : ""}`}>
+                            <span className={`text-base sm:text-lg transition-transform ${activeTab === tab.id ? "rotate-6" : ""}`}>
                                 {tab.icon}
                             </span>
-                            <span className="text-sm font-bold whitespace-nowrap">
+                            <span className="text-xs sm:text-sm font-bold whitespace-nowrap">
                                 {tab.label}
                             </span>
                             {tab.count > 0 && (
-                                <span className={`text-[10px] min-w-[20px] h-[20px] flex items-center justify-center rounded-full font-black ${activeTab === tab.id
+                                <span className={`text-[10px] min-w-[18px] sm:min-w-[20px] h-[18px] sm:h-[20px] px-1 flex items-center justify-center rounded-full font-black ${activeTab === tab.id
                                     ? "bg-white text-[#0A84FF]"
-                                    : "bg-gray-200 text-gray-600"
+                                    : "bg-slate-100 text-slate-700 border border-slate-200"
                                     }`}>
                                     {tab.count}
                                 </span>
@@ -708,20 +725,38 @@ export default function VendorRequests() {
                 <div className="space-y-4">
 
                     {currentRequests.length === 0 ? (
-                        <div className="rounded-xl bg-white p-8 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center space-y-3">
-                            <p className="text-[#3A3A3A] font-medium">
-                                No {activeTab.toLowerCase()} requests available
-                            </p>
-                            {activeTab !== "New" && newRequests.length > 0 && (
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab("New")}
-                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-[#0A84FF] border border-blue-200 hover:bg-blue-100 active:scale-95 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
-                                >
-                                    <IoNotificationsOutline className="text-base shrink-0 animate-bounce" />
-                                    <span>You have {newRequests.length} new booking request{newRequests.length > 1 ? 's' : ''} waiting — View Requests</span>
-                                </button>
-                            )}
+                        <div className="rounded-2xl bg-white p-6 sm:p-10 text-center border border-slate-100 shadow-sm flex flex-col items-center justify-center space-y-3.5">
+                            {/* Icon Pod */}
+                            <div className={`w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-2xl transition-transform duration-300 ${
+                                activeTab === "New" 
+                                    ? "bg-blue-50 text-[#0A84FF] border border-blue-100/80" 
+                                    : activeTab === "In Progress"
+                                    ? "bg-indigo-50 text-indigo-600 border border-indigo-100/80"
+                                    : activeTab === "Completed"
+                                    ? "bg-emerald-50 text-emerald-600 border border-emerald-100/80"
+                                    : "bg-slate-50 text-slate-500 border border-slate-200/80"
+                            }`}>
+                                {activeTab === "New" && <IoNotificationsOutline className="text-2xl" />}
+                                {activeTab === "In Progress" && <IoBriefcaseOutline className="text-2xl" />}
+                                {activeTab === "Completed" && <IoStarOutline className="text-2xl" />}
+                                {activeTab === "History" && <IoCloseCircleOutline className="text-2xl" />}
+                            </div>
+
+                            {/* Message Heading & Subtext */}
+                            <div className="max-w-md mx-auto space-y-1">
+                                <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                                    {activeTab === "New" && "No New Requests Available"}
+                                    {activeTab === "In Progress" && "No In-Progress Bookings"}
+                                    {activeTab === "Completed" && "No Completed Bookings Yet"}
+                                    {activeTab === "History" && "No Cancelled Requests"}
+                                </h3>
+                                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                                    {activeTab === "New" && "You're all caught up! When a customer in your service area requests a groundwater survey, it will appear here for you to accept."}
+                                    {activeTab === "In Progress" && "Surveys you have accepted that are awaiting your visit, OTP verification, or report submission will appear here."}
+                                    {activeTab === "Completed" && "Completed survey records, customer ratings, and finalized hydrogeological reports will be archived here."}
+                                    {activeTab === "History" && "Cancelled, rejected, or expired booking requests will be recorded here for your review."}
+                                </p>
+                            </div>
                         </div>
                     ) : (
                         currentRequests.map((request) => (

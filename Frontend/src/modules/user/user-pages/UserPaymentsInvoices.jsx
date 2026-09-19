@@ -148,7 +148,7 @@ export default function UserPaymentsInvoices() {
                                 <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl">
                                     <IoReceiptOutline className="text-2xl text-white" />
                                 </div>
-                                <h1 className="text-2xl font-bold">Payments & Receipts</h1>
+                                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Payments &amp; Receipts</h1>
                             </div>
                             <p className="text-teal-100 text-sm">
                                 View advance payment receipts, final invoices, and transaction histories.

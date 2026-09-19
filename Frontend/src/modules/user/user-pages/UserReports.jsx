@@ -112,7 +112,7 @@ export default function UserReports() {
                             <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl">
                                 <IoDocumentTextOutline className="text-2xl text-white" />
                             </div>
-                            <h1 className="text-2xl font-bold">Hydrogeological Survey Reports</h1>
+                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Hydrogeological Survey Reports</h1>
                         </div>
                         <p className="text-blue-100 text-sm max-w-xl">
                             Access and download official survey reports, water table observations, depth estimates, and expert recommendations for all your bookings.

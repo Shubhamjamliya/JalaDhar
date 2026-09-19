@@ -401,43 +401,44 @@ export default function VendorOngoingBookingCard({
                 {/* ── 2. SURVEY & SITE SECTION ── */}
                 <div className="bg-slate-50/80 rounded-xl p-3.5 space-y-2 border border-slate-100 text-xs">
                     <div className="flex items-center justify-between gap-2">
-                        <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                            <IoConstructOutline className="text-[#0A84FF] text-sm" />
-                            {surveyCategory}
+                        <span className="font-extrabold text-slate-900 flex items-center gap-1.5 min-w-0">
+                            <IoConstructOutline className="text-[#0A84FF] text-sm shrink-0" />
+                            <span className="truncate">{surveyCategory}</span>
                         </span>
+                        {surveyPurpose && (
+                            <span className="text-[11px] text-slate-600 shrink-0 text-right">
+                                <strong className="text-slate-700">Purpose:</strong> {surveyPurpose}
+                            </span>
+                        )}
                     </div>
-
-                    <p className="text-slate-600 font-medium text-[11px] leading-relaxed line-clamp-2">
-                        <strong className="text-slate-700">Purpose:</strong> {surveyPurpose}
-                    </p>
 
                     <div className="flex items-start gap-1.5 text-slate-600 pt-1">
                         <IoLocationOutline className="text-emerald-600 text-sm shrink-0 mt-0.5" />
                         <span className="font-semibold text-[11px] leading-tight line-clamp-2">{propertyAddress}</span>
                     </div>
 
-                    <div className="flex items-center gap-3 text-slate-700 pt-1 border-t border-slate-200/60 text-[11px] flex-wrap">
-                        <span className="flex items-center gap-1 font-bold">
-                            <IoCalendarOutline className="text-blue-500" />
-                            {surveyDate}
+                    <div className="flex items-center justify-between gap-2 text-slate-700 pt-1.5 border-t border-slate-200/60 text-[11px]">
+                        <span className="flex items-center gap-1.5 font-bold text-slate-800 shrink-0">
+                            <IoCalendarOutline className="text-blue-500 text-xs" />
+                            <span>{surveyDate}</span>
                         </span>
                         {isTimeTBD ? (
                             <button
                                 type="button"
                                 onClick={(e) => handleOpenTimePicker(e, false)}
-                                className="flex items-center gap-1 font-extrabold text-amber-800 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg text-[10.5px] border border-amber-300 shadow-2xs transition-all cursor-pointer hover:scale-102"
+                                className="flex items-center gap-1 font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-lg text-[10.5px] border border-amber-200/80 transition-all cursor-pointer shrink-0"
                             >
-                                <IoTimeOutline className="text-amber-700 text-xs" />
-                                <span>Time TBD (Tap to Set)</span>
+                                <IoTimeOutline className="text-amber-600 text-xs" />
+                                <span>Time TBD (Set)</span>
                             </button>
                         ) : (
                             <button
                                 type="button"
                                 onClick={(e) => handleOpenTimePicker(e, false)}
-                                className="flex items-center gap-1 font-bold text-slate-700 hover:text-[#0A84FF] bg-white px-2 py-0.5 rounded-md border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer"
+                                className="flex items-center gap-1 font-semibold text-slate-700 hover:text-[#0A84FF] bg-white hover:bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200/80 text-[10.5px] transition-colors cursor-pointer shrink-0"
                                 title="Click to adjust time slot"
                             >
-                                <IoTimeOutline className="text-amber-500" />
+                                <IoTimeOutline className="text-amber-500 text-xs" />
                                 <span>{surveyTime}</span>
                             </button>
                         )}

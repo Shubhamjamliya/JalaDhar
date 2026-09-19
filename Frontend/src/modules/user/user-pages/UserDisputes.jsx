@@ -159,7 +159,7 @@ export default function UserDisputes() {
             {/* Header with compact CTA on top right */}
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                         <span>My Disputes</span>
                         {disputes.length > 0 && (
                             <span className="text-[11px] font-extrabold bg-blue-100/80 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">

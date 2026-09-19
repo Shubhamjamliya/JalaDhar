@@ -355,6 +355,11 @@ export default function VendorWallet() {
     return (
         <>
         <PageContainer>
+            {/* Page Heading */}
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight pt-3 sm:pt-4 mb-3 sm:mb-4">
+                Wallet & Earnings
+            </h1>
+
             {/* Horizontal Scroll Tab Navigations */}
             <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-md py-3 mb-6 border-b border-gray-200/80 shadow-xs w-full max-w-full">
                 <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide no-scrollbar py-0.5">
@@ -383,7 +388,7 @@ export default function VendorWallet() {
             {activeNav === "wallet-overview" && (
                 <div className="animate-in fade-in duration-200 space-y-5">
                     <div className="flex items-center justify-between px-1">
-                        <h2 className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                        <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
                             <IoWalletOutline className="text-[#0A84FF]" /> 1. Wallet Overview
                         </h2>
                     </div>
@@ -574,7 +579,7 @@ export default function VendorWallet() {
 
                 return (
                     <div className="animate-in fade-in duration-200 space-y-5">
-                        <h2 className="px-1 text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                        <h2 className="px-1 text-sm sm:text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
                             <IoStatsChartOutline className="text-[#0A84FF]" /> 2. Earnings &amp; Statistics
                         </h2>
 
@@ -732,7 +737,7 @@ export default function VendorWallet() {
 
                 return (
                     <div className="animate-in fade-in duration-200 space-y-5">
-                        <h2 className="px-1 text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                        <h2 className="px-1 text-sm sm:text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
                             <IoTrendingUpOutline className="text-[#0A84FF]" /> 3. Earnings Breakdown
                         </h2>
 
@@ -849,7 +854,7 @@ export default function VendorWallet() {
             {/* TAB 4: Transaction History */}
             {activeNav === "transaction-history" && (
                 <div className="animate-in fade-in duration-200 space-y-5">
-                    <h2 className="px-1 text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    <h2 className="px-1 text-sm sm:text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
                         <IoReceiptOutline className="text-[#0A84FF]" /> 4. Transaction History
                     </h2>
                     
@@ -1007,7 +1012,7 @@ export default function VendorWallet() {
             {/* TAB 5: Withdraw Money */}
             {activeNav === "withdraw-money" && (
                 <div className="animate-in fade-in duration-200 space-y-5">
-                    <h2 className="px-1 text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    <h2 className="px-1 text-sm sm:text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
                         <IoCashOutline className="text-[#0A84FF]" /> 5. Withdraw Money
                     </h2>
 
@@ -1186,7 +1191,7 @@ export default function VendorWallet() {
             {activeNav === "bank-account" && (
                 <div className="animate-in fade-in duration-200 space-y-5">
                     <div className="flex items-center justify-between px-1">
-                        <h2 className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                        <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
                             <IoCardOutline className="text-[#0A84FF]" /> 6. Bank Account
                         </h2>
                         <button

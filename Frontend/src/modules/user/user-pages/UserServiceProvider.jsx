@@ -110,11 +110,10 @@ export default function UserServiceProvider() {
         <PageContainer className="pb-28">
             <ErrorMessage message={error} />
 
-            {/* Top Navigation Bar */}
-            <div className="flex items-center bg-[#F3F7FA] p-4 pb-3 justify-center mb-4">
-                {/* Back button removed - handled by UserNavbar */}
-                <h1 className="text-[#3A3A3A] text-lg font-bold leading-tight">Find an Expert</h1>
-            </div>
+            {/* Page Heading */}
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight pt-3 sm:pt-4 mb-3 sm:mb-4 px-4">
+                Find an Expert
+            </h1>
 
             {/* Location Selector */}
             <div className="px-4 mb-4">

@@ -645,6 +645,11 @@ export default function UserWallet() {
     return (
         <>
         <PageContainer>
+            {/* Page Heading */}
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight pt-3 sm:pt-4 mb-3 sm:mb-4">
+                Wallet &amp; Credits
+            </h1>
+
             {/* Hydro Aqua Ocean Balance Card */}
             <section className="relative my-3 overflow-hidden rounded-3xl bg-gradient-to-br from-[#0F52BA] via-[#0A84FF] to-[#00C49F] p-6 text-white shadow-xl shadow-cyan-500/15 border border-cyan-400/30">
                 {/* Hydro Ripple Background Waves */}
@@ -843,7 +848,7 @@ export default function UserWallet() {
                     {/* Header with Sub-filters */}
                     <div className="flex items-center justify-between flex-wrap gap-2 px-1">
                         <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-black text-gray-900 tracking-tight">Withdrawal Requests</h2>
+                            <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Withdrawal Requests</h2>
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                                 {filteredWithdrawalRequests.length} of {withdrawalRequests.length}
                             </span>
@@ -1020,7 +1025,7 @@ export default function UserWallet() {
                     {/* Header */}
                     <div className="flex items-center justify-between flex-wrap gap-2 px-1">
                         <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-black text-gray-900 tracking-tight">Transaction History</h2>
+                            <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Transaction History</h2>
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                                 {pagination.totalTransactions}
                             </span>
