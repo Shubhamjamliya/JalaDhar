@@ -251,7 +251,7 @@ export default function UserRemainingPayment() {
                                         <IoCheckmarkCircleOutline className="text-3xl text-green-600" />
                                         <div>
                                             <p className="font-semibold text-gray-800">Water Found</p>
-                                            <p className="text-sm text-gray-600">The vendor has detected water at your location</p>
+                                            <p className="text-sm text-gray-600">The expert has detected water at your location</p>
                                         </div>
                                     </>
                                 ) : (
@@ -259,7 +259,7 @@ export default function UserRemainingPayment() {
                                         <IoCloseCircleOutline className="text-3xl text-red-600" />
                                         <div>
                                             <p className="font-semibold text-gray-800">No Water Detected</p>
-                                            <p className="text-sm text-gray-600">The vendor did not detect water at your location</p>
+                                            <p className="text-sm text-gray-600">The expert did not detect water at your location</p>
                                         </div>
                                     </>
                                 )}

@@ -314,7 +314,7 @@ const acceptBooking = async (req, res) => {
           name: booking.user.name,
           bookingId: booking._id.toString(),
           status: 'ACCEPTED',
-          message: `Vendor has accepted your booking request.${timeDetail ? ` Visit scheduled ${timeDetail}.` : ''}`
+          message: `Expert has accepted your booking request.${timeDetail ? ` Visit scheduled ${timeDetail}.` : ''}`
         });
       }
 
