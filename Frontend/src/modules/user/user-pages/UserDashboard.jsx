@@ -10,6 +10,7 @@ import {
     IoCloseOutline,
     IoCheckmarkCircleOutline,
     IoCheckmarkCircle,
+    IoShieldCheckmark,
     IoCloseCircleOutline,
     IoInformationCircleOutline,
     IoWaterOutline,
@@ -545,11 +546,23 @@ export default function UserDashboard() {
 
     const displayRequests = filteredRequests;
 
-    const backgroundImageUrl =
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuCSWOEOG7ry6z14TFWGAz7PjaKTwn697LggEX4Vf1U2F-18-Yl362M1a0XmrCPrnxjq3HLvvisiIPbnCcLWbicHHyQVehSZEC56qo5fvTVnSjPmEPPFLj9dncg63DYDUscFj51kK5mnPvn7hznGuHDuYjMiSWsX7r6Nlpe1ss-SQVtV_G_yADjJFZVcqSA8EGeUz4tjBJlabT7hxamjtW25RfdT9g0K2O82ATNS4J1em3nBru9nIKr4YnD72XMjXgETg4PCKTSCxEva";
-
     const avatarImageUrl =
         "https://lh3.googleusercontent.com/aida-public/AB6AXuDCqZRhSzmWMNhXuX4RPFuS_KD7WQ8XLgbsk2nXkV3JICy3ZcLfqjZnTbmofKaBePVQ9HQeoiASrUYaU_VYP7dBYSFBI9Z5WlMcnCKPDQIZaN5Uo8Qh4iv3tNNNnrRAnqP6QfGEIvqzMRneraT-7cwEGw9ba4Ci_wx2qsxlsRdxcPVRdPcnkz2n2vv4YM02MHGkKA3Punga2QFw4FyWv6phuBqmgoiAjWSehWquP1nyb8tigrHh5j6ir7c3uumnU1LI7khab45fuKmL";
+
+    const fallbackAvatar =
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300";
+
+    const isPlaceholderAvatar = typeof userAvatar === 'string' && (userAvatar.includes('aida-public') || userAvatar.includes('AB6AXuDCqZ'));
+    const displayAvatar = (!userAvatar || isPlaceholderAvatar) ? (avatarImageUrl || fallbackAvatar) : userAvatar;
+
+    // Properly capitalize username (handles lowercase inputs like "somil" gracefully)
+    const formattedUserName = userName
+        ? userName
+            .trim()
+            .split(/\s+/)
+            .map(word => word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : "")
+            .join(" ")
+        : t('explorer', 'Explorer');
 
     if (loading) {
         return <LoadingSpinner message="Loading dashboard..." />;
@@ -558,30 +571,95 @@ export default function UserDashboard() {
     return (
         <PageContainer className="pb-20 max-w-7xl mx-auto">
 
-            {/* Profile Header — Senior SDE Glassmorphic Banner */}
-            <section className="relative my-3 overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-[#0A84FF] to-indigo-600 p-6 shadow-xl shadow-blue-500/10 text-white">
-                <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-                <div className="relative z-10 flex items-center justify-between gap-4">
+            {/* Profile Header — Premium Hydrogeology Glassmorphic Banner */}
+            <section className="relative my-3 overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#003B99] via-[#005CE2] to-[#007CFE] p-4 sm:p-5 md:p-6 shadow-xl shadow-blue-900/20 text-white border border-white/20">
+                {/* Aquatic Contour Wave Lines Background Graphic */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+                    <svg className="absolute right-0 top-0 h-full w-full opacity-25" viewBox="0 0 1000 300" fill="none" preserveAspectRatio="none">
+                        <path d="M450,300 C600,240 680,120 880,50 C930,32 970,30 1000,32 L1000,300 Z" fill="url(#user-wave-grad-1)" />
+                        <path d="M380,300 C530,220 620,100 820,30 C880,10 940,15 1000,20 L1000,300 Z" fill="url(#user-wave-grad-2)" />
+                        <path d="M480,300 C620,260 720,140 920,70 C960,55 980,52 1000,55" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" />
+                        <path d="M420,300 C560,230 650,110 850,40 C910,20 960,25 1000,28" stroke="rgba(255,255,255,0.22)" strokeWidth="1.2" />
+                        <defs>
+                            <linearGradient id="user-wave-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.10" />
+                                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.02" />
+                            </linearGradient>
+                            <linearGradient id="user-wave-grad-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.14" />
+                                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.03" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    {/* Ambient Glows */}
+                    <div className="absolute -top-12 -left-12 w-44 h-44 bg-white/10 rounded-full blur-2xl"></div>
+                    <div className="absolute top-1/2 right-1/4 w-52 h-32 bg-sky-300/20 rounded-full blur-3xl"></div>
+                </div>
+
+                {/* Main Content Layout */}
+                <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-5">
                     <div className="min-w-0 flex-1">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[11px] sm:text-xs font-extrabold text-white mb-2 border border-white/25 shadow-2xs">
-                            <span>🇮🇳 {t('indiaFirstPlatform', "India's 1st Groundwater Survey Booking Platform")}</span>
+                        {/* India's 1st Platform Badge */}
+                        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-white/12 hover:bg-white/20 backdrop-blur-md text-[10px] sm:text-xs font-bold text-white mb-2 sm:mb-2.5 border border-white/25 shadow-xs transition-all duration-200">
+                            <span className="text-xs sm:text-sm leading-none">🇮🇳</span>
+                            <span className="tracking-wide">{t('indiaFirstPlatform', "India's 1st Groundwater Survey Booking Platform")}</span>
                         </div>
-                        <h1 className="text-lg sm:text-2xl font-black tracking-tight text-white leading-tight">
-                            {t('welcomeBack', 'Welcome back')}, {userName} 👋
+
+                        {/* Heading */}
+                        <h1 className="text-lg sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-tight">
+                            {t('welcomeBack', 'Welcome back')}, {formattedUserName} <span className="inline-block hover:rotate-12 transition-transform duration-200 cursor-default">👋</span>
                         </h1>
-                        <p className="text-xs sm:text-sm text-blue-100 font-medium mt-1 leading-normal">
+
+                        {/* Subtitle */}
+                        <p className="text-xs sm:text-sm text-blue-100/90 font-medium mt-1 leading-normal max-w-xl">
                             {t('findExpertsDesc', 'Find verified groundwater survey experts and book your survey.')}
                         </p>
+
+                        {/* Trust & Key Features Badges Strip */}
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2.5 pt-0.5">
+                            <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-xs text-[10px] sm:text-[11px] font-medium text-blue-50 border border-white/15">
+                                <span>🛡️</span>
+                                <span>{t('certifiedExperts', 'Certified Hydrogeologists')}</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-xs text-[10px] sm:text-[11px] font-medium text-blue-50 border border-white/15">
+                                <span>⚡</span>
+                                <span>{t('fastBooking', 'Instant Booking')}</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-xs text-[10px] sm:text-[11px] font-medium text-blue-50 border border-white/15">
+                                <span>📊</span>
+                                <span>{t('digitalReport', 'GPS Survey Reports')}</span>
+                            </span>
+                        </div>
                     </div>
-                    {/* White Circular Profile Picture */}
+
+                    {/* Right: Avatar with Dual-ring Frame & Verified Badge */}
                     <div
-                        className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-white bg-cover bg-center flex-shrink-0 shadow-lg border-2 border-white/90"
-                        style={{
-                            backgroundImage: userAvatar
-                                ? `url("${userAvatar}")`
-                                : `url("${avatarImageUrl}")`,
-                        }}
-                    ></div>
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => navigate("/user/profile")}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate("/user/profile"); }}
+                        title={t('viewProfile', 'View Profile & Settings')}
+                        className="relative shrink-0 group cursor-pointer"
+                    >
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl sm:rounded-3xl border-2 sm:border-[3px] border-white/95 ring-2 ring-white/30 shadow-xl overflow-hidden bg-white/90 group-hover:scale-105 group-hover:ring-white/60 active:scale-95 transition-all duration-300">
+                            <img
+                                src={displayAvatar}
+                                alt={formattedUserName}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = fallbackAvatar;
+                                }}
+                            />
+                        </div>
+                        {/* Verified Account Badge */}
+                        <div
+                            className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white shadow-md shadow-emerald-900/20"
+                            title={t('verifiedAccount', 'Verified Account')}
+                        >
+                            <IoShieldCheckmark className="text-[11px] sm:text-xs" />
+                        </div>
+                    </div>
                 </div>
             </section>
 
