@@ -233,6 +233,11 @@ app.use('/api/fcm-tokens', require('./routes/fcmToken.routes'));
 // Public report verification route (no auth — QR scan use-case)
 app.use('/api/verify', require('./routes/verify.routes'));
 
+// Safe Local/Development Testing routes (BhashSMS WhatsApp & diagnostic tests)
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/test', require('./routes/testBhash.routes'));
+}
+
 // 404 handler
 app.use((req, res) => {
   console.log(`[404 HANDLER] Route not found - Method: ${req.method}, Path: ${req.path}, OriginalUrl: ${req.originalUrl}`);

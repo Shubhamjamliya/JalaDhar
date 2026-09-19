@@ -764,6 +764,36 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     enum: ['USER', 'VENDOR', 'ADMIN'],
     default: null
+  },
+  // WhatsApp Notification Delivery Tracking
+  whatsappNotifications: {
+    bookingConfirmed: {
+      status: {
+        type: String,
+        enum: ['NOT_SENT', 'PROCESSING', 'SENT', 'FAILED'],
+        default: 'NOT_SENT'
+      },
+      sentAt: {
+        type: Date,
+        default: null
+      },
+      messageId: {
+        type: String,
+        default: null
+      },
+      attempts: {
+        type: Number,
+        default: 0
+      },
+      lastAttemptAt: {
+        type: Date,
+        default: null
+      },
+      lastError: {
+        type: String,
+        default: null
+      }
+    }
   }
 }, {
   timestamps: true,
@@ -776,6 +806,7 @@ bookingSchema.index({ vendor: 1, status: 1 });
 bookingSchema.index({ user: 1, status: 1 });
 bookingSchema.index({ scheduledDate: 1 });
 bookingSchema.index({ 'payment.status': 1 });
+bookingSchema.index({ 'whatsappNotifications.bookingConfirmed.status': 1 });
 
 // Virtual getter & setter for scheduleDate to prevent field mismatch issues
 bookingSchema.virtual('scheduleDate')

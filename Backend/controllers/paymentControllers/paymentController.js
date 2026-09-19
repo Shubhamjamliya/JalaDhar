@@ -7,6 +7,139 @@ const { sendPaymentConfirmationEmail } = require('../../services/emailService');
 const { sendNotification } = require('../../services/notificationService');
 const { getIO } = require('../../sockets');
 const { creditToVendorWallet } = require('../../services/walletService');
+const { sendBookingConfirmedWhatsApp } = require('../../services/bhashWhatsappService');
+
+/**
+ * Concurrency-safe, isolated WhatsApp notification dispatcher for booking confirmation.
+ * Uses atomic findOneAndUpdate to guarantee idempotency across concurrent executions
+ * (e.g., verifyAdvancePayment endpoint vs. Razorpay order.paid webhook).
+ *
+ * @param {string|mongoose.Types.ObjectId} bookingId
+ */
+const dispatchBookingConfirmedWhatsAppSafe = async (bookingId) => {
+  try {
+    if (!bookingId) return;
+
+    // 1. Atomic claim lock:
+    // Only claim if status is 'NOT_SENT' or 'FAILED' (retryable), or if an earlier
+    // 'PROCESSING' claim timed out (> 5 minutes ago) to handle unexpected crashes.
+    const staleLockCutoff = new Date(Date.now() - 5 * 60 * 1000);
+
+    const claimedBooking = await Booking.findOneAndUpdate(
+      {
+        _id: bookingId,
+        $or: [
+          { 'whatsappNotifications.bookingConfirmed.status': { $in: ['NOT_SENT', 'FAILED'] } },
+          { 'whatsappNotifications.bookingConfirmed.status': { $exists: false } },
+          {
+            'whatsappNotifications.bookingConfirmed.status': 'PROCESSING',
+            'whatsappNotifications.bookingConfirmed.lastAttemptAt': { $lt: staleLockCutoff }
+          }
+        ]
+      },
+      {
+        $set: {
+          'whatsappNotifications.bookingConfirmed.status': 'PROCESSING',
+          'whatsappNotifications.bookingConfirmed.lastAttemptAt': new Date()
+        },
+        $inc: {
+          'whatsappNotifications.bookingConfirmed.attempts': 1
+        }
+      },
+      { new: true }
+    ).populate('user', 'name phone email mobile alternatePhone');
+
+    // If null, another concurrent thread (or previous attempt) already claimed or sent it
+    if (!claimedBooking) {
+      console.log(`ℹ️ [WhatsApp Notification] Booking ${bookingId} already claimed or sent. Skipping duplicate dispatch.`);
+      return;
+    }
+
+    // 2. Resolve customer phone and details
+    const phone = claimedBooking.phone && claimedBooking.phone !== 'TBD'
+      ? claimedBooking.phone
+      : (claimedBooking.user?.phone || claimedBooking.user?.mobile || claimedBooking.alternatePhone);
+
+    const customerName = claimedBooking.user?.name || claimedBooking.customerName || 'Customer';
+    // Use human-readable bookingId field if it exists; otherwise fallback to 8-char uppercase short ID
+    const displayBookingId = claimedBooking.bookingId || (claimedBooking._id ? claimedBooking._id.toString().slice(-8).toUpperCase() : 'N/A');
+
+    let bookingDate = 'Confirmed';
+    if (claimedBooking.scheduledDate) {
+      const d = new Date(claimedBooking.scheduledDate);
+      if (!isNaN(d.getTime())) {
+        bookingDate = d.toISOString().split('T')[0]; // YYYY-MM-DD
+      }
+    }
+
+    const bookingTime = claimedBooking.scheduledTime || 'Scheduled Time';
+
+    if (!phone) {
+      console.warn(`⚠️ [WhatsApp Notification] No valid phone number found for booking ${displayBookingId}. Marking as FAILED.`);
+      await Booking.findByIdAndUpdate(bookingId, {
+        $set: {
+          'whatsappNotifications.bookingConfirmed.status': 'FAILED',
+          'whatsappNotifications.bookingConfirmed.lastError': 'No customer phone number available'
+        }
+      });
+      return;
+    }
+
+    // 3. Dispatch via verified BhashSMS service
+    const result = await sendBookingConfirmedWhatsApp({
+      phone,
+      customerName,
+      bookingId: displayBookingId,
+      bookingDate,
+      bookingTime
+    });
+
+    // 4. Validate tracking response: must be successful and return valid Bhash tracking ID (e.g. S.xxxxxx)
+    const trackingId = typeof result?.data === 'string' ? result.data.trim() : '';
+    const isValidTracking = result?.success && /^S\.[a-zA-Z0-9]+$/i.test(trackingId);
+
+    if (isValidTracking) {
+      // Mark as SENT
+      await Booking.findByIdAndUpdate(bookingId, {
+        $set: {
+          'whatsappNotifications.bookingConfirmed.status': 'SENT',
+          'whatsappNotifications.bookingConfirmed.sentAt': new Date(),
+          'whatsappNotifications.bookingConfirmed.messageId': trackingId,
+          'whatsappNotifications.bookingConfirmed.lastError': null
+        }
+      });
+      console.log(`✅ [WhatsApp Notification] Confirmed WhatsApp sent for booking ${displayBookingId}. Tracking ID: ${trackingId}`);
+    } else {
+      // Mark as FAILED to keep it retryable
+      const safeError = result?.error
+        ? String(result.error).replace(new RegExp(process.env.BHASH_PASSWORD || '###', 'g'), '***')
+        : `Invalid gateway response: ${trackingId || 'Empty'}`;
+
+      await Booking.findByIdAndUpdate(bookingId, {
+        $set: {
+          'whatsappNotifications.bookingConfirmed.status': 'FAILED',
+          'whatsappNotifications.bookingConfirmed.lastError': safeError
+        }
+      });
+      console.warn(`⚠️ [WhatsApp Notification] Failed sending WhatsApp for booking ${displayBookingId}. Notification left retryable:`, safeError);
+    }
+  } catch (err) {
+    // Sanitize any error output to prevent credential leaks
+    const sanitizedError = err.message ? err.message.replace(new RegExp(process.env.BHASH_PASSWORD || '###', 'g'), '***') : 'Unknown dispatch error';
+    console.error(`❌ [WhatsApp Notification] Isolated error for booking ${bookingId}:`, sanitizedError);
+
+    try {
+      await Booking.findByIdAndUpdate(bookingId, {
+        $set: {
+          'whatsappNotifications.bookingConfirmed.status': 'FAILED',
+          'whatsappNotifications.bookingConfirmed.lastError': sanitizedError
+        }
+      });
+    } catch (_) {
+      // Ignore database logging failure to preserve payment flow
+    }
+  }
+};
 
 /**
  * Verify and process advance payment
@@ -75,6 +208,9 @@ const verifyAdvancePayment = async (req, res) => {
     booking.userStatus = BOOKING_STATUS.ASSIGNED;
 
     await booking.save();
+
+    // Trigger WhatsApp booking-confirmed notification safely in background (concurrency-safe & isolated)
+    dispatchBookingConfirmedWhatsAppSafe(booking._id);
 
     // Credit travel charges to vendor wallet when booking is confirmed
     // Credit travel charges only if booking has already been ACCEPTED by the expert
@@ -619,6 +755,11 @@ const handleOrderPaid = async (orderData, paymentDetails) => {
     await booking.save();
     console.log(`Webhook: Booking ${bookingId} confirmed via order.paid`);
 
+    // Trigger WhatsApp notification safely in background if advance payment confirmed
+    if (paymentType === 'ADVANCE') {
+      dispatchBookingConfirmedWhatsAppSafe(booking._id);
+    }
+
     // Trigger notifications (reusing logic would be better, but implementing basic notify here)
     // Ideally, we should refactor verification logic to shared service functions.
     // For now, simple console log, assuming client-side success handler also triggers notifications
@@ -668,6 +809,10 @@ const handlePaymentCaptured = async (paymentData) => {
         }
         booking.payment.status = PAYMENT_STATUS.SUCCESS;
         await booking.save();
+
+        if (payment.paymentType === 'ADVANCE') {
+          dispatchBookingConfirmedWhatsAppSafe(booking._id);
+        }
       }
     }
   } catch (error) {
