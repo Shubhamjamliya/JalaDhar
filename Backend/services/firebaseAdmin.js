@@ -162,7 +162,9 @@ async function sendPushNotification(tokens, payload) {
         if (
           errorCode === 'messaging/invalid-registration-token' ||
           errorCode === 'messaging/registration-token-not-registered' ||
-          errorCode === 'messaging/mismatched-credential'
+          errorCode === 'messaging/mismatched-credential' ||
+          errorCode === 'messaging/invalid-argument' ||
+          resp.error.message?.includes('not a valid FCM registration token')
         ) {
           invalidTokens.push(uniqueTokens[idx]);
         }
