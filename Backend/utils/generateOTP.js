@@ -4,8 +4,8 @@
  * @returns {string} - Generated OTP
  */
 const generateOTP = (length = 6) => {
-  const isSmsConfigured = process.env.ENABLE_SMS === 'true' && Boolean(process.env.SMS_INDIA_API_KEY);
-  if (!isSmsConfigured) {
+  const isOtpEnabled = process.env.ENABLE_SMS === 'true' && process.env.ENABLE_OTP !== 'false' && Boolean(process.env.SMS_INDIA_API_KEY) && process.env.ALLOW_DEMO_OTP !== 'true';
+  if (!isOtpEnabled) {
     return '123456';
   }
   const digits = '0123456789';

@@ -582,14 +582,15 @@ const markAsEnRoute = async (req, res) => {
 
     // Generate OTPs
     if (!booking.otp || !booking.otp.startSurvey || !booking.otp.startSurvey.code) {
+      const isDemoMode = process.env.ENABLE_SMS !== 'true' || process.env.ENABLE_OTP === 'false' || process.env.ALLOW_DEMO_OTP === 'true';
       booking.otp = {
         startSurvey: { 
-          code: Math.floor(100000 + Math.random() * 900000).toString(), 
+          code: isDemoMode ? '123456' : Math.floor(100000 + Math.random() * 900000).toString(), 
           generatedAt: new Date(), 
           verified: false 
         },
         endSurvey: { 
-          code: Math.floor(100000 + Math.random() * 900000).toString(), 
+          code: isDemoMode ? '123456' : Math.floor(100000 + Math.random() * 900000).toString(), 
           generatedAt: new Date(), 
           verified: false 
         }
@@ -890,7 +891,8 @@ const verifyStartSurveyOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Start Survey OTP already verified' });
     }
 
-    if (booking.otp.startSurvey.code !== otp) {
+    const isFallbackOtpAllowed = (process.env.ENABLE_SMS !== 'true' || process.env.ENABLE_OTP === 'false' || process.env.ALLOW_DEMO_OTP === 'true') && (otp === '123456' || otp === '666666');
+    if (booking.otp.startSurvey.code !== otp && !isFallbackOtpAllowed) {
       return res.status(400).json({ success: false, message: 'Invalid OTP' });
     }
 
@@ -1058,7 +1060,8 @@ const verifyEndSurveyOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: 'End Survey OTP already verified' });
     }
 
-    if (booking.otp.endSurvey.code !== otp) {
+    const isFallbackOtpAllowed = (process.env.ENABLE_SMS !== 'true' || process.env.ENABLE_OTP === 'false' || process.env.ALLOW_DEMO_OTP === 'true') && (otp === '123456' || otp === '666666');
+    if (booking.otp.endSurvey.code !== otp && !isFallbackOtpAllowed) {
       return res.status(400).json({ success: false, message: 'Invalid OTP' });
     }
 

@@ -175,7 +175,7 @@ const register = async (req, res) => {
     }
 
     // Verify OTP (Allows 123456 / 666666 fallback when SMS service key is not configured)
-    const isFallbackOtpAllowed = (process.env.ENABLE_SMS !== 'true' || !process.env.SMS_INDIA_API_KEY || process.env.ALLOW_DEMO_OTP === 'true') && (otp === '123456' || otp === '666666');
+    const isFallbackOtpAllowed = (process.env.ENABLE_SMS !== 'true' || process.env.ENABLE_OTP === 'false' || !process.env.SMS_INDIA_API_KEY || process.env.ALLOW_DEMO_OTP === 'true') && (otp === '123456' || otp === '666666');
     if (tokenDoc.otp !== otp && !isFallbackOtpAllowed) {
       tokenDoc.attempts = (tokenDoc.attempts || 0) + 1;
       await tokenDoc.save();
@@ -843,7 +843,7 @@ const verifyLoginOTP = async (req, res) => {
       });
     }
 
-    const isFallbackOtpAllowed = (process.env.ENABLE_SMS !== 'true' || !process.env.SMS_INDIA_API_KEY || process.env.ALLOW_DEMO_OTP === 'true') && (otp === '123456' || otp === '666666');
+    const isFallbackOtpAllowed = (process.env.ENABLE_SMS !== 'true' || process.env.ENABLE_OTP === 'false' || !process.env.SMS_INDIA_API_KEY || process.env.ALLOW_DEMO_OTP === 'true') && (otp === '123456' || otp === '666666');
     if (tokenDoc.otp !== otp && !isFallbackOtpAllowed) {
       tokenDoc.attempts = (tokenDoc.attempts || 0) + 1;
       await tokenDoc.save();

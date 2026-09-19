@@ -210,7 +210,7 @@ const register = async (req, res) => {
     }
 
     // Verify OTP (Allows 123456 / 666666 fallback when SMS service key is not configured)
-    const isFallbackOtpAllowed = (process.env.ENABLE_SMS !== 'true' || !process.env.SMS_INDIA_API_KEY || process.env.ALLOW_DEMO_OTP === 'true') && (otp === '123456' || otp === '666666');
+    const isFallbackOtpAllowed = (process.env.ENABLE_SMS !== 'true' || process.env.ENABLE_OTP === 'false' || !process.env.SMS_INDIA_API_KEY || process.env.ALLOW_DEMO_OTP === 'true') && (otp === '123456' || otp === '666666');
     if (tokenDoc.otp !== otp && !isFallbackOtpAllowed) {
       tokenDoc.attempts += 1;
       await tokenDoc.save();
@@ -1010,7 +1010,7 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    const isSmsConfigured = process.env.ENABLE_SMS === 'true' && Boolean(process.env.SMS_INDIA_API_KEY);
+    const isSmsConfigured = process.env.ENABLE_SMS === 'true' && process.env.ENABLE_OTP !== 'false' && Boolean(process.env.SMS_INDIA_API_KEY);
     const isFallbackOtpAllowed = (!isSmsConfigured || process.env.ALLOW_DEMO_OTP === 'true' || process.env.NODE_ENV === 'development') && (otp === '123456' || otp === '666666');
 
     // Verify OTP if not fallback
@@ -1225,7 +1225,7 @@ const verifyResetOTP = async (req, res) => {
 
     const vendor = await Vendor.findOne({ $or: searchConditions });
 
-    const isSmsConfigured = process.env.ENABLE_SMS === 'true' && Boolean(process.env.SMS_INDIA_API_KEY);
+    const isSmsConfigured = process.env.ENABLE_SMS === 'true' && process.env.ENABLE_OTP !== 'false' && Boolean(process.env.SMS_INDIA_API_KEY);
     const isFallbackOtpAllowed = (!isSmsConfigured || process.env.ALLOW_DEMO_OTP === 'true' || process.env.NODE_ENV === 'development') && (otp === '123456' || otp === '666666');
 
     if (!vendor) {

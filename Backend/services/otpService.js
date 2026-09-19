@@ -37,7 +37,7 @@ const createOTPToken = async ({ userId, userModel, type, expiryMinutes = 10 }) =
  * @returns {Object} - { isValid, tokenDoc }
  */
 const verifyOTPToken = async ({ userId, userModel, type, otp }) => {
-  const isFallbackOtpAllowed = (process.env.ENABLE_SMS !== 'true' || !process.env.SMS_INDIA_API_KEY || process.env.ALLOW_DEMO_OTP === 'true') && (otp === '123456' || otp === '666666');
+  const isFallbackOtpAllowed = (process.env.ENABLE_SMS !== 'true' || process.env.ENABLE_OTP === 'false' || !process.env.SMS_INDIA_API_KEY || process.env.ALLOW_DEMO_OTP === 'true') && (otp === '123456' || otp === '666666');
 
   const query = {
     userId,
