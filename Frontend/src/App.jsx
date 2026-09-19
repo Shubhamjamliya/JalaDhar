@@ -19,6 +19,7 @@ import ToastProvider from "./components/ToastProvider";
 import LocationPermissionModal from "./components/LocationPermissionModal";
 import ScrollToTop from "./components/ScrollToTop";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import useVirtualKeyboard from "./hooks/useVirtualKeyboard";
 
 // Lazy load all route components for better performance
 const LandingPage = lazy(() => import("./modules/landing/LandingPage"));
@@ -190,6 +191,7 @@ function AppRootGateway() {
 }
 
 function App() {
+    useVirtualKeyboard();
     return (
         <ThemeProvider>
             <LanguageProvider>

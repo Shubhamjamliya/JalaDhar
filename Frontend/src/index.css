@@ -179,3 +179,14 @@ input[type="number"] {
 .thin-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.22);
 }
+
+/* Central Mobile Virtual Keyboard Hiding */
+html[data-keyboard-open="true"] [data-bottom-nav="true"],
+html[data-keyboard-open="true"] nav.fixed.bottom-0,
+html[data-keyboard-open="true"] .fixed.bottom-0.md\:hidden {
+  transform: translateY(120%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  transition: transform 0.18s ease-out, opacity 0.18s ease-out !important;
+}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import useVirtualKeyboard from "../../../hooks/useVirtualKeyboard";
 import {
     IoHome,
     IoHomeOutline,
@@ -89,7 +90,7 @@ export default function UserNavbar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showLangMenu, setShowLangMenu] = useState(false);
-    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+    const isKeyboardOpen = useVirtualKeyboard();
     const { language, setLanguage, t, supportedLanguages, isLanguageEnabled } = useLanguage();
     const currentLangObj = supportedLanguages.find(l => l.code === language) || supportedLanguages[0];
 
@@ -120,22 +121,6 @@ export default function UserNavbar() {
             ro.disconnect();
             window.removeEventListener('resize', updateHeight);
         };
-    }, []);
-
-    // Hide bottom nav when virtual keyboard is open (mobile)
-    useEffect(() => {
-        const viewport = window.visualViewport;
-        if (!viewport) return;
-
-        const handleViewportResize = () => {
-            // If the visual viewport height is significantly smaller than the window height,
-            // the keyboard is likely open. Threshold of 150px avoids false positives.
-            const keyboardVisible = window.innerHeight - viewport.height > 150;
-            setIsKeyboardOpen(keyboardVisible);
-        };
-
-        viewport.addEventListener('resize', handleViewportResize);
-        return () => viewport.removeEventListener('resize', handleViewportResize);
     }, []);
 
     // Close language dropdown on outside click or touch
@@ -432,7 +417,10 @@ export default function UserNavbar() {
             )}
 
             {/* Bottom Navigation — Mobile Only (Redesigned Senior UI with Floating FAB) */}
-            <nav className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden transition-transform duration-200 ${isKeyboardOpen ? 'translate-y-full pointer-events-none' : 'translate-y-0'}`}>
+            <nav 
+                data-bottom-nav="true"
+                className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden transition-all duration-200 ${isKeyboardOpen ? 'translate-y-full pointer-events-none opacity-0' : 'translate-y-0 opacity-100'}`}
+            >
                 <div className="flex items-center justify-around gap-1 max-w-md mx-auto">
                     {navItems.map(({ id, labelKey, fallbackLabel, to, Icon, ActiveIcon, isFab }) => (
                         <NavLink

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import useVirtualKeyboard from "../../../hooks/useVirtualKeyboard";
 import {
     IoHome,
     IoHomeOutline,
@@ -74,7 +75,7 @@ const navItems = [
 export default function VendorNavbar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+    const isKeyboardOpen = useVirtualKeyboard();
     const toggleRef = useRef(null);
     const headerRef = useRef(null);
     const { logout, vendor, updateOnlineStatus, allowAvailabilityToggle } = useVendorAuth();
@@ -445,7 +446,10 @@ export default function VendorNavbar() {
             </div>
 
             {/* Bottom Navigation — Mobile Only (Redesigned Senior UI) */}
-            <nav className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden transition-transform duration-200 ${isKeyboardOpen ? 'translate-y-full pointer-events-none' : 'translate-y-0'}`}>
+            <nav 
+                data-bottom-nav="true"
+                className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden transition-all duration-200 ${isKeyboardOpen ? 'translate-y-full pointer-events-none opacity-0' : 'translate-y-0 opacity-100'}`}
+            >
                 <div className="flex items-center justify-around gap-1 max-w-md mx-auto">
                     {navItems.map(({ id, label, to, Icon, ActiveIcon }) => (
                         <NavLink
