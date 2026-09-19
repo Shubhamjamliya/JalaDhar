@@ -614,22 +614,6 @@ export default function UserDashboard() {
                         <p className="text-xs sm:text-sm text-blue-100/90 font-medium mt-1 leading-normal max-w-xl">
                             {t('findExpertsDesc', 'Find verified groundwater survey experts and book your survey.')}
                         </p>
-
-                        {/* Trust & Key Features Badges Strip */}
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2.5 pt-0.5">
-                            <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-xs text-[10px] sm:text-[11px] font-medium text-blue-50 border border-white/15">
-                                <span>🛡️</span>
-                                <span>{t('certifiedExperts', 'Certified Hydrogeologists')}</span>
-                            </span>
-                            <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-xs text-[10px] sm:text-[11px] font-medium text-blue-50 border border-white/15">
-                                <span>⚡</span>
-                                <span>{t('fastBooking', 'Instant Booking')}</span>
-                            </span>
-                            <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-xs text-[10px] sm:text-[11px] font-medium text-blue-50 border border-white/15">
-                                <span>📊</span>
-                                <span>{t('digitalReport', 'GPS Survey Reports')}</span>
-                            </span>
-                        </div>
                     </div>
 
                     {/* Right: Avatar with Dual-ring Frame & Verified Badge */}
