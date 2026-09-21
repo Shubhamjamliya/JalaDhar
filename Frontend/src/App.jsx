@@ -15,6 +15,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import VendorProtectedRoute from "./components/VendorProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import LoadingSpinner from "./modules/shared/components/LoadingSpinner";
+import ErrorBoundary from "./modules/shared/components/ErrorBoundary";
 import ToastProvider from "./components/ToastProvider";
 import LocationPermissionModal from "./components/LocationPermissionModal";
 import ScrollToTop from "./components/ScrollToTop";
@@ -333,8 +334,9 @@ function App() {
                                                     <UserNavbar />
                                                 </Suspense>
                                                 <main style={{ paddingTop: 'calc(var(--user-header-height, 60px) + 6px)' }} className="px-4 pb-16 md:pb-8 md:px-6 md:max-w-7xl md:mx-auto">
-                                                    <Suspense fallback={<LoadingSpinner />}>
-                                                        <Routes>
+                                                    <ErrorBoundary title="Unable to load page">
+                                                        <Suspense fallback={<LoadingSpinner />}>
+                                                            <Routes>
                                                             <Route
                                                                 path="/"
                                                                 element={
@@ -582,6 +584,7 @@ function App() {
                                                             />
                                                         </Routes>
                                                     </Suspense>
+                                                    </ErrorBoundary>
                                                 </main>
                                             </ProtectedRoute>
                                         }
@@ -650,8 +653,9 @@ function App() {
                                                     <VendorNavbar />
                                                 </Suspense>
                                                 <main style={{ paddingTop: 'calc(var(--vendor-header-height, 60px) + 6px)' }} className="px-4 pb-20 md:pb-12 md:px-6 md:max-w-7xl md:mx-auto">
-                                                    <Suspense fallback={<LoadingSpinner />}>
-                                                        <Routes>
+                                                    <ErrorBoundary title="Unable to load page">
+                                                        <Suspense fallback={<LoadingSpinner />}>
+                                                            <Routes>
                                                             <Route
                                                                 path="/"
                                                                 element={
@@ -888,6 +892,7 @@ function App() {
                                                             />
                                                         </Routes>
                                                     </Suspense>
+                                                    </ErrorBoundary>
                                                 </main>
                                             </VendorProtectedRoute>
                                         }
@@ -1526,6 +1531,10 @@ function App() {
                                             </AdminProtectedRoute>
                                         }
                                     />
+
+                                    {/* Fallback & Helper Routes */}
+                                    <Route path="/wallet" element={<Navigate to="/user/wallet" replace />} />
+                                    <Route path="*" element={<Navigate to="/" replace />} />
 
                                 </Routes>
                             </NotificationProvider>

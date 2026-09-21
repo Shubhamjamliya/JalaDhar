@@ -2,7 +2,8 @@ import axios from 'axios';
 import { getCachedResponse, setCachedResponse, clearCache } from '../utils/apiCache';
 
 // Base URL from environment variable or default
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = typeof rawApiUrl === 'string' ? rawApiUrl.trim() : 'http://localhost:5000/api';
 
 // Create axios instance
 const api = axios.create({

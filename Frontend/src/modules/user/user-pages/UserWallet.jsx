@@ -594,17 +594,20 @@ export default function UserWallet() {
         }
     };
 
-    // Format amount with 2 decimal places
+    // Format amount with 2 decimal places safely
     const formatAmount = (amount) => {
-        return amount.toLocaleString("en-IN", {
+        const num = Number(amount) || 0;
+        return num.toLocaleString("en-IN", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         });
     };
 
-    // Format date and time
+    // Format date and time safely
     const formatDateTime = (dateString) => {
+        if (!dateString) return "N/A";
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) return "N/A";
         return date.toLocaleDateString("en-IN", {
             day: "numeric",
             month: "short",
@@ -732,7 +735,7 @@ export default function UserWallet() {
                                 payoutType === 'BANK_TRANSFER' ? (
                                     <>
                                         <span className="font-semibold text-slate-800">{accountDetails.bankName || 'Bank'}</span>
-                                        {' '}••••{accountDetails.accountNumber ? accountDetails.accountNumber.slice(-4) : '----'}
+                                        {' '}••••{accountDetails.accountNumber ? String(accountDetails.accountNumber).slice(-4) : '----'}
                                         {accountDetails.ifscCode ? ` (${accountDetails.ifscCode})` : ''}
                                         {accountDetails.accountHolderName ? ` • ${accountDetails.accountHolderName}` : ''}
                                     </>
@@ -959,7 +962,7 @@ export default function UserWallet() {
                                             )}
                                             {request.payoutType === 'BANK_TRANSFER' && (
                                                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                                                    🏦 {request.accountDetails?.bankName || 'Bank'} ••••{request.accountDetails?.accountNumber?.slice(-4) || ''}
+                                                    🏦 {request.accountDetails?.bankName || 'Bank'} ••••{request.accountDetails?.accountNumber ? String(request.accountDetails.accountNumber).slice(-4) : ''}
                                                 </span>
                                             )}
                                         </div>
@@ -1212,9 +1215,9 @@ export default function UserWallet() {
                                             <p className="text-xs text-gray-500 font-medium">
                                                 {formatDateTime(transaction.createdAt)}
                                             </p>
-                                            {transaction.booking && (
+                                            {(transaction.booking || transaction.metadata?.bookingId) && (
                                                 <p className="text-xs text-blue-600 font-bold mt-0.5">
-                                                    Booking #{transaction.booking._id?.toString().slice(-8).toUpperCase()}
+                                                    Booking #{String(transaction.booking?._id || transaction.booking || transaction.metadata?.bookingId || '').slice(-8).toUpperCase()}
                                                 </p>
                                             )}
                                             {(transaction.errorMessage || transaction.metadata?.rejectionReason) && (
