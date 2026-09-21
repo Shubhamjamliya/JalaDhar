@@ -1,12 +1,13 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 /**
  * Protected Route Component
- * Redirects to login if user is not authenticated
+ * Redirects to login if user is not authenticated, preserving the requested destination
  */
 export default function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     // Show loading spinner while checking auth
@@ -21,8 +22,15 @@ export default function ProtectedRoute({ children }) {
   }
 
   if (!isAuthenticated) {
-    // Redirect to login if not authenticated
-    return <Navigate to="/userlogin" replace />;
+    // Preserve requested target URL so the user can be returned to it after login
+    const targetPath = location.pathname + location.search;
+    return (
+      <Navigate
+        to={`/userlogin?redirect=${encodeURIComponent(targetPath)}`}
+        state={{ from: location, redirectUrl: targetPath }}
+        replace
+      />
+    );
   }
 
   return children;

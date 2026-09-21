@@ -27,12 +27,15 @@ export default function UserLogin() {
     const toast = useToast();
     const { isAuthenticated } = useAuth();
 
+    const searchParams = new URLSearchParams(location.search);
+    const redirectUrl = searchParams.get("redirect") || location.state?.redirectUrl || (location.state?.from ? (location.state.from.pathname + (location.state.from.search || '')) : null);
+
     useEffect(() => {
         window.scrollTo(0, 0);
         if (isAuthenticated) {
-            navigate("/user/dashboard", { replace: true });
+            navigate(redirectUrl || "/user/dashboard", { replace: true });
         }
-    }, [isAuthenticated, navigate]);
+    }, [isAuthenticated, navigate, redirectUrl]);
 
     // Handle Mobile OTP Login
     const handleSendLoginOTP = async (e) => {
@@ -59,12 +62,13 @@ export default function UserLogin() {
                 }
 
                 setTimeout(() => {
-                    navigate("/user/verify-login-otp", {
+                    navigate(`/user/verify-login-otp${redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`, {
                         state: {
                             phone: phone.trim(),
                             verificationToken: response.data?.token,
                             devOtp: response.data?.devOtp || location.state?.devOtp,
-                            cooldownRemaining: response.data?.cooldownRemaining || 60
+                            cooldownRemaining: response.data?.cooldownRemaining || 60,
+                            redirectUrl: redirectUrl
                         }
                     });
                 }, 600);
@@ -77,9 +81,10 @@ export default function UserLogin() {
             if (err.response?.status === 404) {
                 toast.showInfo("Welcome to Jaladhaara! Looks like you're new here — let's quickly create your account.");
                 setTimeout(() => {
-                    navigate("/usersignup", {
+                    navigate(`/usersignup${redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`, {
                         state: {
-                            phone: cleanPhone
+                            phone: cleanPhone,
+                            redirectUrl: redirectUrl
                         }
                     });
                 }, 700);

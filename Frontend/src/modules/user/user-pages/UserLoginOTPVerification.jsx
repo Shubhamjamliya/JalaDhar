@@ -93,8 +93,10 @@ export default function UserLoginOTPVerification() {
                 toast.dismissToast(loadingToast);
                 toast.showSuccess("Login successful! Redirecting...");
                 setLoginSuccess(true);
+                const searchParams = new URLSearchParams(location.search);
+                const redirectUrl = location.state?.redirectUrl || searchParams.get('redirect') || "/user/dashboard";
                 setTimeout(() => {
-                    navigate("/user/dashboard");
+                    navigate(redirectUrl, { replace: true });
                 }, 800);
             } else {
                 toast.dismissToast(loadingToast);
@@ -218,7 +220,11 @@ export default function UserLoginOTPVerification() {
                             )}
                             <button
                                 type="button"
-                                onClick={() => navigate("/userlogin", { state: { phone, devOtp: location.state?.devOtp } })}
+                                onClick={() => {
+                                    const searchParams = new URLSearchParams(location.search);
+                                    const redirectUrl = location.state?.redirectUrl || searchParams.get('redirect');
+                                    navigate(`/userlogin${redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`, { state: { phone, devOtp: location.state?.devOtp, redirectUrl } });
+                                }}
                                 className="text-gray-500 hover:text-[#0A84FF] font-bold flex items-center gap-1 transition-all cursor-pointer"
                             >
                                 <IoArrowBackOutline className="text-sm" />

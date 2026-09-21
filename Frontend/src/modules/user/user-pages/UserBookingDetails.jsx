@@ -169,7 +169,11 @@ export default function UserBookingDetails() {
             if (response.success) {
                 setBooking(response.data.booking);
 
-                if (response.data.booking.status === 'COMPLETED' || response.data.booking.status === 'ADMIN_APPROVED' || response.data.booking.status === 'FINAL_SETTLEMENT') {
+                const isCompleted = response.data.booking.status === 'COMPLETED' || response.data.booking.status === 'ADMIN_APPROVED' || response.data.booking.status === 'FINAL_SETTLEMENT';
+                const searchParams = new URLSearchParams(location.search);
+                const isRateAction = searchParams.get('action') === 'rate';
+
+                if (isCompleted) {
                     try {
                         const ratingResponse = await getBookingRating(bookingId);
                         if (ratingResponse.success && !ratingResponse.data?.rating) {
@@ -180,7 +184,11 @@ export default function UserBookingDetails() {
                                 visitTiming: 0,
                                 review: ""
                             });
-                            setTimeout(() => setShowRatingModal(true), 1500);
+                            if (isRateAction) {
+                                setShowRatingModal(true);
+                            } else {
+                                setTimeout(() => setShowRatingModal(true), 1500);
+                            }
                         } else if (ratingResponse.success && ratingResponse.data?.rating) {
                             const existingRating = ratingResponse.data.rating;
                             setRatingData({
@@ -190,6 +198,9 @@ export default function UserBookingDetails() {
                                 visitTiming: existingRating.ratings?.visitTiming || 0,
                                 review: existingRating.review || ""
                             });
+                            if (isRateAction) {
+                                setShowRatingModal(true);
+                            }
                         }
                     } catch (e) {
                         setRatingData({
@@ -199,8 +210,14 @@ export default function UserBookingDetails() {
                             visitTiming: 0,
                             review: ""
                         });
-                        setTimeout(() => setShowRatingModal(true), 1500);
+                        if (isRateAction) {
+                            setShowRatingModal(true);
+                        } else {
+                            setTimeout(() => setShowRatingModal(true), 1500);
+                        }
                     }
+                } else if (isRateAction) {
+                    toast.showInfo("Rating will be available once the groundwater survey is completed.");
                 }
             } else {
                 toast.showError(response.message || "Failed to load booking details");
