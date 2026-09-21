@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   IoTimeOutline,
   IoLocationOutline,
   IoPersonOutline,
   IoDocumentTextOutline,
   IoCalendarOutline,
+  IoCheckmarkCircleOutline,
+  IoCloseOutline,
+  IoWalletOutline,
 } from "react-icons/io5";
 import { getUserBookings } from "../../../services/bookingApi";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -13,14 +16,66 @@ import PageContainer from "../../shared/components/PageContainer";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 
+const VALID_TABS = ["upcoming", "ongoing", "completed", "complete", "cancelled"];
+
 export default function UserAllBookingsStatus() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("upcoming");
+
+  const tabFromUrl = searchParams.get("tab");
+  const tabFromState = location.state?.activeTab;
+  const activeTab = (tabFromUrl && VALID_TABS.includes(tabFromUrl))
+    ? tabFromUrl
+    : (tabFromState && VALID_TABS.includes(tabFromState))
+      ? tabFromState
+      : "upcoming";
+
+  const [cancellationNotice, setCancellationNotice] = useState(() => (
+    location.state?.cancelledBookingId ? location.state : null
+  ));
 
   const { socket } = useNotifications();
+
+  // Clean up location state once read to prevent reappearing on refresh
+  useEffect(() => {
+    if (location.state?.cancelledBookingId) {
+      navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.search, location.state, navigate]);
+
+  const handleTabChange = (tabKey) => {
+    setSearchParams({ tab: tabKey }, { replace: true });
+  };
+
+  const loadAllBookings = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      // Get all bookings
+      const response = await getUserBookings({
+        limit: 100,
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      });
+
+      if (response.success) {
+        const allBookings = response.data.bookings || [];
+        setBookings(allBookings);
+      } else {
+        setError(response.message || "Failed to load bookings");
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load bookings");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadAllBookings();
@@ -47,31 +102,6 @@ export default function UserAllBookingsStatus() {
     socket.on("new_notification", handleNewNotification);
     return () => socket.off("new_notification", handleNewNotification);
   }, [socket]);
-
-  const loadAllBookings = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      // Get all bookings
-      const response = await getUserBookings({
-        limit: 100,
-        sortBy: "createdAt",
-        sortOrder: "desc",
-      });
-
-      if (response.success) {
-        const allBookings = response.data.bookings || [];
-        setBookings(allBookings);
-      } else {
-        setError(response.message || "Failed to load bookings");
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to load bookings");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getFilteredBookings = () => {
     if (!bookings.length) return [];
@@ -223,10 +253,48 @@ export default function UserAllBookingsStatus() {
         )}
       </div>
 
+      {/* Cancellation & Refund Success Notice */}
+      {cancellationNotice && (
+        <div className="mb-4 p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200/90 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0">
+              <IoCheckmarkCircleOutline className="text-xl" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-emerald-950">
+                Booking Cancelled Successfully
+              </p>
+              <p className="text-xs text-emerald-800 mt-0.5 font-medium">
+                {cancellationNotice.refundMessage ||
+                  (cancellationNotice.refundAmount > 0
+                    ? `₹${cancellationNotice.refundAmount} has been credited to your JalaDhar wallet.`
+                    : "Your survey booking has been cancelled.")}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              onClick={() => navigate("/user/wallet")}
+              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+            >
+              <IoWalletOutline className="text-sm" />
+              <span>View Wallet</span>
+            </button>
+            <button
+              onClick={() => setCancellationNotice(null)}
+              className="p-1 text-emerald-700 hover:text-emerald-900 rounded-lg hover:bg-emerald-100/60 transition-colors cursor-pointer"
+              title="Dismiss"
+            >
+              <IoCloseOutline className="text-lg" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Responsive Horizontal Scrollable Tabs */}
       <div className="mb-4 flex gap-1 border-b border-slate-200 overflow-x-auto no-scrollbar pb-0.5">
         <button
-          onClick={() => setActiveTab("upcoming")}
+          onClick={() => handleTabChange("upcoming")}
           className={`px-3.5 py-2 font-bold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap cursor-pointer ${activeTab === "upcoming"
             ? "text-[#0A84FF] border-[#0A84FF]"
             : "text-slate-500 border-transparent hover:text-slate-800"
@@ -235,7 +303,7 @@ export default function UserAllBookingsStatus() {
           Upcoming
         </button>
         <button
-          onClick={() => setActiveTab("ongoing")}
+          onClick={() => handleTabChange("ongoing")}
           className={`px-3.5 py-2 font-bold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap cursor-pointer ${activeTab === "ongoing"
             ? "text-[#0A84FF] border-[#0A84FF]"
             : "text-slate-500 border-transparent hover:text-slate-800"
@@ -244,7 +312,7 @@ export default function UserAllBookingsStatus() {
           Ongoing
         </button>
         <button
-          onClick={() => setActiveTab("completed")}
+          onClick={() => handleTabChange("completed")}
           className={`px-3.5 py-2 font-bold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap cursor-pointer ${activeTab === "completed" || activeTab === "complete"
             ? "text-[#0A84FF] border-[#0A84FF]"
             : "text-slate-500 border-transparent hover:text-slate-800"
@@ -253,7 +321,7 @@ export default function UserAllBookingsStatus() {
           Completed
         </button>
         <button
-          onClick={() => setActiveTab("cancelled")}
+          onClick={() => handleTabChange("cancelled")}
           className={`px-3.5 py-2 font-bold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap cursor-pointer ${activeTab === "cancelled"
             ? "text-[#0A84FF] border-[#0A84FF]"
             : "text-slate-500 border-transparent hover:text-slate-800"

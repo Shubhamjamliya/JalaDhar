@@ -276,10 +276,25 @@ export default function UserBookingDetails() {
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
-                toast.showSuccess("Booking cancelled successfully!");
                 setShowCancelConfirm(false);
                 setCancellationReason("");
-                await loadBookingDetails();
+
+                const advanceAmount = (booking?.payment?.advancePaid && booking?.payment?.advanceAmount > 0)
+                    ? booking.payment.advanceAmount
+                    : 0;
+                const refundMsg = advanceAmount > 0
+                    ? `Booking cancelled successfully. ₹${advanceAmount} has been credited to your wallet.`
+                    : "Booking cancelled successfully.";
+                toast.showSuccess(refundMsg, 5000);
+
+                navigate("/user/my-bookings?tab=cancelled", {
+                    replace: true,
+                    state: {
+                        cancelledBookingId: bookingId,
+                        refundAmount: advanceAmount,
+                        refundMessage: refundMsg
+                    }
+                });
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to cancel booking");

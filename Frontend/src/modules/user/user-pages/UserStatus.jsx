@@ -517,10 +517,22 @@ export default function UserStatus() {
             const bookingId = currentBooking.id || currentBooking._id;
             const res = await cancelBooking(bookingId, cancellationReason || "Cancelled by user");
             if (res.success) {
-                toast.showSuccess("Booking cancelled successfully. Refund initiated.");
-                if (loadCurrentBookingRef.current) {
-                    await loadCurrentBookingRef.current();
-                }
+                const advanceAmount = (currentBooking?.payment?.advancePaid && currentBooking?.payment?.advanceAmount > 0)
+                    ? currentBooking.payment.advanceAmount
+                    : 0;
+                const refundMsg = advanceAmount > 0
+                    ? `Booking cancelled successfully. ₹${advanceAmount} has been credited to your wallet.`
+                    : "Booking cancelled successfully. Refund initiated.";
+                toast.showSuccess(refundMsg, 5000);
+
+                navigate("/user/my-bookings?tab=cancelled", {
+                    replace: true,
+                    state: {
+                        cancelledBookingId: bookingId,
+                        refundAmount: advanceAmount,
+                        refundMessage: refundMsg
+                    }
+                });
             } else {
                 toast.showError(res.message || "Failed to cancel booking");
             }
