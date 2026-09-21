@@ -182,12 +182,21 @@ input[type="number"] {
 }
 
 /* Central Mobile Virtual Keyboard Hiding */
+body.keyboard-open [data-bottom-nav],
+body.keyboard-open [data-bottom-nav="true"],
+body.keyboard-open nav.fixed.bottom-0,
+body.keyboard-open .fixed.bottom-0.md\:hidden,
+body.keyboard-open .bottom-nav-container,
+body.keyboard-open [data-role="bottom-nav"],
+html[data-keyboard-open="true"] [data-bottom-nav],
 html[data-keyboard-open="true"] [data-bottom-nav="true"],
 html[data-keyboard-open="true"] nav.fixed.bottom-0,
-html[data-keyboard-open="true"] .fixed.bottom-0.md\:hidden {
-  transform: translateY(120%) !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
+html[data-keyboard-open="true"] .fixed.bottom-0.md\:hidden,
+html[data-keyboard-open="true"] .bottom-nav-container,
+html[data-keyboard-open="true"] [data-role="bottom-nav"] {
+  display: none !important;
   visibility: hidden !important;
-  transition: transform 0.18s ease-out, opacity 0.18s ease-out !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  transform: translateY(100%) !important;
 }
