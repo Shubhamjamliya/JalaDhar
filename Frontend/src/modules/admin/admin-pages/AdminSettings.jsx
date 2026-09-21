@@ -48,6 +48,21 @@ import { INDIAN_LANGUAGES_PRESETS } from "../../../utils/indianLanguages";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import { useToast } from "../../../hooks/useToast";
 
+const BUILT_IN_TEMPLATE_KEYS = [
+    'booking_confirmed',
+    'booking_accepted',
+    'on_the_way',
+    'final_payment',
+    'report_ready',
+    'booking_cancelled',
+    'expert_assignment',
+    'expert_report_required',
+    'schedule_confirmation',
+    'need_location',
+    'customer_not_reachable',
+    'delay_notification'
+];
+
 export default function AdminSettings({ defaultTab = "general" }) {
     const navigate = useNavigate();
     const location = useLocation();
@@ -123,34 +138,64 @@ export default function AdminSettings({ defaultTab = "general" }) {
         ENABLE_VENDOR_WHATSAPP_ASSISTANT: true,
         ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS: true,
         WHATSAPP_TEMPLATES_CONFIG: {
+            booking_confirmed: {
+                enabled: true,
+                title: "Automated: Booking Confirmed (Customer)",
+                template: "Hi {{1}}, Your booking {{2}} has been confirmed. Date: {{3}} Time: {{4}} Booking ID: {{5}} Thank you for choosing us."
+            },
             booking_accepted: {
                 enabled: true,
-                title: "1. Booking Accepted",
+                title: "Automated & Chat: Booking Accepted (Customer)",
                 template: "Hello {Customer Name}, This is {Expert Name}, your assigned Jaladhaara Expert.\nI have accepted your Groundwater Survey booking (Booking ID: {Booking ID}). I will contact you shortly to confirm the survey schedule. Thank you."
             },
             on_the_way: {
                 enabled: true,
-                title: "2. On the Way",
+                title: "Automated & Chat: Expert On The Way (Customer)",
                 template: "Hello {Customer Name},\nI am on my way to your survey location and expect to arrive at approximately {Time}. Please keep the site accessible. Thank you."
+            },
+            final_payment: {
+                enabled: true,
+                title: "Automated: Final Payment Due (Customer)",
+                template: "Hello {{1}}, Your groundwater survey for Booking ID: {{2}} has been completed. Remaining Amount: Rs. {{3}}. Please complete the payment to access your survey report. - Jaladhaara"
+            },
+            report_ready: {
+                enabled: true,
+                title: "Automated: Survey Report Ready (Customer)",
+                template: "Hello {{1}}, Great news! Your Groundwater Survey Report for Booking ID: {{2}} has been uploaded by Expert {{3}}. You can view and download your full hydrogeological analysis report in the Jaladhaara app: {{4}} - Team Jaladhaara"
+            },
+            booking_cancelled: {
+                enabled: true,
+                title: "Automated: Booking Cancelled (Customer)",
+                template: "Hello {{1}}, Your groundwater survey booking (ID: {{2}}) has been cancelled. Details: {{3}}. If applicable, your refund has been initiated to the original payment source. - Team Jaladhaara"
+            },
+            expert_assignment: {
+                enabled: true,
+                title: "Automated: Survey Assigned (Expert)",
+                template: "Jaladhaara – Survey Assigned\nBooking {{1}} has been assigned to you.\nLocation: {{2}}\nDate: {{3}}\nTime: {{4}}\nPlease open the Jaladhaara Expert App and confirm the assignment. - Team Jaladhaara"
+            },
+            expert_report_required: {
+                enabled: true,
+                title: "Automated: Report Submission Pending (Expert)",
+                template: "Jaladhaara – Report Submission Pending\nPlease submit the groundwater survey report for booking {{1}} through the Jaladhaara Expert App to unlock settlement. - Team Jaladhaara"
             },
             schedule_confirmation: {
                 enabled: true,
-                title: "3. Schedule Confirmation",
+                title: "Chat Quick Message: Schedule Confirmation",
                 template: "Hello {Customer Name},\nYour groundwater survey is scheduled for {Date} at {Time}. Kindly ensure someone is available at the site to assist during the survey."
             },
             need_location: {
                 enabled: true,
-                title: "4. Need Location",
+                title: "Chat Quick Message: Need Location",
                 template: "Hello {Customer Name},\nPlease share your live location or the exact survey site location on WhatsApp to help me reach the site without delay. Thank you."
             },
             customer_not_reachable: {
                 enabled: true,
-                title: "5. Customer Not Reachable",
+                title: "Chat Quick Message: Customer Not Reachable",
                 template: "Hello {Customer Name},\nI tried contacting you regarding your Jaladhaara survey booking but could not reach you. Please call or reply at your earliest convenience to avoid delays."
             },
             delay_notification: {
                 enabled: true,
-                title: "6. Delay Notification",
+                title: "Chat Quick Message: Delay Notification",
                 template: "Hello {Customer Name},\nDue to unforeseen circumstances, I may be delayed by approximately {X} minutes. Sorry for the inconvenience, and thank you for your patience."
             }
         }
@@ -159,6 +204,8 @@ export default function AdminSettings({ defaultTab = "general" }) {
     const [whatsappStatus, setWhatsappStatus] = useState(null);
     const [testPhone, setTestPhone] = useState("");
     const [testSending, setTestSending] = useState(false);
+    const [showAddTemplateForm, setShowAddTemplateForm] = useState(false);
+    const [newTemplateData, setNewTemplateData] = useState({ title: "", key: "", template: "" });
 
     // Reschedule Policy Settings State
     const [rescheduleSettings, setRescheduleSettings] = useState({
@@ -1883,19 +1930,121 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
                                     {/* Templates Configuration Card */}
                                     <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4 shadow-2xs">
-                                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
                                             <div>
-                                                <h3 className="text-sm font-bold text-gray-800">
-                                                    Message Templates Management (6 Templates)
+                                                <h3 className="text-sm font-bold text-gray-900">
+                                                    WhatsApp Template Library & Content Control
                                                 </h3>
                                                 <p className="text-xs text-gray-500 mt-0.5">
-                                                    Enable/disable templates and customize their wording for the Expert App.
+                                                    Enable/disable automated & chat templates, edit text, or create custom quick messages for Experts.
                                                 </p>
                                             </div>
-                                            <div className="text-[11px] font-mono text-gray-400 bg-gray-50 px-2 py-1 rounded border border-gray-200">
-                                                Tokens: {"{Customer Name}"}, {"{Expert Name}"}, {"{Booking ID}"}, {"{Date}"}, {"{Time}"}, {"{X}"}
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowAddTemplateForm(!showAddTemplateForm)}
+                                                    className="px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer"
+                                                >
+                                                    {showAddTemplateForm ? "Close Form" : "+ Add Quick Message"}
+                                                </button>
+                                                <div className="text-[11px] font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                                                    Tokens: {"{Customer Name}"}, {"{Expert Name}"}, {"{Booking ID}"}, {"{Date}"}, {"{Time}"}, {"{X}"}
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {/* Inline Add Quick Message Form */}
+                                        {showAddTemplateForm && (
+                                            <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/40 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-blue-900">Create New Expert Quick Message</span>
+                                                    <span className="text-[11px] text-blue-600 font-medium">Instantly available in Expert App WhatsApp modal</span>
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">Display Title</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="e.g. Chat Quick Message: 10 Min Delay"
+                                                            value={newTemplateData.title}
+                                                            onChange={(e) => {
+                                                                const title = e.target.value;
+                                                                const autoKey = title
+                                                                    .toLowerCase()
+                                                                    .replace(/chat quick message:\s*/gi, '')
+                                                                    .replace(/[^a-z0-9]+/g, '_')
+                                                                    .replace(/^_+|_+$/g, '');
+                                                                setNewTemplateData(prev => ({
+                                                                    ...prev,
+                                                                    title,
+                                                                    key: prev.key || autoKey
+                                                                }));
+                                                            }}
+                                                            className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">Internal Key / Identifier</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="e.g. delay_10_minutes"
+                                                            value={newTemplateData.key}
+                                                            onChange={(e) => setNewTemplateData(prev => ({ ...prev, key: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') }))}
+                                                            className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[11px] font-semibold text-gray-700 mb-1">Template Message</label>
+                                                    <textarea
+                                                        rows={2}
+                                                        placeholder="Hello {Customer Name}, I will reach your location in 10 minutes. Thank you for your patience."
+                                                        value={newTemplateData.template}
+                                                        onChange={(e) => setNewTemplateData(prev => ({ ...prev, template: e.target.value }))}
+                                                        className="w-full p-2.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+                                                    />
+                                                </div>
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowAddTemplateForm(false);
+                                                            setNewTemplateData({ title: "", key: "", template: "" });
+                                                        }}
+                                                        className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg font-medium cursor-pointer"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (!newTemplateData.title || !newTemplateData.template) {
+                                                                toast.showError("Please enter both a title and message for the template");
+                                                                return;
+                                                            }
+                                                            const finalKey = newTemplateData.key || `custom_${Date.now()}`;
+                                                            setCommunicationSettings(prev => ({
+                                                                ...prev,
+                                                                WHATSAPP_TEMPLATES_CONFIG: {
+                                                                    ...prev.WHATSAPP_TEMPLATES_CONFIG,
+                                                                    [finalKey]: {
+                                                                        enabled: true,
+                                                                        title: newTemplateData.title,
+                                                                        template: newTemplateData.template
+                                                                    }
+                                                                }
+                                                            }));
+                                                            setShowAddTemplateForm(false);
+                                                            setNewTemplateData({ title: "", key: "", template: "" });
+                                                            toast.showSuccess(`Added "${newTemplateData.title}". Click "Save Communication Settings" to apply.`);
+                                                        }}
+                                                        className="px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer"
+                                                    >
+                                                        Add Template
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <div className="space-y-4">
                                             {Object.entries(communicationSettings.WHATSAPP_TEMPLATES_CONFIG || {}).map(([key, tmpl]) => (
@@ -1911,27 +2060,47 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                                 {tmpl.enabled ? "ENABLED" : "DISABLED"}
                                                             </span>
                                                         </div>
-                                                        <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
-                                                            <span>Show in App</span>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={tmpl.enabled !== false}
-                                                                onChange={(e) => {
-                                                                    const updated = {
-                                                                        ...communicationSettings.WHATSAPP_TEMPLATES_CONFIG,
-                                                                        [key]: {
-                                                                            ...tmpl,
-                                                                            enabled: e.target.checked
-                                                                        }
-                                                                    };
-                                                                    setCommunicationSettings(prev => ({
-                                                                        ...prev,
-                                                                        WHATSAPP_TEMPLATES_CONFIG: updated
-                                                                    }));
-                                                                }}
-                                                                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
-                                                            />
-                                                        </label>
+                                                        <div className="flex items-center gap-3">
+                                                            {!BUILT_IN_TEMPLATE_KEYS.includes(key) && (
+                                                                <button
+                                                                    type="button"
+                                                                    title="Delete custom template"
+                                                                    onClick={() => {
+                                                                        const updated = { ...communicationSettings.WHATSAPP_TEMPLATES_CONFIG };
+                                                                        delete updated[key];
+                                                                        setCommunicationSettings(prev => ({
+                                                                            ...prev,
+                                                                            WHATSAPP_TEMPLATES_CONFIG: updated
+                                                                        }));
+                                                                        toast.showInfo(`Removed "${tmpl.title || key}". Click "Save Communication Settings" to persist.`);
+                                                                    }}
+                                                                    className="text-[11px] text-rose-600 hover:text-rose-800 hover:underline font-bold cursor-pointer"
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            )}
+                                                            <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
+                                                                <span>Active</span>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={tmpl.enabled !== false}
+                                                                    onChange={(e) => {
+                                                                        const updated = {
+                                                                            ...communicationSettings.WHATSAPP_TEMPLATES_CONFIG,
+                                                                            [key]: {
+                                                                                ...tmpl,
+                                                                                enabled: e.target.checked
+                                                                            }
+                                                                        };
+                                                                        setCommunicationSettings(prev => ({
+                                                                            ...prev,
+                                                                            WHATSAPP_TEMPLATES_CONFIG: updated
+                                                                        }));
+                                                                    }}
+                                                                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                                                                />
+                                                            </label>
+                                                        </div>
                                                     </div>
 
                                                     <textarea

@@ -2124,6 +2124,18 @@ const reassignReplacementVendor = async (req, res) => {
       }
     }, io);
 
+    // Dispatch WhatsApp assignment alert to newly assigned expert
+    try {
+      const { dispatchExpertAssignment } = require('../../services/multiChannelNotificationService');
+      dispatchExpertAssignment({
+        vendor: newVendor,
+        booking,
+        io
+      }).catch(waErr => console.error('Error dispatching WhatsApp expert assignment on user reassign:', waErr));
+    } catch (waErr) {
+      console.error('Error calling dispatchExpertAssignment:', waErr);
+    }
+
     // Notify User
     await sendNotification({
       recipient: userId,

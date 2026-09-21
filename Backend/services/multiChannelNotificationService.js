@@ -136,7 +136,18 @@ const dispatchBookingConfirmation = async ({ user, booking, vendor, io = null })
 
   // 3. WhatsApp Channel
   const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
-  if (phone && isAutoWhatsAppEnabled) {
+  const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+  const isBookingConfirmedEnabled = templatesConfig?.booking_confirmed?.enabled !== false;
+  if (phone && isAutoWhatsAppEnabled && isBookingConfirmedEnabled) {
+    tasks.push(
+      sendBookingConfirmedWhatsApp({
+        phone,
+        customerName: name,
+        bookingId,
+        bookingDate: scheduledDate,
+        bookingTime: 'As scheduled'
+      }).catch(err => console.error('BhashSMS Booking Confirmed dispatch error:', err))
+    );
     tasks.push(
       sendWhatsAppBookingConfirmation({ phone, name, bookingId, serviceName, scheduledDate })
         .catch(err => console.error('WhatsApp Confirmation error:', err))
@@ -173,6 +184,14 @@ const dispatchBookingAccepted = async ({ user, booking, vendor, io = null }) => 
   const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
   if (!isAutoWhatsAppEnabled) return;
 
+  const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+  const tmpl = templatesConfig?.booking_accepted;
+
+  if (tmpl && tmpl.enabled === false) {
+    console.log('ℹ️ [Multi-Channel] Booking Accepted WhatsApp template disabled by Admin');
+    return;
+  }
+
   const customerName = user.name || 'Customer';
   const expertName = vendor?.name || 'Jaladhaara Expert';
   const bookingId = booking.bookingId || `ORD-${booking._id?.toString()?.slice(-8).toUpperCase()}`;
@@ -190,13 +209,6 @@ const dispatchBookingAccepted = async ({ user, booking, vendor, io = null }) => 
   }).catch(err => console.error('BhashSMS Booking Accepted dispatch error:', err));
 
   // 2. Secondary fallback via Meta / Twilio WhatsApp driver
-  const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
-  const tmpl = templatesConfig?.booking_accepted;
-
-  if (tmpl && tmpl.enabled === false) {
-    return;
-  }
-
   const text = tmpl?.template
     ? interpolateTemplate(tmpl.template, { customerName, expertName, bookingId })
     : `Hello ${customerName}, This is ${expertName}, your assigned Jaladhaara Expert.\nI have accepted your Groundwater Survey booking (Booking ID: ${bookingId}). I will contact you shortly to confirm the survey schedule. Thank you.`;
@@ -217,6 +229,14 @@ const dispatchOnTheWay = async ({ user, booking, vendor, io = null, expectedTime
   const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
   if (!isAutoWhatsAppEnabled) return;
 
+  const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+  const tmpl = templatesConfig?.on_the_way;
+
+  if (tmpl && tmpl.enabled === false) {
+    console.log('ℹ️ [Multi-Channel] On The Way WhatsApp template disabled by Admin');
+    return;
+  }
+
   const customerName = user.name || 'Customer';
   const expertName = vendor?.name || 'Jaladhaara Expert';
   const bookingId = booking.bookingId || `ORD-${booking._id?.toString()?.slice(-8).toUpperCase()}`;
@@ -230,13 +250,6 @@ const dispatchOnTheWay = async ({ user, booking, vendor, io = null, expectedTime
   }).catch(err => console.error('BhashSMS Expert On Way dispatch error:', err));
 
   // 2. Secondary fallback via Meta / Twilio WhatsApp driver
-  const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
-  const tmpl = templatesConfig?.on_the_way;
-
-  if (tmpl && tmpl.enabled === false) {
-    return;
-  }
-
   const text = tmpl?.template
     ? interpolateTemplate(tmpl.template, { customerName, expertName, time: expectedTime })
     : `Hello ${customerName},\nI am on my way to your survey location and expect to arrive at approximately ${expectedTime}. Please keep the site accessible. Thank you.`;
@@ -316,7 +329,9 @@ const dispatchSurveyReportNotification = async ({ user, booking, expertName, rep
 
   // 3. WhatsApp Channel (BhashSMS Template: report_ready + Meta fallback)
   const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
-  if (phone && isAutoWhatsAppEnabled) {
+  const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+  const isReportReadyEnabled = templatesConfig?.report_ready?.enabled !== false;
+  if (phone && isAutoWhatsAppEnabled && isReportReadyEnabled) {
     tasks.push(
       sendReportReadyWhatsApp({
         phone,
@@ -343,7 +358,7 @@ const dispatchSurveyReportNotification = async ({ user, booking, expertName, rep
 const dispatchBookingCancelled = async ({ user, booking, reason = 'As per request / policy', io = null }) => {
   if (!user || !booking) return;
 
-  const phone = user.phone || user.mobile;
+  const phone = user.phone || user.mobile || booking.phone;
   const email = user.email;
   const customerName = user.name || 'Valued Customer';
   const bookingId = booking.bookingId || `ORD-${booking._id?.toString()?.slice(-8).toUpperCase()}`;
@@ -382,7 +397,9 @@ const dispatchBookingCancelled = async ({ user, booking, reason = 'As per reques
 
   // 3. WhatsApp Channel (BhashSMS Template: booking_cancelled - APPROVED)
   const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
-  if (phone && isAutoWhatsAppEnabled) {
+  const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+  const isBookingCancelledEnabled = templatesConfig?.booking_cancelled?.enabled !== false;
+  if (phone && isAutoWhatsAppEnabled && isBookingCancelledEnabled) {
     tasks.push(
       sendBookingCancelledWhatsApp({
         phone,
@@ -403,7 +420,7 @@ const dispatchBookingCancelled = async ({ user, booking, reason = 'As per reques
 const dispatchFinalPaymentRequired = async ({ user, booking, remainingAmount, io = null }) => {
   if (!user || !booking) return;
 
-  const phone = user.phone || user.mobile;
+  const phone = user.phone || user.mobile || booking.phone;
   const customerName = user.name || 'Valued Customer';
   const bookingId = booking.bookingId || `ORD-${booking._id?.toString()?.slice(-8).toUpperCase()}`;
   const amount = remainingAmount || booking.payment?.remainingAmount || '0';
@@ -429,7 +446,9 @@ const dispatchFinalPaymentRequired = async ({ user, booking, remainingAmount, io
 
   // 2. WhatsApp Channel (BhashSMS Template: final_payment)
   const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
-  if (phone && isAutoWhatsAppEnabled) {
+  const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+  const isFinalPaymentEnabled = templatesConfig?.final_payment?.enabled !== false;
+  if (phone && isAutoWhatsAppEnabled && isFinalPaymentEnabled) {
     tasks.push(
       sendFinalPaymentWhatsApp({
         phone,
@@ -466,6 +485,12 @@ const dispatchExpertAssignment = async ({ vendor, booking, io = null }) => {
     const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
     if (!isAutoWhatsAppEnabled) return { success: true, disabled: true };
 
+    const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+    if (templatesConfig?.expert_assignment?.enabled === false) {
+      console.log('ℹ️ [Multi-Channel] Expert Assignment WhatsApp template disabled by Admin');
+      return { success: true, disabled: true };
+    }
+
     const result = await sendExpertAssignmentWhatsApp({
       phone,
       bookingId,
@@ -497,6 +522,12 @@ const dispatchExpertReportReminder = async ({ vendor, booking, io = null }) => {
   try {
     const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
     if (!isAutoWhatsAppEnabled) return { success: true, disabled: true };
+
+    const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+    if (templatesConfig?.expert_report_required?.enabled === false) {
+      console.log('ℹ️ [Multi-Channel] Expert Report Required WhatsApp template disabled by Admin');
+      return { success: true, disabled: true };
+    }
 
     const result = await sendExpertReportRequiredWhatsApp({
       phone,

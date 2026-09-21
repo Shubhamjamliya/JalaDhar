@@ -421,34 +421,64 @@ const initializeDefaultSettings = async () => {
     {
       key: 'WHATSAPP_TEMPLATES_CONFIG',
       value: {
+        booking_confirmed: {
+          enabled: true,
+          title: 'Automated: Booking Confirmed (Customer)',
+          template: 'Hi {{1}}, Your booking {{2}} has been confirmed. Date: {{3}} Time: {{4}} Booking ID: {{5}} Thank you for choosing us.'
+        },
         booking_accepted: {
           enabled: true,
-          title: 'Booking Accepted',
+          title: 'Automated & Chat: Booking Accepted (Customer)',
           template: 'Hello {Customer Name}, This is {Expert Name}, your assigned Jaladhaara Expert.\nI have accepted your Groundwater Survey booking (Booking ID: {Booking ID}). I will contact you shortly to confirm the survey schedule. Thank you.'
         },
         on_the_way: {
           enabled: true,
-          title: 'On the Way',
+          title: 'Automated & Chat: Expert On The Way (Customer)',
           template: 'Hello {Customer Name},\nI am on my way to your survey location and expect to arrive at approximately {Time}. Please keep the site accessible. Thank you.'
+        },
+        final_payment: {
+          enabled: true,
+          title: 'Automated: Final Payment Due (Customer)',
+          template: 'Hello {{1}}, Your groundwater survey for Booking ID: {{2}} has been completed. Remaining Amount: Rs. {{3}}. Please complete the payment to access your survey report. - Jaladhaara'
+        },
+        report_ready: {
+          enabled: true,
+          title: 'Automated: Survey Report Ready (Customer)',
+          template: 'Hello {{1}}, Great news! Your Groundwater Survey Report for Booking ID: {{2}} has been uploaded by Expert {{3}}. You can view and download your full hydrogeological analysis report in the Jaladhaara app: {{4}} - Team Jaladhaara'
+        },
+        booking_cancelled: {
+          enabled: true,
+          title: 'Automated: Booking Cancelled (Customer)',
+          template: 'Hello {{1}}, Your groundwater survey booking (ID: {{2}}) has been cancelled. Details: {{3}}. If applicable, your refund has been initiated to the original payment source. - Team Jaladhaara'
+        },
+        expert_assignment: {
+          enabled: true,
+          title: 'Automated: Survey Assigned (Expert)',
+          template: 'Jaladhaara – Survey Assigned\nBooking {{1}} has been assigned to you.\nLocation: {{2}}\nDate: {{3}}\nTime: {{4}}\nPlease open the Jaladhaara Expert App and confirm the assignment. - Team Jaladhaara'
+        },
+        expert_report_required: {
+          enabled: true,
+          title: 'Automated: Report Submission Pending (Expert)',
+          template: 'Jaladhaara – Report Submission Pending\nPlease submit the groundwater survey report for booking {{1}} through the Jaladhaara Expert App to unlock settlement. - Team Jaladhaara'
         },
         schedule_confirmation: {
           enabled: true,
-          title: 'Schedule Confirmation',
+          title: 'Chat Quick Message: Schedule Confirmation',
           template: 'Hello {Customer Name},\nYour groundwater survey is scheduled for {Date} at {Time}. Kindly ensure someone is available at the site to assist during the survey.'
         },
         need_location: {
           enabled: true,
-          title: 'Need Location',
+          title: 'Chat Quick Message: Need Location',
           template: 'Hello {Customer Name},\nPlease share your live location or the exact survey site location on WhatsApp to help me reach the site without delay. Thank you.'
         },
         customer_not_reachable: {
           enabled: true,
-          title: 'Customer Not Reachable',
+          title: 'Chat Quick Message: Customer Not Reachable',
           template: 'Hello {Customer Name},\nI tried contacting you regarding your Jaladhaara survey booking but could not reach you. Please call or reply at your earliest convenience to avoid delays.'
         },
         delay_notification: {
           enabled: true,
-          title: 'Delay Notification',
+          title: 'Chat Quick Message: Delay Notification',
           template: 'Hello {Customer Name},\nDue to unforeseen circumstances, I may be delayed by approximately {X} minutes. Sorry for the inconvenience, and thank you for your patience.'
         }
       },

@@ -143,8 +143,8 @@ export default function WhatsAppTemplateModal({
         }
     ];
 
-    // Filter out templates that Admin disabled (if templatesConfig is passed)
-    const TEMPLATES = ALL_TEMPLATES.filter(tmpl => {
+    // Filter out standard templates that Admin disabled (if templatesConfig is passed)
+    const standardTemplates = ALL_TEMPLATES.filter(tmpl => {
         if (templatesConfig && templatesConfig[tmpl.id]) {
             return templatesConfig[tmpl.id].enabled !== false;
         }
@@ -157,7 +157,32 @@ export default function WhatsAppTemplateModal({
         };
     });
 
-    const currentTemplate = TEMPLATES[selectedTemplateIndex] || TEMPLATES[0];
+    // Check for any custom quick messages defined in templatesConfig
+    const customTemplates = Object.entries(templatesConfig || {})
+        .filter(([key, config]) => {
+            const isStandard = ALL_TEMPLATES.some(t => t.id === key);
+            const isAutomatedSystem = [
+                'booking_confirmed',
+                'final_payment',
+                'report_ready',
+                'expert_assignment',
+                'expert_report_required',
+                'booking_cancelled'
+            ].includes(key);
+            return !isStandard && !isAutomatedSystem && config?.enabled !== false && config?.template;
+        })
+        .map(([key, config], idx) => ({
+            id: key,
+            number: ALL_TEMPLATES.length + idx + 1,
+            title: config.title || `Quick Message: ${key.replace(/_/g, ' ')}`,
+            icon: <IoCheckmarkCircleOutline className="text-teal-600 text-lg shrink-0" />,
+            badge: "Custom",
+            badgeColor: "bg-teal-50 text-teal-700 border-teal-200",
+            getText: () => interpolate(config.template, delayMinutes)
+        }));
+
+    const TEMPLATES = [...standardTemplates, ...customTemplates];
+    const currentTemplate = TEMPLATES[selectedTemplateIndex] || TEMPLATES[0] || { getText: () => "" };
     const activeMessageText = customText !== "" ? customText : currentTemplate.getText();
 
     // Contact number resolution

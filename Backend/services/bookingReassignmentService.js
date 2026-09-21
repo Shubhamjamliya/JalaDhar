@@ -259,6 +259,18 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
       }
     }, io);
 
+    // Dispatch WhatsApp assignment alert to newly assigned expert
+    try {
+      const { dispatchExpertAssignment } = require('./multiChannelNotificationService');
+      dispatchExpertAssignment({
+        vendor: newVendor,
+        booking,
+        io
+      }).catch(waErr => console.error('Error dispatching Expert Assignment WhatsApp on auto reassign:', waErr));
+    } catch (waErr) {
+      console.error('Error calling dispatchExpertAssignment on auto reassign:', waErr);
+    }
+
     // Notify user about reassignment
     await sendNotification({
       recipient: booking.user._id,

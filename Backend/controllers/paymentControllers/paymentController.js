@@ -85,6 +85,20 @@ const dispatchBookingConfirmedWhatsAppSafe = async (bookingId) => {
       return;
     }
 
+    // Check admin automated WhatsApp settings
+    const { getSetting } = require('../../services/settingsService');
+    const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
+    if (!isAutoWhatsAppEnabled) {
+      console.log(`ℹ️ [WhatsApp Notification] Automated WhatsApp is disabled by Admin. Skipping ${displayBookingId}.`);
+      return;
+    }
+
+    const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
+    if (templatesConfig?.booking_confirmed?.enabled === false) {
+      console.log(`ℹ️ [WhatsApp Notification] booking_confirmed template disabled by Admin. Skipping ${displayBookingId}.`);
+      return;
+    }
+
     // 3. Dispatch via verified BhashSMS service
     const result = await sendBookingConfirmedWhatsApp({
       phone,
@@ -166,8 +180,8 @@ const verifyAdvancePayment = async (req, res) => {
 
     // Find booking
     const booking = await Booking.findById(bookingId)
-      .populate('user', 'name email')
-      .populate('vendor', 'name email phone')
+      .populate('user', 'name email phone mobile')
+      .populate('vendor', 'name email phone mobile')
       .populate('service', 'name price');
 
     if (!booking) {
@@ -438,8 +452,8 @@ const verifyRemainingPayment = async (req, res) => {
       _id: bookingId,
       userStatus: BOOKING_STATUS.AWAITING_PAYMENT
     })
-      .populate('user', 'name email')
-      .populate('vendor', 'name email')
+      .populate('user', 'name email phone mobile')
+      .populate('vendor', 'name email phone mobile')
       .populate('service', 'name price');
 
     if (!booking) {
