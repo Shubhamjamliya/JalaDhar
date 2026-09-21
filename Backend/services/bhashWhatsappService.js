@@ -350,6 +350,57 @@ const sendReportReadyWhatsApp = async ({
   });
 };
 
+/**
+ * Send the `expert_assignment` WhatsApp template via BhashSMS.
+ * Template: expert_assignment
+ * Parameters mapping:
+ * {{1}} booking ID
+ * {{2}} location
+ * {{3}} scheduled date
+ * {{4}} scheduled time
+ */
+const sendExpertAssignmentWhatsApp = async ({
+  phone,
+  bookingId = 'N/A',
+  location = 'Survey Location',
+  scheduledDate = 'As scheduled',
+  scheduledTime = 'As scheduled'
+}) => {
+  const params = [
+    bookingId,
+    location,
+    scheduledDate,
+    scheduledTime
+  ];
+
+  return await sendBhashWhatsAppMessage({
+    phone,
+    text: 'expert_assignment',
+    params
+  });
+};
+
+/**
+ * Send the `expert_report_required` WhatsApp template via BhashSMS.
+ * Template: expert_report_required
+ * Parameters mapping:
+ * {{1}} booking ID
+ */
+const sendExpertReportRequiredWhatsApp = async ({
+  phone,
+  bookingId = 'N/A'
+}) => {
+  const params = [
+    bookingId
+  ];
+
+  return await sendBhashWhatsAppMessage({
+    phone,
+    text: 'expert_report_required',
+    params
+  });
+};
+
 module.exports = {
   formatBhashPhoneNumber,
   sanitizeParam,
@@ -359,5 +410,7 @@ module.exports = {
   sendBookingAcceptedWhatsApp,
   sendExpertOnWayWhatsApp,
   sendFinalPaymentWhatsApp,
-  sendReportReadyWhatsApp
+  sendReportReadyWhatsApp,
+  sendExpertAssignmentWhatsApp,
+  sendExpertReportRequiredWhatsApp
 };

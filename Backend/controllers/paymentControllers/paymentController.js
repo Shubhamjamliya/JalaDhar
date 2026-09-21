@@ -167,7 +167,7 @@ const verifyAdvancePayment = async (req, res) => {
     // Find booking
     const booking = await Booking.findById(bookingId)
       .populate('user', 'name email')
-      .populate('vendor', 'name email')
+      .populate('vendor', 'name email phone')
       .populate('service', 'name price');
 
     if (!booking) {
@@ -314,6 +314,18 @@ const verifyAdvancePayment = async (req, res) => {
           bookingId: booking._id.toString()
         }
       }, io);
+
+      // Dispatch WhatsApp Expert Assignment alert to vendor
+      try {
+        const { dispatchExpertAssignment } = require('../../services/multiChannelNotificationService');
+        await dispatchExpertAssignment({
+          vendor: booking.vendor,
+          booking,
+          io
+        });
+      } catch (waErr) {
+        console.error('Error dispatching Expert Assignment WhatsApp:', waErr);
+      }
 
       // Direct real-time socket broadcasts for instant UI updates without manual page refresh
       if (io) {

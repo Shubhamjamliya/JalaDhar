@@ -7,7 +7,9 @@ const {
   sendBookingAcceptedWhatsApp,
   sendExpertOnWayWhatsApp,
   sendFinalPaymentWhatsApp,
-  sendReportReadyWhatsApp
+  sendReportReadyWhatsApp,
+  sendExpertAssignmentWhatsApp,
+  sendExpertReportRequiredWhatsApp
 } = require('../services/bhashWhatsappService');
 
 /**
@@ -42,7 +44,9 @@ router.get('/bhash-whatsapp/status', devOnly, (req, res) => {
       'booking_accepted',
       'expert_on_way',
       'final_payment',
-      'report_ready'
+      'report_ready',
+      'expert_assignment',
+      'expert_report_required'
     ],
     environment: process.env.NODE_ENV || 'development'
   });
@@ -129,6 +133,23 @@ router.post('/bhash-whatsapp', devOnly, async (req, res) => {
           bookingId,
           expertName,
           reportLink
+        });
+        break;
+
+      case 'expert_assignment':
+        result = await sendExpertAssignmentWhatsApp({
+          phone: formattedPhone,
+          bookingId,
+          location: req.body.location || 'Survey Location',
+          scheduledDate: bookingDate,
+          scheduledTime: bookingTime
+        });
+        break;
+
+      case 'expert_report_required':
+        result = await sendExpertReportRequiredWhatsApp({
+          phone: formattedPhone,
+          bookingId
         });
         break;
 

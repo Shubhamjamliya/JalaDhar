@@ -18,7 +18,9 @@ const {
   sendBookingAcceptedWhatsApp,
   sendExpertOnWayWhatsApp,
   sendFinalPaymentWhatsApp,
-  sendReportReadyWhatsApp
+  sendReportReadyWhatsApp,
+  sendExpertAssignmentWhatsApp,
+  sendExpertReportRequiredWhatsApp
 } = require('../services/bhashWhatsappService');
 
 // Parse CLI flags
@@ -41,6 +43,7 @@ const bookingTime = getArg('--time', '10:30 AM');
 const remainingAmount = getArg('--amount', '4500');
 const details = getArg('--details', 'Schedule conflict resolved');
 const reportLink = getArg('--link', 'https://jaladhar.com/user/bookings');
+const location = getArg('--location', 'Kolar, Karnataka');
 
 console.log('====================================================');
 console.log('🚀 BhashSMS WhatsApp Business API — Test Runner');
@@ -124,6 +127,25 @@ if (!formattedPhone) {
           bookingId,
           expertName,
           reportLink
+        });
+        break;
+
+      case 'expert_assignment':
+        console.log('📝 Template: expert_assignment (4 params):', [bookingId, location, bookingDate, bookingTime]);
+        result = await sendExpertAssignmentWhatsApp({
+          phone: formattedPhone,
+          bookingId,
+          location,
+          scheduledDate: bookingDate,
+          scheduledTime: bookingTime
+        });
+        break;
+
+      case 'expert_report_required':
+        console.log('📝 Template: expert_report_required (1 param):', [bookingId]);
+        result = await sendExpertReportRequiredWhatsApp({
+          phone: formattedPhone,
+          bookingId
         });
         break;
 

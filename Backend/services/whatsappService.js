@@ -248,7 +248,9 @@ const {
   sendBookingAcceptedWhatsApp,
   sendExpertOnWayWhatsApp,
   sendFinalPaymentWhatsApp,
-  sendReportReadyWhatsApp
+  sendReportReadyWhatsApp,
+  sendExpertAssignmentWhatsApp,
+  sendExpertReportRequiredWhatsApp
 } = require('./bhashWhatsappService');
 
 module.exports = {
@@ -271,6 +273,8 @@ module.exports = {
   sendBookingAcceptedWhatsApp,
   sendExpertOnWayWhatsApp,
   sendFinalPaymentWhatsApp,
-  sendReportReadyWhatsApp
+  sendReportReadyWhatsApp,
+  sendExpertAssignmentWhatsApp,
+  sendExpertReportRequiredWhatsApp
 };
 

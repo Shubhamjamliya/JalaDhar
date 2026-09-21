@@ -16,7 +16,9 @@ const {
   sendBookingAcceptedWhatsApp,
   sendExpertOnWayWhatsApp,
   sendFinalPaymentWhatsApp,
-  sendReportReadyWhatsApp
+  sendReportReadyWhatsApp,
+  sendExpertAssignmentWhatsApp,
+  sendExpertReportRequiredWhatsApp
 } = require('./whatsappService');
 const { sendNotification } = require('./notificationService');
 const { getSetting } = require('./settingsService');
@@ -442,6 +444,72 @@ const dispatchFinalPaymentRequired = async ({ user, booking, remainingAmount, io
   return { success: true, dispatches: results };
 };
 
+/**
+ * Dispatch Expert Assignment Notification (WhatsApp via BhashSMS)
+ */
+const dispatchExpertAssignment = async ({ vendor, booking, io = null }) => {
+  if (!vendor || !booking) return;
+
+  const phone = vendor.phone || vendor.mobile;
+  const bookingId = booking.bookingId || `ORD-${booking._id?.toString()?.slice(-8).toUpperCase()}`;
+  const location = booking.address?.city || booking.address?.district || booking.location?.address || 'Survey Site';
+  const scheduledDate = booking.scheduledDate
+    ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    : 'As scheduled';
+  const scheduledTime = booking.scheduledTime || 'Scheduled Time';
+
+  console.log('🚀 [Multi-Channel Notification] Dispatching Expert Assignment for Booking:', bookingId, 'to Phone:', phone);
+
+  if (!phone) return { success: false, error: 'No phone number for expert' };
+
+  try {
+    const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
+    if (!isAutoWhatsAppEnabled) return { success: true, disabled: true };
+
+    const result = await sendExpertAssignmentWhatsApp({
+      phone,
+      bookingId,
+      location,
+      scheduledDate,
+      scheduledTime
+    });
+
+    return { success: result.success, data: result };
+  } catch (err) {
+    console.error('Error dispatching Expert Assignment WhatsApp:', err);
+    return { success: false, error: err.message };
+  }
+};
+
+/**
+ * Dispatch Expert Report Submission Reminder (WhatsApp via BhashSMS)
+ */
+const dispatchExpertReportReminder = async ({ vendor, booking, io = null }) => {
+  if (!vendor || !booking) return;
+
+  const phone = vendor.phone || vendor.mobile;
+  const bookingId = booking.bookingId || `ORD-${booking._id?.toString()?.slice(-8).toUpperCase()}`;
+
+  console.log('🚀 [Multi-Channel Notification] Dispatching Report Submission Reminder for Booking:', bookingId);
+
+  if (!phone) return { success: false, error: 'No phone number for expert' };
+
+  try {
+    const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
+    if (!isAutoWhatsAppEnabled) return { success: true, disabled: true };
+
+    const result = await sendExpertReportRequiredWhatsApp({
+      phone,
+      bookingId
+    });
+
+    return { success: result.success, data: result };
+  } catch (err) {
+    console.error('Error dispatching Expert Report Reminder WhatsApp:', err);
+    return { success: false, error: err.message };
+  }
+};
+
 module.exports = {
   interpolateTemplate,
   dispatchOTP,
@@ -452,5 +520,7 @@ module.exports = {
   dispatchScheduleConfirmed,
   dispatchSurveyReportNotification,
   dispatchBookingCancelled,
-  dispatchFinalPaymentRequired
+  dispatchFinalPaymentRequired,
+  dispatchExpertAssignment,
+  dispatchExpertReportReminder
 };

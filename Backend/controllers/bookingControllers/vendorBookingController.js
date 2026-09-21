@@ -1038,7 +1038,7 @@ const verifyEndSurveyOTP = async (req, res) => {
       vendor: vendorId
     })
       .populate('user', 'name email phone')
-      .populate('vendor', 'name designation companyName');
+      .populate('vendor', 'name designation companyName phone');
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -1128,6 +1128,18 @@ const verifyEndSurveyOTP = async (req, res) => {
           link: `/vendor/bookings/${booking._id}/upload-report`
         }
       }, io).catch(err => console.error('[verifyEndSurveyOTP] Vendor notification error:', err));
+
+      // Dispatch WhatsApp report required reminder to expert
+      try {
+        const { dispatchExpertReportReminder } = require('../../services/multiChannelNotificationService');
+        await dispatchExpertReportReminder({
+          vendor: booking.vendor,
+          booking,
+          io
+        });
+      } catch (waErr) {
+        console.error('Error dispatching Expert Report Reminder WhatsApp:', waErr);
+      }
     }
 
     if (io) {
