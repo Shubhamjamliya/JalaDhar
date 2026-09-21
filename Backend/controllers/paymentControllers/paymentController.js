@@ -556,6 +556,22 @@ const verifyRemainingPayment = async (req, res) => {
         }
       }, io);
 
+      // Dispatch WhatsApp report ready notification to customer
+      try {
+        const { dispatchSurveyReportNotification } = require('../../services/multiChannelNotificationService');
+        const expertName = booking.vendor?.name || 'Jaladhaara Expert';
+        const reportUrl = `${process.env.FRONTEND_URL || 'https://jaladhar.com'}/user/booking/${booking._id}/report`;
+        await dispatchSurveyReportNotification({
+          user: booking.user,
+          booking,
+          expertName,
+          reportUrl,
+          io
+        });
+      } catch (waErr) {
+        console.error('Error dispatching WhatsApp survey report ready on remaining payment:', waErr);
+      }
+
       // Notify vendor about customer payment completion
       await sendNotification({
         recipient: booking.vendor._id,

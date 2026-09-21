@@ -1683,8 +1683,21 @@ const cancelBooking = async (req, res) => {
           cancellationReason: cancellationReason || 'Cancelled by user'
         }
       }, io);
+
+      // Dispatch WhatsApp cancellation notification to user
+      const User = require('../../models/User');
+      const currentUser = await User.findById(userId);
+      if (currentUser) {
+        const { dispatchBookingCancelled } = require('../../services/multiChannelNotificationService');
+        dispatchBookingCancelled({
+          user: currentUser,
+          booking,
+          reason: cancellationReason || 'Cancelled by user',
+          io
+        }).catch(err => console.error('Error dispatching WhatsApp cancellation:', err));
+      }
     } catch (emailError) {
-      console.error('Email notification error:', emailError);
+      console.error('Cancellation notification error:', emailError);
     }
 
     res.json({
@@ -2258,6 +2271,23 @@ const claimFullRefundForExpertCancellation = async (req, res) => {
         entityId: booking._id
       }
     }, io);
+
+    // Dispatch WhatsApp cancellation alert to customer
+    try {
+      const User = require('../../models/User');
+      const cancelledUser = await User.findById(userId);
+      if (cancelledUser) {
+        const { dispatchBookingCancelled } = require('../../services/multiChannelNotificationService');
+        dispatchBookingCancelled({
+          user: cancelledUser,
+          booking,
+          reason: `Cancelled by expert / Full refund of ₹${refundAmount} credited to wallet`,
+          io
+        }).catch(err => console.error('Error dispatching WhatsApp cancellation:', err));
+      }
+    } catch (waErr) {
+      console.error('Error in cancellation WhatsApp dispatch:', waErr);
+    }
 
     res.json({
       success: true,

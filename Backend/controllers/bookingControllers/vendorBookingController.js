@@ -1263,13 +1263,13 @@ const markVisitedAndUploadReport = async (req, res) => {
       _id: bookingId,
       vendor: vendorId,
       vendorStatus: { $in: [BOOKING_STATUS.VISITED, BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.ASSIGNED, BOOKING_STATUS.REPORT_UPLOADED] }
-    }).populate('user', 'name email');
+    }).populate('user', 'name email phone');
 
     if (!booking) {
       booking = await Booking.findOne({
         _id: bookingId,
         vendor: vendorId
-      }).populate('user', 'name email');
+      }).populate('user', 'name email phone');
     }
 
     if (!booking) {
@@ -1527,6 +1527,19 @@ const markVisitedAndUploadReport = async (req, res) => {
             bookingId: booking._id.toString()
           }
         }, io);
+
+        // Dispatch WhatsApp final payment notification
+        try {
+          const { dispatchFinalPaymentRequired } = require('../../services/multiChannelNotificationService');
+          await dispatchFinalPaymentRequired({
+            user: booking.user,
+            booking,
+            remainingAmount: booking.payment?.remainingAmount || 0,
+            io
+          });
+        } catch (waErr) {
+          console.error('Error dispatching WhatsApp final payment on report upload:', waErr);
+        }
       }
 
       // Notify admin (get all admins)

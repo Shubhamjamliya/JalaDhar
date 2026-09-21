@@ -10,7 +10,13 @@ const {
   sendWhatsAppScheduleConfirmation,
   sendWhatsAppNeedLocation,
   sendWhatsAppCustomerNotReachable,
-  sendWhatsAppDelayNotification
+  sendWhatsAppDelayNotification,
+  sendBookingConfirmedWhatsApp,
+  sendBookingCancelledWhatsApp,
+  sendBookingAcceptedWhatsApp,
+  sendExpertOnWayWhatsApp,
+  sendFinalPaymentWhatsApp,
+  sendReportReadyWhatsApp
 } = require('./whatsappService');
 const { sendNotification } = require('./notificationService');
 const { getSetting } = require('./settingsService');
@@ -168,12 +174,24 @@ const dispatchBookingAccepted = async ({ user, booking, vendor, io = null }) => 
   const customerName = user.name || 'Customer';
   const expertName = vendor?.name || 'Jaladhaara Expert';
   const bookingId = booking.bookingId || `ORD-${booking._id?.toString()?.slice(-8).toUpperCase()}`;
+  const scheduledDate = booking.scheduledDate
+    ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    : 'As scheduled';
 
+  // 1. Dispatch BhashSMS WhatsApp Template (booking_accepted)
+  sendBookingAcceptedWhatsApp({
+    phone,
+    customerName,
+    expertName,
+    bookingId,
+    scheduledDate
+  }).catch(err => console.error('BhashSMS Booking Accepted dispatch error:', err));
+
+  // 2. Secondary fallback via Meta / Twilio WhatsApp driver
   const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
   const tmpl = templatesConfig?.booking_accepted;
 
   if (tmpl && tmpl.enabled === false) {
-    console.log('ℹ️ [Multi-Channel] Booking Accepted WhatsApp template disabled by Admin');
     return;
   }
 
@@ -199,12 +217,21 @@ const dispatchOnTheWay = async ({ user, booking, vendor, io = null, expectedTime
 
   const customerName = user.name || 'Customer';
   const expertName = vendor?.name || 'Jaladhaara Expert';
+  const bookingId = booking.bookingId || `ORD-${booking._id?.toString()?.slice(-8).toUpperCase()}`;
 
+  // 1. Dispatch BhashSMS WhatsApp Template (expert_on_way)
+  sendExpertOnWayWhatsApp({
+    phone,
+    customerName,
+    expertName,
+    bookingId
+  }).catch(err => console.error('BhashSMS Expert On Way dispatch error:', err));
+
+  // 2. Secondary fallback via Meta / Twilio WhatsApp driver
   const templatesConfig = await getSetting('WHATSAPP_TEMPLATES_CONFIG', null);
   const tmpl = templatesConfig?.on_the_way;
 
   if (tmpl && tmpl.enabled === false) {
-    console.log('ℹ️ [Multi-Channel] On The Way WhatsApp template disabled by Admin');
     return;
   }
 
@@ -285,12 +312,129 @@ const dispatchSurveyReportNotification = async ({ user, booking, expertName, rep
     );
   }
 
-  // 3. WhatsApp Channel
+  // 3. WhatsApp Channel (BhashSMS Template: report_ready + Meta fallback)
   const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
   if (phone && isAutoWhatsAppEnabled) {
     tasks.push(
+      sendReportReadyWhatsApp({
+        phone,
+        customerName: name,
+        bookingId,
+        expertName: expertName || 'Jaladhaara Expert',
+        reportLink: reportUrl || `${process.env.FRONTEND_URL || 'https://jaladhar.com'}/user/bookings`
+      }).catch(err => console.error('BhashSMS Report Ready dispatch error:', err))
+    );
+
+    tasks.push(
       sendWhatsAppSurveyReportAlert({ phone, name, bookingId, expertName, reportUrl })
         .catch(err => console.error('WhatsApp Report Alert error:', err))
+    );
+  }
+
+  const results = await Promise.allSettled(tasks);
+  return { success: true, dispatches: results };
+};
+
+/**
+ * Send Booking Cancelled Multi-Channel Notification
+ */
+const dispatchBookingCancelled = async ({ user, booking, reason = 'As per request / policy', io = null }) => {
+  if (!user || !booking) return;
+
+  const phone = user.phone || user.mobile;
+  const email = user.email;
+  const customerName = user.name || 'Valued Customer';
+  const bookingId = booking.bookingId || `ORD-${booking._id?.toString()?.slice(-8).toUpperCase()}`;
+
+  console.log('🚀 [Multi-Channel Notification] Dispatching Booking Cancelled for ID:', bookingId);
+
+  const tasks = [];
+
+  // 1. In-App Notification & FCM Push
+  if (user._id) {
+    tasks.push(
+      sendNotification({
+        recipient: user._id,
+        recipientModel: 'User',
+        type: 'BOOKING_CANCELLED',
+        title: 'Booking Cancelled',
+        message: `Your survey booking #${bookingId} has been cancelled. Details: ${reason}`,
+        relatedEntity: { entityType: 'Booking', entityId: booking._id },
+        metadata: { link: `/user/booking/${booking._id}` }
+      }, io).catch(err => console.error('In-App Cancellation error:', err))
+    );
+  }
+
+  // 2. Email Channel
+  if (email) {
+    tasks.push(
+      sendBookingStatusUpdateEmail({
+        email,
+        name: customerName,
+        bookingId,
+        serviceName: booking.service?.name || 'Groundwater Survey',
+        status: 'CANCELLED'
+      }).catch(err => console.error('Email Cancellation error:', err))
+    );
+  }
+
+  // 3. WhatsApp Channel (BhashSMS Template: booking_cancelled - APPROVED)
+  const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
+  if (phone && isAutoWhatsAppEnabled) {
+    tasks.push(
+      sendBookingCancelledWhatsApp({
+        phone,
+        customerName,
+        bookingId,
+        details: reason
+      }).catch(err => console.error('BhashSMS Cancellation error:', err))
+    );
+  }
+
+  const results = await Promise.allSettled(tasks);
+  return { success: true, dispatches: results };
+};
+
+/**
+ * Send Final Payment Required Multi-Channel Notification
+ */
+const dispatchFinalPaymentRequired = async ({ user, booking, remainingAmount, io = null }) => {
+  if (!user || !booking) return;
+
+  const phone = user.phone || user.mobile;
+  const customerName = user.name || 'Valued Customer';
+  const bookingId = booking.bookingId || `ORD-${booking._id?.toString()?.slice(-8).toUpperCase()}`;
+  const amount = remainingAmount || booking.payment?.remainingAmount || '0';
+
+  console.log('🚀 [Multi-Channel Notification] Dispatching Final Payment Due for ID:', bookingId);
+
+  const tasks = [];
+
+  // 1. In-App Notification & FCM Push
+  if (user._id) {
+    tasks.push(
+      sendNotification({
+        recipient: user._id,
+        recipientModel: 'User',
+        type: 'FINAL_PAYMENT_DUE',
+        title: 'Final Payment Due',
+        message: `Groundwater survey completed for #${bookingId}. Please pay remaining ₹${amount} to access your report.`,
+        relatedEntity: { entityType: 'Booking', entityId: booking._id },
+        metadata: { link: `/user/booking/${booking._id}` }
+      }, io).catch(err => console.error('In-App Final Payment error:', err))
+    );
+  }
+
+  // 2. WhatsApp Channel (BhashSMS Template: final_payment)
+  const isAutoWhatsAppEnabled = await getSetting('ENABLE_AUTOMATED_WHATSAPP_NOTIFICATIONS', true);
+  if (phone && isAutoWhatsAppEnabled) {
+    tasks.push(
+      sendFinalPaymentWhatsApp({
+        phone,
+        customerName,
+        bookingId,
+        remainingAmount: String(amount)
+      }).catch(err => console.error('BhashSMS Final Payment error:', err))
     );
   }
 
@@ -306,5 +450,7 @@ module.exports = {
   dispatchBookingAccepted,
   dispatchOnTheWay,
   dispatchScheduleConfirmed,
-  dispatchSurveyReportNotification
+  dispatchSurveyReportNotification,
+  dispatchBookingCancelled,
+  dispatchFinalPaymentRequired
 };

@@ -179,21 +179,13 @@ const sendBhashWhatsAppMessage = async ({
 
 /**
  * Send the approved `booking_confirmed` WhatsApp template via BhashSMS.
- * Template: booking_confirmed
+ * Template: booking_confirmed (APPROVED)
  * Parameters mapping:
  * {{1}} customer name
  * {{2}} booking ID
  * {{3}} booking date
  * {{4}} booking time
  * {{5}} booking ID
- *
- * @param {Object} payload
- * @param {string} payload.phone - Customer 10-digit mobile number
- * @param {string} payload.customerName - Customer name ({{1}})
- * @param {string} payload.bookingId - Booking ID ({{2}} & {{5}})
- * @param {string} payload.bookingDate - Scheduled survey date ({{3}})
- * @param {string} payload.bookingTime - Scheduled survey time ({{4}})
- * @returns {Promise<{ success: boolean, data?: any, error?: string }>}
  */
 const sendBookingConfirmedWhatsApp = async ({
   phone,
@@ -202,7 +194,6 @@ const sendBookingConfirmedWhatsApp = async ({
   bookingDate = 'N/A',
   bookingTime = 'N/A'
 }) => {
-  // Map {{1}} to {{5}} exactly as approved in BhashSMS
   const params = [
     customerName,
     bookingId,
@@ -218,9 +209,155 @@ const sendBookingConfirmedWhatsApp = async ({
   });
 };
 
+/**
+ * Send the approved `booking_cancelled` WhatsApp template via BhashSMS.
+ * Template: booking_cancelled (APPROVED)
+ * Parameters mapping:
+ * {{1}} customer name
+ * {{2}} booking ID
+ * {{3}} details / refund notice
+ */
+const sendBookingCancelledWhatsApp = async ({
+  phone,
+  customerName = 'Customer',
+  bookingId = 'N/A',
+  details = 'As per request / policy'
+}) => {
+  const params = [
+    customerName,
+    bookingId,
+    details
+  ];
+
+  return await sendBhashWhatsAppMessage({
+    phone,
+    text: 'booking_cancelled',
+    params
+  });
+};
+
+/**
+ * Send the `booking_accepted` WhatsApp template via BhashSMS.
+ * Template: booking_accepted
+ * Parameters mapping:
+ * {{1}} customer name
+ * {{2}} expert name
+ * {{3}} booking ID
+ * {{4}} scheduled date & time
+ */
+const sendBookingAcceptedWhatsApp = async ({
+  phone,
+  customerName = 'Customer',
+  expertName = 'Jaladhaara Expert',
+  bookingId = 'N/A',
+  scheduledDate = 'As scheduled'
+}) => {
+  const params = [
+    customerName,
+    expertName,
+    bookingId,
+    scheduledDate
+  ];
+
+  return await sendBhashWhatsAppMessage({
+    phone,
+    text: 'booking_accepted',
+    params
+  });
+};
+
+/**
+ * Send the `expert_on_way` WhatsApp template via BhashSMS.
+ * Template: expert_on_way
+ * Parameters mapping:
+ * {{1}} customer name
+ * {{2}} expert name
+ * {{3}} booking ID
+ */
+const sendExpertOnWayWhatsApp = async ({
+  phone,
+  customerName = 'Customer',
+  expertName = 'Jaladhaara Expert',
+  bookingId = 'N/A'
+}) => {
+  const params = [
+    customerName,
+    expertName,
+    bookingId
+  ];
+
+  return await sendBhashWhatsAppMessage({
+    phone,
+    text: 'expert_on_way',
+    params
+  });
+};
+
+/**
+ * Send the `final_payment` WhatsApp template via BhashSMS.
+ * Template: final_payment
+ * Parameters mapping:
+ * {{1}} customer name
+ * {{2}} booking ID
+ * {{3}} remaining amount
+ */
+const sendFinalPaymentWhatsApp = async ({
+  phone,
+  customerName = 'Customer',
+  bookingId = 'N/A',
+  remainingAmount = '0'
+}) => {
+  const params = [
+    customerName,
+    bookingId,
+    remainingAmount
+  ];
+
+  return await sendBhashWhatsAppMessage({
+    phone,
+    text: 'final_payment',
+    params
+  });
+};
+
+/**
+ * Send the `report_ready` WhatsApp template via BhashSMS.
+ * Template: report_ready
+ * Parameters mapping:
+ * {{1}} customer name
+ * {{2}} booking ID
+ * {{3}} expert name
+ * {{4}} report link / app link
+ */
+const sendReportReadyWhatsApp = async ({
+  phone,
+  customerName = 'Customer',
+  bookingId = 'N/A',
+  expertName = 'Jaladhaara Expert',
+  reportLink = 'https://jaladhar.com/user/bookings'
+}) => {
+  const params = [
+    customerName,
+    bookingId,
+    expertName,
+    reportLink
+  ];
+
+  return await sendBhashWhatsAppMessage({
+    phone,
+    text: 'report_ready',
+    params
+  });
+};
+
 module.exports = {
   formatBhashPhoneNumber,
   sanitizeParam,
   sendBhashWhatsAppMessage,
-  sendBookingConfirmedWhatsApp
+  sendBookingConfirmedWhatsApp,
+  sendBookingCancelledWhatsApp,
+  sendBookingAcceptedWhatsApp,
+  sendExpertOnWayWhatsApp,
+  sendFinalPaymentWhatsApp,
+  sendReportReadyWhatsApp
 };

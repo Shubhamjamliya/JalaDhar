@@ -13,7 +13,12 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const {
   formatBhashPhoneNumber,
-  sendBookingConfirmedWhatsApp
+  sendBookingConfirmedWhatsApp,
+  sendBookingCancelledWhatsApp,
+  sendBookingAcceptedWhatsApp,
+  sendExpertOnWayWhatsApp,
+  sendFinalPaymentWhatsApp,
+  sendReportReadyWhatsApp
 } = require('../services/bhashWhatsappService');
 
 // Parse CLI flags
@@ -27,10 +32,15 @@ const getArg = (flag, fallback) => {
 };
 
 const rawPhone = getArg('--phone', process.env.TEST_PHONE || '9876543210');
+const templateName = getArg('--template', 'booking_confirmed');
 const customerName = getArg('--name', 'Somil Kumar');
+const expertName = getArg('--expert', 'Rajesh Hydrogeologist');
 const bookingId = getArg('--id', 'JD-' + Math.floor(1000 + Math.random() * 9000));
 const bookingDate = getArg('--date', new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }));
 const bookingTime = getArg('--time', '10:30 AM');
+const remainingAmount = getArg('--amount', '4500');
+const details = getArg('--details', 'Schedule conflict resolved');
+const reportLink = getArg('--link', 'https://jaladhar.com/user/bookings');
 
 console.log('====================================================');
 console.log('🚀 BhashSMS WhatsApp Business API — Test Runner');
@@ -46,7 +56,7 @@ console.log(` • BHASH_USER:    ${bhashUser}`);
 console.log(` • BHASH_PASSWORD:${bhashPass ? ' [Configured, ' + bhashPass.length + ' chars]' : ' ⚠️ [NOT SET in Backend/.env]'}`);
 console.log(` • BHASH_SENDER:  ${bhashSender}`);
 console.log(` • BHASH_API_URL: ${bhashUrl}${process.env.BHASH_WA_UTILITY_API_URL ? ' [Overridden via BHASH_WA_UTILITY_API_URL]' : ''}`);
-console.log(` • Priority/Stype:${process.env.BHASH_WA_PRIORITY || 'wa'} / ${process.env.BHASH_WA_STYPE || 'normal'}`);
+console.log(` • Template:      ${templateName}`);
 console.log('----------------------------------------------------');
 
 const formattedPhone = formatBhashPhoneNumber(rawPhone);
@@ -56,37 +66,79 @@ console.log(` • Formatted:     "${formattedPhone}" (must be 10 digits without 
 console.log(` • Valid:         ${formattedPhone ? '✅ YES' : '❌ NO'}`);
 console.log('----------------------------------------------------');
 
-console.log('📝 Template Test Data (booking_confirmed):');
-console.log(` • {{1}} Customer Name: "${customerName}"`);
-console.log(` • {{2}} Booking ID:    "${bookingId}"`);
-console.log(` • {{3}} Booking Date:  "${bookingDate}"`);
-console.log(` • {{4}} Booking Time:  "${bookingTime}"`);
-console.log(` • {{5}} Booking ID:    "${bookingId}"`);
-console.log('====================================================');
-
 if (!formattedPhone) {
   console.error('\n❌ Test aborted: Please provide a valid 10-digit Indian phone number via --phone <number>.');
   process.exit(1);
 }
 
-if (!bhashPass) {
-  console.log('\n⚠️ Notice: BHASH_PASSWORD is not set in Backend/.env.');
-  console.log('To send a real WhatsApp message to an active device:');
-  console.log('  1. Open Backend/.env');
-  console.log('  2. Set BHASH_PASSWORD=your_actual_password');
-  console.log('  3. Re-run: node scripts/test-bhash-whatsapp.js --phone <your_10_digit_number>\n');
-  console.log('Simulating call without password...');
-}
-
 (async () => {
   try {
-    const result = await sendBookingConfirmedWhatsApp({
-      phone: formattedPhone,
-      customerName,
-      bookingId,
-      bookingDate,
-      bookingTime
-    });
+    let result;
+    switch (templateName) {
+      case 'booking_cancelled':
+        console.log('📝 Template: booking_cancelled (3 params):', [customerName, bookingId, details]);
+        result = await sendBookingCancelledWhatsApp({
+          phone: formattedPhone,
+          customerName,
+          bookingId,
+          details
+        });
+        break;
+
+      case 'booking_accepted':
+        console.log('📝 Template: booking_accepted (4 params):', [customerName, expertName, bookingId, `${bookingDate} at ${bookingTime}`]);
+        result = await sendBookingAcceptedWhatsApp({
+          phone: formattedPhone,
+          customerName,
+          expertName,
+          bookingId,
+          scheduledDate: `${bookingDate} at ${bookingTime}`
+        });
+        break;
+
+      case 'expert_on_way':
+        console.log('📝 Template: expert_on_way (3 params):', [customerName, expertName, bookingId]);
+        result = await sendExpertOnWayWhatsApp({
+          phone: formattedPhone,
+          customerName,
+          expertName,
+          bookingId
+        });
+        break;
+
+      case 'final_payment':
+        console.log('📝 Template: final_payment (3 params):', [customerName, bookingId, remainingAmount]);
+        result = await sendFinalPaymentWhatsApp({
+          phone: formattedPhone,
+          customerName,
+          bookingId,
+          remainingAmount
+        });
+        break;
+
+      case 'report_ready':
+        console.log('📝 Template: report_ready (4 params):', [customerName, bookingId, expertName, reportLink]);
+        result = await sendReportReadyWhatsApp({
+          phone: formattedPhone,
+          customerName,
+          bookingId,
+          expertName,
+          reportLink
+        });
+        break;
+
+      case 'booking_confirmed':
+      default:
+        console.log('📝 Template: booking_confirmed (5 params):', [customerName, bookingId, bookingDate, bookingTime, bookingId]);
+        result = await sendBookingConfirmedWhatsApp({
+          phone: formattedPhone,
+          customerName,
+          bookingId,
+          bookingDate,
+          bookingTime
+        });
+        break;
+    }
 
     console.log('\n📡 Dispatch Result:');
     console.log(JSON.stringify(result, null, 2));

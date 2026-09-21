@@ -243,7 +243,12 @@ const sendWhatsAppDelayNotification = async ({ phone, customerName = 'Customer',
 
 const {
   sendBhashWhatsAppMessage,
-  sendBookingConfirmedWhatsApp
+  sendBookingConfirmedWhatsApp,
+  sendBookingCancelledWhatsApp,
+  sendBookingAcceptedWhatsApp,
+  sendExpertOnWayWhatsApp,
+  sendFinalPaymentWhatsApp,
+  sendReportReadyWhatsApp
 } = require('./bhashWhatsappService');
 
 module.exports = {
@@ -261,6 +266,11 @@ module.exports = {
   sendWhatsAppDelayNotification,
   // BhashSMS WhatsApp Business API exports
   sendBhashWhatsAppMessage,
-  sendBookingConfirmedWhatsApp
+  sendBookingConfirmedWhatsApp,
+  sendBookingCancelledWhatsApp,
+  sendBookingAcceptedWhatsApp,
+  sendExpertOnWayWhatsApp,
+  sendFinalPaymentWhatsApp,
+  sendReportReadyWhatsApp
 };
 

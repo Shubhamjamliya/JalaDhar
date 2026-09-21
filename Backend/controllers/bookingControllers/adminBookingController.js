@@ -3035,6 +3035,23 @@ const resolveInfeasibleBooking = async (req, res) => {
         }
       }, io);
 
+      // Dispatch WhatsApp cancellation alert to customer
+      try {
+        const User = require('../../models/User');
+        const customer = await User.findById(booking.user?._id || booking.user);
+        if (customer) {
+          const { dispatchBookingCancelled } = require('../../services/multiChannelNotificationService');
+          dispatchBookingCancelled({
+            user: customer,
+            booking,
+            reason: `Admin mediated: ${adminNotes || decision || 'Booking cancelled'}`,
+            io
+          }).catch(err => console.error('Error dispatching WhatsApp cancellation in admin mediate:', err));
+        }
+      } catch (waErr) {
+        console.error('Error in admin cancellation WhatsApp dispatch:', waErr);
+      }
+
       // Vendor Notification
       await sendNotification({
         recipient: booking.vendor?._id || booking.vendor,
