@@ -36,6 +36,7 @@ const AdminDashboard = () => {
     const [statusDistributionData, setStatusDistributionData] = useState([]);
     const [vendorPaymentBreakdownData, setVendorPaymentBreakdownData] = useState([]);
     const [topServicesData, setTopServicesData] = useState([]);
+    const [userGrowthData, setUserGrowthData] = useState([]);
     const [stats, setStats] = useState({
         totalUsers: 0,
         totalVendors: 0,
@@ -48,6 +49,11 @@ const AdminDashboard = () => {
         periodCompletedBookings: 0,
         periodNewUsers: 0,
         periodNewVendors: 0,
+        periodRevenueChange: 0,
+        periodBookingsChange: 0,
+        periodCompletedBookingsChange: 0,
+        periodNewUsersChange: 0,
+        periodNewVendorsChange: 0,
     });
 
     const canReports = hasAdminPermission(admin, 'reports');
@@ -117,8 +123,14 @@ const AdminDashboard = () => {
                         periodCompletedBookings: s.periodCompletedBookings,
                         periodNewUsers: s.periodNewUsers,
                         periodNewVendors: s.periodNewVendors,
+                        periodRevenueChange: s.periodRevenueChange || 0,
+                        periodBookingsChange: s.periodBookingsChange || 0,
+                        periodCompletedBookingsChange: s.periodCompletedBookingsChange || 0,
+                        periodNewUsersChange: s.periodNewUsersChange || 0,
+                        periodNewVendorsChange: s.periodNewVendorsChange || 0,
                     });
                     setRecentBookingsList(statsRes.data.recentBookings || []);
+                    setUserGrowthData(statsRes.data.userGrowth || []);
                     setTodaysActivityData(statsRes.data.todaysActivity || null);
                     setPendingActionsData(statsRes.data.pendingActions || null);
                     setPlatformFeesData(statsRes.data.platformFees || null);
@@ -210,7 +222,7 @@ const AdminDashboard = () => {
             title: `Revenue (${periodLabel})`,
             value: formatCurrency(stats.periodRevenue !== undefined ? stats.periodRevenue : stats.totalRevenue),
             subtitle: `All-time: ${formatCurrency(stats.totalRevenue || 0)}`,
-            change: 0,
+            change: stats.periodRevenueChange || 0,
             icon: FiDollarSign,
             color: 'text-white',
             bgColor: 'bg-gradient-to-br from-green-500 to-emerald-600',
@@ -222,7 +234,7 @@ const AdminDashboard = () => {
             title: `Bookings (${periodLabel})`,
             value: (stats.periodBookings !== undefined ? stats.periodBookings : stats.activeBookings || 0).toLocaleString(),
             subtitle: `${stats.activeBookings || 0} active now`,
-            change: 0,
+            change: stats.periodBookingsChange || 0,
             icon: FiShoppingBag,
             color: 'text-white',
             bgColor: 'bg-gradient-to-br from-blue-500 to-indigo-600',
@@ -234,7 +246,7 @@ const AdminDashboard = () => {
             title: `Completed (${periodLabel})`,
             value: (stats.periodCompletedBookings !== undefined ? stats.periodCompletedBookings : stats.completedBookings || 0).toLocaleString(),
             subtitle: `${stats.completedBookings || 0} total completed`,
-            change: 0,
+            change: stats.periodCompletedBookingsChange || 0,
             icon: FiActivity,
             color: 'text-white',
             bgColor: 'bg-gradient-to-br from-purple-500 to-violet-600',
@@ -246,7 +258,7 @@ const AdminDashboard = () => {
             title: `New Users (${periodLabel})`,
             value: (stats.periodNewUsers !== undefined ? stats.periodNewUsers : stats.totalUsers || 0).toLocaleString(),
             subtitle: `${stats.totalUsers || 0} total users`,
-            change: 0,
+            change: stats.periodNewUsersChange || 0,
             icon: FiUser,
             color: 'text-white',
             bgColor: 'bg-gradient-to-br from-orange-500 to-amber-600',
@@ -258,7 +270,7 @@ const AdminDashboard = () => {
             title: `New Experts (${periodLabel})`,
             value: (stats.periodNewVendors !== undefined ? stats.periodNewVendors : stats.totalVendors || 0).toLocaleString(),
             subtitle: `${stats.totalVendors || 0} total experts`,
-            change: 0,
+            change: stats.periodNewVendorsChange || 0,
             icon: FiBriefcase,
             color: 'text-white',
             bgColor: 'bg-gradient-to-br from-teal-500 to-cyan-600',
@@ -364,7 +376,12 @@ const AdminDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-                <CustomerGrowthAreaChart timelineData={revenueData} bookings={recentBookingsList} period={period} />
+                <CustomerGrowthAreaChart
+                    timelineData={revenueData}
+                    userGrowth={userGrowthData}
+                    bookings={recentBookingsList}
+                    period={period}
+                />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

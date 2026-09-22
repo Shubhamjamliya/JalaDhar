@@ -23,6 +23,13 @@ exports.getDashboardStats = async (req, res) => {
     let periodCompletedBookings = null;
     let periodNewUsers = null;
     let periodNewVendors = null;
+    let periodRevenueChange = 0;
+    let periodBookingsChange = 0;
+    let periodCompletedBookingsChange = 0;
+    let periodNewUsersChange = 0;
+    let periodNewVendorsChange = 0;
+    let userGrowthDaily = [];
+    let vendorGrowthDaily = [];
 
     if (startDate && endDate) {
       periodStart = new Date(startDate);
@@ -30,7 +37,15 @@ exports.getDashboardStats = async (req, res) => {
       periodStart.setHours(0, 0, 0, 0);
       periodEnd.setHours(23, 59, 59, 999);
 
-      const [pRevAgg, pBookings, pCompleted, pUsers, pVendors] = await Promise.all([
+      const durationMs = periodEnd.getTime() - periodStart.getTime();
+      const prevEnd = new Date(periodStart.getTime() - 1);
+      const prevStart = new Date(prevEnd.getTime() - durationMs);
+
+      const [
+        pRevAgg, pBookings, pCompleted, pUsers, pVendors,
+        prevRevAgg, prevBookings, prevCompleted, prevUsers, prevVendors,
+        uGrowth, vGrowth
+      ] = await Promise.all([
         Booking.aggregate([
           {
             $match: {
@@ -64,7 +79,65 @@ exports.getDashboardStats = async (req, res) => {
           status: { $in: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE] }
         }),
         User.countDocuments({ createdAt: { $gte: periodStart, $lte: periodEnd }, role: 'USER' }),
-        Vendor.countDocuments({ createdAt: { $gte: periodStart, $lte: periodEnd } })
+        Vendor.countDocuments({ createdAt: { $gte: periodStart, $lte: periodEnd } }),
+
+        // Previous Period Metrics for dynamic % comparison
+        Booking.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: prevStart, $lte: prevEnd },
+              status: { $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalRevenue: {
+                $sum: {
+                  $add: [
+                    { $ifNull: ["$payment.advanceAmount", { $multiply: ["$payment.totalAmount", 0.4] }] },
+                    {
+                      $cond: [
+                        { $eq: ["$payment.remainingPaymentStatus", "PAID"] },
+                        { $ifNull: ["$payment.remainingAmount", { $multiply: ["$payment.totalAmount", 0.6] }] },
+                        0
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]),
+        Booking.countDocuments({ createdAt: { $gte: prevStart, $lte: prevEnd } }),
+        Booking.countDocuments({
+          updatedAt: { $gte: prevStart, $lte: prevEnd },
+          status: { $in: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE] }
+        }),
+        User.countDocuments({ createdAt: { $gte: prevStart, $lte: prevEnd }, role: 'USER' }),
+        Vendor.countDocuments({ createdAt: { $gte: prevStart, $lte: prevEnd } }),
+
+        // Day-by-day user & vendor growth within period
+        User.aggregate([
+          { $match: { createdAt: { $gte: periodStart, $lte: periodEnd }, role: 'USER' } },
+          {
+            $group: {
+              _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Kolkata" } },
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { _id: 1 } }
+        ]),
+        Vendor.aggregate([
+          { $match: { createdAt: { $gte: periodStart, $lte: periodEnd } } },
+          {
+            $group: {
+              _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Kolkata" } },
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { _id: 1 } }
+        ])
       ]);
 
       periodRevenue = pRevAgg.length > 0 ? pRevAgg[0].totalRevenue : 0;
@@ -72,6 +145,22 @@ exports.getDashboardStats = async (req, res) => {
       periodCompletedBookings = pCompleted;
       periodNewUsers = pUsers;
       periodNewVendors = pVendors;
+
+      const prevRev = prevRevAgg.length > 0 ? prevRevAgg[0].totalRevenue : 0;
+
+      const calcChange = (curr, prev) => {
+        if (!prev || prev === 0) return curr > 0 ? 100 : 0;
+        return Math.round(((curr - prev) / prev) * 100);
+      };
+
+      periodRevenueChange = calcChange(periodRevenue, prevRev);
+      periodBookingsChange = calcChange(periodBookings, prevBookings);
+      periodCompletedBookingsChange = calcChange(periodCompletedBookings, prevCompleted);
+      periodNewUsersChange = calcChange(periodNewUsers, prevUsers);
+      periodNewVendorsChange = calcChange(periodNewVendors, prevVendors);
+
+      userGrowthDaily = uGrowth;
+      vendorGrowthDaily = vGrowth;
     }
 
     // 1. Total Users
@@ -423,6 +512,11 @@ exports.getDashboardStats = async (req, res) => {
           periodCompletedBookings: periodCompletedBookings !== null ? periodCompletedBookings : completedBookings,
           periodNewUsers: periodNewUsers !== null ? periodNewUsers : totalUsers,
           periodNewVendors: periodNewVendors !== null ? periodNewVendors : totalVendors,
+          periodRevenueChange,
+          periodBookingsChange,
+          periodCompletedBookingsChange,
+          periodNewUsersChange,
+          periodNewVendorsChange,
           platformFeeEarnings,
           vendorNetPayouts
         },
@@ -452,7 +546,9 @@ exports.getDashboardStats = async (req, res) => {
         topServices: topServicesList,
         expertPerformance,
         alerts,
-        recentBookings
+        recentBookings,
+        userGrowth: userGrowthDaily,
+        vendorGrowth: vendorGrowthDaily
       }
     });
 
@@ -613,14 +709,25 @@ exports.getBookingTrends = async (req, res) => {
  */
 exports.getUserGrowthMetrics = async (req, res) => {
   try {
-    const { days = 30 } = req.query;
-    const start = new Date();
-    start.setDate(start.getDate() - parseInt(days));
-    start.setHours(0, 0, 0, 0);
+    const { days = 30, startDate, endDate } = req.query;
+    let start, end;
+
+    if (startDate && endDate) {
+      start = new Date(startDate);
+      end = new Date(endDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      start = new Date();
+      start.setDate(start.getDate() - parseInt(days));
+      start.setHours(0, 0, 0, 0);
+      end = new Date();
+      end.setHours(23, 59, 59, 999);
+    }
 
     const [userGrowth, vendorGrowth] = await Promise.all([
       User.aggregate([
-        { $match: { createdAt: { $gte: start }, role: 'USER' } },
+        { $match: { createdAt: { $gte: start, $lte: end }, role: 'USER' } },
         {
           $group: {
             _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Kolkata" } },
@@ -630,7 +737,7 @@ exports.getUserGrowthMetrics = async (req, res) => {
         { $sort: { _id: 1 } }
       ]),
       Vendor.aggregate([
-        { $match: { createdAt: { $gte: start } } },
+        { $match: { createdAt: { $gte: start, $lte: end } } },
         {
           $group: {
             _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Kolkata" } },

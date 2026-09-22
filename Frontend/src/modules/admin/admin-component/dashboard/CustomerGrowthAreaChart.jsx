@@ -30,8 +30,48 @@ const getCustomerKey = (booking) => {
   return phone || email || name || null;
 };
 
-const CustomerGrowthAreaChart = ({ timelineData = [], bookings = [], period = 'month' }) => {
+const CustomerGrowthAreaChart = ({ timelineData = [], userGrowth = [], bookings = [], period = 'month' }) => {
   const customerData = useMemo(() => {
+    // 1. When userGrowth from backend aggregation is available
+    if (Array.isArray(userGrowth) && userGrowth.length > 0) {
+      const growthMap = new Map();
+      userGrowth.forEach((item) => {
+        const key = item._id ? item._id.slice(0, 10) : '';
+        if (key) {
+          growthMap.set(key, (growthMap.get(key) || 0) + Number(item.count || 0));
+        }
+      });
+
+      // If timelineData has points, match along timelineData; otherwise build from userGrowth
+      if (Array.isArray(timelineData) && timelineData.length > 0) {
+        let cumulative = 0;
+        return timelineData.map((d) => {
+          const dayKey = d.date ? d.date.slice(0, 10) : '';
+          const newCustomers = growthMap.get(dayKey) || 0;
+          cumulative += newCustomers;
+          return {
+            date: d.date,
+            dateLabel: formatChartDateLabel(d.date, period),
+            customers: cumulative,
+            newCustomers,
+          };
+        });
+      }
+
+      let cumulative = 0;
+      return userGrowth.map((item) => {
+        const count = Number(item.count || 0);
+        cumulative += count;
+        return {
+          date: item._id,
+          dateLabel: formatChartDateLabel(item._id, period),
+          customers: cumulative,
+          newCustomers: count,
+        };
+      });
+    }
+
+    // 2. Fallback to timelineData matching or bookings matching
     if (!Array.isArray(timelineData)) return [];
 
     const byDate = new Map();
@@ -66,18 +106,22 @@ const CustomerGrowthAreaChart = ({ timelineData = [], bookings = [], period = 'm
         newCustomers,
       };
     });
-  }, [timelineData, bookings, period]);
+  }, [timelineData, userGrowth, bookings, period]);
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
+    const item = payload[0]?.payload;
     return (
       <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-        <p className="text-sm font-semibold text-gray-800 mb-2">{label}</p>
-        {payload.map((entry, index) => (
-          <p key={index} className="text-sm" style={{ color: entry.color }}>
-            <span className="font-medium">{entry.name}:</span> {Number(entry.value || 0).toLocaleString()}
+        <p className="text-sm font-semibold text-gray-800 mb-1">{label}</p>
+        <p className="text-sm" style={{ color: '#ec4899' }}>
+          <span className="font-medium">Total Registered:</span> {Number(item?.customers || 0).toLocaleString()}
+        </p>
+        {item?.newCustomers !== undefined && (
+          <p className="text-xs text-gray-500 mt-0.5">
+            +{item.newCustomers} new in period
           </p>
-        ))}
+        )}
       </div>
     );
   };

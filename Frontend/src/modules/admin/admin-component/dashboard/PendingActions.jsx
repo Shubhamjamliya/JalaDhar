@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { FiCheckSquare, FiAlertTriangle, FiDollarSign, FiCalendar, FiArrowRight, FiLock } from 'react-icons/fi';
+import { FiCheckSquare, FiAlertTriangle, FiDollarSign, FiCalendar, FiArrowRight, FiLock, FiCreditCard } from 'react-icons/fi';
 import { useAdminAuth } from '../../../../contexts/AdminAuthContext';
 import { hasAdminPermission } from '../../../../utils/permissionUtils';
 
@@ -12,7 +12,9 @@ const PendingActions = ({ pendingActions }) => {
         pendingVendors: 0,
         openDisputes: 0,
         pendingSettlements: 0,
-        unassignedBookings: 0
+        unassignedBookings: 0,
+        pendingUserWithdrawals: 0,
+        pendingVendorWithdrawals: 0
     };
 
     const canVendors = hasAdminPermission(admin, 'vendors');
@@ -61,6 +63,26 @@ const PendingActions = ({ pendingActions }) => {
             badgeBg: 'bg-purple-100 text-purple-800',
             buttonBg: 'bg-purple-50 text-purple-700 hover:bg-purple-100',
             link: canBookings ? '/admin/bookings' : null
+        },
+        {
+            title: 'Customer Refund Claims',
+            count: actions.pendingUserWithdrawals || 0,
+            label: 'Refund Requests Pending Disbursal',
+            icon: FiCreditCard,
+            color: 'text-red-600',
+            badgeBg: 'bg-red-100 text-red-800',
+            buttonBg: 'bg-red-50 text-red-700 hover:bg-red-100',
+            link: canPayments ? '/admin/user-withdrawals' : null
+        },
+        {
+            title: 'Expert Disbursals',
+            count: actions.pendingVendorWithdrawals || 0,
+            label: 'Partner Payouts Pending Disbursal',
+            icon: FiDollarSign,
+            color: 'text-emerald-600',
+            badgeBg: 'bg-emerald-100 text-emerald-800',
+            buttonBg: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+            link: canPayments ? '/admin/withdrawals' : null
         }
     ];
 
@@ -75,7 +97,7 @@ const PendingActions = ({ pendingActions }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {actionList.map((item, idx) => {
                     const Icon = item.icon;
                     const isClickable = Boolean(item.link);
