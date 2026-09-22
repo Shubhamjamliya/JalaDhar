@@ -543,10 +543,14 @@ const registerAdminWithOTP = async (req, res) => {
       });
     }
 
-    // Determine clean email (fallback for phone-only registration)
-    const adminEmail = email && email.trim()
-      ? email.toLowerCase().trim()
-      : `${phone.replace(/\D/g, '')}@jaladhar.internal`;
+    // Determine clean email (Admin accounts require a valid email)
+    if (!email || !email.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid email is required for administrator account registration'
+      });
+    }
+    const adminEmail = email.toLowerCase().trim();
 
     // Check if admin already exists (double check)
     const existingAdmin = await Admin.findOne({ email: adminEmail });

@@ -44,12 +44,13 @@ const sendRegistrationOTP = async (req, res) => {
       });
     }
 
-    const targetEmail = cleanEmail || `${cleanPhone}@jaladhar.internal`;
+    const tokenQuery = cleanEmail
+      ? { email: cleanEmail, type: TOKEN_TYPES.EMAIL_VERIFICATION }
+      : { phone: cleanPhone, type: TOKEN_TYPES.EMAIL_VERIFICATION };
 
     // Enterprise Rate Limiting & Cooldown Protection (60s Cooldown)
     const existingToken = await Token.findOne({
-      email: targetEmail,
-      type: TOKEN_TYPES.EMAIL_VERIFICATION,
+      ...tokenQuery,
       isUsed: false,
       expiresAt: { $gt: new Date() }
     }).sort({ createdAt: -1 });
@@ -72,7 +73,7 @@ const sendRegistrationOTP = async (req, res) => {
       });
     }
 
-    await Token.deleteMany({ email: targetEmail, type: TOKEN_TYPES.EMAIL_VERIFICATION, isUsed: false });
+    await Token.deleteMany({ ...tokenQuery, isUsed: false });
 
     const otp = generateOTP(6);
     const token = generateToken(32);
@@ -84,7 +85,8 @@ const sendRegistrationOTP = async (req, res) => {
       token,
       type: TOKEN_TYPES.EMAIL_VERIFICATION,
       otp,
-      email: targetEmail,
+      phone: cleanPhone,
+      email: cleanEmail || null,
       expiresAt
     });
 
@@ -206,16 +208,15 @@ const register = async (req, res) => {
 
     // Create user
     const { preferredLanguage } = req.body;
-    const userEmail = cleanEmail || `${cleanPhone}@jaladhar.internal`;
     const defaultPassword = password || `Jaladhar@${cleanPhone.slice(-4)}`;
 
     const user = await User.create({
       name,
-      email: userEmail,
+      email: cleanEmail || null,
       phone: cleanPhone,
       password: defaultPassword,
       preferredLanguage: preferredLanguage || 'en',
-      isEmailVerified: true
+      isEmailVerified: Boolean(cleanEmail)
     });
 
     // Mark token as used
@@ -743,12 +744,9 @@ const sendLoginOTP = async (req, res) => {
       });
     }
 
-    // Generate OTP & Token
-    const targetEmail = user.email || `${user.phone}@jaladhar.internal`;
-
     // Enterprise Rate Limiting & Cooldown Protection (60s Cooldown)
     const existingToken = await Token.findOne({
-      email: targetEmail,
+      phone: user.phone,
       type: TOKEN_TYPES.PHONE_VERIFICATION,
       isUsed: false,
       expiresAt: { $gt: new Date() }
@@ -771,7 +769,7 @@ const sendLoginOTP = async (req, res) => {
       });
     }
 
-    await Token.deleteMany({ email: targetEmail, type: TOKEN_TYPES.PHONE_VERIFICATION, isUsed: false });
+    await Token.deleteMany({ phone: user.phone, type: TOKEN_TYPES.PHONE_VERIFICATION, isUsed: false });
 
     const otp = generateOTP(6);
     const token = generateToken(32);
@@ -783,7 +781,8 @@ const sendLoginOTP = async (req, res) => {
       token,
       type: TOKEN_TYPES.PHONE_VERIFICATION,
       otp,
-      email: targetEmail,
+      phone: user.phone,
+      email: user.email || null,
       expiresAt
     });
 

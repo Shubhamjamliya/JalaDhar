@@ -252,7 +252,14 @@ export default function AdminUsers() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                             <div className="flex flex-col gap-1">
-                                                <span className="flex items-center gap-1.5"><IoMailOutline /> {user.email}</span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <IoMailOutline className={user.email && !user.email.endsWith('@jaladhar.internal') ? 'text-gray-500' : 'text-gray-300'} />
+                                                    {user.email && !user.email.endsWith('@jaladhar.internal') ? (
+                                                        <span>{user.email}</span>
+                                                    ) : (
+                                                        <span className="text-gray-400 text-xs italic">Not provided</span>
+                                                    )}
+                                                </span>
                                                 <span className="flex items-center gap-1.5"><IoCallOutline /> {user.phone}</span>
                                             </div>
                                         </td>
@@ -261,7 +268,7 @@ export default function AdminUsers() {
                                                 <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${user.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                     {user.isActive ? 'ACTIVE' : 'INACTIVE'}
                                                 </span>
-                                                {user.isEmailVerified && (
+                                                {user.isEmailVerified && user.email && !user.email.endsWith('@jaladhar.internal') && (
                                                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 tracking-wider">
                                                         <IoShieldCheckmarkOutline /> VERIFIED
                                                     </span>

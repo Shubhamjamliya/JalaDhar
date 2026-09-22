@@ -64,7 +64,7 @@ export default function UserProfile() {
                 const user = response.data.user;
                 setProfileData({
                     name: user.name || "",
-                    email: user.email || "",
+                    email: user.email && !user.email.endsWith('@jaladhar.internal') ? user.email : "",
                     phone: user.phone || "",
                     alternatePhone: user.alternatePhone || "",
                     address: user.address || {
@@ -74,7 +74,7 @@ export default function UserProfile() {
                         pincode: "",
                     },
                     profilePicture: user.profilePicture || null,
-                    isEmailVerified: user.isEmailVerified || false,
+                    isEmailVerified: user.email && !user.email.endsWith('@jaladhar.internal') ? (user.isEmailVerified || false) : false,
                 });
             } else {
                 toast.showError(response.message || "Failed to load profile");

@@ -9,11 +9,17 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
-    unique: true,
+    required: false,
+    default: null,
     lowercase: true,
     trim: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email']
+    validate: {
+      validator: function (v) {
+        if (v === null || v === undefined || v === '') return true;
+        return /^\S+@\S+\.\S+$/.test(v);
+      },
+      message: 'Please provide a valid email'
+    }
   },
   phone: {
     type: String,
@@ -155,6 +161,12 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Partial unique index so users without email do not cause duplicate key collisions
+userSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { email: { $type: 'string' } } }
+);
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {

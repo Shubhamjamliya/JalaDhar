@@ -159,8 +159,12 @@ export default function AdminUserDetails() {
 
                         <div className="w-full mt-6 space-y-4 text-left">
                             <div className="flex items-center gap-3 text-sm text-gray-600">
-                                <IoMailOutline className="text-blue-500" />
-                                <span className="truncate">{user.email}</span>
+                                <IoMailOutline className={user.email && !user.email.endsWith('@jaladhar.internal') ? 'text-blue-500' : 'text-gray-300'} />
+                                {user.email && !user.email.endsWith('@jaladhar.internal') ? (
+                                    <span className="truncate">{user.email}</span>
+                                ) : (
+                                    <span className="text-gray-400 italic text-xs">Not provided</span>
+                                )}
                             </div>
                             <div className="flex items-center gap-3 text-sm text-gray-600">
                                 <IoCallOutline className="text-blue-500" />
