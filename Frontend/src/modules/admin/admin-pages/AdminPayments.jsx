@@ -1322,140 +1322,143 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                         ) : adminOverview ? (
                             <>
                                 {/* Main Stats Cards */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                                     {/* Total Money from Users */}
-                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg border border-blue-200">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="w-14 h-14 rounded-xl bg-blue-500 flex items-center justify-center">
-                                                <IoWalletOutline className="text-2xl text-white" />
+                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100/70 rounded-lg p-3 shadow-xs border border-blue-200/80">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <div className="w-7 h-7 rounded-md bg-blue-500 flex items-center justify-center shrink-0">
+                                                <IoWalletOutline className="text-sm text-white" />
                                             </div>
-                                            <span className="text-xs font-semibold text-blue-700 bg-blue-200 px-3 py-1 rounded-full">Total from Users</span>
+                                            <span className="text-[10px] font-semibold text-blue-700 bg-blue-200/80 px-2 py-0.5 rounded-full">Total from Users</span>
                                         </div>
-                                        <p className="text-3xl font-bold text-gray-800 mb-2">{formatCurrency(adminOverview.totalFromUsers.amount)}</p>
-                                        <div className="flex gap-4 text-sm text-gray-600">
-                                            <span>Advance: {formatCurrency(adminOverview.totalFromUsers.breakdown.advance.amount)}</span>
-                                            <span>Remaining: {formatCurrency(adminOverview.totalFromUsers.breakdown.remaining.amount)}</span>
+                                        <p className="text-lg font-bold text-gray-800 leading-tight mb-1">{formatCurrency(adminOverview.totalFromUsers.amount)}</p>
+                                        <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-gray-600">
+                                            <span>Adv: {formatCurrency(adminOverview.totalFromUsers.breakdown.advance.amount)}</span>
+                                            <span className="text-gray-400">•</span>
+                                            <span>Rem: {formatCurrency(adminOverview.totalFromUsers.breakdown.remaining.amount)}</span>
                                         </div>
-                                        <p className="text-xs text-gray-500 mt-2">{adminOverview.totalFromUsers.count} payments</p>
+                                        <p className="text-[10px] text-gray-400 mt-0.5">{adminOverview.totalFromUsers.count} payments</p>
                                     </div>
 
                                     {/* Pending from Users */}
-                                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 shadow-lg border border-yellow-200">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="w-14 h-14 rounded-xl bg-yellow-500 flex items-center justify-center">
-                                                <IoTimeOutline className="text-2xl text-white" />
+                                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100/70 rounded-lg p-3 shadow-xs border border-yellow-200/80">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <div className="w-7 h-7 rounded-md bg-yellow-500 flex items-center justify-center shrink-0">
+                                                <IoTimeOutline className="text-sm text-white" />
                                             </div>
-                                            <span className="text-xs font-semibold text-yellow-700 bg-yellow-200 px-3 py-1 rounded-full">Pending from Users</span>
+                                            <span className="text-[10px] font-semibold text-yellow-700 bg-yellow-200/80 px-2 py-0.5 rounded-full">Pending from Users</span>
                                         </div>
-                                        <p className="text-3xl font-bold text-gray-800 mb-2">{formatCurrency(adminOverview.pendingFromUsers.amount)}</p>
-                                        <p className="text-xs text-gray-500">{adminOverview.pendingFromUsers.count} pending payments</p>
+                                        <p className="text-lg font-bold text-gray-800 leading-tight mb-1">{formatCurrency(adminOverview.pendingFromUsers.amount)}</p>
+                                        <p className="text-[11px] text-gray-500 mt-0.5">{adminOverview.pendingFromUsers.count} pending payments</p>
                                     </div>
 
                                     {/* Total Admin Revenue */}
-                                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg border border-green-200">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="w-14 h-14 rounded-xl bg-green-500 flex items-center justify-center">
-                                                <IoCashOutline className="text-2xl text-white" />
+                                    <div className="bg-gradient-to-br from-green-50 to-green-100/70 rounded-lg p-3 shadow-xs border border-green-200/80">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <div className="w-7 h-7 rounded-md bg-green-500 flex items-center justify-center shrink-0">
+                                                <IoCashOutline className="text-sm text-white" />
                                             </div>
-                                            <span className="text-xs font-semibold text-green-700 bg-green-200 px-3 py-1 rounded-full">Admin Revenue</span>
+                                            <span className="text-[10px] font-semibold text-green-700 bg-green-200/80 px-2 py-0.5 rounded-full">Admin Revenue</span>
                                         </div>
-                                        <p className="text-3xl font-bold text-gray-800 mb-2">{formatCurrency(adminOverview.totalAdminRevenue.amount)}</p>
-                                        <p className="text-xs text-gray-500">Net profit after all expenses</p>
+                                        <p className="text-lg font-bold text-gray-800 leading-tight mb-1">{formatCurrency(adminOverview.totalAdminRevenue.amount)}</p>
+                                        <p className="text-[11px] text-gray-500 mt-0.5">Net profit after all expenses</p>
                                     </div>
 
                                     {/* Pending to Experts */}
-                                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 shadow-lg border border-orange-200">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="w-14 h-14 rounded-xl bg-orange-500 flex items-center justify-center">
-                                                <IoTimeOutline className="text-2xl text-white" />
+                                    <div className="bg-gradient-to-br from-orange-50 to-orange-100/70 rounded-lg p-3 shadow-xs border border-orange-200/80">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <div className="w-7 h-7 rounded-md bg-orange-500 flex items-center justify-center shrink-0">
+                                                <IoTimeOutline className="text-sm text-white" />
                                             </div>
-                                            <span className="text-xs font-semibold text-orange-700 bg-orange-200 px-3 py-1 rounded-full">Pending to Vendors</span>
+                                            <span className="text-[10px] font-semibold text-orange-700 bg-orange-200/80 px-2 py-0.5 rounded-full">Pending to Vendors</span>
                                         </div>
-                                        <p className="text-3xl font-bold text-gray-800 mb-2">{formatCurrency(adminOverview.pendingToVendors.amount)}</p>
-                                        <div className="flex gap-4 text-sm text-gray-600 mt-2">
-                                            <span>Settlements: {formatCurrency(adminOverview.pendingToVendors.breakdown.settlements.amount)}</span>
-                                            <span>Withdrawals: {formatCurrency(adminOverview.pendingToVendors.breakdown.withdrawals.amount)}</span>
+                                        <p className="text-lg font-bold text-gray-800 leading-tight mb-1">{formatCurrency(adminOverview.pendingToVendors.amount)}</p>
+                                        <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-gray-600 mt-0.5">
+                                            <span>Set: {formatCurrency(adminOverview.pendingToVendors.breakdown.settlements.amount)}</span>
+                                            <span className="text-gray-400">•</span>
+                                            <span>Wdl: {formatCurrency(adminOverview.pendingToVendors.breakdown.withdrawals.amount)}</span>
                                         </div>
                                     </div>
 
                                     {/* Released to Experts */}
-                                    <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-6 shadow-lg border border-teal-200">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="w-14 h-14 rounded-xl bg-teal-500 flex items-center justify-center">
-                                                <IoCheckmarkCircleOutline className="text-2xl text-white" />
+                                    <div className="bg-gradient-to-br from-teal-50 to-teal-100/70 rounded-lg p-3 shadow-xs border border-teal-200/80">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <div className="w-7 h-7 rounded-md bg-teal-500 flex items-center justify-center shrink-0">
+                                                <IoCheckmarkCircleOutline className="text-sm text-white" />
                                             </div>
-                                            <span className="text-xs font-semibold text-teal-700 bg-teal-200 px-3 py-1 rounded-full">Released to Vendors</span>
+                                            <span className="text-[10px] font-semibold text-teal-700 bg-teal-200/80 px-2 py-0.5 rounded-full">Released to Vendors</span>
                                         </div>
-                                        <p className="text-3xl font-bold text-gray-800 mb-2">{formatCurrency(adminOverview.releasedToVendors.amount)}</p>
-                                        <p className="text-xs text-gray-500">{adminOverview.releasedToVendors.count} withdrawals processed</p>
+                                        <p className="text-lg font-bold text-gray-800 leading-tight mb-1">{formatCurrency(adminOverview.releasedToVendors.amount)}</p>
+                                        <p className="text-[11px] text-gray-500 mt-0.5">{adminOverview.releasedToVendors.count} withdrawals processed</p>
                                     </div>
 
                                     {/* Paid to Users for Failure */}
-                                    <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 shadow-lg border border-red-200">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="w-14 h-14 rounded-xl bg-red-500 flex items-center justify-center">
-                                                <IoReceiptOutline className="text-2xl text-white" />
+                                    <div className="bg-gradient-to-br from-red-50 to-red-100/70 rounded-lg p-3 shadow-xs border border-red-200/80">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <div className="w-7 h-7 rounded-md bg-red-500 flex items-center justify-center shrink-0">
+                                                <IoReceiptOutline className="text-sm text-white" />
                                             </div>
-                                            <span className="text-xs font-semibold text-red-700 bg-red-200 px-3 py-1 rounded-full">Paid to Users (Failure)</span>
+                                            <span className="text-[10px] font-semibold text-red-700 bg-red-200/80 px-2 py-0.5 rounded-full">Paid to Users (Failure)</span>
                                         </div>
-                                        <p className="text-3xl font-bold text-gray-800 mb-2">{formatCurrency(adminOverview.paidToUsersForFailure.amount)}</p>
-                                        <div className="flex gap-4 text-sm text-gray-600 mt-2">
-                                            <span>Refunds: {formatCurrency(adminOverview.paidToUsersForFailure.breakdown.refunds)}</span>
-                                            <span>Remittances: {formatCurrency(adminOverview.paidToUsersForFailure.breakdown.remittances)}</span>
+                                        <p className="text-lg font-bold text-gray-800 leading-tight mb-1">{formatCurrency(adminOverview.paidToUsersForFailure.amount)}</p>
+                                        <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-gray-600 mt-0.5">
+                                            <span>Ref: {formatCurrency(adminOverview.paidToUsersForFailure.breakdown.refunds)}</span>
+                                            <span className="text-gray-400">•</span>
+                                            <span>Rem: {formatCurrency(adminOverview.paidToUsersForFailure.breakdown.remittances)}</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Detailed Breakdown */}
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
                                     {/* Total Paid to Experts Breakdown */}
-                                    <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
-                                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                            <IoCashOutline className="text-orange-500" />
+                                    <div className="bg-white rounded-lg p-3.5 shadow-xs border border-gray-200">
+                                        <h3 className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-1.5">
+                                            <IoCashOutline className="text-orange-500 text-base" />
                                             Total Paid to Vendors
                                         </h3>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                                                <span className="text-gray-600">Total Amount</span>
-                                                <span className="text-xl font-bold text-gray-800">{formatCurrency(adminOverview.totalPaidToVendors.amount)}</span>
+                                        <div className="space-y-1.5">
+                                            <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                                                <span className="text-xs text-gray-600">Total Amount</span>
+                                                <span className="text-sm font-bold text-gray-800">{formatCurrency(adminOverview.totalPaidToVendors.amount)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                                                <span className="text-gray-600">Wallet Credits</span>
-                                                <span className="text-gray-800">{formatCurrency(adminOverview.totalPaidToVendors.breakdown.walletCredits)}</span>
+                                            <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                                                <span className="text-xs text-gray-600">Wallet Credits</span>
+                                                <span className="text-xs text-gray-800 font-medium">{formatCurrency(adminOverview.totalPaidToVendors.breakdown.walletCredits)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                                                <span className="text-gray-600">Settlements</span>
-                                                <span className="text-gray-800">{formatCurrency(adminOverview.totalPaidToVendors.breakdown.settlements)}</span>
+                                            <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                                                <span className="text-xs text-gray-600">Settlements</span>
+                                                <span className="text-xs text-gray-800 font-medium">{formatCurrency(adminOverview.totalPaidToVendors.breakdown.settlements)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center py-2">
-                                                <span className="text-gray-600">Withdrawals</span>
-                                                <span className="text-gray-800">{formatCurrency(adminOverview.totalPaidToVendors.breakdown.withdrawals)}</span>
+                                            <div className="flex justify-between items-center py-1">
+                                                <span className="text-xs text-gray-600">Withdrawals</span>
+                                                <span className="text-xs text-gray-800 font-medium">{formatCurrency(adminOverview.totalPaidToVendors.breakdown.withdrawals)}</span>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Revenue Calculation */}
-                                    <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
-                                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                            <IoReceiptOutline className="text-green-500" />
+                                    <div className="bg-white rounded-lg p-3.5 shadow-xs border border-gray-200">
+                                        <h3 className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-1.5">
+                                            <IoReceiptOutline className="text-green-500 text-base" />
                                             Revenue Calculation
                                         </h3>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                                                <span className="text-gray-600">Total from Users</span>
-                                                <span className="text-gray-800 font-semibold">{formatCurrency(adminOverview.totalAdminRevenue.calculation.totalFromUsers)}</span>
+                                        <div className="space-y-1.5">
+                                            <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                                                <span className="text-xs text-gray-600">Total from Users</span>
+                                                <span className="text-xs text-gray-800 font-semibold">{formatCurrency(adminOverview.totalAdminRevenue.calculation.totalFromUsers)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                                                <span className="text-gray-600">- Total Paid to Vendors</span>
-                                                <span className="text-red-600">-{formatCurrency(adminOverview.totalAdminRevenue.calculation.totalPaidToVendors)}</span>
+                                            <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                                                <span className="text-xs text-gray-600">- Total Paid to Vendors</span>
+                                                <span className="text-xs text-red-600 font-medium">-{formatCurrency(adminOverview.totalAdminRevenue.calculation.totalPaidToVendors)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                                                <span className="text-gray-600">- Paid to Users (Failure)</span>
-                                                <span className="text-red-600">-{formatCurrency(adminOverview.totalAdminRevenue.calculation.paidToUsersForFailure)}</span>
+                                            <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                                                <span className="text-xs text-gray-600">- Paid to Users (Failure)</span>
+                                                <span className="text-xs text-red-600 font-medium">-{formatCurrency(adminOverview.totalAdminRevenue.calculation.paidToUsersForFailure)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center py-2 pt-3 border-t-2 border-gray-300">
-                                                <span className="text-lg font-bold text-gray-800">Net Revenue</span>
-                                                <span className="text-2xl font-bold text-green-600">{formatCurrency(adminOverview.totalAdminRevenue.amount)}</span>
+                                            <div className="flex justify-between items-center py-1 pt-2 border-t border-gray-200">
+                                                <span className="text-xs font-bold text-gray-800">Net Revenue</span>
+                                                <span className="text-base font-bold text-green-600">{formatCurrency(adminOverview.totalAdminRevenue.amount)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1659,86 +1662,86 @@ export default function AdminPayments({ defaultTab = "overview" }) {
                 {activeTab === "overview" && (
                     <div>
                         {/* Revenue Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 shadow-sm border border-green-200">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center">
-                                        <IoWalletOutline className="text-2xl text-white" />
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5 sm:gap-4 mb-6">
+                            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-green-200">
+                                <div className="flex items-center justify-between mb-2.5">
+                                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-green-500 flex items-center justify-center shrink-0">
+                                        <IoWalletOutline className="text-lg sm:text-xl text-white" />
                                     </div>
-                                    <span className="text-xs font-semibold text-green-700 bg-green-200 px-2 py-1 rounded-full">Total Revenue</span>
+                                    <span className="text-[11px] font-semibold text-green-700 bg-green-200 px-2.5 py-0.5 rounded-full">Total Revenue</span>
                                 </div>
-                                <p className="text-3xl font-bold text-gray-800 mb-1">{formatCurrency(stats.totalRevenue)}</p>
+                                <p className="text-xl sm:text-2xl font-extrabold text-gray-800 mb-1 tracking-tight">{formatCurrency(stats.totalRevenue)}</p>
                                 <p className="text-xs text-gray-600">All successful payments</p>
                             </div>
 
-                            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: currentTheme.primary }}>
-                                        <IoCheckmarkCircleOutline className="text-2xl text-white" />
+                            <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-200">
+                                <div className="flex items-center justify-between mb-2.5">
+                                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: currentTheme.primary }}>
+                                        <IoCheckmarkCircleOutline className="text-lg sm:text-xl text-white" />
                                     </div>
-                                    <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{ color: currentTheme.primaryDark, backgroundColor: `${currentTheme.primary}20` }}>Success</span>
+                                    <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full" style={{ color: currentTheme.primaryDark, backgroundColor: `${currentTheme.primary}20` }}>Success</span>
                                 </div>
-                                <p className="text-3xl font-bold text-gray-800 mb-1">{stats.successPayments}</p>
+                                <p className="text-xl sm:text-2xl font-extrabold text-gray-800 mb-1 tracking-tight">{stats.successPayments}</p>
                                 <p className="text-xs text-gray-600">Successful payments</p>
                             </div>
 
 
-                            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center">
-                                        <IoTimeOutline className="text-2xl text-yellow-600" />
+                            <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-200">
+                                <div className="flex items-center justify-between mb-2.5">
+                                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-yellow-100 flex items-center justify-center shrink-0">
+                                        <IoTimeOutline className="text-lg sm:text-xl text-yellow-600" />
                                     </div>
-                                    <span className="text-xs font-semibold text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">Pending</span>
+                                    <span className="text-[11px] font-semibold text-yellow-600 bg-yellow-50 px-2.5 py-0.5 rounded-full">Pending</span>
                                 </div>
-                                <p className="text-3xl font-bold text-gray-800 mb-1">{stats.pendingPayments}</p>
+                                <p className="text-xl sm:text-2xl font-extrabold text-gray-800 mb-1 tracking-tight">{stats.pendingPayments}</p>
                                 <p className="text-xs text-gray-600">Pending payments</p>
                             </div>
 
-                            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
-                                        <IoCloseCircleOutline className="text-2xl text-red-600" />
+                            <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-200">
+                                <div className="flex items-center justify-between mb-2.5">
+                                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                                        <IoCloseCircleOutline className="text-lg sm:text-xl text-red-600" />
                                     </div>
-                                    <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full">Failed</span>
+                                    <span className="text-[11px] font-semibold text-red-600 bg-red-50 px-2.5 py-0.5 rounded-full">Failed</span>
                                 </div>
-                                <p className="text-3xl font-bold text-gray-800 mb-1">{stats.failedPayments}</p>
+                                <p className="text-xl sm:text-2xl font-extrabold text-gray-800 mb-1 tracking-tight">{stats.failedPayments}</p>
                                 <p className="text-xs text-gray-600">Failed payments</p>
                             </div>
                         </div>
 
                         {/* Payment Type Breakdown */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                                        <IoArrowDownOutline className="text-xl text-blue-600" />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 mb-6">
+                            <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-200">
+                                <div className="flex items-center gap-2.5 mb-2.5">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                                        <IoArrowDownOutline className="text-lg text-blue-600" />
                                     </div>
-                                    <h3 className="font-semibold text-gray-800">Advance Payments</h3>
+                                    <h3 className="font-semibold text-sm text-gray-800">Advance Payments</h3>
                                 </div>
-                                <p className="text-2xl font-bold text-gray-800 mb-1">{formatCurrency(stats.advancePayments.total)}</p>
-                                <p className="text-sm text-gray-600">{stats.advancePayments.count} transactions</p>
+                                <p className="text-xl font-extrabold text-gray-800 mb-0.5">{formatCurrency(stats.advancePayments.total)}</p>
+                                <p className="text-xs text-gray-600">{stats.advancePayments.count} transactions</p>
                             </div>
 
-                            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                                        <IoArrowUpOutline className="text-xl text-purple-600" />
+                            <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-200">
+                                <div className="flex items-center gap-2.5 mb-2.5">
+                                    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
+                                        <IoArrowUpOutline className="text-lg text-purple-600" />
                                     </div>
-                                    <h3 className="font-semibold text-gray-800">Remaining Payments</h3>
+                                    <h3 className="font-semibold text-sm text-gray-800">Remaining Payments</h3>
                                 </div>
-                                <p className="text-2xl font-bold text-gray-800 mb-1">{formatCurrency(stats.remainingPayments.total)}</p>
-                                <p className="text-sm text-gray-600">{stats.remainingPayments.count} transactions</p>
+                                <p className="text-xl font-extrabold text-gray-800 mb-0.5">{formatCurrency(stats.remainingPayments.total)}</p>
+                                <p className="text-xs text-gray-600">{stats.remainingPayments.count} transactions</p>
                             </div>
 
-                            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                                        <IoCashOutline className="text-xl text-orange-600" />
+                            <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-200">
+                                <div className="flex items-center gap-2.5 mb-2.5">
+                                    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center shrink-0">
+                                        <IoCashOutline className="text-lg text-orange-600" />
                                     </div>
-                                    <h3 className="font-semibold text-gray-800">Vendor Settlements</h3>
+                                    <h3 className="font-semibold text-sm text-gray-800">Vendor Settlements</h3>
                                 </div>
-                                <p className="text-2xl font-bold text-gray-800 mb-1">{formatCurrency(stats.settlements.total)}</p>
-                                <p className="text-sm text-gray-600">{stats.settlements.count} settlements</p>
+                                <p className="text-xl font-extrabold text-gray-800 mb-0.5">{formatCurrency(stats.settlements.total)}</p>
+                                <p className="text-xs text-gray-600">{stats.settlements.count} settlements</p>
                             </div>
                         </div>
                     </div>
