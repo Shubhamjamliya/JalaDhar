@@ -955,51 +955,43 @@ function App() {
                                                                         }
                                                                     />
                                                                     <Route
-                                                                        path="/expert-agreements"
-                                                                        element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminExpertAgreementLogs />
-                                                                            </Suspense>
-                                                                        }
-                                                                    />
-                                                                    <Route
                                                                         path="/booking/:bookingId/tracking"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <LiveTrackingPage role="User" />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="bookings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <LiveTrackingPage role="User" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/booking/:bookingId"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <UserBookingDetails />
-                                                                            </Suspense>
-                                                                        }
-                                                                    />
-                                                                    <Route
-                                                                        path="/bookings/notifications"
-                                                                        element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminBookingNotifications />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="bookings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <UserBookingDetails />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/notifications"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminBookingNotifications />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="bookings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminBookingNotifications />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
                                                                         path="/notification"
                                                                         element={
-                                                                            <Suspense fallback={<LoadingSpinner />}>
-                                                                                <AdminBookingNotifications />
-                                                                            </Suspense>
+                                                                            <AdminProtectedRoute requiredPermission="bookings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminBookingNotifications />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
                                                                         }
                                                                     />
                                                                     <Route
@@ -1466,7 +1458,7 @@ function App() {
                                                                     <Route
                                                                         path="/inquiries"
                                                                         element={
-                                                                            <AdminProtectedRoute>
+                                                                            <AdminProtectedRoute requiredPermission="inquiries">
                                                                                 <Suspense fallback={<LoadingSpinner />}>
                                                                                     <AdminInquiries />
                                                                                 </Suspense>

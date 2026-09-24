@@ -7,6 +7,7 @@ const {
   deleteInquiry
 } = require('../controllers/contactInquiryController');
 const { authenticate } = require('../middleware/authMiddleware');
+const { isInquiryAdmin } = require('../middleware/roleMiddleware');
 
 // ── Public Router: POST /api/contact ─────────────────────────────────────────
 const publicRouter = express.Router();
@@ -14,7 +15,7 @@ publicRouter.post('/', submitInquiry);
 
 // ── Admin Router: /api/admin/inquiries ───────────────────────────────────────
 const adminRouter = express.Router();
-adminRouter.use(authenticate);
+adminRouter.use(authenticate, isInquiryAdmin);
 
 adminRouter.get('/', getInquiries);
 adminRouter.get('/stats', getInquiryStats);

@@ -138,6 +138,7 @@ const navSections = [
                 label: "Contact Inquiries",
                 to: "/admin/inquiries",
                 Icon: IoMailOutline,
+                permission: "inquiries",
                 roles: ["SUPER_ADMIN", "ADMIN", "SUPPORT_ADMIN", "OPERATIONS_ADMIN"]
             },
             {

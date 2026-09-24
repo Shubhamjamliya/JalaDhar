@@ -720,6 +720,9 @@ export default function AdminTeamManagement() {
     return matched ? matched.color : 'bg-gray-100 text-gray-700 border-gray-200';
   };
 
+  const superAdmins = admins.filter((a) => a.role === "SUPER_ADMIN");
+  const operationalStaff = admins.filter((a) => a.role !== "SUPER_ADMIN");
+
   return (
     <div className="p-4 sm:p-5 max-w-7xl mx-auto space-y-4">
       {/* Header */}
@@ -793,6 +796,157 @@ export default function AdminTeamManagement() {
         <AdminActivityLogs embedded={true} />
       ) : (
         <>
+          {/* ── 1. PLATFORM GOVERNANCE & SUPER ADMINS ── */}
+          <div className="bg-white rounded-2xl shadow-xs border border-purple-200/80 overflow-hidden">
+            {/* Header Bar */}
+            <div className="px-4 py-3 border-b border-purple-100 flex items-center justify-between bg-gradient-to-r from-purple-50/70 via-indigo-50/30 to-white">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-sm border border-purple-200 shadow-xs">
+                  <IoShieldCheckmarkOutline />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs sm:text-sm font-bold text-gray-900">
+                      Platform Governance & Super Admins
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+                      {superAdmins.length}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    Master administrators with full platform clearance, financial controls, and security governance.
+                  </p>
+                </div>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-purple-700 font-bold bg-white px-2.5 py-1 rounded-xl border border-purple-200/80 shadow-xs">
+                <IoLockClosedOutline className="text-xs text-purple-600" />
+                <span>Full Master Access</span>
+              </div>
+            </div>
+
+            {/* Content: Cards Grid */}
+            <div className="p-4 bg-slate-50/40">
+              {superAdmins.length === 0 ? (
+                <div className="py-8 text-center text-gray-400">
+                  <IoShieldCheckmarkOutline className="mx-auto text-2xl text-gray-300 mb-1" />
+                  <p className="text-xs font-semibold text-gray-600">No Super Admins Found</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {superAdmins.map((admin) => {
+                    const isSelf = admin._id === currentAdmin?.id || admin._id === currentAdmin?._id;
+                    const initials = admin.name
+                      ? admin.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)
+                      : "SA";
+
+                    return (
+                      <div
+                        key={admin._id}
+                        className="bg-white rounded-xl p-3.5 border border-purple-100/90 shadow-xs hover:border-purple-300 hover:shadow-sm transition-all flex flex-col justify-between gap-3 relative"
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shadow-xs shadow-purple-500/20 shrink-0">
+                                {initials}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-bold text-gray-900 text-xs truncate max-w-[130px]">
+                                    {admin.name || "Admin"}
+                                  </span>
+                                  {isSelf && (
+                                    <span className="text-[9px] text-blue-700 font-bold bg-blue-50 border border-blue-200/80 px-1.5 py-0.2 rounded">
+                                      You
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 mt-0.5 rounded-full text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                  <IoShieldCheckmarkOutline className="text-[9.5px]" />
+                                  Super Admin
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={() => handleOpenEditModal(admin)}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                title="Edit Profile & Password"
+                              >
+                                <IoCreateOutline className="text-sm" />
+                              </button>
+                              {!isSelf && superAdmins.length > 1 && (
+                                <button
+                                  onClick={() => handleDeleteClick(admin)}
+                                  className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Delete Super Admin"
+                                >
+                                  <IoTrashOutline className="text-sm" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1 mt-2.5 pt-2.5 border-t border-gray-100 text-xs">
+                            <div className="flex items-center gap-1.5 text-gray-600">
+                              <IoMailOutline className="text-gray-400 text-xs shrink-0" />
+                              <span className="truncate text-[11px] font-medium" title={admin.email}>
+                                {admin.email}
+                              </span>
+                            </div>
+                            {admin.phone ? (
+                              <div className="flex items-center gap-1.5 text-gray-600">
+                                <IoCallOutline className="text-gray-400 text-xs shrink-0" />
+                                <span className="text-[11px] font-medium">{admin.phone}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 text-gray-300 italic text-[10px]">
+                                <IoCallOutline className="text-gray-300 text-xs shrink-0" />
+                                <span>No phone added</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleActiveStatus(admin._id, admin.isActive)}
+                            disabled={updatingId === admin._id || (admin.isActive && superAdmins.filter((a) => a.isActive !== false).length <= 1)}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold border transition-colors ${
+                              admin.isActive !== false
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 cursor-pointer"
+                                : "bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200 cursor-pointer"
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            title={
+                              admin.isActive && superAdmins.filter((a) => a.isActive !== false).length <= 1
+                                ? "At least one Super Admin must remain active"
+                                : "Toggle active status"
+                            }
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              admin.isActive !== false ? "bg-emerald-500" : "bg-gray-400"
+                            }`} />
+                            {admin.isActive !== false ? "Active" : "Inactive"}
+                          </button>
+                          <span className="text-purple-700 font-semibold bg-purple-50/80 px-2 py-0.5 rounded-full border border-purple-100">
+                            Universal Clearance
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* ── DEPARTMENT MASTER AUTO-ASSIGN TOGGLE CARD ── */}
           <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-gray-200/80 shadow-xs space-y-2.5">
         <div className="flex items-center justify-between">
@@ -859,13 +1013,13 @@ export default function AdminTeamManagement() {
           <div className="flex items-center gap-2">
             <IoBriefcaseOutline className="text-gray-500 text-sm" />
             <h3 className="text-xs sm:text-sm font-bold text-gray-900">
-              Operational Staff Team ({admins.filter((a) => a.role !== "SUPER_ADMIN").length})
+              Operational Staff Team ({operationalStaff.length})
             </h3>
           </div>
           <span className="text-[11px] text-gray-400">
             Staff on-duty:{" "}
             <strong className="text-gray-700 font-bold">
-              {admins.filter((a) => a.role !== "SUPER_ADMIN" && a.isActive && a.isAvailableForAssignment !== false).length}
+              {operationalStaff.filter((a) => a.isActive && a.isAvailableForAssignment !== false).length}
             </strong>
           </span>
         </div>
@@ -882,7 +1036,7 @@ export default function AdminTeamManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-xs">
-              {admins.filter((a) => a.role !== "SUPER_ADMIN").length === 0 ? (
+              {operationalStaff.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-10 text-center text-gray-400">
                     <div className="flex flex-col items-center justify-center gap-2">
@@ -897,9 +1051,7 @@ export default function AdminTeamManagement() {
                   </td>
                 </tr>
               ) : (
-                admins
-                  .filter((a) => a.role !== "SUPER_ADMIN")
-                  .map((admin) => {
+                operationalStaff.map((admin) => {
                     const isSelf = admin._id === currentAdmin.id;
                     const isUpdating = updatingId === admin._id;
                     const isDuty = admin.isAvailableForAssignment !== false;

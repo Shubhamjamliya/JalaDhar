@@ -34,7 +34,7 @@ const {
   assignBookingOperations
 } = require('../../controllers/bookingControllers/adminBookingController');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin, isSuperAdmin, canApproveReports, canApproveDisbursals } = require('../../middleware/roleMiddleware');
+const { isAdmin, isSuperAdmin, isFinanceAdmin, canApproveReports, canApproveDisbursals } = require('../../middleware/roleMiddleware');
 
 // Validation rules
 const approveBorewellResultValidation = [
@@ -72,20 +72,20 @@ router.patch('/bookings/:bookingId/approve-report', authenticate, canApproveRepo
 router.patch('/bookings/:bookingId/reject-report', authenticate, canApproveReports, rejectTravelChargesValidation, rejectReport);
 router.get('/bookings/borewell-pending', authenticate, isAdmin, getBorewellPendingApprovals);
 router.patch('/bookings/:bookingId/assign-borewell-qa', authenticate, isSuperAdmin, assignBorewellQA);
-router.get('/bookings/pending-user-refunds', authenticate, isAdmin, getPendingUserRefunds);
+router.get('/bookings/pending-user-refunds', authenticate, isFinanceAdmin, getPendingUserRefunds);
 router.patch('/bookings/:bookingId/user-refund', authenticate, canApproveDisbursals, processUserRefund);
 router.patch('/bookings/:bookingId/final-settlement', authenticate, canApproveDisbursals, processFinalSettlement);
-router.get('/bookings/pending-first-payment', authenticate, isAdmin, getPendingFirstPaymentReleases);
-router.get('/bookings/pending-second-payment', authenticate, isAdmin, getPendingSecondPaymentReleases);
+router.get('/bookings/pending-first-payment', authenticate, isFinanceAdmin, getPendingFirstPaymentReleases);
+router.get('/bookings/pending-second-payment', authenticate, isFinanceAdmin, getPendingSecondPaymentReleases);
 
 // New Final Settlement routes (separate from old final settlement)
 // Vendor final settlements
-router.get('/bookings/final-settlement/vendor/pending', authenticate, isAdmin, getPendingVendorFinalSettlements);
-router.get('/bookings/final-settlement/vendor/completed', authenticate, isAdmin, getCompletedVendorFinalSettlements);
+router.get('/bookings/final-settlement/vendor/pending', authenticate, isFinanceAdmin, getPendingVendorFinalSettlements);
+router.get('/bookings/final-settlement/vendor/completed', authenticate, isFinanceAdmin, getCompletedVendorFinalSettlements);
 router.patch('/bookings/:bookingId/final-settlement/vendor/process', authenticate, canApproveDisbursals, processNewFinalSettlement);
 // User final settlements
-router.get('/bookings/final-settlement/user/pending', authenticate, isAdmin, getPendingUserFinalSettlements);
-router.get('/bookings/final-settlement/user/completed', authenticate, isAdmin, getCompletedUserFinalSettlements);
+router.get('/bookings/final-settlement/user/pending', authenticate, isFinanceAdmin, getPendingUserFinalSettlements);
+router.get('/bookings/final-settlement/user/completed', authenticate, isFinanceAdmin, getCompletedUserFinalSettlements);
 router.patch('/bookings/:bookingId/final-settlement/user/process', authenticate, canApproveDisbursals, processUserFinalSettlement);
 router.patch('/bookings/:bookingId/resolve-infeasible', authenticate, isSuperAdmin, resolveInfeasibleBooking);
 

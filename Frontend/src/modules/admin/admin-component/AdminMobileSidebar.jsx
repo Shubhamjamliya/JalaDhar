@@ -17,6 +17,7 @@ import {
     IoLockClosedOutline,
     IoBusinessOutline,
     IoChevronDown,
+    IoMailOutline,
 } from "react-icons/io5";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { hasAdminPermission } from "../../../utils/permissionUtils";
@@ -131,6 +132,14 @@ const navSections = [
                 Icon: IoAlertCircleOutline,
                 permission: "disputes",
                 roles: ["SUPER_ADMIN", "SUPPORT_ADMIN"]
+            },
+            {
+                id: "inquiries",
+                label: "Contact Inquiries",
+                to: "/admin/inquiries",
+                Icon: IoMailOutline,
+                permission: "inquiries",
+                roles: ["SUPER_ADMIN", "ADMIN", "SUPPORT_ADMIN", "OPERATIONS_ADMIN"]
             },
             {
                 id: "agreement-logs",

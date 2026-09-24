@@ -67,6 +67,13 @@ export const SIDEBAR_MODULE_PERMISSIONS = [
     icon: "IoAlertCircleOutline",
   },
   {
+    key: "inquiries",
+    label: "Contact Inquiries",
+    section: "FINANCE & INTELLIGENCE",
+    description: "Allows reviewing customer contact inquiries, feedback messages & responses.",
+    icon: "IoMailOutline",
+  },
+  {
     key: "agreement-logs",
     label: "Audit Logs & OTP Verifications",
     section: "FINANCE & INTELLIGENCE",
@@ -119,11 +126,11 @@ export const ADMIN_MODULES = SIDEBAR_MODULE_PERMISSIONS;
 export const ROLE_DEFAULT_PERMISSIONS = {
   SUPER_ADMIN: ["all"],
   ADMIN: ["all"],
-  OPERATIONS_ADMIN: ["dashboard", "users", "bookings", "reports"],
+  OPERATIONS_ADMIN: ["dashboard", "users", "bookings", "reports", "inquiries"],
   EXPERT_VERIFICATION_ADMIN: ["dashboard", "vendors", "can_approve_vendors"],
   VERIFIER_ADMIN: ["dashboard", "vendors", "can_approve_vendors"],
   FINANCE_ADMIN: ["dashboard", "payments", "reports", "can_approve_disbursals"],
-  SUPPORT_ADMIN: ["dashboard", "disputes", "ratings", "users"],
+  SUPPORT_ADMIN: ["dashboard", "disputes", "ratings", "users", "inquiries"],
   QC_ADMIN: ["dashboard", "approvals", "reports", "can_approve_reports"],
 };
 

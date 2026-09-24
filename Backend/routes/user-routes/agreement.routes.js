@@ -16,7 +16,7 @@ router.get('/status', optionalAuth, getAgreementStatus);
 router.post('/accept', authenticate, acceptAgreement);
 
 // Admin endpoints for viewing acceptance logs & updating agreement text
-router.get('/admin/logs', authenticate, authorize('ADMIN', 'SUPER_ADMIN', 'SUPPORT_ADMIN', 'OPERATIONS_ADMIN'), getAdminAcceptanceLogs);
+router.get('/admin/logs', authenticate, authorize('ADMIN', 'SUPER_ADMIN', 'SUPPORT_ADMIN', 'OPERATIONS_ADMIN', 'QC_ADMIN'), getAdminAcceptanceLogs);
 router.put('/admin/update', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), updateAdminAgreement);
 
 module.exports = router;

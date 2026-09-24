@@ -44,10 +44,10 @@ router.patch('/vendors/:vendorId/approve', authenticate, canApproveVendors, appr
 router.patch('/vendors/:vendorId/reject', authenticate, canApproveVendors, rejectVendorValidation, rejectVendor);
 
 // Deactivate vendor
-router.patch('/vendors/:vendorId/deactivate', authenticate, isAdmin, deactivateVendor);
+router.patch('/vendors/:vendorId/deactivate', authenticate, canApproveVendors, deactivateVendor);
 
 // Activate vendor
-router.patch('/vendors/:vendorId/activate', authenticate, isAdmin, activateVendor);
+router.patch('/vendors/:vendorId/activate', authenticate, canApproveVendors, activateVendor);
 
 module.exports = router;
 

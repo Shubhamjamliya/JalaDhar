@@ -16,7 +16,7 @@ router.post('/accept', authenticate, acceptExpertAgreement);
 router.get('/download-pdf', authenticate, downloadExpertAgreementPdf);
 
 // Admin audit & edit endpoints
-router.get('/admin/logs', authenticate, authorize('ADMIN', 'SUPER_ADMIN', 'SUPPORT_ADMIN', 'OPERATIONS_ADMIN'), getAdminExpertAgreementLogs);
+router.get('/admin/logs', authenticate, authorize('ADMIN', 'SUPER_ADMIN', 'SUPPORT_ADMIN', 'OPERATIONS_ADMIN', 'QC_ADMIN'), getAdminExpertAgreementLogs);
 router.put('/admin/update', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), updateAdminExpertAgreement);
 
 module.exports = router;

@@ -42,9 +42,6 @@ const notificationLogSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// TTL index to automatically delete records after 24 hours
-notificationLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
-
 const NotificationLog = mongoose.model('NotificationLog', notificationLogSchema);
 
 module.exports = NotificationLog;

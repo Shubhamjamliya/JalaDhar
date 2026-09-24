@@ -124,6 +124,11 @@ const isExpertVerificationAdmin = isVerifierAdmin;
 const isSupportAdmin = requirePermission('support', ROLES.SUPPORT_ADMIN);
 
 /**
+ * Check if user has Inquiries permissions (or Support Admin / Operations Admin / Super Admin)
+ */
+const isInquiryAdmin = requirePermission('inquiries', ROLES.SUPPORT_ADMIN, ROLES.OPERATIONS_ADMIN);
+
+/**
  * Check if user has Quality Control permissions (or QC Admin / Super Admin)
  */
 const isQCAdmin = requirePermission('qc', ROLES.QC_ADMIN);
@@ -175,6 +180,7 @@ module.exports = {
   isVerifierAdmin,
   isExpertVerificationAdmin,
   isSupportAdmin,
+  isInquiryAdmin,
   isQCAdmin,
   canApproveVendors,
   canApproveReports,

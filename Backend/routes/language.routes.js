@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/authMiddleware');
-const { isAdmin } = require('../middleware/roleMiddleware');
+const { isAdmin, isSuperAdmin, requirePermission } = require('../middleware/roleMiddleware');
 const languageController = require('../controllers/languageController');
+
+const isSettingsAdmin = requirePermission('settings');
 
 // ==========================================
 // PUBLIC ROUTES
@@ -25,30 +27,30 @@ router.post('/translate-text', languageController.translateDynamicText);
 // ==========================================
 
 // Full dictionary matrix
-router.get('/admin/dictionary', authenticate, isAdmin, languageController.getAdminDictionary);
+router.get('/admin/dictionary', authenticate, isSettingsAdmin, languageController.getAdminDictionary);
 
-// Update configuration & Google API keys
-router.post('/admin/config', authenticate, isAdmin, languageController.updateLanguageConfig);
+// Update configuration & Google API keys (Super Admin only)
+router.post('/admin/config', authenticate, isSuperAdmin, languageController.updateLanguageConfig);
 
 // Test Google Translation API connection
-router.post('/admin/test-google-api', authenticate, isAdmin, languageController.testGoogleApi);
+router.post('/admin/test-google-api', authenticate, isSettingsAdmin, languageController.testGoogleApi);
 
 // Auto-translate dictionary to a target language with Google API
-router.post('/admin/auto-translate-language', authenticate, isAdmin, languageController.autoTranslateLanguage);
+router.post('/admin/auto-translate-language', authenticate, isSettingsAdmin, languageController.autoTranslateLanguage);
 
 // Add a new supported language
-router.post('/admin/add-language', authenticate, isAdmin, languageController.addSupportedLanguage);
+router.post('/admin/add-language', authenticate, isSettingsAdmin, languageController.addSupportedLanguage);
 
-// Delete a supported language
-router.delete('/admin/delete-language/:code', authenticate, isAdmin, languageController.deleteSupportedLanguage);
+// Delete a supported language (Super Admin only)
+router.delete('/admin/delete-language/:code', authenticate, isSuperAdmin, languageController.deleteSupportedLanguage);
 
 // Add / edit translation key
-router.post('/admin/upsert-key', authenticate, isAdmin, languageController.upsertDictionaryKey);
+router.post('/admin/upsert-key', authenticate, isSettingsAdmin, languageController.upsertDictionaryKey);
 
 // Bulk save manual translation edits
-router.post('/admin/bulk-update', authenticate, isAdmin, languageController.bulkUpdateTranslations);
+router.post('/admin/bulk-update', authenticate, isSettingsAdmin, languageController.bulkUpdateTranslations);
 
 // Seed default dictionary
-router.post('/admin/seed-defaults', authenticate, isAdmin, languageController.seedDefaultTranslations);
+router.post('/admin/seed-defaults', authenticate, isSuperAdmin, languageController.seedDefaultTranslations);
 
 module.exports = router;
