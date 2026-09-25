@@ -258,16 +258,16 @@ export default function LandingPage() {
           style={{ paddingTop: 'calc(var(--landing-header-height, 80px) + 20px)' }}
           className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 flex flex-col pb-14 sm:pb-18 lg:pb-20"
         >
-          <div className="w-full grid lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-center">
-            <div className="lg:col-span-8 flex flex-col justify-center items-start py-2 sm:py-4 lg:py-6 relative">
+          <div className="w-full grid lg:grid-cols-12 gap-2.5 sm:gap-5 lg:gap-8 items-center">
+            <div className="lg:col-span-8 flex flex-col justify-center items-start py-1 sm:py-4 lg:py-6 relative">
               {/* Text Block */}
-              <div className="w-full bg-white/80 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-4 sm:p-8 lg:p-0 rounded-2xl sm:rounded-3xl lg:rounded-none border border-white/50 lg:border-none shadow-lg shadow-black/5 lg:shadow-none mb-3 sm:mb-5 lg:mb-0">
-                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] sm:text-xs font-extrabold uppercase tracking-[0.12em] sm:tracking-[0.15em] mb-2.5 sm:mb-4 border border-[var(--color-primary)]/20">
+              <div className="w-full bg-white/80 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-4 sm:p-8 lg:p-0 rounded-2xl sm:rounded-3xl lg:rounded-none border border-white/50 lg:border-none shadow-lg shadow-black/5 lg:shadow-none mb-2 sm:mb-4 lg:mb-0">
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] sm:text-xs font-extrabold uppercase tracking-[0.12em] sm:tracking-[0.15em] mb-2 sm:mb-3.5 border border-[var(--color-primary)]/20">
                   <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                   <span>{cms('hero.badgeText', 'Dedicated Scientific Groundwater Survey Booking Platform')}</span>
                 </div>
 
-                <h1 className="text-[22px] sm:text-3xl md:text-4xl lg:text-[45px] xl:text-[52px] font-black leading-[1.2] lg:leading-[1.12] tracking-tight mb-2.5 sm:mb-4 text-[var(--color-text-primary)] font-display">
+                <h1 className="text-[22px] sm:text-3xl md:text-4xl lg:text-[45px] xl:text-[52px] font-black leading-[1.2] lg:leading-[1.12] tracking-tight mb-2 sm:mb-3.5 text-[var(--color-text-primary)] font-display">
                   <span className="block mb-1 lg:mb-2">{cms('hero.headline1', "India's Trusted Platform to")}</span>
                   <span className="block text-[var(--color-primary)]">{cms('hero.headline2', "Book Verified Groundwater Survey Experts")}</span>
                   {cms('hero.headline3', '') && (
@@ -275,40 +275,40 @@ export default function LandingPage() {
                   )}
                 </h1>
 
-                <p className="text-[13px] sm:text-base lg:text-xl text-[var(--color-text-secondary)] mb-3 sm:mb-5 max-w-2xl leading-relaxed sm:leading-[1.7] font-medium">
+                <p className="text-[13px] sm:text-base lg:text-xl text-[var(--color-text-secondary)] mb-2 sm:mb-4 max-w-2xl leading-relaxed sm:leading-[1.7] font-medium">
                   {cms('hero.subtitle', "Find and connect with verified groundwater experts for Agricultural, Residential, Commercial and Industrial water needs.")}
                 </p>
               </div>
 
               {/* Action Block */}
-              <div className="w-full mt-2 sm:mt-3 lg:mt-4 pt-1 sm:pt-2 lg:pt-0">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-4 sm:mb-6">
+              <div className="w-full mt-1 sm:mt-2 lg:mt-4">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 mb-2.5 sm:mb-5">
                   {['FIND', 'CONNECT', 'SURVEY', 'PROTECT'].map((word, i) => (
                     <div 
                       key={i} 
-                      className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/90 backdrop-blur-sm border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-[var(--color-primary)]/50 hover:shadow-md transition-all duration-200 group cursor-default"
+                      className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-4 sm:py-2 rounded-full bg-white/90 backdrop-blur-sm border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-[var(--color-primary)]/50 hover:shadow-md transition-all duration-200 group cursor-default"
                     >
                       <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center shrink-0 group-hover:bg-[var(--color-primary)] group-hover:text-white transition-all">
                         <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
                       </div>
-                      <span className="text-[11px] sm:text-xs font-extrabold text-slate-700 tracking-wider">
+                      <span className="text-[10px] sm:text-xs font-extrabold text-slate-700 tracking-wider">
                         {word}
                       </span>
                     </div>
                   ))}
                 </div>
 
-                <div className="flex flex-row gap-2.5 sm:gap-4 w-full sm:w-auto">
+                <div className="flex flex-row gap-2 sm:gap-4 w-full sm:w-auto">
                   <a 
                     href="#apps" 
-                    className="flex-1 sm:flex-initial h-11 sm:h-13 px-3 sm:px-8 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 group shadow-lg shadow-[var(--color-primary)]/20 text-center"
+                    className="flex-1 sm:flex-initial h-10.5 sm:h-13 px-3 sm:px-8 rounded-xl bg-[var(--color-primary)] text-white font-bold text-xs sm:text-base hover:bg-[var(--color-primary-hover)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 group shadow-lg shadow-[var(--color-primary)]/20 text-center"
                   >
                     <span>{cms('hero.cta1Label') === 'Book a Survey' ? 'Download app' : cms('hero.cta1Label', 'Download app')}</span>
                     <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform shrink-0" />
                   </a>
                   <a 
                     href="#why-us" 
-                    className="flex-1 sm:flex-initial h-11 sm:h-13 px-3 sm:px-8 rounded-xl bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] font-bold text-xs sm:text-base hover:bg-[var(--color-surface)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 group shadow-xs text-center"
+                    className="flex-1 sm:flex-initial h-10.5 sm:h-13 px-3 sm:px-8 rounded-xl bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] font-bold text-xs sm:text-base hover:bg-[var(--color-surface)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 group shadow-xs text-center"
                   >
                     <span>{cms('hero.cta2Label', 'How It Works')}</span>
                     <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full border border-[var(--color-border)] flex items-center justify-center group-hover:border-[var(--color-text-primary)] transition-colors shrink-0">
@@ -320,7 +320,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right Card / Visual */}
-            <div className="lg:col-span-4 relative flex items-center justify-center mt-6 sm:mt-8 lg:mt-0 w-full reveal animate-fade-up-delay-2">
+            <div className="lg:col-span-4 relative flex items-center justify-center mt-2.5 sm:mt-5 lg:mt-0 w-full reveal animate-fade-up-delay-2">
               <div className="relative w-full max-w-sm sm:max-w-md lg:max-w-sm rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/95 to-white/70 p-5 sm:p-7 lg:p-8 border border-white/80 shadow-xl lg:shadow-2xl backdrop-blur-xl">
                 <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] flex items-center justify-center text-white shrink-0 shadow-md shadow-[var(--color-primary)]/20">
