@@ -36,6 +36,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
+  const [drawerLangExpanded, setDrawerLangExpanded] = useState(false);
   const langDropdownRef = useRef(null);
   const headerRef = useRef(null);
   const location = useLocation();
@@ -371,47 +372,69 @@ export default function Navbar() {
                 })}
               </ul>
 
-              {/* Drawer Regional Language Selection Section */}
+              {/* Drawer Regional Language Selection Dropdown */}
               {isLanguageEnabled && (
                 <div className="pt-3 border-t border-slate-100">
-                  <div className="flex items-center justify-between px-1 mb-2.5">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                      <IoGlobeOutline className="text-[#0A84FF] text-base" />
-                      <span>Language / क्षेत्रीय भाषा</span>
-                    </div>
-                    <span className="text-[11px] font-bold text-[#0A84FF] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
-                      {currentLangObj.nativeName}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {availableLanguages.map((lang) => {
-                      const isSelected = language === lang.code;
-                      return (
-                        <button
-                          key={lang.code}
-                          type="button"
-                          onClick={() => {
-                            setLanguage(lang.code);
-                          }}
-                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1 ${
-                            isSelected
-                              ? 'bg-blue-50/90 border-[#0A84FF] ring-1 ring-blue-500/20 text-[#0A84FF] shadow-2xs'
-                              : 'bg-slate-50/70 border-slate-100 hover:bg-slate-100/80 text-slate-700'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isSelected ? 'bg-[#0A84FF] text-white' : 'bg-slate-200/80 text-slate-600'}`}>
-                              {lang.badge || lang.code.toUpperCase()}
-                            </span>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-[#0A84FF] shrink-0" />}
-                          </div>
-                          <div>
-                            <span className="text-xs font-bold block text-slate-900 truncate">{lang.nativeName}</span>
-                            <span className="text-[10px] text-slate-400 font-mono block truncate">{lang.name}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setDrawerLangExpanded((prev) => !prev)}
+                      className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100/80 active:scale-[0.99] border border-slate-200/80 transition-all cursor-pointer shadow-2xs group"
+                      aria-expanded={drawerLangExpanded}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0A84FF] flex items-center justify-center border border-blue-100/60 shrink-0">
+                          <IoGlobeOutline className="text-base" />
+                        </div>
+                        <div className="text-left min-w-0">
+                          <span className="text-xs font-bold text-slate-800 block truncate">Language / क्षेत्रीय भाषा</span>
+                          <span className="text-[11px] text-slate-500 font-medium truncate block">
+                            {currentLangObj.nativeName} ({currentLangObj.name})
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[11px] font-bold text-[#0A84FF] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                          {currentLangObj.badge || currentLangObj.code.toUpperCase()}
+                        </span>
+                        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 group-hover:text-slate-600 ${drawerLangExpanded ? 'rotate-180' : ''}`} />
+                      </div>
+                    </button>
+
+                    {/* Expandable Dropdown Options */}
+                    {drawerLangExpanded && (
+                      <div className="mt-2 bg-white rounded-2xl border border-slate-200/80 shadow-lg p-1.5 space-y-1 max-h-56 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
+                        {availableLanguages.map((lang) => {
+                          const isSelected = language === lang.code;
+                          return (
+                            <button
+                              key={lang.code}
+                              type="button"
+                              onClick={() => {
+                                setLanguage(lang.code);
+                                setDrawerLangExpanded(false);
+                              }}
+                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                                isSelected 
+                                  ? 'bg-blue-50 text-[#0A84FF] border border-blue-200/60 shadow-2xs' 
+                                  : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isSelected ? 'bg-[#0A84FF] text-white' : 'bg-slate-100 text-slate-600'}`}>
+                                  {lang.badge || lang.code.toUpperCase()}
+                                </span>
+                                <span>{lang.nativeName}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-slate-400 font-mono font-normal">{lang.name}</span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-[#0A84FF] shrink-0" />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
