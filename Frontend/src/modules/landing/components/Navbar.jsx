@@ -181,8 +181,10 @@ export default function Navbar() {
           : 'bg-white/90 backdrop-blur-lg border-b border-slate-200/60 shadow-[0_1px_4px_rgba(0,0,0,0.02)]'
       }`}
     >
-      <nav className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
-        <Logo />
+      <nav className="w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="shrink-0 flex items-center min-w-0">
+          <Logo />
+        </div>
 
         <ul className="hidden items-center gap-2 xl:gap-5 2xl:gap-7 lg:flex">
           {navItems.map((item) => {
@@ -269,18 +271,20 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Header Actions */}
-        <div className="flex items-center gap-2 sm:gap-2.5 lg:hidden">
+        <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden shrink-0">
           {/* Quick Mobile Language Switcher Pill (Opens Regional Language Modal) */}
           {isLanguageEnabled && (
             <button
               type="button"
               onClick={() => setShowLangModal(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-50 hover:bg-slate-100 active:scale-95 border border-slate-200/90 text-slate-700 text-[11px] sm:text-xs font-bold shadow-2xs transition-all cursor-pointer"
+              className="h-8.5 sm:h-9 px-2 sm:px-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 active:scale-95 border border-slate-200/90 text-slate-700 text-xs font-bold shadow-2xs transition-all cursor-pointer flex items-center gap-1 shrink-0"
               title="Change Language"
               aria-label="Change Language"
             >
-              <IoGlobeOutline className="text-[#0A84FF] text-sm shrink-0" />
-              <span className="max-w-[58px] truncate">{currentLangObj.nativeName}</span>
+              <IoGlobeOutline className="text-[#0A84FF] text-base shrink-0" />
+              <span className="text-[11px] font-bold text-slate-700 leading-none">
+                {currentLangObj.badge || currentLangObj.code.toUpperCase()}
+              </span>
             </button>
           )}
 
@@ -288,16 +292,16 @@ export default function Navbar() {
           <button
             type="button"
             onClick={handleDownloadAppClick}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] active:scale-95 text-white text-[11px] sm:text-xs font-bold shadow-xs shadow-[var(--color-primary)]/20 transition-all cursor-pointer"
+            className="h-8.5 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] active:scale-95 text-white text-[11px] sm:text-xs font-bold shadow-xs shadow-[var(--color-primary)]/20 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
           >
-            <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <Download className="w-3.5 h-3.5 shrink-0" />
             <span>App</span>
           </button>
 
           {/* Styled Tactile Hamburger Button */}
           <button
             type="button"
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200/80 border border-slate-200/80 text-[var(--color-text-primary)] flex items-center justify-center shadow-2xs active:scale-95 transition-all cursor-pointer"
+            className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200/80 border border-slate-200/80 text-[var(--color-text-primary)] flex items-center justify-center shadow-2xs active:scale-95 transition-all cursor-pointer shrink-0"
             aria-label="Open menu"
             onClick={() => setOpen(true)}
           >
