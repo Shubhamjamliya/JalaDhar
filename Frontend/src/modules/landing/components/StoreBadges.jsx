@@ -134,7 +134,7 @@ export function AppStoreBadge({
   const content = (
     <>
       <AppleLogo className={compact ? 'w-4 h-4 shrink-0 fill-current' : 'w-5 h-5 sm:w-6 sm:h-6 shrink-0 fill-current'} />
-      <div className="flex flex-col text-left leading-tight">
+      <div className="flex flex-col text-left leading-tight shrink-0">
         <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider opacity-75 whitespace-nowrap">
           Download on the
         </span>
@@ -143,21 +143,21 @@ export function AppStoreBadge({
         </span>
       </div>
       {!isLive && showSoonBadge && (
-        <span className={`ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 ${
+        <span className={`ml-auto text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 ${
           variant === 'dark'
             ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
             : variant === 'glass'
             ? 'bg-amber-300/25 text-amber-200 border border-amber-300/35'
             : 'bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs'
         }`}>
-          Coming Soon
+          Soon
         </span>
       )}
     </>
   );
 
   const padClasses = compact 
-    ? 'gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2' 
+    ? 'gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2' 
     : 'gap-2.5 px-3.5 sm:px-4 py-2 sm:py-2.5';
   const baseClasses = `inline-flex items-center ${padClasses} rounded-xl transition-all duration-200 cursor-pointer group select-none ${variantStyles} ${className}`;
 
