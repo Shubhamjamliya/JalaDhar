@@ -215,6 +215,21 @@ export default function AdminSettings({ defaultTab = "general" }) {
     });
     const [rescheduleLoading, setRescheduleLoading] = useState(false);
 
+    // Default Travel Slabs definition (One-way distance -> Two-way charge covering tolls)
+    const DEFAULT_TRAVEL_SLABS = [
+        { minKm: 0, maxKm: 30, charge: 0 },
+        { minKm: 31, maxKm: 50, charge: 1200 },
+        { minKm: 51, maxKm: 75, charge: 1800 },
+        { minKm: 76, maxKm: 100, charge: 2400 },
+        { minKm: 101, maxKm: 150, charge: 3000 },
+        { minKm: 151, maxKm: 200, charge: 4000 },
+        { minKm: 201, maxKm: 250, charge: 5000 },
+        { minKm: 251, maxKm: 300, charge: 6000 },
+        { minKm: 301, maxKm: 350, charge: 7000 },
+        { minKm: 351, maxKm: 400, charge: 8000 },
+        { minKm: 401, maxKm: 500, charge: 10000 }
+    ];
+
     // Pricing Settings State
     const [pricingSettings, setPricingSettings] = useState({
         TRAVEL_CHARGE_PER_KM: 10,
@@ -224,6 +239,9 @@ export default function AdminSettings({ defaultTab = "general" }) {
         REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT: true,
         ENABLE_AUTO_APPROVE_REPORT_SLA: true,
         AUTO_APPROVE_REPORT_SLA_HOURS: 48,
+        TRAVEL_CHARGE_SLABS: DEFAULT_TRAVEL_SLABS,
+        TRAVEL_CHARGE_DEFINITION: "The applicable slab is determined by the one-way road distance between the expert's starting location and the survey site. The corresponding Travel Charge covers two-way travel and applicable toll charges.",
+        OVERNIGHT_ACCOMMODATION_POLICY: "Overnight accommodation is not included in the Travel Charge and will not be provided by Jaladhaara.",
     });
     const [pricingLoading, setPricingLoading] = useState(false);
 
@@ -635,7 +653,15 @@ export default function AdminSettings({ defaultTab = "general" }) {
                     if (response.success && response.data.settings) {
                         const settingsObj = {};
                         response.data.settings.forEach(setting => {
-                            settingsObj[setting.key] = setting.value;
+                            let val = setting.value;
+                            if (setting.key === 'TRAVEL_CHARGE_SLABS' && typeof val === 'string') {
+                                try {
+                                    val = JSON.parse(val);
+                                } catch (e) {
+                                    console.error('Error parsing TRAVEL_CHARGE_SLABS:', e);
+                                }
+                            }
+                            settingsObj[setting.key] = val;
                         });
                         setPricingSettings(prev => ({
                             ...prev,
@@ -1022,6 +1048,29 @@ export default function AdminSettings({ defaultTab = "general" }) {
             }
         };
 
+        // Travel Slabs handlers
+        const handleSlabChargeChange = (index, value) => {
+            setPricingSettings(prev => {
+                const currentSlabs = Array.isArray(prev.TRAVEL_CHARGE_SLABS) ? [...prev.TRAVEL_CHARGE_SLABS] : [...DEFAULT_TRAVEL_SLABS];
+                currentSlabs[index] = {
+                    ...currentSlabs[index],
+                    charge: value === "" ? "" : Math.max(0, Number(value) || 0)
+                };
+                return {
+                    ...prev,
+                    TRAVEL_CHARGE_SLABS: currentSlabs
+                };
+            });
+        };
+
+        const handleResetSlabsToDefault = () => {
+            setPricingSettings(prev => ({
+                ...prev,
+                TRAVEL_CHARGE_SLABS: DEFAULT_TRAVEL_SLABS
+            }));
+            toast.showSuccess("Travel slabs reset to Jaladhaara defaults. Click 'Save Pricing Settings' to persist.");
+        };
+
         // Handle pricing settings update
         const handlePricingSettingsUpdate = async (e) => {
             e.preventDefault();
@@ -1029,6 +1078,13 @@ export default function AdminSettings({ defaultTab = "general" }) {
             setPricingLoading(true);
 
             try {
+                // Ensure charges in slabs are numbers
+                const sanitizedSlabs = (pricingSettings.TRAVEL_CHARGE_SLABS || DEFAULT_TRAVEL_SLABS).map(slab => ({
+                    minKm: Number(slab.minKm),
+                    maxKm: slab.maxKm !== null && slab.maxKm !== undefined ? Number(slab.maxKm) : null,
+                    charge: Number(slab.charge) || 0
+                }));
+
                 const settings = [
                     { key: 'TRAVEL_CHARGE_PER_KM', value: Number(pricingSettings.TRAVEL_CHARGE_PER_KM) },
                     { key: 'BASE_RADIUS_KM', value: Number(pricingSettings.BASE_RADIUS_KM) },
@@ -1037,11 +1093,14 @@ export default function AdminSettings({ defaultTab = "general" }) {
                     { key: 'REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', value: Boolean(pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT) },
                     { key: 'ENABLE_AUTO_APPROVE_REPORT_SLA', value: Boolean(pricingSettings.ENABLE_AUTO_APPROVE_REPORT_SLA) },
                     { key: 'AUTO_APPROVE_REPORT_SLA_HOURS', value: Math.max(1, Number(pricingSettings.AUTO_APPROVE_REPORT_SLA_HOURS) || 48) },
+                    { key: 'TRAVEL_CHARGE_SLABS', value: sanitizedSlabs, category: 'pricing' },
+                    { key: 'TRAVEL_CHARGE_DEFINITION', value: String(pricingSettings.TRAVEL_CHARGE_DEFINITION || '').trim(), category: 'pricing' },
+                    { key: 'OVERNIGHT_ACCOMMODATION_POLICY', value: String(pricingSettings.OVERNIGHT_ACCOMMODATION_POLICY || '').trim(), category: 'pricing' },
                 ];
 
                 const response = await updateMultipleSettings(settings);
                 if (response.success) {
-                    toast.showSuccess("Pricing settings updated successfully!");
+                    toast.showSuccess("Pricing settings and travel charge slabs updated successfully!");
                 } else {
                     setError(response.message || "Failed to update pricing settings");
                 }
@@ -2596,101 +2655,245 @@ export default function AdminSettings({ defaultTab = "general" }) {
                             {activeTab === "pricing" && (
                                 <div>
                                     <h2 className="text-base font-semibold text-gray-800 mb-5">Pricing Settings</h2>
-                                    <form onSubmit={handlePricingSettingsUpdate} className="space-y-5">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                                                Travel Charge Per Kilometer (₹)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={pricingSettings.TRAVEL_CHARGE_PER_KM}
-                                                onChange={(e) =>
-                                                    setPricingSettings({
-                                                        ...pricingSettings,
-                                                        TRAVEL_CHARGE_PER_KM: e.target.value,
-                                                    })
-                                                }
-                                                min="0"
-                                                step="0.01"
-                                                required
-                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
-                                                placeholder="Enter travel charge per km"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                Charge per kilometer beyond the base radius
+                                    <form onSubmit={handlePricingSettingsUpdate} className="space-y-6">
+                                        {/* Core Commission & GST Rates */}
+                                        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs space-y-4">
+                                            <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                                <span>💼</span> Platform Commission & Tax Rates
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+                                                        Platform Fee / Commission (%)
+                                                    </label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="number"
+                                                            value={pricingSettings.PLATFORM_FEE_PERCENTAGE ?? 15}
+                                                            onChange={(e) =>
+                                                                setPricingSettings({
+                                                                    ...pricingSettings,
+                                                                    PLATFORM_FEE_PERCENTAGE: e.target.value,
+                                                                })
+                                                            }
+                                                            min="0"
+                                                            max="100"
+                                                            step="0.1"
+                                                            required
+                                                            className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
+                                                            placeholder="e.g. 15"
+                                                        />
+                                                        <span className="absolute right-3.5 top-2.5 text-sm font-bold text-gray-400">%</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-500 mt-1">
+                                                        Commission deducted from survey service charges. 18% GST on platform fee and 1% Sec 194O TDS apply automatically.
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+                                                        GST Percentage (%)
+                                                    </label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="number"
+                                                            value={pricingSettings.GST_PERCENTAGE}
+                                                            onChange={(e) =>
+                                                                setPricingSettings({
+                                                                    ...pricingSettings,
+                                                                    GST_PERCENTAGE: e.target.value,
+                                                                })
+                                                            }
+                                                            min="0"
+                                                            max="100"
+                                                            step="0.01"
+                                                            required
+                                                            className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
+                                                            placeholder="Enter GST percentage"
+                                                        />
+                                                        <span className="absolute right-3.5 top-2.5 text-sm font-bold text-gray-400">%</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-500 mt-1">
+                                                        GST percentage applied on customer invoice (base fee + travel charges).
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Two-Way Travel Charge Slabs Table */}
+                                        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs space-y-4">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-3">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-base">🚗</span>
+                                                        <h3 className="text-sm font-bold text-gray-900">
+                                                            Travel Charge Slabs (Two-Way Travel & Tolls)
+                                                        </h3>
+                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                                            Active Policy
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mt-0.5">
+                                                        Applicable slab is determined by one-way road distance. The charge covers round-trip (two-way) travel and tolls.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleResetSlabsToDefault}
+                                                    className="self-start sm:self-auto px-3 py-1.5 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
+                                                >
+                                                    ↺ Reset to Defaults
+                                                </button>
+                                            </div>
+
+                                            {/* Slabs Table */}
+                                            <div className="overflow-x-auto border border-gray-100 rounded-lg">
+                                                <table className="w-full text-left text-xs">
+                                                    <thead className="bg-gray-50/80 text-gray-700 font-semibold border-b border-gray-200/80">
+                                                        <tr>
+                                                            <th className="py-2.5 px-3">#</th>
+                                                            <th className="py-2.5 px-3">One-Way Road Distance</th>
+                                                            <th className="py-2.5 px-3">Two-Way Travel Charge (₹)</th>
+                                                            <th className="py-2.5 px-3 hidden sm:table-cell">Toll Coverage</th>
+                                                            <th className="py-2.5 px-3 text-right">Summary</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-100">
+                                                        {(Array.isArray(pricingSettings.TRAVEL_CHARGE_SLABS) ? pricingSettings.TRAVEL_CHARGE_SLABS : DEFAULT_TRAVEL_SLABS).map((slab, index) => (
+                                                            <tr key={index} className="hover:bg-blue-50/30 transition-colors">
+                                                                <td className="py-2.5 px-3 text-gray-400 font-mono text-[11px]">{index + 1}</td>
+                                                                <td className="py-2.5 px-3 font-semibold text-gray-800">
+                                                                    {slab.minKm}–{slab.maxKm ? `${slab.maxKm} km` : '+ km'}
+                                                                </td>
+                                                                <td className="py-2 px-3">
+                                                                    <div className="relative w-36">
+                                                                        <span className="absolute left-2.5 top-1.5 text-gray-400 font-bold">₹</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            min="0"
+                                                                            step="50"
+                                                                            value={slab.charge}
+                                                                            onChange={(e) => handleSlabChargeChange(index, e.target.value)}
+                                                                            className="w-full pl-6 pr-2 py-1 text-xs font-bold border border-gray-300 rounded-md focus:ring-1 focus:ring-[#0A84FF] bg-white"
+                                                                        />
+                                                                    </div>
+                                                                </td>
+                                                                <td className="py-2.5 px-3 hidden sm:table-cell text-gray-500">
+                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                        ✓ Included
+                                                                    </span>
+                                                                </td>
+                                                                <td className="py-2.5 px-3 text-right font-medium text-gray-600">
+                                                                    {Number(slab.charge) === 0 ? (
+                                                                        <span className="text-emerald-600 font-bold">₹0 (Base Free)</span>
+                                                                    ) : (
+                                                                        <span>₹{Number(slab.charge).toLocaleString('en-IN')} (Round trip)</span>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <p className="text-[11px] text-gray-400 italic">
+                                                * For distances exceeding 500 km, the rate defaults to the highest configured slab (₹10,000).
                                             </p>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                                                Base Radius (km)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={pricingSettings.BASE_RADIUS_KM}
-                                                onChange={(e) =>
-                                                    setPricingSettings({
-                                                        ...pricingSettings,
-                                                        BASE_RADIUS_KM: e.target.value,
-                                                    })
-                                                }
-                                                min="0"
-                                                step="1"
-                                                required
-                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
-                                                placeholder="Enter base radius in km"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                Distance within which no travel charges apply
-                                            </p>
+
+                                        {/* Policy Definitions & Disclaimers */}
+                                        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs space-y-4">
+                                            <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                                <span>📋</span> Travel Policy & Accommodation Disclaimers
+                                            </h3>
+
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+                                                    Travel Charge Definition
+                                                </label>
+                                                <textarea
+                                                    value={pricingSettings.TRAVEL_CHARGE_DEFINITION || ""}
+                                                    onChange={(e) =>
+                                                        setPricingSettings({
+                                                            ...pricingSettings,
+                                                            TRAVEL_CHARGE_DEFINITION: e.target.value,
+                                                        })
+                                                    }
+                                                    rows={3}
+                                                    className="w-full px-3.5 py-2.5 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent leading-relaxed"
+                                                    placeholder="Enter travel charge definition..."
+                                                />
+                                                <p className="text-[11px] text-gray-400 mt-1">
+                                                    Explains how the slab is determined and what the travel charge covers.
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+                                                    Overnight Accommodation Policy Disclaimer
+                                                </label>
+                                                <textarea
+                                                    value={pricingSettings.OVERNIGHT_ACCOMMODATION_POLICY || ""}
+                                                    onChange={(e) =>
+                                                        setPricingSettings({
+                                                            ...pricingSettings,
+                                                            OVERNIGHT_ACCOMMODATION_POLICY: e.target.value,
+                                                        })
+                                                    }
+                                                    rows={2}
+                                                    className="w-full px-3.5 py-2.5 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent leading-relaxed"
+                                                    placeholder="Enter overnight accommodation policy..."
+                                                />
+                                                <p className="text-[11px] text-gray-400 mt-1">
+                                                    Displayed to customer and expert at checkout, booking details, and invoices.
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                                                GST Percentage (%)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={pricingSettings.GST_PERCENTAGE}
-                                                onChange={(e) =>
-                                                    setPricingSettings({
-                                                        ...pricingSettings,
-                                                        GST_PERCENTAGE: e.target.value,
-                                                    })
-                                                }
-                                                min="0"
-                                                max="100"
-                                                step="0.01"
-                                                required
-                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
-                                                placeholder="Enter GST percentage"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                GST percentage applied on total amount (subtotal + travel charges)
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                                                Platform Fee / Commission Percentage (%)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={pricingSettings.PLATFORM_FEE_PERCENTAGE ?? 15}
-                                                onChange={(e) =>
-                                                    setPricingSettings({
-                                                        ...pricingSettings,
-                                                        PLATFORM_FEE_PERCENTAGE: e.target.value,
-                                                    })
-                                                }
-                                                min="0"
-                                                max="100"
-                                                step="0.1"
-                                                required
-                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
-                                                placeholder="e.g. 15"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                Platform commission deducted from service charges. 18% GST on platform fee and 1% Sec 194O TDS apply automatically.
-                                            </p>
-                                        </div>
+
+                                        {/* Legacy Per-KM Fallbacks (Collapsible / Compact) */}
+                                        <details className="bg-gray-50/70 p-4 rounded-xl border border-gray-200/80 group">
+                                            <summary className="text-xs font-bold text-gray-600 cursor-pointer flex items-center justify-between select-none">
+                                                <span>⚙️ Legacy Per-KM Fallbacks (Optional Legacy Overrides)</span>
+                                                <span className="text-[10px] text-gray-400 font-normal">Click to expand</span>
+                                            </summary>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 pt-3 border-t border-gray-200">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                                                        Fallback Charge Per KM (₹)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={pricingSettings.TRAVEL_CHARGE_PER_KM}
+                                                        onChange={(e) =>
+                                                            setPricingSettings({
+                                                                ...pricingSettings,
+                                                                TRAVEL_CHARGE_PER_KM: e.target.value,
+                                                            })
+                                                        }
+                                                        min="0"
+                                                        step="0.01"
+                                                        className="w-full px-3.5 py-2 text-xs border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#0A84FF] bg-white"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                                                        Fallback Base Radius (km)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={pricingSettings.BASE_RADIUS_KM}
+                                                        onChange={(e) =>
+                                                            setPricingSettings({
+                                                                ...pricingSettings,
+                                                                BASE_RADIUS_KM: e.target.value,
+                                                            })
+                                                        }
+                                                        min="0"
+                                                        step="1"
+                                                        className="w-full px-3.5 py-2 text-xs border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#0A84FF] bg-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </details>
 
                                         {/* 2nd Installment Payout Quality Review Gate & SLA Timer Settings (Compact Layout) */}
                                         <div className="p-4 bg-gradient-to-br from-blue-50/60 via-indigo-50/30 to-slate-50 rounded-xl border border-blue-100 shadow-2xs space-y-3">

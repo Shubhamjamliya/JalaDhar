@@ -1511,23 +1511,42 @@ const SlotAndPayment = ({ surveyData, onDateChange, onConfirm, onBack, isSubmitt
             <div className="space-y-2 pt-2 border-t border-gray-100">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-gray-500">Travel Distance</span>
-                <span className="text-gray-700 font-semibold">{charges?.distance ? `${charges.distance} km` : '0 km'}</span>
+                <span className="text-gray-700 font-semibold">{charges?.distance ? `${charges.distance} km (one-way)` : '0 km'}</span>
               </div>
+              {charges?.travelSlab && (
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500">Applicable Slab</span>
+                  <span className="text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[11px]">
+                    {charges.travelSlab}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-500">One Way Charge</span>
-                <span className="text-gray-700 font-semibold">₹{(charges?.travelCharges / 2 || 0).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-500">Round Trip (Two Way)</span>
-                <span className="text-blue-600 font-bold text-[10px] uppercase">Included (X 2)</span>
+                <span className="text-gray-500">Round Trip & Tolls</span>
+                <span className="text-emerald-700 font-semibold text-[10.5px]">✓ 2-Way Travel & Tolls Covered</span>
               </div>
               <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-100/50">
                 <span className="text-gray-600 font-bold">Total Travel Charges</span>
                 {loading ? (
                   <div className="h-4 w-20 bg-gray-100 animate-pulse rounded"></div>
                 ) : (
-                  <span className="text-gray-900 font-bold">₹{charges?.travelCharges?.toFixed(2) || '0.00'}</span>
+                  <span className="text-gray-900 font-bold">
+                    {charges?.travelCharges > 0 ? `₹${charges?.travelCharges?.toFixed(2)}` : '₹0.00 (Within 30 km Free Range)'}
+                  </span>
                 )}
+              </div>
+
+              {/* Policy Disclaimer Card */}
+              <div className="p-2.5 bg-amber-50/70 border border-amber-200/70 rounded-lg text-[10.5px] text-amber-900 space-y-1 mt-1">
+                <p className="font-semibold flex items-center gap-1 text-[11px]">
+                  <span>ℹ️</span> Travel & Overnight Policy
+                </p>
+                <p className="text-amber-800 leading-snug">
+                  {charges?.travelChargeDefinition || "The applicable slab is determined by the one-way road distance between the expert's starting location and the survey site. The corresponding Travel Charge covers two-way travel and applicable toll charges."}
+                </p>
+                <p className="text-amber-950 font-medium pt-1 border-t border-amber-200/60 leading-snug">
+                  ⚠️ {charges?.overnightAccommodationPolicy || "Overnight accommodation is not included in the Travel Charge and will not be provided by Jaladhaara."}
+                </p>
               </div>
             </div>
 

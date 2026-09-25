@@ -12,6 +12,16 @@ const normalizeSettingValue = (val, type, defaultValue) => {
     const n = Number(val);
     return isNaN(n) ? defaultValue : n;
   }
+  if (type === 'json') {
+    if (typeof val === 'string') {
+      try {
+        return JSON.parse(val);
+      } catch (e) {
+        return defaultValue;
+      }
+    }
+    return val;
+  }
   return val;
 };
 
@@ -61,7 +71,7 @@ const setSetting = async (key, value, label, description, type = 'string', categ
     if (!finalCategory || finalCategory === 'general') {
       if (key.startsWith('BILLING_')) {
         finalCategory = 'billing';
-      } else if (['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'ADVANCE_PAYMENT_PERCENTAGE', 'REMAINING_PAYMENT_PERCENTAGE', 'REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', 'ENABLE_AUTO_APPROVE_REPORT_SLA', 'AUTO_APPROVE_REPORT_SLA_HOURS'].includes(key)) {
+      } else if (['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'PLATFORM_FEE_PERCENTAGE', 'TRAVEL_CHARGE_SLABS', 'TRAVEL_CHARGE_DEFINITION', 'OVERNIGHT_ACCOMMODATION_POLICY', 'ADVANCE_PAYMENT_PERCENTAGE', 'REMAINING_PAYMENT_PERCENTAGE', 'REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', 'ENABLE_AUTO_APPROVE_REPORT_SLA', 'AUTO_APPROVE_REPORT_SLA_HOURS'].includes(key)) {
         finalCategory = 'pricing';
       } else if (existing && existing.category) {
         finalCategory = existing.category;
@@ -78,7 +88,9 @@ const setSetting = async (key, value, label, description, type = 'string', categ
     const finalDescription = description !== undefined ? description : (existing ? existing.description : '');
 
     let finalType = type;
-    if (!finalType || finalType === 'string') {
+    if (key === 'TRAVEL_CHARGE_SLABS' || Array.isArray(value) || (typeof value === 'object' && value !== null)) {
+      finalType = 'json';
+    } else if (!finalType || finalType === 'string') {
       if (typeof value === 'boolean' || value === 'true' || value === 'false') {
         finalType = 'boolean';
       } else if (typeof value === 'number') {
@@ -93,6 +105,14 @@ const setSetting = async (key, value, label, description, type = 'string', categ
       finalValue = (value === true || value === 'true' || value === 1 || value === '1');
     } else if (finalType === 'number') {
       finalValue = Number(value);
+    } else if (finalType === 'json') {
+      if (typeof value === 'string') {
+        try {
+          finalValue = JSON.parse(value);
+        } catch (e) {
+          finalValue = value;
+        }
+      }
     }
 
     const setting = await Settings.findOneAndUpdate(
@@ -149,6 +169,42 @@ const initializeDefaultSettings = async () => {
       label: 'Platform Fee / Commission Percentage (%)',
       description: 'Platform facilitation fee percentage deducted from base service charges (e.g. 15%). 18% GST on platform fee and 1% Sec 194O TDS apply automatically.',
       type: 'number',
+      category: 'pricing'
+    },
+    {
+      key: 'TRAVEL_CHARGE_SLABS',
+      value: JSON.stringify([
+        { minKm: 0, maxKm: 30, charge: 0 },
+        { minKm: 31, maxKm: 50, charge: 1200 },
+        { minKm: 51, maxKm: 75, charge: 1800 },
+        { minKm: 76, maxKm: 100, charge: 2400 },
+        { minKm: 101, maxKm: 150, charge: 3000 },
+        { minKm: 151, maxKm: 200, charge: 4000 },
+        { minKm: 201, maxKm: 250, charge: 5000 },
+        { minKm: 251, maxKm: 300, charge: 6000 },
+        { minKm: 301, maxKm: 350, charge: 7000 },
+        { minKm: 351, maxKm: 400, charge: 8000 },
+        { minKm: 401, maxKm: 500, charge: 10000 }
+      ]),
+      label: 'Travel Charge Slabs (Two-Way)',
+      description: 'Tiered two-way travel charge slabs determined by one-way road distance. Covers two-way travel and applicable toll charges.',
+      type: 'json',
+      category: 'pricing'
+    },
+    {
+      key: 'TRAVEL_CHARGE_DEFINITION',
+      value: "The applicable slab is determined by the one-way road distance between the expert's starting location and the survey site. The corresponding Travel Charge covers two-way travel and applicable toll charges.",
+      label: 'Travel Charge Policy Definition',
+      description: 'Definition explaining how travel charges and toll coverage are computed.',
+      type: 'string',
+      category: 'pricing'
+    },
+    {
+      key: 'OVERNIGHT_ACCOMMODATION_POLICY',
+      value: "Overnight accommodation is not included in the Travel Charge and will not be provided by Jaladhaara.",
+      label: 'Overnight Accommodation Policy',
+      description: 'Overnight accommodation policy disclaimer.',
+      type: 'string',
       category: 'pricing'
     },
     {
@@ -279,6 +335,8 @@ const initializeDefaultSettings = async () => {
         "Please retain this invoice for future reference.",
         "Booking is confirmed upon receipt of the advance payment.",
         "Final payment is required to unlock the survey report.",
+        "Travel Charge covers two-way travel and applicable toll charges based on one-way road distance.",
+        "Overnight accommodation is not included in the Travel Charge and will not be provided by Jaladhaara.",
         "Travel charges are non-refundable once the expert begins the journey.",
         "Disputes must be raised within 10 days of the survey report submission."
       ]),
@@ -292,6 +350,8 @@ const initializeDefaultSettings = async () => {
       value: JSON.stringify([
         "This invoice is issued by the Platform for facilitation services provided to the Expert.",
         "Platform fees and applicable statutory deductions are calculated as per applicable laws.",
+        "Travel Charge covers two-way travel and applicable toll charges.",
+        "Overnight accommodation is not included in the Travel Charge and will not be provided by Jaladhaara.",
         "Net payout is subject to successful settlement and platform policies.",
         "Any refund, dispute, or chargeback may be adjusted against future payouts.",
         "This is a computer-generated invoice and does not require a signature."

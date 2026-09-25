@@ -186,6 +186,10 @@ const bookingSchema = new mongoose.Schema({
       default: 0,
       min: [0, 'Travel charges cannot be negative']
     },
+    travelSlab: {
+      type: String,
+      default: null
+    },
     gst: {
       type: Number,
       default: 0,

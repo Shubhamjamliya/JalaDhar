@@ -507,7 +507,7 @@ const InvoicePDF = ({ booking, billingInfo, qrCodeUrl }) => {
             <View style={styles.tableRow}>
               <View style={styles.rowDesc}>
                 <Text style={{ fontSize: 8.5, fontWeight: 700, color: '#111827' }}>Travel & Mobilization Charges</Text>
-                <Text style={{ fontSize: 7, color: '#6b7280', marginTop: 1 }}>Distance {payment?.distance?.toFixed(1)} km</Text>
+                <Text style={{ fontSize: 7, color: '#6b7280', marginTop: 1 }}>{payment?.travelSlab ? `Slab: ${payment.travelSlab} (2-Way Travel & Tolls Included)` : `Distance ${payment?.distance?.toFixed(1)} km`}</Text>
               </View>
               <Text style={{ width: '15%', textAlign: 'center', fontSize: 8 }}>{BILLING_SAC_CODE}</Text>
               <Text style={{ width: '10%', textAlign: 'center', fontSize: 8, fontWeight: 700 }}>1</Text>

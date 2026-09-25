@@ -146,18 +146,16 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
     const newDistance = bestMatch.distance;
 
     // Get settings for charge calculation
-    const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE']);
+    const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'TRAVEL_CHARGE_SLABS']);
     const travelChargePerKm = settings.TRAVEL_CHARGE_PER_KM || 10;
     const baseRadius = settings.BASE_RADIUS_KM || 30;
     const gstPercentage = settings.GST_PERCENTAGE || 18;
 
-    // Recalculate amounts according to formula:
-    // 1. Base Service Fee
-    // 2. GST (18% on Base Service Fee)
-    // 3. Subtotal = Base Service Fee + GST
-    // 4. Travel Charges
-    // 5. Total Amount = Subtotal + Travel Charges
-    const travelCharges = calculateTravelCharges(newDistance, baseRadius, travelChargePerKm);
+    // Recalculate amounts according to formula with travel slabs:
+    const { getTravelSlab } = require('../utils/distanceCalculator');
+    const slabInfo = getTravelSlab(newDistance, settings.TRAVEL_CHARGE_SLABS);
+    const travelCharges = slabInfo.charge;
+    const travelSlab = slabInfo.slab;
     const baseServiceFee = (typeof newVendor.servicePrice === 'number' && newVendor.servicePrice > 0)
       ? newVendor.servicePrice
       : (newService?.price || 3500);
@@ -198,6 +196,7 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
     booking.payment.distance = newDistance;
     booking.payment.baseServiceFee = baseServiceFee;
     booking.payment.travelCharges = travelCharges;
+    booking.payment.travelSlab = travelSlab;
     booking.payment.subtotal = subtotal;
     booking.payment.gst = gst;
     booking.payment.totalAmount = totalAmount;

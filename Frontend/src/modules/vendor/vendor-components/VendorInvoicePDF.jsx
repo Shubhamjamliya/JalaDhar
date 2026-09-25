@@ -313,7 +313,7 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
           
           {travelCharges > 0 && (
             <View style={styles.rowFlexBetween}>
-              <Text style={styles.textLabel}>   + Travel Mobilization Reimbursement</Text>
+              <Text style={styles.textLabel}>   + Travel Mobilization Reimbursement{payment?.travelSlab ? ` (${payment.travelSlab})` : ''}</Text>
               <Text style={styles.textValue}>+{formatCurrency(travelCharges)}</Text>
             </View>
           )}

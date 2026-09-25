@@ -277,7 +277,7 @@ const createBooking = async (req, res) => {
     }
 
     // Get settings
-    const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'ADVANCE_PAYMENT_PERCENTAGE', 'REMAINING_PAYMENT_PERCENTAGE']);
+    const settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'ADVANCE_PAYMENT_PERCENTAGE', 'REMAINING_PAYMENT_PERCENTAGE', 'TRAVEL_CHARGE_SLABS']);
     const adminTravelChargePerKm = Number(settings.TRAVEL_CHARGE_PER_KM) || 10;
     const adminBaseRadius = Number(settings.BASE_RADIUS_KM) || 30;
     const gstPercentage = Number(settings.GST_PERCENTAGE) || 18;
@@ -314,9 +314,10 @@ const createBooking = async (req, res) => {
       userLat = address.coordinates.coordinates[1];
     }
 
-    // Calculate distance
+    // Calculate distance and slab-based travel charges
     let distance = null;
     let travelCharges = 0;
+    let travelSlab = null;
 
     const parsedUserLat = parseFloat(userLat);
     const parsedUserLng = parseFloat(userLng);
@@ -324,7 +325,10 @@ const createBooking = async (req, res) => {
     if (vendorLat != null && vendorLng != null && !isNaN(parsedUserLat) && !isNaN(parsedUserLng)) {
       distance = calculateDistance(Number(vendorLat), Number(vendorLng), parsedUserLat, parsedUserLng);
       if (typeof distance === 'number' && !isNaN(distance)) {
-        travelCharges = calculateTravelCharges(distance, baseRadius, travelChargePerKm);
+        const { getTravelSlab } = require('../../utils/distanceCalculator');
+        const slabInfo = getTravelSlab(distance, settings.TRAVEL_CHARGE_SLABS);
+        travelCharges = slabInfo.charge;
+        travelSlab = slabInfo.slab;
       }
     }
 
@@ -428,6 +432,7 @@ const createBooking = async (req, res) => {
         baseServiceFee: parseFloat(baseServiceFee.toFixed(2)),
         distance: (distance !== null && !isNaN(distance)) ? parseFloat(distance.toFixed(2)) : null,
         travelCharges: travelChargesRounded,
+        travelSlab,
         subtotal,
         gst,
         totalAmount,
@@ -1783,7 +1788,16 @@ const calculateBookingCharges = async (req, res) => {
     // Get settings with bulletproof defaults
     let settings = {};
     try {
-      settings = await getSettings(['TRAVEL_CHARGE_PER_KM', 'BASE_RADIUS_KM', 'GST_PERCENTAGE', 'ADVANCE_PAYMENT_PERCENTAGE', 'REMAINING_PAYMENT_PERCENTAGE']) || {};
+      settings = await getSettings([
+        'TRAVEL_CHARGE_PER_KM',
+        'BASE_RADIUS_KM',
+        'GST_PERCENTAGE',
+        'ADVANCE_PAYMENT_PERCENTAGE',
+        'REMAINING_PAYMENT_PERCENTAGE',
+        'TRAVEL_CHARGE_SLABS',
+        'TRAVEL_CHARGE_DEFINITION',
+        'OVERNIGHT_ACCOMMODATION_POLICY'
+      ]) || {};
     } catch (sErr) {
       console.warn('Could not fetch settings for booking calculation, using safe defaults', sErr);
     }
@@ -1818,6 +1832,7 @@ const calculateBookingCharges = async (req, res) => {
 
     let distance = null;
     let travelCharges = 0;
+    let travelSlab = null;
 
     const parsedUserLat = parseFloat(userLat);
     const parsedUserLng = parseFloat(userLng);
@@ -1825,7 +1840,10 @@ const calculateBookingCharges = async (req, res) => {
     if (vendorLat != null && vendorLng != null && !isNaN(parsedUserLat) && !isNaN(parsedUserLng)) {
       distance = calculateDistance(Number(vendorLat), Number(vendorLng), parsedUserLat, parsedUserLng);
       if (typeof distance === 'number' && !isNaN(distance)) {
-        travelCharges = calculateTravelCharges(distance, baseRadius, travelChargePerKm);
+        const { getTravelSlab } = require('../../utils/distanceCalculator');
+        const slabInfo = getTravelSlab(distance, settings.TRAVEL_CHARGE_SLABS);
+        travelCharges = slabInfo.charge;
+        travelSlab = slabInfo.slab;
       }
     }
 
@@ -1842,6 +1860,9 @@ const calculateBookingCharges = async (req, res) => {
         baseServiceFee: parseFloat(baseServiceFee.toFixed(2)),
         distance: (distance !== null && !isNaN(distance)) ? parseFloat(distance.toFixed(2)) : null,
         travelCharges: parseFloat(travelCharges.toFixed(2)),
+        travelSlab,
+        travelChargeDefinition: settings.TRAVEL_CHARGE_DEFINITION || "The applicable slab is determined by the one-way road distance between the expert's starting location and the survey site. The corresponding Travel Charge covers two-way travel and applicable toll charges.",
+        overnightAccommodationPolicy: settings.OVERNIGHT_ACCOMMODATION_POLICY || "Overnight accommodation is not included in the Travel Charge and will not be provided by Jaladhaara.",
         subtotal: parseFloat(subtotal.toFixed(2)),
         gst: parseFloat(gst.toFixed(2)),
         totalAmount: parseFloat(totalAmount.toFixed(2)),

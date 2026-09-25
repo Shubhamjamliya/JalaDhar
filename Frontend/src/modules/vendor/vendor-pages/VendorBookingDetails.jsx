@@ -1776,7 +1776,12 @@ export default function VendorBookingDetails() {
 
                             {/* Travel Charges */}
                             <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-100">
-                                <span className="text-gray-500 font-medium">Travel Charges</span>
+                                <div>
+                                    <span className="text-gray-500 font-medium">Travel Charges</span>
+                                    {booking.payment?.travelSlab && (
+                                        <span className="text-[10px] text-blue-600 ml-1.5 font-bold">({booking.payment.travelSlab})</span>
+                                    )}
+                                </div>
                                 <span className="text-gray-900 font-bold">₹{booking.payment.travelCharges?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
 
@@ -1957,19 +1962,24 @@ export default function VendorBookingDetails() {
                     <div className="space-y-4">
                         {/* Current Applied Travel Charges */}
                         {booking.payment?.travelCharges !== undefined && booking.payment?.travelCharges !== null && (
-                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-2.5">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <p className="font-semibold text-gray-800 text-sm">Applied Travel Charges (To & Fro)</p>
+                                        <p className="font-semibold text-gray-800 text-sm">Applied Travel Charges (Two-Way)</p>
                                         {booking.payment?.distance !== null && booking.payment?.distance !== undefined && (
                                             <p className="text-xs text-gray-600 mt-1">
-                                                Distance: {Number(booking.payment.distance).toFixed(2)} km × 2 (Round Trip)
+                                                One-way Distance: {Number(booking.payment.distance).toFixed(1)} km
+                                                {booking.payment?.travelSlab && ` • Slab: ${booking.payment.travelSlab}`}
                                             </p>
                                         )}
+                                        <p className="text-[11px] text-emerald-600 font-medium mt-0.5">✓ Covers two-way travel & applicable toll charges</p>
                                     </div>
-                                    <p className="font-bold text-gray-800">
+                                    <p className="font-bold text-gray-800 text-base">
                                         ₹{(booking.payment?.travelCharges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </p>
+                                </div>
+                                <div className="p-2.5 bg-amber-50/80 border border-amber-200/80 rounded-md text-[11px] text-amber-900">
+                                    ⚠️ <strong>Policy Notice:</strong> Overnight accommodation is not included in the Travel Charge and will not be provided by Jaladhaara.
                                 </div>
                             </div>
                         )}

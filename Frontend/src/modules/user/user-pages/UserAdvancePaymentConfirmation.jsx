@@ -610,23 +610,22 @@ export default function UserAdvancePaymentConfirmation() {
                     </div>
 
                     {/* Travel Charges */}
-                    <div className="flex justify-between items-center p-3 border border-gray-100 rounded-xl">
-                        <div>
-                            <p className="font-semibold text-gray-800 text-sm">Travel Charges (Two-way)</p>
-                            <p className="text-xs text-gray-500">
-                                {bookingPayment?.distance ? `${Number(bookingPayment.distance).toFixed(2)} km` : 'Standard'} from expert
-                            </p>
-                            {travelCharges > 0 && (
-                                <p className="text-xs font-bold text-gray-500">
-                                    2 x ₹{(Number(travelCharges) / 2).toFixed(2)}
+                    <div className="p-3 border border-gray-100 rounded-xl space-y-1">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="font-semibold text-gray-800 text-sm">Travel Charges (Round Trip)</p>
+                                <p className="text-xs text-gray-500">
+                                    {bookingPayment?.distance ? `${Number(bookingPayment.distance).toFixed(1)} km one-way` : 'Standard distance'}
+                                    {bookingPayment?.travelSlab && ` • Slab: ${bookingPayment.travelSlab}`}
                                 </p>
+                                <p className="text-[11px] text-emerald-600 font-medium">✓ Covers 2-way travel & toll charges</p>
+                            </div>
+                            {travelCharges > 0 ? (
+                                <p className="font-bold text-gray-900">{formatAmount(travelCharges)}</p>
+                            ) : (
+                                <p className="font-bold text-green-600 text-xs">₹0.00 (Within 30 km Free Range)</p>
                             )}
                         </div>
-                        {travelCharges > 0 ? (
-                            <p className="font-bold text-gray-900">{formatAmount(travelCharges)}</p>
-                        ) : (
-                            <p className="font-bold text-green-600 text-xs">Free (Within Range)</p>
-                        )}
                     </div>
 
                     {/* Total Amount */}
@@ -657,6 +656,19 @@ export default function UserAdvancePaymentConfirmation() {
                             <p className="font-bold text-gray-800 text-lg">{formatAmount(remainingAmount)}</p>
                         </div>
                     </div>
+                </div>
+
+                {/* Overnight Policy Disclaimer */}
+                <div className="mt-4 p-3 bg-amber-50/70 border border-amber-200/60 rounded-xl text-[11px] text-amber-900 space-y-1">
+                    <p className="font-semibold flex items-center gap-1.5 text-amber-950">
+                        <span>ℹ️</span> Travel & Accommodation Policy
+                    </p>
+                    <p className="text-amber-800 leading-snug">
+                        The applicable slab is determined by the one-way road distance between the expert's starting location and the survey site. The corresponding Travel Charge covers two-way travel and applicable toll charges.
+                    </p>
+                    <p className="text-amber-950 font-medium pt-1 border-t border-amber-200/60 leading-snug">
+                        ⚠️ Overnight accommodation is not included in the Travel Charge and will not be provided by Jaladhaara.
+                    </p>
                 </div>
             </div>
 

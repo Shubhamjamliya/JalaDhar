@@ -1222,22 +1222,27 @@ export default function UserBookingDetails() {
                                     {/* Travel KM */}
                                     <div className="flex justify-between items-center text-[11px]">
                                         <span className="text-slate-500">Travel Distance</span>
-                                        <span className="text-slate-700 font-semibold">{booking.payment.distance?.toFixed(2)} km</span>
+                                        <span className="text-slate-700 font-semibold">{booking.payment.distance?.toFixed(1)} km (one-way)</span>
                                     </div>
-                                    {/* One Way */}
+                                    {booking.payment?.travelSlab && (
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-500">Applicable Slab</span>
+                                            <span className="text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[10px]">
+                                                {booking.payment.travelSlab}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {/* Two Way & Tolls */}
                                     <div className="flex justify-between items-center text-[11px]">
-                                        <span className="text-slate-500">One Way Charge</span>
-                                        <span className="text-slate-700 font-semibold">{formatAmount(booking.payment.travelCharges / 2)}</span>
-                                    </div>
-                                    {/* Two Way */}
-                                    <div className="flex justify-between items-center text-[11px]">
-                                        <span className="text-slate-500">Round Trip (Two Way)</span>
-                                        <span className="text-blue-600 font-bold text-[10px] uppercase">Included (X 2)</span>
+                                        <span className="text-slate-500">Coverage</span>
+                                        <span className="text-emerald-700 font-semibold text-[10px]">✓ Round trip & tolls covered</span>
                                     </div>
                                     {/* Total Travel Charges */}
                                     <div className="flex justify-between items-center text-xs pt-1 border-t border-slate-200/50">
                                         <span className="text-slate-700 font-bold">Total Travel Charges</span>
-                                        <span className="text-slate-900 font-bold">{formatAmount(booking.payment.travelCharges)}</span>
+                                        <span className="text-slate-900 font-bold">
+                                            {booking.payment.travelCharges > 0 ? formatAmount(booking.payment.travelCharges) : '₹0.00 (Within 30 km Free Range)'}
+                                        </span>
                                     </div>
                                 </div>
 
@@ -1286,12 +1291,23 @@ export default function UserBookingDetails() {
                                                 </span>
                                             </div>
                                         </div>
-                                        <p className="text-xs sm:text-sm font-black text-slate-900">{formatAmount(booking.payment?.remainingAmount)}</p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
+                            {/* Policy Disclaimer */}
+                            <div className="mt-3.5 p-3 bg-amber-50/70 border border-amber-200/70 rounded-xl text-[10.5px] text-amber-900 space-y-1">
+                                <p className="font-semibold flex items-center gap-1 text-[11px] text-amber-950">
+                                    <span>ℹ️</span> Travel & Overnight Policy
+                                </p>
+                                <p className="text-amber-800 leading-snug">
+                                    Travel Charge covers two-way travel and applicable toll charges determined by one-way road distance.
+                                </p>
+                                <p className="text-amber-950 font-medium pt-1 border-t border-amber-200/60 leading-snug">
+                                    ⚠️ Overnight accommodation is not included in the Travel Charge and will not be provided by Jaladhaara.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 )}
 
