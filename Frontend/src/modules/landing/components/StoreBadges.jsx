@@ -134,25 +134,27 @@ export function AppStoreBadge({
   const content = (
     <>
       <AppleLogo className={compact ? 'w-4 h-4 shrink-0 fill-current' : 'w-5 h-5 sm:w-6 sm:h-6 shrink-0 fill-current'} />
-      <div className="flex flex-col text-left leading-tight shrink-0">
+      <div className="flex flex-col text-left leading-tight min-w-0">
         <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider opacity-75 whitespace-nowrap">
           Download on the
         </span>
-        <span className={`${compact ? 'text-xs font-bold' : 'text-xs sm:text-sm font-extrabold'} tracking-tight whitespace-nowrap`}>
-          App Store
-        </span>
+        <div className="flex items-center gap-1.5 whitespace-nowrap">
+          <span className={`${compact ? 'text-xs font-bold' : 'text-xs sm:text-sm font-extrabold'} tracking-tight`}>
+            App Store
+          </span>
+          {!isLive && showSoonBadge && (
+            <span className={`text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 ${
+              variant === 'dark'
+                ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+                : variant === 'glass'
+                ? 'bg-amber-300/25 text-amber-200 border border-amber-300/35'
+                : 'bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs'
+            }`}>
+              {compact ? 'Soon' : 'Coming Soon'}
+            </span>
+          )}
+        </div>
       </div>
-      {!isLive && showSoonBadge && (
-        <span className={`ml-auto text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 ${
-          variant === 'dark'
-            ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
-            : variant === 'glass'
-            ? 'bg-amber-300/25 text-amber-200 border border-amber-300/35'
-            : 'bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs'
-        }`}>
-          Soon
-        </span>
-      )}
     </>
   );
 
