@@ -464,9 +464,25 @@ const initializeDefaultSettings = async () => {
     },
     {
       key: 'MAX_FREE_RESCHEDULES',
-      value: 2,
+      value: 1,
       label: 'Max Free Reschedules',
       description: 'Maximum number of voluntary reschedules permitted per booking',
+      type: 'number',
+      category: 'policy'
+    },
+    {
+      key: 'RESCHEDULE_NOTICE_HOURS',
+      value: 24,
+      label: 'Minimum Reschedule Notice (Hours)',
+      description: 'Minimum hours in advance before the scheduled survey time a customer must request a reschedule (e.g. 24 hours)',
+      type: 'number',
+      category: 'policy'
+    },
+    {
+      key: 'RESCHEDULE_WINDOW_DAYS',
+      value: 30,
+      label: 'Reschedule Future Horizon (Days)',
+      description: 'Maximum days into the future a customer is allowed to pick a new date',
       type: 'number',
       category: 'policy'
     },

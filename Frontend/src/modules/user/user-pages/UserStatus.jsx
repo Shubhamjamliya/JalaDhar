@@ -469,10 +469,15 @@ export default function UserStatus() {
             toast.showError("Rescheduling is currently disabled by platform policy. Please contact customer support.");
             return;
         }
-        const maxReschedules = currentBooking.maxReschedules !== undefined ? Number(currentBooking.maxReschedules) : 2;
+        const maxReschedules = currentBooking.maxReschedules !== undefined ? Number(currentBooking.maxReschedules) : 1;
         const count = currentBooking.rescheduleCount || 0;
         if (maxReschedules === 0 || count >= maxReschedules) {
             toast.showError(`Maximum limit of ${maxReschedules} reschedule${maxReschedules === 1 ? '' : 's'} reached for this booking. Please contact support.`);
+            return;
+        }
+        if (currentBooking.isRescheduleNoticeExpired) {
+            const noticeHrs = currentBooking.rescheduleNoticeHours || 24;
+            toast.showError(`Voluntary rescheduling requires at least ${noticeHrs} hours advance notice before the survey. Please contact customer support.`);
             return;
         }
         setShowRescheduleModal(true);

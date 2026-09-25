@@ -99,12 +99,16 @@ const getVendorBookings = async (req, res) => {
     const reschedulePolicySettings = await getSettings([
       'ALLOW_CUSTOMER_RESCHEDULE',
       'MAX_FREE_RESCHEDULES',
+      'RESCHEDULE_NOTICE_HOURS',
       'RESCHEDULE_WINDOW_DAYS'
     ]);
     const allowReschedule = reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== false && reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== 'false';
     const maxReschedules = typeof reschedulePolicySettings.MAX_FREE_RESCHEDULES === 'number'
       ? reschedulePolicySettings.MAX_FREE_RESCHEDULES
-      : (parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) : 2);
+      : (parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) : 1);
+    const minNoticeHours = typeof reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS === 'number'
+      ? reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS
+      : (parseInt(reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS, 10) || 24);
     const windowDays = typeof reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS === 'number'
       ? reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS
       : (parseInt(reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS, 10) || 30);
@@ -113,6 +117,7 @@ const getVendorBookings = async (req, res) => {
       const bObj = b.toObject ? b.toObject({ virtuals: true }) : { ...b };
       bObj.allowReschedule = allowReschedule;
       bObj.maxReschedules = maxReschedules;
+      bObj.rescheduleNoticeHours = minNoticeHours;
       bObj.rescheduleWindowDays = windowDays;
       bObj.reschedulesRemaining = Math.max(0, maxReschedules - (b.rescheduleCount || 0));
       return sanitizeBookingForVendor(bObj);
@@ -1737,12 +1742,16 @@ const getBookingDetails = async (req, res) => {
     const reschedulePolicySettings = await getSettings([
       'ALLOW_CUSTOMER_RESCHEDULE',
       'MAX_FREE_RESCHEDULES',
+      'RESCHEDULE_NOTICE_HOURS',
       'RESCHEDULE_WINDOW_DAYS'
     ]);
     const allowReschedule = reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== false && reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== 'false';
     const maxReschedules = typeof reschedulePolicySettings.MAX_FREE_RESCHEDULES === 'number'
       ? reschedulePolicySettings.MAX_FREE_RESCHEDULES
-      : (parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) : 2);
+      : (parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) : 1);
+    const minNoticeHours = typeof reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS === 'number'
+      ? reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS
+      : (parseInt(reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS, 10) || 24);
     const windowDays = typeof reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS === 'number'
       ? reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS
       : (parseInt(reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS, 10) || 30);
@@ -1750,6 +1759,7 @@ const getBookingDetails = async (req, res) => {
     const bookingObj = booking.toObject ? booking.toObject() : { ...booking };
     bookingObj.allowReschedule = allowReschedule;
     bookingObj.maxReschedules = maxReschedules;
+    bookingObj.rescheduleNoticeHours = minNoticeHours;
     bookingObj.rescheduleWindowDays = windowDays;
     bookingObj.reschedulesRemaining = Math.max(0, maxReschedules - (booking.rescheduleCount || 0));
 

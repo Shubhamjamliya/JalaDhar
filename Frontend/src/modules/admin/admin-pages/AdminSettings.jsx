@@ -210,7 +210,8 @@ export default function AdminSettings({ defaultTab = "general" }) {
     // Reschedule Policy Settings State
     const [rescheduleSettings, setRescheduleSettings] = useState({
         ALLOW_CUSTOMER_RESCHEDULE: true,
-        MAX_FREE_RESCHEDULES: 2,
+        MAX_FREE_RESCHEDULES: 1,
+        RESCHEDULE_NOTICE_HOURS: 24,
         RESCHEDULE_WINDOW_DAYS: 30,
     });
     const [rescheduleLoading, setRescheduleLoading] = useState(false);
@@ -627,7 +628,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                         response.data.settings.forEach(setting => {
                             if (setting.key === 'ALLOW_CUSTOMER_RESCHEDULE') {
                                 settingsObj[setting.key] = setting.value === true || setting.value === 'true' || setting.value === 1;
-                            } else if (setting.key === 'MAX_FREE_RESCHEDULES' || setting.key === 'RESCHEDULE_WINDOW_DAYS') {
+                            } else if (setting.key === 'MAX_FREE_RESCHEDULES' || setting.key === 'RESCHEDULE_WINDOW_DAYS' || setting.key === 'RESCHEDULE_NOTICE_HOURS') {
                                 settingsObj[setting.key] = Number(setting.value);
                             }
                         });
@@ -1030,7 +1031,8 @@ export default function AdminSettings({ defaultTab = "general" }) {
             try {
                 const settings = [
                     { key: 'ALLOW_CUSTOMER_RESCHEDULE', value: Boolean(rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE), category: 'policy' },
-                    { key: 'MAX_FREE_RESCHEDULES', value: Math.max(0, parseInt(rescheduleSettings.MAX_FREE_RESCHEDULES, 10) || 0), category: 'policy' },
+                    { key: 'MAX_FREE_RESCHEDULES', value: Math.max(0, parseInt(rescheduleSettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(rescheduleSettings.MAX_FREE_RESCHEDULES, 10) : 1), category: 'policy' },
+                    { key: 'RESCHEDULE_NOTICE_HOURS', value: Math.max(1, parseInt(rescheduleSettings.RESCHEDULE_NOTICE_HOURS, 10) || 24), category: 'policy' },
                     { key: 'RESCHEDULE_WINDOW_DAYS', value: Math.max(1, parseInt(rescheduleSettings.RESCHEDULE_WINDOW_DAYS, 10) || 30), category: 'policy' },
                 ];
 
@@ -2259,15 +2261,15 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                         </div>
 
                                         {/* Configuration Fields */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {/* Max Free Reschedules */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                            {/* 1. Max Free Reschedules */}
                                             <div className="p-4.5 bg-white rounded-xl border border-gray-200 space-y-3 shadow-2xs">
                                                 <div>
                                                     <label className="block text-sm font-bold text-gray-800 mb-1">
-                                                        Max Allowed Reschedules Per Booking
+                                                        Max Allowed Reschedules
                                                     </label>
                                                     <p className="text-xs text-gray-500">
-                                                        Number of voluntary date changes permitted before rescheduling is locked.
+                                                        Voluntary date changes allowed per booking before lock.
                                                     </p>
                                                 </div>
 
@@ -2284,15 +2286,15 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                             }))
                                                         }
                                                         disabled={!rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE}
-                                                        className="w-24 px-3.5 py-2.5 text-sm font-bold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] disabled:bg-gray-100 disabled:text-gray-400"
+                                                        className="w-20 px-3 py-2 text-sm font-bold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] disabled:bg-gray-100 disabled:text-gray-400"
                                                     />
                                                     <span className="text-xs font-semibold text-gray-600">
-                                                        reschedules per booking
+                                                        times / booking
                                                     </span>
                                                 </div>
 
                                                 {/* Presets */}
-                                                <div className="flex items-center gap-1.5 pt-1">
+                                                <div className="flex flex-wrap items-center gap-1.5 pt-1">
                                                     <span className="text-[11px] font-bold text-gray-400 mr-1">Presets:</span>
                                                     {[0, 1, 2, 3, 5].map((count) => (
                                                         <button
@@ -2305,26 +2307,88 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                                     MAX_FREE_RESCHEDULES: count
                                                                 }))
                                                             }
-                                                            className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                                                            className={`px-2 py-0.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
                                                                 Number(rescheduleSettings.MAX_FREE_RESCHEDULES) === count
                                                                     ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
                                                                     : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 disabled:opacity-50"
                                                             }`}
                                                         >
-                                                            {count === 0 ? "0 (Disabled)" : `${count} Free`}
+                                                            {count === 0 ? "0 (Off)" : count === 1 ? "1 (Default)" : `${count}`}
                                                         </button>
                                                     ))}
                                                 </div>
                                             </div>
 
-                                            {/* Reschedule Window Days */}
+                                            {/* 2. Minimum Advance Notice (Hours) */}
                                             <div className="p-4.5 bg-white rounded-xl border border-gray-200 space-y-3 shadow-2xs">
                                                 <div>
                                                     <label className="block text-sm font-bold text-gray-800 mb-1">
-                                                        Reschedule Advance Window (Days)
+                                                        Notice Cutoff Window (Hours)
                                                     </label>
                                                     <p className="text-xs text-gray-500">
-                                                        Maximum days into the future a customer is allowed to pick a new date.
+                                                        Minimum hours advance notice required before appointment.
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="168"
+                                                        value={rescheduleSettings.RESCHEDULE_NOTICE_HOURS}
+                                                        onChange={(e) =>
+                                                            setRescheduleSettings(prev => ({
+                                                                ...prev,
+                                                                RESCHEDULE_NOTICE_HOURS: e.target.value
+                                                            }))
+                                                        }
+                                                        disabled={!rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE}
+                                                        className="w-20 px-3 py-2 text-sm font-bold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] disabled:bg-gray-100 disabled:text-gray-400"
+                                                    />
+                                                    <span className="text-xs font-semibold text-gray-600">
+                                                        hours before survey
+                                                    </span>
+                                                </div>
+
+                                                {/* Presets */}
+                                                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                                    <span className="text-[11px] font-bold text-gray-400 mr-1">Presets:</span>
+                                                    {[
+                                                        { hours: 12, label: "12h" },
+                                                        { hours: 24, label: "24h (1d)" },
+                                                        { hours: 48, label: "48h (2d)" },
+                                                        { hours: 72, label: "72h (3d)" }
+                                                    ].map((item) => (
+                                                        <button
+                                                            key={item.hours}
+                                                            type="button"
+                                                            disabled={!rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE}
+                                                            onClick={() =>
+                                                                setRescheduleSettings(prev => ({
+                                                                    ...prev,
+                                                                    RESCHEDULE_NOTICE_HOURS: item.hours
+                                                                }))
+                                                            }
+                                                            className={`px-2 py-0.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                                                                Number(rescheduleSettings.RESCHEDULE_NOTICE_HOURS) === item.hours
+                                                                    ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
+                                                                    : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 disabled:opacity-50"
+                                                            }`}
+                                                        >
+                                                            {item.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* 3. Reschedule Window Days */}
+                                            <div className="p-4.5 bg-white rounded-xl border border-gray-200 space-y-3 shadow-2xs">
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-800 mb-1">
+                                                        Booking Horizon (Days)
+                                                    </label>
+                                                    <p className="text-xs text-gray-500">
+                                                        Maximum future days ahead allowed in the date picker.
                                                     </p>
                                                 </div>
 
@@ -2341,15 +2405,15 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                             }))
                                                         }
                                                         disabled={!rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE}
-                                                        className="w-24 px-3.5 py-2.5 text-sm font-bold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] disabled:bg-gray-100 disabled:text-gray-400"
+                                                        className="w-20 px-3 py-2 text-sm font-bold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] disabled:bg-gray-100 disabled:text-gray-400"
                                                     />
                                                     <span className="text-xs font-semibold text-gray-600">
-                                                        days in advance
+                                                        days ahead
                                                     </span>
                                                 </div>
 
                                                 {/* Presets */}
-                                                <div className="flex items-center gap-1.5 pt-1">
+                                                <div className="flex flex-wrap items-center gap-1.5 pt-1">
                                                     <span className="text-[11px] font-bold text-gray-400 mr-1">Presets:</span>
                                                     {[15, 30, 45, 60, 90].map((days) => (
                                                         <button
@@ -2362,13 +2426,13 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                                     RESCHEDULE_WINDOW_DAYS: days
                                                                 }))
                                                             }
-                                                            className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                                                            className={`px-2 py-0.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
                                                                 Number(rescheduleSettings.RESCHEDULE_WINDOW_DAYS) === days
                                                                     ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
                                                                     : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 disabled:opacity-50"
                                                             }`}
                                                         >
-                                                            {days}d
+                                                            {days === 30 ? "30d (Default)" : `${days}d`}
                                                         </button>
                                                     ))}
                                                 </div>
@@ -2376,23 +2440,44 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                         </div>
 
                                         {/* Customer Experience Preview Card */}
-                                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+                                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-3">
                                             <span className="font-bold text-slate-700 uppercase tracking-wider block text-[10.5px]">
-                                                Customer App Preview:
+                                                Customer App Policy Preview:
                                             </span>
                                             {rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE && Number(rescheduleSettings.MAX_FREE_RESCHEDULES) > 0 ? (
-                                                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50/80 border border-blue-200 text-blue-950 font-bold">
-                                                    <span className="flex items-center gap-1.5">
-                                                        <IoCalendarOutline className="text-[#0A84FF] text-base" />
-                                                        <span>Free Reschedules Remaining:</span>
-                                                    </span>
-                                                    <span className="px-2.5 py-0.5 rounded-full bg-[#0A84FF] text-white text-[11px] font-black">
-                                                        {rescheduleSettings.MAX_FREE_RESCHEDULES} of {rescheduleSettings.MAX_FREE_RESCHEDULES} Left
-                                                    </span>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                    <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50/80 border border-blue-200 text-blue-950 font-bold">
+                                                        <span className="flex items-center gap-1.5">
+                                                            <IoCalendarOutline className="text-[#0A84FF] text-base" />
+                                                            <span>Free Allowance:</span>
+                                                        </span>
+                                                        <span className="px-2.5 py-0.5 rounded-full bg-[#0A84FF] text-white text-[11px] font-black">
+                                                            {rescheduleSettings.MAX_FREE_RESCHEDULES} of {rescheduleSettings.MAX_FREE_RESCHEDULES} Left
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between p-3 rounded-lg bg-indigo-50/80 border border-indigo-200 text-indigo-950 font-bold">
+                                                        <span className="flex items-center gap-1.5">
+                                                            <IoTimeOutline className="text-indigo-600 text-base" />
+                                                            <span>Notice Cutoff:</span>
+                                                        </span>
+                                                        <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[11px] font-black">
+                                                            ≥ {rescheduleSettings.RESCHEDULE_NOTICE_HOURS}h in advance
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-50/80 border border-emerald-200 text-emerald-950 font-bold">
+                                                        <span className="flex items-center gap-1.5">
+                                                            <IoShieldCheckmarkOutline className="text-emerald-600 text-base" />
+                                                            <span>Date Horizon:</span>
+                                                        </span>
+                                                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[11px] font-black">
+                                                            Up to {rescheduleSettings.RESCHEDULE_WINDOW_DAYS} days
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             ) : (
-                                                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 font-semibold">
-                                                    ⚠️ Rescheduling is locked. Customers will see: "Rescheduling is currently disabled by platform policy."
+                                                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 font-semibold flex items-center gap-2">
+                                                    <IoWarningOutline className="text-base text-amber-600 shrink-0" />
+                                                    <span>Rescheduling is locked. Customers will see: "Rescheduling is currently disabled by platform policy."</span>
                                                 </div>
                                             )}
                                         </div>

@@ -45,9 +45,13 @@ export default function RescheduleModal({
 }) {
     const maxReschedules = propMaxReschedules !== undefined 
         ? Number(propMaxReschedules)
-        : (currentBooking?.maxReschedules !== undefined ? Number(currentBooking.maxReschedules) : 2);
+        : (currentBooking?.maxReschedules !== undefined ? Number(currentBooking.maxReschedules) : 1);
     const rescheduleCount = currentBooking?.rescheduleCount || 0;
     const reschedulesRemaining = Math.max(0, maxReschedules - rescheduleCount);
+    const noticeHours = currentBooking?.rescheduleNoticeHours !== undefined 
+        ? Number(currentBooking.rescheduleNoticeHours) 
+        : 24;
+    const isNoticeExpired = Boolean(currentBooking?.isRescheduleNoticeExpired);
     const expert = currentBooking?.vendor;
     const bookingId = currentBooking?._id || currentBooking?.id;
 
@@ -271,6 +275,16 @@ export default function RescheduleModal({
         e.preventDefault();
         setFormError("");
 
+        if (isNoticeExpired) {
+            setFormError(`Voluntary rescheduling cutoff has passed. At least ${noticeHours} hours advance notice is required before the scheduled survey time. Please contact customer support.`);
+            return;
+        }
+
+        if (reschedulesRemaining <= 0) {
+            setFormError(`Maximum limit of ${maxReschedules} reschedule${maxReschedules === 1 ? '' : 's'} reached for this booking. Please contact customer support.`);
+            return;
+        }
+
         if (!selectedDate) {
             setFormError("Please select a new survey date.");
             return;
@@ -358,6 +372,17 @@ export default function RescheduleModal({
 
                 {/* ── 2. FORM BODY ── */}
                 <form id="reschedule-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 space-y-3.5 overscroll-contain touch-pan-y">
+                    {/* Notice Expired Warning Banner */}
+                    {isNoticeExpired && (
+                        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 flex items-start gap-2.5 text-xs text-amber-900 font-medium animate-in fade-in">
+                            <IoAlertCircleOutline className="text-lg text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                                <span className="font-bold block text-amber-950">Notice Window Expired</span>
+                                Online rescheduling requires at least {noticeHours} hours advance notice before the survey time. For urgent changes, please contact customer support.
+                            </div>
+                        </div>
+                    )}
+
                     {/* Remaining Reschedules Banner */}
                     <div className="flex items-center justify-between py-2 px-3.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50/60 border border-blue-200/70 shadow-2xs text-xs">
                         <div className="flex items-center gap-1.5 text-blue-950 font-bold">
@@ -752,7 +777,7 @@ export default function RescheduleModal({
                     <div className="space-y-2 pt-0.5">
                         <div className="flex items-center gap-2 text-[11px] text-blue-900 bg-blue-50/80 py-2 px-3 rounded-xl border border-blue-200/70">
                             <IoTimeOutline className="text-[#0A84FF] text-sm shrink-0" />
-                            <span><strong>Arrival Slot:</strong> Confirmed by expert based on daily route.</span>
+                            <span><strong>Notice Required:</strong> Up to {noticeHours}h in advance of appointment.</span>
                         </div>
 
                         <div className="flex items-center gap-2 text-[11px] text-emerald-900 bg-emerald-50/80 py-2 px-3 rounded-xl border border-emerald-200/70">
@@ -767,11 +792,15 @@ export default function RescheduleModal({
                     <button
                         type="submit"
                         form="reschedule-form"
-                        disabled={isLoading || (!selectedVendorId) || (isKeepingCurrentExpert && !isCurrentExpertAvailableOnDate)}
+                        disabled={isLoading || isNoticeExpired || reschedulesRemaining <= 0 || (!selectedVendorId) || (isKeepingCurrentExpert && !isCurrentExpertAvailableOnDate)}
                         className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#0A84FF] to-blue-700 hover:from-[#0070DF] hover:to-blue-800 text-white font-extrabold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-98"
                     >
                         {isLoading ? (
                             <span>Updating Schedule...</span>
+                        ) : isNoticeExpired ? (
+                            <span>Notice Window Expired (Contact Support)</span>
+                        ) : reschedulesRemaining <= 0 ? (
+                            <span>Reschedule Limit Reached</span>
                         ) : (
                             <>
                                 <IoCheckmarkCircleOutline className="text-lg" />

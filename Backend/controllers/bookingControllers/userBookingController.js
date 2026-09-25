@@ -622,22 +622,55 @@ const getUserBookings = async (req, res) => {
     const reschedulePolicySettings = await getSettings([
       'ALLOW_CUSTOMER_RESCHEDULE',
       'MAX_FREE_RESCHEDULES',
+      'RESCHEDULE_NOTICE_HOURS',
       'RESCHEDULE_WINDOW_DAYS'
     ]);
     const allowReschedule = reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== false && reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== 'false';
     const maxReschedules = typeof reschedulePolicySettings.MAX_FREE_RESCHEDULES === 'number'
       ? reschedulePolicySettings.MAX_FREE_RESCHEDULES
-      : (parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) : 2);
+      : (parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) : 1);
+    const minNoticeHours = typeof reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS === 'number'
+      ? reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS
+      : (parseInt(reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS, 10) || 24);
     const windowDays = typeof reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS === 'number'
       ? reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS
       : (parseInt(reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS, 10) || 30);
 
+    const nowTime = Date.now();
     const formattedBookings = bookings.map(b => {
       const bObj = b.toObject ? b.toObject() : { ...b };
+      let hoursUntilSurvey = null;
+      let isNoticeExpired = false;
+      if (b.scheduledDate) {
+        try {
+          const dateStr = b.scheduledDate instanceof Date ? b.scheduledDate.toISOString().split('T')[0] : String(b.scheduledDate).split('T')[0];
+          let timeStr = '09:00:00';
+          if (b.scheduledTime) {
+            const match = String(b.scheduledTime).match(/(\d{1,2}):(\d{2})(?:\s*([APap][Mm]))?/);
+            if (match) {
+              let h = parseInt(match[1], 10);
+              const m = match[2];
+              const ampm = match[3]?.toUpperCase();
+              if (ampm === 'PM' && h < 12) h += 12;
+              if (ampm === 'AM' && h === 12) h = 0;
+              timeStr = `${String(h).padStart(2, '0')}:${m}:00`;
+            }
+          }
+          const surveyDateTime = new Date(`${dateStr}T${timeStr}`);
+          if (!isNaN(surveyDateTime.getTime())) {
+            hoursUntilSurvey = Math.max(0, Math.round(((surveyDateTime.getTime() - nowTime) / (1000 * 60 * 60)) * 10) / 10);
+            isNoticeExpired = hoursUntilSurvey < minNoticeHours;
+          }
+        } catch (e) {}
+      }
+
       bObj.allowReschedule = allowReschedule;
       bObj.maxReschedules = maxReschedules;
+      bObj.rescheduleNoticeHours = minNoticeHours;
       bObj.rescheduleWindowDays = windowDays;
       bObj.reschedulesRemaining = Math.max(0, maxReschedules - (b.rescheduleCount || 0));
+      bObj.hoursUntilSurvey = hoursUntilSurvey;
+      bObj.isRescheduleNoticeExpired = isNoticeExpired;
       return bObj;
     });
 
@@ -654,6 +687,7 @@ const getUserBookings = async (req, res) => {
         reschedulePolicy: {
           allowReschedule,
           maxReschedules,
+          rescheduleNoticeHours: minNoticeHours,
           rescheduleWindowDays: windowDays
         }
       }
@@ -750,21 +784,53 @@ const getBookingDetails = async (req, res) => {
     const reschedulePolicySettings = await getSettings([
       'ALLOW_CUSTOMER_RESCHEDULE',
       'MAX_FREE_RESCHEDULES',
+      'RESCHEDULE_NOTICE_HOURS',
       'RESCHEDULE_WINDOW_DAYS'
     ]);
     const allowReschedule = reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== false && reschedulePolicySettings.ALLOW_CUSTOMER_RESCHEDULE !== 'false';
     const maxReschedules = typeof reschedulePolicySettings.MAX_FREE_RESCHEDULES === 'number'
       ? reschedulePolicySettings.MAX_FREE_RESCHEDULES
-      : (parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) : 2);
+      : (parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(reschedulePolicySettings.MAX_FREE_RESCHEDULES, 10) : 1);
+    const minNoticeHours = typeof reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS === 'number'
+      ? reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS
+      : (parseInt(reschedulePolicySettings.RESCHEDULE_NOTICE_HOURS, 10) || 24);
     const windowDays = typeof reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS === 'number'
       ? reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS
       : (parseInt(reschedulePolicySettings.RESCHEDULE_WINDOW_DAYS, 10) || 30);
 
+    let hoursUntilSurvey = null;
+    let isNoticeExpired = false;
+    if (booking.scheduledDate) {
+      try {
+        const dateStr = booking.scheduledDate instanceof Date ? booking.scheduledDate.toISOString().split('T')[0] : String(booking.scheduledDate).split('T')[0];
+        let timeStr = '09:00:00';
+        if (booking.scheduledTime) {
+          const match = String(booking.scheduledTime).match(/(\d{1,2}):(\d{2})(?:\s*([APap][Mm]))?/);
+          if (match) {
+            let h = parseInt(match[1], 10);
+            const m = match[2];
+            const ampm = match[3]?.toUpperCase();
+            if (ampm === 'PM' && h < 12) h += 12;
+            if (ampm === 'AM' && h === 12) h = 0;
+            timeStr = `${String(h).padStart(2, '0')}:${m}:00`;
+          }
+        }
+        const surveyDateTime = new Date(`${dateStr}T${timeStr}`);
+        if (!isNaN(surveyDateTime.getTime())) {
+          hoursUntilSurvey = Math.max(0, Math.round(((surveyDateTime.getTime() - Date.now()) / (1000 * 60 * 60)) * 10) / 10);
+          isNoticeExpired = hoursUntilSurvey < minNoticeHours;
+        }
+      } catch (e) {}
+    }
+
     const bookingObj = booking.toObject ? booking.toObject() : { ...booking };
     bookingObj.allowReschedule = allowReschedule;
     bookingObj.maxReschedules = maxReschedules;
+    bookingObj.rescheduleNoticeHours = minNoticeHours;
     bookingObj.rescheduleWindowDays = windowDays;
     bookingObj.reschedulesRemaining = Math.max(0, maxReschedules - (booking.rescheduleCount || 0));
+    bookingObj.hoursUntilSurvey = hoursUntilSurvey;
+    bookingObj.isRescheduleNoticeExpired = isNoticeExpired;
 
     res.json({
       success: true,
@@ -775,8 +841,11 @@ const getBookingDetails = async (req, res) => {
         reschedulePolicy: {
           allowReschedule,
           maxReschedules,
+          rescheduleNoticeHours: minNoticeHours,
           rescheduleWindowDays: windowDays,
-          reschedulesRemaining: bookingObj.reschedulesRemaining
+          reschedulesRemaining: bookingObj.reschedulesRemaining,
+          hoursUntilSurvey,
+          isRescheduleNoticeExpired: isNoticeExpired
         }
       }
     });
@@ -2516,13 +2585,17 @@ const rescheduleBooking = async (req, res) => {
     const rescheduleSettings = await getSettings([
       'ALLOW_CUSTOMER_RESCHEDULE',
       'MAX_FREE_RESCHEDULES',
+      'RESCHEDULE_NOTICE_HOURS',
       'RESCHEDULE_WINDOW_DAYS'
     ]);
 
     const allowReschedule = rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE !== false && rescheduleSettings.ALLOW_CUSTOMER_RESCHEDULE !== 'false';
     const maxReschedules = typeof rescheduleSettings.MAX_FREE_RESCHEDULES === 'number'
       ? rescheduleSettings.MAX_FREE_RESCHEDULES
-      : (parseInt(rescheduleSettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(rescheduleSettings.MAX_FREE_RESCHEDULES, 10) : 2);
+      : (parseInt(rescheduleSettings.MAX_FREE_RESCHEDULES, 10) >= 0 ? parseInt(rescheduleSettings.MAX_FREE_RESCHEDULES, 10) : 1);
+    const minNoticeHours = typeof rescheduleSettings.RESCHEDULE_NOTICE_HOURS === 'number'
+      ? rescheduleSettings.RESCHEDULE_NOTICE_HOURS
+      : (parseInt(rescheduleSettings.RESCHEDULE_NOTICE_HOURS, 10) || 24);
     const windowDays = typeof rescheduleSettings.RESCHEDULE_WINDOW_DAYS === 'number'
       ? rescheduleSettings.RESCHEDULE_WINDOW_DAYS
       : (parseInt(rescheduleSettings.RESCHEDULE_WINDOW_DAYS, 10) || 30);
@@ -2582,6 +2655,39 @@ const rescheduleBooking = async (req, res) => {
         success: false,
         message: `Booking cannot be rescheduled in status: ${booking.status}. Once the expert is en route or survey has begun, rescheduling is locked.`
       });
+    }
+
+    // Check minimum advance notice cutoff (Hours in advance)
+    if (booking.scheduledDate) {
+      try {
+        const dateStr = booking.scheduledDate instanceof Date
+          ? booking.scheduledDate.toISOString().split('T')[0]
+          : String(booking.scheduledDate).split('T')[0];
+        let timeStr = '09:00:00';
+        if (booking.scheduledTime) {
+          const match = String(booking.scheduledTime).match(/(\d{1,2}):(\d{2})(?:\s*([APap][Mm]))?/);
+          if (match) {
+            let h = parseInt(match[1], 10);
+            const m = match[2];
+            const ampm = match[3]?.toUpperCase();
+            if (ampm === 'PM' && h < 12) h += 12;
+            if (ampm === 'AM' && h === 12) h = 0;
+            timeStr = `${String(h).padStart(2, '0')}:${m}:00`;
+          }
+        }
+        const surveyDateTime = new Date(`${dateStr}T${timeStr}`);
+        if (!isNaN(surveyDateTime.getTime())) {
+          const diffHours = (surveyDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
+          if (diffHours < minNoticeHours) {
+            return res.status(400).json({
+              success: false,
+              message: `Voluntary rescheduling requires at least ${minNoticeHours} hours advance notice before the scheduled survey time. Please contact customer support for urgent assistance.`
+            });
+          }
+        }
+      } catch (dateErr) {
+        console.warn('Error verifying reschedule notice cutoff:', dateErr);
+      }
     }
 
     // Check max reschedules limit dynamically
