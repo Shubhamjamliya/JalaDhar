@@ -218,16 +218,20 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
     booking.assignedAt = new Date();
 
     // Recalculate vendor wallet payments for the new vendor
+    const { getSetting } = require('./settingsService');
     const { calculateVendorPayment, creditToVendorWallet } = require('./walletService');
-    const vendorPayment = calculateVendorPayment(baseServiceFee, travelCharges);
+    const platformFeePercentage = await getSetting('PLATFORM_FEE_PERCENTAGE', 15);
+    const vendorPayment = calculateVendorPayment(baseServiceFee, travelCharges, platformFeePercentage);
 
     booking.payment.vendorWalletPayments = {
       base: vendorPayment.base,
       customerGST: vendorPayment.customerGST,
       gross: vendorPayment.gross,
+      commissionRate: vendorPayment.commissionRate,
       platformCommission: vendorPayment.platformCommission,
       gstOnCommission: vendorPayment.gstOnCommission,
       tds: vendorPayment.tds,
+      platformFee: vendorPayment.platformCommission + vendorPayment.gstOnCommission + vendorPayment.tds,
       totalVendorPayment: vendorPayment.totalVendorPayment,
       siteVisitPayment: {
         amount: vendorPayment.totalVendorPayment * 0.5,

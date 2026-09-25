@@ -8,13 +8,14 @@ const PlatformFeesWidget = ({ platformFees }) => {
         totalGrossVolume: 0,
         platformFeeEarnings: 0,
         vendorNetPayouts: 0,
-        feePercentage: 10
+        feePercentage: 15
     };
 
     const gross = data.totalGrossVolume || 0;
-    const fee = data.platformFeeEarnings || Math.round(gross * 0.10);
+    const defaultRate = (data.feePercentage ? Number(data.feePercentage) : 15) / 100;
+    const fee = data.platformFeeEarnings || Math.round(gross * defaultRate);
     const payout = data.vendorNetPayouts || (gross - fee);
-    const feePercent = gross > 0 ? ((fee / gross) * 100).toFixed(1) : '10.0';
+    const feePercent = data.feePercentage ? Number(data.feePercentage).toFixed(1) : (gross > 0 ? ((fee / gross) * 100).toFixed(1) : '15.0');
 
     return (
         <motion.div

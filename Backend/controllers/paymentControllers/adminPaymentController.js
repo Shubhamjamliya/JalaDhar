@@ -755,12 +755,16 @@ const getPaymentReports = async (req, res) => {
       query.paidAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
 
+    const { getSetting } = require('../../services/settingsService');
+    const feePercentage = await getSetting('PLATFORM_FEE_PERCENTAGE', 15);
+    const feeRate = (Number(feePercentage) || 15) / 100;
+
     const payments = await Payment.find(query)
       .populate('user', 'name')
       .populate('vendor', 'name')
       .populate({
         path: 'booking',
-        select: 'bookingId status service',
+        select: 'bookingId status service payment.vendorWalletPayments',
         populate: { path: 'service', select: 'name' }
       })
       .sort({ paidAt: -1 });
@@ -772,7 +776,7 @@ const getPaymentReports = async (req, res) => {
       customer: p.user?.name || '-',
       vendor: p.vendor?.name || '-',
       amount: p.amount,
-      platformFee: (p.amount * 0.1), // Mocking 10% platform fee if not in model
+      platformFee: p.booking?.payment?.vendorWalletPayments?.platformCommission || (p.amount * feeRate),
       paymentMethod: p.method,
       bookingStatus: p.booking?.status || '-'
     }));

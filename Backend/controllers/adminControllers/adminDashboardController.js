@@ -289,7 +289,7 @@ exports.getDashboardStats = async (req, res) => {
     ]);
 
     // 8. Platform Fees breakdown (dynamic setting lookup)
-    const feePercentage = await getSetting('PLATFORM_FEE_PERCENTAGE', 10);
+    const feePercentage = await getSetting('PLATFORM_FEE_PERCENTAGE', 15);
     const platformFeeEarnings = Math.round(totalRevenue * (feePercentage / 100));
     const vendorNetPayouts = totalRevenue - platformFeeEarnings;
 

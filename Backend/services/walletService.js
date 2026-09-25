@@ -14,21 +14,24 @@ const mongoose = require('mongoose');
  *   customerGST           = 18% of baseServiceFee  (collected from customer by platform)
  *   grossCustomerPayment  = baseServiceFee + customerGST + travelCharges
  *
- *   platformCommission    = 10% of baseServiceFee   ← on base only, NOT on gross
+ *   platformCommission    = commissionRatePercent% of baseServiceFee (default 15%, configurable by Admin)
  *   gstOnCommission       = 18% of platformCommission
  *   tds                   = 1%  of baseServiceFee   ← Sec 194O, on base only
  *
  *   totalVendorPayment    = grossCustomerPayment - platformCommission - gstOnCommission - tds
  *
- * Example (₹3,500 base, no travel):
+ * Example (₹3,500 base, 15% platform fee, no travel):
  *   gross          = ₹4,130
- *   commission     = ₹350   (10% × 3,500)
- *   gstOnCommission= ₹63    (18% × 350)
- *   tds            = ₹35    (1%  × 3,500)
- *   net            = ₹4,130 - ₹350 - ₹63 - ₹35 = ₹3,682
+ *   commission     = ₹525.00 (15% × 3,500)
+ *   gstOnCommission= ₹94.50  (18% × 525)
+ *   tds            = ₹35.00  (1%  × 3,500)
+ *   net            = ₹4,130 - ₹525 - ₹94.50 - ₹35 = ₹3,475.50
  */
-const calculateVendorPayment = (baseServiceFee, travelCharges = 0) => {
-  const COMMISSION_RATE    = 0.10;  // 10% platform commission on base fee
+const calculateVendorPayment = (baseServiceFee, travelCharges = 0, commissionRatePercent = 15) => {
+  const commissionRateNum  = typeof commissionRatePercent === 'number' && !isNaN(commissionRatePercent)
+    ? commissionRatePercent
+    : (parseFloat(commissionRatePercent) || 15);
+  const COMMISSION_RATE    = commissionRateNum / 100;
   const GST_ON_COMMISSION  = 0.18;  // 18% GST on platform commission
   const TDS_RATE           = 0.01;  // 1% TDS under Sec 194O on base fee
   const CUSTOMER_GST_RATE  = 0.18;  // 18% GST charged to customer
@@ -45,6 +48,7 @@ const calculateVendorPayment = (baseServiceFee, travelCharges = 0) => {
     base: baseServiceFee,
     customerGST,
     gross,
+    commissionRate: commissionRateNum,
     platformCommission,
     gstOnCommission,
     tds,

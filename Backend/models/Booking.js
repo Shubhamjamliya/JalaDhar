@@ -284,6 +284,22 @@ const bookingSchema = new mongoose.Schema({
         type: Number,
         default: 0
       },
+      commissionRate: {
+        type: Number,
+        default: 15
+      },
+      platformCommission: {
+        type: Number,
+        default: 0
+      },
+      gstOnCommission: {
+        type: Number,
+        default: 0
+      },
+      tds: {
+        type: Number,
+        default: 0
+      },
       totalVendorPayment: {
         type: Number,
         default: 0

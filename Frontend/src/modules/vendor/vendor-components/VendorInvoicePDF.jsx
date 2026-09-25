@@ -229,17 +229,20 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
   const customerGst = payment?.gst || (netServiceValue * 0.18);
   const grossTotal = payment?.totalAmount || (netServiceValue + customerGst);
 
-  // Platform 10% Commission on Net Service Value
-  const commBase = netServiceValue * 0.10;
-  const commCgst = commBase * 0.09;
-  const commSgst = commBase * 0.09;
-  const totalCommFee = commBase + commCgst + commSgst; // 11.8% effective (10% + 18% GST)
+  const vp = booking.payment?.vendorWalletPayments || {};
+  const commRate = vp.commissionRate || Number(billingInfo?.PLATFORM_FEE_PERCENTAGE) || 15;
+
+  // Platform Commission on Net Service Value
+  const commBase = vp.platformCommission || (netServiceValue * (commRate / 100));
+  const commCgst = vp.gstOnCommission ? (vp.gstOnCommission / 2) : (commBase * 0.09);
+  const commSgst = vp.gstOnCommission ? (vp.gstOnCommission / 2) : (commBase * 0.09);
+  const totalCommFee = commBase + commCgst + commSgst;
 
   // Sec 194O Income Tax TDS (1% of Net Service Value)
-  const tdsDeduction = netServiceValue * 0.01;
+  const tdsDeduction = vp.tds || (netServiceValue * 0.01);
 
   // Net Amount Credited to Expert's Bank Account
-  const netPayout = grossTotal - totalCommFee - tdsDeduction;
+  const netPayout = vp.totalVendorPayment || (grossTotal - totalCommFee - tdsDeduction);
 
   const utrNo = `UTR-N${booking._id.slice(-10).toUpperCase()}`;
   const finalQrCodeUrl = qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`COMM:${commInvoiceNo}|ORD:${booking._id}|PAYOUT:${netPayout}`)}`;
@@ -326,7 +329,7 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
           </View>
 
           <View style={styles.rowFlexBetween}>
-            <Text style={styles.textLabel}>Less: Platform Commission (10% of Service Fee {formatCurrency(netServiceValue)})</Text>
+            <Text style={styles.textLabel}>Less: Platform Commission ({commRate}% of Service Fee {formatCurrency(netServiceValue)})</Text>
             <Text style={{ fontWeight: 700, color: '#dc2626', fontSize: 7.5 }}>-{formatCurrency(commBase)}</Text>
           </View>
 
@@ -419,10 +422,10 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
           <View style={styles.tableRow}>
             <View style={{ width: '48%' }}>
               <Text style={{ fontSize: 8, fontWeight: 700, color: '#111827' }}>Platform Facilitation Commission</Text>
-              <Text style={{ fontSize: 6.8, color: '#6b7280', marginTop: 1 }}>10% of Net Service Value ({formatCurrency(netServiceValue)})</Text>
+              <Text style={{ fontSize: 6.8, color: '#6b7280', marginTop: 1 }}>{commRate}% of Net Service Value ({formatCurrency(netServiceValue)})</Text>
             </View>
             <Text style={{ width: '16%', textAlign: 'center', fontSize: 7.5 }}>998311</Text>
-            <Text style={{ width: '16%', textAlign: 'center', fontSize: 7.5 }}>10.0%</Text>
+            <Text style={{ width: '16%', textAlign: 'center', fontSize: 7.5 }}>{Number(commRate).toFixed(1)}%</Text>
             <Text style={{ width: '20%', textAlign: 'right', fontSize: 8, fontWeight: 700, color: '#dc2626' }}>-{formatCurrency(commBase)}</Text>
           </View>
 

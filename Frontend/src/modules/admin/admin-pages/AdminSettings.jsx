@@ -220,6 +220,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
         TRAVEL_CHARGE_PER_KM: 10,
         BASE_RADIUS_KM: 30,
         GST_PERCENTAGE: 18,
+        PLATFORM_FEE_PERCENTAGE: 15,
         REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT: true,
         ENABLE_AUTO_APPROVE_REPORT_SLA: true,
         AUTO_APPROVE_REPORT_SLA_HOURS: 48,
@@ -1032,6 +1033,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                     { key: 'TRAVEL_CHARGE_PER_KM', value: Number(pricingSettings.TRAVEL_CHARGE_PER_KM) },
                     { key: 'BASE_RADIUS_KM', value: Number(pricingSettings.BASE_RADIUS_KM) },
                     { key: 'GST_PERCENTAGE', value: Number(pricingSettings.GST_PERCENTAGE) },
+                    { key: 'PLATFORM_FEE_PERCENTAGE', value: Number(pricingSettings.PLATFORM_FEE_PERCENTAGE) || 15 },
                     { key: 'REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', value: Boolean(pricingSettings.REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT) },
                     { key: 'ENABLE_AUTO_APPROVE_REPORT_SLA', value: Boolean(pricingSettings.ENABLE_AUTO_APPROVE_REPORT_SLA) },
                     { key: 'AUTO_APPROVE_REPORT_SLA_HOURS', value: Math.max(1, Number(pricingSettings.AUTO_APPROVE_REPORT_SLA_HOURS) || 48) },
@@ -2663,6 +2665,30 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             />
                                             <p className="text-xs text-gray-500 mt-1">
                                                 GST percentage applied on total amount (subtotal + travel charges)
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                                                Platform Fee / Commission Percentage (%)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={pricingSettings.PLATFORM_FEE_PERCENTAGE ?? 15}
+                                                onChange={(e) =>
+                                                    setPricingSettings({
+                                                        ...pricingSettings,
+                                                        PLATFORM_FEE_PERCENTAGE: e.target.value,
+                                                    })
+                                                }
+                                                min="0"
+                                                max="100"
+                                                step="0.1"
+                                                required
+                                                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
+                                                placeholder="e.g. 15"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Platform commission deducted from service charges. 18% GST on platform fee and 1% Sec 194O TDS apply automatically.
                                             </p>
                                         </div>
 

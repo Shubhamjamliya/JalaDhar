@@ -379,6 +379,12 @@ const createBooking = async (req, res) => {
       notes: 'Auto-assigned booking operations lifecycle'
     });
 
+    // Calculate vendor payment breakdown using dynamic Admin Platform Fee %
+    const { getSetting } = require('../../services/settingsService');
+    const { calculateVendorPayment } = require('../../services/walletService');
+    const platformFeePercentage = await getSetting('PLATFORM_FEE_PERCENTAGE', 15);
+    const vendorPayment = calculateVendorPayment(baseServiceFee, travelCharges, platformFeePercentage);
+
     // Create booking in PENDING status - will be set to ASSIGNED only after payment verification
     const booking = await Booking.create({
       user: userId,
@@ -432,27 +438,25 @@ const createBooking = async (req, res) => {
         status: PAYMENT_STATUS.PENDING,
         advanceRazorpayOrderId: razorpayOrder.orderId,
         // Calculate vendor payment breakdown
-        vendorWalletPayments: (() => {
-          const { calculateVendorPayment } = require('../../services/walletService');
-          // Pass baseServiceFee + travelCharges so commission/TDS apply to base only
-          // (matching Payout Summary: commission=10% of base, TDS=1% of base)
-          const vendorPayment = calculateVendorPayment(baseServiceFee, travelCharges);
-          return {
-            base: vendorPayment.base,
-            gst: vendorPayment.customerGST,
-            platformFee: vendorPayment.platformCommission + vendorPayment.gstOnCommission + vendorPayment.tds,
-            totalVendorPayment: vendorPayment.totalVendorPayment,
-            siteVisitPayment: {
-              amount: parseFloat((vendorPayment.totalVendorPayment * 0.5).toFixed(2)),
-              credited: false
-            },
-            reportUploadPayment: {
-              amount: parseFloat((vendorPayment.totalVendorPayment * 0.5).toFixed(2)),
-              credited: false
-            },
-            totalCredited: 0
-          };
-        })()
+        vendorWalletPayments: {
+          base: vendorPayment.base,
+          gst: vendorPayment.customerGST,
+          commissionRate: vendorPayment.commissionRate,
+          platformCommission: vendorPayment.platformCommission,
+          gstOnCommission: vendorPayment.gstOnCommission,
+          tds: vendorPayment.tds,
+          platformFee: vendorPayment.platformCommission + vendorPayment.gstOnCommission + vendorPayment.tds,
+          totalVendorPayment: vendorPayment.totalVendorPayment,
+          siteVisitPayment: {
+            amount: parseFloat((vendorPayment.totalVendorPayment * 0.5).toFixed(2)),
+            credited: false
+          },
+          reportUploadPayment: {
+            amount: parseFloat((vendorPayment.totalVendorPayment * 0.5).toFixed(2)),
+            credited: false
+          },
+          totalCredited: 0
+        }
       },
       assignedAt: new Date()
     });

@@ -54,10 +54,14 @@ export default function VendorInvoice() {
       setLoading(true);
       setError("");
 
-      const [bookingRes, settingsRes] = await Promise.all([
+      const [bookingRes, settingsRes, pricingSettingsRes] = await Promise.all([
         getBookingDetails(bookingId),
         getPublicSettings('billing').catch(err => {
           console.error("Failed to load billing settings", err);
+          return null;
+        }),
+        getPublicSettings('pricing').catch(err => {
+          console.error("Failed to load pricing settings", err);
           return null;
         })
       ]);
@@ -68,13 +72,18 @@ export default function VendorInvoice() {
         setError(bookingRes.message || "Failed to load commission invoice data");
       }
 
+      const info = {};
       if (settingsRes && settingsRes.success && settingsRes.data.settings) {
-        const info = {};
         settingsRes.data.settings.forEach(s => {
           info[s.key] = s.value;
         });
-        setBillingInfo(prev => ({ ...prev, ...info }));
       }
+      if (pricingSettingsRes && pricingSettingsRes.success && pricingSettingsRes.data.settings) {
+        pricingSettingsRes.data.settings.forEach(s => {
+          info[s.key] = s.value;
+        });
+      }
+      setBillingInfo(prev => ({ ...prev, ...info }));
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load commission invoice data");
       handleApiError(err);
@@ -95,7 +104,8 @@ export default function VendorInvoice() {
       const custGst = vp.customerGST || booking.payment?.gst || (baseF * 0.18);
       const gross = vp.gross || booking.payment?.totalAmount || (netServiceVal + custGst);
 
-      const commBase = vp.platformCommission || (baseF * 0.10);
+      const commRate = vp.commissionRate || Number(billingInfo?.PLATFORM_FEE_PERCENTAGE) || 15;
+      const commBase = vp.platformCommission || (baseF * (commRate / 100));
       const commCgst = vp.gstOnCommission ? (vp.gstOnCommission / 2) : (commBase * 0.09);
       const commSgst = vp.gstOnCommission ? (vp.gstOnCommission / 2) : (commBase * 0.09);
       const totalComm = commBase + commCgst + commSgst;
@@ -217,12 +227,14 @@ export default function VendorInvoice() {
   const customerGst = booking.payment?.gst || (netServiceValue * 0.18);
   const grossTotal = booking.payment?.totalAmount || (netServiceValue + customerGst);
 
-  const commBase = netServiceValue * 0.10;
-  const commCgst = commBase * 0.09;
-  const commSgst = commBase * 0.09;
+  const vp = booking.payment?.vendorWalletPayments || {};
+  const commRate = vp.commissionRate || Number(billingInfo?.PLATFORM_FEE_PERCENTAGE) || 15;
+  const commBase = vp.platformCommission || (netServiceValue * (commRate / 100));
+  const commCgst = vp.gstOnCommission ? (vp.gstOnCommission / 2) : (commBase * 0.09);
+  const commSgst = vp.gstOnCommission ? (vp.gstOnCommission / 2) : (commBase * 0.09);
   const totalCommFee = commBase + commCgst + commSgst;
-  const tdsDeduction = netServiceValue * 0.01;
-  const netPayout = grossTotal - totalCommFee - tdsDeduction;
+  const tdsDeduction = vp.tds || (netServiceValue * 0.01);
+  const netPayout = vp.totalVendorPayment || (grossTotal - totalCommFee - tdsDeduction);
 
   const utrNo = `UTR-N${booking._id.slice(-10).toUpperCase()}`;
 
@@ -364,7 +376,7 @@ export default function VendorInvoice() {
               <span>{formatAmount(grossTotal)}</span>
             </div>
             <div className="flex justify-between items-center text-red-600 font-medium">
-              <span>Less: Platform Facilitation Fee (10% of Base Fee {formatAmount(netServiceValue)})</span>
+              <span>Less: Platform Facilitation Fee ({commRate}% of Base Fee {formatAmount(netServiceValue)})</span>
               <span className="font-bold">-{formatAmount(commBase)}</span>
             </div>
             <div className="flex justify-between items-center text-red-600 font-medium">
@@ -409,10 +421,10 @@ export default function VendorInvoice() {
                   <tr>
                     <td className="py-3 px-4">
                       <p className="font-bold text-gray-900">Platform Facilitation Commission</p>
-                      <p className="text-[11px] text-gray-500">10% Platform fee on Base Service Fee ({formatAmount(netServiceValue)})</p>
+                      <p className="text-[11px] text-gray-500">{commRate}% Platform fee on Base Service Fee ({formatAmount(netServiceValue)})</p>
                     </td>
                     <td className="py-3 px-3 text-center font-mono text-xs">998311</td>
-                    <td className="py-3 px-3 text-center font-bold">10.0%</td>
+                    <td className="py-3 px-3 text-center font-bold">{Number(commRate).toFixed(1)}%</td>
                     <td className="py-3 px-4 text-right font-black text-red-600 text-sm">-{formatAmount(commBase)}</td>
                   </tr>
                   <tr>

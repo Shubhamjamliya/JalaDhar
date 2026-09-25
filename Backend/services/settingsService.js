@@ -144,6 +144,14 @@ const initializeDefaultSettings = async () => {
       category: 'pricing'
     },
     {
+      key: 'PLATFORM_FEE_PERCENTAGE',
+      value: 15,
+      label: 'Platform Fee / Commission Percentage (%)',
+      description: 'Platform facilitation fee percentage deducted from base service charges (e.g. 15%). 18% GST on platform fee and 1% Sec 194O TDS apply automatically.',
+      type: 'number',
+      category: 'pricing'
+    },
+    {
       key: 'ADVANCE_PAYMENT_PERCENTAGE',
       value: 40,
       label: 'Advance Payment Percentage (%)',
