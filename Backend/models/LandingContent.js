@@ -50,6 +50,7 @@ const FounderSchema = new mongoose.Schema({
   bio: { type: String, default: '' },
   quote: { type: String, default: '' },
   educationBadge: { type: String, default: 'M.Sc. Geophysics – Osmania University, Hyderabad' },
+  educationBadge2: { type: String, default: 'M.Sc. Environmental Science (BRAOU)' },
   experienceBadge: { type: String, default: '14+ Years of Professional Experience' },
   pillars: { type: [PillarSchema], default: [] }
 }, { _id: false });
@@ -310,9 +311,10 @@ const LandingContentSchema = new mongoose.Schema({
       bio: 'A Geophysics professional with over 14 years of experience in groundwater exploration and geophysical investigations, Bommala Anjaiah brings strong technical and field expertise to Jaladhaara.',
       quote: 'Our goal is simple — help people make better-informed groundwater decisions before they drill.',
       educationBadge: 'M.Sc. Geophysics – Osmania University, Hyderabad',
+      educationBadge2: 'M.Sc. Environmental Science (BRAOU)',
       experienceBadge: '14+ Years of Professional Experience',
       pillars: [
-        { icon: '🎓', title: 'Education', desc: 'M.Sc. Geophysics • Osmania University, Hyderabad, Telangana' },
+        { icon: '🎓', title: 'Education', desc: 'M.Sc. Geophysics (OU) • M.Sc. Environmental Science (BRAOU)' },
         { icon: '🌍', title: 'Experience', desc: '14+ Years • Geophysics • Groundwater Exploration • Geophysical Investigations' },
         { icon: '🚀', title: 'Vision', desc: 'Pan-India Reach • Building a trusted technology platform for groundwater exploration across India' }
       ]

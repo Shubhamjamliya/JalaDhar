@@ -389,8 +389,11 @@ function FounderEditor({ data, setData }) {
       <Field label="Signature Quote">
         <TextArea value={data.quote} onChange={v => set('quote', v)} rows={2} maxLength={300} />
       </Field>
-      <Field label="Education Badge Text">
-        <TextInput value={data.educationBadge} onChange={v => set('educationBadge', v)} maxLength={100} />
+      <Field label="Education Badge 1 (Primary Degree)">
+        <TextInput value={data.educationBadge} onChange={v => set('educationBadge', v)} maxLength={100} placeholder="M.Sc. Geophysics — Osmania University, Hyderabad" />
+      </Field>
+      <Field label="Education Badge 2 (Secondary Degree)">
+        <TextInput value={data.educationBadge2 || ''} onChange={v => set('educationBadge2', v)} maxLength={100} placeholder="M.Sc. Environmental Science (BRAOU)" />
       </Field>
       <Field label="Experience Badge Text">
         <TextInput value={data.experienceBadge} onChange={v => set('experienceBadge', v)} maxLength={100} />
@@ -871,7 +874,7 @@ const DEFAULT_DATA = {
   ],
   howItWorksCustomers: { eyebrow: '', heading1: '', heading2: '', subtitle: '', steps: [] },
   howItWorksExperts: { eyebrow: '', heading1: '', heading2: '', subtitle: '', steps: [] },
-  founder: { name: '', role: '', subDesignation: '', bio: '', quote: '', educationBadge: '', experienceBadge: '', pillars: [] },
+  founder: { name: '', role: '', subDesignation: '', bio: '', quote: '', educationBadge: '', educationBadge2: '', experienceBadge: '', pillars: [] },
   whyChoose: {
     enabled: true,
     whyChooseEnabled: true,

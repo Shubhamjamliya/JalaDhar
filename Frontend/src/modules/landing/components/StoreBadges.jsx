@@ -114,16 +114,16 @@ export function AppStoreBadge({
   variant = 'white', // 'white' | 'dark' | 'glass'
   className = '',
   compact = false,
-  showSoonBadge = false
+  showSoonBadge = true
 }) {
+  const isLive = Boolean(url && typeof url === 'string' && url.trim().length > 0);
+
   const handleClick = (e) => {
-    if (!url) {
+    if (!isLive) {
       e.preventDefault();
-      alert(`${appName} iOS version will be available shortly on the Apple App Store!`);
+      alert(`${appName} iOS version is currently in final review and will be available soon on the Apple App Store!`);
     }
   };
-
-  const isLive = Boolean(url);
 
   const variantStyles = {
     white: 'bg-white text-slate-900 hover:bg-white/95 border border-slate-200 shadow-md hover:shadow-lg',
@@ -143,8 +143,14 @@ export function AppStoreBadge({
         </span>
       </div>
       {!isLive && showSoonBadge && (
-        <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 border border-amber-500/30 whitespace-nowrap">
-          Soon
+        <span className={`ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 ${
+          variant === 'dark'
+            ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+            : variant === 'glass'
+            ? 'bg-amber-300/25 text-amber-200 border border-amber-300/35'
+            : 'bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs'
+        }`}>
+          Coming Soon
         </span>
       )}
     </>

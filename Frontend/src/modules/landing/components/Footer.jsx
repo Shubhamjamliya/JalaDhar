@@ -138,7 +138,7 @@ export default function Footer({ cms = (path, fallback) => fallback }) {
                       url={cms('appVideos.userAppStoreUrl')} 
                       appName="Jaladhaara Customer App"
                       variant="dark"
-                      showSoonBadge={false}
+                      showSoonBadge={true}
                       compact={true}
                       className="w-full justify-center sm:justify-start"
                     />
@@ -168,7 +168,7 @@ export default function Footer({ cms = (path, fallback) => fallback }) {
                       url={cms('appVideos.expertAppStoreUrl')} 
                       appName="Jaladhaara Expert App"
                       variant="dark"
-                      showSoonBadge={false}
+                      showSoonBadge={true}
                       compact={true}
                       className="w-full justify-center sm:justify-start"
                     />

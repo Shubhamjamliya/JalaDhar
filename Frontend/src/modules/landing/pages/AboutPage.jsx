@@ -74,11 +74,15 @@ export default function AboutPage() {
                   </p>
                 </div>
 
-                {/* Academic Qualification */}
+                {/* Academic Qualifications */}
                 <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-5">
                   <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-blue-50 text-[var(--color-primary)] border border-blue-100 text-[11px] sm:text-sm font-bold shadow-xs">
                     <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                     <span>{cms('founder.educationBadge', 'M.Sc. Geophysics — Osmania University, Hyderabad')}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/70 text-[11px] sm:text-sm font-bold shadow-xs">
+                    <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-emerald-600" />
+                    <span>{cms('founder.educationBadge2', 'M.Sc. Environmental Science (BRAOU)')}</span>
                   </span>
                 </div>
 
