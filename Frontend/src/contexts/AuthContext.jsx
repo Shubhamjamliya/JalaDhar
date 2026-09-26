@@ -140,9 +140,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const verifyLoginOTP = async ({ token: verificationToken, otp }) => {
+  const verifyLoginOTP = async ({ token: verificationToken, otp, name, email, preferredLanguage }) => {
     try {
-      const response = await verifyUserLoginOTP({ token: verificationToken, otp });
+      const response = await verifyUserLoginOTP({
+        token: verificationToken,
+        otp,
+        name,
+        email,
+        preferredLanguage
+      });
+
+      if (response.success && response.requiresName) {
+        return {
+          success: true,
+          requiresName: true,
+          isNewUser: true,
+          token: response.data?.token || verificationToken,
+          phone: response.data?.phone
+        };
+      }
 
       if (response.success && response.data?.tokens) {
         const { tokens, user: userData } = response.data;
@@ -158,7 +174,8 @@ export const AuthProvider = ({ children }) => {
         return {
           success: true,
           message: response.message || 'Login successful',
-          user: userData
+          user: userData,
+          isNewUser: response.isNewUser || false
         };
       } else {
         return {

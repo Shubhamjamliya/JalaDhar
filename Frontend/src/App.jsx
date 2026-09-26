@@ -275,7 +275,11 @@ function App() {
                                             </Suspense>
                                         }
                                     />
-                                    {/* ---------- USER AUTH ---------- */}
+                                    {/* ---------- USER AUTH (Unified Mobile Flow) ---------- */}
+                                    <Route
+                                        path="/login"
+                                        element={<Navigate to="/userlogin" replace />}
+                                    />
                                     <Route
                                         path="/userlogin"
                                         element={
@@ -286,11 +290,7 @@ function App() {
                                     />
                                     <Route
                                         path="/usersignup"
-                                        element={
-                                            <Suspense fallback={<LoadingSpinner />}>
-                                                <UserSignup />
-                                            </Suspense>
-                                        }
+                                        element={<Navigate to="/userlogin" replace />}
                                     />
                                     <Route
                                         path="/user/verify-otp"

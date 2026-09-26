@@ -4,7 +4,7 @@ const tokenSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.Mixed, // Allow both ObjectId and String
     required: function() {
-      return this.type !== 'ADMIN_REGISTRATION';
+      return this.type !== 'ADMIN_REGISTRATION' && this.type !== 'PHONE_VERIFICATION';
     }
   },
   userModel: {

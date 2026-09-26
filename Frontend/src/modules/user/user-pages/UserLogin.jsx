@@ -51,46 +51,35 @@ export default function UserLogin() {
         const loadingToast = toast.showLoading("Sending OTP...");
 
         try {
-            const response = await sendUserLoginOTP({ phone: phone.trim() });
+            const response = await sendUserLoginOTP({ phone: cleanPhone });
 
             if (response.success) {
                 toast.dismissToast(loadingToast);
                 if (response.reused) {
                     toast.showInfo(response.message || "Active OTP reused. Redirecting...");
                 } else {
-                    toast.showSuccess("OTP sent successfully! Please verify to log in.");
+                    toast.showSuccess("OTP sent successfully to your mobile number!");
                 }
 
                 setTimeout(() => {
                     navigate(`/user/verify-login-otp${redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`, {
                         state: {
-                            phone: phone.trim(),
+                            phone: cleanPhone,
                             verificationToken: response.data?.token,
                             devOtp: response.data?.devOtp || location.state?.devOtp,
                             cooldownRemaining: response.data?.cooldownRemaining || 60,
-                            redirectUrl: redirectUrl
+                            redirectUrl: redirectUrl,
+                            isNewUser: response.isNewUser
                         }
                     });
-                }, 600);
+                }, 500);
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to send OTP");
             }
         } catch (err) {
             toast.dismissToast(loadingToast);
-            if (err.response?.status === 404) {
-                toast.showInfo("Welcome to Jaladhaara! Looks like you're new here — let's quickly create your account.");
-                setTimeout(() => {
-                    navigate(`/usersignup${redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`, {
-                        state: {
-                            phone: cleanPhone,
-                            redirectUrl: redirectUrl
-                        }
-                    });
-                }, 700);
-                return;
-            }
-            toast.showError(err.response?.data?.message || "Failed to send OTP");
+            toast.showError(err.response?.data?.message || "Failed to send OTP. Please check your network and try again.");
         } finally {
             setLoading(false);
         }
@@ -149,67 +138,70 @@ export default function UserLogin() {
                                 className="h-20 sm:h-24 object-contain"
                             />
                         </div>
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
+                            {t('getStarted', 'Sign In or Sign Up')}
+                        </h1>
                         <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500">
-                            {t('welcomeBackLogin', 'Welcome back! Please login to your account.')}
+                            {t('enterMobileSubtitle', "Enter your mobile number. We'll send you an OTP to continue.")}
                         </p>
                     </div>
 
                     <form className="space-y-4" onSubmit={handleSendLoginOTP} autoComplete="off">
-                        {/* Pill Tag */}
-                        <div className="flex justify-center mb-2">
-                            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-50 text-[#0A84FF] text-xs font-extrabold border border-blue-200/80 tracking-wide shadow-2xs">
-                                <IoPersonOutline className="text-sm" />
-                                {t('userLogin', 'User Login')}
-                            </span>
-                        </div>
-
-                        {/* Mobile Number Input */}
-                        <div className="relative">
-                            <IoCallOutline className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400 text-lg" />
-                            <input
-                                className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-slate-800 text-sm font-medium shadow-2xs focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
-                                placeholder={`${t('mobileNumber', 'Mobile Number')} *`}
-                                type="tel"
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                                maxLength={10}
-                                disabled={loading}
-                                required
-                                autoFocus
-                            />
+                        {/* Mobile Number Input with +91 Country Badge */}
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-slate-700">
+                                {t('mobileNumber', 'Mobile Number')} <span className="text-rose-500">*</span>
+                            </label>
+                            <div className="relative flex items-center rounded-2xl border border-slate-200 bg-white shadow-2xs focus-within:border-[#0A84FF] focus-within:ring-4 focus-within:ring-blue-100 transition-all overflow-hidden">
+                                <div className="flex items-center gap-1.5 px-3.5 py-3.5 bg-slate-50 border-r border-slate-200 text-slate-700 font-bold text-sm select-none shrink-0">
+                                    <span className="text-base">🇮🇳</span>
+                                    <span>+91</span>
+                                </div>
+                                <input
+                                    className="w-full bg-transparent py-3.5 px-4 text-slate-800 text-base font-bold tracking-wide outline-none placeholder:font-normal placeholder:text-slate-400 placeholder:text-sm"
+                                    placeholder="Enter 10-digit mobile number"
+                                    type="tel"
+                                    inputMode="numeric"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                    maxLength={10}
+                                    disabled={loading}
+                                    required
+                                    autoFocus
+                                />
+                            </div>
                         </div>
 
                         {/* Submit Button */}
                         <button
-                            className="w-full rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 mt-2"
+                            className="w-full rounded-2xl bg-gradient-to-r from-[#0A84FF] via-blue-600 to-[#00C2A8] py-3.5 text-sm sm:text-base font-extrabold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 mt-4"
                             type="submit"
-                            disabled={loading || !phone}
+                            disabled={loading || phone.length !== 10}
                         >
-                            <span>{loading ? "Sending OTP..." : t('sendOtp', 'Send OTP')}</span>
+                            <span>{loading ? "Sending OTP..." : t('getOtp', 'Get Verification Code')}</span>
                             {!loading && <span className="text-base font-bold">→</span>}
                         </button>
                     </form>
 
-                    {/* Footer Links */}
-                    <div className="mt-6 pt-4 border-t border-slate-100 text-center space-y-2">
-                        <p className="text-xs text-slate-500 font-medium">
-                            By logging in, you agree to our{" "}
+                    {/* Terms & Privacy Notice */}
+                    <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                            By continuing, you agree to our{" "}
                             <button
                                 type="button"
                                 onClick={() => setShowTermsModal(true)}
-                                className="font-bold text-[#0A84FF] underline hover:text-blue-700 transition-colors cursor-pointer"
+                                className="font-bold text-[#0A84FF] hover:underline cursor-pointer"
                             >
-                                General Terms & Conditions
+                                Terms & Conditions
                             </button>
-                        </p>
-                        <p className="text-xs sm:text-sm font-medium text-slate-500">
-                            {t('dontHaveAccount', "Don't have an account?")}{" "}
-                            <Link
-                                to="/usersignup"
-                                className="font-extrabold text-[#0A84FF] hover:text-blue-700 hover:underline transition-colors"
+                            {" "}and{" "}
+                            <button
+                                type="button"
+                                onClick={() => setShowTermsModal(true)}
+                                className="font-bold text-[#0A84FF] hover:underline cursor-pointer"
                             >
-                                {t('signUp', 'Sign Up')}
-                            </Link>
+                                Privacy Policy
+                            </button>.
                         </p>
                     </div>
                 </main>

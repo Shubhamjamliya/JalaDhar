@@ -704,7 +704,7 @@ const logout = async (req, res) => {
 };
 
 /**
- * Send OTP for User Login via Mobile Number
+ * Send OTP for User Authentication via Mobile Number (Unified Login & Signup)
  */
 const sendLoginOTP = async (req, res) => {
   try {
@@ -730,23 +730,27 @@ const sendLoginOTP = async (req, res) => {
       ]
     });
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'No account found with this mobile number. Please click Sign Up to create an account.'
-      });
-    }
-
-    if (!user.isActive) {
+    if (user && !user.isActive) {
       return res.status(401).json({
         success: false,
         message: 'Your account has been deactivated. Please contact support.'
       });
     }
 
+    // Determine target phone
+    const targetPhone = user ? user.phone : (digits.length >= 10 ? digits.slice(-10) : identifier);
+
+    // For new users, validate phone format (10 digits)
+    if (!user && (!digits || digits.length < 10)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid 10-digit mobile number'
+      });
+    }
+
     // Enterprise Rate Limiting & Cooldown Protection (60s Cooldown)
     const existingToken = await Token.findOne({
-      phone: user.phone,
+      phone: targetPhone,
       type: TOKEN_TYPES.PHONE_VERIFICATION,
       isUsed: false,
       expiresAt: { $gt: new Date() }
@@ -759,48 +763,50 @@ const sendLoginOTP = async (req, res) => {
       return res.json({
         success: true,
         reused: true,
+        isNewUser: !user,
         message: `OTP already sent to mobile number. Please wait ${remainingSeconds}s before requesting again.`,
         data: {
           token: existingToken.token,
-          phone: user.phone,
+          phone: targetPhone,
           cooldownRemaining: remainingSeconds,
           ...(process.env.NODE_ENV !== 'production' && { devOtp: existingToken.otp })
         }
       });
     }
 
-    await Token.deleteMany({ phone: user.phone, type: TOKEN_TYPES.PHONE_VERIFICATION, isUsed: false });
+    await Token.deleteMany({ phone: targetPhone, type: TOKEN_TYPES.PHONE_VERIFICATION, isUsed: false });
 
     const otp = generateOTP(6);
     const token = generateToken(32);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     const tokenDoc = await Token.create({
-      userId: user._id,
+      userId: user ? user._id : null,
       userModel: 'User',
       token,
       type: TOKEN_TYPES.PHONE_VERIFICATION,
       otp,
-      phone: user.phone,
-      email: user.email || null,
+      phone: targetPhone,
+      email: user?.email || null,
       expiresAt
     });
 
     // Dispatch OTP across Multi-Channel (SMS, WhatsApp, Email)
     dispatchOTP({
-      email: user.email,
-      phone: user.phone,
-      name: user.name,
+      email: user?.email,
+      phone: targetPhone,
+      name: user?.name || 'Customer',
       otp,
-      type: 'login'
+      type: user ? 'login' : 'verification'
     }).catch(err => console.error('Multi-channel OTP dispatch error:', err));
 
     res.json({
       success: true,
+      isNewUser: !user,
       message: 'OTP sent to your mobile number successfully',
       data: {
         token: tokenDoc.token,
-        phone: user.phone,
+        phone: targetPhone,
         ...(process.env.NODE_ENV !== 'production' && { devOtp: otp })
       }
     });
@@ -815,11 +821,11 @@ const sendLoginOTP = async (req, res) => {
 };
 
 /**
- * Verify Login OTP and authenticate user
+ * Verify Login OTP and authenticate user or complete registration
  */
 const verifyLoginOTP = async (req, res) => {
   try {
-    const { token, otp } = req.body;
+    const { token, otp, name, email, preferredLanguage } = req.body;
 
     if (!token || !otp) {
       return res.status(400).json({
@@ -852,11 +858,69 @@ const verifyLoginOTP = async (req, res) => {
       });
     }
 
-    const user = await User.findById(tokenDoc.userId);
+    // Locate user either by userId in tokenDoc or by phone
+    let user = null;
+    if (tokenDoc.userId) {
+      user = await User.findById(tokenDoc.userId);
+    }
+    if (!user && tokenDoc.phone) {
+      const cleanPhone = tokenDoc.phone.slice(-10);
+      user = await User.findOne({
+        phone: new RegExp(cleanPhone + '$')
+      });
+    }
+
+    // If new user and name is not provided yet, ask frontend to collect name (+ optional email)
     if (!user) {
-      return res.status(404).json({
+      if (!name || !name.trim()) {
+        return res.json({
+          success: true,
+          isNewUser: true,
+          requiresName: true,
+          message: 'OTP verified successfully. Please enter your name to complete registration.',
+          data: {
+            token: tokenDoc.token,
+            phone: tokenDoc.phone
+          }
+        });
+      }
+
+      // Name provided -> Register new user
+      const cleanEmail = email ? email.toLowerCase().trim() : null;
+      if (cleanEmail) {
+        const existingEmailUser = await User.findOne({ email: cleanEmail });
+        if (existingEmailUser) {
+          return res.status(400).json({
+            success: false,
+            message: 'Email address already registered. Please use another email or leave it blank.'
+          });
+        }
+      }
+
+      const cleanPhone = tokenDoc.phone.slice(-10);
+      const defaultPassword = `Jaladhar@${cleanPhone.slice(-4)}`;
+
+      user = await User.create({
+        name: name.trim(),
+        phone: cleanPhone,
+        email: cleanEmail || null,
+        password: defaultPassword,
+        preferredLanguage: preferredLanguage || 'en',
+        isEmailVerified: Boolean(cleanEmail)
+      });
+
+      if (cleanEmail) {
+        sendWelcomeEmail({
+          email: user.email,
+          name: user.name
+        }).catch(err => console.error('Welcome email send error:', err));
+      }
+    }
+
+    if (!user.isActive) {
+      return res.status(401).json({
         success: false,
-        message: 'User account not found'
+        message: 'Your account has been deactivated. Please contact support.'
       });
     }
 
@@ -886,7 +950,8 @@ const verifyLoginOTP = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Login successful',
+      isNewUser: !tokenDoc.userId,
+      message: 'Authentication successful',
       data: {
         tokens: {
           accessToken,
