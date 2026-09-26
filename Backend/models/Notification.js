@@ -70,6 +70,9 @@ const notificationSchema = new mongoose.Schema({
       'WITHDRAWAL_REJECTED',
       'WITHDRAWAL_PROCESSED',
       'PLATFORM_FEE_DEDUCTION',
+      'WALLET_CREDITED',
+      'WALLET_DEBITED',
+      'WALLET_ADJUSTED',
       // Admin
       'NEW_VENDOR_REGISTRATION',
       'NEW_BOOKING_PENDING',
@@ -95,7 +98,7 @@ const notificationSchema = new mongoose.Schema({
   relatedEntity: {
     entityType: {
       type: String,
-      enum: ['Booking', 'Payment', 'Vendor', 'Service', 'Dispute', 'Rating', 'User', 'Wallet', 'UserWithdrawalRequest', 'VendorWithdrawalRequest', 'Withdrawal', 'ContactInquiry'],
+      enum: ['Booking', 'Payment', 'Vendor', 'Service', 'Dispute', 'Rating', 'User', 'Wallet', 'WalletTransaction', 'UserWithdrawalRequest', 'VendorWithdrawalRequest', 'Withdrawal', 'ContactInquiry'],
       default: null
     },
     entityId: {

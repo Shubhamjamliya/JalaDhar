@@ -98,7 +98,14 @@ const getDisputeDetails = async (req, res) => {
 
     const dispute = await Dispute.findById(disputeId)
       .populate('raisedBy', 'name email phone')
-      .populate('booking', 'status scheduledDate address user vendor service')
+      .populate({
+        path: 'booking',
+        select: 'status scheduledDate address user vendor service payment',
+        populate: {
+          path: 'vendor',
+          select: 'name email phone paymentCollection designation'
+        }
+      })
       .populate('assignedTo', 'name email')
       .populate('resolution.resolvedBy', 'name email')
       .populate('comments.commentedBy', 'name email');

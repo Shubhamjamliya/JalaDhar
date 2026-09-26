@@ -12,7 +12,10 @@ import {
     IoCloseOutline,
     IoChatbubbleOutline,
     IoArrowForwardOutline,
-    IoSwapHorizontalOutline
+    IoSwapHorizontalOutline,
+    IoWalletOutline,
+    IoArrowDownOutline,
+    IoWarningOutline
 } from "react-icons/io5";
 import {
     getAllDisputes,
@@ -21,16 +24,298 @@ import {
     updateDisputeStatus,
     assignDispute,
     addDisputeComment,
-    getAllAdmins
+    getAllAdmins,
+    adminAdjustVendorWallet
 } from "../../../services/adminApi";
 import { useAdminAuth } from "../../../contexts/AdminAuthContext";
 import { getPublicSettings } from "../../../services/settingsApi";
+import { hasAdminPermission } from "../../../utils/permissionUtils";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import InputModal from "../../shared/components/InputModal";
 import AssignmentHistoryModal from "../admin-component/AssignmentHistoryModal";
+
+/* -------------------------------------------------------------
+   DisputeWalletDebitModal - One-click Expert Clawback Modal
+------------------------------------------------------------- */
+function DisputeWalletDebitModal({ dispute, onClose, onSuccess, toast }) {
+    const vendor = dispute?.booking?.vendor;
+    const currentBalance = vendor?.paymentCollection?.walletBalance || 0;
+    const totalCredited = dispute?.booking?.payment?.vendorWalletPayments?.totalCredited || 0;
+
+    // Suggest default amount: totalCredited if > 0, otherwise booking total or current balance
+    const initialAmount = totalCredited > 0
+        ? Math.min(totalCredited, currentBalance > 0 ? currentBalance : totalCredited)
+        : (currentBalance > 0 ? Math.min(500, currentBalance) : "");
+
+    const [amount, setAmount] = useState(initialAmount ? String(initialAmount) : "");
+    const [reason, setReason] = useState("DISPUTE_REFUND");
+    const [notes, setNotes] = useState(
+        `Clawback for Dispute #${dispute?._id?.toString().slice(-8).toUpperCase()} (Booking #${dispute?.booking?._id?.toString().slice(-8).toUpperCase()}) - ${dispute?.subject || ''}`
+    );
+    const [submitting, setSubmitting] = useState(false);
+    const [confirmStep, setConfirmStep] = useState(false);
+
+    const parsedAmount = parseFloat(amount) || 0;
+    const isInsufficient = parsedAmount > currentBalance;
+    const previewBalance = currentBalance - parsedAmount;
+
+    const canProceed =
+        parsedAmount > 0 &&
+        reason &&
+        notes.trim().length >= 10 &&
+        !isInsufficient;
+
+    const handleSubmit = async (e) => {
+        if (e) e.preventDefault();
+        if (!canProceed) return;
+        if (!confirmStep) {
+            setConfirmStep(true);
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const res = await adminAdjustVendorWallet(vendor._id, {
+                action: 'DEBIT',
+                amount: parsedAmount,
+                reason,
+                notes: notes.trim()
+            });
+
+            if (res.success) {
+                // Also add an audit comment to the dispute trail
+                try {
+                    await addDisputeComment(dispute._id, {
+                        comment: `💳 [ADMIN WALLET CLAWBACK] Debited ₹${parsedAmount.toFixed(2)} from expert ${vendor.name}'s wallet. Reason: ${reason}. Notes: ${notes.trim()}`
+                    });
+                } catch (commentErr) {
+                    console.error("Failed to post audit comment on dispute:", commentErr);
+                }
+
+                toast.showSuccess(`₹${parsedAmount.toFixed(2)} debited successfully from ${vendor.name}'s wallet`);
+                onSuccess();
+                onClose();
+            } else {
+                toast.showError(res.message || 'Debit failed');
+                setConfirmStep(false);
+            }
+        } catch (err) {
+            toast.showError(err?.response?.data?.message || err?.message || 'Failed to adjust wallet');
+            setConfirmStep(false);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-gray-100">
+                {/* Header */}
+                <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                            <IoArrowDownOutline className="text-xl" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-bold text-gray-900">Debit Expert Wallet</h3>
+                            <p className="text-xs text-gray-400">
+                                Dispute #{dispute?._id?.toString().slice(-8).toUpperCase()} • Booking #{dispute?.booking?._id?.toString().slice(-8).toUpperCase()}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        disabled={submitting}
+                        className="p-1 text-gray-400 hover:text-gray-600 rounded-lg cursor-pointer"
+                    >
+                        <IoCloseOutline className="text-2xl" />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-5">
+                    {/* Target Expert Card */}
+                    <div className="bg-gradient-to-r from-gray-50 to-rose-50/40 rounded-xl p-4 border border-rose-100">
+                        <div className="flex items-center justify-between mb-2">
+                            <div>
+                                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Expert</span>
+                                <h4 className="text-sm font-bold text-gray-900">{vendor?.name}</h4>
+                                <p className="text-xs text-gray-500">{vendor?.email} • {vendor?.phone}</p>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Wallet Balance</span>
+                                <span className={`text-base font-black ${currentBalance > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                    ₹{Number(currentBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                        </div>
+
+                        {totalCredited > 0 && (
+                            <div className="mt-2 pt-2 border-t border-rose-100/60 flex items-center justify-between text-xs text-gray-600">
+                                <span>Total Credited for this Booking:</span>
+                                <span className="font-bold text-gray-900">₹{Number(totalCredited).toLocaleString('en-IN')}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Pre-fill Chips */}
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Quick Select Amount</label>
+                        <div className="flex flex-wrap gap-2">
+                            {totalCredited > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setAmount(String(totalCredited)); setConfirmStep(false); }}
+                                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors cursor-pointer"
+                                >
+                                    Full Booking Payout (₹{totalCredited})
+                                </button>
+                            )}
+                            {totalCredited > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setAmount(String(Math.round(totalCredited / 2))); setConfirmStep(false); }}
+                                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer"
+                                >
+                                    50% Payout (₹{Math.round(totalCredited / 2)})
+                                </button>
+                            )}
+                            {currentBalance > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setAmount(String(currentBalance)); setConfirmStep(false); }}
+                                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer"
+                                >
+                                    Entire Balance (₹{currentBalance})
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Amount Input */}
+                    <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                            Amount to Debit (₹) <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">₹</span>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="1"
+                                max={currentBalance}
+                                value={amount}
+                                onChange={(e) => {
+                                    setAmount(e.target.value);
+                                    setConfirmStep(false);
+                                }}
+                                placeholder="Enter amount"
+                                className={`w-full pl-8 pr-4 py-2.5 text-sm font-semibold rounded-xl border ${
+                                    isInsufficient
+                                        ? 'border-rose-400 focus:ring-rose-500 bg-rose-50/20'
+                                        : 'border-gray-200 focus:ring-blue-500'
+                                } outline-none transition-all`}
+                            />
+                        </div>
+                        {isInsufficient && (
+                            <p className="mt-1 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                                <IoWarningOutline /> Amount exceeds expert's current wallet balance (₹{currentBalance.toFixed(2)}). Overdrafts are not permitted.
+                            </p>
+                        )}
+                        {!isInsufficient && parsedAmount > 0 && (
+                            <p className="mt-1 text-xs text-gray-500">
+                                Wallet balance after deduction: <span className="font-bold text-gray-800">₹{previewBalance.toFixed(2)}</span>
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Reason Selection */}
+                    <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                            Adjustment Reason <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                            value={reason}
+                            onChange={(e) => { setReason(e.target.value); setConfirmStep(false); }}
+                            className="w-full px-3.5 py-2.5 text-xs font-medium rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                        >
+                            <option value="DISPUTE_REFUND">Dispute Refund / Survey Quality Resolution</option>
+                            <option value="FRAUD_PENALTY">Fraud / No-Show / Safety Penalty</option>
+                            <option value="BOREWELL_PENALTY">Borewell Settlement Penalty</option>
+                            <option value="CORRECTION">Ledger Correction</option>
+                            <option value="OTHER">Other Administrative Debit</option>
+                        </select>
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs font-bold text-gray-700">
+                                Audit & Resolution Notes <span className="text-rose-500">*</span>
+                            </label>
+                            <span className={`text-[10px] ${notes.trim().length >= 10 ? 'text-gray-400' : 'text-rose-500 font-bold'}`}>
+                                {notes.trim().length}/10 chars min
+                            </span>
+                        </div>
+                        <textarea
+                            value={notes}
+                            onChange={(e) => { setNotes(e.target.value); setConfirmStep(false); }}
+                            rows={3}
+                            placeholder="Explain why this wallet debit is being made for future audit..."
+                            className="w-full px-3.5 py-2.5 text-xs text-gray-800 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                        />
+                    </div>
+
+                    {/* Confirm Step Caution Alert */}
+                    {confirmStep && (
+                        <div className="bg-rose-50 border border-rose-200 rounded-xl p-3.5 text-xs text-rose-800 space-y-1.5">
+                            <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                <IoWarningOutline className="text-base text-rose-600 shrink-0" />
+                                Please confirm this financial clawback
+                            </div>
+                            <p className="text-[11px] leading-relaxed text-rose-700">
+                                You are about to deduct <strong className="font-bold text-rose-950">₹{parsedAmount.toFixed(2)}</strong> from <strong className="font-bold text-rose-950">{vendor?.name}</strong>'s wallet. This operation creates an immutable ledger entry and automatically posts an audit note to this dispute.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 justify-end pt-2 border-t border-gray-100">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (confirmStep) setConfirmStep(false);
+                                else onClose();
+                            }}
+                            disabled={submitting}
+                            className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
+                        >
+                            {confirmStep ? "Back" : "Cancel"}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={!canProceed || submitting}
+                            className={`px-5 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-xs cursor-pointer ${
+                                confirmStep
+                                    ? 'bg-rose-700 hover:bg-rose-800 ring-2 ring-rose-400'
+                                    : 'bg-rose-600 hover:bg-rose-700'
+                            } disabled:opacity-40 disabled:cursor-not-allowed`}
+                        >
+                            {submitting
+                                ? "Processing Debit..."
+                                : confirmStep
+                                ? "Confirm & Debit Now"
+                                : "Review Debit"}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 const DEFAULT_DISPUTE_TYPES = [
     "Expert did not arrive",
@@ -74,11 +359,13 @@ export default function AdminDisputes() {
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [showCommentModal, setShowCommentModal] = useState(false);
     const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+    const [showDebitModal, setShowDebitModal] = useState(false);
     const [newComment, setNewComment] = useState("");
     const [statusUpdate, setStatusUpdate] = useState({ status: "", notes: "" });
     const [actionLoading, setActionLoading] = useState(false);
 
     const isSuperAdmin = currentAdmin?.role === "SUPER_ADMIN";
+    const canAdjustWallet = hasAdminPermission(currentAdmin, 'can_adjust_wallets') || ['SUPER_ADMIN', 'FINANCE_ADMIN'].includes(currentAdmin?.role);
 
     useEffect(() => {
         loadDisputes();
@@ -569,6 +856,77 @@ export default function AdminDisputes() {
                                     </button>
                                 </div>
                             )}
+
+                            {/* Assigned Expert & Wallet Clawback Card */}
+                            {selectedDispute.booking?.vendor && (
+                                <div className="bg-gradient-to-br from-amber-50/50 via-white to-rose-50/30 rounded-2xl p-4 sm:p-5 border border-amber-200/70 shadow-xs space-y-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-lg">
+                                                <IoWalletOutline className="text-2xl" />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">Assigned Expert</span>
+                                                    {selectedDispute.booking.vendor.designation && (
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-semibold">
+                                                            {selectedDispute.booking.vendor.designation}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <h4 className="text-sm font-bold text-gray-900">{selectedDispute.booking.vendor.name}</h4>
+                                                <p className="text-xs text-gray-500">
+                                                    {selectedDispute.booking.vendor.email} • {selectedDispute.booking.vendor.phone}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 ml-auto sm:ml-0">
+                                            <div className="text-right">
+                                                <span className="text-[10px] uppercase font-bold text-gray-400 block">Expert Balance</span>
+                                                <span className={`text-base font-extrabold ${Number(selectedDispute.booking.vendor.paymentCollection?.walletBalance || 0) > 0 ? 'text-emerald-600' : 'text-gray-500'}`}>
+                                                    ₹{Number(selectedDispute.booking.vendor.paymentCollection?.walletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
+
+                                            {canAdjustWallet && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowDebitModal(true)}
+                                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-xs hover:shadow-md transition-all cursor-pointer"
+                                                    title="Directly deduct funds from this expert's wallet"
+                                                >
+                                                    <IoArrowDownOutline className="text-sm" />
+                                                    Debit Expert Wallet
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Booking Financial Snapshot */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 border-t border-amber-200/50 text-xs">
+                                        <div className="bg-white/80 rounded-xl p-2.5 border border-amber-100/70">
+                                            <span className="text-[10px] text-gray-400 uppercase font-bold block">Booking Fee</span>
+                                            <span className="font-extrabold text-gray-800">
+                                                ₹{Number(selectedDispute.booking.totalAmount || 0).toLocaleString('en-IN')}
+                                            </span>
+                                        </div>
+                                        <div className="bg-white/80 rounded-xl p-2.5 border border-amber-100/70">
+                                            <span className="text-[10px] text-gray-400 uppercase font-bold block">Paid to Expert</span>
+                                            <span className="font-extrabold text-emerald-600">
+                                                ₹{Number(selectedDispute.booking.payment?.vendorWalletPayments?.totalCredited || 0).toLocaleString('en-IN')}
+                                            </span>
+                                        </div>
+                                        <div className="bg-white/80 rounded-xl p-2.5 border border-amber-100/70 col-span-2 sm:col-span-1">
+                                            <span className="text-[10px] text-gray-400 uppercase font-bold block">Booking Status</span>
+                                            <span className="font-bold text-gray-700">
+                                                {selectedDispute.booking.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {selectedDispute.comments && selectedDispute.comments.length > 0 && (
                                 <div>
                                     <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Comments ({selectedDispute.comments.length})</h3>
@@ -596,7 +954,7 @@ export default function AdminDisputes() {
                                     </p>
                                 </div>
                             )}
-                            <div className="flex gap-2 pt-4 border-t border-gray-100">
+                            <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-gray-100">
                                 <button
                                     onClick={() => {
                                         setStatusUpdate({ status: selectedDispute.status, notes: "" });
@@ -613,6 +971,16 @@ export default function AdminDisputes() {
                                     <IoChatbubbleOutline className="text-sm" />
                                     Add Comment
                                 </button>
+                                {canAdjustWallet && selectedDispute.booking?.vendor && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDebitModal(true)}
+                                        className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold text-xs flex items-center gap-1.5 ml-auto cursor-pointer"
+                                    >
+                                        <IoArrowDownOutline className="text-sm" />
+                                        Debit Expert Wallet
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -712,6 +1080,20 @@ export default function AdminDisputes() {
                 onReassign={handleReassignDispute}
                 isSuperAdmin={isSuperAdmin}
             />
+
+            {/* Dispute Expert Wallet Debit Modal */}
+            {showDebitModal && selectedDispute?.booking?.vendor && (
+                <DisputeWalletDebitModal
+                    dispute={selectedDispute}
+                    onClose={() => setShowDebitModal(false)}
+                    onSuccess={async () => {
+                        await handleViewDetails(selectedDispute._id);
+                        await loadDisputes();
+                        await loadStatistics();
+                    }}
+                    toast={toast}
+                />
+            )}
         </div>
     );
 }
