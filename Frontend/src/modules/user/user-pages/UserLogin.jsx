@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
     IoCallOutline,
@@ -22,6 +22,7 @@ export default function UserLogin() {
     const [loading, setLoading] = useState(false);
     const [showTermsModal, setShowTermsModal] = useState(false);
     const [showLangMenu, setShowLangMenu] = useState(false);
+    const langDropdownRef = useRef(null);
     
     const navigate = useNavigate();
     const toast = useToast();
@@ -36,6 +37,33 @@ export default function UserLogin() {
             navigate(redirectUrl || "/user/dashboard", { replace: true });
         }
     }, [isAuthenticated, navigate, redirectUrl]);
+
+    // Close language dropdown on outside click, touch, or escape key
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (langDropdownRef.current && !langDropdownRef.current.contains(event.target)) {
+                setShowLangMenu(false);
+            }
+        };
+
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                setShowLangMenu(false);
+            }
+        };
+
+        if (showLangMenu) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+            document.addEventListener("keydown", handleKeyDown);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [showLangMenu]);
 
     // Handle Mobile OTP Login
     const handleSendLoginOTP = async (e) => {
@@ -95,7 +123,7 @@ export default function UserLogin() {
 
             {/* Top Language Toggle Button */}
             {isLanguageEnabled && (
-                <div className="absolute top-4 right-4 z-20">
+                <div className="absolute top-4 right-4 z-20" ref={langDropdownRef}>
                     <button
                         onClick={() => setShowLangMenu(!showLangMenu)}
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-xs font-bold text-slate-700 hover:border-blue-300 transition-all cursor-pointer"

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
     IoShieldCheckmarkOutline,
@@ -6,7 +6,8 @@ import {
     IoCheckmarkCircle,
     IoPersonOutline,
     IoMailOutline,
-    IoSparklesOutline
+    IoSparklesOutline,
+    IoGlobeOutline
 } from "react-icons/io5";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useLanguage } from "../../../contexts/LanguageContext";
@@ -17,7 +18,7 @@ import { handleApiError } from "../../../utils/toastHelper";
 import logo from "@/assets/AppLogo.png";
 
 export default function UserLoginOTPVerification() {
-    const { t, language } = useLanguage();
+    const { t, language, setLanguage, supportedLanguages, isLanguageEnabled } = useLanguage();
     const navigate = useNavigate();
     const location = useLocation();
     const { verifyLoginOTP } = useAuth();
@@ -33,7 +34,38 @@ export default function UserLoginOTPVerification() {
     const [otpCountdown, setOtpCountdown] = useState(() => location.state?.cooldownRemaining ?? 60);
     const [loading, setLoading] = useState(false);
     const [loginSuccess, setLoginSuccess] = useState(false);
+    const [showLangMenu, setShowLangMenu] = useState(false);
+    const langDropdownRef = useRef(null);
     const toast = useToast();
+
+    // Close language dropdown on outside click, touch, or escape key
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (langDropdownRef.current && !langDropdownRef.current.contains(event.target)) {
+                setShowLangMenu(false);
+            }
+        };
+
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                setShowLangMenu(false);
+            }
+        };
+
+        if (showLangMenu) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+            document.addEventListener("keydown", handleKeyDown);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [showLangMenu]);
+
+    const currentLangObj = supportedLanguages?.find(l => l.code === language) || supportedLanguages?.[0] || { code: 'en', nativeName: 'English' };
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -213,7 +245,38 @@ export default function UserLoginOTPVerification() {
         <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 px-4 py-8 overflow-y-auto overflow-x-hidden">
             {/* Ambient Blurred Background Accents */}
             <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute bottom-10 right-10 w-80 h-80 bg-teal-400/10 rounded-full blur-3xl" />
+            {/* Top Language Toggle Button */}
+            {isLanguageEnabled && (
+                <div className="absolute top-4 right-4 z-20" ref={langDropdownRef}>
+                    <button
+                        onClick={() => setShowLangMenu(!showLangMenu)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-xs font-bold text-slate-700 hover:border-blue-300 transition-all cursor-pointer"
+                    >
+                        <IoGlobeOutline className="text-[#0A84FF] text-sm" />
+                        <span>{currentLangObj.nativeName}</span>
+                    </button>
+
+                    {showLangMenu && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-30 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                            {supportedLanguages?.map((lang) => (
+                                <button
+                                    key={lang.code}
+                                    onClick={() => {
+                                        setLanguage(lang.code);
+                                        setShowLangMenu(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left cursor-pointer ${
+                                        language === lang.code ? "bg-blue-50 text-[#0A84FF]" : "text-slate-700 hover:bg-slate-50"
+                                    }`}
+                                >
+                                    <span>{lang.nativeName}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">{lang.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="relative z-10 w-full max-w-md flex flex-col items-center">
                 {/* Logo & Subtitle */}
