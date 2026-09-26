@@ -299,10 +299,7 @@ export default function VendorSignup() {
                 ? initialData.modeOfTravel
                 : (Array.isArray(d.modeOfTravel)
                     ? d.modeOfTravel
-                    : ['Car', 'Bike']),
-            travelChargesPerKm: initialData?.travelChargesPerKm !== undefined
-                ? initialData.travelChargesPerKm
-                : (d.travelChargesPerKm !== undefined ? d.travelChargesPerKm : "")
+                    : ['Car', 'Bike'])
         };
     });
 
@@ -350,8 +347,7 @@ export default function VendorSignup() {
                 serviceRadius: formData.serviceRadius,
                 multipleStates: formData.multipleStates,
                 willingToTravel: formData.willingToTravel,
-                modeOfTravel: formData.modeOfTravel,
-                travelChargesPerKm: formData.travelChargesPerKm
+                modeOfTravel: formData.modeOfTravel
             };
             sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
                 formData: textFields,
@@ -1007,8 +1003,7 @@ export default function VendorSignup() {
                                 serviceRadius: formData.serviceRadius,
                                 multipleStates: formData.multipleStates,
                                 willingToTravel: formData.willingToTravel,
-                                modeOfTravel: formData.modeOfTravel,
-                                travelChargesPerKm: formData.travelChargesPerKm
+                                modeOfTravel: formData.modeOfTravel
                             },
                             verificationToken: response.data.token,
                             phone: formData.phone,
@@ -1946,30 +1941,6 @@ export default function VendorSignup() {
                                                             );
                                                         })}
                                                     </div>
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 px-1">
-                                                        Travel Charges after Free Radius
-                                                    </label>
-                                                    <div className="relative">
-                                                        <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-500 font-extrabold text-sm">₹</span>
-                                                        <input
-                                                            type="number"
-                                                            name="travelChargesPerKm"
-                                                            value={formData.travelChargesPerKm}
-                                                            onChange={handleInputChange}
-                                                            placeholder="0.00"
-                                                            min="0"
-                                                            step="0.01"
-                                                            disabled={loading}
-                                                            className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-9 pr-16 text-sm font-extrabold text-slate-800 focus:border-[#0A84FF] focus:ring-4 focus:ring-blue-100 transition-all outline-none"
-                                                        />
-                                                        <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-slate-400 font-bold text-xs">/ km</span>
-                                                    </div>
-                                                    <p className="text-[11px] text-slate-500 font-medium mt-1.5 px-1">
-                                                        Applicable for client visits beyond your standard service radius.
-                                                    </p>
                                                 </div>
                                             </div>
                                         )}

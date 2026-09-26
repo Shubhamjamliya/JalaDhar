@@ -659,10 +659,7 @@ export default function AdminVendorDetails() {
                                 <div className="space-y-1 text-xs text-gray-700">
                                     <p><span className="font-semibold text-gray-500">Service Radius:</span> <span className="font-bold">{vendor.serviceRadius || "50 km"}</span></p>
                                     <p><span className="font-semibold text-gray-500">Willing to Travel:</span> <span className="font-bold">{vendor.willingToTravel || "Yes"}</span></p>
-                                    <p><span className="font-semibold text-gray-500">Mode of Travel:</span> <span className="font-bold">{Array.isArray(vendor.modeOfTravel) ? vendor.modeOfTravel.join(', ') : (vendor.modeOfTravel || "Car, Bike")}</span></p>
-                                    {vendor.travelChargesPerKm ? (
-                                        <p><span className="font-semibold text-gray-500">Rate / km:</span> <span className="font-bold text-green-600">₹{vendor.travelChargesPerKm}/km</span></p>
-                                    ) : null}
+                                    <p><span className="font-semibold text-gray-500">Travel Rate:</span> <span className="font-bold text-gray-700">Platform Standard</span></p>
                                 </div>
                             </div>
                         </div>

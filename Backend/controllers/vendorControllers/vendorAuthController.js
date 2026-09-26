@@ -529,7 +529,7 @@ const register = async (req, res) => {
       multipleStates: parsedMultipleStates,
       willingToTravel: willingToTravel || "Yes",
       modeOfTravel: parsedModeOfTravel,
-      travelChargesPerKm: travelChargesPerKm ? parseFloat(travelChargesPerKm) : 0,
+      travelChargesPerKm: 0,
       serviceAreas: serviceAreasList.length > 0 ? serviceAreasList : undefined,
       isEmailVerified: true, // Email is verified via OTP
       gender,

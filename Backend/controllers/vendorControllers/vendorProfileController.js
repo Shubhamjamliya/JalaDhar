@@ -269,7 +269,6 @@ const updateProfile = async (req, res) => {
       'multipleStates',
       'willingToTravel',
       'modeOfTravel',
-      'travelChargesPerKm',
       'serviceAreas',
       'educationalQualifications',
       'experience',

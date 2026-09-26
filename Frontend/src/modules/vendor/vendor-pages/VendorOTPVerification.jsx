@@ -227,9 +227,6 @@ export default function VendorOTPVerification() {
                 if (registrationData.modeOfTravel && registrationData.modeOfTravel.length > 0) {
                     formDataToSend.append('modeOfTravel', JSON.stringify(registrationData.modeOfTravel));
                 }
-                if (registrationData.travelChargesPerKm) {
-                    formDataToSend.append('travelChargesPerKm', registrationData.travelChargesPerKm);
-                }
             }
 
             const result = await register(formDataToSend);

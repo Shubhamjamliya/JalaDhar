@@ -117,7 +117,6 @@ export default function VendorProfileView({ vendor, profileData, stats }) {
                                     {vendor.willingToTravel === 'Yes'
                                         ? `Yes (${vendor.modeOfTravel?.length > 0 ? vendor.modeOfTravel.join(', ') : 'All Modes'})`
                                         : 'No'}
-                                    {vendor.willingToTravel === 'Yes' && vendor.travelChargesPerKm > 0 && ` • ₹${vendor.travelChargesPerKm}/km`}
                                 </span>
                             </div>
                         )}

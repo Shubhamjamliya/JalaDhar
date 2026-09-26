@@ -312,10 +312,8 @@ const createBooking = async (req, res) => {
       }
     }
 
-    let travelChargePerKm = adminTravelChargePerKm;
-    if (typeof vendor.travelChargesPerKm === 'number' && vendor.travelChargesPerKm > 0) {
-      travelChargePerKm = vendor.travelChargesPerKm;
-    }
+    // Standard platform travel charge set by Admin under Settings > Pricing
+    const travelChargePerKm = adminTravelChargePerKm;
 
     // Get vendor location (handles both object and GeoJSON array)
     let vendorLat = vendor.address?.coordinates?.lat;
@@ -1905,10 +1903,8 @@ const calculateBookingCharges = async (req, res) => {
       }
     }
 
-    let travelChargePerKm = adminTravelChargePerKm;
-    if (typeof vendor.travelChargesPerKm === 'number' && vendor.travelChargesPerKm > 0) {
-      travelChargePerKm = vendor.travelChargesPerKm;
-    }
+    // Standard platform travel charge set by Admin under Settings > Pricing
+    const travelChargePerKm = adminTravelChargePerKm;
 
     // Extract vendor coordinates safely (handles both object and GeoJSON array)
     let vendorLat = vendor.address?.coordinates?.lat;

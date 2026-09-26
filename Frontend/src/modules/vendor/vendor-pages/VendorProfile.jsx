@@ -696,7 +696,6 @@ export default function VendorProfile() {
                         : [profileData.district, profileData.state].filter(Boolean)),
                 willingToTravel: profileData.willingToTravel || "Yes",
                 modeOfTravel: profileData.modeOfTravel || [],
-                travelChargesPerKm: profileData.travelChargesPerKm ? parseFloat(profileData.travelChargesPerKm) : 0,
                 bankDetails: (() => {
                     const activeBank = bankAccounts.find(b => b.isPrimary) || bankAccounts[0] || profileData.bankDetails;
                     return (activeBank?.accountNumber || profileData.bankDetails?.accountNumber) ? {
@@ -1564,27 +1563,6 @@ export default function VendorProfile() {
                                                     })}
                                                 </div>
                                             </div>
-
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                                    Travel Charges after Free Radius (₹ per km)
-                                                </label>
-                                                <div className="relative max-w-xs">
-                                                    <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-500 font-extrabold text-sm">₹</span>
-                                                    <input
-                                                        type="number"
-                                                        value={profileData.travelChargesPerKm}
-                                                        onChange={(e) => setProfileData(prev => ({ ...prev, travelChargesPerKm: e.target.value }))}
-                                                        onWheel={(e) => e.target.blur()}
-                                                        placeholder="0.00"
-                                                        min="0"
-                                                        step="0.01"
-                                                        disabled={saving}
-                                                        className="w-full rounded-xl border-gray-200 bg-gray-50 p-3 pl-9 pr-14 text-sm font-bold text-slate-800 focus:border-blue-500 focus:ring-blue-500 outline-none"
-                                                    />
-                                                    <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-slate-400 font-bold text-xs">/ km</span>
-                                                </div>
-                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -1605,7 +1583,7 @@ export default function VendorProfile() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Service Radius</p>
                                             <p className="text-sm font-extrabold text-slate-800">
@@ -1618,14 +1596,6 @@ export default function VendorProfile() {
                                                 {profileData.willingToTravel === 'Yes'
                                                     ? `Yes (${profileData.modeOfTravel?.length > 0 ? profileData.modeOfTravel.join(', ') : 'All Modes'})`
                                                     : 'No'}
-                                            </p>
-                                        </div>
-                                        <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Travel Rate</p>
-                                            <p className="text-sm font-extrabold text-emerald-600">
-                                                {profileData.willingToTravel === 'Yes' && parseFloat(profileData.travelChargesPerKm) > 0
-                                                    ? `₹${profileData.travelChargesPerKm} / km`
-                                                    : 'Standard Rates'}
                                             </p>
                                         </div>
                                     </div>

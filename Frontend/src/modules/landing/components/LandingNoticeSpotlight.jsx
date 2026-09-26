@@ -41,7 +41,7 @@ export default function LandingNoticeSpotlight({ variant = 'subnav', portal = 'l
     text: 'Survey bookings will be open from 1st  November, 2026 onwards ',
     showLanding: true,
     showUser: true,
-    showVendor: true,
+    showVendor: false,
     type: 'warning'
   });
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ export default function LandingNoticeSpotlight({ variant = 'subnav', portal = 'l
     let text = 'Survey bookings will be open from 1st  November, 2026 onwards ';
     let showLanding = true;
     let showUser = true;
-    let showVendor = true;
+    let showVendor = false;
     let type = 'warning';
 
     settingsList.forEach((s) => {
