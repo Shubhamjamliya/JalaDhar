@@ -113,7 +113,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
     const settingsTabs = [
         { id: "general", label: "General", title: "General & App Info", icon: IoSettingsOutline },
-        { id: "booking_controls", label: "Booking Controls", title: "Booking Availability & User App Pop-Up", icon: IoCalendarOutline },
+        { id: "booking_controls", label: "Booking Controls", title: "Booking Availability & Notice Settings", icon: IoCalendarOutline },
         { id: "availability", label: "Availability", title: "Expert Availability & Shifts", icon: IoTimeOutline },
         { id: "communication", label: "WhatsApp", title: "WhatsApp & Alerts", icon: IoLogoWhatsapp },
         { id: "reschedule", label: "Reschedule", title: "Reschedule Policy", icon: IoCalendarOutline },
@@ -852,15 +852,15 @@ export default function AdminSettings({ defaultTab = "general" }) {
             try {
                 const response = await updateMultipleSettings([
                     { key: 'ALLOW_NEW_BOOKINGS', value: Boolean(bookingControlSettings.ALLOW_NEW_BOOKINGS), label: 'Allow New Survey Bookings', category: 'general', type: 'boolean' },
-                    { key: 'BOOKING_DISABLED_POPUP_ENABLED', value: Boolean(bookingControlSettings.BOOKING_DISABLED_POPUP_ENABLED), label: 'Enable Customer Booking Notice Pop-Up', category: 'general', type: 'boolean' },
-                    { key: 'BOOKING_DISABLED_POPUP_TITLE', value: (bookingControlSettings.BOOKING_DISABLED_POPUP_TITLE || '').trim(), label: 'Booking Disabled Pop-Up Title', category: 'general', type: 'string' },
+                    { key: 'BOOKING_DISABLED_POPUP_ENABLED', value: Boolean(bookingControlSettings.BOOKING_DISABLED_POPUP_ENABLED), label: 'Enable Customer Booking Notice Banner', category: 'general', type: 'boolean' },
+                    { key: 'BOOKING_DISABLED_POPUP_TITLE', value: (bookingControlSettings.BOOKING_DISABLED_POPUP_TITLE || '').trim(), label: 'Booking Disabled Notice Header', category: 'general', type: 'string' },
                     { key: 'BOOKING_DISABLED_MESSAGE', value: (bookingControlSettings.BOOKING_DISABLED_MESSAGE || '').trim(), label: 'Booking Disabled Main Highlight', category: 'general', type: 'string' },
                     { key: 'BOOKING_REOPEN_DATE', value: (bookingControlSettings.BOOKING_REOPEN_DATE || '').trim(), label: 'Bookings Official Reopen Date', category: 'general', type: 'string' },
-                    { key: 'BOOKING_DISABLED_DESCRIPTION', value: (bookingControlSettings.BOOKING_DISABLED_DESCRIPTION || '').trim(), label: 'Booking Disabled Pop-Up Description', category: 'general', type: 'string' },
-                    { key: 'BOOKING_DISABLED_BUTTON_TEXT', value: (bookingControlSettings.BOOKING_DISABLED_BUTTON_TEXT || '').trim(), label: 'Booking Disabled Pop-Up Button Text', category: 'general', type: 'string' }
+                    { key: 'BOOKING_DISABLED_DESCRIPTION', value: (bookingControlSettings.BOOKING_DISABLED_DESCRIPTION || '').trim(), label: 'Booking Disabled Guidance Description', category: 'general', type: 'string' },
+                    { key: 'BOOKING_DISABLED_BUTTON_TEXT', value: (bookingControlSettings.BOOKING_DISABLED_BUTTON_TEXT || '').trim(), label: 'Booking Disabled Button Text', category: 'general', type: 'string' }
                 ]);
                 if (response.success) {
-                    toast.showSuccess("Booking availability & pop-up settings saved successfully!");
+                    toast.showSuccess("Booking availability & notice settings saved successfully!");
                 } else {
                     setError(response.message || "Failed to update booking controls");
                 }
@@ -1830,7 +1830,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 <p className="text-xs text-gray-600 leading-relaxed">
                                                     {bookingControlSettings.ALLOW_NEW_BOOKINGS
                                                         ? "Customers can search for verified hydrogeologists, choose survey slots, and confirm bookings normally."
-                                                        : "New survey booking creation is locked platform-wide. When customers attempt to book, the configured pop-up will notify them."}
+                                                        : "New survey booking creation is locked platform-wide. When customers attempt to book, the configured notice and disabled button will inform them."}
                                                 </p>
                                             </div>
 
@@ -1858,17 +1858,17 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                         </div>
                                     </div>
 
-                                    {/* Pop-Up Modal Configuration Form */}
+                                    {/* Notice & Disabled Button Configuration Form */}
                                     <form onSubmit={handleSaveBookingControlSettings} className="space-y-5">
                                         <div className="bg-white p-5 rounded-2xl border border-gray-200/90 shadow-2xs space-y-4">
                                             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                                                 <div>
                                                     <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
                                                         <IoSparklesOutline className="text-amber-500 text-base" />
-                                                        <span>Customer App Pop-Up Modal Settings</span>
+                                                        <span>Customer Booking Notice & Disabled Button Settings</span>
                                                     </h3>
                                                     <p className="text-xs text-gray-500 mt-0.5">
-                                                        Customize the popup modal shown when customers visit the app or click to book a survey while bookings are disabled.
+                                                        Customize the notice banner and disabled booking button shown to customers when new bookings are paused platform-wide.
                                                     </p>
                                                 </div>
 
@@ -1886,17 +1886,17 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                     />
                                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0A84FF]"></div>
                                                     <span className="ml-2 text-xs font-semibold text-gray-700">
-                                                        {bookingControlSettings.BOOKING_DISABLED_POPUP_ENABLED ? "Pop-Up Active" : "Pop-Up Off"}
+                                                        {bookingControlSettings.BOOKING_DISABLED_POPUP_ENABLED ? "Notice Banner Active" : "Notice Banner Off"}
                                                     </span>
                                                 </label>
                                             </div>
 
-                                            {/* Pop-up Fields */}
+                                            {/* Notice & Button Fields */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {/* Pop-Up Title */}
+                                                {/* Notice Header / Title */}
                                                 <div>
                                                     <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
-                                                        Pop-Up Title
+                                                        Notice Header / Title
                                                     </label>
                                                     <input
                                                         type="text"
@@ -1936,7 +1936,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             <div>
                                                 <div className="flex items-center justify-between mb-1">
                                                     <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide">
-                                                        Main Announcement Highlight (Banner Text)
+                                                        Main Announcement Highlight (Banner & Button Text)
                                                     </label>
                                                     <span className="text-[11px] font-bold text-gray-400">
                                                         Presets:
@@ -1998,29 +1998,11 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                             BOOKING_DISABLED_DESCRIPTION: e.target.value
                                                         }))
                                                     }
-                                                    placeholder="Explanation shown to the customer inside the modal..."
+                                                    placeholder="Explanation shown to customers in the guidance banner..."
                                                     className="w-full px-3.5 py-2.5 text-xs text-gray-700 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white resize-none"
                                                 />
                                             </div>
 
-                                            {/* Button Text */}
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
-                                                    Primary Modal Button Text
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={bookingControlSettings.BOOKING_DISABLED_BUTTON_TEXT}
-                                                    onChange={(e) =>
-                                                        setBookingControlSettings(prev => ({
-                                                            ...prev,
-                                                            BOOKING_DISABLED_BUTTON_TEXT: e.target.value
-                                                        }))
-                                                    }
-                                                    placeholder="e.g. Got it, Explore Platform"
-                                                    className="w-full px-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white max-w-sm"
-                                                />
-                                            </div>
                                             {/* Live Preview: Disabled Booking Button */}
                                             <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-3">
                                                 <div className="flex items-center justify-between">
@@ -2036,24 +2018,32 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                 </div>
 
                                                 {/* Notice Banner Preview */}
-                                                <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-xl space-y-1.5 text-xs text-amber-900">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-bold text-amber-950">Bookings Currently Paused</span>
-                                                        {bookingControlSettings.BOOKING_REOPEN_DATE && (
-                                                            <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-amber-200/80 text-amber-900 rounded-md">
-                                                                {bookingControlSettings.BOOKING_REOPEN_DATE}
+                                                {bookingControlSettings.BOOKING_DISABLED_POPUP_ENABLED ? (
+                                                    <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-xl space-y-1.5 text-xs text-amber-900">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-amber-950">
+                                                                {bookingControlSettings.BOOKING_DISABLED_POPUP_TITLE || "Bookings Currently Paused"}
                                                             </span>
+                                                            {bookingControlSettings.BOOKING_REOPEN_DATE && (
+                                                                <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-amber-200/80 text-amber-900 rounded-md">
+                                                                    {bookingControlSettings.BOOKING_REOPEN_DATE}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-amber-800 font-semibold">
+                                                            {bookingControlSettings.BOOKING_DISABLED_MESSAGE || "Bookings will be open from Nov. 1 onwards"}
+                                                        </p>
+                                                        {bookingControlSettings.BOOKING_DISABLED_DESCRIPTION && (
+                                                            <p className="text-amber-700/80 text-[11px] leading-relaxed">
+                                                                {bookingControlSettings.BOOKING_DISABLED_DESCRIPTION}
+                                                            </p>
                                                         )}
                                                     </div>
-                                                    <p className="text-amber-800 font-semibold">
-                                                        {bookingControlSettings.BOOKING_DISABLED_MESSAGE || "Bookings will be open from Nov. 1 onwards"}
-                                                    </p>
-                                                    {bookingControlSettings.BOOKING_DISABLED_DESCRIPTION && (
-                                                        <p className="text-amber-700/80 text-[11px] leading-relaxed">
-                                                            {bookingControlSettings.BOOKING_DISABLED_DESCRIPTION}
-                                                        </p>
-                                                    )}
-                                                </div>
+                                                ) : (
+                                                    <div className="p-3 bg-gray-100 border border-gray-200 rounded-xl text-xs text-gray-500 italic text-center">
+                                                        Notice banner is off (only the disabled booking button below will be shown).
+                                                    </div>
+                                                )}
 
                                                 {/* Disabled Button Preview */}
                                                 <div className="pt-1">

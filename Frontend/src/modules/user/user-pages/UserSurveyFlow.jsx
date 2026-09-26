@@ -1596,14 +1596,14 @@ const SlotAndPayment = ({ surveyData, onDateChange, onConfirm, onBack, isSubmitt
         />
       )}
 
-      {bookingDisabledConfig && (
+      {bookingDisabledConfig && bookingDisabledConfig.popupEnabled !== false && (
         <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-start gap-3 text-amber-900 shadow-2xs">
           <div className="p-2 rounded-xl bg-amber-100 text-amber-700 shrink-0">
             <IoCalendarOutline className="text-xl" />
           </div>
           <div className="text-xs space-y-1">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-amber-950">Bookings Currently Paused</span>
+              <span className="font-bold text-amber-950">{bookingDisabledConfig.title || "Bookings Currently Paused"}</span>
               {bookingDisabledConfig.reopenDate && (
                 <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-amber-200/80 text-amber-900 rounded-md">
                   {bookingDisabledConfig.reopenDate}

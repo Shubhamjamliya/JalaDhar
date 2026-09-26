@@ -436,10 +436,12 @@ export default function UserVendorProfile() {
 
                     {bookingDisabledConfig ? (
                         <div className="space-y-2.5">
-                            <div className="p-3.5 bg-amber-50/90 border border-amber-200/90 rounded-2xl flex items-center gap-2.5 text-xs text-amber-900 font-semibold shadow-2xs">
-                                <IoCalendarOutline className="text-lg text-amber-600 shrink-0" />
-                                <span>{bookingDisabledConfig.message || "Bookings will be open from Nov. 1 onwards"}</span>
-                            </div>
+                            {bookingDisabledConfig.popupEnabled !== false && (
+                                <div className="p-3.5 bg-amber-50/90 border border-amber-200/90 rounded-2xl flex items-center gap-2.5 text-xs text-amber-900 font-semibold shadow-2xs">
+                                    <IoCalendarOutline className="text-lg text-amber-600 shrink-0" />
+                                    <span>{bookingDisabledConfig.message || "Bookings will be open from Nov. 1 onwards"}</span>
+                                </div>
+                            )}
                             <button
                                 type="button"
                                 disabled
