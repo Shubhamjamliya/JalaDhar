@@ -2626,7 +2626,7 @@ export default function VendorProfile() {
 
             {/* Reorganized Button Layout for Editing */}
             {isEditing && (
-                <div className="fixed bottom-0 inset-x-0 bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.1)] p-4 z-50 flex gap-4 max-w-lg mx-auto md:rounded-t-3xl border-t border-gray-100">
+                <div className="fixed bottom-0 inset-x-0 bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.1)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] z-50 flex gap-4 max-w-lg mx-auto md:rounded-t-3xl border-t border-gray-100">
                     <button
                         onClick={handleSave}
                         disabled={saving}

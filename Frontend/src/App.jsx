@@ -347,7 +347,7 @@ function App() {
                                                 <Suspense fallback={<LoadingSpinner />}>
                                                     <UserNavbar />
                                                 </Suspense>
-                                                <main style={{ paddingTop: 'calc(var(--user-header-height, 60px) + 6px)' }} className="px-4 pb-16 md:pb-8 md:px-6 md:max-w-7xl md:mx-auto">
+                                                <main style={{ paddingTop: 'calc(var(--user-header-height, 60px) + 6px)' }} className="px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-8 md:px-6 md:max-w-7xl md:mx-auto">
                                                     <ErrorBoundary title="Unable to load page">
                                                         <Suspense fallback={<LoadingSpinner />}>
                                                             <Routes>
@@ -692,7 +692,7 @@ function App() {
                                                 <Suspense fallback={<LoadingSpinner />}>
                                                     <VendorNavbar />
                                                 </Suspense>
-                                                <main style={{ paddingTop: 'calc(var(--vendor-header-height, 60px) + 6px)' }} className="px-4 pb-20 md:pb-12 md:px-6 md:max-w-7xl md:mx-auto">
+                                                <main style={{ paddingTop: 'calc(var(--vendor-header-height, 60px) + 6px)' }} className="px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-12 md:px-6 md:max-w-7xl md:mx-auto">
                                                     <ErrorBoundary title="Unable to load page">
                                                         <Suspense fallback={<LoadingSpinner />}>
                                                             <Routes>

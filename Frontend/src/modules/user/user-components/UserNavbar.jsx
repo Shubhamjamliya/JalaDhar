@@ -420,7 +420,7 @@ export default function UserNavbar() {
             <nav 
                 data-bottom-nav="true"
                 data-role="bottom-nav"
-                className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden bottom-nav-container ${isKeyboardOpen ? 'hidden pointer-events-none' : ''}`}
+                className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden bottom-nav-container ${isKeyboardOpen ? 'hidden pointer-events-none' : ''}`}
             >
                 <div className="flex items-center justify-around gap-1 max-w-md mx-auto">
                     {navItems.map(({ id, labelKey, fallbackLabel, to, Icon, ActiveIcon, isFab }) => (
@@ -439,11 +439,11 @@ export default function UserNavbar() {
                             {({ isActive }) => {
                                 if (isFab) {
                                     return (
-                                        <div className="flex flex-col items-center justify-center -mt-6">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 via-[#0A84FF] to-indigo-500 text-white shadow-lg shadow-blue-500/35 border-4 border-white flex items-center justify-center transition-all duration-200 group-active:scale-90 group-hover:scale-105">
+                                        <div className="relative flex flex-col items-center justify-center">
+                                            <div className="-mt-8 mb-1.5 w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 via-[#0A84FF] to-indigo-500 text-white shadow-lg shadow-blue-500/35 border-4 border-white flex items-center justify-center transition-all duration-200 group-active:scale-90 group-hover:scale-105 shrink-0">
                                                 <IoAdd className="text-2xl font-black text-white" />
                                             </div>
-                                            <span className="text-[10px] leading-none mt-1 font-bold text-[#0A84FF] tracking-tight">
+                                            <span className="text-[10px] leading-none font-bold text-[#0A84FF] tracking-tight whitespace-nowrap">
                                                 {t(labelKey, fallbackLabel)}
                                             </span>
                                         </div>

@@ -200,3 +200,8 @@ html[data-keyboard-open="true"] [data-role="bottom-nav"] {
   opacity: 0 !important;
   transform: translateY(100%) !important;
 }
+
+/* Safe Area Inset Support for Mobile Bottom Navigation */
+.bottom-nav-container {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}

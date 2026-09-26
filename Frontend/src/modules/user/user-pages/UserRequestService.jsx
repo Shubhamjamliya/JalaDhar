@@ -518,7 +518,7 @@ const ProjectDetailsForm = ({ data, onSubmit, onBack, category }) => {
                 />
             </div>
 
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 flex gap-3 z-40 md:relative md:bg-transparent md:border-0 md:p-0">
+            <div className="fixed bottom-0 left-0 right-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white border-t border-gray-200 flex gap-3 z-40 md:relative md:bg-transparent md:border-0 md:p-0">
                 <button type="button" onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
                 <button type="submit" className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors">Continue</button>
             </div>
@@ -807,7 +807,7 @@ const ReviewAndBook = ({ surveyData, service, vendor, onConfirm, onBack }) => {
                 />
             )}
 
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 flex gap-3 z-40 md:relative md:bg-transparent md:border-0 md:p-0">
+            <div className="fixed bottom-0 left-0 right-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white border-t border-gray-200 flex gap-3 z-40 md:relative md:bg-transparent md:border-0 md:p-0">
                 <button onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
                 <button
                     onClick={() => {

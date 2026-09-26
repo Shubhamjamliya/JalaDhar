@@ -436,7 +436,7 @@ export default function VendorNavbar() {
             <nav 
                 data-bottom-nav="true"
                 data-role="bottom-nav"
-                className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden bottom-nav-container ${isKeyboardOpen ? 'hidden pointer-events-none' : ''}`}
+                className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden bottom-nav-container ${isKeyboardOpen ? 'hidden pointer-events-none' : ''}`}
             >
                 <div className="flex items-center justify-around gap-1 max-w-md mx-auto">
                     {navItems.map(({ id, label, to, Icon, ActiveIcon }) => (
