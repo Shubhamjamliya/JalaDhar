@@ -139,6 +139,7 @@ const isQCAdmin = requirePermission('qc', ROLES.QC_ADMIN);
 const canApproveVendors = requirePermission('can_approve_vendors');
 const canApproveReports = requirePermission('can_approve_reports');
 const canApproveDisbursals = requirePermission('can_approve_disbursals');
+const canAdjustWallets = requirePermission('can_adjust_wallets', ROLES.FINANCE_ADMIN);
 
 /**
  * Check if user is vendor
@@ -185,6 +186,7 @@ module.exports = {
   canApproveVendors,
   canApproveReports,
   canApproveDisbursals,
+  canAdjustWallets,
   isVendor,
   isUser,
   isVendorOrAdmin,

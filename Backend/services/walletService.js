@@ -734,6 +734,116 @@ const processWithdrawalRequest = async (vendorId, requestId, action, adminId, da
   }
 };
 
+/**
+ * Admin manual wallet adjustment — credit or debit a vendor wallet.
+ * Requires a predefined reason code and mandatory notes for full audit trail.
+ *
+ * @param {String}  vendorId  - Target vendor ID
+ * @param {String}  adminId   - Admin performing the action
+ * @param {'CREDIT'|'DEBIT'} action - Direction of the adjustment
+ * @param {Number}  amount    - Positive amount (always)
+ * @param {String}  reason    - Predefined reason code
+ * @param {String}  notes     - Mandatory human-readable explanation
+ * @returns {Object} - { success, transaction, balanceBefore, balanceAfter }
+ */
+const adminAdjustVendorWallet = async (vendorId, adminId, action, amount, reason, notes) => {
+  const ALLOWED_REASONS = [
+    'DISPUTE_REFUND',
+    'FRAUD_PENALTY',
+    'CORRECTION',
+    'GOODWILL_CREDIT',
+    'BOREWELL_PENALTY',
+    'BOREWELL_REWARD',
+    'OTHER'
+  ];
+
+  if (!['CREDIT', 'DEBIT'].includes(action)) {
+    return { success: false, error: 'Invalid action. Must be CREDIT or DEBIT.' };
+  }
+  if (!amount || amount <= 0) {
+    return { success: false, error: 'Amount must be a positive number.' };
+  }
+  if (!ALLOWED_REASONS.includes(reason)) {
+    return { success: false, error: `Invalid reason. Allowed: ${ALLOWED_REASONS.join(', ')}` };
+  }
+  if (!notes || notes.trim().length < 10) {
+    return { success: false, error: 'Notes are required and must be at least 10 characters.' };
+  }
+
+  const session = await Vendor.startSession();
+  session.startTransaction();
+
+  try {
+    const vendor = await Vendor.findById(vendorId).session(session);
+    if (!vendor) throw new Error('Vendor not found');
+
+    const balanceBefore = vendor.paymentCollection.walletBalance || 0;
+
+    if (action === 'DEBIT' && balanceBefore < amount) {
+      await session.abortTransaction();
+      session.endSession();
+      return { success: false, error: `Insufficient wallet balance. Current: ₹${balanceBefore.toFixed(2)}` };
+    }
+
+    const balanceAfter = action === 'CREDIT' ? balanceBefore + amount : balanceBefore - amount;
+
+    vendor.paymentCollection.walletBalance = balanceAfter;
+    if (action === 'CREDIT') {
+      vendor.paymentCollection.totalCredited = (vendor.paymentCollection.totalCredited || 0) + amount;
+    }
+    await vendor.save({ session, validateModifiedOnly: true });
+
+    const txType = action === 'CREDIT' ? 'ADMIN_CREDIT' : 'ADMIN_DEBIT';
+    const transaction = await WalletTransaction.create([{
+      vendor: vendorId,
+      booking: null,
+      type: txType,
+      amount: action === 'CREDIT' ? amount : -amount,
+      balanceBefore,
+      balanceAfter,
+      status: 'SUCCESS',
+      description: `[Admin ${action}] ${reason} — ${notes.trim()}`,
+      metadata: { adminId: adminId?.toString(), action, reason, notes: notes.trim() }
+    }], { session });
+
+    await session.commitTransaction();
+
+    // Notify vendor
+    try {
+      const { sendNotification } = require('./notificationService');
+      const { getIO } = require('../sockets');
+      let io = null;
+      try { io = getIO(); } catch (_) {}
+
+      const reasonLabel = {
+        DISPUTE_REFUND: 'Dispute Refund', FRAUD_PENALTY: 'Fraud Penalty',
+        CORRECTION: 'Account Correction', GOODWILL_CREDIT: 'Goodwill Credit',
+        BOREWELL_PENALTY: 'Borewell Penalty', BOREWELL_REWARD: 'Borewell Reward', OTHER: 'Admin Adjustment'
+      }[reason] || reason;
+
+      await sendNotification({
+        recipient: vendorId,
+        recipientModel: 'Vendor',
+        type: action === 'CREDIT' ? 'WALLET_CREDITED' : 'WALLET_DEBITED',
+        title: action === 'CREDIT' ? 'Wallet Credited 💰' : 'Wallet Adjusted',
+        message: `${action === 'CREDIT' ? '+' : '-'}₹${amount.toFixed(2)} ${action === 'CREDIT' ? 'credited to' : 'debited from'} your wallet. Reason: ${reasonLabel}. Note: ${notes.trim()}`,
+        relatedEntity: { entityType: 'WalletTransaction', entityId: transaction[0]._id },
+        metadata: { amount, action, reason, balanceBefore, balanceAfter }
+      }, io);
+    } catch (notifErr) {
+      console.error('[adminAdjustVendorWallet] Notification error:', notifErr);
+    }
+
+    return { success: true, transaction: transaction[0], balanceBefore, balanceAfter };
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('[adminAdjustVendorWallet] Error:', error);
+    return { success: false, error: error.message };
+  } finally {
+    session.endSession();
+  }
+};
+
 module.exports = {
   calculateVendorPayment,
   creditToVendorWallet,
@@ -742,6 +852,7 @@ module.exports = {
   retryFailedCredit,
   getVendorWalletBalance,
   createWithdrawalRequest,
-  processWithdrawalRequest
+  processWithdrawalRequest,
+  adminAdjustVendorWallet
 };
 

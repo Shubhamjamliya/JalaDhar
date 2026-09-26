@@ -118,6 +118,13 @@ export const APPROVAL_PERMISSIONS = [
     requiredPage: "payments",
     pageName: "Payments, Wallets & Disbursals",
   },
+  {
+    key: "can_adjust_wallets",
+    label: "Can Adjust Expert Wallets (Credit / Debit)",
+    description: "Allows manual credit/debit balance adjustments to expert wallets with audit trail.",
+    requiredPage: "payments",
+    pageName: "Payments, Wallets & Disbursals",
+  },
 ];
 
 // Alias for backward compatibility
@@ -129,7 +136,7 @@ export const ROLE_DEFAULT_PERMISSIONS = {
   OPERATIONS_ADMIN: ["dashboard", "users", "bookings", "reports", "inquiries"],
   EXPERT_VERIFICATION_ADMIN: ["dashboard", "vendors", "can_approve_vendors"],
   VERIFIER_ADMIN: ["dashboard", "vendors", "can_approve_vendors"],
-  FINANCE_ADMIN: ["dashboard", "payments", "reports", "can_approve_disbursals"],
+  FINANCE_ADMIN: ["dashboard", "payments", "reports", "can_approve_disbursals", "can_adjust_wallets"],
   SUPPORT_ADMIN: ["dashboard", "disputes", "ratings", "users", "inquiries"],
   QC_ADMIN: ["dashboard", "approvals", "reports", "can_approve_reports"],
 };
@@ -215,6 +222,7 @@ export const hasAdminPermission = (admin, requiredPermission) => {
     can_approve_vendors: "vendors",
     can_approve_reports: "approvals",
     can_approve_disbursals: "payments",
+    can_adjust_wallets: "payments",
   };
 
   if (approvalDeps[requiredPermission]) {

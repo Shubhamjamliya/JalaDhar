@@ -297,7 +297,11 @@ export default function VendorWallet() {
             'PLATFORM_FEE_DEDUCTION': 'Platform Fee Deduction',
             'WITHDRAWAL_REQUEST': 'Withdrawal Request',
             'WITHDRAWAL_PROCESSED': 'Withdrawal Processed',
-            'WITHDRAWAL_REJECTED': 'Withdrawal Rejected'
+            'WITHDRAWAL_REJECTED': 'Withdrawal Rejected',
+            'ADMIN_CREDIT': 'Admin Credit Adjustment',
+            'ADMIN_DEBIT': 'Admin Debit Adjustment',
+            'FINAL_SETTLEMENT_REWARD': 'Borewell Success Reward',
+            'FINAL_SETTLEMENT_PENALTY': 'Borewell Penalty'
         };
         return labels[type] || type;
     };
@@ -317,10 +321,10 @@ export default function VendorWallet() {
     // Filtering Logic
     const getFilteredTransactions = () => {
         return transactions.filter(t => {
-            const isEarning = ['TRAVEL_CHARGES', 'SITE_VISIT', 'REPORT_UPLOAD'].includes(t.type);
+            const isEarning = ['TRAVEL_CHARGES', 'SITE_VISIT', 'REPORT_UPLOAD', 'ADMIN_CREDIT', 'FINAL_SETTLEMENT_REWARD'].includes(t.type);
             const isWithdrawal = ['WITHDRAWAL_REQUEST', 'WITHDRAWAL_PROCESSED', 'WITHDRAWAL_REJECTED'].includes(t.type);
-            const isRefund = ['REFUND', 'REVERSAL'].includes(t.type);
-            const isAdjustment = ['PLATFORM_FEE_DEDUCTION', 'ADJUSTMENT', 'BONUS', 'PENALTY'].includes(t.type);
+            const isRefund = ['REFUND', 'REVERSAL', 'TRAVEL_CHARGES_REVERSAL'].includes(t.type);
+            const isAdjustment = ['PLATFORM_FEE_DEDUCTION', 'ADJUSTMENT', 'BONUS', 'PENALTY', 'ADMIN_CREDIT', 'ADMIN_DEBIT', 'FINAL_SETTLEMENT_REWARD', 'FINAL_SETTLEMENT_PENALTY'].includes(t.type);
 
             if (typeFilter === 'EARNINGS' && !isEarning) return false;
             if (typeFilter === 'WITHDRAWALS' && !isWithdrawal) return false;
@@ -730,7 +734,7 @@ export default function VendorWallet() {
                     .reduce((sum, t) => sum + (Math.abs(t.amount) || 0), 0);
 
                 const adjustments = transactions
-                    .filter(t => ['ADJUSTMENT', 'BONUS', 'PENALTY'].includes(t.type) && t.status === 'SUCCESS')
+                    .filter(t => ['ADJUSTMENT', 'BONUS', 'PENALTY', 'ADMIN_CREDIT', 'ADMIN_DEBIT', 'FINAL_SETTLEMENT_REWARD', 'FINAL_SETTLEMENT_PENALTY'].includes(t.type) && t.status === 'SUCCESS')
                     .reduce((sum, t) => sum + (t.amount || 0), 0);
 
                 const netEarnings = (serviceEarnings + travelCharges + adjustments) - platformFee;
@@ -917,8 +921,8 @@ export default function VendorWallet() {
                             </div>
                         ) : (
                             filteredTransactions.map((transaction, index) => {
-                                const isCredit = ['TRAVEL_CHARGES', 'SITE_VISIT', 'REPORT_UPLOAD', 'BONUS'].includes(transaction.type);
-                                const isDebit = ['PLATFORM_FEE_DEDUCTION', 'WITHDRAWAL_REQUEST', 'WITHDRAWAL_PROCESSED', 'PENALTY'].includes(transaction.type);
+                                const isCredit = ['TRAVEL_CHARGES', 'SITE_VISIT', 'REPORT_UPLOAD', 'BONUS', 'ADMIN_CREDIT', 'FINAL_SETTLEMENT_REWARD'].includes(transaction.type) || (transaction.amount > 0);
+                                const isDebit = ['PLATFORM_FEE_DEDUCTION', 'WITHDRAWAL_REQUEST', 'WITHDRAWAL_PROCESSED', 'PENALTY', 'ADMIN_DEBIT', 'FINAL_SETTLEMENT_PENALTY'].includes(transaction.type) || (transaction.amount < 0);
                                 const isSuccess = transaction.status === 'SUCCESS' || transaction.status === 'PROCESSED';
                                 const isPending = transaction.status === 'PENDING';
                                 

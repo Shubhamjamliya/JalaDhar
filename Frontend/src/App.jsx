@@ -1028,7 +1028,7 @@ function App() {
                                                                     <Route
                                                                         path="/vendors/wallets"
                                                                         element={
-                                                                            <AdminProtectedRoute requiredPermission="vendors">
+                                                                            <AdminProtectedRoute requiredPermission={["vendors", "payments"]}>
                                                                                 <Suspense fallback={<LoadingSpinner />}>
                                                                                     <AdminVendorWallets />
                                                                                 </Suspense>

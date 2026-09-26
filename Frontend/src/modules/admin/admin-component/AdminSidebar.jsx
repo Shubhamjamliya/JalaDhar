@@ -40,7 +40,7 @@ const navSections = [
                 to: "/admin/vendors",
                 Icon: IoBusinessOutline,
                 permission: "vendors",
-                roles: ["SUPER_ADMIN", "EXPERT_VERIFICATION_ADMIN", "VERIFIER_ADMIN"],
+                roles: ["SUPER_ADMIN", "ADMIN", "FINANCE_ADMIN", "EXPERT_VERIFICATION_ADMIN", "VERIFIER_ADMIN"],
                 children: [
                     { label: "All Experts", to: "/admin/vendors", end: true },
                     { label: "KYC & Approvals", to: "/admin/vendors/pending" },
@@ -99,6 +99,7 @@ const navSections = [
                 children: [
                     { label: "All Transactions", to: "/admin/payments", end: true },
                     { label: "Expert Disbursals", to: "/admin/withdrawals" },
+                    { label: "Expert Wallets & Adjustments", to: "/admin/vendors/wallets" },
                     { label: "User Refunds & Claims", to: "/admin/user-withdrawals" }
                 ]
             },

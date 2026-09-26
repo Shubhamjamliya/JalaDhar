@@ -1019,5 +1019,16 @@ export const getAuditLogDetails = async (logId) => {
   return response.data;
 };
 
+/**
+ * Admin Wallet Adjustment APIs
+ */
+export const adminAdjustVendorWallet = async (vendorId, data) => {
+  const response = await api.post(`/admin/wallets/${vendorId}/adjust`, data);
+  return response.data;
+};
 
+export const getVendorWalletTransactions = async (vendorId, params = {}) => {
+  const response = await api.get(`/admin/wallets/${vendorId}/transactions`, { params });
+  return response.data;
+};
 

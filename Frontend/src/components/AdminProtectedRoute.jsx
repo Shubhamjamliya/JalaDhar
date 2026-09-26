@@ -21,7 +21,9 @@ export default function AdminProtectedRoute({ children, requiredPermission, requ
 
   const isPermissionDenied = Boolean(
     requiredPermission &&
-    !hasAdminPermission(admin, requiredPermission)
+    (Array.isArray(requiredPermission)
+      ? !requiredPermission.some(p => hasAdminPermission(admin, p))
+      : !hasAdminPermission(admin, requiredPermission))
   );
 
   useEffect(() => {
@@ -31,7 +33,9 @@ export default function AdminProtectedRoute({ children, requiredPermission, requ
         toast.error(`Access Denied: Requires ${requiredRole.replace(/_/g, ' ')} clearance.`);
       } else if (isPermissionDenied) {
         toast.dismiss();
-        const formattedModule = requiredPermission.replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase();
+        const formattedModule = Array.isArray(requiredPermission)
+          ? requiredPermission.map(p => p.replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase()).join(' or ')
+          : requiredPermission.replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase();
         toast.error(`Access Denied: You do not have permission to access '${formattedModule}'.`);
       }
     }

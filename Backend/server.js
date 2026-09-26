@@ -195,6 +195,7 @@ app.use('/api/admin', require('./routes/payment-routes/adminPayment.routes'));
 app.use('/api/admin/settings', require('./routes/admin-routes/settings.routes'));
 app.use('/api/admin/withdrawals', require('./routes/admin-routes/withdrawal.routes'));
 app.use('/api/admin/user-withdrawals', require('./routes/admin-routes/userWithdrawal.routes'));
+app.use('/api/admin/wallets', require('./routes/admin-routes/walletAdjustment.routes'));
 
 // Landing page content routes
 const landingRoutes = require('./routes/admin-routes/landingContent.routes');
