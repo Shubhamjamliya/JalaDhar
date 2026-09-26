@@ -225,24 +225,26 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
   // FINANCIAL COMPUTATION (100% Transparent Math)
   const baseFee = payment?.baseServiceFee || service?.price || 3500;
   const travelCharges = payment?.travelCharges || 0;
-  const netServiceValue = baseFee + travelCharges;
-  const customerGst = payment?.gst || (netServiceValue * 0.18);
-  const grossTotal = payment?.totalAmount || (netServiceValue + customerGst);
+  const customerGst = payment?.gst || (baseFee * 0.18);
+  const grossTotal = payment?.totalAmount || (baseFee + travelCharges + customerGst);
 
   const vp = booking.payment?.vendorWalletPayments || {};
   const commRate = vp.commissionRate || Number(billingInfo?.PLATFORM_FEE_PERCENTAGE) || 15;
 
-  // Platform Commission on Net Service Value
-  const commBase = vp.platformCommission || (netServiceValue * (commRate / 100));
+  // Platform Commission on Base Service Fee
+  const commBase = vp.platformCommission || (baseFee * (commRate / 100));
   const commCgst = vp.gstOnCommission ? (vp.gstOnCommission / 2) : (commBase * 0.09);
   const commSgst = vp.gstOnCommission ? (vp.gstOnCommission / 2) : (commBase * 0.09);
   const totalCommFee = commBase + commCgst + commSgst;
 
-  // Sec 194O Income Tax TDS (1% of Net Service Value)
-  const tdsDeduction = vp.tds || (netServiceValue * 0.01);
+  // Sec 194O Income Tax TDS (1% of Base Service Fee)
+  const tdsDeduction = vp.tds || (baseFee * 0.01);
 
-  // Net Amount Credited to Expert's Bank Account
-  const netPayout = vp.totalVendorPayment || (grossTotal - totalCommFee - tdsDeduction);
+  // Net Service Earnings
+  const netServiceEarnings = vp.netServiceFee || (baseFee - totalCommFee - tdsDeduction);
+
+  // Net Amount Credited to Expert's Bank Account (Net Service + Travel Reimbursement)
+  const netPayout = vp.totalVendorPayment || (netServiceEarnings + travelCharges);
 
   const utrNo = `UTR-N${booking._id.slice(-10).toUpperCase()}`;
   const finalQrCodeUrl = qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`COMM:${commInvoiceNo}|ORD:${booking._id}|PAYOUT:${netPayout}`)}`;
@@ -310,26 +312,9 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
             <Text style={styles.textLabel}>1. Expert Base Service Fee</Text>
             <Text style={styles.textValue}>{formatCurrency(baseFee)}</Text>
           </View>
-          
-          {travelCharges > 0 && (
-            <View style={styles.rowFlexBetween}>
-              <Text style={styles.textLabel}>   + Travel Mobilization Reimbursement{payment?.travelSlab ? ` (${payment.travelSlab})` : ''}</Text>
-              <Text style={styles.textValue}>+{formatCurrency(travelCharges)}</Text>
-            </View>
-          )}
 
           <View style={styles.rowFlexBetween}>
-            <Text style={styles.textLabel}>2. Plus: Customer GST Collected by Platform (18%)</Text>
-            <Text style={{ fontWeight: 700, color: '#0A84FF', fontSize: 7.5 }}>+{formatCurrency(customerGst)}</Text>
-          </View>
-
-          <View style={[styles.rowFlexBetween, { backgroundColor: '#f1f5f9', paddingHorizontal: 4, marginVertical: 3, borderRadius: 3 }]}>
-            <Text style={{ fontSize: 7.8, fontWeight: 700, color: '#334155' }}>Gross Amount Collected from Customer</Text>
-            <Text style={{ fontSize: 7.8, fontWeight: 700, color: '#0f172a' }}>{formatCurrency(grossTotal)}</Text>
-          </View>
-
-          <View style={styles.rowFlexBetween}>
-            <Text style={styles.textLabel}>Less: Platform Commission ({commRate}% of Service Fee {formatCurrency(netServiceValue)})</Text>
+            <Text style={styles.textLabel}>Less: Platform Commission ({commRate}% of Base Fee {formatCurrency(baseFee)})</Text>
             <Text style={{ fontWeight: 700, color: '#dc2626', fontSize: 7.5 }}>-{formatCurrency(commBase)}</Text>
           </View>
 
@@ -339,12 +324,24 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
           </View>
 
           <View style={styles.rowFlexBetween}>
-            <Text style={styles.textLabel}>Less: Income Tax TDS (1% of Service Fee under Sec 194O)</Text>
+            <Text style={styles.textLabel}>Less: Income Tax TDS (1% of Base Fee under Sec 194O)</Text>
             <Text style={{ fontWeight: 700, color: '#dc2626', fontSize: 7.5 }}>-{formatCurrency(tdsDeduction)}</Text>
           </View>
 
+          <View style={[styles.rowFlexBetween, { backgroundColor: '#f0fdf4', paddingHorizontal: 4, marginVertical: 3, borderRadius: 3 }]}>
+            <Text style={{ fontSize: 7.8, fontWeight: 700, color: '#166534' }}>Net Service Earnings (50% Visit + 50% Report)</Text>
+            <Text style={{ fontSize: 7.8, fontWeight: 700, color: '#15803d' }}>{formatCurrency(netServiceEarnings)}</Text>
+          </View>
+          
+          {travelCharges > 0 && (
+            <View style={styles.rowFlexBetween}>
+              <Text style={styles.textLabel}>   + Travel Mobilization Reimbursement{payment?.travelSlab ? ` (${payment.travelSlab})` : ''} (Paid on Accept)</Text>
+              <Text style={{ fontWeight: 700, color: '#059669', fontSize: 7.5 }}>+{formatCurrency(travelCharges)}</Text>
+            </View>
+          )}
+
           <View style={[styles.rowFlexBetween, { borderTop: '1pt solid #cbd5e1', paddingTop: 4, marginTop: 4 }]}>
-            <Text style={{ fontSize: 8.5, fontWeight: 700, color: '#0f172a' }}>NET BANK PAYOUT CREDITED TO EXPERT</Text>
+            <Text style={{ fontSize: 8.5, fontWeight: 700, color: '#0f172a' }}>TOTAL NET BANK PAYOUT CREDITED TO EXPERT</Text>
             <Text style={{ fontSize: 9.5, fontWeight: 700, color: '#059669' }}>{formatCurrency(netPayout)}</Text>
           </View>
         </View>
@@ -411,18 +408,18 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
 
           <View style={styles.tableRow}>
             <View style={{ width: '48%' }}>
-              <Text style={{ fontSize: 8, fontWeight: 700, color: '#111827' }}>Gross Customer Collection</Text>
-              <Text style={{ fontSize: 6.8, color: '#6b7280', marginTop: 1 }}>Full survey fee + GST collected from customer</Text>
+              <Text style={{ fontSize: 8, fontWeight: 700, color: '#111827' }}>Expert Base Service Fee</Text>
+              <Text style={{ fontSize: 6.8, color: '#6b7280', marginTop: 1 }}>Hydrogeological survey valuation</Text>
             </View>
             <Text style={{ width: '16%', textAlign: 'center', fontSize: 7.5 }}>998341</Text>
             <Text style={{ width: '16%', textAlign: 'center', fontSize: 7.5 }}>100%</Text>
-            <Text style={{ width: '20%', textAlign: 'right', fontSize: 8, fontWeight: 700, color: '#059669' }}>+{formatCurrency(grossTotal)}</Text>
+            <Text style={{ width: '20%', textAlign: 'right', fontSize: 8, fontWeight: 700, color: '#059669' }}>+{formatCurrency(baseFee)}</Text>
           </View>
 
           <View style={styles.tableRow}>
             <View style={{ width: '48%' }}>
               <Text style={{ fontSize: 8, fontWeight: 700, color: '#111827' }}>Platform Facilitation Commission</Text>
-              <Text style={{ fontSize: 6.8, color: '#6b7280', marginTop: 1 }}>{commRate}% of Net Service Value ({formatCurrency(netServiceValue)})</Text>
+              <Text style={{ fontSize: 6.8, color: '#6b7280', marginTop: 1 }}>{commRate}% of Base Service Fee ({formatCurrency(baseFee)})</Text>
             </View>
             <Text style={{ width: '16%', textAlign: 'center', fontSize: 7.5 }}>998311</Text>
             <Text style={{ width: '16%', textAlign: 'center', fontSize: 7.5 }}>{Number(commRate).toFixed(1)}%</Text>
@@ -452,23 +449,41 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
           <View style={styles.tableRow}>
             <View style={{ width: '48%' }}>
               <Text style={{ fontSize: 8, fontWeight: 700, color: '#111827' }}>TDS Withheld (Section 194O)</Text>
-              <Text style={{ fontSize: 6.8, color: '#6b7280', marginTop: 1 }}>1% Income Tax withheld on Service Value ({formatCurrency(netServiceValue)})</Text>
+              <Text style={{ fontSize: 6.8, color: '#6b7280', marginTop: 1 }}>1% Income Tax withheld on Base Fee ({formatCurrency(baseFee)})</Text>
             </View>
             <Text style={{ width: '16%', textAlign: 'center', fontSize: 7.5 }}>194O</Text>
             <Text style={{ width: '16%', textAlign: 'center', fontSize: 7.5 }}>1.0%</Text>
             <Text style={{ width: '20%', textAlign: 'right', fontSize: 8, fontWeight: 700, color: '#dc2626' }}>-{formatCurrency(tdsDeduction)}</Text>
           </View>
+
+          {travelCharges > 0 && (
+            <View style={styles.tableRow}>
+              <View style={{ width: '48%' }}>
+                <Text style={{ fontSize: 8, fontWeight: 700, color: '#111827' }}>Travel Mobilization Reimbursement</Text>
+                <Text style={{ fontSize: 6.8, color: '#6b7280', marginTop: 1 }}>Pass-through reimbursement (0% fee, 0% GST)</Text>
+              </View>
+              <Text style={{ width: '16%', textAlign: 'center', fontSize: 7.5 }}>996511</Text>
+              <Text style={{ width: '16%', textAlign: 'center', fontSize: 7.5 }}>Reimb.</Text>
+              <Text style={{ width: '20%', textAlign: 'right', fontSize: 8, fontWeight: 700, color: '#059669' }}>+{formatCurrency(travelCharges)}</Text>
+            </View>
+          )}
         </View>
 
         {/* Final Net Payout Box */}
         <View style={styles.boxContainer}>
           <Text style={styles.boxTitle}>Final Net Payout Summary</Text>
           <View style={styles.rowFlexBetween}>
-            <Text style={styles.textLabel}>Gross Collection</Text>
-            <Text style={styles.textValue}>{formatCurrency(grossTotal)}</Text>
+            <Text style={styles.textLabel}>Net Service Earnings</Text>
+            <Text style={styles.textValue}>{formatCurrency(netServiceEarnings)}</Text>
           </View>
+          {travelCharges > 0 && (
+            <View style={styles.rowFlexBetween}>
+              <Text style={styles.textLabel}>Travel Reimbursement</Text>
+              <Text style={styles.textValue}>{formatCurrency(travelCharges)}</Text>
+            </View>
+          )}
           <View style={styles.rowFlexBetween}>
-            <Text style={styles.textLabel}>Total Deductions (Commission + GST + TDS)</Text>
+            <Text style={styles.textLabel}>Platform Facilitation Deductions</Text>
             <Text style={{ fontSize: 7.8, fontWeight: 700, color: '#dc2626' }}>-{formatCurrency(totalCommFee + tdsDeduction)}</Text>
           </View>
           <View style={[styles.rowFlexBetween, { borderTop: '1.5pt solid #111827', paddingTop: 4, marginTop: 4 }]}>

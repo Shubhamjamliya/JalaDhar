@@ -288,6 +288,18 @@ const bookingSchema = new mongoose.Schema({
         type: Number,
         default: 0
       },
+      gross: {
+        type: Number,
+        default: 0
+      },
+      netServiceFee: {
+        type: Number,
+        default: 0
+      },
+      travelCharges: {
+        type: Number,
+        default: 0
+      },
       commissionRate: {
         type: Number,
         default: 15

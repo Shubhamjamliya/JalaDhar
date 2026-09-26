@@ -202,12 +202,13 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
     booking.payment.totalAmount = totalAmount;
 
     // Adjust remaining amount based on new total
+    const advancePercentage = settings.ADVANCE_PAYMENT_PERCENTAGE || 50;
     if (booking.payment.advancePaid) {
-      booking.payment.remainingAmount = totalAmount - booking.payment.advanceAmount;
+      booking.payment.remainingAmount = parseFloat((totalAmount - booking.payment.advanceAmount).toFixed(2));
     } else {
-      // If not paid yet, recalculate both
-      booking.payment.advanceAmount = totalAmount * 0.4;
-      booking.payment.remainingAmount = totalAmount * 0.6;
+      // If not paid yet, recalculate both using configured percentages
+      booking.payment.advanceAmount = parseFloat((totalAmount * (advancePercentage / 100)).toFixed(2));
+      booking.payment.remainingAmount = parseFloat((totalAmount - booking.payment.advanceAmount).toFixed(2));
     }
 
     // Reset status to ASSIGNED for the new vendor
@@ -230,14 +231,16 @@ const autoReassignBooking = async (bookingId, reason, initiatorRole = 'VENDOR') 
       platformCommission: vendorPayment.platformCommission,
       gstOnCommission: vendorPayment.gstOnCommission,
       tds: vendorPayment.tds,
-      platformFee: vendorPayment.platformCommission + vendorPayment.gstOnCommission + vendorPayment.tds,
+      platformFee: vendorPayment.platformFee,
+      netServiceFee: vendorPayment.netServiceFee,
+      travelCharges: vendorPayment.travelCharges,
       totalVendorPayment: vendorPayment.totalVendorPayment,
       siteVisitPayment: {
-        amount: vendorPayment.totalVendorPayment * 0.5,
+        amount: vendorPayment.siteVisitAmount,
         credited: false
       },
       reportUploadPayment: {
-        amount: vendorPayment.totalVendorPayment * 0.5,
+        amount: vendorPayment.reportUploadAmount,
         credited: false
       },
       totalCredited: 0

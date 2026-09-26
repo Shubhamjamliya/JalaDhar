@@ -3182,7 +3182,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                         <span className="absolute right-3.5 top-2.5 text-sm font-bold text-gray-400">%</span>
                                                     </div>
                                                     <p className="text-[11px] text-gray-500 mt-1">
-                                                        GST percentage applied on customer invoice (base fee + travel charges).
+                                                        GST percentage applied on customer invoice (base fee only; no GST on travelling charges).
                                                     </p>
                                                 </div>
                                             </div>

@@ -238,16 +238,16 @@ const acceptBooking = async (req, res) => {
       ? (formattedDate ? `on ${formattedDate} (${booking.scheduledTime})` : `at ${booking.scheduledTime}`)
       : (formattedDate ? `on ${formattedDate}` : '');
 
+    let io = null;
+    try {
+      const { getIO } = require('../../sockets');
+      io = getIO();
+    } catch (e) {
+      console.log('[acceptBooking] Socket.io not initialized yet');
+    }
+
     // 1. Create In-App Notification (Database & Real-time Socket) — Independent of Email
     try {
-      let io = null;
-      try {
-        const { getIO } = require('../../sockets');
-        io = getIO();
-      } catch (e) {
-        console.log('[acceptBooking] Socket.io not initialized yet');
-      }
-
       const expertCategory = booking.vendor?.designation || 'Groundwater Professional';
       const vendorName = booking.vendor?.name ? `${booking.vendor.name} (${expertCategory})` : `a specialized ${expertCategory.toLowerCase()}`;
 

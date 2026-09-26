@@ -815,7 +815,7 @@ const getGstReports = async (req, res) => {
       customerName: b.user?.name || '-',
       placeOfSupply: b.address?.state || 'Local',
       hsnSac: '9988',
-      taxableValue: b.payment?.subtotal || 0,
+      taxableValue: b.payment?.baseServiceFee || (b.payment?.subtotal && b.payment?.gst ? b.payment.subtotal - b.payment.gst : (b.payment?.subtotal || 0)),
       gstRate: '18%',
       totalTax: b.payment?.gst || 0,
       invoiceValue: b.payment?.totalAmount || 0,

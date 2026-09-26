@@ -8,24 +8,38 @@ const mongoose = require('mongoose');
 /**
  * Calculate vendor payment breakdown
  *
- * Formula (matches Platform Payout Summary invoice exactly):
+ * Statutory & Marketplace Settlement Formula:
  *
- *   baseServiceFee        = service price (excl. GST)
- *   customerGST           = 18% of baseServiceFee  (collected from customer by platform)
- *   grossCustomerPayment  = baseServiceFee + customerGST + travelCharges
+ *   baseServiceFee          = service price (excl. GST)
+ *   customerGST             = 18% of baseServiceFee (remitted directly to Govt by Platform)
+ *   travelCharges           = 100% pass-through reimbursement to Expert (0% commission, 0% GST)
+ *   grossCustomerPayment    = baseServiceFee + customerGST + travelCharges
  *
- *   platformCommission    = commissionRatePercent% of baseServiceFee (default 15%, configurable by Admin)
- *   gstOnCommission       = 18% of platformCommission
- *   tds                   = 1%  of baseServiceFee   ← Sec 194O, on base only
+ * Platform Deductions (from Base Service Fee only):
+ *   platformCommission      = commissionRatePercent% of baseServiceFee (default 15%, configurable by Admin)
+ *   gstOnCommission         = 18% of platformCommission (B2B output GST charged by Platform)
+ *   tds                     = 1% of baseServiceFee (Sec 194O, deposited for Expert PAN)
+ *   platformFee             = platformCommission + gstOnCommission + tds
  *
- *   totalVendorPayment    = grossCustomerPayment - platformCommission - gstOnCommission - tds
+ * Expert Payout Breakdown:
+ *   netServiceFee           = baseServiceFee - platformFee
+ *   siteVisitAmount         = 50% of netServiceFee (credited upon site visit OTP verification)
+ *   reportUploadAmount      = 50% of netServiceFee (credited upon report approval)
+ *   travelCharges           = credited 100% upon booking acceptance
+ *   totalVendorPayment      = netServiceFee + travelCharges
  *
- * Example (₹3,500 base, 15% platform fee, no travel):
- *   gross          = ₹4,130
- *   commission     = ₹525.00 (15% × 3,500)
- *   gstOnCommission= ₹94.50  (18% × 525)
- *   tds            = ₹35.00  (1%  × 3,500)
- *   net            = ₹4,130 - ₹525 - ₹94.50 - ₹35 = ₹3,475.50
+ * Example (₹3,500 base, ₹500 travel, 15% platform fee):
+ *   grossCustomerPayment   = ₹3,500 + ₹630 (GST) + ₹500 (Travel) = ₹4,630.00
+ *   commission (15%)       = ₹525.00
+ *   gstOnCommission (18%)  = ₹94.50
+ *   tds (1% Sec 194O)      = ₹35.00
+ *   totalPlatformDeductions= ₹654.50
+ *   netServiceFee          = ₹3,500 - ₹654.50 = ₹2,845.50
+ *   siteVisitPayment (50%) = ₹1,422.75
+ *   reportUploadPayment(50%)= ₹1,422.75
+ *   travelReimbursement    = ₹500.00 (credited on accept)
+ *   totalVendorPayment     = ₹2,845.50 + ₹500.00 = ₹3,345.50
+ *   Reconciliation: ₹3,345.50 (vendor) + ₹654.50 (platform) + ₹630.00 (customer GST) = ₹4,630.00 (₹0 diff)
  */
 const calculateVendorPayment = (baseServiceFee, travelCharges = 0, commissionRatePercent = 15) => {
   const commissionRateNum  = typeof commissionRatePercent === 'number' && !isNaN(commissionRatePercent)
@@ -34,15 +48,29 @@ const calculateVendorPayment = (baseServiceFee, travelCharges = 0, commissionRat
   const COMMISSION_RATE    = commissionRateNum / 100;
   const GST_ON_COMMISSION  = 0.18;  // 18% GST on platform commission
   const TDS_RATE           = 0.01;  // 1% TDS under Sec 194O on base fee
-  const CUSTOMER_GST_RATE  = 0.18;  // 18% GST charged to customer
+  const CUSTOMER_GST_RATE  = 0.18;  // 18% GST charged to customer on base fee
+
+  const travelChargesNum   = typeof travelCharges === 'number' && !isNaN(travelCharges)
+    ? travelCharges
+    : (parseFloat(travelCharges) || 0);
 
   const customerGST        = parseFloat((baseServiceFee * CUSTOMER_GST_RATE).toFixed(2));
-  const gross              = parseFloat((baseServiceFee + customerGST + travelCharges).toFixed(2));
+  const gross              = parseFloat((baseServiceFee + customerGST + travelChargesNum).toFixed(2));
 
   const platformCommission = parseFloat((baseServiceFee * COMMISSION_RATE).toFixed(2));
   const gstOnCommission    = parseFloat((platformCommission * GST_ON_COMMISSION).toFixed(2));
   const tds                = parseFloat((baseServiceFee * TDS_RATE).toFixed(2));
-  const totalVendorPayment = parseFloat((gross - platformCommission - gstOnCommission - tds).toFixed(2));
+  const platformFee        = parseFloat((platformCommission + gstOnCommission + tds).toFixed(2));
+
+  // Net Service Fee earnings after platform commission, GST on commission, and TDS
+  const netServiceFee      = parseFloat((baseServiceFee - platformFee).toFixed(2));
+
+  // Milestone payments split the net service fee (50% each)
+  const siteVisitAmount    = parseFloat((netServiceFee * 0.5).toFixed(2));
+  const reportUploadAmount = parseFloat((netServiceFee - siteVisitAmount).toFixed(2));
+
+  // Total vendor payment = net service fee + pass-through travel charges
+  const totalVendorPayment = parseFloat((netServiceFee + travelChargesNum).toFixed(2));
 
   return {
     base: baseServiceFee,
@@ -52,6 +80,11 @@ const calculateVendorPayment = (baseServiceFee, travelCharges = 0, commissionRat
     platformCommission,
     gstOnCommission,
     tds,
+    platformFee,
+    netServiceFee,
+    siteVisitAmount,
+    reportUploadAmount,
+    travelCharges: travelChargesNum,
     totalVendorPayment
   };
 };

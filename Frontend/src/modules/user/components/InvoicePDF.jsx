@@ -521,8 +521,8 @@ const InvoicePDF = ({ booking, billingInfo, qrCodeUrl }) => {
         <View style={styles.boxContainer}>
           <Text style={styles.boxTitle}>Tax Details Breakdown</Text>
           <View style={styles.rowFlexBetween}>
-            <Text style={styles.textLabel}>Taxable Amount</Text>
-            <Text style={styles.textValue}>{formatCurrency(baseFee + travelCharges)}</Text>
+            <Text style={styles.textLabel}>Taxable Amount (Base Fee)</Text>
+            <Text style={styles.textValue}>{formatCurrency(baseFee)}</Text>
           </View>
           <View style={styles.rowFlexBetween}>
             <Text style={styles.textLabel}>CGST (9%)</Text>

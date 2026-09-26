@@ -159,7 +159,7 @@ const initializeDefaultSettings = async () => {
       key: 'GST_PERCENTAGE',
       value: 18,
       label: 'GST Percentage',
-      description: 'GST percentage applied on base service fee',
+      description: 'GST percentage applied on base service fee (no GST on travelling charges)',
       type: 'number',
       category: 'pricing'
     },

@@ -400,8 +400,8 @@ export default function UserInvoice() {
                 </div>
               )}
               <div className="flex justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
-                <span>Taxable Value</span>
-                <span className="font-bold text-gray-800">{formatAmount(baseFee + travelCharges)}</span>
+                <span>Taxable Value (Base Fee)</span>
+                <span className="font-bold text-gray-800">{formatAmount(baseFee)}</span>
               </div>
               <div className="flex justify-between text-xs text-gray-500">
                 <span>CGST (9%)</span>

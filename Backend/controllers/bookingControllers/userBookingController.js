@@ -472,18 +472,21 @@ const createBooking = async (req, res) => {
         vendorWalletPayments: {
           base: vendorPayment.base,
           gst: vendorPayment.customerGST,
+          gross: vendorPayment.gross,
           commissionRate: vendorPayment.commissionRate,
           platformCommission: vendorPayment.platformCommission,
           gstOnCommission: vendorPayment.gstOnCommission,
           tds: vendorPayment.tds,
-          platformFee: vendorPayment.platformCommission + vendorPayment.gstOnCommission + vendorPayment.tds,
+          platformFee: vendorPayment.platformFee,
+          netServiceFee: vendorPayment.netServiceFee,
+          travelCharges: vendorPayment.travelCharges,
           totalVendorPayment: vendorPayment.totalVendorPayment,
           siteVisitPayment: {
-            amount: parseFloat((vendorPayment.totalVendorPayment * 0.5).toFixed(2)),
+            amount: vendorPayment.siteVisitAmount,
             credited: false
           },
           reportUploadPayment: {
-            amount: parseFloat((vendorPayment.totalVendorPayment * 0.5).toFixed(2)),
+            amount: vendorPayment.reportUploadAmount,
             credited: false
           },
           totalCredited: 0

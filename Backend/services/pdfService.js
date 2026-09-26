@@ -157,9 +157,15 @@ const generateInvoice = async (booking) => {
       doc.text('Base Service Fee:', summaryX, currentY);
       doc.fillColor(textColor).font('Helvetica-Bold').text(`₹ ${baseFee.toFixed(2)}`, 460, currentY, { width: 85, align: 'right' });
 
+      if (travelCharges > 0) {
+        currentY += 12;
+        doc.fillColor(grayColor).font('Helvetica').text('Travel (Non-Taxable):', summaryX, currentY);
+        doc.fillColor(textColor).font('Helvetica-Bold').text(`₹ ${travelCharges.toFixed(2)}`, 460, currentY, { width: 85, align: 'right' });
+      }
+
       currentY += 12;
-      doc.fillColor(grayColor).font('Helvetica').text('Taxable Value:', summaryX, currentY);
-      doc.fillColor(textColor).font('Helvetica-Bold').text(`₹ ${(baseFee + travelCharges).toFixed(2)}`, 460, currentY, { width: 85, align: 'right' });
+      doc.fillColor(grayColor).font('Helvetica').text('Taxable Value (Base Fee):', summaryX, currentY);
+      doc.fillColor(textColor).font('Helvetica-Bold').text(`₹ ${baseFee.toFixed(2)}`, 460, currentY, { width: 85, align: 'right' });
 
       currentY += 12;
       doc.fillColor(grayColor).font('Helvetica').text('CGST (9%):', summaryX, currentY);
