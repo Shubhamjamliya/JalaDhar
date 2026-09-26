@@ -11,6 +11,7 @@ const { uploadToCloudinary } = require('../../services/cloudinaryService');
 const createDispute = async (req, res) => {
   try {
     const userId = req.userId;
+    const { subject, description, type, bookingId } = req.body;
     const finalSubject = (subject && subject.trim()) || type || 'Dispute';
 
     // Validation

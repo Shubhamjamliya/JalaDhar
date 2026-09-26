@@ -802,13 +802,34 @@ const handleOrderPaid = async (orderData, paymentDetails) => {
       dispatchBookingConfirmedWhatsAppSafe(booking._id);
     }
 
-    // Trigger notifications (reusing logic would be better, but implementing basic notify here)
-    // Ideally, we should refactor verification logic to shared service functions.
-    // For now, simple console log, assuming client-side success handler also triggers notifications
-    // OR the user will refresh/check status.
-    // REAL-TIME: If user closed app, we should trigger notifications here.
-    // TODO: Import and call sendPaymentConfirmationEmail / sendNotification here if critical.
-
+    // Trigger notifications (Email & In-App push) in background
+    try {
+      if (booking.user?.email) {
+        await sendPaymentConfirmationEmail({
+          email: booking.user.email,
+          name: booking.user.name,
+          bookingId: booking._id.toString(),
+          amount: paymentType === 'ADVANCE' ? booking.payment?.advanceAmount : booking.payment?.remainingAmount,
+          paymentType: paymentType === 'ADVANCE' ? 'Advance Payment' : 'Remaining Payment'
+        });
+      }
+      const io = getIO();
+      if (booking.user?._id) {
+        await sendNotification({
+          recipient: booking.user._id,
+          recipientModel: 'User',
+          type: paymentType === 'ADVANCE' ? 'PAYMENT_ADVANCE_SUCCESS' : 'PAYMENT_SUCCESS',
+          title: paymentType === 'ADVANCE' ? 'Advance Payment Successful' : 'Payment Successful',
+          message: `Payment of ₹${paymentType === 'ADVANCE' ? booking.payment?.advanceAmount : booking.payment?.remainingAmount} received successfully.`,
+          relatedEntity: {
+            entityType: 'Booking',
+            entityId: booking._id
+          }
+        }, io);
+      }
+    } catch (notifErr) {
+      console.error('Error dispatching notifications in order.paid webhook:', notifErr);
+    }
   } catch (error) {
     console.error("Error handling order.paid user:", error);
   }

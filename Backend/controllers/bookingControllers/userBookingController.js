@@ -262,6 +262,15 @@ const createBooking = async (req, res) => {
       }
 
       if (!isNaN(bookingDate.getTime())) {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        if (bookingDate < startOfToday) {
+          return res.status(400).json({
+            success: false,
+            message: 'Scheduled date cannot be in the past. Please select today or a future date.'
+          });
+        }
+
         const dayOfWeek = bookingDate.toLocaleDateString('en-US', { weekday: 'long' });
         
         let activeDays = [];
