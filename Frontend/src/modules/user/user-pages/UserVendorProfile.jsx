@@ -14,7 +14,8 @@ import {
     IoPersonOutline,
     IoShieldCheckmarkOutline,
     IoCalendarOutline,
-    IoTimeOutline
+    IoTimeOutline,
+    IoLockClosedOutline
 } from "react-icons/io5";
 import { getVendorProfile } from "../../../services/bookingApi";
 import { maskPhone } from "../../../utils/phoneMasker";
@@ -24,7 +25,6 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import PageContainer from "../../shared/components/PageContainer";
 import { getPublicSettings } from "../../../services/settingsApi";
-import BookingDisabledModal from "../../shared/components/BookingDisabledModal";
 
 export default function UserVendorProfile() {
     const navigate = useNavigate();
@@ -34,7 +34,6 @@ export default function UserVendorProfile() {
     const [vendorData, setVendorData] = useState(null);
     const [userLocation, setUserLocation] = useState({ lat: null, lng: null });
     const [bookingDisabledConfig, setBookingDisabledConfig] = useState(null);
-    const [showDisabledModal, setShowDisabledModal] = useState(false);
 
     useEffect(() => {
         // Get user location if available
@@ -131,7 +130,6 @@ export default function UserVendorProfile() {
 
     const handleBookService = (service) => {
         if (bookingDisabledConfig) {
-            setShowDisabledModal(true);
             return;
         }
         const dynamicPrice = vendorData.servicePrice || service?.price || 3500;
@@ -436,31 +434,39 @@ export default function UserVendorProfile() {
                         </div>
                     )}
 
-                    <button
-                        onClick={() => handleBookService(vendorData.services?.[0] || {
-                            id: vendorData._id,
-                            name: `${vendorData.designation || 'Groundwater Survey'} Service`,
-                            price: vendorData.servicePrice || 3500
-                        })}
-                        className="w-full bg-[#0A84FF] hover:bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                        <span>Book Now</span>
-                        <span className="text-lg font-bold">→</span>
-                    </button>
+                    {bookingDisabledConfig ? (
+                        <div className="space-y-2.5">
+                            <div className="p-3.5 bg-amber-50/90 border border-amber-200/90 rounded-2xl flex items-center gap-2.5 text-xs text-amber-900 font-semibold shadow-2xs">
+                                <IoCalendarOutline className="text-lg text-amber-600 shrink-0" />
+                                <span>{bookingDisabledConfig.message || "Bookings will be open from Nov. 1 onwards"}</span>
+                            </div>
+                            <button
+                                type="button"
+                                disabled
+                                className="w-full bg-slate-100 text-slate-400 border border-slate-200 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 cursor-not-allowed select-none shadow-none"
+                            >
+                                <IoLockClosedOutline className="text-base" />
+                                <span>{bookingDisabledConfig.message || "Bookings will be open from Nov. 1 onwards"}</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => handleBookService(vendorData.services?.[0] || {
+                                id: vendorData._id,
+                                name: `${vendorData.designation || 'Groundwater Survey'} Service`,
+                                price: vendorData.servicePrice || 3500
+                            })}
+                            className="w-full bg-[#0A84FF] hover:bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                            <span>Book Now</span>
+                            <span className="text-lg font-bold">→</span>
+                        </button>
+                    )}
                 </div>
             </section>
 
             {/* Groundwater Survey FAQs & Official Disclaimer */}
             <GroundwaterSurveyFAQSection />
-
-            {bookingDisabledConfig && (
-                <BookingDisabledModal
-                    isOpen={showDisabledModal}
-                    onClose={() => setShowDisabledModal(false)}
-                    settings={bookingDisabledConfig}
-                    onExplore={() => navigate("/user/dashboard")}
-                />
-            )}
         </PageContainer>
     );
 }

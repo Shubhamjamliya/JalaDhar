@@ -51,7 +51,6 @@ import { handleApiError } from "../../../utils/toastHelper";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
 import ExpertProfileCard from "../components/ExpertProfileCard";
 import { getPublicSettings } from "../../../services/settingsApi";
-import BookingDisabledModal from "../../shared/components/BookingDisabledModal";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
@@ -86,9 +85,8 @@ export default function UserDashboard() {
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [cancellationReason, setCancellationReason] = useState("");
 
-    // Booking Availability & Pop-Up State
+    // Booking Availability State
     const [bookingDisabledConfig, setBookingDisabledConfig] = useState(null);
-    const [showBookingDisabledModal, setShowBookingDisabledModal] = useState(false);
     const [cancelling, setCancelling] = useState(false);
     const [selectedBookingForAction, setSelectedBookingForAction] = useState(null);
     const [showPaymentPrompt, setShowPaymentPrompt] = useState(false);
@@ -171,13 +169,6 @@ export default function UserDashboard() {
                         };
 
                         setBookingDisabledConfig(config);
-
-                        // Auto-display pop-up once per session if enabled
-                        const hasSeenPopup = sessionStorage.getItem('seen_booking_disabled_modal');
-                        if (!hasSeenPopup && config.popupEnabled) {
-                            setShowBookingDisabledModal(true);
-                            sessionStorage.setItem('seen_booking_disabled_modal', 'true');
-                        }
                     }
                 }
             } catch (err) {
@@ -715,10 +706,6 @@ export default function UserDashboard() {
                     <button
                         key={cat.id}
                         onClick={() => {
-                            if (bookingDisabledConfig) {
-                                setShowBookingDisabledModal(true);
-                                return;
-                            }
                             navigate("/user/survey", { state: { category: cat.id } });
                         }}
                         className={`group relative flex flex-col items-center justify-center p-5 bg-gradient-to-br ${cat.color} rounded-2xl border ${cat.border} shadow-xs hover:shadow-md active:scale-[0.97] transition-all duration-200 text-center`}
@@ -1232,13 +1219,6 @@ export default function UserDashboard() {
                     bookingToUnlock?.bookingData?.report ||
                     ["REPORT_UPLOADED", "AWAITING_PAYMENT", "COMPLETED", "PAYMENT_SUCCESS", "PAID_FIRST", "BOREWELL_UPLOADED", "ADMIN_APPROVED", "FINAL_SETTLEMENT"].includes(bookingToUnlock?.rawStatus)
                 )}
-            />
-            {/* Booking Disabled Notice Modal */}
-            <BookingDisabledModal
-                isOpen={showBookingDisabledModal}
-                onClose={() => setShowBookingDisabledModal(false)}
-                settings={bookingDisabledConfig || {}}
-                onExplore={() => setShowBookingDisabledModal(false)}
             />
         </PageContainer>
     );

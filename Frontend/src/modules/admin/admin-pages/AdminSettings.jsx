@@ -46,7 +46,6 @@ import {
 } from "../../../services/adminApi";
 import { INDIAN_LANGUAGES_PRESETS } from "../../../utils/indianLanguages";
 import ErrorMessage from "../../shared/components/ErrorMessage";
-import BookingDisabledModal from "../../shared/components/BookingDisabledModal";
 import { useToast } from "../../../hooks/useToast";
 
 const BUILT_IN_TEMPLATE_KEYS = [
@@ -135,10 +134,6 @@ export default function AdminSettings({ defaultTab = "general" }) {
         BOOKING_DISABLED_BUTTON_TEXT: "Got it, Explore Platform"
     });
     const [bookingControlLoading, setBookingControlLoading] = useState(false);
-    const [showBookingModalPreview, setShowBookingModalPreview] = useState(false);
-
-
-    // Expert Availability & Policy State
     const [availabilityPolicySettings, setAvailabilityPolicySettings] = useState({
         ALLOW_EXPERT_AVAILABILITY_TOGGLE: true,
         ALLOW_REST_OF_TODAY_PAUSE: true,
@@ -2026,28 +2021,65 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                                     className="w-full px-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white max-w-sm"
                                                 />
                                             </div>
+                                            {/* Live Preview: Disabled Booking Button */}
+                                            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <IoEyeOutline className="text-blue-600 text-base" />
+                                                        <span className="text-xs font-bold text-gray-800 uppercase tracking-wide">
+                                                            Live Customer App Preview (Disabled Booking Button)
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md">
+                                                        Customer View
+                                                    </span>
+                                                </div>
+
+                                                {/* Notice Banner Preview */}
+                                                <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-xl space-y-1.5 text-xs text-amber-900">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-amber-950">Bookings Currently Paused</span>
+                                                        {bookingControlSettings.BOOKING_REOPEN_DATE && (
+                                                            <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-amber-200/80 text-amber-900 rounded-md">
+                                                                {bookingControlSettings.BOOKING_REOPEN_DATE}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-amber-800 font-semibold">
+                                                        {bookingControlSettings.BOOKING_DISABLED_MESSAGE || "Bookings will be open from Nov. 1 onwards"}
+                                                    </p>
+                                                    {bookingControlSettings.BOOKING_DISABLED_DESCRIPTION && (
+                                                        <p className="text-amber-700/80 text-[11px] leading-relaxed">
+                                                            {bookingControlSettings.BOOKING_DISABLED_DESCRIPTION}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Disabled Button Preview */}
+                                                <div className="pt-1">
+                                                    <button
+                                                        type="button"
+                                                        disabled
+                                                        className="w-full py-3.5 font-bold rounded-xl bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center gap-2 cursor-not-allowed select-none text-xs sm:text-sm"
+                                                    >
+                                                        <IoLockClosedOutline className="text-base text-slate-400" />
+                                                        <span>{bookingControlSettings.BOOKING_DISABLED_MESSAGE || "Bookings will be open from Nov. 1 onwards"}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        {/* Actions: Preview & Save */}
-                                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowBookingModalPreview(true)}
-                                                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
-                                            >
-                                                <IoEyeOutline className="text-base text-blue-600" />
-                                                <span>Preview Customer Pop-Up Modal</span>
-                                            </button>
-
+                                        {/* Actions: Save Button */}
+                                        <div className="flex justify-end pt-2">
                                             <button
                                                 type="submit"
                                                 disabled={bookingControlLoading}
-                                                className="w-full sm:w-auto px-6 py-2.5 bg-[#0A84FF] hover:bg-[#005BBB] text-white font-bold text-sm rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                                                className="w-full sm:w-auto px-7 py-3 bg-[#0A84FF] hover:bg-[#005BBB] text-white font-bold text-sm rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                                             >
                                                 {bookingControlLoading && (
                                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                                 )}
-                                                <span>{bookingControlLoading ? "Saving Settings..." : "Save Booking & Pop-Up Settings"}</span>
+                                                <span>{bookingControlLoading ? "Saving Settings..." : "Save Booking Control Settings"}</span>
                                             </button>
                                         </div>
                                     </form>
@@ -3993,12 +4025,6 @@ export default function AdminSettings({ defaultTab = "general" }) {
                         </div>
                     </div>
                 )}
-                {/* Customer Booking Notice Pop-Up Preview Modal */}
-                <BookingDisabledModal
-                    isOpen={showBookingModalPreview}
-                    onClose={() => setShowBookingModalPreview(false)}
-                    settings={bookingControlSettings}
-                />
             </div>
         );
     }

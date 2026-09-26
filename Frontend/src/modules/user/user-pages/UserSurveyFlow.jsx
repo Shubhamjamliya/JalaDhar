@@ -22,7 +22,8 @@ import {
   IoChevronDownOutline,
   IoChevronUpOutline,
   IoHelpCircleOutline,
-  IoBulbOutline
+  IoBulbOutline,
+  IoLockClosedOutline
 } from "react-icons/io5";
 import { useToast } from "../../../hooks/useToast";
 import PageContainer from "../../shared/components/PageContainer";
@@ -30,7 +31,6 @@ import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
 import { getNearbyVendors, createBooking, calculateBookingCharges, getUserDashboardStats, getVendorProfile } from "../../../services/bookingApi";
 import { getPublicSettings } from "../../../services/settingsApi";
 import PolicyModal from "../../shared/components/PolicyModal";
-import BookingDisabledModal from "../../shared/components/BookingDisabledModal";
 import ExpertProfileCard from "../components/ExpertProfileCard";
 import { parseAcresGuntas, isAgriCategory } from "../../../utils/landAreaHelper";
 import StateDistrictInput from "../../../components/StateDistrictInput";
@@ -1151,7 +1151,7 @@ const ExpertSelection = ({ location, category, onSelect, onBack }) => {
   );
 };
 
-const SlotAndPayment = ({ surveyData, onDateChange, onConfirm, onBack, isSubmitting }) => {
+const SlotAndPayment = ({ surveyData, onDateChange, onConfirm, onBack, isSubmitting, bookingDisabledConfig }) => {
   const [vendorData, setVendorData] = useState(surveyData.vendor);
   const [date, setDate] = useState(() => {
     const savedDate = surveyData?.slot?.scheduledDate || surveyData?.scheduledDate || "";
@@ -1596,23 +1596,60 @@ const SlotAndPayment = ({ surveyData, onDateChange, onConfirm, onBack, isSubmitt
         />
       )}
 
+      {bookingDisabledConfig && (
+        <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-start gap-3 text-amber-900 shadow-2xs">
+          <div className="p-2 rounded-xl bg-amber-100 text-amber-700 shrink-0">
+            <IoCalendarOutline className="text-xl" />
+          </div>
+          <div className="text-xs space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-amber-950">Bookings Currently Paused</span>
+              {bookingDisabledConfig.reopenDate && (
+                <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-amber-200/80 text-amber-900 rounded-md">
+                  {bookingDisabledConfig.reopenDate}
+                </span>
+              )}
+            </div>
+            <p className="text-amber-800 leading-relaxed font-semibold">
+              {bookingDisabledConfig.message || "Bookings will be open from Nov. 1 onwards"}
+            </p>
+            {bookingDisabledConfig.description && (
+              <p className="text-amber-700/80 text-[11px] leading-relaxed">
+                {bookingDisabledConfig.description}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-3 pt-2">
         <button onClick={onBack} className="px-6 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">Back</button>
-        <button
-          onClick={() => {
-            if (!date) {
-              toast.showError("Please select a visit date");
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              return;
-            }
-            setActivePolicy('checkout');
-          }}
-          disabled={!charges || isSubmitting}
-          className={`flex-1 py-3 font-bold rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${!date ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
-        >
-          {!date ? <IoCalendarOutline /> : <IoCashOutline />}
-          {!date ? "Select Date to Book" : "Book & Pay"}
-        </button>
+        {bookingDisabledConfig ? (
+          <button
+            type="button"
+            disabled
+            className="flex-1 py-3.5 font-bold rounded-xl bg-slate-100 text-slate-400 border border-slate-200 shadow-none flex items-center justify-center gap-2 cursor-not-allowed select-none"
+          >
+            <IoLockClosedOutline className="text-base text-slate-400" />
+            <span>{bookingDisabledConfig.message || "Bookings will be open from Nov. 1 onwards"}</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              if (!date) {
+                toast.showError("Please select a visit date");
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+              }
+              setActivePolicy('checkout');
+            }}
+            disabled={!charges || isSubmitting}
+            className={`flex-1 py-3 font-bold rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${!date ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+          >
+            {!date ? <IoCalendarOutline /> : <IoCashOutline />}
+            {!date ? "Select Date to Book" : "Book & Pay"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1707,7 +1744,6 @@ export default function UserSurveyFlow() {
   const [pendingBookingAlert, setPendingBookingAlert] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingDisabledConfig, setBookingDisabledConfig] = useState(null);
-  const [showDisabledModal, setShowDisabledModal] = useState(false);
 
   useEffect(() => {
     sessionStorage.setItem('usf_step', step);
@@ -1782,9 +1818,6 @@ export default function UserSurveyFlow() {
             };
 
             setBookingDisabledConfig(config);
-            if (config.popupEnabled) {
-              setShowDisabledModal(true);
-            }
           }
         }
       } catch (err) {
@@ -1854,7 +1887,6 @@ export default function UserSurveyFlow() {
   // Step 6: Final Booking
   const handleBooking = async ({ scheduledDate, scheduledTime }) => {
     if (bookingDisabledConfig) {
-      setShowDisabledModal(true);
       toast.showError(bookingDisabledConfig.message || "Survey bookings are currently paused.");
       return;
     }
@@ -1994,6 +2026,7 @@ export default function UserSurveyFlow() {
             onConfirm={handleBooking}
             onBack={() => isVendorPreSelected ? setStep(3) : setStep(4)}
             isSubmitting={isSubmitting}
+            bookingDisabledConfig={bookingDisabledConfig}
           />
         )}
       </div>
@@ -2032,15 +2065,6 @@ export default function UserSurveyFlow() {
           category={surveyData.category}
           onAccept={handleTermsAccept}
           onCancel={() => setShowTerms(false)}
-        />
-      )}
-
-      {bookingDisabledConfig && (
-        <BookingDisabledModal
-          isOpen={showDisabledModal}
-          onClose={() => setShowDisabledModal(false)}
-          settings={bookingDisabledConfig}
-          onExplore={() => navigate("/user/dashboard")}
         />
       )}
     </PageContainer>
