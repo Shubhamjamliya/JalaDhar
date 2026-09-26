@@ -1266,6 +1266,16 @@ function App() {
                                                                         }
                                                                     />
                                                                     <Route
+                                                                        path="/settings/booking_controls"
+                                                                        element={
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings defaultTab="booking_controls" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
+                                                                        }
+                                                                    />
+                                                                    <Route
                                                                         path="/settings/availability"
                                                                         element={
                                                                             <AdminProtectedRoute requiredPermission="settings">
@@ -1342,6 +1352,16 @@ function App() {
                                                                             <AdminProtectedRoute requiredPermission="settings">
                                                                                 <Suspense fallback={<LoadingSpinner />}>
                                                                                     <AdminSettings defaultTab="register" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/settings/:tab"
+                                                                        element={
+                                                                            <AdminProtectedRoute requiredPermission="settings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminSettings />
                                                                                 </Suspense>
                                                                             </AdminProtectedRoute>
                                                                         }

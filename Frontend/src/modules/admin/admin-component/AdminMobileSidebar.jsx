@@ -189,6 +189,7 @@ const navSections = [
                 roles: ["SUPER_ADMIN"],
                 children: [
                     { label: "General & App Info", to: "/admin/settings/general" },
+                    { label: "Booking Controls", to: "/admin/settings/booking_controls" },
                     { label: "Pricing & Quality Gate", to: "/admin/settings/pricing" },
                     { label: "Billing & GST Declarations", to: "/admin/settings/billing" },
                     { label: "Languages", to: "/admin/settings/languages" },

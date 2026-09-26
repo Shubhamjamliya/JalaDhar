@@ -197,6 +197,7 @@ const navSections = [
                 roles: ["SUPER_ADMIN"],
                 children: [
                     { label: "General & App Info", to: "/admin/settings/general" },
+                    { label: "Booking Controls", to: "/admin/settings/booking_controls" },
                     { label: "Expert Availability & Shifts", to: "/admin/settings/availability" },
                     { label: "WhatsApp & Alerts", to: "/admin/settings/communication" },
                     { label: "Reschedule Policy", to: "/admin/settings/reschedule" },
