@@ -1959,7 +1959,6 @@ export default function UserSurveyFlow() {
     } catch (err) {
       console.error(err);
       if (err.response?.data?.isBookingDisabled) {
-        setShowDisabledModal(true);
         toast.showError(err.response.data.message || "Survey bookings are currently paused.");
       } else {
         toast.showError("Failed to create booking");

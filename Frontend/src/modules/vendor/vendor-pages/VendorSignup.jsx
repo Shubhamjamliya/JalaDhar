@@ -564,6 +564,8 @@ export default function VendorSignup() {
 
                 // Always store coordinates first
                 let formattedAddress = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+                let autoDistrict = "";
+                let autoState = "";
 
                 // Try to reverse geocode if API key is available
                 if (apiKey && apiKey.trim() !== "") {
@@ -577,9 +579,6 @@ export default function VendorSignup() {
                         }
 
                         const data = await response.json();
-
-                        let autoDistrict = "";
-                        let autoState = "";
 
                         // Check for API errors
                         if (data.status === 'OK' && data.results && data.results.length > 0) {

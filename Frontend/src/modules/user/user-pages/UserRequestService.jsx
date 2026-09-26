@@ -24,6 +24,7 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
 import PolicyModal from "../../shared/components/PolicyModal";
+import { getPublicSettings } from "../../../services/settingsApi";
 import { parseAcresGuntas, isAgriCategory } from "../../../utils/landAreaHelper";
 import StateDistrictInput from "../../../components/StateDistrictInput";
 import { getStatesList, getDistrictsList, findStateForDistrict } from "../../../utils/indianStatesDistricts";

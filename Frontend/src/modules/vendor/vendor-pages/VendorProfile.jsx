@@ -203,7 +203,7 @@ export default function VendorProfile() {
     const handleLogout = async () => {
         try {
             await logout();
-            navigate("/vendor/login");
+            navigate("/vendorlogin");
         } catch (err) {
             console.error("Logout failed:", err);
         }

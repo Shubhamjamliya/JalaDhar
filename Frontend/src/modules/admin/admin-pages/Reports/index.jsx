@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { Routes, Route, Link, useLocation, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   IoBarChartOutline,
@@ -303,6 +303,7 @@ export default function AdminReports() {
         <Route path="vendors" element={<VendorReport />} />
         <Route path="payments" element={<PaymentReport />} />
         <Route path="geo" element={<GeographicAnalysis />} />
+        <Route path="*" element={<Navigate to="/admin/reports" replace />} />
       </Routes>
     </div>
   );

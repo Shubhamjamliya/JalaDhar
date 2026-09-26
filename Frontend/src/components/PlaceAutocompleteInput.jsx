@@ -53,7 +53,7 @@ export default function PlaceAutocompleteInput({
         if (autocompleteRef.current) {
             // Clear existing listeners by creating a new instance
             try {
-                google.maps.event.clearInstanceListeners(autocompleteRef.current);
+                window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);
             } catch (e) {
                 // Ignore errors
             }
@@ -169,7 +169,7 @@ export default function PlaceAutocompleteInput({
             // Cleanup
             if (autocompleteRef.current) {
                 try {
-                    google.maps.event.clearInstanceListeners(autocompleteRef.current);
+                    window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);
                 } catch (e) {
                     // Ignore errors
                 }

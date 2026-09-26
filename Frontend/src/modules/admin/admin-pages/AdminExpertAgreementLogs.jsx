@@ -60,7 +60,7 @@ export default function AdminExpertAgreementLogs() {
     const parseHtmlToClauses = (html) => {
         if (!html) return DEFAULT_10_CLAUSES;
         try {
-            const parser = new DOMParser();
+            const parser = new window.DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             const items = doc.querySelectorAll('ol li');
             

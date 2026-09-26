@@ -210,9 +210,9 @@ export const NotificationProvider = ({ children }) => {
         ), { duration: 6000 });
 
         // 2. Also trigger Native Desktop Notification if permitted
-        if ("Notification" in window && Notification.permission === "granted") {
+        if ("Notification" in window && window.Notification.permission === "granted") {
           try {
-            new Notification(notification.title || "Jaladhaara Alert", {
+            new window.Notification(notification.title || "Jaladhaara Alert", {
               body: notification.message,
               icon: "/favicon.png"
             });

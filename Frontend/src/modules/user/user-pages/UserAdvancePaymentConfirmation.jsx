@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
 
     IoCheckmarkCircleOutline,
@@ -24,6 +24,7 @@ import { useToast } from "../../../hooks/useToast";
 export default function UserAdvancePaymentConfirmation() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { bookingId: routeBookingId } = useParams();
     const { user } = useAuth();
     const toast = useToast();
     const [loading, setLoading] = useState(false);
@@ -41,7 +42,7 @@ export default function UserAdvancePaymentConfirmation() {
     const storedBookingId = localStorage.getItem('pending_booking_id');
 
     const stateBooking = location.state?.booking;
-    const bookingId = stateBooking?.id || stateBooking?._id || location.state?.bookingId || queryBookingId || storedBookingId;
+    const bookingId = routeBookingId || stateBooking?.id || stateBooking?._id || location.state?.bookingId || queryBookingId || storedBookingId;
 
     // Save active bookingId to localStorage for reload recovery
     useEffect(() => {

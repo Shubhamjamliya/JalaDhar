@@ -638,7 +638,7 @@ export default function VendorBookingDetails() {
 
             for (const file of files) {
                 const res = await stampImageWithGeotag(file, {
-                    bookingId: booking?._id || id,
+                    bookingId: booking?._id || bookingId,
                     locationName: locationStr
                 });
                 newImgs.push({
@@ -696,7 +696,7 @@ export default function VendorBookingDetails() {
                 setShowUnableModal(false);
                 setUnableDescription("");
                 setUnableImages([]);
-                await fetchBookingDetails();
+                await loadBookingDetails();
             } else {
                 toast.dismissToast(loadingToast);
                 toast.showError(response.message || "Failed to submit report");

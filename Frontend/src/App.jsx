@@ -44,6 +44,7 @@ const VendorResetPassword = lazy(() => import("./modules/vendor/vendor-pages/Ven
 const UserNavbar = lazy(() => import("./modules/user/user-components/UserNavbar"));
 const VendorNavbar = lazy(() => import("./modules/vendor/vendor-components/VendorNavbar"));
 const UserServiceProvider = lazy(() => import("./modules/user/user-pages/UserServiceProvider"));
+const UserRequestService = lazy(() => import("./modules/user/user-pages/UserRequestService"));
 
 const UserStatus = lazy(() => import("./modules/user/user-pages/UserStatus"));
 const UserAllBookingsStatus = lazy(() => import("./modules/user/user-pages/UserAllBookingsStatus"));
@@ -205,6 +206,7 @@ function App() {
                             <RouteTracker />
                             <NotificationProvider>
                                 <LocationPermissionModal />
+                                <ErrorBoundary title="Application Encountered An Unexpected Error">
                                 <Routes>
                                     {/* ---------- LANDING PAGE ---------- */}
                                     <Route
@@ -279,6 +281,18 @@ function App() {
                                     <Route
                                         path="/login"
                                         element={<Navigate to="/userlogin" replace />}
+                                    />
+                                    <Route
+                                        path="/user/login"
+                                        element={<Navigate to="/userlogin" replace />}
+                                    />
+                                    <Route
+                                        path="/vendor/login"
+                                        element={<Navigate to="/vendorlogin" replace />}
+                                    />
+                                    <Route
+                                        path="/admin/login"
+                                        element={<Navigate to="/adminlogin" replace />}
                                     />
                                     <Route
                                         path="/userlogin"
@@ -413,6 +427,14 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/booking/:bookingId/advance-payment"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserAdvancePaymentConfirmation />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/booking/:bookingId/tracking"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
@@ -515,6 +537,23 @@ function App() {
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <UserInvoice />
                                                                     </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/request-service"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserRequestService />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/booking"
+                                                                element={
+                                                                    <Navigate
+                                                                        to="/user/survey"
+                                                                        replace
+                                                                    />
                                                                 }
                                                             />
                                                             <Route
@@ -683,6 +722,14 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/booking/:bookingId/upload-report"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorUploadReport />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/bookings/:bookingId"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
@@ -691,7 +738,23 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/booking/:bookingId"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorBookingDetails />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/booking/:bookingId/status"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorStatus />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/bookings/:bookingId/status"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <VendorStatus />
@@ -764,6 +827,14 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/bookings/:bookingId/report"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserSurveyReport />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/booking/:bookingId/tracking"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
@@ -772,7 +843,23 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/bookings/:bookingId/tracking"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <LiveTrackingPage role="Vendor" />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
                                                                 path="/booking/:bookingId/invoice"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorInvoice />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/bookings/:bookingId/invoice"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <VendorInvoice />
@@ -844,14 +931,6 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
-                                                                path="/agreement"
-                                                                element={
-                                                                    <Suspense fallback={<LoadingSpinner />}>
-                                                                        <VendorPolicyPage />
-                                                                    </Suspense>
-                                                                }
-                                                            />
-                                                            <Route
                                                                 path="/privacy"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
@@ -889,6 +968,15 @@ function App() {
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <ExpertAgreementScreen />
                                                                     </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="*"
+                                                                element={
+                                                                    <Navigate
+                                                                        to="/vendor/dashboard"
+                                                                        replace
+                                                                    />
                                                                 }
                                                             />
                                                         </Routes>
@@ -936,6 +1024,7 @@ function App() {
                                                     </Suspense>
                                                     <div className="lg:pl-[278px] min-h-screen flex flex-col">
                                                         <main className="flex-1 p-6 md:p-8 pt-24 md:pt-28">
+                                                            <ErrorBoundary title="Unable to load page">
                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                 <Routes>
                                                                     <Route
@@ -1536,8 +1625,28 @@ function App() {
                                                                             </AdminProtectedRoute>
                                                                         }
                                                                     />
+                                                                    <Route
+                                                                        path="/bookings/:bookingId/tracking"
+                                                                        element={
+                                                                            <AdminProtectedRoute requiredPermission="bookings">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <LiveTrackingPage role="Admin" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="*"
+                                                                        element={
+                                                                            <Navigate
+                                                                                to="/admin/dashboard"
+                                                                                replace
+                                                                            />
+                                                                        }
+                                                                    />
                                                                 </Routes>
                                                             </Suspense>
+                                                            </ErrorBoundary>
                                                         </main>
                                                     </div>
                                                 </div>
@@ -1550,6 +1659,7 @@ function App() {
                                     <Route path="*" element={<Navigate to="/" replace />} />
 
                                 </Routes>
+                                </ErrorBoundary>
                             </NotificationProvider>
                         </Router>
                     </AdminAuthProvider>

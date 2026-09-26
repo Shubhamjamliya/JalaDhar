@@ -549,7 +549,7 @@ export default function UserStatus() {
     };
 
     const handleRebook = () => {
-        navigate("/user/booking");
+        navigate("/user/survey");
     };
 
     const handleRateReview = () => {

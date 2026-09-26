@@ -34,6 +34,7 @@ export default function AdminBorewellApproval() {
         totalBookings: 0,
     });
     const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [showSettlementModal, setShowSettlementModal] = useState(false);

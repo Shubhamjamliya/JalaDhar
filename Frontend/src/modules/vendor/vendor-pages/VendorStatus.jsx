@@ -792,7 +792,7 @@ export default function VendorStatus() {
                                         Get Site Directions
                                     </button>
                                     <button
-                                        onClick={() => navigate(`/bookings/${bookingId}/tracking`)}
+                                        onClick={() => navigate(`/vendor/booking/${bookingId}/tracking`)}
                                         className="w-full h-12 bg-slate-900 text-white text-sm font-bold rounded-2xl hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm"
                                     >
                                         <IoCarOutline className="text-xl text-blue-400" />

@@ -524,7 +524,7 @@ const VendorInvoicePDF = ({ booking, billingInfo, qrCodeUrl, loggedInVendor }) =
         <View style={styles.boxContainer}>
           <Text style={styles.boxTitle}>Section 194O Income Tax & GST Compliance Notice</Text>
           <Text style={{ fontSize: 7.5, color: '#334155', lineHeight: 1.35, marginBottom: 3 }}>
-            1. Income Tax TDS of {formatCurrency(tdsDeduction)} deducted under Section 194O of the Income Tax Act, 1961 is calculated at 1% of the Net Service Value ({formatCurrency(netServiceValue)}) and will be deposited with the Income Tax Department on your behalf.
+            1. Income Tax TDS of {formatCurrency(tdsDeduction)} deducted under Section 194O of the Income Tax Act, 1961 is calculated at 1% of the Net Service Value ({formatCurrency(baseFee)}) and will be deposited with the Income Tax Department on your behalf.
           </Text>
           <Text style={{ fontSize: 7.5, color: '#334155', lineHeight: 1.35, marginBottom: 3 }}>
             2. This tax credit will be automatically reflected in your Form 26AS / Annual Information Statement (AIS) and can be claimed during your annual Income Tax Return (ITR) filing.

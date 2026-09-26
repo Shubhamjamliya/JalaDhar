@@ -494,7 +494,7 @@ export default function VendorInvoice() {
             </h5>
             <ul className="list-disc list-inside space-y-2 text-xs text-slate-600 font-medium leading-relaxed">
               <li>
-                <span className="font-bold text-slate-800">Section 194O Income Tax TDS:</span> TDS of {formatAmount(tdsDeduction)} withheld under Sec 194O (1% of Service Fee {formatAmount(netServiceValue)}) will be deposited with the Income Tax Dept against your PAN.
+                <span className="font-bold text-slate-800">Section 194O Income Tax TDS:</span> TDS of {formatAmount(tdsDeduction)} withheld under Sec 194O (1% of Service Fee {formatAmount(baseFee)}) will be deposited with the Income Tax Dept against your PAN.
               </li>
               <li>
                 <span className="font-bold text-slate-800">Form 26AS / AIS Tax Credit:</span> This tax credit will automatically reflect in your Form 26AS and AIS statement for claiming full credit during annual ITR filing.

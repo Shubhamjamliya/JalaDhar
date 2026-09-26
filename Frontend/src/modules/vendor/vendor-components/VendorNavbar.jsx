@@ -112,19 +112,6 @@ export default function VendorNavbar() {
     const [pauseLoading, setPauseLoading] = useState(false);
     const liveStatus = getExpertLiveStatus(vendor);
 
-    // Hide bottom nav when virtual keyboard is open (mobile)
-    useEffect(() => {
-        const viewport = window.visualViewport;
-        if (!viewport) return;
-
-        const handleViewportResize = () => {
-            const keyboardVisible = window.innerHeight - viewport.height > 150;
-            setIsKeyboardOpen(keyboardVisible);
-        };
-
-        viewport.addEventListener('resize', handleViewportResize);
-        return () => viewport.removeEventListener('resize', handleViewportResize);
-    }, []);
 
 
     const handleToggleClick = () => {
