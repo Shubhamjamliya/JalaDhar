@@ -46,6 +46,7 @@ import {
 } from "../../../services/adminApi";
 import { INDIAN_LANGUAGES_PRESETS } from "../../../utils/indianLanguages";
 import ErrorMessage from "../../shared/components/ErrorMessage";
+import BookingDisabledModal from "../../shared/components/BookingDisabledModal";
 import { useToast } from "../../../hooks/useToast";
 
 const BUILT_IN_TEMPLATE_KEYS = [
@@ -113,6 +114,7 @@ export default function AdminSettings({ defaultTab = "general" }) {
 
     const settingsTabs = [
         { id: "general", label: "General", title: "General & App Info", icon: IoSettingsOutline },
+        { id: "booking_controls", label: "Booking Controls", title: "Booking Availability & User App Pop-Up", icon: IoCalendarOutline },
         { id: "availability", label: "Availability", title: "Expert Availability & Shifts", icon: IoTimeOutline },
         { id: "communication", label: "WhatsApp", title: "WhatsApp & Alerts", icon: IoLogoWhatsapp },
         { id: "reschedule", label: "Reschedule", title: "Reschedule Policy", icon: IoCalendarOutline },
@@ -121,6 +123,19 @@ export default function AdminSettings({ defaultTab = "general" }) {
         { id: "languages", label: "Languages", title: "Language System", icon: IoGlobeOutline },
         { id: "security", label: "Security", title: "Security & Integrations", icon: IoLockClosedOutline },
     ];
+
+    // Platform Booking Availability & Pop-Up State
+    const [bookingControlSettings, setBookingControlSettings] = useState({
+        ALLOW_NEW_BOOKINGS: false,
+        BOOKING_DISABLED_POPUP_ENABLED: true,
+        BOOKING_DISABLED_POPUP_TITLE: "Survey Bookings Opening Soon",
+        BOOKING_DISABLED_MESSAGE: "Bookings will be open from Nov. 1 onwards",
+        BOOKING_REOPEN_DATE: "1st November, 2026",
+        BOOKING_DISABLED_DESCRIPTION: "We are currently onboarding verified hydrogeologists and calibrating scientific survey equipment for the new season. Booking will officially open on November 1st. In the meantime, you can explore services and sample survey reports.",
+        BOOKING_DISABLED_BUTTON_TEXT: "Got it, Explore Platform"
+    });
+    const [bookingControlLoading, setBookingControlLoading] = useState(false);
+    const [showBookingModalPreview, setShowBookingModalPreview] = useState(false);
 
 
     // Expert Availability & Policy State
@@ -742,12 +757,31 @@ export default function AdminSettings({ defaultTab = "general" }) {
                             showVendor: vendorSetting ? (vendorSetting.value === true || vendorSetting.value === 'true' || vendorSetting.value === 1 || vendorSetting.value === '1') : true,
                             type: typeSetting?.value || "info"
                         });
+
+                        // Load Booking Control & Pop-Up settings
+                        const allowBookings = response.data.settings.find(s => s.key === 'ALLOW_NEW_BOOKINGS');
+                        const popupEnabled = response.data.settings.find(s => s.key === 'BOOKING_DISABLED_POPUP_ENABLED');
+                        const popupTitle = response.data.settings.find(s => s.key === 'BOOKING_DISABLED_POPUP_TITLE');
+                        const popupMsg = response.data.settings.find(s => s.key === 'BOOKING_DISABLED_MESSAGE');
+                        const reopenDate = response.data.settings.find(s => s.key === 'BOOKING_REOPEN_DATE');
+                        const popupDesc = response.data.settings.find(s => s.key === 'BOOKING_DISABLED_DESCRIPTION');
+                        const popupBtn = response.data.settings.find(s => s.key === 'BOOKING_DISABLED_BUTTON_TEXT');
+
+                        setBookingControlSettings({
+                            ALLOW_NEW_BOOKINGS: allowBookings ? (allowBookings.value === true || allowBookings.value === 'true' || allowBookings.value === 1 || allowBookings.value === '1') : false,
+                            BOOKING_DISABLED_POPUP_ENABLED: popupEnabled ? (popupEnabled.value === true || popupEnabled.value === 'true' || popupEnabled.value === 1 || popupEnabled.value === '1') : true,
+                            BOOKING_DISABLED_POPUP_TITLE: popupTitle?.value || "Survey Bookings Opening Soon",
+                            BOOKING_DISABLED_MESSAGE: popupMsg?.value || "Bookings will be open from Nov. 1 onwards",
+                            BOOKING_REOPEN_DATE: reopenDate?.value || "1st November, 2026",
+                            BOOKING_DISABLED_DESCRIPTION: popupDesc?.value || "We are currently onboarding verified hydrogeologists and calibrating scientific survey equipment for the new season. Booking will officially open on November 1st. In the meantime, you can explore services and sample survey reports.",
+                            BOOKING_DISABLED_BUTTON_TEXT: popupBtn?.value || "Got it, Explore Platform"
+                        });
                     }
                 } catch (err) {
                     console.error('Error loading general settings:', err);
                 }
             };
-            if (activeTab === 'general') {
+            if (activeTab === 'general' || activeTab === 'booking_controls') {
                 loadGeneralSettings();
             }
         }, [activeTab]);
@@ -812,6 +846,55 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 setError(err.response?.data?.message || "Failed to update announcement settings. Please try again.");
             } finally {
                 setAnnouncementLoading(false);
+            }
+        };
+
+        const handleSaveBookingControlSettings = async (e) => {
+            if (e) e.preventDefault();
+            setError("");
+            setBookingControlLoading(true);
+
+            try {
+                const response = await updateMultipleSettings([
+                    { key: 'ALLOW_NEW_BOOKINGS', value: Boolean(bookingControlSettings.ALLOW_NEW_BOOKINGS), label: 'Allow New Survey Bookings', category: 'general', type: 'boolean' },
+                    { key: 'BOOKING_DISABLED_POPUP_ENABLED', value: Boolean(bookingControlSettings.BOOKING_DISABLED_POPUP_ENABLED), label: 'Enable Customer Booking Notice Pop-Up', category: 'general', type: 'boolean' },
+                    { key: 'BOOKING_DISABLED_POPUP_TITLE', value: (bookingControlSettings.BOOKING_DISABLED_POPUP_TITLE || '').trim(), label: 'Booking Disabled Pop-Up Title', category: 'general', type: 'string' },
+                    { key: 'BOOKING_DISABLED_MESSAGE', value: (bookingControlSettings.BOOKING_DISABLED_MESSAGE || '').trim(), label: 'Booking Disabled Main Highlight', category: 'general', type: 'string' },
+                    { key: 'BOOKING_REOPEN_DATE', value: (bookingControlSettings.BOOKING_REOPEN_DATE || '').trim(), label: 'Bookings Official Reopen Date', category: 'general', type: 'string' },
+                    { key: 'BOOKING_DISABLED_DESCRIPTION', value: (bookingControlSettings.BOOKING_DISABLED_DESCRIPTION || '').trim(), label: 'Booking Disabled Pop-Up Description', category: 'general', type: 'string' },
+                    { key: 'BOOKING_DISABLED_BUTTON_TEXT', value: (bookingControlSettings.BOOKING_DISABLED_BUTTON_TEXT || '').trim(), label: 'Booking Disabled Pop-Up Button Text', category: 'general', type: 'string' }
+                ]);
+                if (response.success) {
+                    toast.showSuccess("Booking availability & pop-up settings saved successfully!");
+                } else {
+                    setError(response.message || "Failed to update booking controls");
+                }
+            } catch (err) {
+                console.error("Update booking controls error:", err);
+                setError(err.response?.data?.message || "Failed to save booking settings.");
+            } finally {
+                setBookingControlLoading(false);
+            }
+        };
+
+        const handleQuickToggleBookings = async (newAllowedState) => {
+            setError("");
+            setBookingControlLoading(true);
+            try {
+                const response = await updateMultipleSettings([
+                    { key: 'ALLOW_NEW_BOOKINGS', value: Boolean(newAllowedState), label: 'Allow New Survey Bookings', category: 'general', type: 'boolean' }
+                ]);
+                if (response.success) {
+                    setBookingControlSettings(prev => ({ ...prev, ALLOW_NEW_BOOKINGS: newAllowedState }));
+                    toast.showSuccess(newAllowedState ? "Survey bookings are now ENABLED platform-wide!" : "Survey bookings are now DISABLED. Pop-up notice is active for users.");
+                } else {
+                    setError(response.message || "Failed to toggle booking status");
+                }
+            } catch (err) {
+                console.error("Toggle bookings error:", err);
+                setError(err.response?.data?.message || "Failed to update booking status.");
+            } finally {
+                setBookingControlLoading(false);
             }
         };
 
@@ -1177,6 +1260,18 @@ export default function AdminSettings({ defaultTab = "general" }) {
                 border: "border-blue-100",
                 badge: "Core",
                 badgeBg: "bg-blue-100 text-blue-700",
+            },
+            {
+                id: "booking_controls",
+                label: "Booking Controls & Pop-Up",
+                description: "Disable/enable new bookings, configure customer app pop-up notice & re-open dates",
+                icon: IoCalendarOutline,
+                gradient: "from-blue-600 to-cyan-600",
+                bg: "bg-blue-50",
+                iconColor: "text-blue-600",
+                border: "border-blue-100",
+                badge: bookingControlSettings.ALLOW_NEW_BOOKINGS ? "Bookings Active" : "Bookings Paused",
+                badgeBg: bookingControlSettings.ALLOW_NEW_BOOKINGS ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700",
             },
             {
                 id: "availability",
@@ -1690,6 +1785,272 @@ export default function AdminSettings({ defaultTab = "general" }) {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            )}
+
+                            {activeTab === "booking_controls" && (
+                                <div className="space-y-6">
+                                    {/* Header */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <div className="p-2 rounded-xl bg-blue-50 text-[#0A84FF] border border-blue-100">
+                                                    <IoCalendarOutline className="text-xl" />
+                                                </div>
+                                                <h2 className="text-lg font-bold text-gray-900">
+                                                    Platform Booking Availability & Customer Pop-Up
+                                                </h2>
+                                            </div>
+                                            <p className="text-xs text-gray-500 max-w-2xl leading-relaxed">
+                                                Instantly toggle platform-wide survey booking availability and configure the announcement pop-up modal displayed to customers in the User App.
+                                            </p>
+                                        </div>
+                                        <span className={`px-3 py-1 text-xs font-black rounded-full border self-start sm:self-auto ${
+                                            bookingControlSettings.ALLOW_NEW_BOOKINGS
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                : "bg-amber-50 text-amber-800 border-amber-300"
+                                        }`}>
+                                            {bookingControlSettings.ALLOW_NEW_BOOKINGS ? "● Bookings Active" : "⏸ Bookings Disabled"}
+                                        </span>
+                                    </div>
+
+                                    {/* Master Booking Availability Card (The Booking Disable Button) */}
+                                    <div className={`p-5 rounded-2xl border transition-all ${
+                                        bookingControlSettings.ALLOW_NEW_BOOKINGS
+                                            ? "bg-gradient-to-r from-emerald-50/80 via-teal-50/30 to-white border-emerald-200"
+                                            : "bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-white border-amber-300 shadow-2xs"
+                                    }`}>
+                                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                            <div className="space-y-1 max-w-xl">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`inline-block w-3 h-3 rounded-full ${
+                                                        bookingControlSettings.ALLOW_NEW_BOOKINGS ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                                                    }`} />
+                                                    <h3 className="text-base font-extrabold text-gray-900">
+                                                        {bookingControlSettings.ALLOW_NEW_BOOKINGS
+                                                            ? "Survey Bookings are Currently ACTIVE"
+                                                            : "Survey Bookings are Currently DISABLED"}
+                                                    </h3>
+                                                </div>
+                                                <p className="text-xs text-gray-600 leading-relaxed">
+                                                    {bookingControlSettings.ALLOW_NEW_BOOKINGS
+                                                        ? "Customers can search for verified hydrogeologists, choose survey slots, and confirm bookings normally."
+                                                        : "New survey booking creation is locked platform-wide. When customers attempt to book, the configured pop-up will notify them."}
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleQuickToggleBookings(!bookingControlSettings.ALLOW_NEW_BOOKINGS)}
+                                                    disabled={bookingControlLoading}
+                                                    className={`px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-2 ${
+                                                        bookingControlSettings.ALLOW_NEW_BOOKINGS
+                                                            ? "bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200"
+                                                            : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
+                                                    }`}
+                                                >
+                                                    {bookingControlLoading && (
+                                                        <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                    )}
+                                                    <span>
+                                                        {bookingControlSettings.ALLOW_NEW_BOOKINGS
+                                                            ? "Disable New Bookings"
+                                                            : "Enable New Bookings"}
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Pop-Up Modal Configuration Form */}
+                                    <form onSubmit={handleSaveBookingControlSettings} className="space-y-5">
+                                        <div className="bg-white p-5 rounded-2xl border border-gray-200/90 shadow-2xs space-y-4">
+                                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                                <div>
+                                                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                                                        <IoSparklesOutline className="text-amber-500 text-base" />
+                                                        <span>Customer App Pop-Up Modal Settings</span>
+                                                    </h3>
+                                                    <p className="text-xs text-gray-500 mt-0.5">
+                                                        Customize the popup modal shown when customers visit the app or click to book a survey while bookings are disabled.
+                                                    </p>
+                                                </div>
+
+                                                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={bookingControlSettings.BOOKING_DISABLED_POPUP_ENABLED}
+                                                        onChange={(e) =>
+                                                            setBookingControlSettings(prev => ({
+                                                                ...prev,
+                                                                BOOKING_DISABLED_POPUP_ENABLED: e.target.checked
+                                                            }))
+                                                        }
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0A84FF]"></div>
+                                                    <span className="ml-2 text-xs font-semibold text-gray-700">
+                                                        {bookingControlSettings.BOOKING_DISABLED_POPUP_ENABLED ? "Pop-Up Active" : "Pop-Up Off"}
+                                                    </span>
+                                                </label>
+                                            </div>
+
+                                            {/* Pop-up Fields */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {/* Pop-Up Title */}
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
+                                                        Pop-Up Title
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={bookingControlSettings.BOOKING_DISABLED_POPUP_TITLE}
+                                                        onChange={(e) =>
+                                                            setBookingControlSettings(prev => ({
+                                                                ...prev,
+                                                                BOOKING_DISABLED_POPUP_TITLE: e.target.value
+                                                            }))
+                                                        }
+                                                        placeholder="e.g. Survey Bookings Opening Soon"
+                                                        className="w-full px-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white"
+                                                    />
+                                                </div>
+
+                                                {/* Official Reopen Date */}
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
+                                                        Official Reopen Date
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={bookingControlSettings.BOOKING_REOPEN_DATE}
+                                                        onChange={(e) =>
+                                                            setBookingControlSettings(prev => ({
+                                                                ...prev,
+                                                                BOOKING_REOPEN_DATE: e.target.value
+                                                            }))
+                                                        }
+                                                        placeholder="e.g. 1st November, 2026 or Nov 1, 2026"
+                                                        className="w-full px-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Highlight Notice Message (Main highlight) */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide">
+                                                        Main Announcement Highlight (Banner Text)
+                                                    </label>
+                                                    <span className="text-[11px] font-bold text-gray-400">
+                                                        Presets:
+                                                    </span>
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={bookingControlSettings.BOOKING_DISABLED_MESSAGE}
+                                                    onChange={(e) =>
+                                                        setBookingControlSettings(prev => ({
+                                                            ...prev,
+                                                            BOOKING_DISABLED_MESSAGE: e.target.value
+                                                        }))
+                                                    }
+                                                    placeholder="e.g. Bookings will be open from Nov. 1 onwards"
+                                                    className="w-full px-3.5 py-2.5 text-sm font-bold text-gray-900 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white"
+                                                />
+
+                                                {/* Quick Presets for Notice */}
+                                                <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                                                    {[
+                                                        "Bookings will be open from Nov. 1 onwards",
+                                                        "Survey bookings will be open from 1st  November, 2026 onwards ",
+                                                        "New survey bookings opening soon for season 2026",
+                                                        "Booking temporarily paused for platform maintenance"
+                                                    ].map((preset) => (
+                                                        <button
+                                                            key={preset}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setBookingControlSettings(prev => ({
+                                                                    ...prev,
+                                                                    BOOKING_DISABLED_MESSAGE: preset
+                                                                }))
+                                                            }
+                                                            className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                                                                bookingControlSettings.BOOKING_DISABLED_MESSAGE === preset
+                                                                    ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
+                                                                    : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                                                            }`}
+                                                        >
+                                                            {preset}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Detailed Description */}
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
+                                                    Detailed Description / Customer Guidance
+                                                </label>
+                                                <textarea
+                                                    rows={3}
+                                                    value={bookingControlSettings.BOOKING_DISABLED_DESCRIPTION}
+                                                    onChange={(e) =>
+                                                        setBookingControlSettings(prev => ({
+                                                            ...prev,
+                                                            BOOKING_DISABLED_DESCRIPTION: e.target.value
+                                                        }))
+                                                    }
+                                                    placeholder="Explanation shown to the customer inside the modal..."
+                                                    className="w-full px-3.5 py-2.5 text-xs text-gray-700 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white resize-none"
+                                                />
+                                            </div>
+
+                                            {/* Button Text */}
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
+                                                    Primary Modal Button Text
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={bookingControlSettings.BOOKING_DISABLED_BUTTON_TEXT}
+                                                    onChange={(e) =>
+                                                        setBookingControlSettings(prev => ({
+                                                            ...prev,
+                                                            BOOKING_DISABLED_BUTTON_TEXT: e.target.value
+                                                        }))
+                                                    }
+                                                    placeholder="e.g. Got it, Explore Platform"
+                                                    className="w-full px-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A84FF] focus:border-transparent bg-white max-w-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Actions: Preview & Save */}
+                                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowBookingModalPreview(true)}
+                                                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
+                                            >
+                                                <IoEyeOutline className="text-base text-blue-600" />
+                                                <span>Preview Customer Pop-Up Modal</span>
+                                            </button>
+
+                                            <button
+                                                type="submit"
+                                                disabled={bookingControlLoading}
+                                                className="w-full sm:w-auto px-6 py-2.5 bg-[#0A84FF] hover:bg-[#005BBB] text-white font-bold text-sm rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                                            >
+                                                {bookingControlLoading && (
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                )}
+                                                <span>{bookingControlLoading ? "Saving Settings..." : "Save Booking & Pop-Up Settings"}</span>
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                             )}
 
@@ -3632,6 +3993,12 @@ export default function AdminSettings({ defaultTab = "general" }) {
                         </div>
                     </div>
                 )}
+                {/* Customer Booking Notice Pop-Up Preview Modal */}
+                <BookingDisabledModal
+                    isOpen={showBookingModalPreview}
+                    onClose={() => setShowBookingModalPreview(false)}
+                    settings={bookingControlSettings}
+                />
             </div>
         );
     }

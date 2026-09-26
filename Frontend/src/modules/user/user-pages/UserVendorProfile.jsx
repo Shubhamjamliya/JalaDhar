@@ -23,6 +23,8 @@ import GroundwaterSurveyFAQSection from "../../vendor/vendor-components/Groundwa
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import ErrorMessage from "../../shared/components/ErrorMessage";
 import PageContainer from "../../shared/components/PageContainer";
+import { getPublicSettings } from "../../../services/settingsApi";
+import BookingDisabledModal from "../../shared/components/BookingDisabledModal";
 
 export default function UserVendorProfile() {
     const navigate = useNavigate();
@@ -31,6 +33,8 @@ export default function UserVendorProfile() {
     const [error, setError] = useState("");
     const [vendorData, setVendorData] = useState(null);
     const [userLocation, setUserLocation] = useState({ lat: null, lng: null });
+    const [bookingDisabledConfig, setBookingDisabledConfig] = useState(null);
+    const [showDisabledModal, setShowDisabledModal] = useState(false);
 
     useEffect(() => {
         // Get user location if available
@@ -49,6 +53,40 @@ export default function UserVendorProfile() {
         }
         loadVendorProfile();
     }, [vendorId]);
+
+    // Check if new survey bookings are disabled platform-wide
+    useEffect(() => {
+        const checkBookingAvailability = async () => {
+            try {
+                const res = await getPublicSettings('general');
+                if (res?.success && res.data?.settings) {
+                    const allowSetting = res.data.settings.find(s => s.key === 'ALLOW_NEW_BOOKINGS');
+                    const isAllowed = allowSetting ? (allowSetting.value === true || allowSetting.value === 'true' || allowSetting.value === 1 || allowSetting.value === '1') : false;
+
+                    if (!isAllowed) {
+                        const popupEnabled = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_POPUP_ENABLED');
+                        const popupTitle = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_POPUP_TITLE');
+                        const popupMsg = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_MESSAGE');
+                        const reopenDate = res.data.settings.find(s => s.key === 'BOOKING_REOPEN_DATE');
+                        const popupDesc = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_DESCRIPTION');
+                        const popupBtn = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_BUTTON_TEXT');
+
+                        setBookingDisabledConfig({
+                            title: popupTitle?.value || "Survey Bookings Opening Soon",
+                            message: popupMsg?.value || "Bookings will be open from Nov. 1 onwards",
+                            reopenDate: reopenDate?.value || "1st November, 2026",
+                            description: popupDesc?.value || "We are currently onboarding verified hydrogeologists and calibrating scientific survey equipment for the new season. Booking will officially open on November 1st. In the meantime, you can explore services and sample survey reports.",
+                            buttonText: popupBtn?.value || "Got it, Explore Platform",
+                            popupEnabled: popupEnabled ? (popupEnabled.value === true || popupEnabled.value === 'true' || popupEnabled.value === 1 || popupEnabled.value === '1') : true
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to check booking availability", err);
+            }
+        };
+        checkBookingAvailability();
+    }, []);
 
     useEffect(() => {
         if (userLocation.lat && userLocation.lng && vendorData) {
@@ -92,6 +130,10 @@ export default function UserVendorProfile() {
     };
 
     const handleBookService = (service) => {
+        if (bookingDisabledConfig) {
+            setShowDisabledModal(true);
+            return;
+        }
         const dynamicPrice = vendorData.servicePrice || service?.price || 3500;
         navigate("/user/survey", {
             state: {
@@ -410,6 +452,15 @@ export default function UserVendorProfile() {
 
             {/* Groundwater Survey FAQs & Official Disclaimer */}
             <GroundwaterSurveyFAQSection />
+
+            {bookingDisabledConfig && (
+                <BookingDisabledModal
+                    isOpen={showDisabledModal}
+                    onClose={() => setShowDisabledModal(false)}
+                    settings={bookingDisabledConfig}
+                    onExplore={() => navigate("/user/dashboard")}
+                />
+            )}
         </PageContainer>
     );
 }

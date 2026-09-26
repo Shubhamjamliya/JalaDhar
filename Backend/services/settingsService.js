@@ -642,6 +642,62 @@ const initializeDefaultSettings = async () => {
       description: 'Visual accent theme for the banner (info, warning, or success)',
       type: 'string',
       category: 'general'
+    },
+    {
+      key: 'ALLOW_NEW_BOOKINGS',
+      value: false,
+      label: 'Allow New Survey Bookings',
+      description: 'Master switch to enable or disable new customer survey bookings platform-wide',
+      type: 'boolean',
+      category: 'general'
+    },
+    {
+      key: 'BOOKING_DISABLED_POPUP_ENABLED',
+      value: true,
+      label: 'Enable Customer Booking Notice Pop-Up',
+      description: 'Display an interactive pop-up modal on the user app when new bookings are disabled',
+      type: 'boolean',
+      category: 'general'
+    },
+    {
+      key: 'BOOKING_DISABLED_POPUP_TITLE',
+      value: 'Survey Bookings Opening Soon',
+      label: 'Booking Disabled Pop-Up Title',
+      description: 'Header title displayed on the customer app pop-up modal',
+      type: 'string',
+      category: 'general'
+    },
+    {
+      key: 'BOOKING_DISABLED_MESSAGE',
+      value: 'Bookings will be open from Nov. 1 onwards',
+      label: 'Booking Disabled Main Highlight',
+      description: 'Prominent highlight message showing reopening timeline to customers',
+      type: 'string',
+      category: 'general'
+    },
+    {
+      key: 'BOOKING_REOPEN_DATE',
+      value: '1st November, 2026',
+      label: 'Bookings Official Reopen Date',
+      description: 'Target calendar date when new survey bookings resume',
+      type: 'string',
+      category: 'general'
+    },
+    {
+      key: 'BOOKING_DISABLED_DESCRIPTION',
+      value: 'We are currently onboarding verified hydrogeologists and calibrating scientific survey equipment for the new season. Booking will officially open on November 1st. In the meantime, you can explore services and sample survey reports.',
+      label: 'Booking Disabled Pop-Up Description',
+      description: 'Detailed explanation shown inside the customer pop-up modal',
+      type: 'string',
+      category: 'general'
+    },
+    {
+      key: 'BOOKING_DISABLED_BUTTON_TEXT',
+      value: 'Got it, Explore Platform',
+      label: 'Booking Disabled Pop-Up Button Text',
+      description: 'Primary action button label on the customer pop-up modal',
+      type: 'string',
+      category: 'general'
     }
   ];
 

@@ -133,6 +133,25 @@ const createBooking = async (req, res) => {
       });
     }
 
+    // Check if new bookings are disabled platform-wide by admin
+    const bookingPolicySettings = await getSettings([
+      'ALLOW_NEW_BOOKINGS',
+      'BOOKING_DISABLED_MESSAGE',
+      'BOOKING_REOPEN_DATE',
+      'BOOKING_DISABLED_POPUP_TITLE'
+    ]);
+    const allowNewBookings = bookingPolicySettings.ALLOW_NEW_BOOKINGS !== false && bookingPolicySettings.ALLOW_NEW_BOOKINGS !== 'false';
+    if (!allowNewBookings) {
+      const disabledMsg = bookingPolicySettings.BOOKING_DISABLED_MESSAGE || 'Bookings will be open from Nov. 1 onwards';
+      return res.status(403).json({
+        success: false,
+        isBookingDisabled: true,
+        title: bookingPolicySettings.BOOKING_DISABLED_POPUP_TITLE || 'Survey Bookings Opening Soon',
+        message: disabledMsg,
+        reopenDate: bookingPolicySettings.BOOKING_REOPEN_DATE || '1st November, 2026'
+      });
+    }
+
     // Check if user has an active booking (only one booking at a time)
     // Exclude bookings that are cancelled, completed, rejected, or in final settlement stages
     // An active booking is one that is either paid (advancePaid = true) or already assigned (status != PENDING)

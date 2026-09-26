@@ -30,6 +30,7 @@ import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
 import { getNearbyVendors, createBooking, calculateBookingCharges, getUserDashboardStats, getVendorProfile } from "../../../services/bookingApi";
 import { getPublicSettings } from "../../../services/settingsApi";
 import PolicyModal from "../../shared/components/PolicyModal";
+import BookingDisabledModal from "../../shared/components/BookingDisabledModal";
 import ExpertProfileCard from "../components/ExpertProfileCard";
 import { parseAcresGuntas, isAgriCategory } from "../../../utils/landAreaHelper";
 import StateDistrictInput from "../../../components/StateDistrictInput";
@@ -1705,6 +1706,8 @@ export default function UserSurveyFlow() {
   });
   const [pendingBookingAlert, setPendingBookingAlert] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingDisabledConfig, setBookingDisabledConfig] = useState(null);
+  const [showDisabledModal, setShowDisabledModal] = useState(false);
 
   useEffect(() => {
     sessionStorage.setItem('usf_step', step);
@@ -1752,6 +1755,43 @@ export default function UserSurveyFlow() {
     };
 
     checkPendingBookings();
+
+    // Check if new bookings are disabled platform-wide
+    const checkBookingAllowed = async () => {
+      try {
+        const res = await getPublicSettings('general');
+        if (res.success && res.data?.settings) {
+          const allowSetting = res.data.settings.find(s => s.key === 'ALLOW_NEW_BOOKINGS');
+          const isAllowed = allowSetting ? (allowSetting.value === true || allowSetting.value === 'true' || allowSetting.value === 1 || allowSetting.value === '1') : false;
+          
+          if (!isAllowed) {
+            const popupEnabled = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_POPUP_ENABLED');
+            const popupTitle = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_POPUP_TITLE');
+            const popupMsg = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_MESSAGE');
+            const reopenDate = res.data.settings.find(s => s.key === 'BOOKING_REOPEN_DATE');
+            const popupDesc = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_DESCRIPTION');
+            const popupBtn = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_BUTTON_TEXT');
+
+            const config = {
+              title: popupTitle?.value || "Survey Bookings Opening Soon",
+              message: popupMsg?.value || "Bookings will be open from Nov. 1 onwards",
+              reopenDate: reopenDate?.value || "1st November, 2026",
+              description: popupDesc?.value || "We are currently onboarding verified hydrogeologists and calibrating scientific survey equipment for the new season. Booking will officially open on November 1st. In the meantime, you can explore services and sample survey reports.",
+              buttonText: popupBtn?.value || "Got it, Explore Platform",
+              popupEnabled: popupEnabled ? (popupEnabled.value === true || popupEnabled.value === 'true' || popupEnabled.value === 1 || popupEnabled.value === '1') : true
+            };
+
+            setBookingDisabledConfig(config);
+            if (config.popupEnabled) {
+              setShowDisabledModal(true);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not check booking availability settings:", err);
+      }
+    };
+    checkBookingAllowed();
   }, [location.state]);
 
   // Step 1: Category Selected
@@ -1813,6 +1853,11 @@ export default function UserSurveyFlow() {
 
   // Step 6: Final Booking
   const handleBooking = async ({ scheduledDate, scheduledTime }) => {
+    if (bookingDisabledConfig) {
+      setShowDisabledModal(true);
+      toast.showError(bookingDisabledConfig.message || "Survey bookings are currently paused.");
+      return;
+    }
     // Prevent multiple submissions
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -1881,7 +1926,12 @@ export default function UserSurveyFlow() {
       }
     } catch (err) {
       console.error(err);
-      toast.showError("Failed to create booking");
+      if (err.response?.data?.isBookingDisabled) {
+        setShowDisabledModal(true);
+        toast.showError(err.response.data.message || "Survey bookings are currently paused.");
+      } else {
+        toast.showError("Failed to create booking");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -1982,6 +2032,15 @@ export default function UserSurveyFlow() {
           category={surveyData.category}
           onAccept={handleTermsAccept}
           onCancel={() => setShowTerms(false)}
+        />
+      )}
+
+      {bookingDisabledConfig && (
+        <BookingDisabledModal
+          isOpen={showDisabledModal}
+          onClose={() => setShowDisabledModal(false)}
+          settings={bookingDisabledConfig}
+          onExplore={() => navigate("/user/dashboard")}
         />
       )}
     </PageContainer>
