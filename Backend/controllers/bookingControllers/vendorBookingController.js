@@ -1456,14 +1456,15 @@ const markVisitedAndUploadReport = async (req, res) => {
     // Check dynamic platform setting for Admin Approval on 2nd installment
     try {
       const { getSetting } = require('../../services/settingsService');
-      const requireApproval = await getSetting('REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', true);
+      const requireApproval = await getSetting('REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', false);
 
       if (!requireApproval) {
-        // Auto-approve and credit 2nd installment immediately
+        // Auto-credit 2nd installment immediately on report upload.
+        // approvedAt is ONLY set after a confirmed successful wallet credit to avoid
+        // a zombie state where approvedAt is set but credited=false, which would
+        // block both the SLA worker and the paymentController fallback from retrying.
         const { creditToVendorWallet } = require('../../services/walletService');
-        booking.report.approvedAt = new Date();
-        booking.report.approvedBy = 'SYSTEM_AUTO_APPROVED';
-        
+
         if (booking.payment?.vendorWalletPayments?.reportUploadPayment &&
           !booking.payment.vendorWalletPayments.reportUploadPayment.credited) {
           const paymentAmount = booking.payment.vendorWalletPayments.reportUploadPayment.amount;
@@ -1476,11 +1477,16 @@ const markVisitedAndUploadReport = async (req, res) => {
               { description: `Second installment (50%) for booking #${booking._id.toString().slice(-6)} (Auto-Approved on Report Upload)` }
             );
             if (creditResult.success) {
+              // Only mark as approved AFTER successful credit — prevents zombie state
+              booking.report.approvedAt = new Date();
+              booking.report.approvedBy = 'SYSTEM_AUTO_APPROVED';
               booking.payment.vendorWalletPayments.reportUploadPayment.credited = true;
               booking.payment.vendorWalletPayments.reportUploadPayment.creditedAt = new Date();
               booking.payment.vendorWalletPayments.reportUploadPayment.transactionId = creditResult.transaction._id;
               booking.payment.vendorWalletPayments.totalCredited =
                 (booking.payment.vendorWalletPayments.totalCredited || 0) + paymentAmount;
+            } else {
+              console.error(`[uploadSurveyReport] Auto-credit failed for booking #${booking._id.toString().slice(-6)}. Will retry on customer remaining payment.`);
             }
           }
         }

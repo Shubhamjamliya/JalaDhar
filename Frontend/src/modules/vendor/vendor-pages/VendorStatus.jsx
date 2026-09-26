@@ -466,36 +466,16 @@ export default function VendorStatus() {
                 date: booking.reportUploadedAt || booking.report?.uploadedAt || null,
             },
             {
-                id: "report-approved",
-                label: "Report Approved + 2nd Payout",
-                icon: IoCheckmarkCircleOutline,
-                // Active while waiting for admin to approve the report
-                active: hasReport && !booking.report?.approvedAt,
-                // Completed once report is approved (2nd payout is auto-released at same time)
-                completed: !!booking.report?.approvedAt,
-                description: booking.report?.approvedAt
-                    ? booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited
-                        ? `Report approved. 2nd payout (₹${(booking.payment.vendorWalletPayments.reportUploadPayment.amount || 0).toLocaleString('en-IN')}) has been credited to your wallet.`
-                        : "Report approved. 2nd payout is being processed to your wallet."
-                    : hasReport
-                        ? "Waiting for admin to approve your report. Payout will be auto-released on approval."
-                        : "Report not yet uploaded.",
-                date: booking.report?.approvedAt,
-                payoutAmount: booking.payment?.vendorWalletPayments?.reportUploadPayment?.amount,
-                payoutCredited: !!booking.payment?.vendorWalletPayments?.reportUploadPayment?.credited,
-                payoutKey: "reportUploadPayment",
-            },
-            {
                 id: "customer-payment",
                 label: "Customer Final Payment",
                 icon: IoWalletOutline,
-                active: !!booking.report?.approvedAt && !hasFullPayment,
+                active: hasReport && !hasFullPayment,
                 completed: hasFullPayment,
                 description: hasFullPayment
                     ? "Customer has completed the 60% final payment. ✅"
-                    : booking.report?.approvedAt
+                    : hasReport
                         ? "Awaiting customer's 60% final payment."
-                        : "Waiting for report approval before customer can pay.",
+                        : "Waiting for report upload before customer can pay.",
                 date: booking.payment?.remainingPaidAt,
             },
             {

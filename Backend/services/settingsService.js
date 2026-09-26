@@ -225,7 +225,7 @@ const initializeDefaultSettings = async () => {
     },
     {
       key: 'REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT',
-      value: true,
+      value: false,
       label: 'Require Admin Approval for 2nd Installment Payout',
       description: 'When enabled, the 2nd installment (50%) is held in escrow until an Admin reviews and approves the technical survey report in Admin Approvals. When disabled, payout is credited automatically to the vendor upon report upload.',
       type: 'boolean',

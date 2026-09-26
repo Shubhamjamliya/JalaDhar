@@ -10,7 +10,7 @@ const { BOOKING_STATUS } = require('../utils/constants');
  */
 const processReportSLAApprovals = async () => {
   try {
-    const requireApproval = await getSetting('REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', true);
+    const requireApproval = await getSetting('REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', false);
     const enableSLA = await getSetting('ENABLE_AUTO_APPROVE_REPORT_SLA', true);
     const slaHours = Number(await getSetting('AUTO_APPROVE_REPORT_SLA_HOURS', 48));
 

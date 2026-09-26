@@ -519,7 +519,7 @@ const verifyRemainingPayment = async (req, res) => {
     // Credit 2nd installment to vendor wallet if report is approved (or if gate is disabled) and not yet credited
     try {
       const { getSetting } = require('../../services/settingsService');
-      const requireApproval = await getSetting('REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', true);
+      const requireApproval = await getSetting('REQUIRE_ADMIN_REPORT_APPROVAL_FOR_PAYOUT', false);
       const isReportApproved = !!(booking.report?.approvedAt || !requireApproval);
 
       if (isReportApproved &&
