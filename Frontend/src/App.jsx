@@ -66,6 +66,7 @@ const UserPaymentsInvoices = lazy(() => import("./modules/user/user-pages/UserPa
 const UserNotificationsPage = lazy(() => import("./modules/user/user-pages/UserNotificationsPage"));
 const UserHelpSupport = lazy(() => import("./modules/user/user-pages/UserHelpSupport"));
 const UserSettingsPage = lazy(() => import("./modules/user/user-pages/UserSettingsPage"));
+const UserRewardsComingSoon = lazy(() => import("./modules/user/user-pages/UserRewardsComingSoon"));
 const LiveTrackingPage = lazy(() => import("./modules/shared/pages/LiveTrackingPage"));
 const VendorDashboard = lazy(() => import("./modules/vendor/vendor-pages/VendorDashboard"));
 const VendorDisputes = lazy(() => import("./modules/vendor/vendor-pages/VendorDisputes"));
@@ -456,7 +457,7 @@ function App() {
                                                                 path="/rewards"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
-                                                                        <VendorRewards />
+                                                                        <UserRewardsComingSoon />
                                                                     </Suspense>
                                                                 }
                                                             />

@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   IoCloseOutline,
   IoLogOutOutline,
@@ -19,6 +19,7 @@ import {
 import { useAuth } from "../../../contexts/AuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import PolicyModal from "../../shared/components/PolicyModal";
+import UserRewardsComingSoonModal from "../../shared/components/UserRewardsComingSoonModal";
 
 const menuSections = [
   {
@@ -55,7 +56,8 @@ const menuSections = [
         label: "Rewards & Benefits",
         to: "/user/rewards",
         Icon: IoGiftOutline,
-        iconBg: "bg-rose-500"
+        iconBg: "bg-rose-500",
+        isComingSoon: true
       },
       {
         id: "payments",
@@ -116,8 +118,10 @@ const menuSections = [
 export default function UserSidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showRewardsModal, setShowRewardsModal] = useState(false);
   const closeRef = useRef(null);
 
   const handleLogoutClick = () => {
@@ -226,28 +230,57 @@ export default function UserSidebar({ isOpen, onClose }) {
               <span className="block px-2 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
                 {section.title}
               </span>
-              {section.items.map(({ id, label, to, Icon, iconBg }) => (
-                <NavLink
-                  key={id}
-                  to={to}
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    `flex items-center justify-between p-2.5 rounded-2xl transition-all ${
-                      isActive
-                        ? "bg-blue-50 text-[#0A84FF] font-extrabold shadow-2xs"
-                        : "text-slate-700 hover:bg-slate-50 font-semibold"
-                    }`
-                  }
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${iconBg} text-white shadow-2xs shrink-0`}>
-                      <Icon className="text-base" />
+              {section.items.map(({ id, label, to, Icon, iconBg, isComingSoon }) => {
+                if (isComingSoon) {
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        setShowRewardsModal(true);
+                      }}
+                      className="w-full flex items-center justify-between p-2.5 rounded-2xl text-slate-700 hover:bg-slate-50 font-semibold transition-all text-left cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${iconBg} text-white shadow-2xs shrink-0 group-hover:scale-105 transition-transform`}>
+                          <Icon className="text-base" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm">{label}</span>
+                          <span className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200/80 rounded-md">
+                            Soon
+                          </span>
+                        </div>
+                      </div>
+                      <IoChevronForwardOutline className="text-slate-300 text-xs" />
+                    </button>
+                  );
+                }
+
+                return (
+                  <NavLink
+                    key={id}
+                    to={to}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      `flex items-center justify-between p-2.5 rounded-2xl transition-all ${
+                        isActive
+                          ? "bg-blue-50 text-[#0A84FF] font-extrabold shadow-2xs"
+                          : "text-slate-700 hover:bg-slate-50 font-semibold"
+                      }`
+                    }
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${iconBg} text-white shadow-2xs shrink-0`}>
+                        <Icon className="text-base" />
+                      </div>
+                      <span className="text-xs sm:text-sm">{label}</span>
                     </div>
-                    <span className="text-xs sm:text-sm">{label}</span>
-                  </div>
-                  <IoChevronForwardOutline className="text-slate-300 text-xs" />
-                </NavLink>
-              ))}
+                    <IoChevronForwardOutline className="text-slate-300 text-xs" />
+                  </NavLink>
+                );
+              })}
             </div>
           ))}
 
@@ -285,6 +318,13 @@ export default function UserSidebar({ isOpen, onClose }) {
       {showHelpModal && (
         <PolicyModal type="general" onClose={() => setShowHelpModal(false)} />
       )}
+
+      {/* Customer Rewards Coming Soon Modal */}
+      <UserRewardsComingSoonModal
+        isOpen={showRewardsModal}
+        onClose={() => setShowRewardsModal(false)}
+        onGoToWallet={() => navigate("/user/wallet")}
+      />
     </>
   );
 }
