@@ -19,7 +19,6 @@ import {
 import { useAuth } from "../../../contexts/AuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import PolicyModal from "../../shared/components/PolicyModal";
-import UserRewardsComingSoonModal from "../../shared/components/UserRewardsComingSoonModal";
 
 const menuSections = [
   {
@@ -121,7 +120,6 @@ export default function UserSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
-  const [showRewardsModal, setShowRewardsModal] = useState(false);
   const closeRef = useRef(null);
 
   const handleLogoutClick = () => {
@@ -233,28 +231,22 @@ export default function UserSidebar({ isOpen, onClose }) {
               {section.items.map(({ id, label, to, Icon, iconBg, isComingSoon }) => {
                 if (isComingSoon) {
                   return (
-                    <button
+                    <div
                       key={id}
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        setShowRewardsModal(true);
-                      }}
-                      className="w-full flex items-center justify-between p-2.5 rounded-2xl text-slate-700 hover:bg-slate-50 font-semibold transition-all text-left cursor-pointer group"
+                      className="w-full flex items-center justify-between p-2.5 rounded-2xl text-slate-700 font-semibold select-none cursor-default"
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${iconBg} text-white shadow-2xs shrink-0 group-hover:scale-105 transition-transform`}>
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${iconBg} text-white shadow-2xs shrink-0 opacity-80`}>
                           <Icon className="text-base" />
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm">{label}</span>
+                          <span className="text-xs sm:text-sm text-slate-700">{label}</span>
                           <span className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200/80 rounded-md">
                             Soon
                           </span>
                         </div>
                       </div>
-                      <IoChevronForwardOutline className="text-slate-300 text-xs" />
-                    </button>
+                    </div>
                   );
                 }
 
@@ -318,13 +310,6 @@ export default function UserSidebar({ isOpen, onClose }) {
       {showHelpModal && (
         <PolicyModal type="general" onClose={() => setShowHelpModal(false)} />
       )}
-
-      {/* Customer Rewards Coming Soon Modal */}
-      <UserRewardsComingSoonModal
-        isOpen={showRewardsModal}
-        onClose={() => setShowRewardsModal(false)}
-        onGoToWallet={() => navigate("/user/wallet")}
-      />
     </>
   );
 }
