@@ -167,10 +167,10 @@ export default function UserLogin() {
                             />
                         </div>
                         <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
-                            {t('getStarted', 'Sign In or Sign Up')}
+                            {t('login', 'Login')}
                         </h1>
                         <p className="mt-1 text-xs sm:text-sm font-semibold text-slate-500">
-                            {t('enterMobileSubtitle', "Enter your mobile number. We'll send you an OTP to continue.")}
+                            {t('enterMobileSubtitle', 'Enter your mobile number to continue')}
                         </p>
                     </div>
 
