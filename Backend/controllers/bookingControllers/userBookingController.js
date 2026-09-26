@@ -1763,6 +1763,32 @@ const cancelBooking = async (req, res) => {
       console.error('Error auto-refunding to user wallet on cancelBooking:', refundErr);
     }
 
+    // Claw back travel allowance from vendor wallet if it was credited upon acceptance
+    try {
+      if (booking.vendor && booking.payment?.travelCharges > 0) {
+        const WalletTransaction = require('../../models/WalletTransaction');
+        const { debitFromVendorWallet } = require('../../services/walletService');
+        const vendorIdToDebit = booking.vendor._id || booking.vendor;
+        const existingTravelTx = await WalletTransaction.findOne({
+          vendor: vendorIdToDebit,
+          booking: booking._id,
+          type: 'TRAVEL_CHARGES',
+          status: 'SUCCESS'
+        });
+        if (existingTravelTx) {
+          await debitFromVendorWallet(
+            vendorIdToDebit,
+            booking.payment.travelCharges,
+            'TRAVEL_CHARGES_REVERSAL',
+            booking._id,
+            { description: `Travel allowance reversed due to user cancellation of booking #${booking._id.toString().slice(-6).toUpperCase()}` }
+          );
+        }
+      }
+    } catch (clawbackErr) {
+      console.error('[cancelBooking] Error clawing back vendor travel allowance:', clawbackErr);
+    }
+
     // Send notification email to vendor
     try {
       await sendBookingStatusUpdateEmail({
