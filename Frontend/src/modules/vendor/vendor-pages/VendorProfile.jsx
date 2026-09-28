@@ -1075,7 +1075,7 @@ export default function VendorProfile() {
                     </div>
 
                     {/* Core Profile Row: Image + Main Details */}
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 text-center sm:text-left">
+                    <div className="flex items-center gap-3.5 sm:gap-4 text-left">
                         {/* Profile Avatar */}
                         <div className="relative group shrink-0">
                             <label htmlFor="profileImage" className="cursor-pointer block relative">
@@ -1109,24 +1109,24 @@ export default function VendorProfile() {
                         </div>
 
                         {/* Name, ID & Badges */}
-                        <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex-1 min-w-0 space-y-1 sm:space-y-1.5 text-left">
                             <div>
                                 {isEditing ? (
                                     <input
                                         type="text"
                                         value={profileData.name}
                                         onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                                        className="bg-white/20 border border-white/50 rounded-lg px-2.5 py-1 text-lg font-bold text-white focus:outline-none focus:bg-white/30 max-w-full"
+                                        className="bg-white/20 border border-white/50 rounded-lg px-2.5 py-1 text-base sm:text-lg font-bold text-white focus:outline-none focus:bg-white/30 max-w-full"
                                     />
                                 ) : (
-                                    <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight leading-snug">
+                                    <h1 className="text-base sm:text-xl font-extrabold text-white tracking-tight leading-snug truncate">
                                         {profileData.name || "Professional"}
                                     </h1>
                                 )}
                             </div>
 
                             {/* Single Sleek Metadata Row */}
-                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 text-[11px] font-medium text-white/90">
+                            <div className="flex flex-wrap items-center justify-start gap-1.5 text-[10px] sm:text-[11px] font-medium text-white/90">
                                 {(() => {
                                     const expertIdStr = vendor?.expertId || (vendor?._id ? `EXP-${vendor._id.toString().slice(-6).toUpperCase()}` : null);
                                     return expertIdStr ? (
@@ -1178,15 +1178,15 @@ export default function VendorProfile() {
                 <StatItem
                     icon={IoStar}
                     label="Customer Rating"
-                    value={stats.averageRating ? `${stats.averageRating.toFixed(1)} / 5.0` : "No Ratings"}
-                    subValue={`${stats.totalRatings} Reviews`}
+                    value={stats.averageRating ? stats.averageRating.toFixed(1) : "0.0"}
+                    subValue={stats.totalRatings > 0 ? `${stats.totalRatings} Reviews` : "0 Reviews"}
                     color="text-yellow-500"
                     bgColor="bg-yellow-50"
                 />
                 <StatItem
                     icon={IoCalendarOutline}
                     label="Total Bookings"
-                    value={stats.completedBookings}
+                    value={stats.completedBookings || 0}
                     subValue="Completed"
                     color="text-blue-500"
                     bgColor="bg-blue-50"
@@ -1194,7 +1194,7 @@ export default function VendorProfile() {
                 <StatItem
                     icon={IoWalletOutline}
                     label="Total Earnings"
-                    value={`₹${stats.totalEarnings.toLocaleString()}`}
+                    value={`₹${(stats.totalEarnings || 0).toLocaleString()}`}
                     subValue="Life-time"
                     color="text-green-500"
                     bgColor="bg-green-50"
@@ -1203,7 +1203,7 @@ export default function VendorProfile() {
                     icon={IoCheckmarkOutline}
                     label="Success Rate"
                     value={`${vendor?.rating?.successRatio || 0}%`}
-                    subValue="Overall Performance"
+                    subValue="Overall"
                     color="text-teal-500"
                     bgColor="bg-teal-50"
                 />
@@ -1328,7 +1328,7 @@ export default function VendorProfile() {
 
                             {/* Languages Spoken */}
                             <div className="pt-4 border-t border-slate-100 space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <label className="text-[11px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                                     <IoLanguageOutline className="text-sm text-blue-500" />
                                     Languages Spoken
                                 </label>
@@ -2354,89 +2354,96 @@ export default function VendorProfile() {
                                             return (
                                                 <div
                                                     key={acc.id || index}
-                                                    className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 p-6 text-white shadow-md border border-slate-700/60"
+                                                    className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 p-5 sm:p-6 text-white shadow-md border border-slate-700/60"
                                                 >
                                                     {/* Background decorative glow */}
                                                     <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
                                                     <div className="absolute -left-12 -bottom-12 h-36 w-36 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
 
-                                                    <div className="relative z-10 flex flex-col justify-between gap-6">
-                                                        {/* Top row: Chip + Bank Name + Badges */}
-                                                        <div className="flex items-start justify-between gap-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="h-7 w-10 rounded-md bg-amber-400/25 border border-amber-300/40 flex items-center justify-center text-amber-300 font-black text-[9px] tracking-widest shadow-2xs">
-                                                                    CHIP
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-base font-black tracking-wide text-white">
-                                                                        {acc.bankName || profileData.bankDetails?.bankName || "State Bank of India"}
+                                                    <div className="relative z-10 flex flex-col justify-between gap-5 sm:gap-6">
+                                                        {/* Top row: Bank Name + Badges */}
+                                                        <div className="flex items-start justify-between gap-2.5">
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="text-base sm:text-lg font-black tracking-wide text-white leading-tight">
+                                                                    {acc.bankName || profileData.bankDetails?.bankName || "State Bank of India"}
+                                                                </p>
+                                                                {(acc.branchName || profileData.bankDetails?.branchName) && (
+                                                                    <p className="text-[11px] text-slate-300 font-medium truncate mt-0.5">
+                                                                        {acc.branchName || profileData.bankDetails?.branchName}
                                                                     </p>
-                                                                    {(acc.branchName || profileData.bankDetails?.branchName) && (
-                                                                        <p className="text-[11px] text-slate-300 font-medium">
-                                                                            {acc.branchName || profileData.bankDetails?.branchName}
-                                                                        </p>
-                                                                    )}
-                                                                </div>
+                                                                )}
                                                             </div>
-                                                            <div className="flex items-center gap-2">
+                                                            <div className="flex items-center gap-1.5 shrink-0">
                                                                 {acc.isPrimary ? (
-                                                                    <span className="text-[10px] font-extrabold text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-1 rounded-lg">
+                                                                    <span className="text-[10px] font-extrabold text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-lg whitespace-nowrap">
                                                                         PRIMARY PAYOUT
                                                                     </span>
                                                                 ) : (
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => handleSetPrimaryBank(index)}
-                                                                        className="text-[10px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2 py-1 rounded-lg transition cursor-pointer"
+                                                                        className="text-[10px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2 py-0.5 rounded-lg transition cursor-pointer whitespace-nowrap"
                                                                     >
                                                                         Make Primary
                                                                     </button>
                                                                 )}
-                                                                <span className="text-[10px] font-bold text-emerald-300 bg-emerald-900/60 border border-emerald-500/30 px-2 py-1 rounded-lg flex items-center gap-1">
+                                                                <span className="text-[10px] font-bold text-emerald-300 bg-emerald-900/60 border border-emerald-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1 whitespace-nowrap">
                                                                     <IoShieldCheckmarkOutline /> Verified
                                                                 </span>
                                                             </div>
                                                         </div>
 
-                                                        {/* Middle row: Formatted Account Number with Mask Toggle */}
-                                                        <div className="py-1">
-                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                                                                Account Number
-                                                            </p>
-                                                            <div className="flex items-center gap-3">
-                                                                <p className="text-lg sm:text-xl font-mono font-bold tracking-widest text-emerald-400">
-                                                                    {displayNum}
+                                                        {/* Middle row: EMV Chip + Formatted Account Number with Mask Toggle */}
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="h-7 w-10 rounded-md bg-amber-400/25 border border-amber-300/40 flex items-center justify-center text-amber-300 font-black text-[9px] tracking-widest shadow-2xs">
+                                                                    CHIP
+                                                                </div>
+                                                            </div>
+
+                                                            <div>
+                                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                                                    Account Number
                                                                 </p>
-                                                                {rawNum && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleToggleMask(acc.id || index)}
-                                                                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
-                                                                        title={isMasked ? "Reveal Account Number" : "Hide Account Number"}
-                                                                    >
-                                                                        {isMasked ? <IoEyeOutline className="text-base" /> : <IoEyeOffOutline className="text-base" />}
-                                                                    </button>
-                                                                )}
+                                                                <div className="flex items-center gap-3">
+                                                                    <p className={`font-bold ${
+                                                                        rawNum
+                                                                            ? "text-lg sm:text-xl font-mono tracking-widest text-emerald-400"
+                                                                            : "text-sm text-slate-400 font-medium italic"
+                                                                    }`}>
+                                                                        {displayNum}
+                                                                    </p>
+                                                                    {rawNum && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleToggleMask(acc.id || index)}
+                                                                            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
+                                                                            title={isMasked ? "Reveal Account Number" : "Hide Account Number"}
+                                                                        >
+                                                                            {isMasked ? <IoEyeOutline className="text-base" /> : <IoEyeOffOutline className="text-base" />}
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
 
                                                         {/* Bottom row: Account Holder + IFSC + Actions */}
                                                         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pt-3 border-t border-slate-700/60">
-                                                            <div className="grid grid-cols-2 gap-4">
-                                                                <div>
+                                                            <div className="grid grid-cols-2 gap-4 flex-1 min-w-0">
+                                                                <div className="min-w-0">
                                                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Account Holder</p>
-                                                                    <p className="text-xs font-bold text-slate-100 truncate">
+                                                                    <p className="text-xs font-bold text-slate-100 truncate" title={acc.accountHolderName || profileData.bankDetails?.accountHolderName || profileData.name}>
                                                                         {acc.accountHolderName || profileData.bankDetails?.accountHolderName || profileData.name || "Vendor"}
                                                                     </p>
                                                                 </div>
-                                                                <div>
+                                                                <div className="min-w-0">
                                                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">IFSC Code</p>
                                                                     <p className="text-xs font-mono font-bold text-slate-100">
                                                                         {acc.ifscCode || profileData.bankDetails?.ifscCode || "SBIN0001234"}
                                                                     </p>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                                                            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => {
@@ -3485,14 +3492,14 @@ export default function VendorProfile() {
 function StatItem({ icon, label, value, subValue, color, bgColor }) {
     const Icon = icon;
     return (
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${bgColor}`}>
-                <Icon className={`text-xl ${color}`} />
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className={`h-11 w-11 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center shrink-0 ${bgColor}`}>
+                <Icon className={`text-lg sm:text-xl ${color}`} />
             </div>
-            <div>
-                <p className="text-[10px] items-center font-bold text-gray-400 uppercase tracking-widest">{label}</p>
-                <p className="text-lg font-extrabold text-gray-800 leading-none mt-1">{value}</p>
-                <p className="text-[10px] font-medium text-gray-500 mt-1">{subValue}</p>
+            <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider leading-tight truncate">{label}</p>
+                <p className="text-xl sm:text-2xl font-black text-gray-900 leading-tight mt-0.5 truncate">{value}</p>
+                <p className="text-[10px] sm:text-[11px] font-medium text-gray-500 mt-0.5 truncate">{subValue}</p>
             </div>
         </div>
     );
@@ -3503,9 +3510,9 @@ function InfoField({ icon, label, value, isEditing, onChange, type = "text", opt
     const formattedOptions = options ? options.map(opt => (typeof opt === 'object' ? opt : { value: opt, label: opt })) : [];
 
     return (
-        <div className="space-y-2">
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <Icon className="text-sm" />
+        <div className="space-y-1.5">
+            <label className="text-[11px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Icon className="text-xs sm:text-sm text-gray-400" />
                 {label}
             </label>
             {isEditing ? (
@@ -3526,12 +3533,12 @@ function InfoField({ icon, label, value, isEditing, onChange, type = "text", opt
                         maxLength={maxLength}
                         onChange={(e) => onChange(e.target.value)}
                         onWheel={(e) => type === "number" && e.target.blur()}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all"
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all"
                     />
                 )
             ) : (
-                <div className="px-1">
-                    <p className="text-base font-extrabold text-gray-800">{value || "Not specified"}</p>
+                <div className="px-0.5">
+                    <p className="text-sm sm:text-base font-bold text-gray-800 break-all">{value || "Not specified"}</p>
                 </div>
             )}
         </div>
@@ -3549,12 +3556,12 @@ function InfoRow({
 }) {
     const IconComponent = icon;
     return (
-        <div className="flex items-start gap-4 p-2">
+        <div className="flex items-start gap-3 sm:gap-4 p-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 shrink-0">
                 <IconComponent className="text-lg text-gray-400" />
             </div>
             <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+                <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">
                     {label}
                 </span>
                 {isEditing ? (
@@ -3564,10 +3571,10 @@ function InfoRow({
                         onChange={onChange}
                         onWheel={(e) => type === "number" && e.target.blur()}
                         disabled={disabled}
-                        className="w-full mt-1 text-sm font-bold text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"
+                        className="w-full mt-1 text-sm font-semibold text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"
                     />
                 ) : (
-                    <span className="text-base font-extrabold text-gray-800 mt-0.5">
+                    <span className="text-sm sm:text-base font-bold text-gray-800 mt-0.5 break-all">
                         {value || "Not provided"}
                     </span>
                 )}
