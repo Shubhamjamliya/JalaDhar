@@ -365,8 +365,8 @@ export default function UserNavbar() {
                     }}
                     style={{
                         bottom: bottomNavHeight 
-                            ? `${bottomNavHeight + 42}px` 
-                            : 'calc(7.25rem + env(safe-area-inset-bottom, 0px))'
+                            ? `${bottomNavHeight + 18}px` 
+                            : 'calc(5.5rem + env(safe-area-inset-bottom, 0px))'
                     }}
                     className="fixed inset-x-3 z-50 max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-3 animate-slideUp transition-all cursor-pointer hover:border-white/30"
                 >
