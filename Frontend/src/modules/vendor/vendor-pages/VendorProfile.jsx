@@ -145,6 +145,7 @@ export default function VendorProfile() {
     const [editingBankIndex, setEditingBankIndex] = useState(0);
     const [showMaskedAccount, setShowMaskedAccount] = useState({});
     const [previewDocModal, setPreviewDocModal] = useState(null);
+    const [previewDocIndex, setPreviewDocIndex] = useState(0);
     const [deleteGuardModal, setDeleteGuardModal] = useState(false);
     const [docUploadState, setDocUploadState] = useState({ loading: false, docType: null });
 
@@ -369,6 +370,20 @@ export default function VendorProfile() {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+
+    // Lock body scroll when document preview or delete guard modal is open
+    useEffect(() => {
+        if (previewDocModal || deleteGuardModal) {
+            const originalOverflow = document.body.style.overflow;
+            const originalTouchAction = document.body.style.touchAction;
+            document.body.style.overflow = "hidden";
+            document.body.style.touchAction = "none";
+            return () => {
+                document.body.style.overflow = originalOverflow;
+                document.body.style.touchAction = originalTouchAction;
+            };
+        }
+    }, [previewDocModal, deleteGuardModal]);
 
     const handleMachineToggle = (machine) => {
         if (selectedMachines.includes(machine)) {
@@ -2497,17 +2512,44 @@ export default function VendorProfile() {
                                 </div>
 
                                 {(() => {
-                                    const aadharDoc = vendor?.documents?.aadharCard || vendor?.documents?.aadharCards?.[0] || (vendor?.documentsList || []).find(d => d.documentType === 'AADHAR') || null;
+                                    const aadharDocList = [
+                                        ...(Array.isArray(vendor?.documents?.aadharCards) ? vendor.documents.aadharCards : []),
+                                        ...(Array.isArray(vendor?.aadharCards) ? vendor.aadharCards : []),
+                                        ...(vendor?.documentsList || []).filter(d => d.documentType === 'AADHAR')
+                                    ];
+                                    const aadharDoc = vendor?.documents?.aadharCard || aadharDocList[0] || null;
+
+                                    const resolveDocUrl = (doc, ...fallbacks) => {
+                                        if (doc?.url && typeof doc.url === 'string' && doc.url.trim().length > 0) return doc.url;
+                                        if (typeof doc === 'string' && (doc.startsWith('http') || doc.startsWith('blob:') || doc.startsWith('data:'))) return doc;
+                                        for (const fb of fallbacks) {
+                                            if (typeof fb === 'string' && (fb.startsWith('http') || fb.startsWith('blob:') || fb.startsWith('data:'))) return fb;
+                                            if (fb?.url && typeof fb.url === 'string' && fb.url.trim().length > 0) return fb.url;
+                                        }
+                                        return null;
+                                    };
+
+                                    const rawAadharUrls = [
+                                        ...aadharDocList.map(d => resolveDocUrl(d)),
+                                        resolveDocUrl(vendor?.documents?.aadharCard),
+                                        resolveDocUrl(vendor?.aadharCard),
+                                        resolveDocUrl(vendor?.aadharFront),
+                                        resolveDocUrl(vendor?.aadharBack)
+                                    ].filter(Boolean);
+                                    const uniqueAadharUrls = [...new Set(rawAadharUrls)];
+                                    const aadharUrl = uniqueAadharUrls[0] || null;
+
                                     const panDoc = vendor?.documents?.panCard || (vendor?.documentsList || []).find(d => d.documentType === 'PAN') || null;
+                                    const panUrl = resolveDocUrl(panDoc, vendor?.panCard, vendor?.documents?.panCard);
+
                                     const chequeDoc = vendor?.documents?.cancelledCheque || (vendor?.documentsList || []).find(d => d.documentType === 'CHEQUE') || null;
+                                    const chequeUrl = resolveDocUrl(chequeDoc, vendor?.cancelledCheque, vendor?.documents?.cancelledCheque);
+
                                     const gwDoc = vendor?.documents?.groundwaterRegDetails || (vendor?.documentsList || []).find(d => d.documentType === 'GROUNDWATER_REG') || null;
+                                    const gwUrl = resolveDocUrl(gwDoc, vendor?.groundwaterRegDetails, vendor?.documents?.groundwaterRegDetails);
+
                                     const certs = vendor?.documents?.certificates || (vendor?.documentsList || []).filter(d => d.documentType === 'CERTIFICATE') || [];
                                     const trainings = vendor?.documents?.trainingCertificates || (vendor?.documentsList || []).filter(d => d.documentType === 'TRAINING_CERTIFICATE') || [];
-
-                                    const aadharUrl = aadharDoc?.url || (typeof aadharDoc === 'string' ? aadharDoc : (vendor?.aadharCard || vendor?.aadharCards?.[0]?.url || null));
-                                    const panUrl = panDoc?.url || (typeof panDoc === 'string' ? panDoc : (vendor?.panCard || null));
-                                    const chequeUrl = chequeDoc?.url || (typeof chequeDoc === 'string' ? chequeDoc : (vendor?.cancelledCheque || null));
-                                    const gwUrl = gwDoc?.url || (typeof gwDoc === 'string' ? gwDoc : (vendor?.groundwaterRegDetails || null));
 
                                     return (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2515,79 +2557,103 @@ export default function VendorProfile() {
                                                 title="Aadhar Card"
                                                 category="Mandatory KYC"
                                                 doc={{ ...(aadharDoc || {}), url: aadharUrl }}
-                                                onPreview={() => setPreviewDocModal({
-                                                    title: "Aadhar Card (Identity Proof)",
-                                                    url: aadharUrl,
-                                                    uploadedAt: aadharDoc?.uploadedAt,
-                                                    category: "Mandatory Government ID"
-                                                })}
+                                                onPreview={() => {
+                                                    setPreviewDocIndex(0);
+                                                    setPreviewDocModal({
+                                                        title: "Aadhar Card (Identity Proof)",
+                                                        url: aadharUrl,
+                                                        urls: uniqueAadharUrls,
+                                                        uploadedAt: aadharDoc?.uploadedAt,
+                                                        category: "Mandatory Government ID"
+                                                    });
+                                                }}
                                             />
                                             <DocumentCard
                                                 title="PAN Card"
                                                 category="Mandatory KYC"
                                                 doc={{ ...(panDoc || {}), url: panUrl }}
-                                                onPreview={() => setPreviewDocModal({
-                                                    title: "PAN Card (Tax & Identity Proof)",
-                                                    url: panUrl,
-                                                    uploadedAt: panDoc?.uploadedAt,
-                                                    category: "Mandatory Tax ID"
-                                                })}
+                                                onPreview={() => {
+                                                    setPreviewDocIndex(0);
+                                                    setPreviewDocModal({
+                                                        title: "PAN Card (Tax & Identity Proof)",
+                                                        url: panUrl,
+                                                        urls: panUrl ? [panUrl] : [],
+                                                        uploadedAt: panDoc?.uploadedAt,
+                                                        category: "Mandatory Tax ID"
+                                                    });
+                                                }}
                                             />
                                             <DocumentCard
                                                 title="Cancelled Cheque / Passbook"
                                                 category="Financial Proof"
                                                 doc={{ ...(chequeDoc || {}), url: chequeUrl }}
-                                                onPreview={() => setPreviewDocModal({
-                                                    title: "Cancelled Cheque / Passbook Copy",
-                                                    url: chequeUrl,
-                                                    uploadedAt: chequeDoc?.uploadedAt,
-                                                    category: "Bank Account Verification"
-                                                })}
+                                                onPreview={() => {
+                                                    setPreviewDocIndex(0);
+                                                    setPreviewDocModal({
+                                                        title: "Cancelled Cheque / Passbook Copy",
+                                                        url: chequeUrl,
+                                                        urls: chequeUrl ? [chequeUrl] : [],
+                                                        uploadedAt: chequeDoc?.uploadedAt,
+                                                        category: "Bank Account Verification"
+                                                    });
+                                                }}
                                             />
                                             {(gwDoc || gwUrl) && (
                                                 <DocumentCard
                                                     title="Groundwater Reg. Certificate"
                                                     category="Official License"
                                                     doc={{ ...(gwDoc || {}), url: gwUrl }}
-                                                    onPreview={() => setPreviewDocModal({
-                                                        title: "Groundwater Dept. Registration",
-                                                        url: gwUrl,
-                                                        uploadedAt: gwDoc?.uploadedAt,
-                                                        category: "Government Department License"
-                                                    })}
+                                                    onPreview={() => {
+                                                        setPreviewDocIndex(0);
+                                                        setPreviewDocModal({
+                                                            title: "Groundwater Dept. Registration",
+                                                            url: gwUrl,
+                                                            urls: gwUrl ? [gwUrl] : [],
+                                                            uploadedAt: gwDoc?.uploadedAt,
+                                                            category: "Government Department License"
+                                                        });
+                                                    }}
                                                 />
                                             )}
                                             {certs.map((cert, idx) => {
-                                                const certUrl = cert?.url || (typeof cert === 'string' ? cert : null);
+                                                const certUrl = resolveDocUrl(cert, cert?.url);
                                                 return (
                                                     <DocumentCard
                                                         key={`cert-${idx}`}
                                                         title={cert.name || `Academic Degree Certificate`}
                                                         category="Academic Credential"
                                                         doc={{ ...(cert || {}), url: certUrl }}
-                                                        onPreview={() => setPreviewDocModal({
-                                                            title: cert.name || "Academic Degree Certificate",
-                                                            url: certUrl,
-                                                            uploadedAt: cert?.uploadedAt,
-                                                            category: "Academic Qualification"
-                                                        })}
+                                                        onPreview={() => {
+                                                            setPreviewDocIndex(0);
+                                                            setPreviewDocModal({
+                                                                title: cert.name || "Academic Degree Certificate",
+                                                                url: certUrl,
+                                                                urls: certUrl ? [certUrl] : [],
+                                                                uploadedAt: cert?.uploadedAt,
+                                                                category: "Academic Qualification"
+                                                            });
+                                                        }}
                                                     />
                                                 );
                                             })}
                                             {trainings.map((cert, idx) => {
-                                                const trainUrl = cert?.url || (typeof cert === 'string' ? cert : null);
+                                                const trainUrl = resolveDocUrl(cert, cert?.url);
                                                 return (
                                                     <DocumentCard
                                                         key={`train-${idx}`}
                                                         title={cert.name || `Training Certificate #${idx + 1}`}
                                                         category="Specialized Training"
                                                         doc={{ ...(cert || {}), url: trainUrl }}
-                                                        onPreview={() => setPreviewDocModal({
-                                                            title: cert.name || "Survey Training Certificate",
-                                                            url: trainUrl,
-                                                            uploadedAt: cert?.uploadedAt,
-                                                            category: "Field Training Certification"
-                                                        })}
+                                                        onPreview={() => {
+                                                            setPreviewDocIndex(0);
+                                                            setPreviewDocModal({
+                                                                title: cert.name || "Survey Training Certificate",
+                                                                url: trainUrl,
+                                                                urls: trainUrl ? [trainUrl] : [],
+                                                                uploadedAt: cert?.uploadedAt,
+                                                                category: "Field Training Certification"
+                                                            });
+                                                        }}
                                                     />
                                                 );
                                             })}
@@ -3335,8 +3401,13 @@ export default function VendorProfile() {
 
             {/* Document Preview Modal */}
             {previewDocModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+                <div 
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setPreviewDocModal(null);
+                    }}
+                    className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in overscroll-contain"
+                >
+                    <div className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overscroll-contain">
                         <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-lg">
@@ -3355,68 +3426,121 @@ export default function VendorProfile() {
                                 <IoCloseOutline className="text-2xl" />
                             </button>
                         </div>
+
+                        {/* Page / Multi-side switcher if multiple images (e.g. Aadhaar Front & Back) */}
+                        {previewDocModal.urls && previewDocModal.urls.length > 1 && (
+                            <div className="bg-slate-100/90 border-b border-slate-200 px-4 py-2 flex items-center gap-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">Pages:</span>
+                                {previewDocModal.urls.map((u, i) => (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => setPreviewDocIndex(i)}
+                                        className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                            previewDocIndex === i
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        {i === 0 ? "Side 1 (Front)" : i === 1 ? "Side 2 (Back)" : `Page ${i + 1}`}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
                         <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-50 flex items-center justify-center min-h-[300px]">
-                            {previewDocModal.url ? (
-                                previewDocModal.url.toLowerCase().endsWith('.pdf') ? (
-                                    <iframe
-                                        src={previewDocModal.url}
-                                        title={previewDocModal.title}
-                                        className="w-full h-[450px] rounded-xl border border-slate-200 bg-white"
-                                    />
-                                ) : (
-                                    <img
-                                        src={previewDocModal.url}
-                                        alt={previewDocModal.title}
-                                        className="max-h-[480px] max-w-full object-contain rounded-xl shadow-sm border border-slate-200"
-                                    />
-                                )
-                            ) : (
-                                <div className="max-w-md w-full bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center space-y-3.5">
-                                    <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl mx-auto shadow-2xs">
-                                        <IoShieldCheckmarkOutline />
-                                    </div>
-                                    <div>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                                            ✓ Verified Official Document
-                                        </span>
-                                        <h4 className="text-base font-extrabold text-slate-900 mt-2">{previewDocModal.title}</h4>
-                                        <p className="text-xs text-slate-500 font-medium mt-1">{previewDocModal.category || "Government Identification & KYC Proof"}</p>
-                                    </div>
-                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-left text-xs space-y-1.5">
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400 font-medium">Expert Name:</span>
-                                            <span className="font-bold text-slate-800">{vendor?.name || profileData.name || "Verified Professional"}</span>
+                            {(() => {
+                                const currentUrl = (previewDocModal.urls && previewDocModal.urls.length > 0)
+                                    ? (previewDocModal.urls[previewDocIndex] || previewDocModal.url)
+                                    : previewDocModal.url;
+
+                                if (currentUrl) {
+                                    const isPdf = currentUrl.toLowerCase().includes('.pdf');
+                                    return (
+                                        <div className="w-full flex flex-col items-center justify-center">
+                                            {isPdf ? (
+                                                <div className="w-full flex flex-col items-center space-y-3">
+                                                    <iframe
+                                                        src={currentUrl}
+                                                        title={previewDocModal.title}
+                                                        className="w-full h-[450px] rounded-xl border border-slate-200 bg-white"
+                                                    />
+                                                    <a
+                                                        href={currentUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1"
+                                                    >
+                                                        <IoOpenOutline /> Click here if PDF does not load in your mobile browser
+                                                    </a>
+                                                </div>
+                                            ) : (
+                                                <div className="relative max-h-[55vh] flex items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm p-1.5 w-full">
+                                                    <img
+                                                        src={currentUrl}
+                                                        alt={previewDocModal.title}
+                                                        className="max-h-[50vh] max-w-full object-contain rounded-lg"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400 font-medium">Expert ID:</span>
-                                            <span className="font-mono font-bold text-blue-600">{vendor?.expertId || "EXP-ACTIVE"}</span>
+                                    );
+                                }
+
+                                return (
+                                    <div className="max-w-md w-full bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center space-y-3.5">
+                                        <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-3xl mx-auto shadow-2xs">
+                                            <IoDocumentTextOutline />
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400 font-medium">Record Status:</span>
-                                            <span className="font-bold text-emerald-600">Active &amp; Compliant</span>
+                                        <div>
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                                                Digital Copy Not Uploaded
+                                            </span>
+                                            <h4 className="text-base font-extrabold text-slate-900 mt-2">{previewDocModal.title}</h4>
+                                            <p className="text-xs text-slate-500 font-medium mt-1">{previewDocModal.category || "Government Identification Proof"}</p>
                                         </div>
+                                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-left text-xs space-y-1.5">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-400 font-medium">Expert Name:</span>
+                                                <span className="font-bold text-slate-800">{vendor?.name || profileData.name || "Verified Professional"}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-400 font-medium">Expert ID:</span>
+                                                <span className="font-mono font-bold text-blue-600">{vendor?.expertId || "EXP-ACTIVE"}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-400 font-medium">Verification Status:</span>
+                                                <span className="font-bold text-emerald-600">Verified on Record</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-[11px] text-slate-400 leading-normal">
+                                            This document was verified for your account, but no digital scan file is currently stored on your cloud profile.
+                                        </p>
                                     </div>
-                                    <p className="text-[11px] text-slate-400 leading-normal">
-                                        This document was verified during registration and is securely archived in the Jaladhaara platform registry.
-                                    </p>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
+
                         <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-between">
                             <span className="text-xs text-slate-500 font-medium">
-                                {previewDocModal.uploadedAt ? `Uploaded on ${new Date(previewDocModal.uploadedAt).toLocaleDateString()}` : "Document Verified"}
+                                {previewDocModal.uploadedAt ? `Uploaded on ${new Date(previewDocModal.uploadedAt).toLocaleDateString()}` : "Document on Record"}
                             </span>
                             <div className="flex items-center gap-2">
-                                {previewDocModal.url && (
-                                    <a
-                                        href={previewDocModal.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="px-4 py-2 bg-[#0A84FF] hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
-                                    >
-                                        <IoOpenOutline className="text-sm" /> Open in New Tab
-                                    </a>
-                                )}
+                                {(() => {
+                                    const currentUrl = (previewDocModal.urls && previewDocModal.urls.length > 0)
+                                        ? (previewDocModal.urls[previewDocIndex] || previewDocModal.url)
+                                        : previewDocModal.url;
+                                    return currentUrl ? (
+                                        <a
+                                            href={currentUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-4 py-2 bg-[#0A84FF] hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                                        >
+                                            <IoOpenOutline className="text-sm" /> Open in New Tab
+                                        </a>
+                                    ) : null;
+                                })()}
                                 <button
                                     type="button"
                                     onClick={() => setPreviewDocModal(null)}
