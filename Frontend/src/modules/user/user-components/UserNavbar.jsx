@@ -339,7 +339,7 @@ export default function UserNavbar() {
                             navigate(`/user/booking/${bId}`);
                         }
                     }}
-                    className="fixed bottom-[68px] inset-x-3 z-35 max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-3 animate-slideUp transition-all cursor-pointer hover:border-white/30"
+                    className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] inset-x-3 z-50 max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-3 animate-slideUp transition-all cursor-pointer hover:border-white/30"
                 >
                     {/* Left Icon & Animated Pulse Status */}
                     <div className="flex items-center gap-3 min-w-0">
@@ -420,7 +420,7 @@ export default function UserNavbar() {
             <nav 
                 data-bottom-nav="true"
                 data-role="bottom-nav"
-                className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden bottom-nav-container ${isKeyboardOpen ? 'hidden pointer-events-none' : ''}`}
+                className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 pt-2 pb-3 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden bottom-nav-container ${isKeyboardOpen ? 'hidden pointer-events-none' : ''}`}
             >
                 <div className="flex items-center justify-around gap-1 max-w-md mx-auto">
                     {navItems.map(({ id, labelKey, fallbackLabel, to, Icon, ActiveIcon, isFab }) => (
