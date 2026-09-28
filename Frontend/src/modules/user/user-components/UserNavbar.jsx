@@ -97,9 +97,33 @@ export default function UserNavbar() {
     const langDropdownRef = useRef(null);
     const toggleRef = useRef(null);
     const headerRef = useRef(null);
+    const bottomNavRef = useRef(null);
+    const [bottomNavHeight, setBottomNavHeight] = useState(0);
     const { logout, user } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+
+    // Dynamically track bottom navigation height to ensure floating widgets stay clear of the navbar and FAB
+    useEffect(() => {
+        const el = bottomNavRef.current;
+        if (!el) return;
+
+        const updateBottomNavHeight = () => {
+            if (el) {
+                setBottomNavHeight(el.offsetHeight);
+            }
+        };
+
+        updateBottomNavHeight();
+        const ro = new ResizeObserver(updateBottomNavHeight);
+        ro.observe(el);
+        window.addEventListener('resize', updateBottomNavHeight);
+
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', updateBottomNavHeight);
+        };
+    }, []);
 
     // Dynamically track header height to adjust layout padding smoothly across notice states
     useEffect(() => {
@@ -339,7 +363,12 @@ export default function UserNavbar() {
                             navigate(`/user/booking/${bId}`);
                         }
                     }}
-                    className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] inset-x-3 z-50 max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-3 animate-slideUp transition-all cursor-pointer hover:border-white/30"
+                    style={{
+                        bottom: bottomNavHeight 
+                            ? `${bottomNavHeight + 42}px` 
+                            : 'calc(7.25rem + env(safe-area-inset-bottom, 0px))'
+                    }}
+                    className="fixed inset-x-3 z-50 max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-3 animate-slideUp transition-all cursor-pointer hover:border-white/30"
                 >
                     {/* Left Icon & Animated Pulse Status */}
                     <div className="flex items-center gap-3 min-w-0">
@@ -418,9 +447,10 @@ export default function UserNavbar() {
 
             {/* Bottom Navigation — Mobile Only (Redesigned Senior UI with Floating FAB) */}
             <nav 
+                ref={bottomNavRef}
                 data-bottom-nav="true"
                 data-role="bottom-nav"
-                className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 pt-2 pb-3 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden bottom-nav-container ${isKeyboardOpen ? 'hidden pointer-events-none' : ''}`}
+                className={`fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100/90 px-2 pt-2 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] md:hidden bottom-nav-container ${isKeyboardOpen ? 'hidden pointer-events-none' : ''}`}
             >
                 <div className="flex items-center justify-around gap-1 max-w-md mx-auto">
                     {navItems.map(({ id, labelKey, fallbackLabel, to, Icon, ActiveIcon, isFab }) => (

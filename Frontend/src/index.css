@@ -203,5 +203,5 @@ html[data-keyboard-open="true"] [data-role="bottom-nav"] {
 
 /* Safe Area Inset Support for Mobile Bottom Navigation */
 .bottom-nav-container {
-  padding-bottom: 0.75rem;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
 }
