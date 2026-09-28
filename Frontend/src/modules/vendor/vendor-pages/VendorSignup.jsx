@@ -1188,7 +1188,7 @@ export default function VendorSignup() {
                                             { value: "Hydrogeologist", label: "Hydrogeologist" },
                                             { value: "Geophysicist", label: "Geophysicist" },
                                             { value: "Earth Scientist", label: "Earth Scientist" },
-                                            { value: "Detector", label: "Detector" },
+                                            { value: "Groundwater Professional", label: "Groundwater Professional" },
                                             { value: "Devinor", label: "Devinor" }
                                         ]}
                                         value={formData.designation}

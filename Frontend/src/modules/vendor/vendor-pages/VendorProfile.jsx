@@ -1259,7 +1259,7 @@ export default function VendorProfile() {
                                     onChange={(val) => setProfileData({ ...profileData, designation: val })}
                                     icon={IoBriefcaseOutline}
                                     type="select"
-                                    options={['Hydrogeologist', 'Geophysicist', 'Earth Scientist', 'Detector', 'Devinor']}
+                                    options={['Hydrogeologist', 'Geophysicist', 'Earth Scientist', 'Groundwater Professional', 'Devinor']}
                                 />
                                 <InfoField
                                     label="Gender"
