@@ -172,7 +172,7 @@ export default function UserSidebar({ isOpen, onClose }) {
     isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
   }`;
 
-  const panel = `fixed right-0 top-0 h-full w-4/5 max-w-xs bg-white z-[100] shadow-2xl p-5 transform transition-transform duration-300 flex flex-col overscroll-contain ${
+  const panel = `fixed right-0 top-0 h-full w-4/5 max-w-xs bg-white z-[100] shadow-2xl p-4 sm:p-4.5 transform transition-transform duration-300 flex flex-col overscroll-contain ${
     isOpen ? "translate-x-0" : "translate-x-full"
   }`;
 
@@ -187,45 +187,45 @@ export default function UserSidebar({ isOpen, onClose }) {
 
       <aside className={panel} role="dialog" aria-modal="true" aria-label="Menu">
         {/* Top Bar Header */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-          <h2 className="text-lg font-black text-slate-800 tracking-tight">Menu</h2>
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <h2 className="text-base sm:text-lg font-black text-slate-800 tracking-tight">Menu</h2>
           <button
             ref={closeRef}
             onClick={onClose}
-            className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+            className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
             aria-label="Close menu"
           >
-            <IoCloseOutline className="text-xl" />
+            <IoCloseOutline className="text-lg" />
           </button>
         </div>
 
         {/* User Profile Card */}
-        <div className="pt-3.5 pb-2">
+        <div className="pt-2 pb-1">
           <NavLink
             to="/user/profile"
             onClick={onClose}
-            className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-3 group hover:border-blue-200 hover:bg-blue-50/50 transition-all"
+            className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-2.5 group hover:border-blue-200 hover:bg-blue-50/50 transition-all"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0A84FF] to-blue-600 text-white flex items-center justify-center font-extrabold text-base shadow-sm shrink-0">
-              {user?.name ? user.name.charAt(0).toUpperCase() : <IoPersonOutline className="text-lg" />}
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-[#0A84FF] to-blue-600 text-white flex items-center justify-center font-extrabold text-sm shadow-sm shrink-0">
+              {user?.name ? user.name.charAt(0).toUpperCase() : <IoPersonOutline className="text-base" />}
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 truncate group-hover:text-[#0A84FF] transition-colors">
                 {user?.name || "My Account"}
               </h3>
-              <p className="text-[11px] text-slate-500 font-medium truncate">
+              <p className="text-[10.5px] text-slate-500 font-medium truncate">
                 {user?.phone || user?.email || "View Profile"}
               </p>
             </div>
-            <IoChevronForwardOutline className="text-slate-400 text-sm group-hover:translate-x-0.5 transition-transform" />
+            <IoChevronForwardOutline className="text-slate-400 text-xs group-hover:translate-x-0.5 transition-transform" />
           </NavLink>
         </div>
 
         {/* Sectional Menu Items */}
-        <nav className="flex-1 overflow-y-auto space-y-4 pr-1 py-2 text-sm font-medium custom-scrollbar overscroll-contain">
+        <nav className="flex-1 overflow-y-auto space-y-2 pr-1 py-1 text-sm font-medium custom-scrollbar overscroll-contain">
           {menuSections.map((section, sectionIdx) => (
-            <div key={sectionIdx} className="space-y-1">
-              <span className="block px-2 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+            <div key={sectionIdx} className="space-y-0.5">
+              <span className="block px-2 pt-1 pb-0.5 text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider">
                 {section.title}
               </span>
               {section.items.map(({ id, label, to, Icon, iconBg, isComingSoon }) => {
@@ -233,15 +233,15 @@ export default function UserSidebar({ isOpen, onClose }) {
                   return (
                     <div
                       key={id}
-                      className="w-full flex items-center justify-between p-2.5 rounded-2xl text-slate-700 font-semibold select-none cursor-default"
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-slate-700 font-semibold select-none cursor-default"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${iconBg} text-white shadow-2xs shrink-0 opacity-80`}>
-                          <Icon className="text-base" />
+                      <div className="flex items-center gap-2.5">
+                        <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${iconBg} text-white shadow-2xs shrink-0 opacity-80`}>
+                          <Icon className="text-sm" />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm text-slate-700">{label}</span>
-                          <span className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200/80 rounded-md">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs sm:text-[13px] text-slate-700">{label}</span>
+                          <span className="px-1.5 py-0.2 text-[8.5px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200/80 rounded-md">
                             Soon
                           </span>
                         </div>
@@ -256,18 +256,18 @@ export default function UserSidebar({ isOpen, onClose }) {
                     to={to}
                     onClick={onClose}
                     className={({ isActive }) =>
-                      `flex items-center justify-between p-2.5 rounded-2xl transition-all ${
+                      `flex items-center justify-between px-2.5 py-1.5 rounded-xl transition-all ${
                         isActive
                           ? "bg-blue-50 text-[#0A84FF] font-extrabold shadow-2xs"
                           : "text-slate-700 hover:bg-slate-50 font-semibold"
                       }`
                     }
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${iconBg} text-white shadow-2xs shrink-0`}>
-                        <Icon className="text-base" />
+                    <div className="flex items-center gap-2.5">
+                      <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${iconBg} text-white shadow-2xs shrink-0`}>
+                        <Icon className="text-sm" />
                       </div>
-                      <span className="text-xs sm:text-sm">{label}</span>
+                      <span className="text-xs sm:text-[13px]">{label}</span>
                     </div>
                     <IoChevronForwardOutline className="text-slate-300 text-xs" />
                   </NavLink>
@@ -277,16 +277,16 @@ export default function UserSidebar({ isOpen, onClose }) {
           ))}
 
           {/* Logout Button Block */}
-          <div className="pt-2 border-t border-slate-100">
+          <div className="pt-1.5 mt-1 border-t border-slate-100">
             <button
               onClick={handleLogoutClick}
-              className="w-full flex items-center justify-between p-2.5 rounded-2xl text-rose-600 hover:bg-rose-50 active:bg-rose-100 transition-all text-left cursor-pointer font-bold"
+              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-rose-600 hover:bg-rose-50 active:bg-rose-100 transition-all text-left cursor-pointer font-bold"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500 text-white shadow-2xs shrink-0">
-                  <IoLogOutOutline className="text-base" />
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500 text-white shadow-2xs shrink-0">
+                  <IoLogOutOutline className="text-sm" />
                 </div>
-                <span className="text-xs sm:text-sm">Logout</span>
+                <span className="text-xs sm:text-[13px]">Logout</span>
               </div>
               <IoChevronForwardOutline className="text-rose-300 text-xs" />
             </button>
