@@ -89,6 +89,7 @@ const VendorAbout = lazy(() => import("./modules/vendor/vendor-pages/VendorAbout
 const VendorSettings = lazy(() => import("./modules/vendor/vendor-pages/VendorSettings"));
 const VendorPolicyPage = lazy(() => import("./modules/vendor/vendor-pages/VendorPolicyPage"));
 const VendorHelpSupport = lazy(() => import("./modules/vendor/vendor-pages/VendorHelpSupport"));
+const VendorSupportChatPage = lazy(() => import("./modules/vendor/vendor-pages/VendorSupportChatPage"));
 const ExpertAgreementScreen = lazy(() => import("./modules/vendor/vendor-pages/ExpertAgreementScreen"));
 const AdminLogin = lazy(() => import("./modules/admin/admin-pages/AdminLogin"));
 const AdminForgotPassword = lazy(() => import("./modules/admin/admin-pages/AdminForgotPassword"));
@@ -940,6 +941,14 @@ function App() {
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <VendorHelpSupport />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/support-chat"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <VendorSupportChatPage />
                                                                     </Suspense>
                                                                 }
                                                             />

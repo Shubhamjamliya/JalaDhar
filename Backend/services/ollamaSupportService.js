@@ -50,6 +50,138 @@ RESPONSE RULES:
 `;
 
 /**
+ * Jaladhaara Groundwater Survey System Prompt for Experts/Hydrogeologists
+ */
+const JALADHAARA_VENDOR_SYSTEM_PROMPT = `
+You are the official 24/7 AI Partner Support Assistant for "Jaladhaara" (जलधारा) – assisting verified Groundwater Professionals, Hydrogeologists, and Survey Experts across India.
+
+YOUR MISSION:
+Assist Hydrogeologists and Groundwater Survey Experts with their assigned bookings, field navigation, site assessment protocols, digital survey report submission, mandatory geotagged photo evidence, wallet earnings, payout withdrawals, partner agreement terms, and dispute resolution with utmost professionalism and practical clarity.
+
+CORE EXPERT GUIDELINES & STANDARDS:
+1. BOOKING EXECUTION & STATUS LIFECYCLE:
+   - Check assigned surveys at [Assigned Bookings](/vendor/bookings).
+   - Once assigned, accept the booking promptly.
+   - On the survey day, mark status as "En Route" when starting your journey, and "Visited" upon arriving at customer premises.
+2. SURVEY ASSESSMENT & SITE EVIDENCE:
+   - Use recognized hydrogeological/geophysical exploration methods suitable for the local subsurface geology.
+   - Record depth to water table observation and estimated drilling depth where technically feasible.
+   - Capture mandatory geotagged site photographs showing the survey location, geological features, and recommended borewell point.
+   - MANDATORY ETHICAL RULE: Never guarantee 100% water availability, yield, or borewell drilling success. The report reflects expert scientific assessment.
+3. DIGITAL REPORT SUBMISSION:
+   - Complete and submit the digital report via [Upload Report](/vendor/bookings).
+   - Once verified, the customer can access their official certified report.
+4. EARNINGS & WALLET WITHDRAWALS:
+   - Partner service fees are credited directly into your partner wallet upon survey milestones.
+   - Check balance, view transaction receipts, and request instant bank withdrawal at [Wallet & Payments](/vendor/wallet).
+5. DISPUTES & ISSUES:
+   - If a customer disputes survey findings, refuses site access, or if severe weather disrupts the survey, log an official ticket at [Partner Resolution Center](/vendor/disputes).
+   - Review partner standards at [Expert Agreement](/vendor/agreement).
+
+EXPERT APP NAVIGATION LINKS:
+- Dashboard: /vendor/dashboard
+- Assigned Bookings: /vendor/bookings
+- Survey Reports: /vendor/status
+- Wallet & Payouts: /vendor/wallet
+- Partner Resolution & Disputes: /vendor/disputes
+- Expert Agreement & Terms: /vendor/agreement
+- Reviews & Ratings: /vendor/reviews
+- Partner Helpline: +91 800-000-0000 | Email: expert-support@jaladhaaraapp.com
+
+RESPONSE RULES:
+- Always format internal app links as Markdown links like [Assigned Bookings](/vendor/bookings), [Wallet](/vendor/wallet), [Upload Report](/vendor/bookings), or [Disputes](/vendor/disputes).
+- Keep responses concise and structured (under 60-80 words). Use clean bullet points or numbered lists.
+- Be supportive, respectful, and authoritative as a partner platform.
+- When answering in Indian regional languages (e.g., Hindi, Telugu, Tamil, Marathi, Kannada), reply in the requested language while keeping URLs in clean English paths.
+`;
+
+/**
+ * Expert action card specifications
+ */
+const SPECIFICATION_ACTION_CARDS_VENDOR = {
+  'wallet': {
+    title: 'Expert Wallet & Payouts',
+    description: 'Check your available balance, survey earnings, and submit payout withdrawal requests directly to your verified bank account.',
+    icon: 'card',
+    url: '/vendor/wallet',
+    actionLabel: 'Open Wallet',
+    buttons: ['My Bookings', 'Upload Report', 'Disputes', 'Main Menu']
+  },
+  'payout': {
+    title: 'Payouts & Earnings',
+    description: 'View your completed survey payouts, platform fee breakdown, and request immediate bank settlement.',
+    icon: 'card',
+    url: '/vendor/wallet',
+    actionLabel: 'View Payouts',
+    buttons: ['Wallet', 'My Bookings', 'Disputes', 'Main Menu']
+  },
+  'my bookings': {
+    title: 'Assigned Survey Bookings',
+    description: 'Review accepted customer bookings, contact details, turn-by-turn navigation, and update live site visit status.',
+    icon: 'booking',
+    url: '/vendor/bookings',
+    actionLabel: 'View Assigned Bookings',
+    buttons: ['Wallet & Payouts', 'Upload Report', 'Disputes', 'Main Menu']
+  },
+  'bookings': {
+    title: 'Assigned Survey Bookings',
+    description: 'Review accepted customer bookings, contact details, turn-by-turn navigation, and update live site visit status.',
+    icon: 'booking',
+    url: '/vendor/bookings',
+    actionLabel: 'View Assigned Bookings',
+    buttons: ['Wallet & Payouts', 'Upload Report', 'Disputes', 'Main Menu']
+  },
+  'upload report': {
+    title: 'Upload Survey Report & Findings',
+    description: 'Submit technical survey findings, water point coordinates, estimated drilling depth, and geotagged site photographs.',
+    icon: 'document',
+    url: '/vendor/bookings',
+    actionLabel: 'Upload Reports',
+    buttons: ['My Bookings', 'Wallet & Payouts', 'Disputes', 'Main Menu']
+  },
+  'report': {
+    title: 'Upload Survey Report & Findings',
+    description: 'Submit technical survey findings, water point coordinates, estimated drilling depth, and geotagged site photographs.',
+    icon: 'document',
+    url: '/vendor/bookings',
+    actionLabel: 'Upload Reports',
+    buttons: ['My Bookings', 'Wallet & Payouts', 'Disputes', 'Main Menu']
+  },
+  'disputes': {
+    title: 'Partner Resolution Center',
+    description: 'Facing customer disputes, unreachable site locations, or payment verification issues? Raise an official partner ticket for admin resolution.',
+    icon: 'support',
+    url: '/vendor/disputes',
+    actionLabel: 'Resolution Center',
+    buttons: ['My Bookings', 'Wallet & Payouts', 'Agreement', 'Main Menu']
+  },
+  'support': {
+    title: 'Partner Resolution Center',
+    description: 'Facing customer disputes, unreachable site locations, or payment verification issues? Raise an official partner ticket for admin resolution.',
+    icon: 'support',
+    url: '/vendor/disputes',
+    actionLabel: 'Resolution Center',
+    buttons: ['My Bookings', 'Wallet & Payouts', 'Agreement', 'Main Menu']
+  },
+  'agreement': {
+    title: 'Expert Terms & Agreement',
+    description: 'View the official Jaladhaara Hydrogeology Partner Agreement, service standards, and ethical survey practices.',
+    icon: 'document',
+    url: '/vendor/agreement',
+    actionLabel: 'View Agreement',
+    buttons: ['My Bookings', 'Disputes', 'Wallet & Payouts', 'Main Menu']
+  },
+  'main menu': {
+    title: 'Expert Partner Portal',
+    description: 'Welcome to your 24/7 Jaladhaara Hydrogeology Expert Assistant. How can we assist your field operations today?',
+    icon: 'water',
+    url: '/vendor/dashboard',
+    actionLabel: 'Expert Dashboard',
+    buttons: ['My Bookings', 'Wallet & Payouts', 'Upload Report', 'Disputes']
+  }
+};
+
+/**
  * Base specification action card definitions (structure only — no translations).
  * Translations and labels are loaded dynamically from ChatLanguage DB via chatLanguageService.
  */
@@ -66,6 +198,27 @@ const SPECIFICATION_ACTION_CARDS_BASE = {
   'rate service':   { icon: 'star',     url: '/user/status?tab=completed',       buttons: ['View Report', 'Main Menu'] },
   'support':        { icon: 'support',  url: '/user/disputes/create',            buttons: ['My Booking', 'Payment', 'Main Menu'], helpline: '+91 800-000-0000' },
   'main menu':      { icon: 'water',    url: '/user/survey',                     buttons: ['My Booking', 'Payment', 'My Report', 'Track Expert', 'Support'] }
+};
+
+const findVendorSpecificationCard = (message = '') => {
+  const cleanMsg = (message || '').toLowerCase().trim();
+  const keys = Object.keys(SPECIFICATION_ACTION_CARDS_VENDOR);
+  for (const key of keys) {
+    if (cleanMsg === key || cleanMsg.includes(key)) {
+      const item = SPECIFICATION_ACTION_CARDS_VENDOR[key];
+      return {
+        title: item.title,
+        description: item.description,
+        icon: item.icon,
+        primaryAction: {
+          label: item.actionLabel,
+          url: item.url
+        },
+        buttons: item.buttons
+      };
+    }
+  }
+  return null;
 };
 
 // ── Card matching ─────────────────────────────────────────────────────────────
@@ -133,10 +286,34 @@ const findSpecificationCard = async (message = '', langKey = 'en') => {
  * Infer an action card from conversational context (Ollama AI responses).
  * Uses dynamic inference keywords loaded from DB.
  */
-const inferActionCardFromContext = async (message = '', reply = '', langKey = 'en') => {
+const inferActionCardFromContext = async (message = '', reply = '', langKey = 'en', isVendor = false) => {
   const config = await langService.loadConfig();
   const combined = `${message} ${reply}`.toLowerCase();
   const ik = config.INFERENCE_KEYWORDS;
+
+  if (isVendor) {
+    if (combined.includes('wallet') || combined.includes('payout') || combined.includes('earnings') || combined.includes('withdraw') || combined.includes('balance')) {
+      const v = SPECIFICATION_ACTION_CARDS_VENDOR['wallet'];
+      return { title: v.title, description: v.description, icon: v.icon, primaryAction: { label: v.actionLabel, url: v.url }, buttons: v.buttons };
+    }
+    if (combined.includes('booking') || combined.includes('assigned') || combined.includes('visit') || combined.includes('customer') || combined.includes('schedule')) {
+      const v = SPECIFICATION_ACTION_CARDS_VENDOR['my bookings'];
+      return { title: v.title, description: v.description, icon: v.icon, primaryAction: { label: v.actionLabel, url: v.url }, buttons: v.buttons };
+    }
+    if (combined.includes('report') || combined.includes('upload') || combined.includes('fracture') || combined.includes('depth') || combined.includes('photo')) {
+      const v = SPECIFICATION_ACTION_CARDS_VENDOR['upload report'];
+      return { title: v.title, description: v.description, icon: v.icon, primaryAction: { label: v.actionLabel, url: v.url }, buttons: v.buttons };
+    }
+    if (combined.includes('dispute') || combined.includes('issue') || combined.includes('problem') || combined.includes('ticket')) {
+      const v = SPECIFICATION_ACTION_CARDS_VENDOR['disputes'];
+      return { title: v.title, description: v.description, icon: v.icon, primaryAction: { label: v.actionLabel, url: v.url }, buttons: v.buttons };
+    }
+    if (combined.includes('agreement') || combined.includes('terms') || combined.includes('policy')) {
+      const v = SPECIFICATION_ACTION_CARDS_VENDOR['agreement'];
+      return { title: v.title, description: v.description, icon: v.icon, primaryAction: { label: v.actionLabel, url: v.url }, buttons: v.buttons };
+    }
+    return null;
+  }
 
   const matches = (keySet) => [...(keySet || [])].some(kw => combined.includes(kw));
 
@@ -278,8 +455,11 @@ const processSupportChat = async ({
   userWallet = { balance: 0, totalCredited: 0 },
   recentWalletTransactions = [],
   userId = null,
-  userName = null
+  userName = null,
+  userRole = 'USER'
 }) => {
+  const isVendor = String(userRole || '').toUpperCase() === 'VENDOR';
+
   // Load dynamic config from DB (cached)
   const config = await langService.loadConfig();
 
@@ -293,6 +473,35 @@ const processSupportChat = async ({
   // ── 0. GREETING FAST-PATH ──────────────────────────────────────────────────
   if (langService.isGreeting(message, config)) {
     const ongoingBooking = Array.isArray(liveBookings) ? liveBookings.find(b => b.isOngoing) : null;
+
+    if (isVendor) {
+      const expertGreetingName = userName
+        ? (/\bexpert\b/i.test(userName.trim()) ? userName.trim() : `Expert ${userName.trim()}`)
+        : 'Expert';
+      return {
+        success: true,
+        reply: `Hello ${expertGreetingName}! Welcome to Jaladhaara 24/7 Expert Partner Support. How can I assist you with your assigned bookings, report upload guidelines, or wallet payouts today?`,
+        buttons: ['My Bookings', 'Wallet & Payouts', 'Upload Report', 'Disputes', 'Agreement'],
+        links: [
+          { text: 'Assigned Bookings', url: '/vendor/bookings' },
+          { text: 'Wallet', url: '/vendor/wallet' },
+          { text: 'Disputes', url: '/vendor/disputes' }
+        ],
+        actionCard: ongoingBooking ? {
+          title: `Active Assignment: ${ongoingBooking.displayId}`,
+          description: `${ongoingBooking.category} • Customer: ${ongoingBooking.customerName} (${ongoingBooking.customerPhone || 'In-app contact'}) • Scheduled on ${new Date(ongoingBooking.scheduledDate).toLocaleDateString()} at ${ongoingBooking.scheduledTime}. Status: ${ongoingBooking.status}`,
+          icon: 'booking',
+          primaryAction: {
+            label: 'View Booking & Upload',
+            url: `/vendor/bookings/${ongoingBooking.id}`
+          }
+        } : null,
+        liveBooking: ongoingBooking || null,
+        model: 'greeting-fast-response',
+        isAiPowered: false,
+        language: langKey
+      };
+    }
 
     return {
       success: true,
@@ -340,6 +549,34 @@ const processSupportChat = async ({
       ? (completedBookings[0] || liveBookings[0])
       : (ongoingBooking || liveBookings[0]);
 
+    if (isVendor) {
+      return {
+        success: true,
+        reply: isHistoryQuery
+          ? `You have completed ${completedBookings.length} surveys out of ${liveBookings.length} total assigned bookings.`
+          : `Here is your current assigned booking: **${targetBooking.displayId}** (${targetBooking.category}) for customer **${targetBooking.customerName}**. Status: **${targetBooking.status}**.`,
+        liveBooking: targetBooking,
+        allBookings: isHistoryQuery ? liveBookings : null,
+        actionCard: {
+          title: `Assignment: ${targetBooking.displayId}`,
+          description: `${targetBooking.category} • Customer: ${targetBooking.customerName} • Scheduled on ${new Date(targetBooking.scheduledDate).toLocaleDateString()} at ${targetBooking.scheduledTime}. Location: ${targetBooking.location}`,
+          icon: 'booking',
+          primaryAction: {
+            label: 'Open Booking Details',
+            url: `/vendor/bookings/${targetBooking.id}`
+          }
+        },
+        links: [
+          { text: 'All Bookings', url: '/vendor/bookings' },
+          { text: 'Wallet & Payouts', url: '/vendor/wallet' }
+        ],
+        buttons: ['My Bookings', 'Wallet & Payouts', 'Upload Report', 'Disputes'],
+        model: 'live-database-query',
+        isAiPowered: false,
+        language: langKey
+      };
+    }
+
     if (isHistoryQuery) {
       return {
         success: true,
@@ -380,6 +617,33 @@ const processSupportChat = async ({
 
   // ── 4. ZERO BOOKINGS RESPONSE ──────────────────────────────────────────────
   if (isBookingQuery && userId && (!liveBookings || liveBookings.length === 0)) {
+    if (isVendor) {
+      const expertGreetingName = userName
+        ? (/\bexpert\b/i.test(userName.trim()) ? userName.trim() : `Expert ${userName.trim()}`)
+        : 'Expert';
+      return {
+        success: true,
+        reply: `Hello ${expertGreetingName}, you currently have no assigned survey bookings awaiting action. Make sure your status is set to ONLINE on your dashboard to receive new bookings in your service zone!`,
+        actionCard: {
+          title: 'Expert Dashboard',
+          description: 'Keep your status active to receive new customer bookings in your district.',
+          icon: 'booking',
+          primaryAction: {
+            label: 'Open Dashboard',
+            url: '/vendor/dashboard'
+          }
+        },
+        links: [
+          { text: 'Expert Dashboard', url: '/vendor/dashboard' },
+          { text: 'Wallet', url: '/vendor/wallet' }
+        ],
+        buttons: ['My Bookings', 'Wallet & Payouts', 'Disputes'],
+        model: 'instant-spec-card',
+        isAiPowered: false,
+        language: langKey
+      };
+    }
+
     return {
       success: true,
       reply: i18n.zeroBookings(userName),
@@ -401,18 +665,34 @@ const processSupportChat = async ({
   }
 
   // ── 5. SPECIFICATION CARD FAST-PATH ───────────────────────────────────────
-  const directCard = await findSpecificationCard(message, langKey);
-  if (directCard) {
-    return {
-      success: true,
-      reply: directCard.description,
-      actionCard: directCard,
-      links: [{ text: directCard.primaryAction.label, url: directCard.primaryAction.url }],
-      buttons: directCard.buttons,
-      model: 'instant-spec-card',
-      isAiPowered: false,
-      language: langKey
-    };
+  if (isVendor) {
+    const vCard = findVendorSpecificationCard(message);
+    if (vCard) {
+      return {
+        success: true,
+        reply: vCard.description,
+        actionCard: vCard,
+        links: [{ text: vCard.primaryAction.label, url: vCard.primaryAction.url }],
+        buttons: vCard.buttons,
+        model: 'instant-spec-card',
+        isAiPowered: false,
+        language: langKey
+      };
+    }
+  } else {
+    const directCard = await findSpecificationCard(message, langKey);
+    if (directCard) {
+      return {
+        success: true,
+        reply: directCard.description,
+        actionCard: directCard,
+        links: [{ text: directCard.primaryAction.label, url: directCard.primaryAction.url }],
+        buttons: directCard.buttons,
+        model: 'instant-spec-card',
+        isAiPowered: false,
+        language: langKey
+      };
+    }
   }
 
   // ── 6. GENERATIVE AI PATH ─────────────────────────────────────────────────
@@ -421,37 +701,64 @@ const processSupportChat = async ({
     : '\nReply in clear, professional English.';
 
   let userProfileContext = '';
-  if (userName) {
-    userProfileContext = `\nCURRENT USER PROFILE:\n- User's Full Name: ${userName}\nWhen greeting the user or addressing them, greet them warmly by their name (e.g. "Hello ${userName}!" or in Hindi "नमस्ते ${userName} जी!"). If they ask who they are or their name, confirm their name is ${userName}.`;
-  }
-
   let userBookingContext = '';
-  if (Array.isArray(liveBookings) && liveBookings.length > 0) {
-    userBookingContext = `\nUSER'S REAL SURVEY BOOKINGS IN JALADHAARA DATABASE:\n` +
-      liveBookings.map((b, i) =>
-        `${i + 1}. Booking ID: ${b.displayId}, Category: ${b.category}, Status: ${b.status} (${b.isOngoing ? 'Active/Upcoming' : 'Completed/Past'}), Date: ${new Date(b.scheduledDate).toLocaleDateString()} at ${b.scheduledTime}, Expert Name: ${b.expertName} (Phone: ${b.expertPhone || 'available on arrival'}), Location: ${b.location}`
-      ).join('\n') +
-      `\nUse this real information to answer user questions about their specific booking, expert, schedule, or past survey history!`;
-  } else if (userId) {
-    userBookingContext = `\nUSER CONTEXT: The user is currently logged in, but has 0 active bookings in the database. If they ask about their bookings, politely let them know they have no active surveys yet and offer to help them book one.`;
-  }
-
   let userPaymentContext = '';
-  if (userId) {
-    userPaymentContext = `\nUSER'S REAL FINANCIAL & PAYMENT CONTEXT IN JALADHAARA:\n` +
-      `- Current Wallet Balance: ₹${userWallet?.balance || 0} (Total Credited / Refunded: ₹${userWallet?.totalCredited || 0})\n` +
-      `- Recent Payments Made (Sent) by User:\n` +
-      (Array.isArray(livePayments) && livePayments.length > 0
-        ? livePayments.map((p, i) => `  ${i + 1}. Amount: ₹${p.amount} (${p.type}), Status: ${p.status}, Date: ${new Date(p.date).toLocaleDateString()}, Booking: ${p.bookingId}`).join('\n')
-        : '  No sent payments recorded yet.') +
-      `\n- Recent Wallet / Refund Transactions Received:\n` +
-      (Array.isArray(recentWalletTransactions) && recentWalletTransactions.length > 0
-        ? recentWalletTransactions.map((w, i) => `  ${i + 1}. Amount: ₹${w.amount} (${w.type}), Status: ${w.status}, Date: ${new Date(w.date).toLocaleDateString()}, Note: ${w.description || 'Wallet credit'}`).join('\n')
-        : '  No received transactions/refunds recorded yet.') +
-      `\nWhen users ask about their payments sent, payments received, refunds, wallet balance, or invoices, use these EXACT figures! If they ask "what was my last payment sent and received", explicitly state their last payment sent amount and their last refund/received amount, and provide the link [Payments & Invoices](/user/payments-invoices).`;
+
+  if (isVendor) {
+    if (userName) {
+      userProfileContext = `\nCURRENT EXPERT PROFILE:\n- Expert's Full Name: ${userName}\nAddress them respectfully as Expert ${userName} or Dr./Mr. ${userName}.`;
+    }
+    if (Array.isArray(liveBookings) && liveBookings.length > 0) {
+      userBookingContext = `\nEXPERT'S REAL ASSIGNED SURVEY BOOKINGS IN JALADHAARA DATABASE:\n` +
+        liveBookings.map((b, i) =>
+          `${i + 1}. Booking ID: ${b.displayId}, Category: ${b.category}, Status: ${b.status} (${b.isOngoing ? 'Active/Upcoming' : 'Completed'}), Scheduled: ${new Date(b.scheduledDate).toLocaleDateString()} at ${b.scheduledTime}, Customer: ${b.customerName} (Phone: ${b.customerPhone || 'In app'}), Location: ${b.location}, Payout Share: ₹${b.payoutAmount}`
+        ).join('\n') +
+        `\nUse this real assigned booking information to answer questions about customer visits, status, or locations!`;
+    } else if (userId) {
+      userBookingContext = `\nEXPERT BOOKING CONTEXT: The expert has 0 assigned survey bookings in the system right now.`;
+    }
+
+    if (userId) {
+      userPaymentContext = `\nEXPERT'S FINANCIAL & WALLET CONTEXT IN JALADHAARA:\n` +
+        `- Current Available Wallet Balance: ₹${userWallet?.balance || 0} (Total Earnings Credited: ₹${userWallet?.totalCredited || 0})\n` +
+        `- Recent Wallet Transactions / Payouts:\n` +
+        (Array.isArray(recentWalletTransactions) && recentWalletTransactions.length > 0
+          ? recentWalletTransactions.map((w, i) => `  ${i + 1}. Amount: ₹${w.amount} (${w.type}), Status: ${w.status}, Date: ${new Date(w.date).toLocaleDateString()}, Note: ${w.description || 'Wallet credit'}`).join('\n')
+          : '  No recent wallet transactions recorded.') +
+        `\nWhen the expert asks about their earnings, wallet balance, or bank withdrawal, use these EXACT figures! Always link to [Wallet & Payouts](/vendor/wallet).`;
+    }
+  } else {
+    if (userName) {
+      userProfileContext = `\nCURRENT USER PROFILE:\n- User's Full Name: ${userName}\nWhen greeting the user or addressing them, greet them warmly by their name (e.g. "Hello ${userName}!" or in Hindi "नमस्ते ${userName} जी!"). If they ask who they are or their name, confirm their name is ${userName}.`;
+    }
+
+    if (Array.isArray(liveBookings) && liveBookings.length > 0) {
+      userBookingContext = `\nUSER'S REAL SURVEY BOOKINGS IN JALADHAARA DATABASE:\n` +
+        liveBookings.map((b, i) =>
+          `${i + 1}. Booking ID: ${b.displayId}, Category: ${b.category}, Status: ${b.status} (${b.isOngoing ? 'Active/Upcoming' : 'Completed/Past'}), Date: ${new Date(b.scheduledDate).toLocaleDateString()} at ${b.scheduledTime}, Expert Name: ${b.expertName} (Phone: ${b.expertPhone || 'available on arrival'}), Location: ${b.location}`
+        ).join('\n') +
+        `\nUse this real information to answer user questions about their specific booking, expert, schedule, or past survey history!`;
+    } else if (userId) {
+      userBookingContext = `\nUSER CONTEXT: The user is currently logged in, but has 0 active bookings in the database. If they ask about their bookings, politely let them know they have no active surveys yet and offer to help them book one.`;
+    }
+
+    if (userId) {
+      userPaymentContext = `\nUSER'S REAL FINANCIAL & PAYMENT CONTEXT IN JALADHAARA:\n` +
+        `- Current Wallet Balance: ₹${userWallet?.balance || 0} (Total Credited / Refunded: ₹${userWallet?.totalCredited || 0})\n` +
+        `- Recent Payments Made (Sent) by User:\n` +
+        (Array.isArray(livePayments) && livePayments.length > 0
+          ? livePayments.map((p, i) => `  ${i + 1}. Amount: ₹${p.amount} (${p.type}), Status: ${p.status}, Date: ${new Date(p.date).toLocaleDateString()}, Booking: ${p.bookingId}`).join('\n')
+          : '  No sent payments recorded yet.') +
+        `\n- Recent Wallet / Refund Transactions Received:\n` +
+        (Array.isArray(recentWalletTransactions) && recentWalletTransactions.length > 0
+          ? recentWalletTransactions.map((w, i) => `  ${i + 1}. Amount: ₹${w.amount} (${w.type}), Status: ${w.status}, Date: ${new Date(w.date).toLocaleDateString()}, Note: ${w.description || 'Wallet credit'}`).join('\n')
+          : '  No received transactions/refunds recorded yet.') +
+        `\nWhen users ask about their payments sent, payments received, refunds, wallet balance, or invoices, use these EXACT figures! If they ask "what was my last payment sent and received", explicitly state their last payment sent amount and their last refund/received amount, and provide the link [Payments & Invoices](/user/payments-invoices).`;
+    }
   }
 
-  const fullSystemPrompt = `${JALADHAARA_SYSTEM_PROMPT}\n${languageInstruction}\n${userProfileContext}\n${userBookingContext}\n${userPaymentContext}`;
+  const basePrompt = isVendor ? JALADHAARA_VENDOR_SYSTEM_PROMPT : JALADHAARA_SYSTEM_PROMPT;
+  const fullSystemPrompt = `${basePrompt}\n${languageInstruction}\n${userProfileContext}\n${userBookingContext}\n${userPaymentContext}`;
 
   const messages = [{ role: 'system', content: fullSystemPrompt }];
 
@@ -472,11 +779,14 @@ const processSupportChat = async ({
 
     if (rawReply) {
       const extractedLinks  = extractLinks(rawReply);
-      const contextualCard  = await inferActionCardFromContext(message, rawReply, langKey);
+      const contextualCard  = await inferActionCardFromContext(message, rawReply, langKey, isVendor);
       const finalLinks      = extractedLinks.length > 0
         ? extractedLinks
         : (contextualCard ? [{ text: contextualCard.primaryAction.label, url: contextualCard.primaryAction.url }] : []);
-      const finalButtons = contextualCard ? contextualCard.buttons : (i18n.buttons || ['My Booking', 'Payment', 'My Report', 'Track Expert']);
+      const defaultButtons = isVendor
+        ? ['My Bookings', 'Wallet & Payouts', 'Upload Report', 'Disputes']
+        : (i18n.buttons || ['My Booking', 'Payment', 'My Report', 'Track Expert']);
+      const finalButtons = contextualCard ? contextualCard.buttons : defaultButtons;
 
       return {
         success: true,
@@ -493,6 +803,38 @@ const processSupportChat = async ({
     throw new Error('Empty response received from Ollama model');
   } catch (err) {
     console.warn(`[OllamaSupportService] Ollama chat unavailable (${err.message}). Using smart specification fallback.`);
+
+    if (isVendor) {
+      let fallbackKey = 'main menu';
+      if (/\b(wallet|payout|earnings|withdraw|balance)\b/i.test(cleanMsg)) {
+        fallbackKey = 'wallet';
+      } else if (/\b(booking|assigned|customer|schedule)\b/i.test(cleanMsg)) {
+        fallbackKey = 'my bookings';
+      } else if (/\b(report|upload|depth|fracture|photo)\b/i.test(cleanMsg)) {
+        fallbackKey = 'upload report';
+      } else if (/\b(dispute|ticket|problem|issue)\b/i.test(cleanMsg)) {
+        fallbackKey = 'disputes';
+      } else if (/\b(agreement|terms)\b/i.test(cleanMsg)) {
+        fallbackKey = 'agreement';
+      }
+
+      const vCard = SPECIFICATION_ACTION_CARDS_VENDOR[fallbackKey];
+      return {
+        success: true,
+        reply: vCard.description,
+        actionCard: {
+          title: vCard.title,
+          description: vCard.description,
+          icon: vCard.icon,
+          primaryAction: { label: vCard.actionLabel, url: vCard.url }
+        },
+        links: [{ text: vCard.actionLabel, url: vCard.url }],
+        buttons: vCard.buttons,
+        model: 'smart-specification-fallback',
+        isAiPowered: false,
+        language: langKey
+      };
+    }
 
     let fallbackCardKey = 'main menu';
     let fbDesc = '';

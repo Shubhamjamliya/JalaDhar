@@ -6,7 +6,13 @@ import {
   IoChevronUpOutline,
   IoShieldCheckmarkOutline,
   IoBulbOutline,
-  IoSearchOutline
+  IoSearchOutline,
+  IoSparkles,
+  IoChatbubblesOutline,
+  IoArrowForward,
+  IoDocumentTextOutline,
+  IoWalletOutline,
+  IoAlertCircleOutline
 } from "react-icons/io5";
 
 export const VENDOR_EXPERT_FAQS = [
@@ -72,16 +78,85 @@ export default function VendorHelpSupport() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-16">
-      {/* Top Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-slate-800 relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+    <div className="max-w-4xl mx-auto space-y-4 pb-16">
+      {/* 24/7 AI-Powered Support Hero Card */}
+      <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white shadow-md border border-blue-900/40 relative overflow-hidden">
+        {/* Subtle background glow accents */}
+        <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+
         <div className="relative z-10 space-y-3">
+          {/* Status badge row */}
+          <div className="flex items-center justify-between">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-[11px] font-bold">
+              <IoSparkles className="text-amber-400 text-xs" />
+              <span>24/7 Jaladhaara AI (Expert Assistant)</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+            </div>
+            <span className="text-[11px] text-emerald-400 font-semibold hidden sm:inline-flex items-center gap-1">
+              ● Online &amp; Ready
+            </span>
+          </div>
+
+          {/* Title and description */}
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">
+              Need Field Help? Chat with Jaladhaara AI
+            </h2>
+            <p className="text-slate-300 text-xs sm:text-sm font-normal mt-1 leading-relaxed max-w-xl">
+              Instant answers for assigned bookings, customer site navigation, report upload requirements, wallet payouts, and dispute resolutions.
+            </p>
+          </div>
+
+          {/* Quick Prompts & CTA Row */}
+          <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Primary Launch Button */}
+            <button
+              onClick={() => navigate("/vendor/support-chat")}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            >
+              <IoChatbubblesOutline className="text-base" />
+              <span>Start AI Live Chat</span>
+              <IoArrowForward className="text-sm" />
+            </button>
+
+            {/* Quick Topic Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              <button
+                onClick={() => navigate("/vendor/support-chat")}
+                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-[11px] font-semibold text-slate-200 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 cursor-pointer"
+              >
+                <IoDocumentTextOutline className="text-xs text-blue-400" />
+                <span>Assigned Bookings</span>
+              </button>
+              <button
+                onClick={() => navigate("/vendor/support-chat")}
+                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-[11px] font-semibold text-slate-200 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 cursor-pointer"
+              >
+                <IoWalletOutline className="text-xs text-emerald-400" />
+                <span>Wallet &amp; Payouts</span>
+              </button>
+              <button
+                onClick={() => navigate("/vendor/support-chat")}
+                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-[11px] font-semibold text-slate-200 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 cursor-pointer"
+              >
+                <IoAlertCircleOutline className="text-xs text-amber-400" />
+                <span>Disputes</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white shadow-lg border border-slate-800 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-extrabold">
             <IoBulbOutline className="text-amber-400 text-sm" />
             <span>Expert Knowledge Base</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-tight">
             Groundwater Survey FAQs – Expert App
           </h1>
           <p className="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed max-w-2xl">

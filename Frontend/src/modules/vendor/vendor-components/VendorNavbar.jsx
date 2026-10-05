@@ -232,8 +232,9 @@ export default function VendorNavbar() {
     const mobileLinkBase =
         "flex flex-1 items-center justify-center rounded-full px-1 py-1 transition-all duration-200";
 
-    const mobileIconWrapper =
-        "flex h-10 w-10 items-center justify-center rounded-full text-lg transition-all duration-200";
+    if (location.pathname === "/vendor/support-chat") {
+        return null;
+    }
 
     return (
         <>

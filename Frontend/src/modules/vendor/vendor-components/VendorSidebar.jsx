@@ -17,7 +17,9 @@ import {
     IoSettingsOutline,
     IoInformationCircleOutline,
     IoGiftOutline,
-    IoChevronForwardOutline
+    IoChevronForwardOutline,
+    IoSparkles,
+    IoAlertCircleOutline
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
@@ -105,9 +107,11 @@ export default function VendorSidebar({ isOpen, onClose }) {
         {
             title: "Support & Ratings",
             items: [
+                { label: "24/7 AI Expert Chat", to: "/vendor/support-chat", icon: IoSparkles, highlight: true },
+                { label: "Help & FAQs", to: "/vendor/help", icon: IoHelpBuoyOutline },
+                { label: "Resolution & Disputes", to: "/vendor/disputes", icon: IoAlertCircleOutline },
                 { label: "Ratings & Reviews", to: "/vendor/reviews", icon: IoStarOutline },
-                { label: "Notifications", to: "/vendor/notifications", icon: IoNotificationsOutline },
-                { label: "Help & Support", to: "/vendor/disputes", icon: IoHelpBuoyOutline }
+                { label: "Notifications", to: "/vendor/notifications", icon: IoNotificationsOutline }
             ]
         },
         {
