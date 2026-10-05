@@ -10,6 +10,15 @@ You are the official 24/7 AI Customer Support Assistant for "Jaladhaara" (जल
 YOUR MISSION:
 Help users with booking groundwater surveys, checking survey status, expert tracking, payments, invoices, reports, and addressing FAQs with utmost courtesy, clarity, and professionalism.
 
+HOW TO BOOK A GROUNDWATER SURVEY:
+When users ask how to book, booking steps, or how to schedule a survey, give this concise, numbered step-by-step guide:
+1. Tap "Book" or go to [Book a Survey](/user/survey).
+2. Select your category: Agriculture, Household (Residential), Commercial, or Industrial.
+3. Set your location on the map and choose your survey package.
+4. Pick your preferred survey date and time slot.
+5. Pay the advance token payment to confirm your booking.
+Once confirmed, a verified hydrogeology expert will be assigned to visit your site at the scheduled time!
+
 CORE KNOWLEDGE BASE:
 1. SURVEY CATEGORIES:
    - Agriculture Survey: For agricultural lands, crop fields, plantations to locate suitable borewell drilling spots.
@@ -23,6 +32,7 @@ CORE KNOWLEDGE BASE:
    - MANDATORY DISCLAIMER: Groundwater availability, yield, quality, exact depth, and borewell success cannot be 100% guaranteed.
 
 3. APP NAVIGATION & ACTION LINKS:
+   - Book New Survey: /user/survey
    - View Bookings / Status: /user/status
    - Upcoming Survey Schedule: /user/status?tab=upcoming
    - Live Track Expert: /user/status?tab=ongoing
@@ -33,8 +43,8 @@ CORE KNOWLEDGE BASE:
    - Helpline: +91 800-000-0000 | Email: info@jaladhaaraapp.com
 
 RESPONSE RULES:
-- Always format internal app links as Markdown links like [View Bookings](/user/status), [Payments](/user/payments-invoices), or [Survey Reports](/user/survey-reports).
-- Keep responses brief (under 50 words / 2 to 3 sentences maximum) so users get fast, clear answers.
+- Always format internal app links as Markdown links like [Book Survey](/user/survey), [View Bookings](/user/status), [Payments](/user/payments-invoices), or [Survey Reports](/user/survey-reports).
+- Keep responses concise and structured (under 60-80 words). Use clean bullet points or numbered lists when explaining steps.
 - Be friendly, respectful, and reassuring.
 - When answering in Indian regional languages (e.g., Hindi, Telugu, Tamil, Marathi, Kannada), use natural phrasing and proper script, but keep URLs in clean English paths.
 `;
@@ -55,7 +65,7 @@ const SPECIFICATION_ACTION_CARDS_BASE = {
   'view report':    { icon: 'document', url: '/user/survey-reports',             buttons: ['Rate Service', 'Submit Report', 'Main Menu'] },
   'rate service':   { icon: 'star',     url: '/user/status?tab=completed',       buttons: ['View Report', 'Main Menu'] },
   'support':        { icon: 'support',  url: '/user/disputes/create',            buttons: ['My Booking', 'Payment', 'Main Menu'], helpline: '+91 800-000-0000' },
-  'main menu':      { icon: 'water',    url: '/user/book-service',               buttons: ['My Booking', 'Payment', 'My Report', 'Track Expert', 'Support'] }
+  'main menu':      { icon: 'water',    url: '/user/survey',                     buttons: ['My Booking', 'Payment', 'My Report', 'Track Expert', 'Support'] }
 };
 
 // ── Card matching ─────────────────────────────────────────────────────────────
@@ -71,6 +81,17 @@ const findSpecificationCard = async (message = '', langKey = 'en') => {
 
   // Sort by descending key length so "payment status" matches before "payment"
   const sortedKeys = Object.keys(SPECIFICATION_ACTION_CARDS_BASE).sort((a, b) => b.length - a.length);
+
+  // If user is asking a natural question (has question words or > 3 words), pass to AI
+  const isQuestion =
+    cleanMsg.split(/\s+/).length > 3 ||
+    /\b(how|why|what|where|when|who|which|can|could|steps|step|provide|tell|guide|process)\b/i.test(cleanMsg) ||
+    /(ఎలా|ఏమిటి|స్టెప్స్|ఎక్కడ|ఎప్పుడు|ఎవరు|ఎలాంటి|చెప్పండి)/.test(cleanMsg) ||
+    /(कैसे|क्या|स्टेप्स|कहाँ|कब|कौन|बताओ|तरीका|प्रक्रिया)/.test(cleanMsg);
+
+  if (isQuestion) {
+    return null;
+  }
 
   for (const key of sortedKeys) {
     const synonymSet = config.SYNONYMS_BY_CARD[key] || new Set();
@@ -120,7 +141,16 @@ const inferActionCardFromContext = async (message = '', reply = '', langKey = 'e
   const matches = (keySet) => [...(keySet || [])].some(kw => combined.includes(kw));
 
   let cardKey = null;
-  if (matches(ik.payment))  cardKey = 'payment';
+  if (
+    combined.includes('how to book') ||
+    combined.includes('steps for') ||
+    combined.includes('step') ||
+    combined.includes('new survey') ||
+    combined.includes('book a survey') ||
+    combined.includes('booking process')
+  ) {
+    cardKey = 'main menu';
+  } else if (matches(ik.payment))  cardKey = 'payment';
   else if (matches(ik.track))   cardKey = 'track expert';
   else if (matches(ik.report))  cardKey = 'my report';
   else if (matches(ik.booking)) cardKey = 'my booking';
@@ -332,7 +362,7 @@ const processSupportChat = async ({
   const fullSystemPrompt = `${JALADHAARA_SYSTEM_PROMPT}\n${languageInstruction}\n${userProfileContext}\n${userBookingContext}`;
 
   const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
-  const ollamaModel   = process.env.OLLAMA_MODEL    || 'qwen2.5:3b';
+  const ollamaModel   = process.env.OLLAMA_MODEL    || 'llama3.2:latest';
 
   const messages = [{ role: 'system', content: fullSystemPrompt }];
 
@@ -351,7 +381,7 @@ const processSupportChat = async ({
   try {
     const response = await axios.post(
       `${ollamaBaseUrl}/api/chat`,
-      { model: ollamaModel, messages, stream: false, options: { temperature: 0.3, top_p: 0.85, num_predict: 120 } },
+      { model: ollamaModel, messages, stream: false, options: { temperature: 0.3, top_p: 0.85, num_predict: 250 } },
       { timeout: 35000 }
     );
 
