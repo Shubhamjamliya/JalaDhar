@@ -19,6 +19,7 @@ import {
 } from "react-icons/io5";
 import PageContainer from "../../shared/components/PageContainer";
 import PolicyModal from "../../shared/components/PolicyModal";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const FAQS = [
     {
@@ -65,6 +66,7 @@ const FAQS = [
 
 export default function UserHelpSupport() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [openFaq, setOpenFaq] = useState(null);
     const [activePolicy, setActivePolicy] = useState(null);
     const [faqSearch, setFaqSearch] = useState("");
@@ -75,6 +77,35 @@ export default function UserHelpSupport() {
 
     const toggleFaq = (index) => {
         setOpenFaq(openFaq === index ? null : index);
+    };
+
+    const handleEmailSupport = (e) => {
+        if (e) e.preventDefault();
+        const email = "info@jaladhaaraapp.com";
+        const userName = user?.name || "Valued Customer";
+        const userPhone = user?.phone || "N/A";
+        const subject = encodeURIComponent(`Jaladhaara Support Request - ${userName}`);
+        const body = encodeURIComponent(
+            `Hello Jaladhaara Support Team,\n\nI need assistance with my groundwater survey booking.\n\nUser Name: ${userName}\nPhone: ${userPhone}\n\nDetails:\n`
+        );
+
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const gmailWebUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
+        const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
+
+        if (isMobile) {
+            // On mobile devices, trigger system intent to launch native Gmail/Email app
+            window.location.href = mailtoUrl;
+
+            // Seamless fallback to Gmail Web if no native mail client catches the intent
+            setTimeout(() => {
+                window.open(gmailWebUrl, "_blank", "noopener,noreferrer");
+            }, 600);
+        } else {
+            // On desktop/browsers where mailto fails if no local app is configured,
+            // directly opening Gmail Compose in a new tab is 100% reliable
+            window.open(gmailWebUrl, "_blank", "noopener,noreferrer");
+        }
     };
 
     const filteredFaqs = useMemo(() => {
@@ -174,9 +205,11 @@ export default function UserHelpSupport() {
                         </span>
                     </a>
 
-                    <a
-                        href="mailto:info@jaladhaaraapp.com"
-                        className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-100 shadow-2xs hover:shadow-xs hover:border-purple-200 transition-all flex flex-col items-center text-center group cursor-pointer active:scale-98"
+                    <button
+                        type="button"
+                        onClick={handleEmailSupport}
+                        className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-100 shadow-2xs hover:shadow-xs hover:border-purple-200 transition-all flex flex-col items-center text-center group cursor-pointer active:scale-98 w-full"
+                        title="Open in Gmail or Mail App"
                     >
                         <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl mb-1.5 group-hover:scale-105 transition-transform shrink-0">
                             <IoMailOutline />
@@ -185,7 +218,7 @@ export default function UserHelpSupport() {
                         <span className="text-[10px] sm:text-xs text-purple-600 font-semibold mt-0.5 truncate max-w-full">
                             Quick Reply
                         </span>
-                    </a>
+                    </button>
 
                     <button
                         onClick={() => navigate("/user/disputes/create")}
