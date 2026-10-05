@@ -238,6 +238,11 @@ export default function UserNavbar() {
     const mobileIconWrapper =
         "flex h-10 w-10 items-center justify-center rounded-full text-lg transition-all duration-200";
 
+    // Allow dedicated full-page screen for AI Support Chat
+    if (location.pathname === "/user/support-chat") {
+        return null;
+    }
+
     return (
         <>
             {/* Top Navbar - Mobile & Desktop */}

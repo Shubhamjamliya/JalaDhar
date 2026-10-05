@@ -83,7 +83,7 @@ api.interceptors.request.use(
         authRole = 'vendor';
       }
       // 3. User endpoints or active user UI path -> use user token
-      else if (url.startsWith('/users/') || url.startsWith('/user/') || url.startsWith('/bookings/') || url.startsWith('/ratings/')) {
+      else if (url.startsWith('/users/') || url.startsWith('/user/') || url.startsWith('/bookings/') || url.startsWith('/ratings/') || url.startsWith('/support')) {
         token = localStorage.getItem('accessToken');
         authRole = 'user';
       }

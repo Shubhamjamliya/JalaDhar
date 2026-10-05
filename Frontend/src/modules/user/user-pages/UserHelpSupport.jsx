@@ -11,7 +11,10 @@ import {
     IoShieldCheckmarkOutline,
     IoDocumentTextOutline,
     IoHeadsetOutline,
-    IoBulbOutline
+    IoBulbOutline,
+    IoSparkles,
+    IoChatbubblesOutline,
+    IoArrowForward
 } from "react-icons/io5";
 import PageContainer from "../../shared/components/PageContainer";
 import PolicyModal from "../../shared/components/PolicyModal";
@@ -130,6 +133,31 @@ export default function UserHelpSupport() {
                     </button>
                 </div>
 
+                {/* AI Support Assistant Launch Card */}
+                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 rounded-3xl p-6 sm:p-7 text-white shadow-md border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden">
+                    <div className="space-y-2 relative z-10 max-w-xl">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-300 text-xs font-bold">
+                            <IoSparkles className="text-amber-400 text-xs" />
+                            <span>24/7 AI-Powered Support</span>
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                            Need Instant Answers? Chat with Jaladhaara AI
+                        </h2>
+                        <p className="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed">
+                            Get immediate answers on survey schedule, live expert tracking, payment invoices, and groundwater depth estimation in your language.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={() => navigate("/user/support-chat")}
+                        className="relative z-10 px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg hover:scale-102 active:scale-98 transition-all flex items-center gap-2.5 cursor-pointer shrink-0"
+                    >
+                        <IoChatbubblesOutline className="text-lg" />
+                        <span>Start AI Live Chat</span>
+                        <IoArrowForward className="text-base" />
+                    </button>
+                </div>
+
                 {/* Company Policies */}
                 <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
                     <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -225,6 +253,21 @@ export default function UserHelpSupport() {
             {activePolicy && (
                 <PolicyModal type={activePolicy} onClose={() => setActivePolicy(null)} />
             )}
+
+            {/* Floating AI Assistant Button */}
+            <button
+                onClick={() => navigate("/user/support-chat")}
+                className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-3 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2.5 border-2 border-white/20 backdrop-blur-md cursor-pointer group"
+                title="Chat with 24/7 AI Assistant"
+            >
+                <div className="relative">
+                    <IoSparkles className="text-amber-300 text-lg group-hover:rotate-12 transition-transform" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-white animate-pulse" />
+                </div>
+                <span className="text-xs sm:text-sm font-extrabold tracking-wide">
+                    AI Support
+                </span>
+            </button>
         </PageContainer>
     );
 }

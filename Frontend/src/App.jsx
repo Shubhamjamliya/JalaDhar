@@ -66,6 +66,7 @@ const UserReports = lazy(() => import("./modules/user/user-pages/UserReports"));
 const UserPaymentsInvoices = lazy(() => import("./modules/user/user-pages/UserPaymentsInvoices"));
 const UserNotificationsPage = lazy(() => import("./modules/user/user-pages/UserNotificationsPage"));
 const UserHelpSupport = lazy(() => import("./modules/user/user-pages/UserHelpSupport"));
+const UserSupportChatPage = lazy(() => import("./modules/user/user-pages/UserSupportChatPage"));
 const UserSettingsPage = lazy(() => import("./modules/user/user-pages/UserSettingsPage"));
 const LiveTrackingPage = lazy(() => import("./modules/shared/pages/LiveTrackingPage"));
 const VendorDashboard = lazy(() => import("./modules/vendor/vendor-pages/VendorDashboard"));
@@ -602,6 +603,14 @@ function App() {
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
                                                                         <UserHelpSupport />
+                                                                    </Suspense>
+                                                                }
+                                                            />
+                                                            <Route
+                                                                path="/support-chat"
+                                                                element={
+                                                                    <Suspense fallback={<LoadingSpinner />}>
+                                                                        <UserSupportChatPage />
                                                                     </Suspense>
                                                                 }
                                                             />

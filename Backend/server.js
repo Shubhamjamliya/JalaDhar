@@ -234,6 +234,9 @@ app.use('/api/fcm-tokens', require('./routes/fcmToken.routes'));
 // Public report verification route (no auth — QR scan use-case)
 app.use('/api/verify', require('./routes/verify.routes'));
 
+// 24/7 AI Customer Support Chatbot routes
+app.use('/api/support', require('./routes/support.routes'));
+
 // 404 handler
 app.use((req, res) => {
   console.log(`[404 HANDLER] Route not found - Method: ${req.method}, Path: ${req.path}, OriginalUrl: ${req.originalUrl}`);

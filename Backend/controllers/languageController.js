@@ -2,6 +2,7 @@ const LanguageConfig = require('../models/LanguageConfig');
 const Translation = require('../models/Translation');
 const translationService = require('../services/translationService');
 const { getIO } = require('../sockets');
+const { invalidateCache: invalidateChatLangCache } = require('../services/chatLanguageService');
 
 // Broadcast language config updates instantly via WebSocket to all connected clients
 const broadcastLanguageConfigUpdate = (config) => {
@@ -398,6 +399,7 @@ const updateLanguageConfig = async (req, res) => {
 
     await config.save();
     broadcastLanguageConfigUpdate(config);
+    invalidateChatLangCache(); // Reload chatbot language cache immediately
 
     res.json({
       success: true,
@@ -629,6 +631,7 @@ const addSupportedLanguage = async (req, res) => {
     config.updatedBy = adminId;
     await config.save();
     broadcastLanguageConfigUpdate(config);
+    invalidateChatLangCache(); // Reload chatbot language cache immediately
 
     let autoTranslatedCount = 0;
     if (autoTranslateImmediately && cleanCode !== 'en') {
@@ -691,6 +694,7 @@ const deleteSupportedLanguage = async (req, res) => {
     config.updatedBy = adminId;
     await config.save();
     broadcastLanguageConfigUpdate(config);
+    invalidateChatLangCache(); // Reload chatbot language cache immediately
 
     // Clean up translations for this language from all Translation records
     const allTranslations = await Translation.find({});
