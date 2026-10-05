@@ -20,6 +20,7 @@ import {
 import api from "../../../services/api";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
+import logoImg from "@/modules/landing/assets/logo.png";
 
 const INITIAL_QUICK_ACTIONS = [
   { label: "📋 My Booking", text: "My Booking" },
@@ -245,66 +246,77 @@ export default function UserSupportChatPage() {
     <div className="fixed inset-0 z-[100] bg-slate-100 flex justify-center items-center overflow-hidden">
       <div className="w-full h-full max-w-4xl bg-white flex flex-col overflow-hidden relative sm:border-x sm:border-slate-200 sm:shadow-2xl">
         
-        {/* Full-Page App Header */}
-        <header className="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white px-3 sm:px-6 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] pb-3.5 flex items-center justify-between border-b border-slate-800 shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3">
+        {/* Full-Page App Header - Compact & Professional */}
+        <header className="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 text-white px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between border-b border-slate-800/80 shadow-xs shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <button
               onClick={() => navigate("/user/help-support")}
-              className="p-2 -ml-1 text-slate-200 hover:text-white hover:bg-white/10 rounded-2xl transition-all cursor-pointer flex items-center gap-1 text-xs font-bold"
+              className="p-1.5 -ml-1 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 rounded-full transition-all cursor-pointer flex items-center justify-center shrink-0"
               title="Back to Help & Support"
+              aria-label="Back"
             >
               <IoArrowBack className="text-xl" />
-              <span className="hidden sm:inline">Back</span>
             </button>
 
-            <div className="h-6 w-px bg-slate-700/60 hidden sm:block" />
-
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="relative">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
-                  <IoWaterOutline className="text-xl sm:text-2xl" />
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+            {/* Jaladhaara Official Logo Avatar */}
+            <div className="relative shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white p-1 sm:p-1.2 shadow-sm border border-slate-700/50 flex items-center justify-center overflow-hidden">
+                <img
+                  src={logoImg}
+                  alt="Jaladhaara"
+                  className="w-full h-full object-contain"
+                />
               </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+            </div>
 
-              <div>
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                    Jaladhaara AI Assistant
-                  </h1>
-                  <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-400/30 text-[9px] sm:text-[10px] font-extrabold text-purple-300 flex items-center gap-1">
-                    <IoSparkles className="text-amber-400 text-[10px]" />
-                    <span>Live AI</span>
-                  </span>
-                </div>
-                <p className="text-[10px] sm:text-xs text-slate-300 flex items-center gap-1.5 font-medium">
-                  <span className="text-emerald-400 font-bold">● Connected</span>
-                  {userName && (
-                    <>
-                      <span>•</span>
-                      <span className="text-purple-200 font-medium">User: <strong className="text-white font-semibold">{userName}</strong></span>
-                    </>
-                  )}
-                  <span>•</span>
-                  <span>{currentLangObj.nativeName || currentLangObj.name}</span>
-                </p>
+            {/* Title & Status - Clean Single-Line Hierarchy */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 leading-none">
+                <h1 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
+                  Jaladhaara Support
+                </h1>
+                <span className="px-1.5 py-0.5 rounded-full bg-purple-500/25 border border-purple-400/30 text-[9px] sm:text-[10px] font-extrabold text-purple-300 flex items-center gap-0.5 shrink-0">
+                  <IoSparkles className="text-amber-400 text-[9px]" />
+                  <span>AI</span>
+                </span>
               </div>
+              <p className="text-[11px] text-slate-300 flex items-center gap-1.5 font-medium mt-1 truncate">
+                <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Connected
+                </span>
+                <span className="text-slate-500">•</span>
+                <span className="text-slate-300 truncate">24/7 Survey Assistance</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-purple-300 font-medium shrink-0">{currentLangObj.nativeName || currentLangObj.name}</span>
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Header Right Actions */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-1.5">
+            <a
+              href="tel:+918000000000"
+              className="p-1.5 sm:p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer flex items-center justify-center"
+              title="Call Support Helpline"
+              aria-label="Call Helpline"
+            >
+              <IoCallOutline className="text-lg sm:text-xl" />
+            </a>
             <button
               onClick={handleResetChat}
-              className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer"
-              title="Reset conversation history"
+              className="p-1.5 sm:p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer flex items-center justify-center"
+              title="Reset conversation"
+              aria-label="Reset conversation"
             >
-              <IoRefreshOutline className="text-xl" />
+              <IoRefreshOutline className="text-lg sm:text-xl" />
             </button>
           </div>
         </header>
 
         {/* Chat Messages Scrolling Body */}
-        <main className="flex-1 p-3.5 sm:p-6 overflow-y-auto space-y-3.5 sm:space-y-4 bg-slate-50/70">
+        <main className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-2.5 sm:space-y-3 bg-[#f8fafc]">
           {messages.map((msg) => {
             const isUser = msg.sender === "user";
             const timeString = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
@@ -315,7 +327,7 @@ export default function UserSupportChatPage() {
                 className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
               >
                 <div
-                  className={`max-w-[90%] sm:max-w-[80%] rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed shadow-xs ${
+                  className={`max-w-[92%] sm:max-w-[80%] rounded-2xl p-3 sm:p-3.5 text-xs sm:text-sm leading-relaxed shadow-xs ${
                     isUser
                       ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-tr-xs"
                       : "bg-white text-slate-800 border border-slate-200/80 rounded-tl-xs"
@@ -323,7 +335,9 @@ export default function UserSupportChatPage() {
                 >
                   {!isUser ? (
                     <div className="flex items-center gap-1.5 mb-1 text-[11px] font-bold text-purple-700">
-                      <IoSparkles className="text-amber-500 text-xs" />
+                      <div className="w-4 h-4 rounded-full bg-purple-50 flex items-center justify-center p-0.5 overflow-hidden shrink-0 border border-purple-200/60">
+                        <img src={logoImg} alt="" className="w-full h-full object-contain" />
+                      </div>
                       <span>Jaladhaara Ground Support</span>
                     </div>
                   ) : (
@@ -577,15 +591,15 @@ export default function UserSupportChatPage() {
         </main>
 
         {/* Suggested Quick Action Chips */}
-        <section className="px-3.5 sm:px-4 py-2 bg-white/95 backdrop-blur-md border-t border-slate-100 overflow-x-auto scrollbar-none flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
+        <section className="px-3 sm:px-4 py-1.5 bg-slate-50/90 border-t border-slate-200/70 overflow-x-auto no-scrollbar flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 hidden sm:inline">
             Suggested:
           </span>
           {INITIAL_QUICK_ACTIONS.map((action, idx) => (
             <button
               key={idx}
               onClick={() => handleSendMessage(action.text)}
-              className="px-2.5 sm:px-3 py-1 bg-slate-100 hover:bg-purple-50 hover:border-purple-200 border border-transparent rounded-full text-xs font-medium text-slate-700 hover:text-purple-700 whitespace-nowrap transition-all cursor-pointer"
+              className="px-2.5 py-1 bg-white hover:bg-purple-50 hover:text-purple-700 text-slate-700 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap shrink-0 border border-slate-200 shadow-2xs cursor-pointer active:scale-95 disabled:opacity-50"
             >
               {action.label}
             </button>
@@ -593,7 +607,7 @@ export default function UserSupportChatPage() {
         </section>
 
         {/* Sticky Bottom Input Field */}
-        <footer className="p-2.5 sm:p-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] bg-white border-t border-slate-200 shrink-0">
+        <footer className="p-2.5 sm:p-3 bg-white border-t border-slate-200/80 shrink-0 pb-[calc(0.6rem+env(safe-area-inset-bottom,0px))]">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -607,15 +621,15 @@ export default function UserSupportChatPage() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Ask anything (e.g. 'What are my bookings?' or 'सर्वे रिपोर्ट कैसे देखें?')..."
-              className="flex-1 px-4 py-2.5 sm:py-3 text-xs sm:text-sm bg-slate-50 rounded-2xl border border-slate-200 focus:outline-none focus:border-purple-500 focus:bg-white text-slate-800 placeholder-slate-400 transition-all shadow-inner"
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:bg-white transition-all shadow-inner"
             />
             <button
               type="submit"
               disabled={!inputText.trim() || loading}
-              className="p-3 sm:p-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-40 text-white rounded-2xl transition-all shadow-sm cursor-pointer shrink-0"
+              className="p-2 sm:p-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-xs active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center justify-center shrink-0"
               title="Send message"
             >
-              <IoSend className="text-base" />
+              <IoSend className="text-base sm:text-lg" />
             </button>
           </form>
         </footer>

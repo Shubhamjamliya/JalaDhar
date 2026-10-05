@@ -23,6 +23,7 @@ import {
 import api from "../../../services/api";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import logoImg from "@/modules/landing/assets/logo.png";
 
 const INITIAL_QUICK_ACTIONS = [
   { label: "📋 Assigned Bookings", text: "My Bookings" },
@@ -302,9 +303,9 @@ export default function VendorSupportChatPage() {
     <div className="fixed inset-0 z-[100] bg-slate-100 flex justify-center items-center overflow-hidden">
       <div className="w-full h-full max-w-4xl bg-white flex flex-col overflow-hidden relative sm:border-x sm:border-slate-200 sm:shadow-2xl">
         
-        {/* Full-Page App Header */}
-        <header className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white px-3 sm:px-6 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] pb-3.5 flex items-center justify-between border-b border-slate-800 shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3">
+        {/* Full-Page App Header - Compact & Professional */}
+        <header className="bg-gradient-to-r from-slate-900 via-slate-900 to-blue-950 text-white px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between border-b border-slate-800/80 shadow-xs shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <button
               onClick={() => {
                 if (window.history.length > 1) {
@@ -313,61 +314,72 @@ export default function VendorSupportChatPage() {
                   navigate("/vendor/help");
                 }
               }}
-              className="p-2 -ml-1 text-slate-200 hover:text-white hover:bg-white/10 rounded-2xl transition-all cursor-pointer flex items-center gap-1 text-xs font-bold"
+              className="p-1.5 -ml-1 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 rounded-full transition-all cursor-pointer flex items-center justify-center shrink-0"
               title="Back"
+              aria-label="Back"
             >
               <IoArrowBack className="text-xl" />
-              <span className="hidden sm:inline">Back</span>
             </button>
 
-            <div className="h-6 w-px bg-slate-700/60 hidden sm:block" />
-
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="relative">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
-                  <IoWaterOutline className="text-xl sm:text-2xl" />
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+            {/* Jaladhaara Official Logo Avatar */}
+            <div className="relative shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white p-1 sm:p-1.2 shadow-sm border border-slate-700/50 flex items-center justify-center overflow-hidden">
+                <img
+                  src={logoImg}
+                  alt="Jaladhaara"
+                  className="w-full h-full object-contain"
+                />
               </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+            </div>
 
-              <div>
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                    Jaladhaara AI Expert Assistant
-                  </h1>
-                  <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-[9px] sm:text-[10px] font-extrabold text-blue-300 flex items-center gap-1">
-                    <IoSparkles className="text-amber-400 text-[10px]" />
-                    <span>Live AI</span>
-                  </span>
-                </div>
-                <p className="text-[10px] sm:text-xs text-slate-300 flex items-center gap-1.5 font-medium">
-                  <span className="text-emerald-400 font-bold">● Online</span>
-                  {expertName && (
-                    <>
-                      <span>•</span>
-                      <span className="text-blue-200 font-medium">Expert: <strong className="text-white font-semibold">{expertName}</strong></span>
-                    </>
-                  )}
-                  <span>•</span>
-                  <span>{currentLangObj.nativeName || currentLangObj.name}</span>
-                </p>
+            {/* Title & Status - Clean Single-Line Hierarchy */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 leading-none">
+                <h1 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
+                  Jaladhaara Expert Support
+                </h1>
+                <span className="px-1.5 py-0.5 rounded-full bg-blue-500/25 border border-blue-400/30 text-[9px] sm:text-[10px] font-extrabold text-blue-300 flex items-center gap-0.5 shrink-0">
+                  <IoSparkles className="text-amber-400 text-[9px]" />
+                  <span>AI</span>
+                </span>
               </div>
+              <p className="text-[11px] text-slate-300 flex items-center gap-1.5 font-medium mt-1 truncate">
+                <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Online
+                </span>
+                <span className="text-slate-500">•</span>
+                <span className="text-slate-300 truncate">24/7 Field Support</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-blue-300 font-medium shrink-0">{currentLangObj.nativeName || currentLangObj.name}</span>
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Header Right Actions */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-1.5">
+            <a
+              href="tel:+918000000000"
+              className="p-1.5 sm:p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer flex items-center justify-center"
+              title="Call Partner Helpline"
+              aria-label="Call Partner Helpline"
+            >
+              <IoCallOutline className="text-lg sm:text-xl" />
+            </a>
             <button
               onClick={handleResetChat}
-              className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer"
-              title="Reset conversation history"
+              className="p-1.5 sm:p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer flex items-center justify-center"
+              title="Reset conversation"
+              aria-label="Reset conversation"
             >
-              <IoRefreshOutline className="text-xl" />
+              <IoRefreshOutline className="text-lg sm:text-xl" />
             </button>
           </div>
         </header>
 
         {/* Chat Messages Scrolling Body */}
-        <main className="flex-1 p-3.5 sm:p-6 overflow-y-auto space-y-3.5 sm:space-y-4 bg-slate-50/70">
+        <main className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-2.5 sm:space-y-3 bg-[#f8fafc]">
           {messages.map((msg) => {
             const isUser = msg.sender === "user";
             const timeString = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
@@ -378,7 +390,7 @@ export default function VendorSupportChatPage() {
                 className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
               >
                 <div
-                  className={`max-w-[90%] sm:max-w-[80%] rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed shadow-xs ${
+                  className={`max-w-[92%] sm:max-w-[80%] rounded-2xl p-3 sm:p-3.5 text-xs sm:text-sm leading-relaxed shadow-xs ${
                     isUser
                       ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-tr-xs"
                       : "bg-white text-slate-800 border border-slate-200/80 rounded-tl-xs"
@@ -386,7 +398,9 @@ export default function VendorSupportChatPage() {
                 >
                   {!isUser ? (
                     <div className="flex items-center gap-1.5 mb-1 text-[11px] font-bold text-blue-700">
-                      <IoSparkles className="text-amber-500 text-xs" />
+                      <div className="w-4 h-4 rounded-full bg-blue-50 flex items-center justify-center p-0.5 overflow-hidden shrink-0 border border-blue-200/60">
+                        <img src={logoImg} alt="" className="w-full h-full object-contain" />
+                      </div>
                       <span>Jaladhaara Expert Support</span>
                     </div>
                   ) : (
@@ -509,7 +523,7 @@ export default function VendorSupportChatPage() {
         </main>
 
         {/* Quick Topic Chips Bar */}
-        <div className="px-3 sm:px-6 py-2 bg-white border-t border-slate-100 overflow-x-auto no-scrollbar shrink-0 flex items-center gap-1.5">
+        <div className="px-3 sm:px-4 py-1.5 bg-slate-50/90 border-t border-slate-200/70 overflow-x-auto no-scrollbar shrink-0 flex items-center gap-1.5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 hidden sm:inline">
             Quick Prompts:
           </span>
@@ -518,7 +532,7 @@ export default function VendorSupportChatPage() {
               key={idx}
               onClick={() => handleSendMessage(item.text)}
               disabled={loading}
-              className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap shrink-0 border border-slate-200/60 cursor-pointer disabled:opacity-50"
+              className="px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap shrink-0 border border-slate-200 shadow-2xs cursor-pointer active:scale-95 disabled:opacity-50"
             >
               {item.label}
             </button>
@@ -526,7 +540,7 @@ export default function VendorSupportChatPage() {
         </div>
 
         {/* Input Bar */}
-        <footer className="p-3 sm:p-4 bg-white border-t border-slate-200/80 shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+        <footer className="p-2.5 sm:p-3 bg-white border-t border-slate-200/80 shrink-0 pb-[calc(0.6rem+env(safe-area-inset-bottom,0px))]">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -541,13 +555,13 @@ export default function VendorSupportChatPage() {
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Ask about assigned bookings, report guidelines, wallet payouts..."
               disabled={loading}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0A84FF] focus:bg-white transition-all shadow-inner"
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0A84FF] focus:bg-white transition-all shadow-inner"
             />
 
             <button
               type="submit"
               disabled={!inputText.trim() || loading}
-              className="p-2.5 sm:p-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-bold transition-all shadow-md active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center justify-center shrink-0"
+              className="p-2 sm:p-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-xs active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center justify-center shrink-0"
               aria-label="Send message"
             >
               <IoSend className="text-base sm:text-lg" />
