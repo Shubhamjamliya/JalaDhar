@@ -1059,24 +1059,24 @@ export default function UserDashboard() {
 
             {/* Geoscientific Instruments Survey Disclaimer Banner */}
             <div className="mx-1 mb-6 p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-2xl text-white shadow-lg relative overflow-hidden border border-slate-700/50">
-                <div className="absolute top-0 right-0 -mr-6 -mt-6 w-32 h-32 bg-blue-500/15 rounded-full blur-2xl pointer-events-none"></div>
-                <div className="relative z-10 flex items-start gap-3 sm:gap-3.5">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 bg-white/10 rounded-xl backdrop-blur-md border border-white/15 text-xl shrink-0 mt-0.5 shadow-xs flex items-center justify-center">
-                        🔬
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-bold tracking-wide uppercase bg-blue-500/25 text-blue-300 px-2 py-0.5 rounded-full border border-blue-400/30 shrink-0">
+                <div className="absolute top-0 right-0 -mr-6 -mt-6 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
+                <div className="relative z-10">
+                    <div className="flex items-center gap-3.5 mb-3">
+                        <div className="w-11 h-11 bg-white/10 rounded-xl backdrop-blur-md border border-white/15 text-2xl shrink-0 shadow-xs flex items-center justify-center">
+                            🔬
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <span className="inline-block text-[10px] font-bold tracking-wide uppercase bg-blue-500/25 text-blue-300 px-2.5 py-0.5 rounded-full border border-blue-400/30 mb-1">
                                 Verified
                             </span>
+                            <h3 className="font-extrabold text-sm sm:text-base text-white leading-snug tracking-tight">
+                                Professional Groundwater Surveys Using Advanced Geoscientific Instruments
+                            </h3>
                         </div>
-                        <h3 className="font-extrabold text-sm sm:text-base text-white leading-snug tracking-tight">
-                            Professional Groundwater Surveys Using Advanced Geoscientific Instruments
-                        </h3>
-                        <p className="text-[11px] sm:text-xs text-slate-300/90 mt-1.5 leading-relaxed font-normal">
-                            Survey findings and recommendations are based on local geological conditions and geophysical interpretations. Groundwater availability, yield, and borewell success cannot be guaranteed.
-                        </p>
                     </div>
+                    <p className="text-xs text-slate-300/90 leading-relaxed font-medium">
+                        Our verified groundwater experts conduct professional groundwater surveys using advanced geoscientific instruments. Survey findings are based on local geological conditions and geophysical interpretations. Groundwater availability and borewell success cannot be guaranteed.
+                    </p>
                 </div>
             </div>
 
