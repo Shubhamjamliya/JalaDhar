@@ -9,7 +9,8 @@ import {
     IoWalletOutline,
     IoSearchOutline,
     IoEyeOutline,
-    IoCashOutline
+    IoCashOutline,
+    IoArrowBack
 } from "react-icons/io5";
 import { getUserBookings } from "../../../services/bookingApi";
 import PageContainer from "../../shared/components/PageContainer";
@@ -145,6 +146,15 @@ export default function UserPaymentsInvoices() {
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <div className="flex items-center gap-3 mb-2">
+                                <button
+                                    type="button"
+                                    onClick={() => navigate(-1)}
+                                    className="p-2.5 bg-white/20 hover:bg-white/30 active:scale-95 backdrop-blur-md rounded-2xl text-white transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-2xs"
+                                    aria-label="Go Back"
+                                    title="Go Back"
+                                >
+                                    <IoArrowBack className="text-xl text-white" />
+                                </button>
                                 <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl">
                                     <IoReceiptOutline className="text-2xl text-white" />
                                 </div>

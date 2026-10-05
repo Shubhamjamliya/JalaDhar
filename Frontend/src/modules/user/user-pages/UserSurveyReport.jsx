@@ -199,15 +199,26 @@ export default function UserSurveyReport() {
           <div className="p-5 sm:p-8 bg-gradient-to-b from-blue-50/50 to-white border-b border-gray-100/80">
             <div className="flex flex-col gap-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2 text-[#102353]">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2.69L19.5 13.94C21.1 16.34 20.35 19.54 17.86 20.97C15.37 22.4 12.06 22.15 9.87 20.35C8.01 18.82 7.15 16.42 7.7 14.15L12 2.69Z" stroke="#0A84FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M15.5 14C15.5 14 13.5 17 12 17C10.5 17 10.5 15.5 10.5 15.5" stroke="#0A84FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <h1 className="text-[28px] font-extrabold tracking-tight">Jaladhaara</h1>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    className="p-2 rounded-xl bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 active:scale-95 transition-all shadow-2xs cursor-pointer flex items-center justify-center shrink-0"
+                    aria-label="Go Back"
+                    title="Go Back"
+                  >
+                    <IoChevronBackOutline className="text-xl" />
+                  </button>
+                  <div>
+                    <div className="flex items-center gap-2 text-[#102353]">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2.69L19.5 13.94C21.1 16.34 20.35 19.54 17.86 20.97C15.37 22.4 12.06 22.15 9.87 20.35C8.01 18.82 7.15 16.42 7.7 14.15L12 2.69Z" stroke="#0A84FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M15.5 14C15.5 14 13.5 17 12 17C10.5 17 10.5 15.5 10.5 15.5" stroke="#0A84FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <h1 className="text-[28px] font-extrabold tracking-tight">Jaladhaara</h1>
+                    </div>
+                    <p className="text-[11px] font-bold text-[#0A84FF] uppercase tracking-widest mt-0.5">Digital Survey Report</p>
                   </div>
-                  <p className="text-[11px] font-bold text-[#0A84FF] uppercase tracking-widest mt-0.5">Digital Survey Report</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">

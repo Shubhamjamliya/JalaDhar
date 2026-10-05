@@ -86,6 +86,14 @@ const navItems = [
     },
 ];
 
+const ROOT_ROUTES = [
+    "/user/dashboard",
+    "/user/status",
+    "/user/survey",
+    "/user/wallet",
+    "/user/profile"
+];
+
 export default function UserNavbar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -102,6 +110,7 @@ export default function UserNavbar() {
     const { logout, user } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+    const isSubRoute = !ROOT_ROUTES.includes(location.pathname);
 
     // Dynamically track bottom navigation height to ensure floating widgets stay clear of the navbar and FAB
     useEffect(() => {
@@ -266,14 +275,27 @@ export default function UserNavbar() {
             {/* Top Navbar - Mobile & Desktop */}
             <header ref={headerRef} className="fixed inset-x-0 top-0 z-50 bg-white/95 backdrop-blur-md shadow-xs border-b border-gray-100">
                 <div className="flex items-center justify-between px-4 py-2.5 md:px-6 md:py-3">
-                    {/* Left Section: Logo */}
-                    <NavLink to="/user/dashboard" className="flex items-center">
-                        <img
-                            src={logo}
-                            alt="Jaladhaara Logo"
-                            className="h-10 md:h-12 w-auto object-contain"
-                        />
-                    </NavLink>
+                    {/* Left Section: Back Button (on nested sub-pages) + Logo */}
+                    <div className="flex items-center gap-2">
+                        {isSubRoute && (
+                            <button
+                                type="button"
+                                onClick={() => navigate(-1)}
+                                className="p-1.5 -ml-1 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-2xs"
+                                aria-label="Go Back"
+                                title="Go Back"
+                            >
+                                <IoChevronBackOutline className="text-xl" />
+                            </button>
+                        )}
+                        <NavLink to="/user/dashboard" className="flex items-center">
+                            <img
+                                src={logo}
+                                alt="Jaladhaara Logo"
+                                className="h-10 md:h-12 w-auto object-contain"
+                            />
+                        </NavLink>
+                    </div>
 
                     {/* Desktop Navigation Links - Hidden on Mobile */}
                     <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">

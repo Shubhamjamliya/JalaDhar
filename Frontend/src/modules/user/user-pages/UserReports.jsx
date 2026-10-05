@@ -7,7 +7,8 @@ import {
     IoPersonOutline,
     IoSearchOutline,
     IoWalletOutline,
-    IoCheckmarkCircleOutline
+    IoCheckmarkCircleOutline,
+    IoArrowBack
 } from "react-icons/io5";
 import { getUserBookings } from "../../../services/bookingApi";
 import PageContainer from "../../shared/components/PageContainer";
@@ -109,6 +110,15 @@ export default function UserReports() {
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
                     <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-2">
+                            <button
+                                type="button"
+                                onClick={() => navigate(-1)}
+                                className="p-2.5 bg-white/20 hover:bg-white/30 active:scale-95 backdrop-blur-md rounded-2xl text-white transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-2xs"
+                                aria-label="Go Back"
+                                title="Go Back"
+                            >
+                                <IoArrowBack className="text-xl text-white" />
+                            </button>
                             <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl">
                                 <IoDocumentTextOutline className="text-2xl text-white" />
                             </div>
